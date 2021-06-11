@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 import re
 
-PACKAGE = "qibo"
+PACKAGE = "boilerplate-library"
 
 
 # Returns the qibo version
