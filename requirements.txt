@@ -1,0 +1,9 @@
+autopep8==1.5.7
+flake8==3.9.2
+mccabe==0.6.1
+mypy==0.902
+mypy-extensions==0.4.3
+pycodestyle==2.7.0
+pyflakes==2.3.1
+toml==0.10.2
+typing-extensions==3.10.0.0
