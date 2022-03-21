@@ -1,13 +1,15 @@
 name: Bump version
 
+# Only trigger, when the build workflow succeeded
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI build to main"]
+    types:
+      - completed
 
 jobs:
   bump_version:
-    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    if: "!startsWith(github.event.head_commit.message, 'PR-')"
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
     steps:
