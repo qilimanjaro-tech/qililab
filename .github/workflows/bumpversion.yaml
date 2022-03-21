@@ -23,14 +23,13 @@ jobs:
         uses: commitizen-tools/commitizen-action@master
         with:
           github_token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
-          changelog_increment_filename: CHANGELOG.md
-          branch: main
+          changelog_increment_filename: body.md
       - name: Print Version
         run: echo "Bumped to version ${{ steps.cz.outputs.version }}"
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          body_path: "CHANGELOG.md"
+          body_path: "body.md"
           tag_name: ${{ env.REVISION }}
         env:
           GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
