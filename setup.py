@@ -1,15 +1,16 @@
 # Installation script for python
-from setuptools import setup, find_packages
 import os
 import re
 
-PACKAGE = "boilerplate-library"
+from setuptools import find_packages, setup
+
+PACKAGE = "boilerplate"
 
 
 # Returns the qibo version
 def get_version():
-    """ Gets the version from the package's __init__ file
-    if there is some problem, let it happily fail """
+    """Gets the version from the package's __init__ file
+    if there is some problem, let it happily fail"""
     VERSIONFILE = os.path.join("src", PACKAGE, "__init__.py")
     initfile_lines = open(VERSIONFILE, "rt").readlines()
     VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
@@ -20,7 +21,7 @@ def get_version():
 
 
 # Read in requirements
-requirements = open('requirements.txt').readlines()
+requirements = open("requirements.txt").readlines()
 requirements = [r.strip() for r in requirements]
 
 
@@ -30,7 +31,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="qili-boilerplate",
+    name="qilimanjaro-boilerplate-library",
     version=get_version(),
     description="A template repository to create a Qilimanjaro Python library",
     author="Qilimanjaro team",
@@ -47,12 +48,18 @@ setup(
     ],
     install_requires=requirements,
     extras_require={
-        "docs": ["sphinx", "sphinx_rtd_theme", "recommonmark",
-                 "sphinxcontrib-bibtex", "sphinx_markdown_tables",
-                 "nbsphinx", "IPython"],
-        "tests": ["pytest", "cirq", "ply", "sklearn"],
+        "docs": [
+            "sphinx",
+            "sphinx_rtd_theme",
+            "recommonmark",
+            "sphinxcontrib-bibtex",
+            "sphinx_markdown_tables",
+            "nbsphinx",
+            "IPython",
+        ],
+        "tests": ["pytest"],
     },
-    python_requires=">=3.6.0",
+    python_requires=">=3.10.0",
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
 )

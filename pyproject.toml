@@ -1,0 +1,56 @@
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+	\.git
+| \.hg
+| \.mypy_cache
+| \.tox
+| \.venv
+| _build
+| buck-out
+| build
+)/
+'''
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = false
+ignore-magic = false
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-module = true
+ignore-nested-functions = false
+ignore-nested-classes = true
+ignore-setters = false
+fail-under = 80
+exclude = ["setup.py", "docs", "build", "tests", "examples"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+verbose = 0
+quiet = false
+whitelist-regex = []
+color = true
+generate-badge = "."
+badge-format = "svg"
+
+[tool.isort]
+profile = "black"
+py_version=310
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.0.1"
+version_files = [
+    "src/boilerplate/__init__.py",
+    "pyproject.toml:version"
+]
+tag_format = "v$version"
+bump_message = "bump: $current_version → $new_version [skip-ci]"
