@@ -24,3 +24,16 @@ class CustomHandler(logging.StreamHandler):
 logger = logging.getLogger(__name__)
 logger.setLevel(LIBRARY_LOG_LEVEL)
 logger.addHandler(CustomHandler())
+
+
+def raise_error(exception, message=None, args=None):
+    """Raise exception with logging error.
+    Args:
+        exception (Exception): python exception.
+        message (str): the error message.
+    """
+    logger.error(message)
+    if args:
+        raise exception(message, args)
+    else:
+        raise exception(message)
