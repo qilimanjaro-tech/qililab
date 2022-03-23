@@ -1,5 +1,5 @@
 # Qilimanjaro Library Boilerplate
-[![codecov](https://codecov.io/gh/qilimanjaro-tech/library-boilerplate/branch/main/graph/badge.svg?token=9GDYLAGT7B)](https://codecov.io/gh/qilimanjaro-tech/library-boilerplate)
+[![codecov](https://codecov.io/gh/qilimanjaro-tech/qililab/branch/main/graph/badge.svg?token=9GDYLAGT7B)](https://codecov.io/gh/qilimanjaro-tech/qililab)
 ![interrogate](./interrogate_badge.svg)
 
 Qilimanjaro template repository to create a Python library

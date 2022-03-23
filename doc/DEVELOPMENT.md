@@ -58,32 +58,32 @@ cd ~/environments
 
 Create the new project environment with the following command:
 
-Example for `your-project-environment-name` being `boilerplate`
+Example for `your-project-environment-name` being `qililab`
 
 ```sh
-python3 -m venv ~/environments/boilerplate
+python3 -m venv ~/environments/qililab
 ```
 
-Whenever you want to use the `boilerplate` environment, just type:
+Whenever you want to use the `qililab` environment, just type:
 
 ```sh
-source ~/environments/boilerplate/bin/activate
+source ~/environments/qililab/bin/activate
 ```
 
 ### Using `conda`
 
-Open a new terminal and create the new `boilerplate` project environment with the following command:
+Open a new terminal and create the new `qililab` project environment with the following command:
 
 ```sh
-conda create -n boilerplate python=3.10
+conda create -n qililab python=3.10
 ```
 
 > ℹ It may ask if you want to proceed with the installation of some libraries.
 
-After completion, and whenever you want to use the `boilerplate` environment, just type:
+After completion, and whenever you want to use the `qililab` environment, just type:
 
 ```sh
-conda activate boilerplate
+conda activate qililab
 ```
 
 ## Clone the project repository and install the project library dependencies for development
@@ -91,7 +91,7 @@ conda activate boilerplate
 Open a new terminal, move to a directory where you want to clone the repository and type:
 
 ```sh
-git clone https://github.com/qilimanjaro-tech/library-boilerplate.git
+git clone https://github.com/qilimanjaro-tech/qililab.git
 ```
 
 > ⚠ Depending on your git account configuration you may need to input your git username and password or token.
@@ -99,7 +99,7 @@ git clone https://github.com/qilimanjaro-tech/library-boilerplate.git
 Move to the new cloned project directory:
 
 ```sh
-cd library-boilerplate
+cd qililab
 ```
 
 And with the virtual environment activated, install the required project libraries for development:

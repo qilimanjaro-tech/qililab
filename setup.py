@@ -4,7 +4,7 @@ import re
 
 from setuptools import find_packages, setup
 
-PACKAGE = "boilerplate"
+PACKAGE = "qililab"
 
 
 # Returns the qibo version
@@ -31,12 +31,12 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="qilimanjaro-boilerplate-library",
+    name="qilimanjaro-qililab",
     version=get_version(),
     description="A template repository to create a Qilimanjaro Python library",
     author="Qilimanjaro team",
     author_email="info@qilimanjaro.tech",
-    url="https://github.com/qilimanjaro-tech/library-boilerplate",
+    url="https://github.com/qilimanjaro-tech/qililab",
     packages=find_packages("src"),
     package_dir={"": "src"},
     package_data={"": ["*.out"]},

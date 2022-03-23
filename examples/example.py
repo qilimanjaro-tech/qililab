@@ -1,10 +1,10 @@
-from boilerplate import BoilerPlate
+from qililab import Qililab
 
 
-def test_boiler_plate():
-    boilerplate = BoilerPlate()
-    print(f"Successfully instantiated a boilerplate.\n{boilerplate}")
+def test_qililab_class():
+    qililab = Qililab()
+    print(f"Successfully instantiated a Qililab.\n{qililab}")
 
 
 if __name__ == "__main__":
-    test_boiler_plate()
+    test_qililab_class()
