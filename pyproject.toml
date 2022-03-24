@@ -77,5 +77,6 @@ tag_format = "v$version"
         'venv/*',
         '*/virtualenv/*',
         '*/virtualenvs/*',
-        '*/tests/*'
+        '*/tests/*',
+        'examples/*'
     ]

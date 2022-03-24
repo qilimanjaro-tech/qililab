@@ -14,9 +14,9 @@ class CustomHandler(logging.StreamHandler):
 
     def format(self, record):
         """Format the record with specific format."""
-        from boilerplate import __version__
+        from qililab import __version__
 
-        fmt = f"[boilerplate] [{__version__}|%(levelname)s|%(asctime)s]: %(message)s"
+        fmt = f"[qililab] [{__version__}|%(levelname)s|%(asctime)s]: %(message)s"
         return logging.Formatter(fmt, datefmt="%Y-%m-%d %H:%M:%S").format(record)
 
 
