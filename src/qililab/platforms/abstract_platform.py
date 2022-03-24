@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from qililab.config import logger, raise_error
+from qililab.config import logger
 
 
 class AbstractPlatform(ABC):
@@ -25,27 +25,22 @@ class AbstractPlatform(ABC):
     @abstractmethod
     def connect(self) -> None:
         """Connect to lab instruments using the specified calibration settings."""
-        raise_error(NotImplementedError)
 
     @abstractmethod
     def setup(self) -> None:
         """Configure instruments using the specified calibration settings."""
-        raise_error(NotImplementedError)
 
     @abstractmethod
     def start(self) -> None:
         """Turn on lab instruments."""
-        raise_error(NotImplementedError)
 
     @abstractmethod
     def stop(self) -> None:
         """Turn off lab instruments."""
-        raise_error(NotImplementedError)
 
     @abstractmethod
     def disconnect(self) -> None:
         """Disconnect from lab instruments."""
-        raise_error(NotImplementedError)
 
     # TODO: Replace 'object' with PulseSequence class (when defined)
     @abstractmethod
@@ -60,4 +55,3 @@ class AbstractPlatform(ABC):
         Returns:
             Readout results.
         """
-        raise_error(NotImplementedError)
