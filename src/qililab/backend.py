@@ -7,8 +7,15 @@ from qililab.circuit import HardwareCircuit
 from qililab.config import raise_error
 
 
-class QililabBackend(NumpyBackend):  # pragma: no cover
-    """Hardware backend used to execute circuits on specified lab platforms"""
+class QililabBackend(NumpyBackend):
+    """Hardware backend used to execute circuits on specified lab platforms
+
+    Attributes:
+        name (str): Name of the backend.
+        is_hardware (bool): Flag used by Qibo to identify a hardware backend.
+        platform (object): Platform object (child of AbstractPlatform class) describing the lab setup.
+
+    """
 
     def __init__(self) -> None:
         super().__init__()

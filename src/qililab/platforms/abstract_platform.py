@@ -4,7 +4,12 @@ from qililab.config import logger
 
 
 class AbstractPlatform(ABC):
-    """Abstract platform for controlling quantum devices."""
+    """Abstract platform for controlling quantum devices.
+
+    Attributes:
+        name (str): Name of the platform.
+
+    """
 
     def __init__(self, name: str) -> None:
         """
