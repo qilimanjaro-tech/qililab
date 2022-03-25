@@ -19,7 +19,7 @@ def backend() -> QililabBackend:
 
 
 class TestBackend:
-    """Unit tests checking the QililabBackend initialization steps and values"""
+    """Unit tests checking the QililabBackend attributes and methods"""
 
     def test_set_backend(self) -> None:
         """Test of the initialization of the qililab backend and qili platform using qibo.
@@ -70,4 +70,4 @@ class TestBackend:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
         for gate in [Identity, X, Y, Z]:
-            assert isinstance(backend.create_gate(gate), gate)
+            assert isinstance(backend.create_gate(gate, 0), gate)
