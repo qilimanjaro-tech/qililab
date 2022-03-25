@@ -1,6 +1,6 @@
 from qililab.config import raise_error
 from qililab.platforms.abstract_platform import AbstractPlatform
-from qililab.settings.settings_loader import SettingsLoader
+from qililab.settings.settings_manager import SettingsManager
 
 
 class QiliPlatform(AbstractPlatform):
@@ -16,7 +16,7 @@ class QiliPlatform(AbstractPlatform):
 
     def __init__(self, name: str) -> None:
         super().__init__(name=name)
-        self.platform_settings = SettingsLoader(name=self.name, id=self._ID)
+        self.platform_settings = SettingsManager(name=self.name, id=self._ID)
 
     def connect(self) -> None:
         """Connect to lab instruments using the specified calibration settings."""
