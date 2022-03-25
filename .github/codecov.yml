@@ -1,0 +1,27 @@
+codecov:
+  branch: main
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default: false # disable the default status that measures entire project
+      src:
+        paths:
+          - "src"
+        target: 80% # the required coverage value
+        threshold: 10% # the leniency in hitting the target
+        flags:
+          - "unittests"
+  notify:
+    slack:
+      default:
+        url: ${{ secrets.SLACK_WEBHOOK }}
+        threshold: 5%
+        only_pulls: false
+        # branches:
+        #   - "main"
+        flags:
+          - "unittests"
+        paths:
+          - "src"
