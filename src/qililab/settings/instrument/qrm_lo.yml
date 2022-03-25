@@ -1,0 +1,7 @@
+description: QRM's local oscillator settings
+name: qrm_lo
+
+ip: 192.168.0.7
+label: LO_qrm
+frequency: 7307720000.0
+power: 15

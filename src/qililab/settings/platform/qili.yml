@@ -1,0 +1,25 @@
+description: Platform settings
+name: qili
+
+nqubits: 1
+data_folder: .data/
+delay_before_readout: 50
+delay_between_pulses: 0
+drag_coeff: 0
+hardware_avg: 4096
+pi_pulse_amplitude: 1
+pi_pulse_duration: 100
+pi_pulse_frequency: 100000000.0
+qubit_freq: 3544000000.0
+rabi_oscillations_pi_pulse_min_voltage: 950
+readout_pulse:
+  amplitude: 0.4
+  duration: 2000
+  frequency: 20000000.0
+  offset_i: 0
+  offset_q: 0
+repetition_duration: 200000
+resonator_spectroscopy_max_ro_voltage: 1775
+sampling_rate: 1000000000.0
+sigmas_per_gate: 4
+software_averages: 10

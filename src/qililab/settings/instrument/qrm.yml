@@ -1,0 +1,18 @@
+description: QRM settings
+name: qrm
+
+acq_trigger_mode: sequencer
+hardware_avg_en: true
+ip: 192.168.0.4
+label: qrm
+ref_clock: external
+sequencer: 0
+sync_en: true
+is_cluster: false
+gain: 0.5
+initial_delay: 0
+integration_length: 2000
+mode: ssb
+repetition_duration: 200000
+sampling_rate: 1000000000.0
+start_sample: 130  # start of the integral during demodulation
