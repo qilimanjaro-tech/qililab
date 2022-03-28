@@ -1,9 +1,10 @@
 import pytest
 import qibo
+from qibo.models import Circuit
 
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
-from qililab.gates import Identity, X, Y, Z
+from qililab.gates import I, X, Y, Z
 from qililab.platforms.qiliplatform import QiliPlatform
 
 
@@ -44,6 +45,8 @@ class TestBackend:
         """
         backend.set_platform("qili")
         assert isinstance(backend.platform, QiliPlatform)
+        with pytest.raises(NotImplementedError):
+            backend.set_platform("unknown_platform")
 
     def test_get_platform(self, backend: QililabBackend) -> None:
         """Test the get_platform method of the QililabBackend class.
@@ -61,6 +64,8 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
+        circuit = Circuit(1)
+        assert isinstance(circuit, HardwareCircuit)
         assert backend.circuit_class() == HardwareCircuit
 
     def test_create_gate(self, backend: QililabBackend) -> None:
@@ -69,5 +74,5 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        for gate in [Identity, X, Y, Z]:
+        for gate in [I, X, Y, Z]:
             assert isinstance(backend.create_gate(gate, 0), gate)
