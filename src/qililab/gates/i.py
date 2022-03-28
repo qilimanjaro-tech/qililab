@@ -4,8 +4,7 @@ from qililab.config import raise_error
 from qililab.gates.abstract_gate import AbstractHardwareGate
 
 
-# FIXME: Flake8 doesn't accept the 'I' class definition. Changed the name to Identity. Should we ignore this flake8 error?
-class Identity(AbstractHardwareGate, gates.I):
+class I(AbstractHardwareGate, gates.I):  # noqa: E742
     """Identity gate"""
 
     def to_sequence(self, sequence: object) -> None:
