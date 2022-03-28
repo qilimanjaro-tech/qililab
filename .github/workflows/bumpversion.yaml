@@ -9,7 +9,7 @@ on:
 
 jobs:
   bump_version:
-    if: "!startsWith(github.event.head_commit.message, 'PR-')"
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
     steps:
@@ -24,6 +24,7 @@ jobs:
         with:
           github_token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           changelog_increment_filename: body.md
+          branch: main
       - name: Print Version
         run: echo "Bumped to version ${{ steps.cz.outputs.version }}"
       - name: Release
