@@ -1,6 +1,5 @@
 from qibo import gates
 
-from qililab.config import raise_error
 from qililab.gates.abstract_gate import AbstractHardwareGate
 
 
@@ -13,4 +12,4 @@ class Z(AbstractHardwareGate, gates.Z):
         Args:
             sequence (PulseSequence): Class containing the sequence of pulses to be applied.
         """
-        raise_error(NotImplementedError)
+        raise NotImplementedError
