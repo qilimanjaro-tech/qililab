@@ -1,65 +1,43 @@
-from abc import ABC
-from pathlib import Path
-from typing import Union
+from dataclasses import asdict
 
 import yaml
 
-from qililab.settings.settings import Settings
+from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.settings_loader import SettingsLoader
 
 
-class SettingsManager(ABC):
-    """Class used to load a yaml file into a Settings object.
+class SettingsManager:
+    """Class used to load and dump configuration settings."""
 
-    Attributes:
-        name (str): Name of the settings file.
-        id (str): Settings identification. Options are "platform", "calibration", "instrument", "qubit" and "cavity".
-        settings (Settings): Dataclass containing the settings from the specified yaml file.
-    """
+    _instance = None
 
-    def __init__(self, name: str, id: str) -> None:
-        """Build path to yaml file from id and name: 'qililab/settings/id/name'
+    def __new__(cls):
+        """Instantiate the object only once."""
+        if cls._instance is None:
+            cls._instance = super(SettingsManager, cls).__new__(cls)
+        return cls._instance
+
+    def load(self, name: str, id: str):
+        """Load yaml file with path 'qililab/settings/id/name.yml' and return dataclass object containing the file values.
 
         Args:
             name (str): Name of the settings file.
             id (str): Settings identification. Options are "platform", "calibration", "instrument", "qubit" and "cavity".
-        """
-        # TODO: Connect to DB when available
-        self.name = name
-        self.id = id
-        self.settings = self.load()
-
-    def load(self) -> Settings:
-        """Load yaml file located at self._path and return dataclass object containing the file values.
 
         Returns:
-            Settings: Dataclass containing the yaml settings.
+            AbstractSettings: Dataclass containing the settings.
         """
-        with open(self._path, "r") as file:
-            settings = yaml.safe_load(stream=file)
 
-        return Settings(settings=settings)
+        return SettingsLoader(id=id, name=name)
 
-    def dump(self) -> None:
-        """Dump dictionary from dataclass self.settings to yaml file located at self._path."""
-        with open(self._path, "w") as file:
-            yaml.dump(data=self.settings.asdict(), stream=file)
-
-    @property
-    def _path(self) -> Path:
-        """Create and return path to yaml file from given name and id.
-
-        Returns:
-            str: Path to the yaml file.
-        """
-        return Path(__file__).parent / self.id / f"{self.name}.yml"
-
-    def __getattr__(self, name: str) -> Union[str, int, float]:
-        """Redirect all non-defined attribute and method calls to the class instance saved in self.settings.
+    def dump(self, settings: AbstractSettings) -> None:
+        """Dump data from settings into its corresponding location.
 
         Args:
-            name (str): Attribute or method to call.
-
-        Returns:
-            Union[str, int, float]: Value of the attribute or return value of the method.
+            settings (AbstractSettings): Dataclass containing the settings.
         """
-        return getattr(self.settings, name)
+        settings_dict = asdict(settings)
+        del settings_dict["location"]
+        del settings_dict["name"]
+        with open(settings.location, "w") as file:
+            yaml.dump(data=settings_dict, stream=file)
