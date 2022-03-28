@@ -2,7 +2,6 @@ from pathlib import Path
 
 import yaml
 
-from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.platform_settings import PlatformSettings
 from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
 
@@ -20,6 +19,7 @@ class SettingsLoader:
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
+        # FIXME: Add better way to find path to file
         path = str(Path(__file__).parent / id / f"{name}.yml")
 
         try:
