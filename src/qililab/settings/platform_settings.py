@@ -11,8 +11,6 @@ class PlatformSettings(AbstractSettings):
         n_qubits (int): Number of qubits.
         hw_avg (int): Hardware average. Number of shots used when executing a sequence.
         sw_avg (float): Software average.
-        sampling_rate (float): Minimum voltage obtained on a rabi oscillation.
-        rep_duration (float): Maximum voltage obtained on a rabi oscillation.
     """
 
     nqubits: int
