@@ -17,4 +17,5 @@ class QiliPlatform(AbstractPlatform):
 
     def __post_init__(self) -> None:
         """Load platform settings."""
+        super().__post_init__()
         self.settings = SM.load(name=self.name, id=self._ID)
