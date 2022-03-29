@@ -12,19 +12,20 @@ class TestSettingsManager:
 
     def test_singleton(self) -> None:
         """Test that SettingsManager is a singleton."""
-        settings_manager = SettingsManager()
+        settings_manager = SettingsManager(foldername="qili")
         assert id(settings_manager) == id(SM)
 
     def test_load(self) -> None:
         """Test the load method of the SettingsManager class. Assert that the returned objects are of the correct type.
         Assert that errors are raised correctly."""
-        assert isinstance(SM.load(name="qili", id="platform"), PlatformSettings)
-        assert isinstance(SM.load(name="qubit", id="calibration"), QubitCalibrationSettings)
+        assert isinstance(SM.load(filename="qili", category="platform"), PlatformSettings)
+        assert isinstance(
+            SM.load(filename="qubit_0", category="calibration", subfolder="qubit"), QubitCalibrationSettings
+        )
         with pytest.raises(FileNotFoundError):
-            SM.load(name="unknown_name", id="unknown_id")
-            SM.load(name="calibration", id="unknown_calibration")
+            SM.load(filename="unknown_name", category="unknown_type")
 
     def test_dump(self) -> None:
         """Test the dump method of the SettingsManager class."""
-        settings = SM.load(name="qili", id="platform")
+        settings = SM.load(filename="qili", category="platform")
         SM.dump(settings)

@@ -1,3 +1,7 @@
-from qililab.settings.settings_manager import SettingsManager
+from .abstract_settings import AbstractSettings
+from .platform_settings import PlatformSettings
+from .qubit_calibration_settings import QubitCalibrationSettings
+from .settings_manager import SettingsManager
 
-SM = SettingsManager()
+# FIXME: Turn foldername into a variable
+SM = SettingsManager(foldername="qili")
