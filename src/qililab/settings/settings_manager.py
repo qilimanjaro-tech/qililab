@@ -4,6 +4,7 @@ from typing import ClassVar, Type
 
 import yaml
 
+from qililab.config import logger
 from qililab.settings import (
     AbstractSettings,
     PlatformSettings,
@@ -22,9 +23,10 @@ class SettingsManager:
     foldername: str
     _instance: ClassVar["SettingsManager"]
 
-    def __new__(cls, foldername: str):
+    def __new__(cls, foldername: str) -> "SettingsManager":
         """Instantiate the object only once."""
         if not hasattr(cls, "_instance"):
+            logger.info(f"Reading settings files from {foldername} folder.")
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
