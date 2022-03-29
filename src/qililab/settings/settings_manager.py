@@ -24,7 +24,14 @@ class SettingsManager:
     _instance: ClassVar["SettingsManager"]
 
     def __new__(cls, foldername: str) -> "SettingsManager":
-        """Instantiate the object only once."""
+        """Instantiate the object only once.
+
+        Args:
+            foldername (str): Name of the folder containing the settings files.
+
+        Returns:
+            SettingsManager: Unique SettingsManager instance.
+        """
         if not hasattr(cls, "_instance"):
             logger.info(f"Reading settings files from {foldername} folder.")
             cls._instance = super(SettingsManager, cls).__new__(cls)
