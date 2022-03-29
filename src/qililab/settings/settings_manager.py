@@ -56,12 +56,14 @@ class SettingsManager:
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        if category == "platform":
-            return PlatformSettings(name=filename, location=path, **settings)
-        elif category == "calibration":
-            return QubitCalibrationSettings(name=filename, location=path, **settings)
-        else:
-            raise NotImplementedError(f"{id} settings not implemented.")
+        # TODO: Implement hash table (dictionary) to select corresponding settings class
+        match category:
+            case "platform":
+                return PlatformSettings(name=filename, location=path, **settings)
+            case "calibration":
+                return QubitCalibrationSettings(name=filename, location=path, **settings)
+            case _:
+                raise NotImplementedError(f"{id} settings not implemented.")
 
     def dump(self, settings: AbstractSettings) -> None:
         """Dump data from settings into its corresponding location.
