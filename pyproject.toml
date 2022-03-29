@@ -51,7 +51,7 @@ version_files = [
     "src/boilerplate/__init__.py",
     "pyproject.toml:version"
 ]
-tag_format = "v$version"
+tag_format = "$version"
 
 [tool.coverage]
     [tool.coverage.report]
@@ -80,3 +80,12 @@ tag_format = "v$version"
         '*/tests/*',
         'examples/*'
     ]
+
+[tool.nbqa.addopts]
+flake8 = [
+    "--ignore=W605, W504, E203, E266, E501, W503, F403, F401",
+    "--extend-ignore=E203"
+]
+
+[tool.nbqa.md]
+mdformat = true

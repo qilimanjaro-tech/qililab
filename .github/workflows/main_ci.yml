@@ -33,9 +33,16 @@ jobs:
           isort .
           black . --check
           flake8
+          pylint src -E
           mypy
           interrogate -vv --fail-under=80
           bandit -r src
+          mdformat .
+          nbqa black .
+          nbqa isort .
+          nbqa flake8 .
+          nbqa mypy .
+          nbqa mdformat .
 
       - name: Install library
         run: |
