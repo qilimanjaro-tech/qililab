@@ -25,7 +25,7 @@ class QililabBackend(NumpyBackend):
 
     def __init__(self) -> None:
         super().__init__()
-        self.platform: Union[None, AbstractPlatform] = None
+        self.platform: AbstractPlatform
 
     def set_platform(self, name: str) -> None:
         """Set platform for controlling quantum devices.
