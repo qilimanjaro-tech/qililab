@@ -1,1 +1,1 @@
-include src/qililab/settings/*.yml
+recursive-include src *.yml
