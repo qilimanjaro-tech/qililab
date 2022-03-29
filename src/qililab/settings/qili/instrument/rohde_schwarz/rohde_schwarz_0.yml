@@ -1,0 +1,4 @@
+name: qcm_lo
+ip: 192.168.0.10
+frequency: 3644000000.0
+power: 15

@@ -1,5 +1,6 @@
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import ClassVar, Type
 
 import yaml
 
@@ -8,36 +9,47 @@ from qililab.settings.platform_settings import PlatformSettings
 from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
 
 
+@dataclass(frozen=True)
 class SettingsManager:
-    """Class used to load and dump configuration settings."""
+    """Class used to load and dump configuration settings.
 
-    _instance = None
+    Args:
+        foldername (str): Name of the folder containing all the settings files.
+    """
 
-    def __new__(cls):
+    foldername: str
+    _instance: ClassVar["SettingsManager"]
+
+    def __new__(cls, foldername: str):
         """Instantiate the object only once."""
-        if cls._instance is None:
+        if not hasattr(cls, "_instance"):
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
-    def load(self, name: str, id: str) -> AbstractSettings:
-        """Load yaml file with path 'qililab/settings/id/name.yml' and return an instance of a settings class specified by the 'id' argument.
+    def load(self, filename: str, settings_type: str, subfolder: str = "") -> AbstractSettings:
+        """Load yaml file with path 'qililab/settings/foldername/settings_type/subfolder/filename.yml' and
+        return an instance of a settings class specified by the 'id' argument.
 
         Args:
-            name (str): Name of the settings file.
-            id (str): Settings identification. Options are "platform", "calibration" and "instrument".
+            filename (str): Name of the settings file without the extension.
+            settings_type (str): Type of settings file. Options are "calibration", "instrument" and "platform".
+            subfoldername (str, optional): Name of subfolder where the settings file is located.
+            Defaults to empty string.
 
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
-        path = str(Path(__file__).parent / id / f"{name}.yml")
+        path = str(
+            Path(__file__).parent / self.foldername / settings_type / subfolder / f"{filename}.yml"
+        )  # path to folder
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        if id == "platform":
-            return PlatformSettings(name=name, location=path, **settings)
-        elif id == "calibration":
-            return QubitCalibrationSettings(name=name, location=path, **settings)
+        if settings_type == "platform":
+            return PlatformSettings(name=filename, location=path, **settings)
+        elif settings_type == "calibration":
+            return QubitCalibrationSettings(name=filename, location=path, **settings)
         else:
             raise NotImplementedError(f"{id} settings not implemented.")
 
