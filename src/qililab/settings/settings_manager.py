@@ -37,6 +37,7 @@ class SettingsManager:
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
+    # FIXME: Add correct return type.
     def load(self, filename: str, category: str, subfolder: str = "") -> AbstractSettings:
         """Load yaml file with path 'qililab/settings/foldername/category/subfolder/filename.yml' and
         return an instance of a settings class specified by the 'id' argument.

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import ClassVar, Type, Union
+from typing import ClassVar, Type
 
 from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PB, Platform, PlatformBuilder
+from qililab.platforms import PB, Platform
 
 
 @dataclass
@@ -30,7 +30,7 @@ class QililabBackend(NumpyBackend):
         """Set platform for controlling quantum devices.
 
         Args:
-            name (str): name of the platform. Options are 'qili'.
+            name (str): Name of the platform.
         """
         self.platform = PB.build(name=name)
 
