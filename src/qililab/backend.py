@@ -33,10 +33,7 @@ class QililabBackend(NumpyBackend):
         Args:
             name (str): name of the platform. Options are 'qili'.
         """
-        if name == "qili":
-            self.platform = PlatformBuilder(name)
-        else:
-            raise NotImplementedError(f"Platform {name} is not supported.")
+        self.platform = PlatformBuilder(name)
 
     def get_platform(self) -> str:
         """
