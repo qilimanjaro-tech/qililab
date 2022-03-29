@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict, List
 
 from qililab.settings.abstract_settings import AbstractSettings
 
@@ -16,3 +17,4 @@ class PlatformSettings(AbstractSettings):
     nqubits: int
     hw_avg: int
     sw_avg: int
+    buses: Dict[str, List[str]]
