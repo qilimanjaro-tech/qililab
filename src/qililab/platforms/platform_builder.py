@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import ClassVar
 
 from qililab.config import logger
 from qililab.platforms import Platform
@@ -8,6 +9,18 @@ from qililab.settings import SM
 @dataclass
 class PlatformBuilder:
     """Builder of platform objects."""
+
+    _instance: ClassVar["PlatformBuilder"]
+
+    def __new__(cls) -> "PlatformBuilder":
+        """Instantiate the object only once.
+
+        Returns:
+            PlatformBuilder: Unique PlatformBuilder instance.
+        """
+        if not hasattr(cls, "_instance"):
+            cls._instance = super(PlatformBuilder, cls).__new__(cls)
+        return cls._instance
 
     def build(self, name: str) -> Platform:
         """Build platform.
