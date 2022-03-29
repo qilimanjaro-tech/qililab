@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import ClassVar, Type
+from typing import ClassVar
 
 import yaml
 
