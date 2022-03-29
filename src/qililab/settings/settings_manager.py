@@ -51,4 +51,4 @@ class SettingsManager:
         del settings_dict["location"]
         del settings_dict["name"]
         with open(settings.location, "w") as file:
-            yaml.dump(data=settings_dict, stream=file)
+            yaml.dump(data=settings_dict, stream=file, sort_keys=False)
