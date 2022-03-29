@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Type, Union
+from typing import ClassVar, Type, Union
 
 from qibo.backends.numpy import NumpyBackend
 
@@ -20,8 +20,8 @@ class QililabBackend(NumpyBackend):
 
     """
 
-    name = "qililab"
-    is_hardware = True
+    name: ClassVar[str] = "qililab"
+    is_hardware: ClassVar[bool] = True
 
     def __init__(self) -> None:
         super().__init__()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import ClassVar
 
 from qililab.platforms.abstract_platform import AbstractPlatform
 from qililab.settings import SM
@@ -13,7 +14,7 @@ class QiliPlatform(AbstractPlatform):
         platform_settings (Settings): Dataclass containing the settings of the platform.
     """
 
-    _ID = "platform"
+    _ID: ClassVar[str] = "platform"
 
     def __post_init__(self) -> None:
         """Load platform settings."""
