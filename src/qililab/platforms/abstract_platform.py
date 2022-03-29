@@ -1,22 +1,22 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from qililab.config import logger
 
 
+@dataclass
 class AbstractPlatform(ABC):
     """Abstract platform for controlling quantum devices.
 
-    Attributes:
+    Args:
         name (str): Name of the platform.
     """
 
-    def __init__(self, name: str) -> None:
-        """
-        Args:
-            name (str): Name of the platform
-        """
-        logger.info(f"Loading platform {name}")
-        self.name = name
+    name: str
+
+    def __post_init__(self) -> None:
+        """Log info message"""
+        logger.info(f"Loading platform {self.name}")
 
     def __str__(self) -> str:
         """String representation of the platform

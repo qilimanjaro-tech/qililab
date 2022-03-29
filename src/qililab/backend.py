@@ -1,11 +1,15 @@
-from typing import Type
+from dataclasses import dataclass
+from typing import Type, Union
 
 from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
+from qililab.platforms.abstract_platform import AbstractPlatform
+from qililab.platforms.qiliplatform import QiliPlatform
 
 
+@dataclass
 class QililabBackend(NumpyBackend):
     """Hardware backend used to execute circuits on specified lab platforms
 
@@ -21,7 +25,7 @@ class QililabBackend(NumpyBackend):
 
     def __init__(self) -> None:
         super().__init__()
-        self.platform = None
+        self.platform: Union[None, AbstractPlatform] = None
 
     def set_platform(self, name: str) -> None:
         """Set platform for controlling quantum devices.
@@ -30,11 +34,9 @@ class QililabBackend(NumpyBackend):
             name (str): name of the platform. Options are 'qili'.
         """
         if name == "qili":
-            from qililab.platforms.qiliplatform import QiliPlatform as Device
+            self.platform = QiliPlatform(name)
         else:
             raise NotImplementedError(f"Platform {name} is not supported.")
-
-        self.platform = Device(name)
 
     def get_platform(self) -> str:
         """

@@ -1,7 +1,10 @@
+from dataclasses import dataclass
+
 from qililab.platforms.abstract_platform import AbstractPlatform
 from qililab.settings import SM
 
 
+@dataclass
 class QiliPlatform(AbstractPlatform):
     """Qilimanjaro platform
 
@@ -12,10 +15,6 @@ class QiliPlatform(AbstractPlatform):
 
     _ID = "platform"
 
-    def __init__(self, name: str) -> None:
-        """
-        Args:
-            name (str): Name of the platform
-        """
-        super().__init__(name=name)
+    def __post_init__(self) -> None:
+        """Load platform settings."""
         self.settings = SM.load(name=self.name, id=self._ID)
