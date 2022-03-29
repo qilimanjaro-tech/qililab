@@ -6,7 +6,7 @@ from qililab.settings import SM
 
 
 @dataclass
-class QiliPlatform(AbstractPlatform):
+class PlatformBuilder(AbstractPlatform):
     """Qilimanjaro platform
 
     Attributes:
@@ -20,4 +20,4 @@ class QiliPlatform(AbstractPlatform):
         """Load platform settings."""
         super().__post_init__()
         # TODO: Add "lab" (global?) variable instead of "qili"
-        self.settings = SM.load(filename=self.name, settings_type=self._id)
+        self.settings = SM.load(filename=self.name, category=self._id)

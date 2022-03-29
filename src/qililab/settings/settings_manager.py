@@ -26,29 +26,27 @@ class SettingsManager:
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
-    def load(self, filename: str, settings_type: str, subfolder: str = "") -> AbstractSettings:
-        """Load yaml file with path 'qililab/settings/foldername/settings_type/subfolder/filename.yml' and
+    def load(self, filename: str, category: str, subfolder: str = "") -> AbstractSettings:
+        """Load yaml file with path 'qililab/settings/foldername/category/subfolder/filename.yml' and
         return an instance of a settings class specified by the 'id' argument.
 
         Args:
             filename (str): Name of the settings file without the extension.
-            settings_type (str): Type of settings file. Options are "calibration", "instrument" and "platform".
-            subfoldername (str, optional): Name of subfolder where the settings file is located.
+            category (str): Settings category. Options are "calibration", "instrument" and "platform".
+            subfolder (str, optional): Name of subfolder where the settings file is located.
             Defaults to empty string.
 
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
-        path = str(
-            Path(__file__).parent / self.foldername / settings_type / subfolder / f"{filename}.yml"
-        )  # path to folder
+        path = str(Path(__file__).parent / self.foldername / category / subfolder / f"{filename}.yml")  # path to folder
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        if settings_type == "platform":
+        if category == "platform":
             return PlatformSettings(name=filename, location=path, **settings)
-        elif settings_type == "calibration":
+        elif category == "calibration":
             return QubitCalibrationSettings(name=filename, location=path, **settings)
         else:
             raise NotImplementedError(f"{id} settings not implemented.")

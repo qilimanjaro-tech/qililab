@@ -18,14 +18,14 @@ class TestSettingsManager:
     def test_load(self) -> None:
         """Test the load method of the SettingsManager class. Assert that the returned objects are of the correct type.
         Assert that errors are raised correctly."""
-        assert isinstance(SM.load(filename="qili", settings_type="platform"), PlatformSettings)
+        assert isinstance(SM.load(filename="qili", category="platform"), PlatformSettings)
         assert isinstance(
-            SM.load(filename="qubit_0", settings_type="calibration", subfolder="qubit"), QubitCalibrationSettings
+            SM.load(filename="qubit_0", category="calibration", subfolder="qubit"), QubitCalibrationSettings
         )
         with pytest.raises(FileNotFoundError):
-            SM.load(filename="unknown_name", settings_type="unknown_type")
+            SM.load(filename="unknown_name", category="unknown_type")
 
     def test_dump(self) -> None:
         """Test the dump method of the SettingsManager class."""
-        settings = SM.load(filename="qili", settings_type="platform")
+        settings = SM.load(filename="qili", category="platform")
         SM.dump(settings)

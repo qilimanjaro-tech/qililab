@@ -6,7 +6,7 @@ from qibo.backends.numpy import NumpyBackend
 from qililab import gates
 from qililab.circuit import HardwareCircuit
 from qililab.platforms.abstract_platform import AbstractPlatform
-from qililab.platforms.qiliplatform import QiliPlatform
+from qililab.platforms.platform_builder import PlatformBuilder
 
 
 @dataclass
@@ -34,7 +34,7 @@ class QililabBackend(NumpyBackend):
             name (str): name of the platform. Options are 'qili'.
         """
         if name == "qili":
-            self.platform = QiliPlatform(name)
+            self.platform = PlatformBuilder(name)
         else:
             raise NotImplementedError(f"Platform {name} is not supported.")
 
