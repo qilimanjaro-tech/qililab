@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar
 
-from qililab.config import logger
-from qililab.settings import SM
+from qililab.settings import AbstractSettings
 
 
 @dataclass
@@ -11,20 +10,11 @@ class Platform:
 
     Args:
         name (str): Name of the platform.
-        platform_settings (Settings): Dataclass containing the settings of the platform.
+        settings (AbstracSettings): Dataclass containing the settings of the platform.
     """
 
     name: str
-    _id: ClassVar[str] = "platform"
-
-    def __post_init__(self) -> None:
-        """Load platform settings."""
-        logger.info(f"Loading platform {self.name}")
-        # TODO: Add "lab" (global?) variable instead of "qili"
-        try:
-            self.settings = SM.load(filename=self.name, category=self._id)
-        except FileNotFoundError:
-            raise NotImplementedError(f"Platform {self.name} is not defined.")
+    settings: AbstractSettings
 
     def __str__(self) -> str:
         """String representation of the platform
