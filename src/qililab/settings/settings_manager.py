@@ -1,9 +1,11 @@
 from dataclasses import asdict
+from pathlib import Path
 
 import yaml
 
 from qililab.settings.abstract_settings import AbstractSettings
-from qililab.settings.settings_loader import SettingsLoader
+from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
 
 
 class SettingsManager:
@@ -17,18 +19,27 @@ class SettingsManager:
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
-    def load(self, name: str, id: str):
-        """Load yaml file with path 'qililab/settings/id/name.yml' and return dataclass object containing the file values.
+    def load(self, name: str, id: str) -> AbstractSettings:
+        """Load yaml file with path 'qililab/settings/id/name.yml' and return an instance of a settings class specified by the 'id' argument.
 
         Args:
             name (str): Name of the settings file.
-            id (str): Settings identification. Options are "platform", "calibration", "instrument", "qubit" and "cavity".
+            id (str): Settings identification. Options are "platform", "calibration" and "instrument".
 
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
+        path = str(Path(__file__).parent / id / f"{name}.yml")
 
-        return SettingsLoader(id=id, name=name)
+        with open(path, "r") as file:
+            settings = yaml.safe_load(stream=file)
+
+        if id == "platform":
+            return PlatformSettings(name=name, location=path, **settings)
+        elif id == "calibration":
+            return QubitCalibrationSettings(name=name, location=path, **settings)
+        else:
+            raise NotImplementedError(f"{id} settings not implemented.")
 
     def dump(self, settings: AbstractSettings) -> None:
         """Dump data from settings into its corresponding location.
