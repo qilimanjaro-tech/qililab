@@ -1,23 +1,19 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
-from qililab.platforms.abstract_platform import AbstractPlatform
-from qililab.settings import SM
+from qililab.platforms import Platform
 
 
 @dataclass
-class PlatformBuilder(AbstractPlatform):
-    """Qilimanjaro platform
+class PlatformBuilder:
+    """Builder of platform objects."""
 
-    Attributes:
-        name (str): Name of the platform.
-        platform_settings (Settings): Dataclass containing the settings of the platform.
-    """
+    def build(self, name: str) -> Platform:
+        """Build platform.
 
-    _id: ClassVar[str] = "platform"
+        Args:
+            name (str): Name of the platform.
 
-    def __post_init__(self) -> None:
-        """Load platform settings."""
-        super().__post_init__()
-        # TODO: Add "lab" (global?) variable instead of "qili"
-        self.settings = SM.load(filename=self.name, category=self._id)
+        Returns:
+            Platform: Platform object describing the setup used.
+        """
+        return Platform(name)

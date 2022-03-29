@@ -5,8 +5,7 @@ from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms.abstract_platform import AbstractPlatform
-from qililab.platforms.platform_builder import PlatformBuilder
+from qililab.platforms import PB, Platform, PlatformBuilder
 
 
 @dataclass
@@ -16,7 +15,7 @@ class QililabBackend(NumpyBackend):
     Attributes:
         name (str): Name of the backend.
         is_hardware (bool): Flag used by Qibo to identify a hardware backend.
-        platform (object): Platform object (child of AbstractPlatform class) describing the lab setup.
+        platform (object): Platform object describing the lab setup.
 
     """
 
@@ -25,7 +24,7 @@ class QililabBackend(NumpyBackend):
 
     def __init__(self) -> None:
         super().__init__()
-        self.platform: AbstractPlatform
+        self.platform: Platform
 
     def set_platform(self, name: str) -> None:
         """Set platform for controlling quantum devices.
@@ -33,7 +32,7 @@ class QililabBackend(NumpyBackend):
         Args:
             name (str): name of the platform. Options are 'qili'.
         """
-        self.platform = PlatformBuilder(name)
+        self.platform = PB.build(name=name)
 
     def get_platform(self) -> str:
         """

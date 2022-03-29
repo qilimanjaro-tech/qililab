@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings import AbstractSettings
 
 
 # TODO: Create parent class CalibrationSettings. What should be the difference from AbstractSettings?

@@ -5,7 +5,7 @@ from qibo.models import Circuit
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
 from qililab.gates import I, X, Y, Z
-from qililab.platforms.platform_builder import PlatformBuilder
+from qililab.platforms import Platform
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ class TestBackend:
         qibo.K.profile["backends"].append(backend)
         qibo.set_backend(backend="qililab", platform="qili")
         assert isinstance(qibo.K.active_backend, QililabBackend)
-        assert isinstance(qibo.K.platform, PlatformBuilder)
+        assert isinstance(qibo.K.platform, Platform)
 
     def test_set_platform(self, backend: QililabBackend) -> None:
         """Test the set_platform method of the QililabBackend class.
@@ -44,7 +44,7 @@ class TestBackend:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
         backend.set_platform("qili")
-        assert isinstance(backend.platform, PlatformBuilder)
+        assert isinstance(backend.platform, Platform)
         with pytest.raises(NotImplementedError):
             backend.set_platform("unknown_platform")
 

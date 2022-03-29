@@ -4,9 +4,11 @@ from typing import ClassVar, Type
 
 import yaml
 
-from qililab.settings.abstract_settings import AbstractSettings
-from qililab.settings.platform_settings import PlatformSettings
-from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
+from qililab.settings import (
+    AbstractSettings,
+    PlatformSettings,
+    QubitCalibrationSettings,
+)
 
 
 @dataclass(frozen=True)
