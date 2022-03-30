@@ -5,11 +5,7 @@ from typing import ClassVar
 import yaml
 
 from qililab.config import logger
-from qililab.settings import (
-    AbstractSettings,
-    PlatformSettings,
-    QubitCalibrationSettings,
-)
+from qililab.settings import AbstractSettings, SettingsHashTable
 
 
 @dataclass(frozen=True)
@@ -37,33 +33,29 @@ class SettingsManager:
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
-    # FIXME: Add correct return type.
-    def load(self, filename: str, category: str, subfolder: str = "") -> AbstractSettings:
-        """Load yaml file with path 'qililab/settings/foldername/category/subfolder/filename.yml' and
-        return an instance of a settings class specified by the 'id' argument.
+    # FIXME: Return type depends on value of category
+    def load(self, filename: str, category: str) -> AbstractSettings:
+        """Load yaml file with path 'qililab/settings/foldername/category/filename.yml' and
+        return an instance of a settings class specified by the 'category' argument.
 
         Args:
             filename (str): Name of the settings file without the extension.
-            category (str): Settings category. Options are "calibration", "instrument" and "platform".
-            subfolder (str, optional): Name of subfolder where the settings file is located.
-            Defaults to empty string.
+            category (str): Settings category. Options are "instrument", "platform", "qubit" and "resonator".
 
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
-        path = str(Path(__file__).parent / self.foldername / category / subfolder / f"{filename}.yml")  # path to folder
+        if not hasattr(SettingsHashTable, category):
+            raise NotImplementedError(f"The class for the {category} settings is not implemented.")
+
+        Settings = getattr(SettingsHashTable, category)
+
+        path = str(Path(__file__).parent / self.foldername / category / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        # TODO: Implement hash table (dictionary) to select corresponding settings class
-        match category:
-            case "platform":
-                return PlatformSettings(name=filename, location=path, **settings)
-            case "calibration":
-                return QubitCalibrationSettings(name=filename, location=path, **settings)
-            case _:
-                raise NotImplementedError(f"{id} settings not implemented.")
+        return Settings(name=filename, location=path, **settings)
 
     def dump(self, settings: AbstractSettings) -> None:
         """Dump data from settings into its corresponding location.
