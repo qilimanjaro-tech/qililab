@@ -1,6 +1,5 @@
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import ClassVar
 
 import yaml
 
@@ -18,9 +17,9 @@ class SettingsManager:
     """
 
     foldername: str
-    _instance: ClassVar["SettingsManager"]
+    _instance = None
 
-    def __new__(cls, foldername: str) -> "SettingsManager":
+    def __new__(cls, foldername: str):
         """Instantiate the object only once.
 
         Args:
@@ -29,7 +28,7 @@ class SettingsManager:
         Returns:
             SettingsManager: Unique SettingsManager instance.
         """
-        if not hasattr(cls, "_instance"):
+        if cls._instance is None:
             logger.info(f"Reading settings files from {foldername} folder.")
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
