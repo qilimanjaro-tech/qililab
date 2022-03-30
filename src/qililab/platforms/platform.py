@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from qililab.settings import AbstractSettings
+from qililab.settings.abstract_settings import AbstractSettings
 
 
 @dataclass

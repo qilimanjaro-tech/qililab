@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import ClassVar, Type
 
-from qililab.settings import PlatformSettings, QubitCalibrationSettings
+from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
 
 
 @dataclass

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from qililab.config import logger
-from qililab.platforms import Platform
+from qililab.platforms.platform import Platform
 from qililab.settings import SM
 
 

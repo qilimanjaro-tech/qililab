@@ -5,7 +5,8 @@ from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PB, Platform
+from qililab.platforms import PB
+from qililab.platforms.platform import Platform
 
 
 @dataclass

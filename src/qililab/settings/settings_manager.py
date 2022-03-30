@@ -5,7 +5,8 @@ from typing import ClassVar
 import yaml
 
 from qililab.config import logger
-from qililab.settings import AbstractSettings, SettingsHashTable
+from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.hashtable import SettingsHashTable
 
 
 @dataclass(frozen=True)
