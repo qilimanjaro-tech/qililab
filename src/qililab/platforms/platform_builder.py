@@ -3,23 +3,12 @@ from dataclasses import dataclass
 from qililab.config import logger
 from qililab.platforms.platform import Platform
 from qililab.settings import SM
+from qililab.utils import Singleton
 
 
 @dataclass
-class PlatformBuilder:
+class PlatformBuilder(metaclass=Singleton):
     """Builder of platform objects."""
-
-    _instance = None
-
-    def __new__(cls):
-        """Instantiate the object only once.
-
-        Returns:
-            PlatformBuilder: Unique PlatformBuilder instance.
-        """
-        if cls._instance is None:
-            cls._instance = super(PlatformBuilder, cls).__new__(cls)
-        return cls._instance
 
     def build(self, name: str) -> Platform:
         """Build platform.

@@ -6,10 +6,11 @@ import yaml
 from qililab.config import logger
 from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.hashtable import SettingsHashTable
+from qililab.utils import Singleton
 
 
 @dataclass(frozen=True)
-class SettingsManager:
+class SettingsManager(metaclass=Singleton):
     """Class used to load and dump configuration settings.
 
     Args:
@@ -17,21 +18,6 @@ class SettingsManager:
     """
 
     foldername: str
-    _instance = None
-
-    def __new__(cls, foldername: str):
-        """Instantiate the object only once.
-
-        Args:
-            foldername (str): Name of the folder containing the settings files.
-
-        Returns:
-            SettingsManager: Unique SettingsManager instance.
-        """
-        if cls._instance is None:
-            logger.info(f"Reading settings files from {foldername} folder.")
-            cls._instance = super(SettingsManager, cls).__new__(cls)
-        return cls._instance
 
     # FIXME: Return type depends on value of category
     def load(self, filename: str, category: str) -> AbstractSettings:
