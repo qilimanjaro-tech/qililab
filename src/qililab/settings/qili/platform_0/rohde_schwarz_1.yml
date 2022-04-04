@@ -1,3 +1,4 @@
+category: instrument
 name: qrm_lo
 ip: 192.168.0.7
 frequency: 7307720000.0

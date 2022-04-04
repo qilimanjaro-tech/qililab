@@ -26,7 +26,7 @@ class PlatformBuilder(metaclass=Singleton):
         # TODO: Build platform (add corresponding classes...)
 
         try:
-            settings = SM.load(filename="platform", category="platform")
+            settings = SM.load(filename="platform")
         except FileNotFoundError as file_not_found:
             raise NotImplementedError(f"Platform {name} is not defined.") from file_not_found
 

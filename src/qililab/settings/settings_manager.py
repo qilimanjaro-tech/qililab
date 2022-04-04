@@ -21,26 +21,27 @@ class SettingsManager(metaclass=Singleton):
     platform: str = field(init=False)
 
     # FIXME: Return type depends on value of category
-    def load(self, filename: str, category: str) -> AbstractSettings:
+    def load(self, filename: str) -> AbstractSettings:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
-        return an instance of a settings class specified by the 'category' argument.
+        return an instance of the corresponding settings class.
 
         Args:
             filename (str): Name of the settings file without the extension.
-            category (str): Settings category. Options are "instrument", "platform", "qubit" and "resonator".
 
         Returns:
             AbstractSettings: Dataclass containing the settings.
         """
-        if not hasattr(SettingsHashTable, category):
-            raise NotImplementedError(f"The class for the {category} settings is not implemented.")
-
-        settings_class = getattr(SettingsHashTable, category)
-
         path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
+
+        category = settings.pop("category")
+
+        if not hasattr(SettingsHashTable, category):
+            raise NotImplementedError(f"The class for the {category} settings is not implemented.")
+
+        settings_class = getattr(SettingsHashTable, category)
 
         return settings_class(name=filename, location=path, **settings)
 
