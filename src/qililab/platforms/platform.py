@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from qililab.schema import Schema
 from qililab.settings.abstract_settings import AbstractSettings
 
 
@@ -14,6 +15,8 @@ class Platform:
 
     name: str
     settings: AbstractSettings
+    schema: Schema
+    # buses: Buses
 
     def __str__(self) -> str:
         """String representation of the platform

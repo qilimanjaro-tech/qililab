@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from qililab.config import logger
 from qililab.platforms.platform import Platform
+from qililab.schema import Schema
 from qililab.settings import SM
 from qililab.utils import Singleton
 
@@ -24,10 +25,10 @@ class PlatformBuilder(metaclass=Singleton):
         SM.platform = name
 
         # TODO: Build platform (add corresponding classes...)
+        # Load settings
+        platform_set = SM.load(filename="platform")
+        schema_set = SM.load(filename="schema")
+        schema = Schema(settings=schema_set)
+        platform = Platform(name=name, settings=platform_set, schema=schema)
 
-        try:
-            settings = SM.load(filename="platform")
-        except FileNotFoundError as file_not_found:
-            raise NotImplementedError(f"Platform {name} is not defined.") from file_not_found
-
-        return Platform(name=name, settings=settings)
+        return platform
