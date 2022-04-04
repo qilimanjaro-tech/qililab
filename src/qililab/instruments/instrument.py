@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractInstrument(ABC):
+class Instrument(ABC):
     """Abstract base class declaring the necessary attributes
     and methods for the instruments connected via TCP/IP.
 
