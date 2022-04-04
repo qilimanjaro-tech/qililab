@@ -1,8 +1,8 @@
 import pytest
 
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.platform_settings import PlatformSettings
-from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
+from qililab.settings.platform import PlatformSettings
+from qililab.settings.qubit import QubitCalibrationSettings
 from qililab.settings.settings_manager import SettingsManager
 
 

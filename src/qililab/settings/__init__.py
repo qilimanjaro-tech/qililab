@@ -1,8 +1,8 @@
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
 from .hashtable import SettingsHashTable
-from .platform_settings import PlatformSettings
-from .qubit_calibration_settings import QubitCalibrationSettings
+from .platform import PlatformSettings
+from .qubit import QubitCalibrationSettings
 from .settings import Settings
 from .settings_manager import SettingsManager
 
