@@ -4,7 +4,7 @@ from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_FILENAME
 from qililab.platforms.platform import Platform
 from qililab.settings import SETTINGS_MANAGER
-from qililab.utils import Singleton
+from qililab.utils.singleton import Singleton
 
 
 @dataclass
