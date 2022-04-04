@@ -21,7 +21,7 @@ class SettingsManager(metaclass=Singleton):
     foldername: str
     platform_name: str = field(init=False)
 
-    def load(self, filename: str) -> [PlatformSettings | QubitCalibrationSettings]:  # type: ignore
+    def load(self, filename: str) -> PlatformSettings | QubitCalibrationSettings:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -45,7 +45,7 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: [PlatformSettings | QubitCalibrationSettings]) -> None:  # type: ignore
+    def dump(self, settings: PlatformSettings | QubitCalibrationSettings) -> None:
         """Dump data from settings into its corresponding location.
 
         Args:
