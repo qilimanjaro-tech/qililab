@@ -6,7 +6,7 @@ import yaml
 from qililab.settings.hashtable import SettingsHashTable
 from qililab.settings.platform import PlatformSettings
 from qililab.settings.qubit import QubitCalibrationSettings
-from qililab.utils import Singleton
+from qililab.utils.singleton import Singleton
 
 
 @dataclass
