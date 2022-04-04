@@ -36,7 +36,7 @@ class SettingsManager(metaclass=Singleton):
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        category = settings.pop("category")
+        category = settings.get("category")
 
         if not hasattr(SettingsHashTable, category):
             raise NotImplementedError(f"The class for the {category} settings is not implemented.")
