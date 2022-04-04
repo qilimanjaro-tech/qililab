@@ -45,7 +45,7 @@ class TestBackend:
         """
         backend.set_platform("platform_0")
         assert isinstance(backend.platform, Platform)
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(FileNotFoundError):
             backend.set_platform("unknown_platform")
 
     def test_get_platform(self, backend: QililabBackend) -> None:

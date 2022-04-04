@@ -5,7 +5,7 @@ import yaml
 
 from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.hashtable import SettingsHashTable
-from qililab.utils import Singleton
+from qililab.utils.singleton import Singleton
 
 
 @dataclass
@@ -21,7 +21,7 @@ class SettingsManager(metaclass=Singleton):
     platform: str = field(init=False)
 
     # FIXME: Return type depends on value of category
-    def load(self, filename: str) -> AbstractSettings:
+    def load(self, filename: str):
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
