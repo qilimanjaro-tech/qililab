@@ -20,20 +20,22 @@ class QililabBackend(NumpyBackend):
 
     """
 
-    name: ClassVar[str] = "qililab"
-    is_hardware: ClassVar[bool] = True
+    name: str
+    is_hardware: bool
 
     def __init__(self) -> None:
         super().__init__()
         self.platform: Platform
+        self.name = "qililab"
+        self.is_hardware = True
 
-    def set_platform(self, name: str) -> None:
+    def set_platform(self, platform: str) -> None:
         """Set platform for controlling quantum devices.
 
         Args:
             name (str): Name of the platform.
         """
-        self.platform = PLATFORM_BUILDER.build(name=name)
+        self.platform = PLATFORM_BUILDER.build(name=platform)
 
     def get_platform(self) -> str:
         """
