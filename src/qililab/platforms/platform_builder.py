@@ -21,7 +21,7 @@ class PlatformBuilder(metaclass=Singleton):
         """
         logger.info("Building platform %s", name)
 
-        SETTINGS_MANAGER.platform = name
+        SETTINGS_MANAGER.platform_name = name
 
         # TODO: Build platform (add corresponding classes...)
 

@@ -18,7 +18,7 @@ class SettingsManager(metaclass=Singleton):
     """
 
     foldername: str
-    platform: str = field(init=False)
+    platform_name: str = field(init=False)
 
     # FIXME: Return type depends on value of category
     def load(self, filename: str) -> Settings:
@@ -31,7 +31,7 @@ class SettingsManager(metaclass=Singleton):
         Returns:
             Settings: Dataclass containing the settings.
         """
-        path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
+        path = str(Path(__file__).parent / self.foldername / self.platform_name / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
