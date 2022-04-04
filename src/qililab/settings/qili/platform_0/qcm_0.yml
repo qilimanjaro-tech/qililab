@@ -1,8 +1,8 @@
 category: instrument
 ip: 192.168.0.3
-ref_clock: internal
+reference_clock: internal
 sequencer: 0
-sync_en: true
+sync_enabled: true
 is_cluster: false
 gain: 1
 initial_delay: 0

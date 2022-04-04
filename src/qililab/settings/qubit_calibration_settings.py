@@ -20,6 +20,6 @@ class QubitCalibrationSettings(Settings):
     pi_pulse_amplitude: float  # V
     pi_pulse_duration: float  # ns
     pi_pulse_frequency: float  # Hz
-    qubit_freq: float  # Hz
+    qubit_frequency: float  # Hz
     min_voltage: float  # V
     max_voltage: float  # V

@@ -1,9 +1,9 @@
 category: platform
-nqubits: 1
-hw_avg: 4096
-sw_avg: 10
+number_qubits: 1
+hardware_average: 4096
+software_average: 10
 repetition_duration: 200000
 delay_between_pulses: 0
 delay_before_readout: 50
-drag_coeff: 0
-num_sigmas: 4
+drag_coefficient: 0
+number_of_sigmas: 4
