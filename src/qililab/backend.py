@@ -5,7 +5,7 @@ from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PB
+from qililab.platforms import PLATFORM_BUILDER
 from qililab.platforms.platform import Platform
 
 
@@ -33,7 +33,7 @@ class QililabBackend(NumpyBackend):
         Args:
             name (str): Name of the platform.
         """
-        self.platform = PB.build(name=name)
+        self.platform = PLATFORM_BUILDER.build(name=name)
 
     def get_platform(self) -> str:
         """
