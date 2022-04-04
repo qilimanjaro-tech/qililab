@@ -4,7 +4,8 @@ from pathlib import Path
 import yaml
 
 from qililab.settings.hashtable import SettingsHashTable
-from qililab.settings.settings import Settings
+from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
 from qililab.utils import Singleton
 
 
@@ -20,8 +21,7 @@ class SettingsManager(metaclass=Singleton):
     foldername: str
     platform_name: str = field(init=False)
 
-    # FIXME: Return type depends on value of category
-    def load(self, filename: str) -> Settings:
+    def load(self, filename: str) -> [PlatformSettings | QubitCalibrationSettings]:  # type: ignore
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -45,7 +45,7 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: Settings) -> None:
+    def dump(self, settings: [PlatformSettings | QubitCalibrationSettings]) -> None:  # type: ignore
         """Dump data from settings into its corresponding location.
 
         Args:
