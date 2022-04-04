@@ -1,0 +1,1 @@
+DEFAULT_PLATFORM_FILENAME = "platform"
