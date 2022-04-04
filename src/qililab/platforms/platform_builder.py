@@ -19,7 +19,7 @@ class PlatformBuilder(metaclass=Singleton):
         Returns:
             Platform: Platform object describing the setup used.
         """
-        logger.info(f"Building platform {name}")
+        logger.info("Building platform %s", name)
 
         SM.platform = name
 
@@ -27,7 +27,7 @@ class PlatformBuilder(metaclass=Singleton):
 
         try:
             settings = SM.load(filename="platform", category="platform")
-        except FileNotFoundError:
-            raise NotImplementedError(f"Platform {name} is not defined.")
+        except FileNotFoundError as file_not_found:
+            raise NotImplementedError(f"Platform {name} is not defined.") from file_not_found
 
         return Platform(name=name, settings=settings)

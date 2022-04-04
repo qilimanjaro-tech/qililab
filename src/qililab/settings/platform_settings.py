@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List
 
 from qililab.settings.abstract_settings import AbstractSettings
 

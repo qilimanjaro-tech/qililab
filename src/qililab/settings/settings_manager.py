@@ -3,7 +3,6 @@ from pathlib import Path
 
 import yaml
 
-from qililab.config import logger
 from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.hashtable import SettingsHashTable
 from qililab.utils import Singleton
@@ -36,14 +35,14 @@ class SettingsManager(metaclass=Singleton):
         if not hasattr(SettingsHashTable, category):
             raise NotImplementedError(f"The class for the {category} settings is not implemented.")
 
-        Settings = getattr(SettingsHashTable, category)
+        settings_class = getattr(SettingsHashTable, category)
 
         path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        return Settings(name=filename, location=path, **settings)
+        return settings_class(name=filename, location=path, **settings)
 
     def dump(self, settings: AbstractSettings) -> None:
         """Dump data from settings into its corresponding location.
