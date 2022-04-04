@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
-# TODO: Create parent class CalibrationSettings. What should be the difference from AbstractSettings?
+# TODO: Create parent class CalibrationSettings. What should be the difference from class Settings?
 @dataclass
-class QubitCalibrationSettings(AbstractSettings):
+class QubitCalibrationSettings(Settings):
     """Contains the settings obtained from calibrating the qubit.
 
     Args:

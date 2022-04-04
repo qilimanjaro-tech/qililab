@@ -2,7 +2,7 @@ import sys
 from abc import ABC, abstractmethod
 
 
-class AbstractHardwareGate(ABC):
+class HardwareGate(ABC):
     """Abstract Base Class of a hardware gate."""
 
     module = sys.modules[__name__]  # used to avoid maximum recursion depth with qibo gates

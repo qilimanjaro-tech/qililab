@@ -1,9 +1,9 @@
 from qibo import gates
 
-from qililab.gates.abstract_gate import AbstractHardwareGate
+from qililab.gates.hardware_gate import HardwareGate
 
 
-class I(AbstractHardwareGate, gates.I):  # noqa: E742
+class I(HardwareGate, gates.I):  # noqa: E742
     """Identity gate"""
 
     def to_sequence(self, sequence: object) -> None:

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
 @dataclass
-class PlatformSettings(AbstractSettings):
+class PlatformSettings(Settings):
     """Contains the settings of the platform.
 
     Args:

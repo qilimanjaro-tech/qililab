@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 
 @dataclass
-class AbstractSettings(ABC):
-    """Settings abstract class.
+class Settings(ABC):
+    """Settings class.
 
     Args:
         name (str): Name of the settings.

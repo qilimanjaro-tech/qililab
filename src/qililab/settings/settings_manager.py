@@ -3,8 +3,8 @@ from pathlib import Path
 
 import yaml
 
-from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.hashtable import SettingsHashTable
+from qililab.settings.settings import Settings
 from qililab.utils import Singleton
 
 
@@ -21,7 +21,7 @@ class SettingsManager(metaclass=Singleton):
     platform: str = field(init=False)
 
     # FIXME: Return type depends on value of category
-    def load(self, filename: str) -> AbstractSettings:
+    def load(self, filename: str) -> Settings:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -29,7 +29,7 @@ class SettingsManager(metaclass=Singleton):
             filename (str): Name of the settings file without the extension.
 
         Returns:
-            AbstractSettings: Dataclass containing the settings.
+            Settings: Dataclass containing the settings.
         """
         path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
 
@@ -45,11 +45,11 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: AbstractSettings) -> None:
+    def dump(self, settings: Settings) -> None:
         """Dump data from settings into its corresponding location.
 
         Args:
-            settings (AbstractSettings): Dataclass containing the settings.
+            settings (Settings): Dataclass containing the settings.
         """
         settings_dict = asdict(settings)
         del settings_dict["location"]
