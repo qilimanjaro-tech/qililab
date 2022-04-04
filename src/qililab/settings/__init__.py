@@ -5,4 +5,4 @@ from .settings import Settings
 from .settings_manager import SettingsManager
 
 # FIXME: Turn foldername into a variable
-SM = SettingsManager(foldername="qili")
+SETTINGS_MANAGER = SettingsManager(foldername="qili")
