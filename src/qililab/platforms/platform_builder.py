@@ -21,10 +21,12 @@ class PlatformBuilder(metaclass=Singleton):
         """
         logger.info(f"Building platform {name}")
 
+        SM.platform = name
+
         # TODO: Build platform (add corresponding classes...)
 
         try:
-            settings = SM.load(filename=name, category="platform")
+            settings = SM.load(filename="platform", category="platform")
         except FileNotFoundError:
             raise NotImplementedError(f"Platform {name} is not defined.")
 

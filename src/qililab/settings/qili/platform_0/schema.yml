@@ -1,12 +1,9 @@
-nqubits: 1
-hw_avg: 4096
-sw_avg: 10
 buses:
   bus_0:
   - qcm_0
-  - cavity_0
+  - resonator_0
   - qubit_0
   bus_1:
   - qrm_0
-  - cavity_0
+  - resonator_0
   - qubit_0

@@ -17,4 +17,8 @@ class PlatformSettings(AbstractSettings):
     nqubits: int
     hw_avg: int
     sw_avg: int
-    buses: Dict[str, List[str]]
+    repetition_duration: int  # ns
+    delay_between_pulses: int  # ns
+    delay_before_readout: int  # ns
+    drag_coeff: float
+    num_sigmas: float

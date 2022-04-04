@@ -1,3 +1,6 @@
+nqubits: 1
+hw_avg: 4096
+sw_avg: 10
 repetition_duration: 200000
 delay_between_pulses: 0
 delay_before_readout: 50

@@ -33,7 +33,7 @@ class TestBackend:
             "is_hardware": True,
         }
         qibo.K.profile["backends"].append(backend)
-        qibo.set_backend(backend="qililab", platform="qili")
+        qibo.set_backend(backend="qililab", platform="platform_0")
         assert isinstance(qibo.K.active_backend, QililabBackend)
         assert isinstance(qibo.K.platform, Platform)
 
@@ -43,7 +43,7 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("qili")
+        backend.set_platform("platform_0")
         assert isinstance(backend.platform, Platform)
         with pytest.raises(NotImplementedError):
             backend.set_platform("unknown_platform")
@@ -54,9 +54,9 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("qili")
+        backend.set_platform("platform_0")
         name = backend.get_platform()
-        assert name == "qili"
+        assert name == "platform_0"
 
     def test_circuit_class(self, backend: QililabBackend) -> None:
         """Test the circuit_class method of the QililabBackend class.

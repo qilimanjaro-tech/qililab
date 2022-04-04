@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import yaml
@@ -9,19 +9,21 @@ from qililab.settings.hashtable import SettingsHashTable
 from qililab.utils import Singleton
 
 
-@dataclass(frozen=True)
+@dataclass
 class SettingsManager(metaclass=Singleton):
     """Class used to load and dump configuration settings.
 
     Args:
         foldername (str): Name of the folder containing all the settings files.
+        platform (str): Name of the platform.
     """
 
     foldername: str
+    platform: str = field(init=False)
 
     # FIXME: Return type depends on value of category
     def load(self, filename: str, category: str) -> AbstractSettings:
-        """Load yaml file with path 'qililab/settings/foldername/category/filename.yml' and
+        """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of a settings class specified by the 'category' argument.
 
         Args:
@@ -36,7 +38,7 @@ class SettingsManager(metaclass=Singleton):
 
         Settings = getattr(SettingsHashTable, category)
 
-        path = str(Path(__file__).parent / self.foldername / category / f"{filename}.yml")
+        path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
