@@ -37,14 +37,21 @@ class TestBackend:
         assert isinstance(qibo.K.active_backend, QililabBackend)
         assert isinstance(qibo.K.platform, Platform)
 
-    def test_set_platform(self, backend: QililabBackend) -> None:
-        """Test the set_platform method of the QililabBackend class.
+    def test_set_platform_using_default_platform(self, backend: QililabBackend) -> None:
+        """Test the set_platform method of the QililabBackend class using platform "platform_0".
 
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
         backend.set_platform("platform_0")
         assert isinstance(backend.platform, Platform)
+
+    def test_set_platform_using_unknown_platform(self, backend: QililabBackend) -> None:
+        """Test the set_platform method of the QililabBackend class using an unknown platform.
+
+        Args:
+            backend (QililabBackend): Instance of the QililabBackend class.
+        """
         with pytest.raises(NotImplementedError):
             backend.set_platform("unknown_platform")
 
@@ -68,11 +75,11 @@ class TestBackend:
         assert isinstance(circuit, HardwareCircuit)
         assert backend.circuit_class() == HardwareCircuit
 
-    def test_create_gate(self, backend: QililabBackend) -> None:
-        """Test the create_gate method of the QililabBackend class.
+    @pytest.mark.parametrize("gate", [I, X, Y, Z])
+    def test_create_gate(self, backend: QililabBackend, gate) -> None:
+        """Test the create_gate method of the QililabBackend class with the I, X, Y and Z gates.
 
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        for gate in [I, X, Y, Z]:
-            assert isinstance(backend.create_gate(gate, 0), gate)
+        assert isinstance(backend.create_gate(gate, 0), gate)
