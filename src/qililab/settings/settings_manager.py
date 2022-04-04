@@ -1,78 +1,60 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import ClassVar
 
 import yaml
 
-from qililab.config import logger
-from qililab.settings import (
-    AbstractSettings,
-    PlatformSettings,
-    QubitCalibrationSettings,
-)
+from qililab.settings.hashtable import SettingsHashTable
+from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
+from qililab.utils import Singleton
 
 
-@dataclass(frozen=True)
-class SettingsManager:
+@dataclass
+class SettingsManager(metaclass=Singleton):
     """Class used to load and dump configuration settings.
 
     Args:
         foldername (str): Name of the folder containing all the settings files.
+        platform (str): Name of the platform.
     """
 
     foldername: str
-    _instance: ClassVar["SettingsManager"]
+    platform_name: str = field(init=False)
 
-    def __new__(cls, foldername: str) -> "SettingsManager":
-        """Instantiate the object only once.
-
-        Args:
-            foldername (str): Name of the folder containing the settings files.
-
-        Returns:
-            SettingsManager: Unique SettingsManager instance.
-        """
-        if not hasattr(cls, "_instance"):
-            logger.info(f"Reading settings files from {foldername} folder.")
-            cls._instance = super(SettingsManager, cls).__new__(cls)
-        return cls._instance
-
-    # FIXME: Add correct return type.
-    def load(self, filename: str, category: str, subfolder: str = "") -> AbstractSettings:
-        """Load yaml file with path 'qililab/settings/foldername/category/subfolder/filename.yml' and
-        return an instance of a settings class specified by the 'id' argument.
+    def load(self, filename: str) -> PlatformSettings | QubitCalibrationSettings:
+        """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
+        return an instance of the corresponding settings class.
 
         Args:
             filename (str): Name of the settings file without the extension.
-            category (str): Settings category. Options are "calibration", "instrument" and "platform".
-            subfolder (str, optional): Name of subfolder where the settings file is located.
-            Defaults to empty string.
 
         Returns:
-            AbstractSettings: Dataclass containing the settings.
+            Settings: Dataclass containing the settings.
         """
-        path = str(Path(__file__).parent / self.foldername / category / subfolder / f"{filename}.yml")  # path to folder
+        path = str(Path(__file__).parent / self.foldername / self.platform_name / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        # TODO: Implement hash table (dictionary) to select corresponding settings class
-        match category:
-            case "platform":
-                return PlatformSettings(name=filename, location=path, **settings)
-            case "calibration":
-                return QubitCalibrationSettings(name=filename, location=path, **settings)
-            case _:
-                raise NotImplementedError(f"{id} settings not implemented.")
+        category = settings.get("category")
 
-    def dump(self, settings: AbstractSettings) -> None:
+        if not hasattr(SettingsHashTable, category):
+            raise NotImplementedError(f"The class for the {category} settings is not implemented.")
+
+        settings_class = getattr(SettingsHashTable, category)
+
+        return settings_class(name=filename, location=path, **settings)
+
+    def dump(self, settings: PlatformSettings | QubitCalibrationSettings) -> None:
         """Dump data from settings into its corresponding location.
 
         Args:
-            settings (AbstractSettings): Dataclass containing the settings.
+            settings (Settings): Dataclass containing the settings.
         """
         settings_dict = asdict(settings)
-        del settings_dict["location"]
-        del settings_dict["name"]
+        if "location" in settings_dict:
+            del settings_dict["location"]
+        if "name" in settings_dict:
+            del settings_dict["name"]
         with open(settings.location, "w") as file:
             yaml.dump(data=settings_dict, stream=file, sort_keys=False)

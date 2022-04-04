@@ -1,9 +1,9 @@
 from qibo import gates
 
-from qililab.gates.abstract_gate import AbstractHardwareGate
+from qililab.gates.hardware_gate import HardwareGate
 
 
-class X(AbstractHardwareGate, gates.X):
+class X(HardwareGate, gates.X):
     """X gate"""
 
     def to_sequence(self, sequence: object) -> None:

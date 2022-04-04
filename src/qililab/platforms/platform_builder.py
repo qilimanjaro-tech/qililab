@@ -1,26 +1,15 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from qililab.config import logger
-from qililab.platforms import Platform
-from qililab.settings import SM
+from qililab.constants import DEFAULT_PLATFORM_FILENAME
+from qililab.platforms.platform import Platform
+from qililab.settings import SETTINGS_MANAGER
+from qililab.utils import Singleton
 
 
 @dataclass
-class PlatformBuilder:
+class PlatformBuilder(metaclass=Singleton):
     """Builder of platform objects."""
-
-    _instance: ClassVar["PlatformBuilder"]
-
-    def __new__(cls) -> "PlatformBuilder":
-        """Instantiate the object only once.
-
-        Returns:
-            PlatformBuilder: Unique PlatformBuilder instance.
-        """
-        if not hasattr(cls, "_instance"):
-            cls._instance = super(PlatformBuilder, cls).__new__(cls)
-        return cls._instance
 
     def build(self, name: str) -> Platform:
         """Build platform.
@@ -31,13 +20,15 @@ class PlatformBuilder:
         Returns:
             Platform: Platform object describing the setup used.
         """
-        logger.info(f"Building platform {name}")
+        logger.info("Building platform %s", name)
+
+        SETTINGS_MANAGER.platform_name = name
 
         # TODO: Build platform (add corresponding classes...)
 
         try:
-            settings = SM.load(filename=name, category="platform")
-        except FileNotFoundError:
-            raise NotImplementedError(f"Platform {name} is not defined.")
+            settings = SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+        except FileNotFoundError as file_not_found:
+            raise NotImplementedError(f"Platform {name} is not defined.") from file_not_found
 
         return Platform(name=name, settings=settings)

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
-from qililab.settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
-# TODO: Create parent class CalibrationSettings. What should be the difference from AbstractSettings?
 @dataclass
-class QubitCalibrationSettings(AbstractSettings):
+class QubitCalibrationSettings(Settings):
     """Contains the settings obtained from calibrating the qubit.
 
     Args:
@@ -20,6 +19,6 @@ class QubitCalibrationSettings(AbstractSettings):
     pi_pulse_amplitude: float  # V
     pi_pulse_duration: float  # ns
     pi_pulse_frequency: float  # Hz
-    qubit_freq: float  # Hz
+    qubit_frequency: float  # Hz
     min_voltage: float  # V
     max_voltage: float  # V

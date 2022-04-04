@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Dict, List
 
-from qililab.settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
 @dataclass
-class PlatformSettings(AbstractSettings):
+class PlatformSettings(Settings):
     """Contains the settings of the platform.
 
     Args:
@@ -14,7 +13,11 @@ class PlatformSettings(AbstractSettings):
         sw_avg (float): Software average.
     """
 
-    nqubits: int
-    hw_avg: int
-    sw_avg: int
-    buses: Dict[str, List[str]]
+    number_qubits: int
+    hardware_average: int
+    software_average: int
+    repetition_duration: int  # ns
+    delay_between_pulses: int  # ns
+    delay_before_readout: int  # ns
+    drag_coefficient: float
+    number_of_sigmas: float

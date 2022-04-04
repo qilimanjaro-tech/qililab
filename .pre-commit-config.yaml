@@ -60,10 +60,7 @@ repos:
         entry: pylint
         language: system
         types: [python]
-        args: [
-            "src",
-            "-E", # Only check for errors
-          ]
+        args: ["-E"] # Only check for errors
 
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.14 # Use the ref you want to point at

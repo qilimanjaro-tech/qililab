@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from qililab.settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
 @dataclass
@@ -13,7 +13,7 @@ class Platform:
     """
 
     name: str
-    settings: AbstractSettings
+    settings: Settings
 
     def __str__(self) -> str:
         """String representation of the platform

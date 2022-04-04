@@ -1,4 +1,4 @@
 from .platform import Platform
 from .platform_builder import PlatformBuilder
 
-PB = PlatformBuilder()
+PLATFORM_BUILDER = PlatformBuilder()

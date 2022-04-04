@@ -5,7 +5,8 @@ from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PB, Platform
+from qililab.platforms import PLATFORM_BUILDER
+from qililab.platforms.platform import Platform
 
 
 @dataclass
@@ -19,20 +20,22 @@ class QililabBackend(NumpyBackend):
 
     """
 
-    name: ClassVar[str] = "qililab"
-    is_hardware: ClassVar[bool] = True
+    name: str
+    is_hardware: bool
 
     def __init__(self) -> None:
         super().__init__()
         self.platform: Platform
+        self.name = "qililab"
+        self.is_hardware = True
 
-    def set_platform(self, name: str) -> None:
+    def set_platform(self, platform: str) -> None:
         """Set platform for controlling quantum devices.
 
         Args:
             name (str): Name of the platform.
         """
-        self.platform = PB.build(name=name)
+        self.platform = PLATFORM_BUILDER.build(name=platform)
 
     def get_platform(self) -> str:
         """
