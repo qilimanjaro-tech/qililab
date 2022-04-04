@@ -52,7 +52,9 @@ class SettingsManager(metaclass=Singleton):
             settings (Settings): Dataclass containing the settings.
         """
         settings_dict = asdict(settings)
-        del settings_dict["location"]
-        del settings_dict["name"]
+        if "location" in settings_dict:
+            del settings_dict["location"]
+        if "name" in settings_dict:
+            del settings_dict["name"]
         with open(settings.location, "w") as file:
             yaml.dump(data=settings_dict, stream=file, sort_keys=False)
