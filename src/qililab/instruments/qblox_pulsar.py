@@ -3,7 +3,8 @@ from qblox_instruments import Pulsar
 
 from qililab.instruments.instrument import Instrument
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.qblox_pulsar import QbloxPulsarSettings
+from qililab.settings.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 
 
 class QbloxPulsar(Instrument):
@@ -24,7 +25,9 @@ class QbloxPulsar(Instrument):
     def load_settings(self):
         """Load instrument settings"""
         settings = SETTINGS_MANAGER.load(filename=self.name)
-        if not isinstance(settings, QbloxPulsarSettings):
+        # FIXME: Can't use parent class (QbloxPulsarSettings) in isinstance, because
+        # then mypy can't infer the type of 'hardware_average_enabled' int the QbloxPulsarQRM class
+        if not isinstance(settings, (QbloxPulsarQRMSettings, QbloxPulsarQCMSettings)):
             raise ValueError(
                 f"""Using instance of class {type(settings).__name__} instead of class QbloxPulsarSettings."""
             )
