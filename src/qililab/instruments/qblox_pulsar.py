@@ -19,8 +19,6 @@ class QbloxPulsar(Instrument):
         super().__init__(name=name)
         self.device: Pulsar
         self.settings = self.load_settings()
-        self.connect()
-        self.initial_setup()
 
     def load_settings(self):
         """Load instrument settings"""
@@ -33,10 +31,35 @@ class QbloxPulsar(Instrument):
             )
         return settings
 
+    def connect(self):
+        """Establish connection with the instrument. Initialize self.device variable."""
+        if not self._connected:
+            self.device = Pulsar(name=self.settings.name, port=self.settings.ip)
+            self._connected = True
+            self.initial_setup()
+
+    def start(self):
+        """Executes the uploaded instructions."""
+        self.device.arm_sequencer()
+        self.device.start_sequencer()
+
+    def stop(self):
+        """Stops the QBlox sequencer from sending pulses."""
+        self.device.stop_sequencer()
+
+    def close(self):
+        """Disconnects from the instrument."""
+        if self._connected:
+            self.stop()
+            self.device.close()
+            self._connected = False
+
+    def reset(self):
+        """Reset instrument."""
+        self.device.reset()
+
     def initial_setup(self):
         """Initial setup of the instrument."""
-        self.connect()
-        self.reset()
         self._set_reference_source()
         self._set_sync_enabled()
 
@@ -58,29 +81,3 @@ class QbloxPulsar(Instrument):
         """Enable/disable synchronization over multiple instruments."""
         sequencer = self.settings.sequencer
         getattr(self.device, f"sequencer{sequencer}_sync_en")(self.settings.sync_enabled)
-
-    def connect(self):
-        """Establish connection with the instrument. Initialize self.device variable."""
-        if not self._connected:
-            self.device = Pulsar(name=self.settings.name, port=self.settings.ip)
-            self._connected = True
-
-    def start(self):
-        """Executes the uploaded instructions."""
-        self.device.arm_sequencer()
-        self.device.start_sequencer()
-
-    def stop(self):
-        """Stops the QBlox sequencer from sending pulses."""
-        self.device.stop_sequencer()
-
-    def close(self):
-        """Disconnects from the instrument."""
-        if self._connected:
-            self.stop()
-            self.device.close()
-            self._connected = False
-
-    def reset(self):
-        """Reset instrument."""
-        self.device.reset()
