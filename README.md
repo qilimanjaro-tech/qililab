@@ -1,8 +1,9 @@
-# Qilimanjaro Library Boilerplate
+# Qilimanjaro Library for the Lab: QiliLab
+
 [![codecov](https://codecov.io/gh/qilimanjaro-tech/qililab/branch/main/graph/badge.svg?token=gSfTPmCeJw)](https://codecov.io/gh/qilimanjaro-tech/qililab)
 ![interrogate](./interrogate_badge.svg)
 
-Qilimanjaro template repository to create a Python library
+This is the Qilimanjaro Library tools to manage the low-level stack control of the Qilimanjaro quantum chips: for both the laboratory devices and hardware quantum control, and also the Qubit Simulators.
 
 ## Development setup
 
