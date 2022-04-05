@@ -9,7 +9,7 @@ class Platform:
 
     Args:
         name (str): Name of the platform.
-        settings (AbstracSettings): Dataclass containing the settings of the platform.
+        settings (Settings): Dataclass containing the settings of the platform.
     """
 
     name: str

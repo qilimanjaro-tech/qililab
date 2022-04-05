@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar, Type
 
 from qililab.settings.platform import PlatformSettings
 from qililab.settings.qblox_pulsar import QbloxPulsarSettings
@@ -15,3 +14,5 @@ class SettingsHashTable:
     qubit = QubitCalibrationSettings
     qblox_qrm = QbloxPulsarQRMSettings
     qblox_qcm = QbloxPulsarSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
