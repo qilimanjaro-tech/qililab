@@ -3,12 +3,10 @@ ip: 192.168.0.4
 reference_clock: external
 sequencer: 0
 sync_enabled: true
-is_cluster: false
 gain: 0.5
-initial_delay: 0
 acquire_trigger_mode: sequencer
 hardware_average_enabled: true
-start_sample: 130
+start_integrate: 130
 sampling_rate: 1000000000
 integration_length: 2000
 mode: ssb
