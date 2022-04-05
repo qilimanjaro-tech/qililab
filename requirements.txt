@@ -1,4 +1,7 @@
 # here goes your library dependencies to be installed
 # with the exact version
-# example: 
+# example:
 # scipy==1.8.0
+qibo==0.1.7
+pyyaml==6.0
+typeguard==2.13.3
