@@ -48,7 +48,7 @@ ensure_newline_before_comments = true
 [tool.commitizen]
 version = "0.0.0"
 version_files = [
-    "src/boilerplate/__init__.py",
+    "src/qililab/__init__.py",
     "pyproject.toml:version"
 ]
 tag_format = "$version"
