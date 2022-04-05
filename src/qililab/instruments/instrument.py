@@ -1,3 +1,4 @@
+"""Instrument class"""
 from abc import ABC, abstractmethod
 
 
@@ -9,8 +10,7 @@ class Instrument(ABC):
         ip (str): IP address of the instrument.
     """
 
-    def __init__(self, ip: str) -> None:
-        self.ip = ip
+    def __init__(self) -> None:
         self._connected: bool = False
 
     @abstractmethod
