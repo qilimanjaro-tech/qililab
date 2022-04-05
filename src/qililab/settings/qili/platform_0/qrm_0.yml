@@ -1,4 +1,4 @@
-category: instrument
+category: qblox_qrm
 ip: 192.168.0.4
 reference_clock: external
 sequencer: 0

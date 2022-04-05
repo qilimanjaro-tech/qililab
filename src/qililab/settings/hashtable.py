@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import ClassVar, Type
 
 from qililab.settings.platform import PlatformSettings
+from qililab.settings.qblox_pulsar import QbloxPulsarSettings
+from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 from qililab.settings.qubit import QubitCalibrationSettings
 
 
@@ -9,5 +11,7 @@ from qililab.settings.qubit import QubitCalibrationSettings
 class SettingsHashTable:
     """Hash table that maps strings to settings classes"""
 
-    platform: ClassVar[Type[PlatformSettings]] = PlatformSettings
-    qubit: ClassVar[Type[QubitCalibrationSettings]] = QubitCalibrationSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
+    qblox_qrm = QbloxPulsarQRMSettings
+    qblox_qcm = QbloxPulsarSettings

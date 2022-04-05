@@ -1,7 +1,8 @@
+"""Qblox pulsar QRM settings class."""
 from dataclasses import dataclass
 
-from qililab.settings.pulsar import QbloxPulsarSettings
 from qililab.settings.pulse import PulseSettings
+from qililab.settings.qblox_pulsar import QbloxPulsarSettings
 
 
 @dataclass
