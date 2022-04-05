@@ -5,4 +5,4 @@
 qibo==0.1.7
 pyyaml==6.0
 typeguard==2.13.3
-qblox-instruments==0.5.3
+qblox-instruments==0.6.0

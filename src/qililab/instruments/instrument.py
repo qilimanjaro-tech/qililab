@@ -10,7 +10,8 @@ class Instrument(ABC):
         ip (str): IP address of the instrument.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name: str):
+        self.name = name
         self._connected: bool = False
 
     @abstractmethod
@@ -28,3 +29,7 @@ class Instrument(ABC):
     @abstractmethod
     def close(self):
         """Close connection with the instrument. Set instrument values to idle values if required."""
+
+    @abstractmethod
+    def reset(self):
+        """Reset instrument."""

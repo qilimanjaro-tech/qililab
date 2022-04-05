@@ -6,11 +6,10 @@ import yaml
 from qililab.settings.hashtable import SettingsHashTable
 from qililab.settings.platform import PlatformSettings
 from qililab.settings.qblox_pulsar import QbloxPulsarSettings
-from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 from qililab.settings.qubit import QubitCalibrationSettings
 from qililab.utils.singleton import Singleton
 
-SettingsTypes = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings | QbloxPulsarQRMSettings
+SettingsTypes = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings
 
 
 @dataclass
@@ -49,7 +48,7 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: SettingsTypes) -> None:
+    def dump(self, settings: SettingsTypes):
         """Dump data from settings into its corresponding location.
 
         Args:

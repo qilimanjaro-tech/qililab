@@ -1,20 +1,9 @@
 """Qblox pulsar QRM class"""
-from pulsar_qrm.pulsar_qrm import pulsar_qrm
-
 from qililab.instruments.qblox_pulsar import QbloxPulsar
 
 
 class QbloxPulsarQRM(QbloxPulsar):
     """Pulsar QCM class"""
-
-    def __init__(self, name: str):
-        super().__init__(name=name)
-
-    def connect(self):
-        """Establish connection with the instrument. Initialize self.device variable."""
-        if not self._connected:
-            self.device = pulsar_qrm(self.settings.name, self.settings.ip)
-            self._connected = True
 
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""

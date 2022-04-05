@@ -1,7 +1,5 @@
 """Qblox pulsar class"""
-from numpy import isin
-from pulsar_qcm.pulsar_qcm import pulsar_qcm
-from pulsar_qrm.pulsar_qrm import pulsar_qrm
+from qblox_instruments import Pulsar
 
 from qililab.instruments.instrument import Instrument
 from qililab.settings import SETTINGS_MANAGER
@@ -17,16 +15,20 @@ class QbloxPulsar(Instrument):
     """
 
     def __init__(self, name: str):
-        self.device: pulsar_qrm | pulsar_qcm
-        self.settings = SETTINGS_MANAGER.load(filename=name)
-        if not isinstance(self.settings, QbloxPulsarSettings):
-            raise ValueError(
-                """The wrong settings class has been loaded.
-                             Please correct the category of the settings"""
-            )
-        super().__init__()
+        super().__init__(name=name)
+        self.device: Pulsar
+        self.settings = self.load_settings()
         self.connect()
         self.initial_setup()
+
+    def load_settings(self):
+        """Load instrument settings"""
+        settings = SETTINGS_MANAGER.load(filename=self.name)
+        if not isinstance(settings, QbloxPulsarSettings):
+            raise ValueError(
+                f"""Using instance of class {type(settings).__name__} instead of class QbloxPulsarSettings."""
+            )
+        return settings
 
     def initial_setup(self):
         """Initial setup of the instrument."""
@@ -53,6 +55,17 @@ class QbloxPulsar(Instrument):
         """Enable/disable synchronization over multiple instruments."""
         sequencer = self.settings.sequencer
         getattr(self.device, f"sequencer{sequencer}_sync_en")(self.settings.sync_enabled)
+
+    def connect(self):
+        """Establish connection with the instrument. Initialize self.device variable."""
+        if not self._connected:
+            self.device = Pulsar(name=self.settings.name, port=self.settings.ip)
+            self._connected = True
+
+    def start(self):
+        """Executes the uploaded instructions."""
+        self.device.arm_sequencer()
+        self.device.start_sequencer()
 
     def stop(self):
         """Stops the QBlox sequencer from sending pulses."""
