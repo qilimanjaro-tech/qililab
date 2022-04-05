@@ -12,4 +12,3 @@ class InstrumentSettings(Settings):
     """
 
     ip: str
-    _connected: bool = field(init=False)

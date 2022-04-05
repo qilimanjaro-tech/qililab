@@ -34,7 +34,7 @@ class QbloxPulsar(Instrument):
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         if not self._connected:
-            self.device = Pulsar(name=self.settings.name, port=self.settings.ip)
+            self.device = Pulsar(name=self.name, identifier=self.settings.ip)
             self._connected = True
             self.initial_setup()
 
