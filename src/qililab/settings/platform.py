@@ -8,9 +8,16 @@ class PlatformSettings(Settings):
     """Contains the settings of the platform.
 
     Args:
-        n_qubits (int): Number of qubits.
-        hw_avg (int): Hardware average. Number of shots used when executing a sequence.
-        sw_avg (float): Software average.
+        name (str): Name of the settings.
+        category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
+        location (str): Path to location of settings file.
+        number_qubits (int): Number of qubits used in the platform.
+        hardware_average (int): Hardware average. Number of shots used when executing a sequence.
+        software_average (float): Software average.
+        repetition_duration (int): Duration (ns) of the whole program.
+        delay_between_pulses (int): Delay (ns) between two consecutive pulses.
+        drag_coefficient (float): Coefficient used for the drag pulse.
+        number_of_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / number_of_sigmas.
     """
 
     number_qubits: int

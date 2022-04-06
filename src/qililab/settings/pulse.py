@@ -8,6 +8,9 @@ class PulseSettings(Settings):
     """Contains the settings of a pulse.
 
     Args:
+        name (str): Name of the settings.
+        category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
+        location (str): Path to location of settings file.
         amplitude (float): Amplitude of the pulse.
         duration (int): Duration of the pulse in nanoseconds.
         frequency (float): Frequency of the pulse in Hertz.
