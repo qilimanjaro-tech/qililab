@@ -54,6 +54,16 @@ class TestQbloxPulsarQCM:
         with pytest.raises(AttributeError):
             qcm.setup()
 
+    def test_check_connected_true(self, qcm: QbloxPulsarQCM):
+        """Test check_connected() method of the QbloxPulsarQCM class when _connected is True."""
+        qcm._connected = True
+        qcm._check_connected()
+
+    def test_check_connected_false(self, qcm: QbloxPulsarQCM):
+        """Test check_connected() method of the QbloxPulsarQCM class when _connected is False."""
+        with pytest.raises(AttributeError):
+            qcm._check_connected()
+
 
 class TestQbloxPulsarQRM:
     """Unit tests checking the QbloxPulsarQCM attributes and methods"""
@@ -77,3 +87,13 @@ class TestQbloxPulsarQRM:
     def test_settings_category(self, qrm: QbloxPulsarQRM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
         assert qrm.settings.category == "qblox_qrm"
+
+    def test_check_connected_true(self, qrm: QbloxPulsarQRM):
+        """Test check_connected() method of the QbloxPulsarQRM class when _connected is True."""
+        qrm._connected = True
+        qrm._check_connected()
+
+    def test_check_connected_false(self, qrm: QbloxPulsarQRM):
+        """Test check_connected() method of the QbloxPulsarQRM class when _connected is False."""
+        with pytest.raises(AttributeError):
+            qrm._check_connected()

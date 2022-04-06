@@ -34,6 +34,7 @@ class QbloxPulsar(Instrument):
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         if not self._connected:
+            # TODO: We need to update the firmware of the instruments to be able to connect
             self.device = Pulsar(name=self.name, identifier=self.settings.ip)
             self._connected = True
             self.initial_setup()
