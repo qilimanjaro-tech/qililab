@@ -1,9 +1,10 @@
 import pytest
 
-from qililab.instruments import QbloxPulsarQCM, QbloxPulsarQRM
+from qililab.instruments import SGS100A, QbloxPulsarQCM, QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 from qililab.settings.qblox_pulsar_qcm import QbloxPulsarQCMSettings
 from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.sgs100a import SGS100ASettings
 
 SETTINGS_MANAGER.platform_name = "platform_0"
 
@@ -18,6 +19,12 @@ def qcm():
 def qrm():
     """Return instance of QbloxPulsarQRM class."""
     return QbloxPulsarQRM(name="qrm_0")
+
+
+@pytest.fixture
+def rohde_schwarz():
+    """Return instance of SGS100A class."""
+    return SGS100A(name="rohde_schwarz_0")
 
 
 class TestQbloxPulsarQCM:
@@ -97,3 +104,37 @@ class TestQbloxPulsarQRM:
         """Test check_connected() method of the QbloxPulsarQRM class when _connected is False."""
         with pytest.raises(AttributeError):
             qrm._check_connected()
+
+
+class TestSGS100A:
+    """Unit tests checking the QbloxPulsarQCM attributes and methods"""
+
+    def test_name(self, rohde_schwarz: SGS100A):
+        """Test name attribute of QbloxPulsarQCM class"""
+        assert rohde_schwarz.name == "rohde_schwarz_0"
+
+    def test_connected(self, rohde_schwarz: SGS100A):
+        """Test _connected attribute of QbloxPulsarQCM class"""
+        assert rohde_schwarz._connected is False
+
+    def test_settings(self, rohde_schwarz: SGS100A):
+        """Test settings attribute type of QbloxPulsarQCM class"""
+        assert isinstance(rohde_schwarz.settings, SGS100ASettings)
+
+    def test_load_settings(self, rohde_schwarz: SGS100A):
+        """Test load_settings() method of QbloxPulsarQCM class"""
+        assert isinstance(rohde_schwarz.load_settings(), SGS100ASettings)
+
+    def test_settings_category(self, rohde_schwarz: SGS100A):
+        """Test category attribute of settings attribute of QbloxPulsarQCM class"""
+        assert rohde_schwarz.settings.category == "rohde_schwarz"
+
+    def test_check_connected_true(self, rohde_schwarz: SGS100A):
+        """Test check_connected() method of the QbloxPulsarQRM class when _connected is True."""
+        rohde_schwarz._connected = True
+        rohde_schwarz._check_connected()
+
+    def test_check_connected_false(self, rohde_schwarz: SGS100A):
+        """Test check_connected() method of the QbloxPulsarQRM class when _connected is False."""
+        with pytest.raises(AttributeError):
+            rohde_schwarz._check_connected()
