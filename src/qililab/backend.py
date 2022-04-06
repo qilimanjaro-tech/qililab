@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import ClassVar, Type
+from typing import Type
 
 from qibo.backends.numpy import NumpyBackend
 
@@ -23,13 +23,13 @@ class QililabBackend(NumpyBackend):
     name: str
     is_hardware: bool
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.platform: Platform
         self.name = "qililab"
         self.is_hardware = True
 
-    def set_platform(self, platform: str) -> None:
+    def set_platform(self, platform: str):
         """Set platform for controlling quantum devices.
 
         Args:
