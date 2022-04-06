@@ -11,7 +11,8 @@ class QbloxPulsar(Instrument):
     """Pulsar class
 
     Args:
-        device (pulsar_qrm | pulsar_qcm): Instance of the Qblox instrument.
+        name (str): Name of the instrument.
+        device (Pulsar): Instance of the Qblox Pulsar class.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
@@ -40,7 +41,7 @@ class QbloxPulsar(Instrument):
             self.initial_setup()
 
     def start(self):
-        """Executes the uploaded instructions."""
+        """Execute the uploaded instructions."""
         # FIXME: Find a solution to check the connection before running all methods (except connect and load_settings)
         # without having to call self._check_connected() every time.
         self._check_connected()
@@ -48,12 +49,12 @@ class QbloxPulsar(Instrument):
         self.device.start_sequencer()
 
     def stop(self):
-        """Stops the QBlox sequencer from sending pulses."""
+        """Stop the QBlox sequencer from sending pulses."""
         self._check_connected()
         self.device.stop_sequencer()
 
     def close(self):
-        """Disconnects from the instrument."""
+        """Disconnect from the instrument."""
         self._check_connected()
         self.stop()
         self.device.close()
@@ -71,7 +72,7 @@ class QbloxPulsar(Instrument):
         self._set_sync_enabled()
 
     def setup(self):
-        """Sets Qblox instrument calibration settings."""
+        """Set Qblox instrument calibration settings."""
         self._check_connected()
         self._set_gain()
 

@@ -7,9 +7,10 @@ from qililab.settings.hashtable import SettingsHashTable
 from qililab.settings.platform import PlatformSettings
 from qililab.settings.qblox_pulsar import QbloxPulsarSettings
 from qililab.settings.qubit import QubitCalibrationSettings
+from qililab.settings.sgs100a import SGS100ASettings
 from qililab.utils.singleton import Singleton
 
-SettingsTypes = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings
+SettingsTypes = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings | SGS100ASettings
 
 
 @dataclass

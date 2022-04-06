@@ -7,7 +7,7 @@ class Instrument(ABC):
     and methods for the instruments connected via TCP/IP.
 
     Args:
-        ip (str): IP address of the instrument.
+        name (str): Name of the instrument.
     """
 
     def __init__(self, name: str):
@@ -28,7 +28,7 @@ class Instrument(ABC):
 
     @abstractmethod
     def close(self):
-        """Close connection with the instrument. Set instrument values to idle values if required."""
+        """Close connection with the instrument."""
 
     @abstractmethod
     def reset(self):
