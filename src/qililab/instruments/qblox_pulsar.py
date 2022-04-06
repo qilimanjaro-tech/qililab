@@ -103,8 +103,3 @@ class QbloxPulsar(Instrument):
         self._check_connected()
         sequencer = self.settings.sequencer
         getattr(self.device, f"sequencer{sequencer}_sync_en")(self.settings.sync_enabled)
-
-    def _check_connected(self):
-        """Raise AttributeError if the instrument is not connected."""
-        if not self._connected:
-            raise AttributeError("Instrument is not connected.")

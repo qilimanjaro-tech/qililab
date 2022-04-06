@@ -30,6 +30,7 @@ class Instrument(ABC):
     def close(self):
         """Close connection with the instrument."""
 
-    @abstractmethod
-    def reset(self):
-        """Reset instrument."""
+    def _check_connected(self):
+        """Raise AttributeError if the instrument is not connected."""
+        if not self._connected:
+            raise AttributeError("Instrument is not connected.")
