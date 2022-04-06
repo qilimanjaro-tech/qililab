@@ -21,6 +21,11 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings):
         integration_length (int): Duration (in ns) of the integration.
         mode (str): Integration mode. Options are 'ssb'.
         readout_pulse (PulseSettings): Pulse used for readout.
+        sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
+        If timeout is reached a TimeoutError is raised.
+        acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
+        If timeout is reached a TimeoutError is raised.
+        acquisition_name (str): Name of the acquisition saved in the sequencer.
     """
 
     acquire_trigger_mode: str
@@ -30,3 +35,6 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings):
     integration_length: int
     mode: str
     readout_pulse: PulseSettings
+    sequence_timeout: int  # minutes
+    acquisition_timeout: int  # minutes
+    acquisition_name: str

@@ -75,6 +75,16 @@ class QbloxPulsar(Instrument):
         self._check_connected()
         self._set_gain()
 
+    def upload(self, sequence_path: str):
+        """Upload sequence to sequencer.
+
+        Args:
+            sequence_path (str): Path to the json file containing the waveforms,
+            weights, acquisitions and program of the sequence.
+        """
+        self.device.sequencer0.sequence(sequence_path)
+        self.device.sequencer1.sequence(sequence_path)
+
     def _set_gain(self):
         """Set gain of sequencer for all paths."""
         self._check_connected()
