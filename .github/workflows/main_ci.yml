@@ -37,7 +37,7 @@ jobs:
           pylint src -E
           mypy
           interrogate -vv --fail-under=80
-          bandit -r src
+          bandit -r src -c .bandit
           mdformat .
           nbqa black .
           nbqa isort .
