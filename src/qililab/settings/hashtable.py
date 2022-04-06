@@ -16,3 +16,5 @@ class SettingsHashTable:
     qblox_qcm = QbloxPulsarQCMSettings
     platform = PlatformSettings
     qubit = QubitCalibrationSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
