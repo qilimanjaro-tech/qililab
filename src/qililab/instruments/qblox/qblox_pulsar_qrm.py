@@ -1,8 +1,9 @@
 """Qblox pulsar QRM class"""
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
+from qililab.instruments.qubit_readout import QubitReadout
 
 
-class QbloxPulsarQRM(QbloxPulsar):
+class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     """Pulsar QCM class"""
 
     def setup(self):
