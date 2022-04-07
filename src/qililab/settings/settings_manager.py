@@ -1,16 +1,17 @@
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import TypeAlias
 
 import yaml
 
 from qililab.settings.hashtable import SettingsHashTable
+from qililab.settings.instruments.qblox_pulsar import QbloxPulsarSettings
+from qililab.settings.instruments.sgs100a import SGS100ASettings
 from qililab.settings.platform import PlatformSettings
-from qililab.settings.qblox_pulsar import QbloxPulsarSettings
 from qililab.settings.qubit import QubitCalibrationSettings
-from qililab.settings.sgs100a import SGS100ASettings
 from qililab.utils.singleton import Singleton
 
-SettingsTypes = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings | SGS100ASettings
+SettingsTypes: TypeAlias = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings | SGS100ASettings
 
 
 @dataclass

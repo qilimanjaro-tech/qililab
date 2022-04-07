@@ -1,11 +1,11 @@
-"""Qblox pulsar QCM settings class"""
+"""Qblox pulsar settings class"""
 from dataclasses import dataclass
 
-from qililab.settings.qblox_pulsar import QbloxPulsarSettings
+from qililab.settings.instruments.instrument import InstrumentSettings
 
 
 @dataclass
-class QbloxPulsarQCMSettings(QbloxPulsarSettings):
+class QbloxPulsarSettings(InstrumentSettings):
     """Contains the settings of a specific pulsar.
 
     Args:
@@ -18,3 +18,8 @@ class QbloxPulsarQCMSettings(QbloxPulsarSettings):
         sync_enabled (bool): Enable synchronization over multiple instruments.
         gain (float): Gain step used by the sequencer.
     """
+
+    reference_clock: str
+    sequencer: int
+    sync_enabled: bool
+    gain: float

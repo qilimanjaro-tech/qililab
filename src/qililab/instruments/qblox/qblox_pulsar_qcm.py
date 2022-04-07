@@ -1,5 +1,5 @@
 """Qblox pulsar QCM class"""
-from qililab.instruments.qblox_pulsar import QbloxPulsar
+from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 
 
 class QbloxPulsarQCM(QbloxPulsar):

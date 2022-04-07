@@ -3,8 +3,8 @@ from qblox_instruments import Pulsar
 
 from qililab.instruments.instrument import Instrument
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.qblox_pulsar_qcm import QbloxPulsarQCMSettings
-from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.instruments.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.instruments.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 
 
 class QbloxPulsar(Instrument):

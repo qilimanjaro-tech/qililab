@@ -2,9 +2,9 @@ import pytest
 
 from qililab.instruments import SGS100A, QbloxPulsarQCM, QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.qblox_pulsar_qcm import QbloxPulsarQCMSettings
-from qililab.settings.qblox_pulsar_qrm import QbloxPulsarQRMSettings
-from qililab.settings.sgs100a import SGS100ASettings
+from qililab.settings.instruments.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.instruments.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.instruments.sgs100a import SGS100ASettings
 
 SETTINGS_MANAGER.platform_name = "platform_0"
 

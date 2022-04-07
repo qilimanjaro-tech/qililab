@@ -1,7 +1,7 @@
 """Qblox pulsar settings class"""
 from dataclasses import dataclass
 
-from qililab.settings.instrument import InstrumentSettings
+from qililab.settings.instruments.instrument import InstrumentSettings
 
 
 @dataclass
