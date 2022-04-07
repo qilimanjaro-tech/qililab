@@ -1,11 +1,12 @@
-"""Qblox pulsar QCM settings class"""
+"""Qblox pulsar QRM settings class."""
 from dataclasses import dataclass
 
-from qililab.settings.instruments.qblox_pulsar import QbloxPulsarSettings
+from qililab.settings.instruments.instrument import InstrumentSettings
+from qililab.settings.pulse import PulseSettings
 
 
 @dataclass
-class QbloxPulsarQCMSettings(QbloxPulsarSettings):
+class QubitReadoutSettings(InstrumentSettings):
     """Contains the settings of a specific pulsar.
 
     Args:
@@ -13,8 +14,9 @@ class QbloxPulsarQCMSettings(QbloxPulsarSettings):
         category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
         location (str): Path to location of settings file.
         ip (str): IP address of the instrument.
-        reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
-        sequencer (int): Index of the sequencer to use.
-        sync_enabled (bool): Enable synchronization over multiple instruments.
         gain (float): Gain step used by the sequencer.
+        readout_pulse (PulseSettings): Pulse used for readout.
     """
+
+    gain: float
+    readout_pulse: PulseSettings

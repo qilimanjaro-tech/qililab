@@ -1,11 +1,11 @@
 """Qblox pulsar settings class"""
 from dataclasses import dataclass
 
-from qililab.settings.instruments.instrument import InstrumentSettings
+from qililab.settings.instruments.signal_generator import SignalGeneratorSettings
 
 
 @dataclass
-class SGS100ASettings(InstrumentSettings):
+class SGS100ASettings(SignalGeneratorSettings):
     """Contains the settings of a specific pulsar.
 
     Args:
@@ -16,6 +16,3 @@ class SGS100ASettings(InstrumentSettings):
         power (float): Power of the instrument. Value range is (-120, 25).
         frequency (float): Frequency of the instrument. Value range is (1e6, 20e9).
     """
-
-    power: float
-    frequency: float

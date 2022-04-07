@@ -5,13 +5,16 @@ from typing import TypeAlias
 import yaml
 
 from qililab.settings.hashtable import SettingsHashTable
-from qililab.settings.instruments.qblox_pulsar import QbloxPulsarSettings
-from qililab.settings.instruments.sgs100a import SGS100ASettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
 from qililab.settings.platform import PlatformSettings
 from qililab.settings.qubit import QubitCalibrationSettings
 from qililab.utils.singleton import Singleton
 
-SettingsTypes: TypeAlias = PlatformSettings | QubitCalibrationSettings | QbloxPulsarSettings | SGS100ASettings
+SettingsTypes: TypeAlias = (
+    PlatformSettings | QubitCalibrationSettings | QbloxPulsarQCMSettings | QbloxPulsarQRMSettings | SGS100ASettings
+)
 
 
 @dataclass

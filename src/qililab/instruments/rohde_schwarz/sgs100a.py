@@ -5,7 +5,7 @@ from qcodes.instrument_drivers.rohde_schwarz.SGS100A import RohdeSchwarz_SGS100A
 
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.instruments.sgs100a import SGS100ASettings
+from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
 
 
 class SGS100A(SignalGenerator):
