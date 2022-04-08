@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 
 from qililab.settings.instruments.qubit_readout import QubitReadoutSettings
-from qililab.settings.pulse import PulseSettings
 
 
 @dataclass
@@ -15,7 +14,6 @@ class QbloxPulsarQRMSettings(QubitReadoutSettings):
         location (str): Path to location of settings file.
         ip (str): IP address of the instrument.
         gain (float): Gain step used by the sequencer.
-        readout_pulse (PulseSettings): Pulse used for readout.
         reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
         sequencer (int): Index of the sequencer to use.
         sync_enabled (bool): Enable synchronization over multiple instruments.
@@ -40,7 +38,6 @@ class QbloxPulsarQRMSettings(QubitReadoutSettings):
     sampling_rate: int
     integration_length: int
     mode: str
-    readout_pulse: PulseSettings
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
     acquisition_name: str

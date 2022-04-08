@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 
 from qililab.settings.instruments.instrument import InstrumentSettings
-from qililab.settings.pulse import PulseSettings
 
 
 @dataclass
@@ -19,4 +18,3 @@ class QubitReadoutSettings(InstrumentSettings):
     """
 
     gain: float
-    readout_pulse: PulseSettings
