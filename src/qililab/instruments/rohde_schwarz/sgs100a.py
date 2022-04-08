@@ -40,18 +40,15 @@ class SGS100A(SignalGenerator):
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
-        self._check_connected()
         self.device.power(self.settings.power)
         self.device.frequency(self.settings.frequency)
 
     def start(self):
         """Start generating microwaves."""
-        self._check_connected()
         self.device.on()
 
     def stop(self):
         """Stop generating microwaves."""
-        self._check_connected()
         self.device.off()
 
     def close(self):
