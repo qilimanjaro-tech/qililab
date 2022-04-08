@@ -34,10 +34,6 @@ class TestQbloxPulsarQCM:
         """Test name attribute of QbloxPulsarQCM class"""
         assert qcm.name == "qcm_0"
 
-    def test_connected(self, qcm: QbloxPulsarQCM):
-        """Test _connected attribute of QbloxPulsarQCM class"""
-        assert qcm._connected is False
-
     def test_settings(self, qcm: QbloxPulsarQCM):
         """Test settings attribute type of QbloxPulsarQCM class"""
         assert isinstance(qcm.settings, QbloxPulsarQCMSettings)
@@ -61,16 +57,6 @@ class TestQbloxPulsarQCM:
         with pytest.raises(AttributeError):
             qcm.setup()
 
-    def test_check_connected_true(self, qcm: QbloxPulsarQCM):
-        """Test check_connected() method of the QbloxPulsarQCM class when _connected is True."""
-        qcm._connected = True
-        qcm._check_connected()
-
-    def test_check_connected_false(self, qcm: QbloxPulsarQCM):
-        """Test check_connected() method of the QbloxPulsarQCM class when _connected is False."""
-        with pytest.raises(AttributeError):
-            qcm._check_connected()
-
 
 class TestQbloxPulsarQRM:
     """Unit tests checking the QbloxPulsarQCM attributes and methods"""
@@ -78,10 +64,6 @@ class TestQbloxPulsarQRM:
     def test_name(self, qrm: QbloxPulsarQRM):
         """Test name attribute of QbloxPulsarQCM class"""
         assert qrm.name == "qrm_0"
-
-    def test_connected(self, qrm: QbloxPulsarQRM):
-        """Test _connected attribute of QbloxPulsarQCM class"""
-        assert qrm._connected is False
 
     def test_settings(self, qrm: QbloxPulsarQRM):
         """Test settings attribute type of QbloxPulsarQCM class"""
@@ -95,16 +77,6 @@ class TestQbloxPulsarQRM:
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
         assert qrm.settings.category == "qblox_qrm"
 
-    def test_check_connected_true(self, qrm: QbloxPulsarQRM):
-        """Test check_connected() method of the QbloxPulsarQRM class when _connected is True."""
-        qrm._connected = True
-        qrm._check_connected()
-
-    def test_check_connected_false(self, qrm: QbloxPulsarQRM):
-        """Test check_connected() method of the QbloxPulsarQRM class when _connected is False."""
-        with pytest.raises(AttributeError):
-            qrm._check_connected()
-
 
 class TestSGS100A:
     """Unit tests checking the QbloxPulsarQCM attributes and methods"""
@@ -112,10 +84,6 @@ class TestSGS100A:
     def test_name(self, rohde_schwarz: SGS100A):
         """Test name attribute of QbloxPulsarQCM class"""
         assert rohde_schwarz.name == "rohde_schwarz_0"
-
-    def test_connected(self, rohde_schwarz: SGS100A):
-        """Test _connected attribute of QbloxPulsarQCM class"""
-        assert rohde_schwarz._connected is False
 
     def test_settings(self, rohde_schwarz: SGS100A):
         """Test settings attribute type of QbloxPulsarQCM class"""
@@ -128,13 +96,3 @@ class TestSGS100A:
     def test_settings_category(self, rohde_schwarz: SGS100A):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
         assert rohde_schwarz.settings.category == "rohde_schwarz"
-
-    def test_check_connected_true(self, rohde_schwarz: SGS100A):
-        """Test check_connected() method of the QbloxPulsarQRM class when _connected is True."""
-        rohde_schwarz._connected = True
-        rohde_schwarz._check_connected()
-
-    def test_check_connected_false(self, rohde_schwarz: SGS100A):
-        """Test check_connected() method of the QbloxPulsarQRM class when _connected is False."""
-        with pytest.raises(AttributeError):
-            rohde_schwarz._check_connected()
