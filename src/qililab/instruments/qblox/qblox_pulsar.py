@@ -18,7 +18,7 @@ class QbloxPulsar(Instrument):
 
     def __init__(self, name: str):
         super().__init__(name=name)
-        self.device: Pulsar | None = None
+        self.device: Pulsar
         self.settings = self.load_settings()
 
     def load_settings(self):

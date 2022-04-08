@@ -19,7 +19,7 @@ class SGS100A(SignalGenerator):
 
     def __init__(self, name: str):
         super().__init__(name=name)
-        self.device: RohdeSchwarz_SGS100A | None = None
+        self.device: RohdeSchwarz_SGS100A
         self.settings = self.load_settings()
 
     def load_settings(self):

@@ -25,7 +25,7 @@ class QililabBackend(NumpyBackend):
 
     def __init__(self):
         super().__init__()
-        self.platform: Platform | None = None
+        self.platform: Platform
         self.name = "qililab"
         self.is_hardware = True
 
