@@ -9,20 +9,20 @@ from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
 SETTINGS_MANAGER.platform_name = "platform_0"
 
 
-@pytest.fixture
-def qcm():
+@pytest.fixture(name="qcm")
+def fixture_qcm():
     """Return instance of QbloxPulsarQCM class."""
     return QbloxPulsarQCM(name="qcm_0")
 
 
-@pytest.fixture
-def qrm():
+@pytest.fixture(name="qrm")
+def fixture_qrm():
     """Return instance of QbloxPulsarQRM class."""
     return QbloxPulsarQRM(name="qrm_0")
 
 
-@pytest.fixture
-def rohde_schwarz():
+@pytest.fixture(name="rohde_schwarz")
+def fixture_rohde_schwarz():
     """Return instance of SGS100A class."""
     return SGS100A(name="rohde_schwarz_0")
 
