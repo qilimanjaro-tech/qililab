@@ -1,15 +1,24 @@
 from dataclasses import dataclass
-from typing import ClassVar, Type
 
-from qililab.settings.platform_settings import PlatformSettings
-from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
-from qililab.settings.schema_settings import SchemaSettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
+from qililab.settings.platform import PlatformSettings
+from qililab.settings.qubit import QubitCalibrationSettings
+from qililab.settings.schema import SchemaSettings
 
 
 @dataclass
 class SettingsHashTable:
     """Hash table that maps strings to settings classes"""
 
-    platform: ClassVar[Type[PlatformSettings]] = PlatformSettings
-    qubit: ClassVar[Type[QubitCalibrationSettings]] = QubitCalibrationSettings
-    schema: ClassVar[Type[SchemaSettings]] = SchemaSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
+    qblox_qrm = QbloxPulsarQRMSettings
+    qblox_qcm = QbloxPulsarQCMSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
+    platform = PlatformSettings
+    qubit = QubitCalibrationSettings
+    rohde_schwarz = SGS100ASettings
+    schema = SchemaSettings

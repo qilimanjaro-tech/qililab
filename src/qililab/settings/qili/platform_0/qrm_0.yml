@@ -1,20 +1,15 @@
-category: instrument
+category: qblox_qrm
 ip: 192.168.0.4
 reference_clock: external
 sequencer: 0
 sync_enabled: true
-is_cluster: false
 gain: 0.5
-initial_delay: 0
 acquire_trigger_mode: sequencer
 hardware_average_enabled: true
-start_sample: 130
+start_integrate: 130
 sampling_rate: 1000000000
 integration_length: 2000
 mode: ssb
-readout_pulse:
-  amplitude: 0.4
-  duration: 2000
-  frequency: 20000000
-  offset_i: 0
-  offset_q: 0
+sequence_timeout: 1
+acquisition_timeout: 1
+acquisition_name: "single"

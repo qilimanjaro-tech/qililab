@@ -1,13 +1,26 @@
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import TypeAlias
 
 import yaml
 
 from qililab.settings.hashtable import SettingsHashTable
-from qililab.settings.platform_settings import PlatformSettings
-from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
-from qililab.settings.schema_settings import SchemaSettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from qililab.settings.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
+from qililab.settings.platform import PlatformSettings
+from qililab.settings.qubit import QubitCalibrationSettings
+from qililab.settings.schema import SchemaSettings
 from qililab.utils.singleton import Singleton
+
+SettingsTypes: TypeAlias = (
+    PlatformSettings
+    | QubitCalibrationSettings
+    | QbloxPulsarQCMSettings
+    | QbloxPulsarQRMSettings
+    | SGS100ASettings
+    | SchemaSettings
+)
 
 
 @dataclass
@@ -22,7 +35,7 @@ class SettingsManager(metaclass=Singleton):
     foldername: str
     platform_name: str = field(init=False)
 
-    def load(self, filename: str) -> PlatformSettings | QubitCalibrationSettings | SchemaSettings:
+    def load(self, filename: str) -> SettingsTypes:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -46,7 +59,7 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: PlatformSettings | QubitCalibrationSettings) -> None:
+    def dump(self, settings: SettingsTypes):
         """Dump data from settings into its corresponding location.
 
         Args:

@@ -5,9 +5,9 @@ from qililab.constants import DEFAULT_PLATFORM_FILENAME
 from qililab.platforms.platform import Platform
 from qililab.schema import Schema
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.platform_settings import PlatformSettings
-from qililab.settings.schema_settings import SchemaSettings
-from qililab.utils import Singleton
+from qililab.settings.platform import PlatformSettings
+from qililab.settings.schema import SchemaSettings
+from qililab.utils.singleton import Singleton
 
 
 @dataclass

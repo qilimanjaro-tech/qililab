@@ -5,7 +5,7 @@ from qibo.models import Circuit
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
 from qililab.gates import I, X, Y, Z
-from qililab.platforms import Platform
+from qililab.platforms.platform import Platform
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def backend() -> QililabBackend:
 class TestBackend:
     """Unit tests checking the QililabBackend attributes and methods"""
 
-    def test_set_backend(self) -> None:
+    def test_set_backend(self):
         """Test of the initialization of the qililab backend and qili platform using qibo.
         Run the qibo.set_backend function to activate qililab backend and qili platform."""
         # FIXME: Need to add backend in qibo's profiles.yml file
@@ -37,7 +37,7 @@ class TestBackend:
         assert isinstance(qibo.K.active_backend, QililabBackend)
         assert isinstance(qibo.K.platform, Platform)
 
-    def test_set_platform_using_default_platform(self, backend: QililabBackend) -> None:
+    def test_set_platform_using_default_platform(self, backend: QililabBackend):
         """Test the set_platform method of the QililabBackend class using platform "platform_0".
 
         Args:
@@ -46,7 +46,7 @@ class TestBackend:
         backend.set_platform("platform_0")
         assert isinstance(backend.platform, Platform)
 
-    def test_set_platform_using_unknown_platform(self, backend: QililabBackend) -> None:
+    def test_set_platform_using_unknown_platform(self, backend: QililabBackend):
         """Test the set_platform method of the QililabBackend class using an unknown platform.
 
         Args:
@@ -55,7 +55,7 @@ class TestBackend:
         with pytest.raises(FileNotFoundError):
             backend.set_platform("unknown_platform")
 
-    def test_get_platform(self, backend: QililabBackend) -> None:
+    def test_get_platform(self, backend: QililabBackend):
         """Test the get_platform method of the QililabBackend class.
 
         Args:
@@ -65,7 +65,7 @@ class TestBackend:
         name = backend.get_platform()
         assert name == "platform_0"
 
-    def test_circuit_class(self, backend: QililabBackend) -> None:
+    def test_circuit_class(self, backend: QililabBackend):
         """Test the circuit_class method of the QililabBackend class.
 
         Args:
@@ -76,7 +76,7 @@ class TestBackend:
         assert backend.circuit_class() == HardwareCircuit
 
     @pytest.mark.parametrize("gate", [I, X, Y, Z])
-    def test_create_gate(self, backend: QililabBackend, gate) -> None:
+    def test_create_gate(self, backend: QililabBackend, gate):
         """Test the create_gate method of the QililabBackend class with the I, X, Y and Z gates.
 
         Args:
