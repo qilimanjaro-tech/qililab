@@ -3,8 +3,10 @@ from pathlib import Path
 
 import yaml
 
-from qililab.settings.abstract_settings import AbstractSettings
 from qililab.settings.hashtable import SettingsHashTable
+from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.qubit_calibration_settings import QubitCalibrationSettings
+from qililab.settings.schema_settings import SchemaSettings
 from qililab.utils.singleton import Singleton
 
 
@@ -18,10 +20,9 @@ class SettingsManager(metaclass=Singleton):
     """
 
     foldername: str
-    platform: str = field(init=False)
+    platform_name: str = field(init=False)
 
-    # FIXME: Return type depends on value of category
-    def load(self, filename: str):
+    def load(self, filename: str) -> PlatformSettings | QubitCalibrationSettings | SchemaSettings:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -29,9 +30,9 @@ class SettingsManager(metaclass=Singleton):
             filename (str): Name of the settings file without the extension.
 
         Returns:
-            AbstractSettings: Dataclass containing the settings.
+            Settings: Dataclass containing the settings.
         """
-        path = str(Path(__file__).parent / self.foldername / self.platform / f"{filename}.yml")
+        path = str(Path(__file__).parent / self.foldername / self.platform_name / f"{filename}.yml")
 
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
@@ -45,14 +46,16 @@ class SettingsManager(metaclass=Singleton):
 
         return settings_class(name=filename, location=path, **settings)
 
-    def dump(self, settings: AbstractSettings) -> None:
+    def dump(self, settings: PlatformSettings | QubitCalibrationSettings) -> None:
         """Dump data from settings into its corresponding location.
 
         Args:
-            settings (AbstractSettings): Dataclass containing the settings.
+            settings (Settings): Dataclass containing the settings.
         """
         settings_dict = asdict(settings)
-        del settings_dict["location"]
-        del settings_dict["name"]
+        if "location" in settings_dict:
+            del settings_dict["location"]
+        if "name" in settings_dict:
+            del settings_dict["name"]
         with open(settings.location, "w") as file:
             yaml.dump(data=settings_dict, stream=file, sort_keys=False)

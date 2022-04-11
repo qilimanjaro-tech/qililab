@@ -27,6 +27,7 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -r dev-requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Code Quality
         run: |
@@ -36,7 +37,7 @@ jobs:
           pylint src -E
           mypy
           interrogate -vv --fail-under=80
-          bandit -r src
+          bandit -r src -c .bandit
           mdformat .
           nbqa black .
           nbqa isort .

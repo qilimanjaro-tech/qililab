@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.settings import Settings
 
 
 @dataclass
-class SchemaSettings(AbstractSettings):
+class SchemaSettings(Settings):
     """Schema settings.
 
     Args:

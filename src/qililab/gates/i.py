@@ -1,10 +1,17 @@
-from qibo import gates
+from dataclasses import dataclass
 
-from qililab.gates.abstract_gate import AbstractHardwareGate
+from qililab.gates.hardware_gate import HardwareGate
 
 
-class I(AbstractHardwareGate, gates.I):  # noqa: E742
-    """Identity gate"""
+@dataclass
+class I(HardwareGate):  # noqa: E742
+    """Identity gate
+
+    Args:
+        q (int): Index of the qubit to which the gate is applied.
+    """
+
+    q: int
 
     def to_sequence(self, sequence: object) -> None:
         """Translates the gate to pulses and adds them to the given PulseSequence.

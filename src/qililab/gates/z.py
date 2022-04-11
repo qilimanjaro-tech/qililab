@@ -1,10 +1,17 @@
-from qibo import gates
+from dataclasses import dataclass
 
-from qililab.gates.abstract_gate import AbstractHardwareGate
+from qililab.gates.hardware_gate import HardwareGate
 
 
-class Z(AbstractHardwareGate, gates.Z):
-    """Z gate"""
+@dataclass
+class Z(HardwareGate):
+    """Z gate
+
+    Args:
+        q (int): Index of the qubit to which the gate is applied.
+    """
+
+    q: int
 
     def to_sequence(self, sequence: object) -> None:
         """Translates the gate to pulses and adds them to the given PulseSequence.

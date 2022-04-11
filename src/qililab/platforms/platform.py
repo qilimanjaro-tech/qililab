@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from qililab.schema import Schema
-from qililab.settings.abstract_settings import AbstractSettings
+from qililab.settings.platform_settings import PlatformSettings
 
 
 @dataclass
@@ -10,11 +10,11 @@ class Platform:
 
     Args:
         name (str): Name of the platform.
-        settings (AbstracSettings): Dataclass containing the settings of the platform.
+        settings (Settings): Dataclass containing the settings of the platform.
     """
 
     name: str
-    settings: AbstractSettings
+    settings: PlatformSettings
     schema: Schema
     # buses: Buses
 
