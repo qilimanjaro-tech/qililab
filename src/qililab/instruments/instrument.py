@@ -2,6 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
+from qililab.constants import INSTRUMENT_TYPES
+
 
 class Instrument(ABC):
     """Abstract base class declaring the necessary attributes
@@ -25,12 +27,13 @@ class Instrument(ABC):
             Raises:
                 AttributeError: If the instrument is not connected.
             """
-            if not ref._connected:
+            if not ref._connected or ref.device is None:
                 raise AttributeError("Instrument is not connected")
             return self._method(*args, **kwargs)
 
     def __init__(self, name: str):
         self.name = name
+        self.device: INSTRUMENT_TYPES | None = None
         self._connected: bool = False
 
     @abstractmethod
@@ -52,7 +55,9 @@ class Instrument(ABC):
     def stop(self):
         """Stop instrument."""
 
-    @abstractmethod
     @CheckConnected
     def close(self):
         """Close connection with the instrument."""
+        self.stop()
+        self.device.close()
+        self._connected = False

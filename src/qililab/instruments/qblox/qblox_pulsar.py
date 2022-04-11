@@ -53,12 +53,6 @@ class QbloxPulsar(Instrument):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
 
-    def close(self):
-        """Disconnect from the instrument."""
-        self.stop()
-        self.device.close()
-        self._connected = False
-
     @Instrument.CheckConnected
     def reset(self):
         """Reset instrument."""

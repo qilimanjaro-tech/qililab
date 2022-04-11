@@ -50,10 +50,3 @@ class SGS100A(SignalGenerator):
     def stop(self):
         """Stop generating microwaves."""
         self.device.off()
-
-    def close(self):
-        """Close connection with the instrument."""
-        if self._connected:
-            self.stop()
-            self.device.close()
-            self._connected = False
