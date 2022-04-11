@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from qililab.schema import Schema
-from qililab.settings.platform_settings import PlatformSettings
+from qililab.settings.platform import PlatformSettings
 
 
 @dataclass

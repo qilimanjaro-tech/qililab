@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-from qililab.settings.schema_settings import SchemaSettings
+from qililab.settings.schema import SchemaSettings
 
 
 @dataclass
