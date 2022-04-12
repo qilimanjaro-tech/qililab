@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Type
 
 from qibo.backends.numpy import NumpyBackend
@@ -21,10 +21,10 @@ class QililabBackend(NumpyBackend):
 
     name: str
     is_hardware: bool
+    platform: Platform = field(init=False)
 
     def __init__(self):
         super().__init__()
-        self.platform: Platform
         self.name = "qililab"
         self.is_hardware = True
 
