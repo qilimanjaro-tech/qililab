@@ -1,7 +1,7 @@
 """Qblox pulsar QCM settings class"""
 from dataclasses import dataclass
 
-from qililab.settings.instruments.qubit_control import QubitControlSettings
+from qililab.settings import QubitControlSettings
 
 
 @dataclass
