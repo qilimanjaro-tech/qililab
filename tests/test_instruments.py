@@ -12,19 +12,22 @@ SETTINGS_MANAGER.platform_name = "platform_0"
 @pytest.fixture(name="qcm")
 def fixture_qcm():
     """Return instance of QbloxPulsarQCM class."""
-    return QbloxPulsarQCM(name="qcm_0")
+    qcm_settings = SETTINGS_MANAGER.load(filename="qcm_0")
+    return QbloxPulsarQCM(name="qcm_0", settings=qcm_settings)
 
 
 @pytest.fixture(name="qrm")
 def fixture_qrm():
     """Return instance of QbloxPulsarQRM class."""
-    return QbloxPulsarQRM(name="qrm_0")
+    qrm_settings = SETTINGS_MANAGER.load(filename="qrm_0")
+    return QbloxPulsarQRM(name="qrm_0", settings=qrm_settings)
 
 
 @pytest.fixture(name="rohde_schwarz")
 def fixture_rohde_schwarz():
     """Return instance of SGS100A class."""
-    return SGS100A(name="rohde_schwarz_0")
+    rs_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
+    return SGS100A(name="rohde_schwarz_0", settings=rs_settings)
 
 
 class TestQbloxPulsarQCM:
@@ -41,15 +44,6 @@ class TestQbloxPulsarQCM:
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
         assert qcm.settings.category == "qblox_qcm"
-
-    def test_load_settings(self, qcm: QbloxPulsarQCM):
-        """Test load_settings() method of QbloxPulsarQCM class"""
-        assert isinstance(qcm.load_settings(), QbloxPulsarQCMSettings)
-
-    def test_load_settings_value_error(self):
-        """Test that the class raises a ValueError when the loaded settings are invalid"""
-        with pytest.raises(ValueError):
-            QbloxPulsarQCM(name="platform")
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running
@@ -69,10 +63,6 @@ class TestQbloxPulsarQRM:
         """Test settings attribute type of QbloxPulsarQCM class"""
         assert isinstance(qrm.settings, QbloxPulsarQRMSettings)
 
-    def test_load_settings(self, qrm: QbloxPulsarQRM):
-        """Test load_settings() method of QbloxPulsarQCM class"""
-        assert isinstance(qrm.load_settings(), QbloxPulsarQRMSettings)
-
     def test_settings_category(self, qrm: QbloxPulsarQRM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
         assert qrm.settings.category == "qblox_qrm"
@@ -88,10 +78,6 @@ class TestSGS100A:
     def test_settings(self, rohde_schwarz: SGS100A):
         """Test settings attribute type of QbloxPulsarQCM class"""
         assert isinstance(rohde_schwarz.settings, SGS100ASettings)
-
-    def test_load_settings(self, rohde_schwarz: SGS100A):
-        """Test load_settings() method of QbloxPulsarQCM class"""
-        assert isinstance(rohde_schwarz.load_settings(), SGS100ASettings)
 
     def test_settings_category(self, rohde_schwarz: SGS100A):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
