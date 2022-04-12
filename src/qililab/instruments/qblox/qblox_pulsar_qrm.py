@@ -1,10 +1,17 @@
 """Qblox pulsar QRM class"""
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
+from qililab.settings import QbloxPulsarQRMSettings
 
 
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     """Pulsar QCM class"""
+
+    settings: QbloxPulsarQRMSettings
+
+    def __init__(self, name: str, settings: dict):
+        super().__init__(name=name)
+        self.settings = QbloxPulsarQRMSettings(**settings)
 
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""

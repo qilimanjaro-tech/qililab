@@ -1,10 +1,9 @@
 """
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
-from qcodes.instrument_drivers.rohde_schwarz.SGS100A import RohdeSchwarz_SGS100A
-
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.settings import SETTINGS_MANAGER, SGS100ASettings
+from qililab.settings import SGS100ASettings
+from qililab.typings import RohdeSchwarzSGS100A
 
 
 class SGS100A(SignalGenerator):
@@ -16,22 +15,17 @@ class SGS100A(SignalGenerator):
         settings (SGS100ASettings): Settings of the instrument.
     """
 
-    def __init__(self, name: str):
-        super().__init__(name=name)
-        self.device: RohdeSchwarz_SGS100A
-        self.settings = self.load_settings()
+    device: RohdeSchwarzSGS100A
+    settings: SGS100ASettings
 
-    def load_settings(self):
-        """Load instrument settings"""
-        settings = SETTINGS_MANAGER.load(filename=self.name)
-        if not isinstance(settings, SGS100ASettings):
-            raise ValueError(f"""Using instance of class {type(settings).__name__} instead of class SGS100ASettings.""")
-        return settings
+    def __init__(self, name: str, settings: dict):
+        super().__init__(name=name)
+        self.settings = SGS100ASettings(**settings)
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         if not self._connected:
-            self.device = RohdeSchwarz_SGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
+            self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
             self._connected = True
 
     def setup(self):

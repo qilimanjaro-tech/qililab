@@ -1,12 +1,7 @@
 """Qblox pulsar class"""
-from qblox_instruments import Pulsar
-
 from qililab.instruments.instrument import Instrument
-from qililab.settings import (
-    SETTINGS_MANAGER,
-    QbloxPulsarQCMSettings,
-    QbloxPulsarQRMSettings,
-)
+from qililab.settings import QbloxPulsarSettings
+from qililab.typings import Pulsar
 
 
 class QbloxPulsar(Instrument):
@@ -18,21 +13,11 @@ class QbloxPulsar(Instrument):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
+    device: Pulsar
+    settings: QbloxPulsarSettings
+
     def __init__(self, name: str):
         super().__init__(name=name)
-        self.device: Pulsar
-        self.settings = self.load_settings()
-
-    def load_settings(self):
-        """Load instrument settings"""
-        settings = SETTINGS_MANAGER.load(filename=self.name)
-        # FIXME: Can't use parent class (QbloxPulsarSettings) in isinstance, because
-        # then mypy can't infer the type of 'hardware_average_enabled' int the QbloxPulsarQRM class
-        if not isinstance(settings, (QbloxPulsarQRMSettings, QbloxPulsarQCMSettings)):
-            raise ValueError(
-                f"""Using instance of class {type(settings).__name__} instead of class QbloxPulsarSettings."""
-            )
-        return settings
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""

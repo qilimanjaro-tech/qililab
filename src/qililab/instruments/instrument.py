@@ -2,7 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from qililab.constants import INSTRUMENT_TYPES
+from qililab.settings import Settings
+from qililab.typings import Device
 
 
 class Instrument(ABC):
@@ -12,6 +13,9 @@ class Instrument(ABC):
     Args:
         name (str): Name of the instrument.
     """
+
+    device: Device  # a subtype of device must be specified by the subclass
+    settings: Settings  # a subtype of settings must be specified by the subclass
 
     class CheckConnected:
         """Property used to check if the instrument is connected."""
@@ -27,14 +31,13 @@ class Instrument(ABC):
             Raises:
                 AttributeError: If the instrument is not connected.
             """
-            if not ref._connected or ref.device is None:
+            if not ref._connected or hasattr(ref, "device"):
                 raise AttributeError("Instrument is not connected")
             return self._method(*args, **kwargs)
 
     def __init__(self, name: str):
         self.name = name
-        self.device: INSTRUMENT_TYPES | None = None
-        self._connected: bool = False
+        self._connected = False
 
     @abstractmethod
     def connect(self):
