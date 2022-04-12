@@ -1,9 +1,6 @@
-from dataclasses import dataclass
-
-from qililab.settings import Settings
+from qililab.settings import PlatformSettings
 
 
-@dataclass
 class Platform:
     """Platform object that describes setup used to control quantum devices.
 
@@ -12,8 +9,9 @@ class Platform:
         settings (Settings): Dataclass containing the settings of the platform.
     """
 
-    name: str
-    settings: Settings
+    def __init__(self, name: str, settings: dict):
+        self.name = name
+        self.settings = PlatformSettings(**settings)
 
     def __str__(self) -> str:
         """String representation of the platform

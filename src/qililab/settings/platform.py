@@ -10,7 +10,6 @@ class PlatformSettings(Settings):
     Args:
         name (str): Name of the settings.
         category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
-        location (str): Path to location of settings file.
         number_qubits (int): Number of qubits used in the platform.
         hardware_average (int): Hardware average. Number of shots used when executing a sequence.
         software_average (float): Software average.
