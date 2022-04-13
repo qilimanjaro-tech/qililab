@@ -36,17 +36,27 @@ class Instrument(ABC):
             Raises:
                 AttributeError: If the instrument is not connected.
             """
-            if not ref._connected or hasattr(ref, "device"):
+            if not ref._connected or not hasattr(ref, "device"):
                 raise AttributeError("Instrument is not connected")
-            return self._method(*args, **kwargs)
+            return self._method(ref, *args, **kwargs)
 
     def __init__(self, name: str):
         self.name = name
         self._connected = False
 
-    @abstractmethod
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
+        if self._connected:
+            raise ValueError("Instrument is already connected")
+        self._initialize_device()
+        self._connected = True
+
+    @CheckConnected
+    def close(self):
+        """Close connection with the instrument."""
+        self.stop()
+        self.device.close()
+        self._connected = False
 
     @abstractmethod
     def start(self):
@@ -60,9 +70,6 @@ class Instrument(ABC):
     def stop(self):
         """Stop instrument."""
 
-    @CheckConnected
-    def close(self):
-        """Close connection with the instrument."""
-        self.stop()
-        self.device.close()
-        self._connected = False
+    @abstractmethod
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""

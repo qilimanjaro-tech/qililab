@@ -22,12 +22,6 @@ class SGS100A(SignalGenerator):
         super().__init__(name=name)
         self.settings = SGS100ASettings(**settings)
 
-    def connect(self):
-        """Establish connection with the instrument. Initialize self.device variable."""
-        if not self._connected:
-            self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
-            self._connected = True
-
     @SignalGenerator.CheckConnected
     def setup(self):
         """Set R&S dbm power and frequency. Value ranges are:
@@ -46,3 +40,7 @@ class SGS100A(SignalGenerator):
     def stop(self):
         """Stop generating microwaves."""
         self.device.off()
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+        self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")

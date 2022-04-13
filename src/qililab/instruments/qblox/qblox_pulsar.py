@@ -21,11 +21,8 @@ class QbloxPulsar(Instrument):
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
-        if not self._connected:
-            # TODO: We need to update the firmware of the instruments to be able to connect
-            self.device = Pulsar(name=self.name, identifier=self.settings.ip)
-            self._connected = True
-            self.initial_setup()
+        super().connect()
+        self.initial_setup()
 
     @Instrument.CheckConnected
     def start(self):
@@ -62,14 +59,12 @@ class QbloxPulsar(Instrument):
             sequence_path (str): Path to the json file containing the waveforms,
             weights, acquisitions and program of the sequence.
         """
-        self.device.sequencer0.sequence(sequence_path)
-        self.device.sequencer1.sequence(sequence_path)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").sequence(sequence_path)
 
     def _set_gain(self):
         """Set gain of sequencer for all paths."""
-        sequencer = self.settings.sequencer
-        getattr(self.device, f"sequencer{sequencer}_gain_awg_path0")(self.settings.gain)
-        getattr(self.device, f"sequencer{sequencer}_gain_awg_path1")(self.settings.gain)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path0(self.settings.gain)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path1(self.settings.gain)
 
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
@@ -77,5 +72,9 @@ class QbloxPulsar(Instrument):
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
-        sequencer = self.settings.sequencer
-        getattr(self.device, f"sequencer{sequencer}_sync_en")(self.settings.sync_enabled)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").sync_en(self.settings.sync_enabled)
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+        # TODO: We need to update the firmware of the instruments to be able to connect
+        self.device = Pulsar(name=self.name, identifier=self.settings.ip)
