@@ -1,5 +1,6 @@
 """Instrument class"""
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import Callable
 
 from qililab.settings import Settings
@@ -23,6 +24,10 @@ class Instrument(ABC):
         def __init__(self, method: Callable):
             self._method = method
 
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
+
         def __call__(self, ref: "Instrument", *args, **kwargs):
             """
             Args:
@@ -44,17 +49,14 @@ class Instrument(ABC):
         """Establish connection with the instrument. Initialize self.device variable."""
 
     @abstractmethod
-    @CheckConnected
     def start(self):
         """Start instrument."""
 
     @abstractmethod
-    @CheckConnected
     def setup(self):
         """Set instrument settings."""
 
     @abstractmethod
-    @CheckConnected
     def stop(self):
         """Stop instrument."""
 

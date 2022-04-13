@@ -27,15 +27,18 @@ class QbloxPulsar(Instrument):
             self._connected = True
             self.initial_setup()
 
+    @Instrument.CheckConnected
     def start(self):
         """Execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
+    @Instrument.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
 
+    @Instrument.CheckConnected
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()

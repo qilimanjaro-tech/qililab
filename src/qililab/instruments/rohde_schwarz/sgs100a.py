@@ -28,6 +28,7 @@ class SGS100A(SignalGenerator):
             self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
             self._connected = True
 
+    @SignalGenerator.CheckConnected
     def setup(self):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
@@ -36,10 +37,12 @@ class SGS100A(SignalGenerator):
         self.device.power(self.settings.power)
         self.device.frequency(self.settings.frequency)
 
+    @SignalGenerator.CheckConnected
     def start(self):
         """Start generating microwaves."""
         self.device.on()
 
+    @SignalGenerator.CheckConnected
     def stop(self):
         """Stop generating microwaves."""
         self.device.off()

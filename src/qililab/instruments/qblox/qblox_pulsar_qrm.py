@@ -13,6 +13,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         super().__init__(name=name)
         self.settings = QbloxPulsarQRMSettings(**settings)
 
+    @QbloxPulsar.CheckConnected
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""
         super().setup()
