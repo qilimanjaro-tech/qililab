@@ -36,7 +36,7 @@ jobs:
           black . --check
           flake8
           pylint src -E
-          mypy src
+          mypy
           interrogate -vv --fail-under=80
           bandit -r src -c .bandit
           mdformat .

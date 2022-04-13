@@ -33,7 +33,7 @@ class TestSGS100A:
     def test_start_method(self, rohde_schwarz: SGS100A):
         """Test start method"""
         rohde_schwarz.start()
-        rohde_schwarz.device.on.assert_called_once()
+        rohde_schwarz.device.on.assert_called_once()  # type: ignore
 
     def test_setup_method(self, rohde_schwarz: SGS100A):
         """Test setup method"""
@@ -44,10 +44,10 @@ class TestSGS100A:
     def test_stop_method(self, rohde_schwarz: SGS100A):
         """Test stop method"""
         rohde_schwarz.stop()
-        rohde_schwarz.device.off.assert_called_once()
+        rohde_schwarz.device.off.assert_called_once()  # type: ignore
 
     def test_close_method(self, rohde_schwarz: SGS100A):
         """Test close method"""
         rohde_schwarz.close()
-        rohde_schwarz.device.off.assert_called_once()
-        rohde_schwarz.device.close.assert_called_once()
+        rohde_schwarz.device.off.assert_called_once()  # type: ignore
+        rohde_schwarz.device.close.assert_called_once()  # type: ignore
