@@ -7,12 +7,7 @@ from qililab.settings import (
 )
 from qililab.settings.settings_manager import SettingsManager
 
-
-@pytest.fixture(name="settings_manager")
-def fixture_sm() -> SettingsManager:
-    """Fixture returning a settings manager for the platform platform_0"""
-    SETTINGS_MANAGER.platform_name = "platform_0"
-    return SETTINGS_MANAGER
+SETTINGS_MANAGER.platform_name = "platform_0"
 
 
 class TestSettingsManager:
@@ -23,19 +18,19 @@ class TestSettingsManager:
         settings_manager = SettingsManager(foldername="qili")
         assert id(settings_manager) == id(SETTINGS_MANAGER)
 
-    def test_load_default_platform_settings(self, settings_manager: SettingsManager):
+    def test_load_default_platform_settings(self):
         """Test the load method of the SettingsManager class with the default platform settings.
         Assert that errors are raised correctly."""
-        settings = settings_manager.load(filename="platform")
+        settings = SETTINGS_MANAGER.load(filename="platform")
         PlatformSettings(**settings)
 
-    def test_load_default_qubit_settings(self, settings_manager: SettingsManager):
+    def test_load_default_qubit_settings(self):
         """Test the load method of the SettingsManager class with the default qubit settings.
         Assert that errors are raised correctly."""
-        settings = settings_manager.load(filename="qubit_0")
+        settings = SETTINGS_MANAGER.load(filename="qubit_0")
         QubitCalibrationSettings(**settings)
 
-    def test_load_unknown_file(self, settings_manager: SettingsManager):
+    def test_load_unknown_file(self):
         """Test the load method of the SettingsManager class with an unknown file."""
         with pytest.raises(FileNotFoundError):
-            settings_manager.load(filename="unknown_file")
+            SETTINGS_MANAGER.load(filename="unknown_file")
