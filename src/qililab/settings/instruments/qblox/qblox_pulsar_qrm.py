@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from qililab.settings.instruments.qblox.qblox_pulsar import QbloxPulsarSettings
 from qililab.settings.instruments.qubit_readout import QubitReadoutSettings
+from qililab.typings import AcquireTriggerMode, IntegrationMode
 
 
 @dataclass
@@ -21,7 +22,7 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings, QubitReadoutSettings):
         hardware_average_enabled (bool): Enable/disable hardware averaging of the data.
         start_integrate (int): Time (in ns) to start integrating the signal.
         integration_length (int): Duration (in ns) of the integration.
-        mode (str): Integration mode. Options are 'ssb'.
+        integration_mode (str): Integration mode. Options are 'ssb'.
         sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
         If timeout is reached a TimeoutError is raised.
         acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
@@ -29,12 +30,18 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings, QubitReadoutSettings):
         acquisition_name (str): Name of the acquisition saved in the sequencer.
     """
 
-    acquire_trigger_mode: str
+    acquire_trigger_mode: str | AcquireTriggerMode
     hardware_average_enabled: bool
     start_integrate: int
     sampling_rate: int
     integration_length: int
-    mode: str
+    integration_mode: str | IntegrationMode
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
     acquisition_name: str
+
+    def __post_init__(self):
+        """Cast acquire_trigger_mode and integration_mode to its corresponding Enum classes"""
+        super().__post_init__()
+        self.acquire_trigger_mode = AcquireTriggerMode(self.acquire_trigger_mode)
+        self.integration_mode = IntegrationMode(self.integration_mode)

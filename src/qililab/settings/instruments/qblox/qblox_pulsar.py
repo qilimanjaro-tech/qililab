@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.settings.instruments.instrument import InstrumentSettings
+from qililab.typings import ReferenceClock
 
 
 @dataclass
@@ -17,6 +18,11 @@ class QbloxPulsarSettings(InstrumentSettings):
         sync_enabled (bool): Enable synchronization over multiple instruments.
     """
 
-    reference_clock: str
+    reference_clock: str | ReferenceClock
     sequencer: int
     sync_enabled: bool
+
+    def __post_init__(self):
+        """Cast reference_clock to its corresponding Enum class"""
+        super().__post_init__()
+        self.reference_clock = ReferenceClock(self.reference_clock)

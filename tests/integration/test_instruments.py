@@ -5,6 +5,7 @@ from qililab.settings import SETTINGS_MANAGER
 from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
 from qililab.settings.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 from qililab.settings.instruments.rohde_schwarz.sgs100a import SGS100ASettings
+from qililab.typings import CategorySettings
 
 SETTINGS_MANAGER.platform_name = "platform_0"
 
@@ -43,7 +44,7 @@ class TestQbloxPulsarQCM:
 
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qcm.settings.category == "qblox_qcm"
+        assert qcm.settings.category == CategorySettings.QBLOX_QCM
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running
@@ -65,7 +66,7 @@ class TestQbloxPulsarQRM:
 
     def test_settings_category(self, qrm: QbloxPulsarQRM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qrm.settings.category == "qblox_qrm"
+        assert qrm.settings.category == CategorySettings.QBLOX_QRM
 
 
 class TestSGS100A:
@@ -81,4 +82,4 @@ class TestSGS100A:
 
     def test_settings_category(self, rohde_schwarz: SGS100A):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert rohde_schwarz.settings.category == "rohde_schwarz"
+        assert rohde_schwarz.settings.category == CategorySettings.ROHDE_SCHWARZ

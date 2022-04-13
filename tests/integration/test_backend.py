@@ -8,8 +8,8 @@ from qililab.gates import I, X, Y, Z
 from qililab.platforms.platform import Platform
 
 
-@pytest.fixture
-def backend() -> QililabBackend:
+@pytest.fixture(name="backend")
+def fixture_backend() -> QililabBackend:
     """Test of the QililabBackend class instantiation.
     This function is used as input to other backend tests.
 
