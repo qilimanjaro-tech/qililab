@@ -51,11 +51,11 @@ class PlatformBuilder(metaclass=Singleton):
         schema = self.platform.schema
         for _, bus in schema.settings.buses.items():
             bus_settings = {}
-            for category, item in bus.items():
-                filename = f"{item['name']}_{item['id']}"
+            for _, item in bus.items():
+                filename = f"""{item["name"]}_{item["id"]}"""
                 settings = SETTINGS_MANAGER.load(filename=filename)
                 element = getattr(NameHashTable, settings["name"])
-                bus_settings[category] = element(settings)
+                bus_settings[item["category"]] = element(settings)
 
             buses.append(Bus(**bus_settings))
 
