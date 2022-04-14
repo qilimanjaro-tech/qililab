@@ -14,8 +14,7 @@ class Platform:
     schema: Schema
     buses: Buses
 
-    def __init__(self, name: str, settings: dict):
-        self.name = name
+    def __init__(self, settings: dict):
         self.settings = PlatformSettings(**settings)
 
     def load_schema(self, schema: Schema):
@@ -34,10 +33,15 @@ class Platform:
         """
         self.buses = buses
 
+    @property
+    def name(self):
+        """Return name from settings"""
+        return self.settings.name
+
     def __str__(self) -> str:
         """String representation of the platform
 
         Returns:
             str: Name of the platform
         """
-        return self.name
+        return self.settings.name
