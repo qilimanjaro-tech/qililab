@@ -40,13 +40,13 @@ class PlatformBuilder(metaclass=Singleton):
         self.platform = Platform(settings=platform_settings)
 
     def _build_schema(self):
-        """Build schema"""
+        """Build platform schema"""
         schema_settings = SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
         schema = Schema(settings=schema_settings)
         self.platform.load_schema(schema=schema)
 
     def _build_buses(self):
-        """Build buses"""
+        """Build platform buses"""
         buses = Buses()
         schema = self.platform.schema
         for bus in schema.settings.buses:
