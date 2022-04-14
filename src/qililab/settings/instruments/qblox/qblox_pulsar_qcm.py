@@ -10,8 +10,10 @@ class QbloxPulsarQCMSettings(QbloxPulsarSettings, QubitControlSettings):
     """Contains the settings of a specific pulsar.
 
     Args:
-        name (str): Name of the settings.
-        category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
+        id (str): ID of the settings.
+        name (str): Unique name of the settings.
+        category (str): General name of the settings category. Options are "platform", "qubit_control",
+        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
         ip (str): IP address of the instrument.
         reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
         sequencer (int): Index of the sequencer to use.
