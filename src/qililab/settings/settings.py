@@ -9,10 +9,13 @@ class Settings(ABC):
     """Settings class.
 
     Args:
-        name (str): Name of the settings.
-        category (str): Name of the settings category. Options are "platform", "instrument", "qubit" and "resonator".
+        id (str): Id of the settings.
+        name (str): Unique name of the settings.
+        category (str): General name of the settings category. Options are "platform", "qubit_control",
+        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
     """
 
+    id: int
     name: str
     category: str | CategorySettings
 

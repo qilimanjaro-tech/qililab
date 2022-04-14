@@ -1,4 +1,6 @@
-category: platform
+id: 0
+name: platform  # unique name
+category: platform  # general name
 number_qubits: 1
 hardware_average: 4096
 software_average: 10

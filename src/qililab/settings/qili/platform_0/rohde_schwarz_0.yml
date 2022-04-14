@@ -1,4 +1,6 @@
-category: rohde_schwarz
+id: 0
+name: rohde_schwarz  # unique name
+category: signal_generator  # general name
 ip: 192.168.0.10
 frequency: 3644000000.0
 power: 15

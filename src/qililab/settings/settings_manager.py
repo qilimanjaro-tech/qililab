@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from qililab.utils.singleton import Singleton
+from qililab.utils import Singleton
 
 
 @dataclass
@@ -33,4 +33,4 @@ class SettingsManager(metaclass=Singleton):
         with open(path, "r") as file:
             settings = yaml.safe_load(stream=file)
 
-        return {"name": filename} | settings
+        return settings

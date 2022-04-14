@@ -18,9 +18,9 @@ class CategorySettings(Enum):
 
     PLATFORM = "platform"
     QUBIT = "qubit"
-    QBLOX_QCM = "qblox_qcm"
-    QBLOX_QRM = "qblox_qrm"
-    ROHDE_SCHWARZ = "rohde_schwarz"
+    QUBIT_CONTROL = "qubit_control"
+    QUBIT_READOUT = "qubit_readout"
+    SIGNAL_GENERATOR = "signal_generator"
     SCHEMA = "schema"
     RESONATOR = "resonator"
 
