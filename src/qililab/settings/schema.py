@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, List
 
 from qililab.settings.settings import Settings
 
@@ -13,8 +13,18 @@ class SchemaSettings(Settings):
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
         "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
-        buses (Dict[str, Dict[str, Dict[str, str | int]]]): Dictionaries that describe the category
-        and names of the elements located in each bus.
+        buses (List[List[Settings]]): List containing the settings of the elements for each bus.
     """
 
-    buses: Dict[str, Dict[str, Dict[str, str | int]]]
+    buses: List[List[Settings]]
+
+    def __post_init__(self):
+        """Cast the settings of each element to the Settings class."""
+        super().__post_init__()
+        buses = []
+        for bus in self.buses:
+            bus_list = []
+            for settings in bus:
+                bus_list.append(Settings(**settings))
+            buses.append(bus_list)
+        self.buses = buses

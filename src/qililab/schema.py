@@ -22,9 +22,8 @@ class Schema:
 
     def draw(self) -> None:
         """Draw schema."""
-        # TODO: Improve drawing
-        for idx, bus in enumerate(self.settings.buses.values()):
+        for idx, bus in enumerate(self.settings.buses):
             print(f"Bus {idx}:\t", end="------")
-            for _, element in bus.items():
-                print(f"|{element}", end="|------")
+            for element in bus:
+                print(f"|{element.name}_{element.id}", end="|------")
             print()
