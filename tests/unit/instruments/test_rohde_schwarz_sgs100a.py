@@ -5,8 +5,6 @@ import pytest
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 
-SETTINGS_MANAGER.platform_name = "platform_0"
-
 
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
@@ -16,8 +14,9 @@ def fixture_rohde_schwarz(mock_pulsar: MagicMock):
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
+    SETTINGS_MANAGER.platform_name = "platform_0"
     rohde_schwarz_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
-    rohde_schwarz = SGS100A(name="rohde_schwarz", settings=rohde_schwarz_settings)
+    rohde_schwarz = SGS100A(settings=rohde_schwarz_settings)
     rohde_schwarz.connect()
     return rohde_schwarz
 

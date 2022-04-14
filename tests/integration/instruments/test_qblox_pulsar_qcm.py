@@ -12,15 +12,11 @@ SETTINGS_MANAGER.platform_name = "platform_0"
 def fixture_qcm():
     """Return instance of QbloxPulsarQCM class."""
     qcm_settings = SETTINGS_MANAGER.load(filename="qcm_0")
-    return QbloxPulsarQCM(name="qcm_0", settings=qcm_settings)
+    return QbloxPulsarQCM(settings=qcm_settings)
 
 
 class TestQbloxPulsarQCM:
     """Unit tests checking the QbloxPulsarQCM attributes and methods"""
-
-    def test_name(self, qcm: QbloxPulsarQCM):
-        """Test name attribute of QbloxPulsarQCM class"""
-        assert qcm.name == "qcm_0"
 
     def test_settings(self, qcm: QbloxPulsarQCM):
         """Test settings attribute type of QbloxPulsarQCM class"""
@@ -28,7 +24,7 @@ class TestQbloxPulsarQCM:
 
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qcm.settings.category == CategorySettings.QBLOX_QCM
+        assert qcm.settings.category == CategorySettings.QUBIT_CONTROL
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running

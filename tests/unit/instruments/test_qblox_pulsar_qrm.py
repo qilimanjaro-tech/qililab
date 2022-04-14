@@ -5,8 +5,6 @@ import pytest
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
-SETTINGS_MANAGER.platform_name = "platform_0"
-
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
@@ -26,8 +24,9 @@ def fixture_qrm(mock_pulsar: MagicMock):
     )
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
     # connect to instrument
+    SETTINGS_MANAGER.platform_name = "platform_0"
     qrm_settings = SETTINGS_MANAGER.load(filename="qrm_0")
-    qrm = QbloxPulsarQRM(name="qrm_0", settings=qrm_settings)
+    qrm = QbloxPulsarQRM(settings=qrm_settings)
     qrm.connect()
     return qrm
 
