@@ -1,6 +1,4 @@
 """Schema class"""
-from typing import Dict
-
 from qililab.settings.schema import SchemaSettings
 
 
@@ -9,8 +7,6 @@ class Schema:
 
     Args:
         settings (SchemaSettings): Settings that define the schema of the platform.
-        buses (List[Dict[str, str]]): List of dictionaries that describe the category
-        and names of the elements located in each bus.
     """
 
     def __init__(self, settings: dict):
