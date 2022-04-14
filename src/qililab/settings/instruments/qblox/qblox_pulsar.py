@@ -16,11 +16,13 @@ class QbloxPulsarSettings(InstrumentSettings):
         reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
         sequencer (int): Index of the sequencer to use.
         sync_enabled (bool): Enable synchronization over multiple instruments.
+        gain (float): Gain step used by the sequencer.
     """
 
     reference_clock: str | ReferenceClock
     sequencer: int
     sync_enabled: bool
+    gain: float
 
     def __post_init__(self):
         """Cast reference_clock to its corresponding Enum class"""

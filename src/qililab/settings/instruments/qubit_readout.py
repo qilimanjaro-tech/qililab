@@ -12,7 +12,4 @@ class QubitReadoutSettings(InstrumentSettings):
         name (str): Name of the settings.
         category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
         ip (str): IP address of the instrument.
-        gain (float): Gain step used by the sequencer.
     """
-
-    gain: float
