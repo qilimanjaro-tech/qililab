@@ -1,22 +1,22 @@
-id: 0
+id_: 0
 name: qili_schema  # unique name
 category: schema  # general name
 buses:
   - - category: qubit_control
       name: qcm
-      id: 0
+      id_: 0
     - category: signal_generator
       name: rohde_schwarz
-      id: 0
+      id_: 0
     - category: resonator
       name: resonator
-      id: 0
+      id_: 0
   - - category: qubit_readout
       name: qrm
-      id: 0
+      id_: 0
     - category: signal_generator
       name: rohde_schwarz
-      id: 1
+      id_: 1
     - category: resonator
       name: resonator
-      id: 0
+      id_: 0

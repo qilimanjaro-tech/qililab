@@ -2,8 +2,10 @@ from qililab.buses import Bus, Buses
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
 from qililab.platforms.platform import Platform
+from qililab.resonator import Resonator
 from qililab.schema import Schema
-from qililab.settings import SETTINGS_MANAGER, Settings
+from qililab.settings import SETTINGS_MANAGER
+from qililab.typings import CategorySettings
 from qililab.utils import Singleton
 from qililab.utils.name_hash_table import NameHashTable
 
@@ -52,23 +54,44 @@ class PlatformBuilder(metaclass=Singleton):
         for bus in schema.settings.buses:
             bus_kwargs = {}
             for item in bus:
-                element = self._load_element(item=item)
+                settings = SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
+                if item.category == "resonator":
+                    element = self._load_resonator(settings=settings)
+                element = self._load_element(settings=settings)
                 bus_kwargs[item.category.value] = element
 
             buses.append(Bus(**bus_kwargs))
 
         self.platform.load_buses(buses=buses)
 
-    def _load_element(self, item: Settings):
-        """Load class instance of the corresponding item.
+    def _load_element(self, settings: dict):
+        """Load class instance of the corresponding category.
 
         Args:
-            item (Settings): Class describing the info of the item to load.
+            settings (dict): Settings of the category object.
 
         Returns:
-            (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the item.
+            (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
         """
-        filename = f"""{item.name}_{item.id}"""
-        settings = SETTINGS_MANAGER.load(filename=filename)
-        element = NameHashTable.get(settings["name"])
-        return element(settings)
+        element_type = NameHashTable.get(settings["name"])
+        return element_type(settings)
+
+    def _load_resonator(self, settings: dict) -> Resonator:
+        """Load instance of qubits connected to the resonator, then load instance of Resonator class.
+
+        Args:
+            item (Settings): Class describing the info of the resonator to load.
+
+        Returns:
+            Resonator: Class instance of the resonator.
+        """
+        # Load qubits
+        qubits = []
+        for id_ in settings["qubits"]:
+            qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.name}_{id_}""")
+            qubit = self._load_element(settings=qubit_settings)
+            qubits.append(qubit)
+        settings["qubits"] = qubits
+        # Load resonator
+        resonator: Resonator = self._load_element(settings=settings)
+        return resonator

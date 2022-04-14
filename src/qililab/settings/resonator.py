@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
+from qililab.qubit import Qubit
 from qililab.settings.settings import Settings
 
 
@@ -16,4 +17,4 @@ class ResonatorSettings(Settings):
         qubits (List[int]): List containing the IDs of the qubits connected to the resonator.
     """
 
-    qubits: List[int]
+    qubits: List[Qubit]

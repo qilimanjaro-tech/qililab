@@ -1,4 +1,4 @@
-id: 0
+id_: 0
 name: platform  # unique name
 category: platform  # general name
 number_qubits: 1
