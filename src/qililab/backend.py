@@ -34,7 +34,7 @@ class QililabBackend(NumpyBackend):
         Args:
             name (str): Name of the platform.
         """
-        self.platform = PLATFORM_BUILDER.build(name=platform)
+        self.platform = PLATFORM_BUILDER.build(platform_name=platform)
 
     def get_platform(self) -> str:
         """

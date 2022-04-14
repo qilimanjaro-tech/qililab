@@ -19,7 +19,7 @@ def load_platform():
     qibo.set_backend(backend="qililab", platform="platform_0")
     print(f"Platform name: {qibo.K.platform}")
     # Using PLATFORM_BUILDER
-    platform = PLATFORM_BUILDER.build(name="platform_0")
+    platform = PLATFORM_BUILDER.build(platform_name="platform_0")
     print(f"Platform name: {platform}")
 
 
