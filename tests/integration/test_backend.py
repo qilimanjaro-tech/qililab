@@ -63,7 +63,7 @@ class TestBackend:
         """
         backend.set_platform("platform_0")
         name = backend.get_platform()
-        assert name == "platform_0"
+        assert name == "platform"
 
     def test_circuit_class(self, backend: QililabBackend):
         """Test the circuit_class method of the QililabBackend class.
