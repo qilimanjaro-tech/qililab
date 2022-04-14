@@ -18,8 +18,8 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
     settings: SGS100ASettings
 
-    def __init__(self, name: str, settings: dict):
-        super().__init__(name=name)
+    def __init__(self, settings: dict):
+        super().__init__()
         self.settings = SGS100ASettings(**settings)
 
     @SignalGenerator.CheckConnected
@@ -43,4 +43,4 @@ class SGS100A(SignalGenerator):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(self.settings.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")

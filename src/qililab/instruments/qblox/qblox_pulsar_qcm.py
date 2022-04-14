@@ -9,6 +9,6 @@ class QbloxPulsarQCM(QbloxPulsar, QubitControl):
 
     settings: QbloxPulsarQCMSettings
 
-    def __init__(self, name: str, settings: dict):
-        super().__init__(name=name)
+    def __init__(self, settings: dict):
+        super().__init__()
         self.settings = QbloxPulsarQCMSettings(**settings)

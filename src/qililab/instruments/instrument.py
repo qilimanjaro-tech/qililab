@@ -40,8 +40,7 @@ class Instrument(ABC):
                 raise AttributeError("Instrument is not connected")
             return self._method(ref, *args, **kwargs)
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self):
         self._connected = False
 
     def connect(self):

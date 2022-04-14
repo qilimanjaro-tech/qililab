@@ -16,9 +16,6 @@ class QbloxPulsar(Instrument):
     device: Pulsar
     settings: QbloxPulsarSettings
 
-    def __init__(self, name: str):
-        super().__init__(name=name)
-
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         super().connect()
@@ -77,4 +74,4 @@ class QbloxPulsar(Instrument):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        self.device = Pulsar(name=self.name, identifier=self.settings.ip)
+        self.device = Pulsar(name=self.settings.name, identifier=self.settings.ip)
