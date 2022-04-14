@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from qililab.settings.settings import Settings
 
@@ -12,11 +13,7 @@ class ResonatorSettings(Settings):
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
         "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
+        qubits (List[int]): List containing the IDs of the qubits connected to the resonator.
     """
 
-    pi_pulse_amplitude: float  # V
-    pi_pulse_duration: float  # ns
-    pi_pulse_frequency: float  # Hz
-    qubit_frequency: float  # Hz
-    min_voltage: float  # V
-    max_voltage: float  # V
+    qubits: List[int]
