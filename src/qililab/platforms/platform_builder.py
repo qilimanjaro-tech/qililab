@@ -55,8 +55,6 @@ class PlatformBuilder(metaclass=Singleton):
             bus_kwargs = {}
             for item in bus:
                 settings = SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
-                if item.category == "resonator":
-                    element = self._load_resonator(settings=settings)
                 element = self._load_element(settings=settings)
                 bus_kwargs[item.category.value] = element
 
@@ -73,25 +71,25 @@ class PlatformBuilder(metaclass=Singleton):
         Returns:
             (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
         """
+        if settings["category"] == "resonator":
+            settings = self._load_resonator_qubits(settings=settings)
         element_type = NameHashTable.get(settings["name"])
+
         return element_type(settings)
 
-    def _load_resonator(self, settings: dict) -> Resonator:
-        """Load instance of qubits connected to the resonator, then load instance of Resonator class.
+    def _load_resonator_qubits(self, settings: dict) -> dict:
+        """Load instance of qubits connected to the resonator and add them in the settings dictionary.
 
         Args:
-            item (Settings): Class describing the info of the resonator to load.
+            settings (dict): Dictionary of the resonator settings.
 
         Returns:
-            Resonator: Class instance of the resonator.
+            settings: Dictionary of the resonator settings.
         """
-        # Load qubits
         qubits = []
         for id_ in settings["qubits"]:
-            qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.name}_{id_}""")
+            qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{id_}""")
             qubit = self._load_element(settings=qubit_settings)
             qubits.append(qubit)
         settings["qubits"] = qubits
-        # Load resonator
-        resonator: Resonator = self._load_element(settings=settings)
-        return resonator
+        return settings
