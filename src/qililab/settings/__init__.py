@@ -1,5 +1,14 @@
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
+from .instruments.qblox.qblox_pulsar import QbloxPulsarSettings
+from .instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from .instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from .instruments.qubit_control import QubitControlSettings
+from .instruments.rohde_schwarz.sgs100a import SGS100ASettings
+from .platform import PlatformSettings
+from .qubit import QubitCalibrationSettings
+from .schema import SchemaSettings
+from .settings import Settings
 from .settings_manager import SettingsManager
 
 # FIXME: Turn foldername into a variable

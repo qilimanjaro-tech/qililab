@@ -1,10 +1,7 @@
-from dataclasses import dataclass
-
 from qililab.schema import Schema
-from qililab.settings.platform import PlatformSettings
+from qililab.settings import PlatformSettings
 
 
-@dataclass
 class Platform:
     """Platform object that describes setup used to control quantum devices.
 
@@ -13,10 +10,10 @@ class Platform:
         settings (Settings): Dataclass containing the settings of the platform.
     """
 
-    name: str
-    settings: PlatformSettings
-    schema: Schema
-    # buses: Buses
+    def __init__(self, name: str, settings: dict, schema: Schema):
+        self.name = name
+        self.settings = PlatformSettings(**settings)
+        self.schema = schema
 
     def __str__(self) -> str:
         """String representation of the platform

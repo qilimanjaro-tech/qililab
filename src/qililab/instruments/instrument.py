@@ -1,8 +1,10 @@
 """Instrument class"""
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import Callable
 
-from qililab.constants import INSTRUMENT_TYPES
+from qililab.settings import Settings
+from qililab.typings import Device
 
 
 class Instrument(ABC):
@@ -13,11 +15,18 @@ class Instrument(ABC):
         name (str): Name of the instrument.
     """
 
+    device: Device  # a subtype of device must be specified by the subclass
+    settings: Settings  # a subtype of settings must be specified by the subclass
+
     class CheckConnected:
         """Property used to check if the instrument is connected."""
 
         def __init__(self, method: Callable):
             self._method = method
+
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
 
         def __call__(self, ref: "Instrument", *args, **kwargs):
             """
@@ -27,33 +36,20 @@ class Instrument(ABC):
             Raises:
                 AttributeError: If the instrument is not connected.
             """
-            if not ref._connected or ref.device is None:
+            if not ref._connected or not hasattr(ref, "device"):
                 raise AttributeError("Instrument is not connected")
-            return self._method(*args, **kwargs)
+            return self._method(ref, *args, **kwargs)
 
     def __init__(self, name: str):
         self.name = name
-        self.device: INSTRUMENT_TYPES | None = None
-        self._connected: bool = False
+        self._connected = False
 
-    @abstractmethod
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
-
-    @abstractmethod
-    @CheckConnected
-    def start(self):
-        """Start instrument."""
-
-    @abstractmethod
-    @CheckConnected
-    def setup(self):
-        """Set instrument settings."""
-
-    @abstractmethod
-    @CheckConnected
-    def stop(self):
-        """Stop instrument."""
+        if self._connected:
+            raise ValueError("Instrument is already connected")
+        self._initialize_device()
+        self._connected = True
 
     @CheckConnected
     def close(self):
@@ -61,3 +57,19 @@ class Instrument(ABC):
         self.stop()
         self.device.close()
         self._connected = False
+
+    @abstractmethod
+    def start(self):
+        """Start instrument."""
+
+    @abstractmethod
+    def setup(self):
+        """Set instrument settings."""
+
+    @abstractmethod
+    def stop(self):
+        """Stop instrument."""
+
+    @abstractmethod
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""

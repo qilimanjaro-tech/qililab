@@ -8,32 +8,32 @@ from qililab.gates import I, X, Y, Z
 from qililab.platforms.platform import Platform
 
 
-@pytest.fixture
-def backend() -> QililabBackend:
-    """Test of the QililabBackend class instantiation.
-    This function is used as input to other backend tests.
+@pytest.fixture(name="backend")
+def fixture_backend() -> QililabBackend:
+    """Load QililabBackend using Qibo.
 
     Returns:
         QililabBackend: Instance of the QililabBackend class.
     """
-    return QililabBackend()
+    # FIXME: Need to add backend in qibo's profiles.yml file
+    backend = {
+        "name": "qililab",
+        "driver": "qililab.backend.QililabBackend",
+        "minimum_version": "0.0.1.dev0",
+        "is_hardware": True,
+    }
+    qibo.K.profile["backends"].append(backend)
+    qibo.set_backend(backend="qililab", platform="platform_0")
+    return qibo.K.active_backend
 
 
 class TestBackend:
     """Unit tests checking the QililabBackend attributes and methods"""
 
-    def test_set_backend(self):
+    def test_set_backend(self, backend: QililabBackend):
         """Test of the initialization of the qililab backend and qili platform using qibo.
         Run the qibo.set_backend function to activate qililab backend and qili platform."""
-        # FIXME: Need to add backend in qibo's profiles.yml file
-        backend = {
-            "name": "qililab",
-            "driver": "qililab.backend.QililabBackend",
-            "minimum_version": "0.0.1.dev0",
-            "is_hardware": True,
-        }
-        qibo.K.profile["backends"].append(backend)
-        qibo.set_backend(backend="qililab", platform="platform_0")
+        assert isinstance(backend, QililabBackend)
         assert isinstance(qibo.K.active_backend, QililabBackend)
         assert isinstance(qibo.K.platform, Platform)
 

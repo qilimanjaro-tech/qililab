@@ -11,7 +11,6 @@ class QubitControlSettings(InstrumentSettings):
     Args:
         name (str): Name of the settings.
         category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
-        location (str): Path to location of settings file.
         ip (str): IP address of the instrument.
         gain (float): Gain step used by the sequencer.
     """

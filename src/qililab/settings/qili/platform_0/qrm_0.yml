@@ -9,7 +9,7 @@ hardware_average_enabled: true
 start_integrate: 130
 sampling_rate: 1000000000
 integration_length: 2000
-mode: ssb
+integration_mode: ssb
 sequence_timeout: 1
 acquisition_timeout: 1
 acquisition_name: "single"

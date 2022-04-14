@@ -1,10 +1,7 @@
 """Qblox pulsar class"""
-from qblox_instruments import Pulsar
-
 from qililab.instruments.instrument import Instrument
-from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
-from qililab.settings.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from qililab.settings import QbloxPulsarSettings
+from qililab.typings import Pulsar
 
 
 class QbloxPulsar(Instrument):
@@ -16,39 +13,29 @@ class QbloxPulsar(Instrument):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
+    device: Pulsar
+    settings: QbloxPulsarSettings
+
     def __init__(self, name: str):
         super().__init__(name=name)
-        self.device: Pulsar
-        self.settings = self.load_settings()
-
-    def load_settings(self):
-        """Load instrument settings"""
-        settings = SETTINGS_MANAGER.load(filename=self.name)
-        # FIXME: Can't use parent class (QbloxPulsarSettings) in isinstance, because
-        # then mypy can't infer the type of 'hardware_average_enabled' int the QbloxPulsarQRM class
-        if not isinstance(settings, (QbloxPulsarQRMSettings, QbloxPulsarQCMSettings)):
-            raise ValueError(
-                f"""Using instance of class {type(settings).__name__} instead of class QbloxPulsarSettings."""
-            )
-        return settings
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
-        if not self._connected:
-            # TODO: We need to update the firmware of the instruments to be able to connect
-            self.device = Pulsar(name=self.name, identifier=self.settings.ip)
-            self._connected = True
-            self.initial_setup()
+        super().connect()
+        self.initial_setup()
 
+    @Instrument.CheckConnected
     def start(self):
         """Execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
+    @Instrument.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
 
+    @Instrument.CheckConnected
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
@@ -72,14 +59,12 @@ class QbloxPulsar(Instrument):
             sequence_path (str): Path to the json file containing the waveforms,
             weights, acquisitions and program of the sequence.
         """
-        self.device.sequencer0.sequence(sequence_path)
-        self.device.sequencer1.sequence(sequence_path)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").sequence(sequence_path)
 
     def _set_gain(self):
         """Set gain of sequencer for all paths."""
-        sequencer = self.settings.sequencer
-        getattr(self.device, f"sequencer{sequencer}_gain_awg_path0")(self.settings.gain)
-        getattr(self.device, f"sequencer{sequencer}_gain_awg_path1")(self.settings.gain)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path0(self.settings.gain)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path1(self.settings.gain)
 
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
@@ -87,5 +72,9 @@ class QbloxPulsar(Instrument):
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
-        sequencer = self.settings.sequencer
-        getattr(self.device, f"sequencer{sequencer}_sync_en")(self.settings.sync_enabled)
+        getattr(self.device, f"sequencer{self.settings.sequencer}").sync_en(self.settings.sync_enabled)
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+        # TODO: We need to update the firmware of the instruments to be able to connect
+        self.device = Pulsar(name=self.name, identifier=self.settings.ip)
