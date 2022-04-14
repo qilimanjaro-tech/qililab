@@ -2,6 +2,4 @@ id: 0
 name: resonator
 category: resonator
 qubits:
-  qubit_0:
-    id: 0
-    name: qubit
+  - 0  # id of the qubit connected to the resonator
