@@ -2,12 +2,11 @@ from qililab.buses import Bus, Buses
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
 from qililab.platforms.platform import Platform
-from qililab.resonator import Resonator
+from qililab.platforms.utils.name_hash_table import NameHashTable
 from qililab.schema import Schema
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import CategorySettings
 from qililab.utils import Singleton
-from qililab.utils.name_hash_table import NameHashTable
 
 
 class PlatformBuilder(metaclass=Singleton):
