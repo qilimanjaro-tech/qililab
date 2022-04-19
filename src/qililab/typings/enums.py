@@ -24,6 +24,7 @@ class CategorySettings(Enum):
     SIGNAL_GENERATOR = "signal_generator"
     SCHEMA = "schema"
     RESONATOR = "resonator"
+    BUSES = "buses"
 
 
 class ReferenceClock(Enum):

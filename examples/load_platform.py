@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import qibo
 
 from qililab import PLATFORM_BUILDER
@@ -19,7 +21,8 @@ def load_platform():
     qibo.set_backend(backend="qililab", platform="platform_0")
     print(f"Platform name: {qibo.K.platform}")
     # Using PLATFORM_BUILDER
-    platform = PLATFORM_BUILDER.build(platform_name="platform_0")
+    filepath = Path(__file__).parent / "platform.yml"
+    platform = PLATFORM_BUILDER.build(platform_name="platform_0", filepath=filepath)
     platform.dump()
     print(f"Platform name: {platform}")
 

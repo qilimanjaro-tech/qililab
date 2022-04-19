@@ -1,3 +1,5 @@
+import yaml
+
 from qililab.buses import Bus, Buses
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
@@ -12,22 +14,27 @@ from qililab.utils import Singleton
 class PlatformBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    platform_name: str
     platform: Platform
+    yaml_data: dict
+    _load_from_yaml: bool = False
 
-    def build(self, platform_name: str) -> Platform:
+    def build(self, platform_name: str, filepath: str | None = None) -> Platform:
         """Build platform.
 
         Args:
-            name (str): Name of the platform.
+            platform_name (str): Name of the platform.
 
         Returns:
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform %s", platform_name)
 
-        self.platform_name = platform_name
-        SETTINGS_MANAGER.platform_name = platform_name
+        if filepath is None:
+            SETTINGS_MANAGER.platform_name = platform_name
+        else:
+            self._load_from_yaml = True
+            with open(file=filepath, mode="r", encoding="utf-8") as file:
+                self.yaml_data = yaml.safe_load(file)
 
         self._build_platform()
         self._build_schema()
@@ -37,23 +44,31 @@ class PlatformBuilder(metaclass=Singleton):
 
     def _build_platform(self):
         """Build platform"""
-        platform_settings = SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+        if self._load_from_yaml:
+            platform_settings = self.yaml_data[CategorySettings.PLATFORM.value]
+        else:
+            platform_settings = SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
         self.platform = Platform(settings=platform_settings)
 
     def _build_schema(self):
         """Build platform schema"""
-        schema_settings = SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
-        schema = Schema(settings=schema_settings)
-        self.platform.schema = schema
+        if self._load_from_yaml:
+            schema_settings = self.yaml_data[CategorySettings.SCHEMA.value]
+        else:
+            schema_settings = SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
+        self.platform.schema = Schema(settings=schema_settings)
 
     def _build_buses(self):
         """Build platform buses"""
         buses = Buses()
         schema = self.platform.schema
-        for bus in schema.settings.buses:
+        for bus_idx, bus in enumerate(schema.settings.buses):
             bus_kwargs = {}
-            for item in bus:
-                settings = SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
+            for item_idx, item in enumerate(bus):
+                if self._load_from_yaml:
+                    settings = self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
+                else:
+                    settings = SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
                 element = self._load_element(settings=settings)
                 bus_kwargs[item.category.value] = element
 
@@ -70,7 +85,7 @@ class PlatformBuilder(metaclass=Singleton):
         Returns:
             (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
         """
-        if settings["category"] == "resonator":
+        if settings["category"] == CategorySettings.RESONATOR.value:
             settings = self._load_resonator_qubits(settings=settings)
         element_type = NameHashTable.get(settings["name"])
 
@@ -87,7 +102,10 @@ class PlatformBuilder(metaclass=Singleton):
         """
         qubits = []
         for id_ in settings["qubits"]:
-            qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{id_}""")
+            if self._load_from_yaml:
+                qubit_settings = id_
+            else:
+                qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{id_}""")
             qubit = self._load_element(settings=qubit_settings)
             qubits.append(qubit)
         settings["qubits"] = qubits
