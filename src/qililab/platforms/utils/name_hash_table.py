@@ -8,7 +8,7 @@ from qililab.resonator import Resonator
 
 
 class NameHashTable:
-    """Hash table that loads a specific class given a category name."""
+    """Hash table that loads a specific class given an object's name."""
 
     platform = Platform
     qblox_qrm = QbloxPulsarQRM
