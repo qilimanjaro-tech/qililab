@@ -20,6 +20,7 @@ def load_platform():
     print(f"Platform name: {qibo.K.platform}")
     # Using PLATFORM_BUILDER
     platform = PLATFORM_BUILDER.build(platform_name="platform_0")
+    platform.dump()
     print(f"Platform name: {platform}")
 
 

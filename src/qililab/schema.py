@@ -1,5 +1,8 @@
 """Schema class"""
+from dataclasses import asdict
+
 from qililab.settings.schema import SchemaSettings
+from qililab.typings import dict_factory
 
 
 class Schema:
@@ -27,3 +30,7 @@ class Schema:
             for element in bus:
                 print(f"|{element.name}_{element.id_}", end="|------")
             print()
+
+    def asdict(self):
+        """Return all Schema information as a dictionary."""
+        return asdict(self.settings, dict_factory=dict_factory)
