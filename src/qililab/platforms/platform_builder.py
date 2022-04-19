@@ -83,7 +83,7 @@ class PlatformBuilder(metaclass=Singleton):
             settings (dict): Dictionary of the resonator settings.
 
         Returns:
-            settings: Dictionary of the resonator settings.
+            dict: Dictionary of the resonator settings.
         """
         qubits = []
         for id_ in settings["qubits"]:
