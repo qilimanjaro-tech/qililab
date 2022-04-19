@@ -9,7 +9,7 @@ class HardwareGate(ABC):
 
     # TODO: Replace 'object' with PulseSequence class
     @abstractmethod
-    def to_sequence(self, sequence: object) -> None:
+    def to_sequence(self, sequence: object):
         """Translates the gate to pulses and adds them to the given PulseSequence.
 
         Args:

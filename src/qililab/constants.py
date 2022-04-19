@@ -1,2 +1,4 @@
+"""Constants"""
+
 DEFAULT_PLATFORM_FILENAME = "platform"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"

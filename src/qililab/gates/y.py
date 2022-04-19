@@ -13,7 +13,7 @@ class Y(HardwareGate):
 
     q: int
 
-    def to_sequence(self, sequence: object) -> None:
+    def to_sequence(self, sequence: object):
         """Translates the gate to pulses and adds them to the given PulseSequence.
 
         Args:

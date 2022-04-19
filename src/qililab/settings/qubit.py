@@ -8,6 +8,8 @@ class QubitCalibrationSettings(Settings):
     """Contains the settings obtained from calibrating the qubit.
 
     Args:
+        name (str): Name of the settings.
+        category (str): Name of the category. Options are "platform", "instrument", "qubit" and "resonator".
         pi_pulse_amplitude (float): Voltage amplitude (in V) used to generate a pi pulse.
         pi_pulse_duration (float): Duration of the pi pulse.
         pi_pulse_freq (float): Frequency of the pi pulse.

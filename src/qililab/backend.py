@@ -1,12 +1,11 @@
-from dataclasses import dataclass
-from typing import ClassVar, Type
+from dataclasses import dataclass, field
+from typing import Type
 
 from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PLATFORM_BUILDER
-from qililab.platforms.platform import Platform
+from qililab.platforms import PLATFORM_BUILDER, Platform
 
 
 @dataclass
@@ -22,14 +21,14 @@ class QililabBackend(NumpyBackend):
 
     name: str
     is_hardware: bool
+    platform: Platform = field(init=False)
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
-        self.platform: Platform
         self.name = "qililab"
         self.is_hardware = True
 
-    def set_platform(self, platform: str) -> None:
+    def set_platform(self, platform: str):
         """Set platform for controlling quantum devices.
 
         Args:

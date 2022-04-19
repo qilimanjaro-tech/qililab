@@ -13,7 +13,7 @@ qibo.K.profile["backends"].append(backend)
 # ------------------------------------------------------
 
 
-def load_platform() -> None:
+def load_platform():
     """Load the platform 'platform_0' from the settings folder."""
     # Using qibo (needed when using qibo circuits)
     qibo.set_backend(backend="qililab", platform="platform_0")

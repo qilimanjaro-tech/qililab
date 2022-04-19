@@ -1,8 +1,12 @@
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
-from .hashtable import SettingsHashTable
-from .platform_settings import PlatformSettings
-from .qubit_calibration_settings import QubitCalibrationSettings
+from .instruments.qblox.qblox_pulsar import QbloxPulsarSettings
+from .instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
+from .instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
+from .instruments.qubit_control import QubitControlSettings
+from .instruments.rohde_schwarz.sgs100a import SGS100ASettings
+from .platform import PlatformSettings
+from .qubit import QubitCalibrationSettings
 from .settings import Settings
 from .settings_manager import SettingsManager
 
