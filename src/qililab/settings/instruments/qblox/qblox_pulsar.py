@@ -18,7 +18,7 @@ class QbloxPulsarSettings(InstrumentSettings):
         sync_enabled (bool): Enable synchronization over multiple instruments.
     """
 
-    reference_clock: str | ReferenceClock
+    reference_clock: ReferenceClock
     sequencer: int
     sync_enabled: bool
 

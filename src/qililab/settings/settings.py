@@ -14,8 +14,8 @@ class Settings(ABC):
     """
 
     name: str
-    category: str | CategorySettings
+    category: CategorySettings
 
     def __post_init__(self):
-        """Cast category to its corresponding Enum class"""
+        """Cast category attribute to its corresponding Enum."""
         self.category = CategorySettings(self.category)
