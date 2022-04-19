@@ -44,7 +44,7 @@ class PlatformBuilder(metaclass=Singleton):
         """Build platform schema"""
         schema_settings = SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
         schema = Schema(settings=schema_settings)
-        self.platform.load_schema(schema=schema)
+        self.platform.schema = schema
 
     def _build_buses(self):
         """Build platform buses"""
@@ -59,7 +59,7 @@ class PlatformBuilder(metaclass=Singleton):
 
             buses.append(Bus(**bus_kwargs))
 
-        self.platform.load_buses(buses=buses)
+        self.platform.buses = buses
 
     def _load_element(self, settings: dict):
         """Load class instance of the corresponding category.

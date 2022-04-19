@@ -17,22 +17,6 @@ class Platform:
     def __init__(self, settings: dict):
         self.settings = PlatformSettings(**settings)
 
-    def load_schema(self, schema: Schema):
-        """Load schema
-
-        Args:
-            schema (Schema): Schema of the platform.
-        """
-        self.schema = schema
-
-    def load_buses(self, buses: Buses):
-        """Load buses
-
-        Args:
-            buses (Buses): Container of buses of the platform.
-        """
-        self.buses = buses
-
     @property
     def name(self):
         """Return name from settings"""
