@@ -32,12 +32,12 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings, QubitReadoutSettings):
         acquisition_name (str): Name of the acquisition saved in the sequencer.
     """
 
-    acquire_trigger_mode: str | AcquireTriggerMode
+    acquire_trigger_mode: AcquireTriggerMode
     hardware_average_enabled: bool
     start_integrate: int
     sampling_rate: int
     integration_length: int
-    integration_mode: str | IntegrationMode
+    integration_mode: IntegrationMode
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
     acquisition_name: str

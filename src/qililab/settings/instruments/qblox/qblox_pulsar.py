@@ -21,7 +21,7 @@ class QbloxPulsarSettings(InstrumentSettings):
         gain (float): Gain step used by the sequencer.
     """
 
-    reference_clock: str | ReferenceClock
+    reference_clock: ReferenceClock
     sequencer: int
     sync_enabled: bool
     gain: float

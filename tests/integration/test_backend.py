@@ -5,7 +5,7 @@ from qibo.models import Circuit
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
 from qililab.gates import I, X, Y, Z
-from qililab.platforms import Platform
+from qililab.platforms.platform import Platform
 
 
 @pytest.fixture(name="backend")
