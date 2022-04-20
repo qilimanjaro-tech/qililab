@@ -40,6 +40,5 @@ class TestSettingsManager:
 
     def test_load_unknown_file(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with an unknown file."""
-        mock_load.side_effect = FileNotFoundError
         with pytest.raises(FileNotFoundError):
             SETTINGS_MANAGER.load(filename="unknown_file")

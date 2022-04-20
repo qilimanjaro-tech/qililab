@@ -42,7 +42,6 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        mock_load.side_effect = FileNotFoundError
         with pytest.raises(NotImplementedError):
             backend.set_platform("unknown_platform")
 
