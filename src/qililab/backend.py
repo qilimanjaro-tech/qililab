@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from typing import Type
 
 from qibo.backends.numpy import NumpyBackend
@@ -8,7 +7,6 @@ from qililab.circuit import HardwareCircuit
 from qililab.platforms import PLATFORM_BUILDER, Platform
 
 
-@dataclass
 class QililabBackend(NumpyBackend):
     """Hardware backend used to execute circuits on specified lab platforms
 
@@ -21,7 +19,7 @@ class QililabBackend(NumpyBackend):
 
     name: str
     is_hardware: bool
-    platform: Platform = field(init=False)
+    platform: Platform
 
     def __init__(self):
         super().__init__()
