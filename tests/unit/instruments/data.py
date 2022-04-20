@@ -1,0 +1,39 @@
+# data.py
+""" Data to use alongside the test suite. """
+from typing import Dict
+
+qcm_0_settings_sample = {
+    "category": "qblox_qcm",
+    "ip": "192.168.0.3",
+    "reference_clock": "internal",
+    "sequencer": 0,
+    "sync_enabled": True,
+    "gain": 1,
+}
+
+qrm_0_settings_sample = {
+    "category": "qblox_qrm",
+    "ip": "192.168.0.4",
+    "reference_clock": "external",
+    "sequencer": 0,
+    "sync_enabled": True,
+    "gain": 0.5,
+    "acquire_trigger_mode": "sequencer",
+    "hardware_average_enabled": True,
+    "start_integrate": 130,
+    "sampling_rate": 1000000000,
+    "integration_length": 2000,
+    "integration_mode": "ssb",
+    "sequence_timeout": 1,
+    "acquisition_timeout": 1,
+    "acquisition_name": "single",
+}
+
+resonator_0_settings_sample: Dict[str, str | float | int] = {}
+
+rohde_schwarz_0_settings_sample = {
+    "category": "rohde_schwarz",
+    "ip": "192.168.0.10",
+    "frequency": 3644000000.0,
+    "power": 15,
+}
