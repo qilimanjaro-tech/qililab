@@ -11,8 +11,6 @@ from qililab.settings.settings_manager import SettingsManager
 
 from .data import platform_settings_sample, qubit_0_settings_sample
 
-SETTINGS_MANAGER.platform_name = "platform_0"
-
 
 @patch("qililab.settings.settings_manager.yaml.safe_load")
 class TestSettingsManager:
@@ -20,6 +18,7 @@ class TestSettingsManager:
 
     def test_singleton(self, mock_load: MagicMock):
         """Test that SettingsManager is a singleton."""
+        SETTINGS_MANAGER.platform_name = "platform_0"
         settings_manager = SettingsManager(foldername="qili")
         mock_load.assert_not_called()
         assert id(settings_manager) == id(SETTINGS_MANAGER)
@@ -27,6 +26,7 @@ class TestSettingsManager:
     def test_load_default_platform_settings(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with the default platform settings.
         Assert that errors are raised correctly."""
+        SETTINGS_MANAGER.platform_name = "platform_0"
         mock_load.return_value = platform_settings_sample
         settings = SETTINGS_MANAGER.load(filename="platform")
         PlatformSettings(**settings)
@@ -34,6 +34,7 @@ class TestSettingsManager:
     def test_load_default_qubit_settings(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with the default qubit settings.
         Assert that errors are raised correctly."""
+        SETTINGS_MANAGER.platform_name = "platform_0"
         mock_load.return_value = qubit_0_settings_sample
         settings = SETTINGS_MANAGER.load(filename="qubit_0")
         QubitCalibrationSettings(**settings)
@@ -42,3 +43,4 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with an unknown file."""
         with pytest.raises(FileNotFoundError):
             SETTINGS_MANAGER.load(filename="unknown_file")
+        mock_load.assert_not_called()
