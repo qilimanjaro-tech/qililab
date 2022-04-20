@@ -5,18 +5,21 @@ import pytest
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 
-SETTINGS_MANAGER.platform_name = "platform_0"
+from .data import rohde_schwarz_0_settings_sample
 
 
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-def fixture_rohde_schwarz(mock_pulsar: MagicMock):
+@patch("qililab.settings.settings_manager.yaml.load", return_value=rohde_schwarz_0_settings_sample)
+def fixture_rohde_schwarz(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of SGS100A class"""
+    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
     rohde_schwarz_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
+    mock_load.assert_called_once()
     rohde_schwarz = SGS100A(name="rohde_schwarz", settings=rohde_schwarz_settings)
     rohde_schwarz.connect()
     return rohde_schwarz
@@ -51,3 +54,9 @@ class TestSGS100A:
         rohde_schwarz.close()
         rohde_schwarz.device.off.assert_called_once()  # type: ignore
         rohde_schwarz.device.close.assert_called_once()  # type: ignore
+
+    def test_not_connected_attribute_error(self, rohde_schwarz: SGS100A):
+        """Test that calling a method when the device is not connected raises an AttributeError."""
+        rohde_schwarz.close()
+        with pytest.raises(AttributeError):
+            rohde_schwarz.start()

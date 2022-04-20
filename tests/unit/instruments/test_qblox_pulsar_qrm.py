@@ -5,13 +5,15 @@ import pytest
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
-SETTINGS_MANAGER.platform_name = "platform_0"
+from .data import qrm_0_settings_sample
 
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-def fixture_qrm(mock_pulsar: MagicMock):
+@patch("qililab.settings.settings_manager.yaml.load", return_value=qrm_0_settings_sample)
+def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQRM class"""
+    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(
@@ -27,6 +29,7 @@ def fixture_qrm(mock_pulsar: MagicMock):
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
     # connect to instrument
     qrm_settings = SETTINGS_MANAGER.load(filename="qrm_0")
+    mock_load.assert_called_once()
     qrm = QbloxPulsarQRM(name="qrm_0", settings=qrm_settings)
     qrm.connect()
     return qrm
@@ -99,3 +102,9 @@ class TestQbloxPulsarQRM:
         qrm.close()
         qrm.device.stop_sequencer.assert_called_once()
         qrm.device.close.assert_called_once()
+
+    def test_not_connected_attribute_error(self, qrm: QbloxPulsarQRM):
+        """Test that calling a method when the device is not connected raises an AttributeError."""
+        qrm.close()
+        with pytest.raises(AttributeError):
+            qrm.start()
