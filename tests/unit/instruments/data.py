@@ -1,7 +1,5 @@
 # data.py
 """ Data to use alongside the test suite. """
-from typing import Dict
-
 qcm_0_settings_sample = {
     "id_": 0,
     "name": "qblox_qcm",
@@ -32,8 +30,6 @@ qrm_0_settings_sample = {
     "acquisition_timeout": 1,
     "acquisition_name": "single",
 }
-
-resonator_0_settings_sample: Dict[str, str | float | int] = {}
 
 rohde_schwarz_0_settings_sample = {
     "id_": 0,

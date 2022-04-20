@@ -1,4 +1,4 @@
-import yaml
+from typing import Dict
 
 from qililab.buses import Bus, Buses
 from qililab.config import logger
@@ -6,7 +6,7 @@ from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
 from qililab.platforms.platform import Platform
 from qililab.platforms.utils.name_hash_table import NameHashTable
 from qililab.schema import Schema
-from qililab.settings import SETTINGS_MANAGER
+from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 from qililab.utils import Singleton
 
@@ -15,10 +15,8 @@ class PlatformBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
     platform: Platform
-    yaml_data: dict
-    _load_from_yaml: bool = False
 
-    def build(self, platform_name: str, filepath: str | None = None) -> Platform:
+    def build(self, platform_name: str) -> Platform:
         """Build platform.
 
         Args:
@@ -29,12 +27,7 @@ class PlatformBuilder(metaclass=Singleton):
         """
         logger.info("Building platform %s", platform_name)
 
-        if filepath is None:
-            SETTINGS_MANAGER.platform_name = platform_name
-        else:
-            self._load_from_yaml = True
-            with open(file=filepath, mode="r", encoding="utf-8") as file:
-                self.yaml_data = yaml.safe_load(file)
+        SETTINGS_MANAGER.platform_name = platform_name
 
         self._build_platform()
         self._build_schema()
@@ -43,40 +36,47 @@ class PlatformBuilder(metaclass=Singleton):
         return self.platform
 
     def _build_platform(self):
-        """Build platform"""
-        if self._load_from_yaml:
-            platform_settings = self.yaml_data[CategorySettings.PLATFORM.value]
-        else:
-            platform_settings = SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+        """Build platform."""
+        platform_settings = self._load_platform_settings()
         self.platform = Platform(settings=platform_settings)
 
+    def _load_platform_settings(self):
+        """Load platform settings."""
+        return SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+
     def _build_schema(self):
-        """Build platform schema"""
-        if self._load_from_yaml:
-            schema_settings = self.yaml_data[CategorySettings.SCHEMA.value]
-        else:
-            schema_settings = SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
+        """Build platform schema."""
+        schema_settings = self._load_schema_settings()
         self.platform.schema = Schema(settings=schema_settings)
 
+    def _load_schema_settings(self):
+        """Load schema settings."""
+        return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
+
     def _build_buses(self):
-        """Build platform buses"""
+        """Build platform buses."""
         buses = Buses()
         schema = self.platform.schema
         for bus_idx, bus in enumerate(schema.settings.buses):
             bus_kwargs = {}
             for item_idx, item in enumerate(bus):
-                if self._load_from_yaml:
-                    settings = self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
-                else:
-                    settings = SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
-                element = self._load_element(settings=settings)
+                settings = self._load_bus_item_settings(item=item, bus_idx=bus_idx, item_idx=item_idx)
+                element = self._load_bus_element(settings=settings)
                 bus_kwargs[item.category.value] = element
 
             buses.append(Bus(**bus_kwargs))
 
         self.platform.buses = buses
 
-    def _load_element(self, settings: dict):
+    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
+        """Load settings of the corresponding bus item.
+
+        Args:
+            element_settings (Dict[str, int  |  float  |  str]): Dictionary describing the bus element.
+        """
+        return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
+
+    def _load_bus_element(self, settings: dict):
         """Load class instance of the corresponding category.
 
         Args:
@@ -101,12 +101,17 @@ class PlatformBuilder(metaclass=Singleton):
             dict: Dictionary of the resonator settings.
         """
         qubits = []
-        for id_ in settings["qubits"]:
-            if self._load_from_yaml:
-                qubit_settings = id_
-            else:
-                qubit_settings = SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{id_}""")
-            qubit = self._load_element(settings=qubit_settings)
+        for qubit_dict in settings["qubits"]:
+            qubit_settings = self._load_qubit_settings(qubit_dict=qubit_dict)
+            qubit = self._load_bus_element(settings=qubit_settings)
             qubits.append(qubit)
         settings["qubits"] = qubits
         return settings
+
+    def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
+        """Load qubit settings.
+
+        Args:
+            qubit_dict (Dict[str, int | float | str]): Dictionary containing the id of the qubit.
+        """
+        return SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{qubit_dict["id_"]}""")

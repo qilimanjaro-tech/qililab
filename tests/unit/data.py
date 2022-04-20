@@ -80,7 +80,7 @@ resonator_0_settings_sample = {
     "id_": 0,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [0],  # id of the qubit connected to the resonator
+    "qubits": [{"id_": 0}],  # id of the qubit connected to the resonator
 }
 
 rohde_schwarz_0_settings_sample = {
