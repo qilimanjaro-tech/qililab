@@ -10,7 +10,7 @@ from .data import qrm_0_settings_sample
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.load", return_value=qrm_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qrm_0_settings_sample)
 def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQRM class"""
     SETTINGS_MANAGER.platform_name = "platform_0"

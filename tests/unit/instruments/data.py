@@ -3,7 +3,9 @@
 from typing import Dict
 
 qcm_0_settings_sample = {
-    "category": "qblox_qcm",
+    "id_": 0,
+    "name": "qblox_qcm",
+    "category": "qubit_control",
     "ip": "192.168.0.3",
     "reference_clock": "internal",
     "sequencer": 0,
@@ -12,7 +14,9 @@ qcm_0_settings_sample = {
 }
 
 qrm_0_settings_sample = {
-    "category": "qblox_qrm",
+    "id_": 0,
+    "name": "qblox_qrm",
+    "category": "qubit_readout",
     "ip": "192.168.0.4",
     "reference_clock": "external",
     "sequencer": 0,
@@ -32,7 +36,9 @@ qrm_0_settings_sample = {
 resonator_0_settings_sample: Dict[str, str | float | int] = {}
 
 rohde_schwarz_0_settings_sample = {
-    "category": "rohde_schwarz",
+    "id_": 0,
+    "name": "rohde_schwarz",
+    "category": "signal_generator",
     "ip": "192.168.0.10",
     "frequency": 3644000000.0,
     "power": 15,

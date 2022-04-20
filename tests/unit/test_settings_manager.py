@@ -14,7 +14,7 @@ from .data import platform_settings_sample, qubit_0_settings_sample
 SETTINGS_MANAGER.platform_name = "platform_0"
 
 
-@patch("qililab.settings.settings_manager.yaml.load")
+@patch("qililab.settings.settings_manager.yaml.safe_load")
 class TestSettingsManager:
     """Unit tests checking the SettingsManager attributes and methods"""
 

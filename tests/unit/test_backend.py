@@ -1,14 +1,15 @@
+import ntpath
+from io import TextIOWrapper
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
-from qililab.constants import DEFAULT_PLATFORM_FILENAME
 from qililab.gates import I, X, Y, Z
 from qililab.platforms.platform import Platform
 
-from .data import platform_settings_sample
+from .data import MockedSettingsHashTable
 
 
 @pytest.fixture(name="backend")
@@ -22,7 +23,13 @@ def fixture_backend() -> QililabBackend:
     return QililabBackend()
 
 
-@patch("qililab.settings.settings_manager.yaml.load", return_value=platform_settings_sample)
+def yaml_safe_load_side_effect(stream: TextIOWrapper):
+    """Side effect for the function safe_load of yaml module."""
+    filename = ntpath.splitext(ntpath.basename(stream.name))[0]
+    return MockedSettingsHashTable.get(name=filename)
+
+
+@patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 class TestBackend:
     """Unit tests checking the QililabBackend attributes and methods"""
 
@@ -33,7 +40,7 @@ class TestBackend:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
         backend.set_platform("platform_0")
-        mock_load.assert_called_once()
+        mock_load.assert_called()
         assert isinstance(backend.platform, Platform)
 
     def test_set_platform_using_unknown_platform(self, mock_load: MagicMock, backend: QililabBackend):
@@ -42,7 +49,7 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(FileNotFoundError):
             backend.set_platform("unknown_platform")
 
     def test_get_platform(self, mock_load: MagicMock, backend: QililabBackend):
@@ -53,8 +60,8 @@ class TestBackend:
         """
         backend.set_platform("platform_0")
         name = backend.get_platform()
-        mock_load.assert_called_once()
-        assert name == "platform_0"
+        mock_load.assert_called()
+        assert name == "platform"
 
     def test_circuit_class(self, mock_load: MagicMock, backend: QililabBackend):
         """Test the circuit_class method of the QililabBackend class.

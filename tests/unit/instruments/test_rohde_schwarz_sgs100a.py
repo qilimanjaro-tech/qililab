@@ -10,7 +10,7 @@ from .data import rohde_schwarz_0_settings_sample
 
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.load", return_value=rohde_schwarz_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=rohde_schwarz_0_settings_sample)
 def fixture_rohde_schwarz(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of SGS100A class"""
     SETTINGS_MANAGER.platform_name = "platform_0"
