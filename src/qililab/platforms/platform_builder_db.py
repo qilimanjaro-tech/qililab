@@ -1,35 +1,21 @@
 from typing import Dict
 
-import yaml
-
+from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
 from qililab.platforms.platform_builder import PlatformBuilder
-from qililab.settings import Settings
+from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 
 
-class PlatformBuilderYAML(PlatformBuilder):
-    """Builder of platform objects. Uses YAML file to get the corresponding settings."""
-
-    yaml_data: dict
-
-    def build_from_yaml(self, filepath: str):
-        """Build platform from YAML file.
-
-        Args:
-            filepath (str): Path to the YAML file.
-        """
-        with open(file=filepath, mode="r", encoding="utf-8") as file:
-            self.yaml_data = yaml.safe_load(file)
-
-        self.build(platform_name=self.yaml_data["platform"]["name"])
+class PlatformBuilderDB(PlatformBuilder):
+    """Builder of platform objects."""
 
     def _load_platform_settings(self):
         """Load platform settings."""
-        return self.yaml_data[CategorySettings.PLATFORM.value]
+        return SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
 
     def _load_schema_settings(self):
         """Load schema settings."""
-        return self.yaml_data[CategorySettings.SCHEMA.value]
+        return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
 
     def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
         """Load settings of the corresponding bus item.
@@ -39,7 +25,7 @@ class PlatformBuilderYAML(PlatformBuilder):
             bus_idx (int): The index of the bus where the item is located.
             item_idx (int): The index of the location of the item inside the bus.
         """
-        return self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
+        return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
 
     def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
         """Load qubit settings.
@@ -47,4 +33,4 @@ class PlatformBuilderYAML(PlatformBuilder):
         Args:
             qubit_dict (Dict[str, int | float | str]): Dictionary containing either the id of the qubit or all the settings.
         """
-        return qubit_dict
+        return SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{qubit_dict["id_"]}""")

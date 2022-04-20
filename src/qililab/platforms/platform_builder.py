@@ -1,17 +1,16 @@
+from abc import ABC, abstractmethod
 from typing import Dict
 
 from qililab.buses import Bus, Buses
 from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
 from qililab.platforms.platform import Platform
 from qililab.platforms.utils.name_hash_table import NameHashTable
 from qililab.schema import Schema
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
-from qililab.utils import Singleton
 
 
-class PlatformBuilder(metaclass=Singleton):
+class PlatformBuilder(ABC):
     """Builder of platform objects."""
 
     platform: Platform
@@ -40,18 +39,10 @@ class PlatformBuilder(metaclass=Singleton):
         platform_settings = self._load_platform_settings()
         self.platform = Platform(settings=platform_settings)
 
-    def _load_platform_settings(self):
-        """Load platform settings."""
-        return SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
-
     def _build_schema(self):
         """Build platform schema."""
         schema_settings = self._load_schema_settings()
         self.platform.schema = Schema(settings=schema_settings)
-
-    def _load_schema_settings(self):
-        """Load schema settings."""
-        return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
 
     def _build_buses(self):
         """Build platform buses."""
@@ -67,14 +58,6 @@ class PlatformBuilder(metaclass=Singleton):
             buses.append(Bus(**bus_kwargs))
 
         self.platform.buses = buses
-
-    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
-        """Load settings of the corresponding bus item.
-
-        Args:
-            element_settings (Dict[str, int  |  float  |  str]): Dictionary describing the bus element.
-        """
-        return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
 
     def _load_bus_element(self, settings: dict):
         """Load class instance of the corresponding category.
@@ -108,10 +91,28 @@ class PlatformBuilder(metaclass=Singleton):
         settings["qubits"] = qubits
         return settings
 
+    @abstractmethod
+    def _load_platform_settings(self):
+        """Load platform settings."""
+
+    @abstractmethod
+    def _load_schema_settings(self):
+        """Load schema settings."""
+
+    @abstractmethod
+    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
+        """Load settings of the corresponding bus item.
+
+        Args:
+            item (Settings): Settings class containing the settings of the item.
+            bus_idx (int): The index of the bus where the item is located.
+            item_idx (int): The index of the location of the item inside the bus.
+        """
+
+    @abstractmethod
     def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
         """Load qubit settings.
 
         Args:
-            qubit_dict (Dict[str, int | float | str]): Dictionary containing the id of the qubit.
+            qubit_dict (Dict[str, int | float | str]): Dictionary containing either the id of the qubit or all the settings.
         """
-        return SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{qubit_dict["id_"]}""")
