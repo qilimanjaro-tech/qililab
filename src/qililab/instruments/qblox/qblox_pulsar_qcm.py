@@ -5,7 +5,11 @@ from qililab.settings import QbloxPulsarQCMSettings
 
 
 class QbloxPulsarQCM(QbloxPulsar, QubitControl):
-    """Qblox pulsar QCM class"""
+    """Qblox pulsar QCM class.
+
+    Args:
+        settings (QBloxPulsarQCMSettings): Settings of the instrument.
+    """
 
     settings: QbloxPulsarQCMSettings
 

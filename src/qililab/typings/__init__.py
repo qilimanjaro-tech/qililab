@@ -3,7 +3,7 @@ from .enums import (
     CategorySettings,
     IntegrationMode,
     ReferenceClock,
-    dict_factory,
+    enum_dict_factory,
 )
 from .instruments.device import Device
 from .instruments.pulsar import Pulsar

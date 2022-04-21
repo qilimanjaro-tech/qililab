@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 
 from qililab.qubit import Qubit
 from qililab.settings import ResonatorSettings
-from qililab.typings import dict_factory
+from qililab.typings import enum_dict_factory
 
 
 class Resonator:
@@ -17,10 +17,10 @@ class Resonator:
 
     def asdict(self):
         """Return all Resonator information as a dictionary."""
-        return asdict(self.settings, dict_factory=resonator_factory)
+        return asdict(self.settings, dict_factory=resonator_dict_factory)
 
 
-def resonator_factory(data: List[Tuple[str, int | float | str | Enum | List[Qubit]]]):
+def resonator_dict_factory(data: List[Tuple[str, int | float | str | Enum | List[Qubit]]]):
     """Dict factory used in the asdict() dataclass function. Replace all Enum classes by its corresponding values
     and all qubits with its corresponding settings."""
     result: Dict[str, List[Dict[str, int | float | str]] | str | int | float] = {}
@@ -28,7 +28,7 @@ def resonator_factory(data: List[Tuple[str, int | float | str | Enum | List[Qubi
         if isinstance(value, list):
             qubit_list: List[Dict[str, int | float | str]] = []
             for qubit in value:
-                qubit_list.append(asdict(qubit.settings, dict_factory=dict_factory))
+                qubit_list.append(asdict(qubit.settings, dict_factory=enum_dict_factory))
             result = result | {key: qubit_list}
             continue
         if isinstance(value, Enum):

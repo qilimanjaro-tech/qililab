@@ -64,7 +64,7 @@ class IntegrationMode(Enum):
     SSB = "ssb"
 
 
-def dict_factory(data: List[Tuple[str, int | float | str | Enum]]):
+def enum_dict_factory(data: List[Tuple[str, int | float | str | Enum]]):
     """Dict factory used in the asdict() dataclass function. Replace all Enum classes by its corresponding values."""
     result: Dict[str, int | float | str] = {}
     for key, value in data:

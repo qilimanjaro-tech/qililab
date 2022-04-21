@@ -3,11 +3,15 @@ from qililab.settings import MixerSettings
 
 
 class Mixer:
-    """Abstract base class defining all instruments used to readout the qubits
+    """Mixer class. The mixer can be described by the following function:
+
+    I + (1 + epsilon) * exp(j * pi/2 + delta) * Q, where I and Q are the two input signals.
+
+    Due to the electronics, the mixer also adds a fixed offset to both I and Q channels.
+    This offset should be evened out by the instrument.
 
     Args:
-        device (Device): Class used for connecting to the instrument.
-        settings (Settings): Class containing the settings of the instrument.
+        settings (MixerSettings): Settings of the mixer.
     """
 
     settings: MixerSettings

@@ -5,12 +5,10 @@ from qililab.typings import Pulsar
 
 
 class QbloxPulsar(Instrument):
-    """Pulsar class
+    """Qblox pulsar class.
 
     Args:
-        device (Device): Class used for connecting to the instrument.
-        settings (Settings): Class containing the settings of the instrument.
-        device (Pulsar): Instance of the Qblox Pulsar class.
+        device (Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 

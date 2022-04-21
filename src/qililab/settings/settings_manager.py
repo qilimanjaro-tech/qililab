@@ -12,7 +12,7 @@ class SettingsManager(metaclass=Singleton):
 
     Args:
         foldername (str): Name of the folder containing all the settings files.
-        platform (str): Name of the platform.
+        platform_name (str): Name of the platform.
     """
 
     foldername: str
@@ -30,7 +30,7 @@ class SettingsManager(metaclass=Singleton):
         """
         path = str(Path(__file__).parent / self.foldername / self.platform_name / f"{filename}.yml")
 
-        with open(path, "r") as file:
+        with open(file=path, mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)
 
         return settings

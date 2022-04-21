@@ -27,11 +27,14 @@ class PlatformBuilderYAML(PlatformBuilder):
 
         return super().build(platform_name=platform_name)
 
-    def build_from_yaml(self, filepath: str):
+    def build_from_yaml(self, filepath: str) -> Platform:
         """Build platform from YAML file.
 
         Args:
             filepath (str): Path to the YAML file.
+
+        Returns:
+            Platform: Platform object describing the setup used.
         """
         with open(file=filepath, mode="r", encoding="utf-8") as file:
             self.yaml_data = yaml.safe_load(file)

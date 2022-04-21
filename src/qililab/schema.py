@@ -2,7 +2,7 @@
 from dataclasses import asdict
 
 from qililab.settings.schema import SchemaSettings
-from qililab.typings import dict_factory
+from qililab.typings import enum_dict_factory
 
 
 class Schema:
@@ -33,4 +33,4 @@ class Schema:
 
     def asdict(self):
         """Return all Schema information as a dictionary."""
-        return asdict(self.settings, dict_factory=dict_factory)
+        return asdict(self.settings, dict_factory=enum_dict_factory)

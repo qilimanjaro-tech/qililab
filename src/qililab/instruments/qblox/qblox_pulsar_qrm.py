@@ -5,7 +5,11 @@ from qililab.settings import QbloxPulsarQRMSettings
 
 
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
-    """Pulsar QCM class"""
+    """Qblox pulsar QRM class.
+
+    Args:
+        settings (QBloxPulsarQRMSettings): Settings of the instrument.
+    """
 
     settings: QbloxPulsarQRMSettings
 
