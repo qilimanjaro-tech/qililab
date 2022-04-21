@@ -12,7 +12,8 @@ class Instrument(ABC):
     and methods for the instruments connected via TCP/IP.
 
     Args:
-        name (str): Name of the instrument.
+        device (Device): Class used for connecting to the instrument.
+        settings (Settings): Class containing the settings of the instrument.
     """
 
     device: Device  # a subtype of device must be specified by the subclass

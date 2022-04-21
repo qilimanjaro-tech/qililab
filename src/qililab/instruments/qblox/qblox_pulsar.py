@@ -8,7 +8,8 @@ class QbloxPulsar(Instrument):
     """Pulsar class
 
     Args:
-        name (str): Name of the instrument.
+        device (Device): Class used for connecting to the instrument.
+        settings (Settings): Class containing the settings of the instrument.
         device (Pulsar): Instance of the Qblox Pulsar class.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
