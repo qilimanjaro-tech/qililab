@@ -14,7 +14,7 @@ class QbloxPulsarQRMSettings(QbloxPulsarSettings, QubitReadoutSettings):
         id (str): ID of the settings.
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
-        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
+        "qubit_readout", "signal_generator", "qubit", "resonator", "mixer" and "schema".
         ip (str): IP address of the instrument.
         reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
         sequencer (int): Index of the sequencer to use.

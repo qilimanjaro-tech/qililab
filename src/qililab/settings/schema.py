@@ -12,7 +12,7 @@ class SchemaSettings(Settings):
         id (str): ID of the settings.
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
-        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
+        "qubit_readout", "signal_generator", "qubit", "resonator", "mixer" and "schema".
         buses (List[List[Settings]]): List containing the settings of the elements for each bus.
     """
 

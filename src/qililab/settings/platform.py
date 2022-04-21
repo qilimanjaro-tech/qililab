@@ -11,7 +11,7 @@ class PlatformSettings(Settings):
         id (str): ID of the settings.
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
-        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
+        "qubit_readout", "signal_generator", "qubit", "resonator", "mixer" and "schema".
         number_qubits (int): Number of qubits used in the platform.
         hardware_average (int): Hardware average. Number of shots used when executing a sequence.
         software_average (float): Software average.

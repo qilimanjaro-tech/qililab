@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import List
 
-from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.resonator import Resonator
 from qililab.typings import dict_factory
 
@@ -10,8 +10,9 @@ from qililab.typings import dict_factory
 class Bus:
     """Bus class"""
 
-    resonator: Resonator
     signal_generator: SignalGenerator
+    mixer: Mixer
+    resonator: Resonator
     qubit_control: None | QubitControl = None
     qubit_readout: None | QubitReadout = None
 
@@ -21,7 +22,7 @@ class Bus:
         for attr in asdict(self, dict_factory=dict_factory).values():
             if attr is None:
                 continue
-            if isinstance(attr, SignalGenerator | QubitReadout | QubitControl):
+            if isinstance(attr, SignalGenerator | QubitReadout | QubitControl | Mixer):
                 attr_dict = asdict(attr.settings, dict_factory=dict_factory)
             if isinstance(attr, Resonator):
                 attr_dict = attr.asdict()

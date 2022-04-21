@@ -8,10 +8,13 @@ buses:
     - category: signal_generator
       name: rohde_schwarz
       id_: 0
+    - category: mixer
+      name: mixer
+      id_: 0
     - category: resonator
       name: resonator
       id_: 0
-  - - category: qubit_readout
+  - - category: qubit_readout  # connection QRM -> Resonator
       name: qrm
       id_: 0
     - category: signal_generator
@@ -20,3 +23,18 @@ buses:
     - category: resonator
       name: resonator
       id_: 0
+    - category: mixer  # up-conversion mixer
+      name: mixer
+      id_: 1
+  - - category: qubit_readout  # connection Resonator -> QRM
+      name: qrm
+      id_: 0
+    - category: signal_generator
+      name: rohde_schwarz
+      id_: 1
+    - category: resonator
+      name: resonator
+      id_: 0
+    - category: mixer  # down-conversion mixer
+      name: mixer
+      id_: 2

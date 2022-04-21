@@ -11,7 +11,7 @@ class QubitCalibrationSettings(Settings):
         id (str): ID of the settings.
         name (str): Unique name of the settings.
         category (str): General name of the settings category. Options are "platform", "qubit_control",
-        "qubit_readout", "signal_generator", "qubit", "resonator" and "schema".
+        "qubit_readout", "signal_generator", "qubit", "resonator", "mixer" and "schema".
         pi_pulse_amplitude (float): Voltage amplitude (in V) used to generate a pi pulse.
         pi_pulse_duration (float): Duration of the pi pulse.
         pi_pulse_freq (float): Frequency of the pi pulse.

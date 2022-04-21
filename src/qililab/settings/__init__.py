@@ -1,5 +1,6 @@
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
+from .instruments.mixer import MixerSettings
 from .instruments.qblox.qblox_pulsar import QbloxPulsarSettings
 from .instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
 from .instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
