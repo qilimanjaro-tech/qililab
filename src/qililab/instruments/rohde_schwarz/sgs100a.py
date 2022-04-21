@@ -10,8 +10,6 @@ class SGS100A(SignalGenerator):
     """Rohde & Schwarz SGS100A class
 
     Args:
-        device (Device): Class used for connecting to the instrument.
-        settings (Settings): Class containing the settings of the instrument.
         device (RohdeSchwarz_SGS100A): Instance of the qcodes SGS100A class.
         settings (SGS100ASettings): Settings of the instrument.
     """
