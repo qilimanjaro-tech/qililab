@@ -120,7 +120,7 @@ class TestPlatform:
     def test_platform_dump_method_raise_error(self, mock_dump: MagicMock, platform: Platform):
         """Test platform dump method raise error when platform not loaded."""
         SETTINGS_MANAGER.platform_name = "platform_0"
-        platform_settings = SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+        platform_settings = SETTINGS_MANAGER.load(filename=platform.name)
         unloaded_platform = Platform(settings=platform_settings)
         with pytest.raises(AttributeError):
             unloaded_platform.dump()
