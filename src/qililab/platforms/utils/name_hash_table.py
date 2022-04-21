@@ -1,7 +1,7 @@
 """Class used as hashtable to load the class corresponding to a given category"""
 from typing import Type
 
-from qililab.instruments import SGS100A, QbloxPulsarQCM, QbloxPulsarQRM
+from qililab.instruments import SGS100A, Mixer, QbloxPulsarQCM, QbloxPulsarQRM
 from qililab.platforms import Platform
 from qililab.qubit import Qubit
 from qililab.resonator import Resonator
@@ -16,8 +16,9 @@ class NameHashTable:
     rohde_schwarz = SGS100A
     resonator = Resonator
     qubit = Qubit
+    mixer = Mixer
 
     @classmethod
-    def get(cls, name: str) -> Type[Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit]:
+    def get(cls, name: str) -> Type[Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit | Mixer]:
         """Return class attribute."""
         return getattr(cls, name)

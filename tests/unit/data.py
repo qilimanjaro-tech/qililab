@@ -35,11 +35,19 @@ schema_settings_sample = {
         [
             {"category": "qubit_control", "name": "qcm", "id_": 0},
             {"category": "signal_generator", "name": "rohde_schwarz", "id_": 0},
+            {"category": "mixer", "name": "mixer", "id_": 0},
             {"category": "resonator", "name": "resonator", "id_": 0},
         ],
         [
             {"category": "qubit_readout", "name": "qrm", "id_": 0},
             {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
+            {"category": "mixer", "name": "mixer", "id_": 1},
+            {"category": "resonator", "name": "resonator", "id_": 0},
+        ],
+        [
+            {"category": "qubit_readout", "name": "qrm", "id_": 0},
+            {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
+            {"category": "mixer", "name": "mixer", "id_": 2},
             {"category": "resonator", "name": "resonator", "id_": 0},
         ],
     ],
@@ -101,6 +109,39 @@ rohde_schwarz_1_settings_sample = {
     "power": 15,
 }
 
+mixer_0_settings_sample = {
+    "id_": 0,
+    "name": "mixer",  # unique name
+    "category": "mixer",  # general name
+    "epsilon": 0,
+    "delta": 0,
+    "offset_i": 0,
+    "offset_q": 0,
+    "up_conversion": True,
+}
+
+mixer_1_settings_sample = {
+    "id_": 1,
+    "name": "mixer",  # unique name
+    "category": "mixer",  # general name
+    "epsilon": 0,
+    "delta": 0,
+    "offset_i": 0,
+    "offset_q": 0,
+    "up_conversion": True,
+}
+
+mixer_2_settings_sample = {
+    "id_": 2,
+    "name": "mixer",  # unique name
+    "category": "mixer",  # general name
+    "epsilon": 0,
+    "delta": 0,
+    "offset_i": 0,
+    "offset_q": 0,
+    "up_conversion": False,
+}
+
 
 class MockedSettingsHashTable:
     """Hash table that relates settings files to mocked data."""
@@ -113,6 +154,9 @@ class MockedSettingsHashTable:
     rohde_schwarz_0 = rohde_schwarz_0_settings_sample
     rohde_schwarz_1 = rohde_schwarz_1_settings_sample
     schema = schema_settings_sample
+    mixer_0 = mixer_0_settings_sample
+    mixer_1 = mixer_1_settings_sample
+    mixer_2 = mixer_2_settings_sample
 
     @classmethod
     def get(cls, name: str) -> dict:

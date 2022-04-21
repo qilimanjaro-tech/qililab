@@ -25,6 +25,7 @@ class CategorySettings(Enum):
     SCHEMA = "schema"
     RESONATOR = "resonator"
     BUSES = "buses"
+    MIXER = "mixer"
 
 
 class ReferenceClock(Enum):
