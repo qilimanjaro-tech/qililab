@@ -5,12 +5,12 @@ import pytest
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
-from ..data import qrm_0_settings_sample
+from ..data import qblox_qrm_0_settings_sample
 
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qrm_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qblox_qrm_0_settings_sample)
 def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQRM class"""
     SETTINGS_MANAGER.platform_name = "platform_0"
@@ -29,7 +29,7 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
     # connect to instrument
     SETTINGS_MANAGER.platform_name = "platform_0"
-    qrm_settings = SETTINGS_MANAGER.load(filename="qrm_0")
+    qrm_settings = SETTINGS_MANAGER.load(filename="qblox_qrm_0")
     mock_load.assert_called_once()
     qrm = QbloxPulsarQRM(settings=qrm_settings)
     qrm.connect()

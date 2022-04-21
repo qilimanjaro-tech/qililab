@@ -3,7 +3,7 @@ name: qili_schema  # unique name
 category: schema  # general name
 buses:
   - - category: qubit_control
-      name: qcm
+      name: qblox_qcm
       id_: 0
     - category: signal_generator
       name: rohde_schwarz
@@ -15,7 +15,7 @@ buses:
       name: resonator
       id_: 0
   - - category: qubit_readout  # connection QRM -> Resonator
-      name: qrm
+      name: qblox_qrm
       id_: 0
     - category: signal_generator
       name: rohde_schwarz
@@ -27,7 +27,7 @@ buses:
       name: mixer
       id_: 1
   - - category: qubit_readout  # connection Resonator -> QRM
-      name: qrm
+      name: qblox_qrm
       id_: 0
     - category: signal_generator
       name: rohde_schwarz

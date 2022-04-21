@@ -16,7 +16,7 @@ schema:
   category: schema
   buses:
   - - id_: 0
-      name: qcm
+      name: qblox_qcm
       category: qubit_control
     - id_: 0
       name: rohde_schwarz
@@ -28,7 +28,7 @@ schema:
       name: resonator
       category: resonator
   - - id_: 0
-      name: qrm
+      name: qblox_qrm
       category: qubit_readout
     - id_: 1
       name: rohde_schwarz
@@ -40,7 +40,7 @@ schema:
       name: mixer
       category: mixer
   - - id_: 0
-      name: qrm
+      name: qblox_qrm
       category: qubit_readout
     - id_: 1
       name: rohde_schwarz
