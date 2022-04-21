@@ -51,7 +51,7 @@ class PlatformBuilder(ABC):
         for bus_idx, bus in enumerate(schema.settings.buses):
             bus_kwargs = {}
             for item_idx, item in enumerate(bus):
-                settings = self._load_bus_item_settings(item=item, bus_idx=bus_idx, item_idx=item_idx)
+                settings = self._load_bus_item_settings(item=item)
                 element = self._load_bus_element(settings=settings)
                 bus_kwargs[item.category.value] = element
 
@@ -100,13 +100,11 @@ class PlatformBuilder(ABC):
         """Load schema settings."""
 
     @abstractmethod
-    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
+    def _load_bus_item_settings(self, item: Settings):
         """Load settings of the corresponding bus item.
 
         Args:
             item (Settings): Settings class containing the settings of the item.
-            bus_idx (int): The index of the bus where the item is located.
-            item_idx (int): The index of the location of the item inside the bus.
         """
 
     @abstractmethod

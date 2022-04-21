@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import yaml
 
@@ -11,7 +11,8 @@ from qililab.typings import CategorySettings
 class PlatformBuilderYAML(PlatformBuilder):
     """Builder of platform objects. Uses YAML file to get the corresponding settings."""
 
-    yaml_data: dict
+    all_platform: Dict
+    yaml_buses: List[List[Settings]]
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.
@@ -22,7 +23,7 @@ class PlatformBuilderYAML(PlatformBuilder):
         Returns:
             Platform: Platform object describing the setup used.
         """
-        if not hasattr(self, "yaml_data"):
+        if not hasattr(self, "all_platform"):
             raise AttributeError("Please use the 'build_from_yaml' method.")
 
         return super().build(platform_name=platform_name)
@@ -36,29 +37,45 @@ class PlatformBuilderYAML(PlatformBuilder):
         Returns:
             Platform: Platform object describing the setup used.
         """
-        with open(file=filepath, mode="r", encoding="utf-8") as file:
-            self.yaml_data = yaml.safe_load(file)
+        self._load_yaml_data(filepath=filepath)
+        return self.build(platform_name=self.all_platform["platform"]["name"])
 
-        return self.build(platform_name=self.yaml_data["platform"]["name"])
+    def _load_yaml_data(self, filepath: str):
+        """Load YAML file and save it to all_platform attribute.
+
+        Args:
+            filepath (str): Path to the YAML file.
+        """
+        with open(file=filepath, mode="r", encoding="utf-8") as file:
+            self.all_platform = yaml.safe_load(file)
+
+        self._load_yaml_buses_data()
+
+    def _load_yaml_buses_data(self):
+        """Get id_, name and category of each item inside buses, cast it to Settings and save it
+        into the yaml_buses attribute. This will be later be used by the _load_bus_item_settings method."""
+        self.yaml_buses = [
+            [Settings(id_=item["id_"], name=item["name"], category=item["category"]) for item in bus]
+            for bus in self.all_platform[CategorySettings.BUSES.value]
+        ]
 
     def _load_platform_settings(self):
         """Load platform settings."""
-        return self.yaml_data[CategorySettings.PLATFORM.value]
+        return self.all_platform[CategorySettings.PLATFORM.value]
 
     def _load_schema_settings(self):
         """Load schema settings."""
-        return self.yaml_data[CategorySettings.SCHEMA.value]
+        return self.all_platform[CategorySettings.SCHEMA.value]
 
-    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
+    def _load_bus_item_settings(self, item: Settings):
         """Load settings of the corresponding bus item.
 
         Args:
             item (Settings): Settings class containing the settings of the item.
-            bus_idx (int): The index of the bus where the item is located.
-            item_idx (int): The index of the location of the item inside the bus.
         """
+
         try:
-            settings = self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
+            settings = self.all_platform[CategorySettings.BUSES.value][self.yaml_buses == item]
         except IndexError as index_error:
             raise IndexError(
                 "Could not load bus item settings. Please make sure that the schema and the buses have the exact same items."
