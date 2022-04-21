@@ -14,13 +14,14 @@ class Platform:
     """Platform object that describes setup used to control quantum devices.
 
     Args:
-        settings (Settings): Settings of the platform.
+        settings (PlatformSettings): Settings of the platform.
         schema (Schema): Schema object.
         buses (Buses): Container of Bus objects.
     """
 
     schema: Schema
     buses: Buses
+    settings: PlatformSettings
 
     def __init__(self, settings: dict):
         self.settings = PlatformSettings(**settings)
