@@ -6,7 +6,6 @@ import pytest
 
 from qililab import PLATFORM_BUILDER_DB, PLATFORM_BUILDER_YAML
 from qililab.buses import Buses
-from qililab.constants import DEFAULT_PLATFORM_FILENAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platforms import Platform
 from qililab.qubit import Qubit
