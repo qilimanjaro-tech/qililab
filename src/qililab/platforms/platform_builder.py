@@ -1,3 +1,4 @@
+import copy
 from abc import ABC, abstractmethod
 from typing import Dict
 
@@ -48,9 +49,9 @@ class PlatformBuilder(ABC):
         """Build platform buses."""
         buses = Buses()
         schema = self.platform.schema
-        for bus_idx, bus in enumerate(schema.settings.buses):
+        for _, bus in enumerate(schema.settings.buses):
             bus_kwargs = {}
-            for item_idx, item in enumerate(bus):
+            for _, item in enumerate(bus):
                 settings = self._load_bus_item_settings(item=item)
                 element = self._load_bus_element(settings=settings)
                 bus_kwargs[item.category.value] = element
@@ -88,8 +89,9 @@ class PlatformBuilder(ABC):
             qubit_settings = self._load_qubit_settings(qubit_dict=qubit_dict)
             qubit = self._load_bus_element(settings=qubit_settings)
             qubits.append(qubit)
-        settings["qubits"] = qubits
-        return settings
+        settings_copy = copy.deepcopy(settings)
+        settings_copy["qubits"] = qubits
+        return settings_copy
 
     @abstractmethod
     def _load_platform_settings(self):
