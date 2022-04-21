@@ -37,7 +37,7 @@ class Platform:
         platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=enum_dict_factory)}
         schema_dict = {CategorySettings.SCHEMA.value: self.schema.asdict()}
         buses_dict = {CategorySettings.BUSES.value: self.buses.asdict()}
-        file_path = Path(sys.argv[0]).parent / "platform.yml"
+        file_path = Path(sys.argv[0]).parent / "all_platform.yml"
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             yaml.safe_dump(data=platform_dict | schema_dict | buses_dict, stream=file, sort_keys=False)
 

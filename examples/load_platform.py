@@ -29,7 +29,7 @@ def load_platform_from_database():
 
 def load_platform_from_yaml():
     """Load the platform configuration from the given yaml file."""
-    filepath = Path(__file__).parent / "platform.yml"
+    filepath = Path(__file__).parent / "all_platform.yml"
     platform = PLATFORM_BUILDER_YAML.build_from_yaml(filepath=filepath)
     print(f"Platform name: {platform}")
 

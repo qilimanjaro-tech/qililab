@@ -5,7 +5,7 @@ import pytest
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
 
-from .data import qcm_0_settings_sample
+from ..data import qcm_0_settings_sample
 
 
 @pytest.fixture(name="qcm")

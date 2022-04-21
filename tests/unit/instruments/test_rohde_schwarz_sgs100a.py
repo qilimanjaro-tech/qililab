@@ -5,7 +5,7 @@ import pytest
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 
-from .data import rohde_schwarz_0_settings_sample
+from ..data import rohde_schwarz_0_settings_sample
 
 
 @pytest.fixture(name="rohde_schwarz")

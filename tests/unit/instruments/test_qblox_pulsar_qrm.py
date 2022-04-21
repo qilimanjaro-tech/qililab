@@ -5,7 +5,7 @@ import pytest
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
-from .data import qrm_0_settings_sample
+from ..data import qrm_0_settings_sample
 
 
 @pytest.fixture(name="qrm")

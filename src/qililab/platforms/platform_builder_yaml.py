@@ -57,7 +57,13 @@ class PlatformBuilderYAML(PlatformBuilder):
             bus_idx (int): The index of the bus where the item is located.
             item_idx (int): The index of the location of the item inside the bus.
         """
-        return self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
+        try:
+            settings = self.yaml_data[CategorySettings.BUSES.value][bus_idx][item_idx]
+        except IndexError as index_error:
+            raise IndexError(
+                "Could not load bus item settings. Please make sure that the schema and the buses have the exact same items."
+            ) from index_error
+        return settings
 
     def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
         """Load qubit settings.

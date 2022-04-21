@@ -1,5 +1,3 @@
-import ntpath
-from io import TextIOWrapper
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,7 +7,7 @@ from qililab.circuit import HardwareCircuit
 from qililab.gates import I, X, Y, Z
 from qililab.platforms.platform import Platform
 
-from .data import MockedSettingsHashTable
+from .utils.side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="backend")
@@ -21,12 +19,6 @@ def fixture_backend() -> QililabBackend:
     """
 
     return QililabBackend()
-
-
-def yaml_safe_load_side_effect(stream: TextIOWrapper):
-    """Side effect for the function safe_load of yaml module."""
-    filename = ntpath.splitext(ntpath.basename(stream.name))[0]
-    return MockedSettingsHashTable.get(name=filename)
 
 
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
