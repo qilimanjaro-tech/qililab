@@ -2,6 +2,7 @@ from typing import Dict
 
 import yaml
 
+from qililab.platforms.platform import Platform
 from qililab.platforms.platform_builder import PlatformBuilder
 from qililab.settings import Settings
 from qililab.typings import CategorySettings
@@ -12,6 +13,20 @@ class PlatformBuilderYAML(PlatformBuilder):
 
     yaml_data: dict
 
+    def build(self, platform_name: str) -> Platform:
+        """Build platform.
+
+        Args:
+            platform_name (str): Name of the platform.
+
+        Returns:
+            Platform: Platform object describing the setup used.
+        """
+        if not hasattr(self, "yaml_data"):
+            raise AttributeError("Please use the 'build_from_yaml' method.")
+
+        return super().build(platform_name=platform_name)
+
     def build_from_yaml(self, filepath: str):
         """Build platform from YAML file.
 
@@ -21,7 +36,7 @@ class PlatformBuilderYAML(PlatformBuilder):
         with open(file=filepath, mode="r", encoding="utf-8") as file:
             self.yaml_data = yaml.safe_load(file)
 
-        self.build(platform_name=self.yaml_data["platform"]["name"])
+        return self.build(platform_name=self.yaml_data["platform"]["name"])
 
     def _load_platform_settings(self):
         """Load platform settings."""

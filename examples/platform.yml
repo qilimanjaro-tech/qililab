@@ -35,20 +35,6 @@ schema:
       category: resonator
 buses:
 - - id_: 0
-    name: qblox_qcm
-    category: qubit_control
-    ip: 192.168.0.3
-    reference_clock: internal
-    sequencer: 0
-    sync_enabled: true
-    gain: 1
-  - id_: 0
-    name: rohde_schwarz
-    category: signal_generator
-    ip: 192.168.0.10
-    power: 15
-    frequency: 3644000000.0
-  - id_: 0
     name: resonator
     category: resonator
     qubits:
@@ -61,7 +47,40 @@ buses:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
+  - id_: 0
+    name: rohde_schwarz
+    category: signal_generator
+    ip: 192.168.0.10
+    power: 15
+    frequency: 3644000000.0
+  - id_: 0
+    name: qblox_qcm
+    category: qubit_control
+    ip: 192.168.0.3
+    reference_clock: internal
+    sequencer: 0
+    sync_enabled: true
+    gain: 1
 - - id_: 0
+    name: resonator
+    category: resonator
+    qubits:
+    - id_: 0
+      name: qubit
+      category: qubit
+      pi_pulse_amplitude: 1
+      pi_pulse_duration: 100
+      pi_pulse_frequency: 100000000.0
+      qubit_frequency: 3544000000.0
+      min_voltage: 950
+      max_voltage: 1775
+  - id_: 1
+    name: rohde_schwarz
+    category: signal_generator
+    ip: 192.168.0.7
+    power: 15
+    frequency: 7307720000.0
+  - id_: 0
     name: qblox_qrm
     category: qubit_readout
     ip: 192.168.0.4
@@ -78,22 +97,3 @@ buses:
     sequence_timeout: 1
     acquisition_timeout: 1
     acquisition_name: single
-  - id_: 1
-    name: rohde_schwarz
-    category: signal_generator
-    ip: 192.168.0.7
-    power: 15
-    frequency: 7307720000.0
-  - id_: 0
-    name: resonator
-    category: resonator
-    qubits:
-    - id_: 0
-      name: qubit
-      category: qubit
-      pi_pulse_amplitude: 1
-      pi_pulse_duration: 100
-      pi_pulse_frequency: 100000000.0
-      qubit_frequency: 3544000000.0
-      min_voltage: 950
-      max_voltage: 1775
