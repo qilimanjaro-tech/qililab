@@ -17,13 +17,11 @@ class PlatformBuilderDB(PlatformBuilder):
         """Load schema settings."""
         return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
 
-    def _load_bus_item_settings(self, item: Settings, bus_idx: int, item_idx: int):
+    def _load_bus_item_settings(self, item: Settings):
         """Load settings of the corresponding bus item.
 
         Args:
             item (Settings): Settings class containing the settings of the item.
-            bus_idx (int): The index of the bus where the item is located.
-            item_idx (int): The index of the location of the item inside the bus.
         """
         return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
 
