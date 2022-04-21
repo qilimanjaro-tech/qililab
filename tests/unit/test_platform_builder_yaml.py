@@ -1,13 +1,12 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab import PLATFORM_BUILDER_YAML
-from qililab.buses import Buses
-from qililab.platforms import Platform, PlatformBuilderYAML
-from qililab.schema import Schema
-from qililab.settings import PlatformSettings
+from qililab.platforms import PlatformBuilderYAML
+from qililab.typings import CategorySettings
 
 from .utils.side_effect import yaml_safe_load_side_effect
 
@@ -25,18 +24,14 @@ def fixture_platform_builder_yaml(mock_load: MagicMock):
 class TestPlatformBuilderDB:
     """Unit tests checking the PlatformBuilderDB attributes and methods."""
 
-    def test_platform_attribute(self, platform_builder_yaml: PlatformBuilderYAML):
-        """Test platform attribute."""
-        assert isinstance(platform_builder_yaml.platform, Platform)
+    def test_build_raises_attribute_error(self):
+        """Test build method raises attribute error."""
+        platform_builder = PlatformBuilderYAML()
+        with pytest.raises(AttributeError):
+            platform_builder.build(platform_name="platform_0")
 
-    def test_platform_settings(self, platform_builder_yaml: PlatformBuilderYAML):
-        """Test platform settings."""
-        assert isinstance(platform_builder_yaml.platform.settings, PlatformSettings)
-
-    def test_platform_schema(self, platform_builder_yaml: PlatformBuilderYAML):
-        """Test platform schema."""
-        assert isinstance(platform_builder_yaml.platform.schema, Schema)
-
-    def test_platform_buses(self, platform_builder_yaml: PlatformBuilderYAML):
-        """Test platform buses."""
-        assert isinstance(platform_builder_yaml.platform.buses, Buses)
+    def test_load_bus_item_settings_raises_value_error(self, platform_builder_yaml: PlatformBuilderYAML):
+        """Test _load_bus_item_settings method raises value error."""
+        platform_builder_yaml.yaml_buses[0] = platform_builder_yaml.yaml_buses[1]  # change sensitive data
+        with pytest.raises(ValueError):
+            platform_builder_yaml.build(platform_name="platform_0")
