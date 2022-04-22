@@ -1,9 +1,9 @@
 import json
 from dataclasses import asdict
 
-from qililab.platforms.components.buses import Buses
-from qililab.platforms.components.schema import Schema
-from qililab.platforms.utils.enum_dict_factory import enum_dict_factory
+from qililab.platform.components.buses import Buses
+from qililab.platform.components.schema import Schema
+from qililab.platform.utils.enum_dict_factory import enum_dict_factory
 from qililab.settings import PlatformSettings
 from qililab.typings import CategorySettings
 

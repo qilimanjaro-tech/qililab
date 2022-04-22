@@ -7,10 +7,10 @@ from typing import Dict
 import yaml
 
 from qililab.config import logger
-from qililab.platforms.components.buses import Bus, Buses
-from qililab.platforms.components.schema import Schema
-from qililab.platforms.platform import Platform
-from qililab.platforms.utils.bus_element_hash_table import BusElementHashTable
+from qililab.platform.components.buses import Bus, Buses
+from qililab.platform.components.schema import Schema
+from qililab.platform.platform import Platform
+from qililab.platform.utils.bus_element_hash_table import BusElementHashTable
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 

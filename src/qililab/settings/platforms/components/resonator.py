@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.platforms.components.qubit import Qubit
+from qililab.platform.components.qubit import Qubit
 from qililab.settings.settings import Settings
 
 

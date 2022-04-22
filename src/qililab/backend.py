@@ -4,7 +4,7 @@ from qibo.backends.numpy import NumpyBackend
 
 from qililab import gates
 from qililab.circuit import HardwareCircuit
-from qililab.platforms import PLATFORM_MANAGER_DB, Platform
+from qililab.platform import PLATFORM_MANAGER_DB, Platform
 
 
 class QililabBackend(NumpyBackend):

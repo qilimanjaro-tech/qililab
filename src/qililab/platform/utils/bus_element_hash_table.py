@@ -2,8 +2,8 @@
 from typing import Type
 
 from qililab.instruments import SGS100A, Mixer, QbloxPulsarQCM, QbloxPulsarQRM
-from qililab.platforms.components.qubit import Qubit
-from qililab.platforms.components.resonator import Resonator
+from qililab.platform.components.qubit import Qubit
+from qililab.platform.components.resonator import Resonator
 
 
 class BusElementHashTable:

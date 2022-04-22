@@ -3,8 +3,8 @@ from typing import Dict, List
 import numpy as np
 import yaml
 
-from qililab.platforms.platform import Platform
-from qililab.platforms.platform_manager import PlatformManager
+from qililab.platform.platform import Platform
+from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import Settings
 from qililab.typings import CategorySettings
 

@@ -1,7 +1,7 @@
 from typing import Dict
 
 from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
-from qililab.platforms.platform_manager import PlatformManager
+from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 
