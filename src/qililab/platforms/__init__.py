@@ -1,6 +1,6 @@
 from .platform import Platform
-from .platform_builder_db import PlatformBuilderDB
-from .platform_builder_yaml import PlatformBuilderYAML
+from .platform_manager_db import PlatformManagerDB
+from .platform_manager_yaml import PlatformManagerYAML
 
-PLATFORM_BUILDER_DB = PlatformBuilderDB()
-PLATFORM_BUILDER_YAML = PlatformBuilderYAML()
+PLATFORM_MANAGER_DB = PlatformManagerDB()
+PLATFORM_MANAGER_YAML = PlatformManagerYAML()

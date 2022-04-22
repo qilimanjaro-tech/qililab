@@ -2,7 +2,7 @@ from pathlib import Path
 
 import qibo
 
-from qililab import PLATFORM_BUILDER_DB, PLATFORM_BUILDER_YAML
+from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 
 # FIXME: Need to add backend in qibo's profiles.yml file
 backend = {
@@ -20,16 +20,16 @@ def load_platform_from_database():
     # Using qibo (needed when using qibo circuits)
     qibo.set_backend(backend="qililab", platform="platform_0")
     print(f"Platform name: {qibo.K.platform}")
-    # Using PLATFORM_BUILDER
-    platform = PLATFORM_BUILDER_DB.build(platform_name="platform_0")
-    PLATFORM_BUILDER_DB.dump(platform=platform)  # save yaml file with all platform settings
+    # Using PLATFORM_MANAGER_DB
+    platform = PLATFORM_MANAGER_DB.build(platform_name="platform_0")
+    PLATFORM_MANAGER_DB.dump(platform=platform)  # save yaml file with all platform settings
     print(f"Platform INFO: {platform}")
 
 
 def load_platform_from_yaml():
     """Load the platform configuration from the given yaml file."""
     filepath = Path(__file__).parent / "platform.yml"
-    platform = PLATFORM_BUILDER_YAML.build_from_yaml(filepath=filepath)
+    platform = PLATFORM_MANAGER_YAML.build_from_yaml(filepath=filepath)
     print(f"Platform INFO: {platform}")
 
 

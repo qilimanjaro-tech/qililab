@@ -4,12 +4,12 @@ import numpy as np
 import yaml
 
 from qililab.platforms.platform import Platform
-from qililab.platforms.platform_builder import PlatformBuilder
+from qililab.platforms.platform_manager import PlatformManager
 from qililab.settings import Settings
 from qililab.typings import CategorySettings
 
 
-class PlatformBuilderYAML(PlatformBuilder):
+class PlatformManagerYAML(PlatformManager):
     """Builder of platform objects. Uses YAML file to get the corresponding settings."""
 
     all_platform: Dict

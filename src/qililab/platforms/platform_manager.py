@@ -15,7 +15,7 @@ from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 
 
-class PlatformBuilder(ABC):
+class PlatformManager(ABC):
     """Builder of platform objects."""
 
     def build(self, platform_name: str) -> Platform:

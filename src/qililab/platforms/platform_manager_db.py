@@ -1,12 +1,12 @@
 from typing import Dict
 
 from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
-from qililab.platforms.platform_builder import PlatformBuilder
+from qililab.platforms.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 
 
-class PlatformBuilderDB(PlatformBuilder):
+class PlatformManagerDB(PlatformManager):
     """Builder of platform objects."""
 
     def _load_platform_settings(self):
