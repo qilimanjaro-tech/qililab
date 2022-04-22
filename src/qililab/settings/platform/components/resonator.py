@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.qubit import Qubit
+from qililab.platform.components.qubit import Qubit
 from qililab.settings.settings import Settings
 
 
@@ -14,3 +14,7 @@ class ResonatorSettings(Settings):
     """
 
     qubits: List[Qubit]
+
+    def __post_init__(self):
+        """Cast list of qubits settings to Qubit objects."""
+        self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]

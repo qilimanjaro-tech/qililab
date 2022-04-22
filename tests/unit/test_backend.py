@@ -5,7 +5,7 @@ import pytest
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
 from qililab.gates import I, X, Y, Z
-from qililab.platforms.platform import Platform
+from qililab.platform.platform import Platform
 
 from .utils.side_effect import yaml_safe_load_side_effect
 

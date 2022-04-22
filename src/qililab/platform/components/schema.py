@@ -1,8 +1,5 @@
 """Schema class"""
-from dataclasses import asdict
-
-from qililab.settings.schema import SchemaSettings
-from qililab.typings import enum_dict_factory
+from qililab.settings.platform.components.schema import SchemaSettings
 
 
 class Schema:
@@ -28,9 +25,9 @@ class Schema:
         for idx, bus in enumerate(self.settings.buses):
             print(f"Bus {idx}:\t", end="------")
             for element in bus:
-                print(f"|{element.name}_{element.id_}", end="|------")
+                print(f"|{element.settings.name}_{element.settings.id_}", end="|------")
             print()
 
-    def asdict(self):
-        """Return all Schema information as a dictionary."""
-        return asdict(self.settings, dict_factory=enum_dict_factory)
+    def to_dict(self):
+        """Return a dict representation of the Schema class."""
+        return self.settings.to_dict()

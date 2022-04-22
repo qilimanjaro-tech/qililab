@@ -1,13 +1,11 @@
-import sys
+import json
 from dataclasses import asdict
-from pathlib import Path
 
-import yaml
-
-from qililab.buses import Buses
-from qililab.schema import Schema
+from qililab.platform.components.buses import Buses
+from qililab.platform.components.schema import Schema
+from qililab.platform.utils.dict_factory import dict_factory
 from qililab.settings import PlatformSettings
-from qililab.typings import CategorySettings, enum_dict_factory
+from qililab.typings import CategorySettings
 
 
 class Platform:
@@ -19,28 +17,23 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    schema: Schema
-    buses: Buses
-    settings: PlatformSettings
-
-    def __init__(self, settings: dict):
+    def __init__(self, settings: dict, schema: Schema, buses: Buses):
         self.settings = PlatformSettings(**settings)
+        self.schema = schema
+        self.buses = buses
 
     @property
     def name(self):
         """Return name from settings"""
         return self.settings.name
 
-    def dump(self):
+    def to_dict(self):
         """Return all platform information as a dictionary."""
         if not hasattr(self, "schema") or not hasattr(self, "buses"):
             raise AttributeError("Platform is not loaded.")
-        platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=enum_dict_factory)}
-        schema_dict = {CategorySettings.SCHEMA.value: self.schema.asdict()}
-        buses_dict = {CategorySettings.BUSES.value: self.buses.asdict()}
-        file_path = Path(sys.argv[0]).parent / "all_platform.yml"
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            yaml.safe_dump(data=platform_dict | schema_dict | buses_dict, stream=file, sort_keys=False)
+        platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
+        schema_dict = {CategorySettings.SCHEMA.value: self.schema.to_dict()}
+        return platform_dict | schema_dict
 
     def __str__(self) -> str:
         """String representation of the platform
@@ -48,4 +41,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return self.settings.name
+        return json.dumps(self.to_dict(), indent=4)

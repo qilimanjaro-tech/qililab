@@ -6,10 +6,9 @@ from .instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
 from .instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRMSettings
 from .instruments.qubit_control import QubitControlSettings
 from .instruments.rohde_schwarz.sgs100a import SGS100ASettings
-from .platform import PlatformSettings
-from .qubit import QubitCalibrationSettings
-from .resonator import ResonatorSettings
-from .schema import SchemaSettings
+from .platform.components.qubit import QubitCalibrationSettings
+from .platform.components.resonator import ResonatorSettings
+from .platform.platform import PlatformSettings
 from .settings import Settings
 from .settings_manager import SettingsManager
 

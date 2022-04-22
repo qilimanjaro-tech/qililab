@@ -28,32 +28,6 @@ qubit_0_settings_sample = {
     "max_voltage": 1775,
 }
 
-schema_settings_sample = {
-    "id_": 0,
-    "name": "qili_schema",  # unique name
-    "category": "schema",  # general name
-    "buses": [
-        [
-            {"category": "qubit_control", "name": "qblox_qcm", "id_": 0},
-            {"category": "signal_generator", "name": "rohde_schwarz", "id_": 0},
-            {"category": "mixer", "name": "mixer", "id_": 0},
-            {"category": "resonator", "name": "resonator", "id_": 0},
-        ],
-        [
-            {"category": "qubit_readout", "name": "qblox_qrm", "id_": 0},
-            {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
-            {"category": "mixer", "name": "mixer", "id_": 1},
-            {"category": "resonator", "name": "resonator", "id_": 0},
-        ],
-        [
-            {"category": "qubit_readout", "name": "qblox_qrm", "id_": 0},
-            {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
-            {"category": "mixer", "name": "mixer", "id_": 2},
-            {"category": "resonator", "name": "resonator", "id_": 0},
-        ],
-    ],
-}
-
 qblox_qcm_0_settings_sample = {
     "id_": 0,
     "name": "qblox_qcm",
@@ -89,7 +63,19 @@ resonator_0_settings_sample = {
     "id_": 0,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [{"id_": 0}],  # id of the qubit connected to the resonator
+    "qubits": [
+        {
+            "id_": 0,
+            "name": "qubit",
+            "category": "qubit",
+            "pi_pulse_amplitude": 1,
+            "pi_pulse_duration": 100,
+            "pi_pulse_frequency": 100000000.0,
+            "qubit_frequency": 3544000000.0,
+            "min_voltage": 950,
+            "max_voltage": 1775,
+        }
+    ],  # id of the qubit connected to the resonator
 }
 
 rohde_schwarz_0_settings_sample = {
@@ -141,6 +127,47 @@ mixer_2_settings_sample = {
     "offset_i": 0,
     "offset_q": 0,
     "up_conversion": False,
+}
+
+schema_settings_sample = {
+    "id_": 0,
+    "name": "qili_schema",  # unique name
+    "category": "schema",  # general name
+    "buses": [
+        {
+            "id_": 0,
+            "name": "bus",
+            "category": "bus",
+            "elements": [
+                qblox_qcm_0_settings_sample,
+                rohde_schwarz_0_settings_sample,
+                mixer_0_settings_sample,
+                resonator_0_settings_sample,
+            ],
+        },
+        {
+            "id_": 0,
+            "name": "bus",
+            "category": "bus",
+            "elements": [
+                qblox_qrm_0_settings_sample,
+                rohde_schwarz_1_settings_sample,
+                mixer_1_settings_sample,
+                resonator_0_settings_sample,
+            ],
+        },
+        {
+            "id_": 0,
+            "name": "bus",
+            "category": "bus",
+            "elements": [
+                resonator_0_settings_sample,
+                rohde_schwarz_1_settings_sample,
+                mixer_2_settings_sample,
+                resonator_0_settings_sample,
+            ],
+        },
+    ],
 }
 
 
