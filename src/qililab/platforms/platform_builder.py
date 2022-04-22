@@ -5,7 +5,7 @@ from typing import Dict
 from qililab.buses import Bus, Buses
 from qililab.config import logger
 from qililab.platforms.platform import Platform
-from qililab.platforms.utils.name_hash_table import NameHashTable
+from qililab.platforms.utils.bus_element_hash_table import BusElementHashTable
 from qililab.schema import Schema
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
@@ -13,8 +13,6 @@ from qililab.typings import CategorySettings
 
 class PlatformBuilder(ABC):
     """Builder of platform objects."""
-
-    platform: Platform
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.
@@ -29,26 +27,25 @@ class PlatformBuilder(ABC):
 
         SETTINGS_MANAGER.platform_name = platform_name
 
-        self._build_platform()
-        self._build_schema()
-        self._build_buses()
+        schema = self._build_schema()
+        buses = self._build_buses(schema=schema)
+        platform = self._build_platform(schema=schema, buses=buses)
 
-        return self.platform
+        return platform
 
-    def _build_platform(self):
+    def _build_platform(self, schema: Schema, buses: Buses) -> Platform:
         """Build platform."""
         platform_settings = self._load_platform_settings()
-        self.platform = Platform(settings=platform_settings)
+        return Platform(settings=platform_settings, schema=schema, buses=buses)
 
-    def _build_schema(self):
+    def _build_schema(self) -> Schema:
         """Build platform schema."""
         schema_settings = self._load_schema_settings()
-        self.platform.schema = Schema(settings=schema_settings)
+        return Schema(settings=schema_settings)
 
-    def _build_buses(self):
+    def _build_buses(self, schema) -> Buses:
         """Build platform buses."""
         buses = Buses()
-        schema = self.platform.schema
         for _, bus in enumerate(schema.settings.buses):
             bus_kwargs = {}
             for _, item in enumerate(bus):
@@ -58,7 +55,7 @@ class PlatformBuilder(ABC):
 
             buses.append(Bus(**bus_kwargs))
 
-        self.platform.buses = buses
+        return buses
 
     def _load_bus_element(self, settings: dict):
         """Load class instance of the corresponding category.
@@ -71,7 +68,7 @@ class PlatformBuilder(ABC):
         """
         if settings["category"] == CategorySettings.RESONATOR.value:
             settings = self._load_resonator_qubits(settings=settings)
-        element_type = NameHashTable.get(settings["name"])
+        element_type = BusElementHashTable.get(settings["name"])
 
         return element_type(settings)
 

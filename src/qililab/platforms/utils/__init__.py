@@ -1,1 +1,1 @@
-from .name_hash_table import NameHashTable
+from .bus_element_hash_table import BusElementHashTable

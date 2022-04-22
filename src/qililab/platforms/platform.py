@@ -19,11 +19,10 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    schema: Schema
-    buses: Buses
-
-    def __init__(self, settings: dict):
+    def __init__(self, settings: dict, schema: Schema, buses: Buses):
         self.settings = PlatformSettings(**settings)
+        self.schema = schema
+        self.buses = buses
 
     @property
     def name(self):
