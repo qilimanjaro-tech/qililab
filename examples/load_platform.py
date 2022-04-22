@@ -22,15 +22,15 @@ def load_platform_from_database():
     print(f"Platform name: {qibo.K.platform}")
     # Using PLATFORM_BUILDER
     platform = PLATFORM_BUILDER_DB.build(platform_name="platform_0")
-    platform.dump()  # save yaml file with all platform settings
-    print(f"Platform name: {platform}")
+    PLATFORM_BUILDER_DB.dump(platform=platform)  # save yaml file with all platform settings
+    print(f"Platform INFO: {platform}")
 
 
 def load_platform_from_yaml():
     """Load the platform configuration from the given yaml file."""
     filepath = Path(__file__).parent / "platform.yml"
     platform = PLATFORM_BUILDER_YAML.build_from_yaml(filepath=filepath)
-    print(f"Platform name: {platform}")
+    print(f"Platform INFO: {platform}")
 
 
 if __name__ == "__main__":
