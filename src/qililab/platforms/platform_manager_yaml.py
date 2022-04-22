@@ -10,7 +10,7 @@ from qililab.typings import CategorySettings
 
 
 class PlatformManagerYAML(PlatformManager):
-    """Builder of platform objects. Uses YAML file to get the corresponding settings."""
+    """Manager of platform objects. Uses YAML file to get the corresponding settings."""
 
     all_platform: Dict
     yaml_buses: List[List[Settings]]

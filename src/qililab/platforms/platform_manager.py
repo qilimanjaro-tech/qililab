@@ -16,7 +16,7 @@ from qililab.typings import CategorySettings
 
 
 class PlatformManager(ABC):
-    """Builder of platform objects."""
+    """Manager of platform objects."""
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.

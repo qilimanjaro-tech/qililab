@@ -7,7 +7,7 @@ from qililab.typings import CategorySettings
 
 
 class PlatformManagerDB(PlatformManager):
-    """Builder of platform objects."""
+    """Manager of platform objects."""
 
     def _load_platform_settings(self):
         """Load platform settings."""
