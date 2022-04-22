@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Dict, List, Tuple
 
 from qililab.platforms.components.qubit import Qubit
+from qililab.platforms.utils.enum_dict_factory import enum_dict_factory
 from qililab.settings import ResonatorSettings
-from qililab.typings import enum_dict_factory
 
 
 class Resonator:

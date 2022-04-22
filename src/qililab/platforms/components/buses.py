@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platforms.components.resonator import Resonator
-from qililab.typings import enum_dict_factory
+from qililab.platforms.utils.enum_dict_factory import enum_dict_factory
 
 
 @dataclass

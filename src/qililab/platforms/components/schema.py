@@ -1,8 +1,8 @@
 """Schema class"""
 from dataclasses import asdict
 
+from qililab.platforms.utils.enum_dict_factory import enum_dict_factory
 from qililab.settings.schema import SchemaSettings
-from qililab.typings import enum_dict_factory
 
 
 class Schema:

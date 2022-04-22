@@ -6,8 +6,9 @@ import yaml
 
 from qililab.platforms.components.buses import Buses
 from qililab.platforms.components.schema import Schema
+from qililab.platforms.utils.enum_dict_factory import enum_dict_factory
 from qililab.settings import PlatformSettings
-from qililab.typings import CategorySettings, enum_dict_factory
+from qililab.typings import CategorySettings
 
 
 class Platform:
