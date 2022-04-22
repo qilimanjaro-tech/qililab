@@ -87,7 +87,19 @@ resonator_0_settings_sample = {
     "id_": 0,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [{"id_": 0}],  # id of the qubit connected to the resonator
+    "qubits": [
+        {
+            "id_": 0,
+            "name": "qubit",
+            "category": "qubit",
+            "pi_pulse_amplitude": 1,
+            "pi_pulse_duration": 100,
+            "pi_pulse_frequency": 100000000.0,
+            "qubit_frequency": 3544000000.0,
+            "min_voltage": 950,
+            "max_voltage": 1775,
+        }
+    ],  # id of the qubit connected to the resonator
 }
 
 rohde_schwarz_0_settings_sample = {

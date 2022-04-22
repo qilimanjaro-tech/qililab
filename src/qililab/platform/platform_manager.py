@@ -79,29 +79,9 @@ class PlatformManager(ABC):
         Returns:
             (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
         """
-        if CategorySettings(settings["category"]) == CategorySettings.RESONATOR:
-            settings = self._load_resonator_qubits(settings=settings)
         element_type = BusElementHashTable.get(settings["name"])
 
         return element_type(settings)
-
-    def _load_resonator_qubits(self, settings: dict) -> dict:
-        """Load instance of qubits connected to the resonator and add them in the settings dictionary.
-
-        Args:
-            settings (dict): Dictionary of the resonator settings.
-
-        Returns:
-            dict: Dictionary of the resonator settings.
-        """
-        qubits = []
-        for qubit_dict in settings["qubits"]:
-            qubit_settings = self._load_qubit_settings(qubit_dict=qubit_dict)
-            qubit = self._load_bus_element(settings=qubit_settings)
-            qubits.append(qubit)
-        settings_copy = copy.deepcopy(settings)
-        settings_copy["qubits"] = qubits
-        return settings_copy
 
     @abstractmethod
     def _load_platform_settings(self):
@@ -117,12 +97,4 @@ class PlatformManager(ABC):
 
         Args:
             item (Settings): Settings class containing the settings of the item.
-        """
-
-    @abstractmethod
-    def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
-        """Load qubit settings.
-
-        Args:
-            qubit_dict (Dict[str, int | float | str]): Dictionary containing either the id of the qubit or all the settings.
         """

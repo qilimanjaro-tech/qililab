@@ -24,11 +24,3 @@ class PlatformManagerDB(PlatformManager):
             item (Settings): Settings class containing the settings of the item.
         """
         return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")
-
-    def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
-        """Load qubit settings.
-
-        Args:
-            qubit_dict (Dict[str, int | float | str]): Dictionary containing either the id of the qubit or all the settings.
-        """
-        return SETTINGS_MANAGER.load(filename=f"""{CategorySettings.QUBIT.value}_{qubit_dict["id_"]}""")

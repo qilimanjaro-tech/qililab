@@ -14,3 +14,7 @@ class ResonatorSettings(Settings):
     """
 
     qubits: List[Qubit]
+
+    def __post_init__(self):
+        """Cast list of qubits settings to Qubit objects."""
+        self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]
