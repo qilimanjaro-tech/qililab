@@ -7,7 +7,8 @@ from typing import Dict
 import yaml
 
 from qililab.config import logger
-from qililab.platform.components.buses import Bus, Buses
+from qililab.platform.components.bus import Bus
+from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
 from qililab.platform.utils.bus_element_hash_table import BusElementHashTable
