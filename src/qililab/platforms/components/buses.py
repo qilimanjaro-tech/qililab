@@ -59,7 +59,4 @@ class Buses:
 
     def asdict(self) -> List[List[Dict]]:
         """Return all Buses information as a dictionary."""
-        result = []
-        for bus in self.buses:
-            result.append(bus.asdict())
-        return result
+        return [bus.asdict() for bus in self.buses]
