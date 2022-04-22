@@ -1,6 +1,10 @@
 import copy
+import sys
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict
+
+import yaml
 
 from qililab.config import logger
 from qililab.platforms.components.buses import Bus, Buses
@@ -29,9 +33,17 @@ class PlatformBuilder(ABC):
 
         schema = self._build_schema()
         buses = self._build_buses(schema=schema)
-        platform = self._build_platform(schema=schema, buses=buses)
+        return self._build_platform(schema=schema, buses=buses)
 
-        return platform
+    def dump(self, platform: Platform):
+        """Dump all platform information into a YAML file.
+
+        Args:
+            platform (Platform): Platform to dump.
+        """
+        file_path = Path(sys.argv[0]).parent / "platform.yml"
+        with open(file=file_path, mode="w", encoding="utf-8") as file:
+            yaml.safe_dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
     def _build_platform(self, schema: Schema, buses: Buses) -> Platform:
         """Build platform."""
@@ -46,9 +58,9 @@ class PlatformBuilder(ABC):
     def _build_buses(self, schema) -> Buses:
         """Build platform buses."""
         buses = Buses()
-        for _, bus in enumerate(schema.settings.buses):
+        for bus in schema.settings.buses:
             bus_kwargs = {}
-            for _, item in enumerate(bus):
+            for item in bus:
                 settings = self._load_bus_item_settings(item=item)
                 element = self._load_bus_element(settings=settings)
                 bus_kwargs[item.category.value] = element

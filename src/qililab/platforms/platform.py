@@ -1,8 +1,4 @@
-import sys
 from dataclasses import asdict
-from pathlib import Path
-
-import yaml
 
 from qililab.platforms.components.buses import Buses
 from qililab.platforms.components.schema import Schema
@@ -30,16 +26,14 @@ class Platform:
         """Return name from settings"""
         return self.settings.name
 
-    def dump(self):
+    def to_dict(self):
         """Return all platform information as a dictionary."""
         if not hasattr(self, "schema") or not hasattr(self, "buses"):
             raise AttributeError("Platform is not loaded.")
         platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=enum_dict_factory)}
         schema_dict = {CategorySettings.SCHEMA.value: self.schema.to_dict()}
         buses_dict = {CategorySettings.BUSES.value: self.buses.to_dict()}
-        file_path = Path(sys.argv[0]).parent / "platform.yml"
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            yaml.safe_dump(data=platform_dict | schema_dict | buses_dict, stream=file, sort_keys=False)
+        return platform_dict | schema_dict | buses_dict
 
     def __str__(self) -> str:
         """String representation of the platform
@@ -47,4 +41,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return self.settings.name
+        return str(self.to_dict())
