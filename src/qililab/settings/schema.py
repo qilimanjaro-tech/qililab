@@ -19,8 +19,6 @@ class SchemaSettings(Settings):
         super().__post_init__()
         buses = []
         for bus in self.buses:
-            bus_list = []
-            for settings in bus:
-                bus_list.append(Settings(**settings))
+            bus_list = [Settings(**settings) for settings in bus]
             buses.append(bus_list)
         self.buses = buses
