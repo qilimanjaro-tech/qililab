@@ -1,10 +1,9 @@
-from dataclasses import dataclass, field
 from typing import Dict, List
 
 from qililab.platform.components.bus import Bus
+from qililab.settings.platform.components.bus import BusSettings
 
 
-@dataclass
 class Buses:
     """Class used as a container of Bus objects.
 
@@ -12,7 +11,8 @@ class Buses:
         buses (List[Bus]): List of Bus objects.
     """
 
-    buses: List[Bus] = field(default_factory=list)
+    def __init__(self, buses: List[BusSettings]):
+        self.buses = [Bus(bus_settings) for bus_settings in buses]
 
     def append(self, bus: Bus):
         """Append a bus to the list of buses.

@@ -28,7 +28,7 @@ class Schema:
         for idx, bus in enumerate(self.settings.buses):
             print(f"Bus {idx}:\t", end="------")
             for element in bus:
-                print(f"|{element.name}_{element.id_}", end="|------")
+                print(f"|{element.settings.name}_{element.settings.id_}", end="|------")
             print()
 
     def to_dict(self):

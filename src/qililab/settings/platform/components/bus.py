@@ -16,3 +16,7 @@ class BusSettings(Settings):
     def __post_init__(self):
         """Cast each element to its corresponding class."""
         self.elements = [BusElementHashTable.get(settings["name"])(settings) for settings in self.elements]
+
+    def __iter__(self):
+        """Redirect __iter__ magic method to iterate over list."""
+        return self.elements.__iter__()
