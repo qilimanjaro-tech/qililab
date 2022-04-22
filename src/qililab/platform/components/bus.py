@@ -4,6 +4,7 @@ from typing import Dict, List
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils.enum_dict_factory import enum_dict_factory
+from qililab.settings.platform.components.bus import BusSettings
 
 
 @dataclass
@@ -13,18 +14,10 @@ class Bus:
     is connected to one or multiple qubits.
 
     Args:
-        qubit_control (None | QubitControl): Class containing the qubit control instrument.
-        qubit_readout (None | QubitReadout): Class containing the qubit readout instrument.
-        signal_generator (SignalGenerator): Class containing the signal generator instrument.
-        mixer (Mixer): Class containing the mixer object, used for up- or down-conversion.
-        resonator (Resonator): Class containing the resonator object.
+        settings (BusSettings): Bus settings.
     """
 
-    signal_generator: SignalGenerator
-    mixer: Mixer
-    resonator: Resonator
-    qubit_control: None | QubitControl = None
-    qubit_readout: None | QubitReadout = None
+    settings: BusSettings
 
     def to_dict(self) -> List[Dict]:
         """Return all Bus information as a dictionary."""

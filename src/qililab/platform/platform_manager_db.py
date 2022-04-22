@@ -16,11 +16,3 @@ class PlatformManagerDB(PlatformManager):
     def _load_schema_settings(self):
         """Load schema settings."""
         return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
-
-    def _load_bus_item_settings(self, item: Settings):
-        """Load settings of the corresponding bus item.
-
-        Args:
-            item (Settings): Settings class containing the settings of the item.
-        """
-        return SETTINGS_MANAGER.load(filename=f"""{item.name}_{item.id_}""")

@@ -1,11 +1,9 @@
-from typing import Dict, List
+from typing import Dict
 
-import numpy as np
 import yaml
 
 from qililab.platform.platform import Platform
 from qililab.platform.platform_manager import PlatformManager
-from qililab.settings import Settings
 from qililab.typings import CategorySettings
 
 
@@ -13,7 +11,6 @@ class PlatformManagerYAML(PlatformManager):
     """Manager of platform objects. Uses YAML file to get the corresponding settings."""
 
     all_platform: Dict
-    yaml_buses: List[List[Settings]]
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.
@@ -50,18 +47,6 @@ class PlatformManagerYAML(PlatformManager):
         with open(file=filepath, mode="r", encoding="utf-8") as file:
             self.all_platform = yaml.safe_load(file)
 
-        self._load_yaml_buses_data()
-
-    def _load_yaml_buses_data(self):
-        """Get id_, name and category of each item inside buses, cast it to Settings and save it
-        into the yaml_buses attribute. This will be later be used by the _load_bus_item_settings method."""
-        self.yaml_buses = np.array(
-            [
-                [Settings(id_=item["id_"], name=item["name"], category=item["category"]) for item in bus]
-                for bus in self.all_platform[CategorySettings.BUSES.value]
-            ]
-        )
-
     def _load_platform_settings(self):
         """Load platform settings."""
         return self.all_platform[CategorySettings.PLATFORM.value]
@@ -69,20 +54,3 @@ class PlatformManagerYAML(PlatformManager):
     def _load_schema_settings(self):
         """Load schema settings."""
         return self.all_platform[CategorySettings.SCHEMA.value]
-
-    def _load_bus_item_settings(self, item: Settings) -> Dict[str, int | float | str]:
-        """Searches for 'item' in 'yaml_buses' and loads its complete settings.
-
-        Args:
-            item (Settings): Settings class containing the id, name and category of the item.
-
-        Raises:
-            ValueError: If there is
-
-        Returns:
-            Dict[str, int | float | str]: _description_
-        """
-        mask = self.yaml_buses == item
-        if np.sum(mask) == 0:
-            raise ValueError(f"Item with name {item.name} and id {item.id_} was not found in buses.")
-        return np.array(self.all_platform[CategorySettings.BUSES.value])[mask][0]

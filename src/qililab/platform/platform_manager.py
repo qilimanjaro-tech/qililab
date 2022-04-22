@@ -1,19 +1,14 @@
-import copy
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict
 
 import yaml
 
 from qililab.config import logger
-from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
-from qililab.platform.utils.bus_element_hash_table import BusElementHashTable
-from qililab.settings import SETTINGS_MANAGER, Settings
-from qililab.typings import CategorySettings
+from qililab.settings import SETTINGS_MANAGER
 
 
 class PlatformManager(ABC):
@@ -58,30 +53,7 @@ class PlatformManager(ABC):
 
     def _build_buses(self, schema: Schema) -> Buses:
         """Build platform buses."""
-        buses = Buses()
-        for bus in schema.settings.buses:
-            bus_kwargs = {}
-            for item in bus:
-                settings = self._load_bus_item_settings(item=item)
-                element = self._load_bus_element(settings=settings)
-                bus_kwargs[item.category.value] = element
-
-            buses.append(Bus(**bus_kwargs))
-
-        return buses
-
-    def _load_bus_element(self, settings: dict):
-        """Load class instance of the corresponding category.
-
-        Args:
-            settings (dict): Settings of the category object.
-
-        Returns:
-            (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
-        """
-        element_type = BusElementHashTable.get(settings["name"])
-
-        return element_type(settings)
+        return Buses(schema.settings.buses)
 
     @abstractmethod
     def _load_platform_settings(self):
@@ -90,11 +62,3 @@ class PlatformManager(ABC):
     @abstractmethod
     def _load_schema_settings(self):
         """Load schema settings."""
-
-    @abstractmethod
-    def _load_bus_item_settings(self, item: Settings):
-        """Load settings of the corresponding bus item.
-
-        Args:
-            item (Settings): Settings class containing the settings of the item.
-        """
