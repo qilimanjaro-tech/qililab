@@ -1,6 +1,5 @@
 # data.py
 """ Data to use alongside the test suite. """
-from typing import Dict
 
 platform_settings_sample = {
     "id_": 0,
@@ -33,19 +32,19 @@ schema_settings_sample = {
     "category": "schema",  # general name
     "buses": [
         [
-            {"category": "qubit_control", "name": "qcm", "id_": 0},
+            {"category": "qubit_control", "name": "qblox_qcm", "id_": 0},
             {"category": "signal_generator", "name": "rohde_schwarz", "id_": 0},
             {"category": "mixer", "name": "mixer", "id_": 0},
             {"category": "resonator", "name": "resonator", "id_": 0},
         ],
         [
-            {"category": "qubit_readout", "name": "qrm", "id_": 0},
+            {"category": "qubit_readout", "name": "qblox_qrm", "id_": 0},
             {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
             {"category": "mixer", "name": "mixer", "id_": 1},
             {"category": "resonator", "name": "resonator", "id_": 0},
         ],
         [
-            {"category": "qubit_readout", "name": "qrm", "id_": 0},
+            {"category": "qubit_readout", "name": "qblox_qrm", "id_": 0},
             {"category": "signal_generator", "name": "rohde_schwarz", "id_": 1},
             {"category": "mixer", "name": "mixer", "id_": 2},
             {"category": "resonator", "name": "resonator", "id_": 0},
@@ -147,8 +146,8 @@ class MockedSettingsHashTable:
     """Hash table that relates settings files to mocked data."""
 
     platform = platform_settings_sample
-    qcm_0 = qcm_0_settings_sample
-    qrm_0 = qrm_0_settings_sample
+    qblox_qcm_0 = qcm_0_settings_sample
+    qblox_qrm_0 = qrm_0_settings_sample
     qubit_0 = qubit_0_settings_sample
     resonator_0 = resonator_0_settings_sample
     rohde_schwarz_0 = rohde_schwarz_0_settings_sample

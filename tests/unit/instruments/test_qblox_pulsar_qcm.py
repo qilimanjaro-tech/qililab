@@ -20,7 +20,7 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
     # connect to instrument
     SETTINGS_MANAGER.platform_name = "platform_0"
-    qcm_settings = SETTINGS_MANAGER.load(filename="qcm_0")
+    qcm_settings = SETTINGS_MANAGER.load(filename="qblox_qcm_0")
     mock_load.assert_called_once()
     qcm = QbloxPulsarQCM(settings=qcm_settings)
     qcm.connect()
