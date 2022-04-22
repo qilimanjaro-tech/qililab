@@ -78,7 +78,7 @@ class PlatformManager(ABC):
         Returns:
             (Platform | QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit): Class instance of the element.
         """
-        if settings["category"] == CategorySettings.RESONATOR.value:
+        if CategorySettings(settings["category"]) == CategorySettings.RESONATOR:
             settings = self._load_resonator_qubits(settings=settings)
         element_type = BusElementHashTable.get(settings["name"])
 
