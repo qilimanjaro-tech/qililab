@@ -85,8 +85,7 @@ class PlatformManagerYAML(PlatformManager):
         mask = self.yaml_buses == item
         if np.sum(mask) == 0:
             raise ValueError(f"Item with name {item.name} and id {item.id_} was not found in buses.")
-        settings = np.array(self.all_platform[CategorySettings.BUSES.value])[mask][0]
-        return settings
+        return np.array(self.all_platform[CategorySettings.BUSES.value])[mask][0]
 
     def _load_qubit_settings(self, qubit_dict: Dict[str, int | float | str]):
         """Load qubit settings.
