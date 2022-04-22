@@ -31,3 +31,7 @@ class Bus:
                 attr_dict = attr.to_dict()
             result.append(attr_dict)
         return result
+
+    def __iter__(self):
+        """Redirect __iter__ magic method to iterate over bus elements."""
+        return self.settings.__iter__()

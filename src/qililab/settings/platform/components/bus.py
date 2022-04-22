@@ -18,5 +18,5 @@ class BusSettings(Settings):
         self.elements = [BusElementHashTable.get(settings["name"])(settings) for settings in self.elements]
 
     def __iter__(self):
-        """Redirect __iter__ magic method to iterate over list."""
+        """Redirect __iter__ magic method to iterate over elements."""
         return self.elements.__iter__()
