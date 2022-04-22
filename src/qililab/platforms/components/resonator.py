@@ -2,7 +2,7 @@ from dataclasses import asdict
 from enum import Enum
 from typing import Dict, List, Tuple
 
-from qililab.qubit import Qubit
+from qililab.platforms.components.qubit import Qubit
 from qililab.settings import ResonatorSettings
 from qililab.typings import enum_dict_factory
 

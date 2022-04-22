@@ -2,11 +2,11 @@ import copy
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from qililab.buses import Bus, Buses
 from qililab.config import logger
+from qililab.platforms.components.buses import Bus, Buses
+from qililab.platforms.components.schema import Schema
 from qililab.platforms.platform import Platform
 from qililab.platforms.utils.bus_element_hash_table import BusElementHashTable
-from qililab.schema import Schema
 from qililab.settings import SETTINGS_MANAGER, Settings
 from qililab.typings import CategorySettings
 

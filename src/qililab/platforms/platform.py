@@ -4,8 +4,8 @@ from pathlib import Path
 
 import yaml
 
-from qililab.buses import Buses
-from qililab.schema import Schema
+from qililab.platforms.components.buses import Buses
+from qililab.platforms.components.schema import Schema
 from qililab.settings import PlatformSettings
 from qililab.typings import CategorySettings, enum_dict_factory
 

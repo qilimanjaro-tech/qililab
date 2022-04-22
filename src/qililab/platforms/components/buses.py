@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Dict, List
 
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
-from qililab.resonator import Resonator
+from qililab.platforms.components.resonator import Resonator
 from qililab.typings import enum_dict_factory
 
 
