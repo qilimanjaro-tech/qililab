@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List
 
 from qililab.settings.settings import Settings
 
@@ -12,7 +12,7 @@ class SchemaSettings(Settings):
         buses (List[List[Settings]]): List containing the settings of the elements for each bus.
     """
 
-    buses: List[List[Settings]]
+    buses: Dict[str, str | int | List[List[Settings]]]
 
     def __post_init__(self):
         """Cast the settings of each element to the Settings class."""

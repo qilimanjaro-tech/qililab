@@ -56,7 +56,7 @@ class PlatformManager(ABC):
         schema_settings = self._load_schema_settings()
         return Schema(settings=schema_settings)
 
-    def _build_buses(self, schema) -> Buses:
+    def _build_buses(self, schema: Schema) -> Buses:
         """Build platform buses."""
         buses = Buses()
         for bus in schema.settings.buses:
