@@ -26,9 +26,10 @@ def resonator_dict_factory(data: List[Tuple[str, int | float | str | Enum | List
     result: Dict[str, List[Dict[str, int | float | str]] | str | int | float] = {}
     for key, value in data:
         if isinstance(value, list):
-            qubit_list: List[Dict[str, int | float | str]] = []
-            for qubit in value:
-                qubit_list.append(asdict(qubit.settings, dict_factory=enum_dict_factory))
+            qubit_list: List[Dict[str, int | float | str]] = [
+                asdict(qubit.settings, dict_factory=enum_dict_factory) for qubit in value
+            ]
+
             result = result | {key: qubit_list}
             continue
         if isinstance(value, Enum):
