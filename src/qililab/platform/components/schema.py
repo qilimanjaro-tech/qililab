@@ -2,7 +2,7 @@
 from dataclasses import asdict
 
 from qililab.platform.utils.enum_dict_factory import enum_dict_factory
-from qililab.settings.platforms.components.schema import SchemaSettings
+from qililab.settings import SchemaSettings
 
 
 class Schema:
