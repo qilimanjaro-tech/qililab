@@ -21,10 +21,6 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.buses.append(bus)
 
-    def to_dict(self) -> List[List[Dict]]:
-        """Return all Buses information as a dictionary."""
-        return [bus.to_dict() for bus in self.buses]
-
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
         return self.buses.__iter__()

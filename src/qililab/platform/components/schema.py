@@ -1,7 +1,4 @@
 """Schema class"""
-from dataclasses import asdict
-
-from qililab.platform.utils.enum_dict_factory import enum_dict_factory
 from qililab.settings.platform.components.schema import SchemaSettings
 
 
@@ -32,5 +29,5 @@ class Schema:
             print()
 
     def to_dict(self):
-        """Return all Schema information as a dictionary."""
-        return asdict(self.settings, dict_factory=enum_dict_factory)
+        """Return a dict representation of the Schema class."""
+        return self.settings.to_dict()
