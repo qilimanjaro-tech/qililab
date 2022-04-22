@@ -26,7 +26,7 @@ class Bus:
     qubit_control: None | QubitControl = None
     qubit_readout: None | QubitReadout = None
 
-    def asdict(self) -> List[Dict]:
+    def to_dict(self) -> List[Dict]:
         """Return all Bus information as a dictionary."""
         result = []
         for attr in asdict(self, dict_factory=enum_dict_factory).values():
@@ -35,7 +35,7 @@ class Bus:
             if isinstance(attr, SignalGenerator | QubitReadout | QubitControl | Mixer):
                 attr_dict = asdict(attr.settings, dict_factory=enum_dict_factory)
             if isinstance(attr, Resonator):
-                attr_dict = attr.asdict()
+                attr_dict = attr.to_dict()
             result.append(attr_dict)
         return result
 
@@ -57,6 +57,6 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.buses.append(bus)
 
-    def asdict(self) -> List[List[Dict]]:
+    def to_dict(self) -> List[List[Dict]]:
         """Return all Buses information as a dictionary."""
-        return [bus.asdict() for bus in self.buses]
+        return [bus.to_dict() for bus in self.buses]

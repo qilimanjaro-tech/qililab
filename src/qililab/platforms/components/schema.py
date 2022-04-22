@@ -31,6 +31,6 @@ class Schema:
                 print(f"|{element.name}_{element.id_}", end="|------")
             print()
 
-    def asdict(self):
+    def to_dict(self):
         """Return all Schema information as a dictionary."""
         return asdict(self.settings, dict_factory=enum_dict_factory)

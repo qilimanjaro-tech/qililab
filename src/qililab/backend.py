@@ -39,7 +39,7 @@ class QililabBackend(NumpyBackend):
         Returns:
             str: Platform name.
         """
-        return str(self.platform)
+        return self.platform.name
 
     def circuit_class(self, accelerators: dict = None, density_matrix: bool = False) -> Type[HardwareCircuit]:
         """

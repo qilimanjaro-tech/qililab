@@ -15,7 +15,7 @@ class Resonator:
     def __init__(self, settings: dict):
         self.settings = ResonatorSettings(**settings)
 
-    def asdict(self):
+    def to_dict(self):
         """Return all Resonator information as a dictionary."""
         return asdict(self.settings, dict_factory=resonator_dict_factory)
 
