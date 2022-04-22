@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import qibo
-from mdformat import file
 
 from qililab import PLATFORM_BUILDER_DB, PLATFORM_BUILDER_YAML
 
