@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 
 from qililab.platforms.components.buses import Buses
@@ -41,4 +42,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return str(self.to_dict())
+        return json.dumps(self.to_dict(), indent=4)
