@@ -1,12 +1,10 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from qililab import PLATFORM_BUILDER_YAML
 from qililab.platforms import PlatformBuilderYAML
-from qililab.typings import CategorySettings
 
 from .utils.side_effect import yaml_safe_load_side_effect
 
