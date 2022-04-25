@@ -10,7 +10,7 @@ from qililab.typings import CategorySettings
 class PlatformManagerYAML(PlatformManager):
     """Manager of platform objects. Uses YAML file to get the corresponding settings."""
 
-    all_platform: Dict
+    data: Dict
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.
@@ -21,7 +21,7 @@ class PlatformManagerYAML(PlatformManager):
         Returns:
             Platform: Platform object describing the setup used.
         """
-        if not hasattr(self, "all_platform"):
+        if not hasattr(self, "data"):
             raise AttributeError("Please use the 'build_from_yaml' method.")
 
         return super().build(platform_name=platform_name)
@@ -36,21 +36,21 @@ class PlatformManagerYAML(PlatformManager):
             Platform: Platform object describing the setup used.
         """
         self._load_yaml_data(filepath=filepath)
-        return self.build(platform_name=self.all_platform["platform"]["name"])
+        return self.build(platform_name=self.data["platform"]["name"])
 
     def _load_yaml_data(self, filepath: str):
-        """Load YAML file and save it to all_platform attribute.
+        """Load YAML file and save it to data attribute.
 
         Args:
             filepath (str): Path to the YAML file.
         """
         with open(file=filepath, mode="r", encoding="utf-8") as file:
-            self.all_platform = yaml.safe_load(file)
+            self.data = yaml.safe_load(file)
 
     def _load_platform_settings(self):
         """Load platform settings."""
-        return self.all_platform[CategorySettings.PLATFORM.value]
+        return self.data[CategorySettings.PLATFORM.value]
 
     def _load_schema_settings(self):
         """Load schema settings."""
-        return self.all_platform[CategorySettings.SCHEMA.value]
+        return self.data[CategorySettings.SCHEMA.value]
