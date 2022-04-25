@@ -1,6 +1,10 @@
 import pytest
 
-from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
+from qililab.constants import (
+    DEFAULT_PLATFORM_FILENAME,
+    DEFAULT_PLATFORM_NAME,
+    DEFAULT_SETTINGS_FOLDERNAME,
+)
 from qililab.platform import Platform
 from qililab.platform.components import Qubit
 from qililab.settings import SETTINGS_MANAGER
@@ -19,7 +23,9 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with the default platform settings.
         Assert that errors are raised correctly."""
         settings = SETTINGS_MANAGER.load(
-            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="platform"
+            foldername=DEFAULT_SETTINGS_FOLDERNAME,
+            platform_name=DEFAULT_PLATFORM_NAME,
+            filename=DEFAULT_PLATFORM_FILENAME,
         )
         Platform.PlatformSettings(**settings)
 
@@ -27,7 +33,7 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with the default qubit settings.
         Assert that errors are raised correctly."""
         settings = SETTINGS_MANAGER.load(
-            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="qubit_0"
+            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qubit_0"
         )
         Qubit.QubitCalibrationSettings(**settings)
 
@@ -35,5 +41,5 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with an unknown file."""
         with pytest.raises(FileNotFoundError):
             SETTINGS_MANAGER.load(
-                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="unknown_file"
+                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="unknown_file"
             )

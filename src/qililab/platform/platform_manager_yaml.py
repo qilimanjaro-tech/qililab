@@ -4,7 +4,7 @@ import yaml
 
 from qililab.platform.platform import Platform
 from qililab.platform.platform_manager import PlatformManager
-from qililab.typings import Category
+from qililab.typings import Category, YAMLNames
 
 
 class PlatformManagerYAML(PlatformManager):
@@ -36,7 +36,7 @@ class PlatformManagerYAML(PlatformManager):
             Platform: Platform object describing the setup used.
         """
         self._load_yaml_data(filepath=filepath)
-        return self.build(platform_name=self.data["platform"]["name"])
+        return self.build(platform_name=self.data[YAMLNames.PLATFORM.value][YAMLNames.NAME.value])
 
     def _load_yaml_data(self, filepath: str):
         """Load YAML file and save it to data attribute.

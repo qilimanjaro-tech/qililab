@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 
 from qililab.config import logger
+from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
@@ -38,7 +39,7 @@ class PlatformManager(ABC):
         Args:
             platform (Platform): Platform to dump.
         """
-        file_path = Path(sys.argv[0]).parent / "platform.yml"
+        file_path = Path(sys.argv[0]).parent / DEFAULT_PLATFORM_DUMP_FILENAME
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             yaml.safe_dump(data=platform.to_dict(), stream=file, sort_keys=False)
 

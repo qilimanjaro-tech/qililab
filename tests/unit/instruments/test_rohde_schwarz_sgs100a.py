@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 
@@ -19,7 +19,7 @@ def fixture_rohde_schwarz(mock_load: MagicMock, mock_pulsar: MagicMock):
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
     rohde_schwarz_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="rohde_schwarz_0"
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="rohde_schwarz_0"
     )
     mock_load.assert_called_once()
     rohde_schwarz = SGS100A(settings=rohde_schwarz_settings)

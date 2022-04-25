@@ -76,3 +76,24 @@ class SchemaDrawOptions(Enum):
 
     PRINT = "print"
     FILE = "file"
+
+
+class YAMLNames(Enum):
+    """YAML names.
+
+    Args:
+        enum (str): Available types of YAML names.
+        * platform
+        * schema
+        * id_
+        * name
+        * category
+        * buses
+    """
+
+    PLATFORM = "platform"
+    SCHEMA = "schema"
+    ID_ = "id_"
+    NAME = "name"
+    CATEGORY = "category"
+    BUSES = "buses"

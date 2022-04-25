@@ -1,5 +1,5 @@
 id_: 0
-name: platform  # unique name
+name: platform_0  # unique name
 category: platform  # general name
 number_qubits: 1
 hardware_average: 4096

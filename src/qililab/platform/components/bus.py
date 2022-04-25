@@ -6,6 +6,7 @@ from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils.bus_element_hash_table import BusElementHashTable
 from qililab.platform.utils.dict_factory import dict_factory
 from qililab.settings.settings import Settings
+from qililab.typings import YAMLNames
 
 
 @dataclass
@@ -40,8 +41,8 @@ class Bus:
             """Cast each element to its corresponding class."""
             super().__post_init__()
             for idx, settings in enumerate(self.elements):
-                self.elements[idx] = BusElementHashTable.get(settings["name"])(settings)
-                setattr(self, settings["category"], BusElementHashTable.get(settings["name"])(settings))
+                self.elements[idx] = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
+                setattr(self, settings["category"], BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings))
 
         def __iter__(self):
             """Redirect __iter__ magic method to iterate over elements."""

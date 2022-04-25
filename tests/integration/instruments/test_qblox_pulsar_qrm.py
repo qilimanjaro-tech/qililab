@@ -1,6 +1,6 @@
 import pytest
 
-from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import Category
@@ -10,7 +10,7 @@ from qililab.typings import Category
 def fixture_qrm():
     """Return instance of QbloxPulsarQRM class."""
     qrm_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="qblox_qrm_0"
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"
     )
     return QbloxPulsarQRM(settings=qrm_settings)
 
