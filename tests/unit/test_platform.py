@@ -4,14 +4,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import PLATFORM_BUILDER_DB, PLATFORM_BUILDER_YAML
-from qililab.buses import Buses
+from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
-from qililab.platforms import Platform
-from qililab.qubit import Qubit
-from qililab.resonator import Resonator
-from qililab.schema import Schema
-from qililab.settings import SETTINGS_MANAGER, PlatformSettings, SchemaSettings
+from qililab.platform import Platform
+from qililab.platform.components import Buses, Qubit, Resonator, Schema
+from qililab.settings import PlatformSettings
+from qililab.settings.platform.components.schema import SchemaSettings
 
 from .utils.side_effect import yaml_safe_load_side_effect
 
@@ -19,18 +17,18 @@ from .utils.side_effect import yaml_safe_load_side_effect
 def platform_db():
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        PLATFORM_BUILDER_DB.build(platform_name="platform_0")
+        platform = PLATFORM_MANAGER_DB.build(platform_name="platform_0")
         mock_load.assert_called()
-    return PLATFORM_BUILDER_DB.platform
+    return platform
 
 
 def platform_yaml():
     """Return PlatformBuilderYAML instance with loaded platform."""
     filepath = Path(__file__).parent.parent.parent / "examples" / "all_platform.yml"
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        PLATFORM_BUILDER_YAML.build_from_yaml(filepath=str(filepath))
+        platform = PLATFORM_MANAGER_YAML.build_from_yaml(filepath=str(filepath))
         mock_load.assert_called()
-    return PLATFORM_BUILDER_YAML.platform
+    return platform
 
 
 @pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])
@@ -40,10 +38,6 @@ class TestPlatform:
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == "platform"
-
-    def test_platform_str_method(self, platform: Platform):
-        """Test platform __str__ method."""
-        assert str(platform) == platform.name
 
     def test_platform_settings_instance(self, platform: Platform):
         """Test platform settings instance."""
@@ -67,15 +61,11 @@ class TestPlatform:
 
     def test_platform_schema_asdict_method(self, platform: Platform):
         """Test platform schema asdict method."""
-        assert isinstance(platform.schema.asdict(), dict)
+        assert isinstance(platform.schema.to_dict(), dict)
 
     def test_platform_buses_instance(self, platform: Platform):
         """Test platform buses instance."""
         assert isinstance(platform.buses, Buses)
-
-    def test_platform_buses_asdict_method(self, platform: Platform):
-        """Test platform buses asdict method."""
-        assert isinstance(platform.buses.asdict(), list)
 
     def test_platform_bus_0_signal_generator_instance(self, platform: Platform):
         """Test platform bus 0 signal generator instance."""
@@ -110,17 +100,7 @@ class TestPlatform:
         assert isinstance(platform.buses.buses[1].qubit_readout, QubitReadout)
 
     @patch("qililab.settings.settings_manager.yaml.safe_dump")
-    def test_platform_dump_method(self, mock_dump: MagicMock, platform: Platform):
+    def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test platform dump method."""
-        platform.dump()
+        PLATFORM_MANAGER_DB.dump(platform=platform)
         mock_dump.assert_called()
-
-    @patch("qililab.settings.settings_manager.yaml.safe_dump")
-    def test_platform_dump_method_raise_error(self, mock_dump: MagicMock, platform: Platform):
-        """Test platform dump method raise error when platform not loaded."""
-        SETTINGS_MANAGER.platform_name = "platform_0"
-        platform_settings = SETTINGS_MANAGER.load(filename=platform.name)
-        unloaded_platform = Platform(settings=platform_settings)
-        with pytest.raises(AttributeError):
-            unloaded_platform.dump()
-        mock_dump.assert_not_called()

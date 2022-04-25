@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 
 from qililab.platform.components.bus import Bus
 from qililab.settings.platform.components.bus import BusSettings

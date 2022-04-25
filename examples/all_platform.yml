@@ -42,9 +42,6 @@ schema:
       offset_q: 0
       up_conversion: true
     - id_: 0
-      name: mixer
-      category: mixer
-    - id_: 0
       name: resonator
       category: resonator
       qubits:

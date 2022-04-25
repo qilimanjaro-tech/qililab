@@ -37,7 +37,7 @@ class PlatformManager(ABC):
         Args:
             platform (Platform): Platform to dump.
         """
-        file_path = Path(sys.argv[0]).parent / "platform.yml"
+        file_path = Path(sys.argv[0]).parent / "all_platform.yml"
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             yaml.safe_dump(data=platform.to_dict(), stream=file, sort_keys=False)
 

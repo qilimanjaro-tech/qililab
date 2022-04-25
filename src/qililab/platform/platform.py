@@ -29,8 +29,6 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        if not hasattr(self, "schema") or not hasattr(self, "buses"):
-            raise AttributeError("Platform is not loaded.")
         platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {CategorySettings.SCHEMA.value: self.schema.to_dict()}
         return platform_dict | schema_dict

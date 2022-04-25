@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import List
 
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
@@ -10,14 +10,30 @@ from qililab.settings.settings import Settings
 
 @dataclass
 class BusSettings(Settings):
-    """Schema settings."""
+    """BusSettings class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
+    through a mixer for up- or down-conversion. At the end/beginning of the bus there should be a resonator object, which
+    is connected to one or multiple qubits.
+    Args:
+        qubit_control (None | QubitControl): Class containing the qubit control instrument.
+        qubit_readout (None | QubitReadout): Class containing the qubit readout instrument.
+        signal_generator (SignalGenerator): Class containing the signal generator instrument.
+        mixer (Mixer): Class containing the mixer object, used for up- or down-conversion.
+        resonator (Resonator): Class containing the resonator object.
+    """
 
     elements: List[QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator]
+    signal_generator: SignalGenerator = field(init=False)
+    mixer: Mixer = field(init=False)
+    resonator: Resonator = field(init=False)
+    qubit_control: None | QubitControl = field(init=False, default=None)
+    qubit_readout: None | QubitReadout = field(init=False, default=None)
 
     def __post_init__(self):
         """Cast each element to its corresponding class."""
         super().__post_init__()
-        self.elements = [BusElementHashTable.get(settings["name"])(settings) for settings in self.elements]
+        for idx, settings in enumerate(self.elements):
+            self.elements[idx] = BusElementHashTable.get(settings["name"])(settings)
+            setattr(self, settings["category"], BusElementHashTable.get(settings["name"])(settings))
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over elements."""
