@@ -8,8 +8,6 @@ from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Platform
 from qililab.platform.components import Buses, Qubit, Resonator, Schema
-from qililab.settings import PlatformSettings
-from qililab.settings.platform.components.schema import SchemaSettings
 
 from .utils.side_effect import yaml_safe_load_side_effect
 
@@ -41,7 +39,7 @@ class TestPlatform:
 
     def test_platform_settings_instance(self, platform: Platform):
         """Test platform settings instance."""
-        assert isinstance(platform.settings, PlatformSettings)
+        assert isinstance(platform.settings, Platform.PlatformSettings)
 
     def test_platform_schema_instance(self, platform: Platform):
         """Test platform schema instance."""
@@ -49,11 +47,7 @@ class TestPlatform:
 
     def test_platform_schema_settings_instance(self, platform: Platform):
         """Test platform schema settings instance."""
-        assert isinstance(platform.schema.settings, SchemaSettings)
-
-    def test_platform_schema_num_buses(self, platform: Platform):
-        """Test platform schema num_buses."""
-        assert platform.schema.num_buses == 3
+        assert isinstance(platform.schema.settings, Schema.SchemaSettings)
 
     def test_platform_schema_draw_method(self, platform: Platform):
         """Test platform schema draw method."""

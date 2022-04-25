@@ -4,12 +4,11 @@ from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import CategorySettings
 
-SETTINGS_MANAGER.platform_name = "platform_0"
-
 
 @pytest.fixture(name="qcm")
 def fixture_qcm():
     """Return instance of QbloxPulsarQCM class."""
+    SETTINGS_MANAGER.platform_name = "platform_0"
     qcm_settings = SETTINGS_MANAGER.load(filename="qblox_qcm_0")
     return QbloxPulsarQCM(settings=qcm_settings)
 
