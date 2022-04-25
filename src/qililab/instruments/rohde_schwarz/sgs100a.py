@@ -27,8 +27,8 @@ class SGS100A(SignalGenerator):
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
-        self.device.power(self.settings.power)
-        self.device.frequency(self.settings.frequency)
+        self.device.power(self.power)
+        self.device.frequency(self.frequency)
 
     @SignalGenerator.CheckConnected
     def start(self):
@@ -42,4 +42,4 @@ class SGS100A(SignalGenerator):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(self.settings.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.ip}::inst0::INSTR")

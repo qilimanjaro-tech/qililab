@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable
 
-from qililab.settings import Settings
+from qililab.settings import InstrumentSettings
 from qililab.typings import Device
 
 
@@ -17,7 +17,7 @@ class Instrument(ABC):
     """
 
     device: Device  # a subtype of device must be specified by the subclass
-    settings: Settings  # a subtype of settings must be specified by the subclass
+    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
 
     class CheckConnected:
         """Property used to check if the instrument is connected."""
@@ -73,3 +73,39 @@ class Instrument(ABC):
     @abstractmethod
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
+
+    @property
+    def id_(self):
+        """Instrument 'id' property.
+
+        Returns:
+            int: settings.id_.
+        """
+        return self.settings.id_
+
+    @property
+    def name(self):
+        """Instrument 'name' property.
+
+        Returns:
+            str: settings.name.
+        """
+        return self.settings.name
+
+    @property
+    def category(self):
+        """Instrument 'category' property.
+
+        Returns:
+            str: settings.category.
+        """
+        return self.settings.category
+
+    @property
+    def ip(self):
+        """Instrument 'ip' property.
+
+        Returns:
+            str: settings.ip.
+        """
+        return self.settings.ip

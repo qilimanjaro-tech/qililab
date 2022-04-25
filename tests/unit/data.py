@@ -1,5 +1,5 @@
-# data.py
 """ Data to use alongside the test suite. """
+import copy
 
 platform_settings_sample = {
     "id_": 0,
@@ -187,4 +187,4 @@ class MockedSettingsHashTable:
     @classmethod
     def get(cls, name: str) -> dict:
         """Return attribute with corresponding name."""
-        return getattr(cls, name).copy()
+        return copy.deepcopy(getattr(cls, name))

@@ -55,22 +55,58 @@ class QbloxPulsar(Instrument):
             sequence_path (str): Path to the json file containing the waveforms,
             weights, acquisitions and program of the sequence.
         """
-        getattr(self.device, f"sequencer{self.settings.sequencer}").sequence(sequence_path)
+        getattr(self.device, f"sequencer{self.sequencer}").sequence(sequence_path)
 
     def _set_gain(self):
         """Set gain of sequencer for all paths."""
-        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path0(self.settings.gain)
-        getattr(self.device, f"sequencer{self.settings.sequencer}").gain_awg_path1(self.settings.gain)
+        getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path0(self.gain)
+        getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path1(self.gain)
 
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
-        self.device.reference_source(self.settings.reference_clock)
+        self.device.reference_source(self.reference_clock)
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
-        getattr(self.device, f"sequencer{self.settings.sequencer}").sync_en(self.settings.sync_enabled)
+        getattr(self.device, f"sequencer{self.sequencer}").sync_en(self.sync_enabled)
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        self.device = Pulsar(name=self.settings.name, identifier=self.settings.ip)
+        self.device = Pulsar(name=self.name, identifier=self.ip)
+
+    @property
+    def reference_clock(self):
+        """QbloxPulsar 'reference_clock' property.
+
+        Returns:
+            ReferenceClock: settings.reference_clock.
+        """
+        return self.settings.reference_clock
+
+    @property
+    def sequencer(self):
+        """QbloxPulsar 'sequencer' property.
+
+        Returns:
+            int: settings.sequencer.
+        """
+        return self.settings.sequencer
+
+    @property
+    def sync_enabled(self):
+        """QbloxPulsar 'sync_enabled' property.
+
+        Returns:
+            bool: settings.sync_enabled.
+        """
+        return self.settings.sync_enabled
+
+    @property
+    def gain(self):
+        """QbloxPulsar 'gain' property.
+
+        Returns:
+            float: settings.gain.
+        """
+        return self.settings.gain

@@ -54,18 +54,98 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             dict: Dictionary with the acquisition results.
 
         """
-        self.device.get_sequencer_state(sequencer=self.settings.sequencer, timeout=self.settings.sequence_timeout)
-        self.device.get_acquisition_state(sequencer=self.settings.sequencer, timeout=self.settings.acquisition_timeout)
-        self.device.store_scope_acquisition(sequencer=self.settings.sequencer, name=self.settings.acquisition_name)
-        acquisitions = self.device.get_acquisitions(sequencer=self.settings.sequencer)
-        return acquisitions
+        self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
+        self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
+        self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
+        return self.device.get_acquisitions(sequencer=self.sequencer)
 
     def _set_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.settings.hardware_average_enabled)
-        self.device.scope_acq_avg_mode_en_path1(self.settings.hardware_average_enabled)
+        self.device.scope_acq_avg_mode_en_path0(self.hardware_average_enabled)
+        self.device.scope_acq_avg_mode_en_path1(self.hardware_average_enabled)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
-        self.device.scope_acq_trigger_mode_path0(self.settings.acquire_trigger_mode)
-        self.device.scope_acq_trigger_mode_path1(self.settings.acquire_trigger_mode)
+        self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode)
+        self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode)
+
+    @property
+    def acquire_trigger_mode(self):
+        """QbloxPulsarQRM 'acquire_trigger_mode' property.
+
+        Returns:
+            AcquireTriggerMode: settings.acquire_trigger_mode.
+        """
+        return self.settings.acquire_trigger_mode
+
+    @property
+    def hardware_average_enabled(self):
+        """QbloxPulsarQRM 'hardware_average_enabled' property.
+
+        Returns:
+            bool: settings.hardware_average_enabled.
+        """
+        return self.settings.hardware_average_enabled
+
+    @property
+    def start_integrate(self):
+        """QbloxPulsarQRM 'start_integrate' property.
+
+        Returns:
+            int: settings.start_integrate.
+        """
+        return self.settings.start_integrate
+
+    @property
+    def sampling_rate(self):
+        """QbloxPulsarQRM 'sampling_rate' property.
+
+        Returns:
+            int: settings.sampling_rate.
+        """
+        return self.settings.sampling_rate
+
+    @property
+    def integration_length(self):
+        """QbloxPulsarQRM 'integration_length' property.
+
+        Returns:
+            int: settings.integration_length.
+        """
+        return self.settings.integration_length
+
+    @property
+    def integration_mode(self):
+        """QbloxPulsarQRM 'integration_mode' property.
+
+        Returns:
+            IntegrationMode: settings.integration_mode.
+        """
+        return self.settings.integration_mode
+
+    @property
+    def sequence_timeout(self):
+        """QbloxPulsarQRM 'sequence_timeout' property.
+
+        Returns:
+            int: settings.sequence_timeout.
+        """
+        return self.settings.sequence_timeout
+
+    @property
+    def acquisition_timeout(self):
+        """QbloxPulsarQRM 'acquisition_timeout' property.
+
+        Returns:
+            int: settings.acquisition_timeout.
+        """
+        return self.settings.acquisition_timeout
+
+    @property
+    def acquisition_name(self):
+        """QbloxPulsarQRM 'acquisition_name' property.
+
+        Returns:
+            str: settings.acquisition_name.
+        """
+        return self.settings.acquisition_name

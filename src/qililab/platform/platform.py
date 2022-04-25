@@ -23,9 +23,30 @@ class Platform:
         self.buses = buses
 
     @property
+    def id_(self):
+        """Platform 'id_' property.
+
+        Returns:
+            int: settings.id_.
+        """
+        return self.settings.id_
+
+    @property
     def name(self):
-        """Return name from settings"""
+        """Platform 'name' property.
+
+        Returns:
+            str: settings.name."""
         return self.settings.name
+
+    @property
+    def category(self):
+        """Platform 'category' property.
+
+        Returns:
+            str: settings.category.
+        """
+        return self.settings.category
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

@@ -38,8 +38,8 @@ class TestQbloxPulsarQCM:
     def test_inital_setup_method(self, qcm: QbloxPulsarQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
-        qcm.device.reference_source.assert_called_with(qcm.settings.reference_clock)
-        qcm.device.sequencer0.sync_en.assert_called_with(qcm.settings.sync_enabled)
+        qcm.device.reference_source.assert_called_with(qcm.reference_clock)
+        qcm.device.sequencer0.sync_en.assert_called_with(qcm.sync_enabled)
 
     def test_start_method(self, qcm: QbloxPulsarQCM):
         """Test start method"""
@@ -50,8 +50,8 @@ class TestQbloxPulsarQCM:
     def test_setup_method(self, qcm: QbloxPulsarQCM):
         """Test setup method"""
         qcm.setup()
-        qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.settings.gain)
-        qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.settings.gain)
+        qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
+        qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
 
     def test_stop_method(self, qcm: QbloxPulsarQCM):
         """Test stop method"""
