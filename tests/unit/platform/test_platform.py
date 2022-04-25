@@ -10,7 +10,7 @@ from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerat
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
 from qililab.typings import SchemaDrawOptions
 
-from .utils.side_effect import yaml_safe_load_side_effect
+from ..utils.side_effect import yaml_safe_load_side_effect
 
 
 def platform_db():
@@ -23,7 +23,7 @@ def platform_db():
 
 def platform_yaml():
     """Return PlatformBuilderYAML instance with loaded platform."""
-    filepath = Path(__file__).parent.parent.parent / "examples" / "all_platform.yml"
+    filepath = Path(__file__).parent.parent.parent.parent / "examples" / "all_platform.yml"
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
         platform = PLATFORM_MANAGER_YAML.build(filepath=str(filepath))
         mock_load.assert_called()

@@ -106,3 +106,55 @@ class TestQbloxPulsarQRM:
         qrm.close()
         with pytest.raises(AttributeError):
             qrm.start()
+
+    def test_ip_property(self, qrm: QbloxPulsarQRM):
+        """Test ip property."""
+        assert qrm.ip == qrm.settings.ip
+
+    def test_id_property(self, qrm: QbloxPulsarQRM):
+        """Test id property."""
+        assert qrm.id_ == qrm.settings.id_
+
+    def test_name_property(self, qrm: QbloxPulsarQRM):
+        """Test name property."""
+        assert qrm.name == qrm.settings.name
+
+    def test_category_property(self, qrm: QbloxPulsarQRM):
+        """Test category property."""
+        assert qrm.category == qrm.settings.category
+
+    def test_acquire_trigger_mode_property(self, qrm: QbloxPulsarQRM):
+        """Test acquire_trigger_mode property."""
+        assert qrm.acquire_trigger_mode == qrm.settings.acquire_trigger_mode
+
+    def test_hardware_average_enabled_property(self, qrm: QbloxPulsarQRM):
+        """Test hardware_average_enabled property."""
+        assert qrm.hardware_average_enabled == qrm.settings.hardware_average_enabled
+
+    def test_start_integrate_property(self, qrm: QbloxPulsarQRM):
+        """Test start_integrate property."""
+        assert qrm.start_integrate == qrm.settings.start_integrate
+
+    def test_sampling_rate_property(self, qrm: QbloxPulsarQRM):
+        """Test sampling_rate property."""
+        assert qrm.sampling_rate == qrm.settings.sampling_rate
+
+    def test_integration_length_property(self, qrm: QbloxPulsarQRM):
+        """Test integration_length property."""
+        assert qrm.integration_length == qrm.settings.integration_length
+
+    def test_integration_mode_property(self, qrm: QbloxPulsarQRM):
+        """Test integration_mode property."""
+        assert qrm.integration_mode == qrm.settings.integration_mode
+
+    def test_sequence_timeout_property(self, qrm: QbloxPulsarQRM):
+        """Test sequence_timeout property."""
+        assert qrm.sequence_timeout == qrm.settings.sequence_timeout
+
+    def test_acquisition_timeout_property(self, qrm: QbloxPulsarQRM):
+        """Test acquisition_timeout property."""
+        assert qrm.acquisition_timeout == qrm.settings.acquisition_timeout
+
+    def test_acquisition_name_property(self, qrm: QbloxPulsarQRM):
+        """Test acquisition_name property."""
+        assert qrm.acquisition_name == qrm.settings.acquisition_name

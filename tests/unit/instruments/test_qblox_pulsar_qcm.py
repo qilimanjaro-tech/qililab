@@ -81,3 +81,19 @@ class TestQbloxPulsarQCM:
         qcm.close()
         with pytest.raises(AttributeError):
             qcm.start()
+
+    def test_ip_property(self, qcm: QbloxPulsarQCM):
+        """Test ip property."""
+        assert qcm.ip == qcm.settings.ip
+
+    def test_id_property(self, qcm: QbloxPulsarQCM):
+        """Test id property."""
+        assert qcm.id_ == qcm.settings.id_
+
+    def test_name_property(self, qcm: QbloxPulsarQCM):
+        """Test name property."""
+        assert qcm.name == qcm.settings.name
+
+    def test_category_property(self, qcm: QbloxPulsarQCM):
+        """Test category property."""
+        assert qcm.category == qcm.settings.category
