@@ -8,16 +8,9 @@ from qililab.utils import Singleton
 
 @dataclass
 class SettingsManager(metaclass=Singleton):
-    """Class used to load configuration settings.
+    """Class used to load configuration settings."""
 
-    Args:
-        foldername (str): Name of the folder containing all the settings files.
-        platform_name (str): Name of the platform.
-    """
-
-    foldername: str
-
-    def load(self, platform_name: str, filename: str) -> dict:
+    def load(self, foldername: str, platform_name: str, filename: str) -> dict:
         """Load yaml file with path 'qililab/settings/foldername/platform/filename.yml' and
         return an instance of the corresponding settings class.
 
@@ -27,7 +20,7 @@ class SettingsManager(metaclass=Singleton):
         Returns:
             dict: Dictionary containing the settings.
         """
-        path = str(Path(__file__).parent / self.foldername / platform_name / f"{filename}.yml")
+        path = str(Path(__file__).parent / foldername / platform_name / f"{filename}.yml")
 
         with open(file=path, mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)

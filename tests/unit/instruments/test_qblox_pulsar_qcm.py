@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
 
@@ -18,7 +19,9 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     mock_instance.mock_add_spec(["reference_source", "sequencer0"])
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
     # connect to instrument
-    qcm_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="qblox_qcm_0")
+    qcm_settings = SETTINGS_MANAGER.load(
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="qblox_qcm_0"
+    )
     mock_load.assert_called_once()
     qcm = QbloxPulsarQCM(settings=qcm_settings)
     qcm.connect()

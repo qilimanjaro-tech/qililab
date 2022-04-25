@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
@@ -27,7 +28,9 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     )
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
     # connect to instrument
-    qrm_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="qblox_qrm_0")
+    qrm_settings = SETTINGS_MANAGER.load(
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="platform_0", filename="qblox_qrm_0"
+    )
     mock_load.assert_called_once()
     qrm = QbloxPulsarQRM(settings=qrm_settings)
     qrm.connect()

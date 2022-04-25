@@ -1,4 +1,8 @@
-from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
+from qililab.constants import (
+    DEFAULT_PLATFORM_FILENAME,
+    DEFAULT_SCHEMA_FILENAME,
+    DEFAULT_SETTINGS_FOLDERNAME,
+)
 from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER
 
@@ -12,7 +16,9 @@ class PlatformManagerDB(PlatformManager):
         Returns:
             dict: Dictionary with platform settings.
         """
-        return SETTINGS_MANAGER.load(platform_name=self.platform_name, filename=DEFAULT_PLATFORM_FILENAME)
+        return SETTINGS_MANAGER.load(
+            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=self.platform_name, filename=DEFAULT_PLATFORM_FILENAME
+        )
 
     def _load_schema_settings(self) -> dict:
         """Load schema settings.
@@ -20,4 +26,6 @@ class PlatformManagerDB(PlatformManager):
         Returns:
             dict: Dictionary with schema settings.
         """
-        return SETTINGS_MANAGER.load(platform_name=self.platform_name, filename=DEFAULT_SCHEMA_FILENAME)
+        return SETTINGS_MANAGER.load(
+            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=self.platform_name, filename=DEFAULT_SCHEMA_FILENAME
+        )
