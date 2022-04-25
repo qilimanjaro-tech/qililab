@@ -3,7 +3,7 @@ import pytest
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import CategorySettings
+from qililab.typings import Category
 
 
 @pytest.fixture(name="qrm")
@@ -20,4 +20,4 @@ class TestQbloxPulsarQRM:
 
     def test_settings_category(self, qrm: QbloxPulsarQRM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qrm.category == CategorySettings.QUBIT_READOUT
+        assert qrm.category == Category.QUBIT_READOUT

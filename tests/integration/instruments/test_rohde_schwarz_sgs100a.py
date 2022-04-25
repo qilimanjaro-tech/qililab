@@ -3,7 +3,7 @@ import pytest
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import CategorySettings
+from qililab.typings import Category
 
 
 @pytest.fixture(name="rohde_schwarz")
@@ -20,4 +20,4 @@ class TestSGS100A:
 
     def test_settings_category(self, rohde_schwarz: SGS100A):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert rohde_schwarz.category == CategorySettings.SIGNAL_GENERATOR
+        assert rohde_schwarz.category == Category.SIGNAL_GENERATOR

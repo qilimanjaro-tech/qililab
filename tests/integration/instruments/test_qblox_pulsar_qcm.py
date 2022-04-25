@@ -3,7 +3,7 @@ import pytest
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import CategorySettings
+from qililab.typings import Category
 
 
 @pytest.fixture(name="qcm")
@@ -20,7 +20,7 @@ class TestQbloxPulsarQCM:
 
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qcm.category == CategorySettings.QUBIT_CONTROL
+        assert qcm.category == Category.QUBIT_CONTROL
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running
