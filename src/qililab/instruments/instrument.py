@@ -1,9 +1,10 @@
 """Instrument class"""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable
 
-from qililab.settings import InstrumentSettings
+from qililab.settings.settings import Settings
 from qililab.typings import Device
 
 
@@ -16,8 +17,15 @@ class Instrument(ABC):
         settings (Settings): Class containing the settings of the instrument.
     """
 
-    device: Device  # a subtype of device must be specified by the subclass
-    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    @dataclass
+    class InstrumentSettings(Settings):
+        """Contains the settings of an instrument.
+
+        Args:
+            ip (str): IP address of the instrument.
+        """
+
+        ip: str
 
     class CheckConnected:
         """Property used to check if the instrument is connected."""
@@ -40,6 +48,9 @@ class Instrument(ABC):
             if not ref._connected or not hasattr(ref, "device"):
                 raise AttributeError("Instrument is not connected")
             return self._method(ref, *args, **kwargs)
+
+    device: Device  # a subtype of device must be specified by the subclass
+    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
 
     def __init__(self):
         self._connected = False

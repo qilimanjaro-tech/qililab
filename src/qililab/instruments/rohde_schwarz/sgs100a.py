@@ -1,8 +1,9 @@
 """
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
+from dataclasses import dataclass
+
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.settings import SGS100ASettings
 from qililab.typings import RohdeSchwarzSGS100A
 
 
@@ -14,12 +15,16 @@ class SGS100A(SignalGenerator):
         settings (SGS100ASettings): Settings of the instrument.
     """
 
+    @dataclass
+    class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):
+        """Contains the settings of a specific pulsar."""
+
     device: RohdeSchwarzSGS100A
     settings: SGS100ASettings
 
     def __init__(self, settings: dict):
         super().__init__()
-        self.settings = SGS100ASettings(**settings)
+        self.settings = self.SGS100ASettings(**settings)
 
     @SignalGenerator.CheckConnected
     def setup(self):

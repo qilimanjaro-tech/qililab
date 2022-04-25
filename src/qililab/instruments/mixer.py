@@ -1,5 +1,7 @@
 """QubitReadout class."""
-from qililab.settings import MixerSettings
+from dataclasses import dataclass
+
+from qililab.settings.settings import Settings
 
 
 class Mixer:
@@ -14,10 +16,28 @@ class Mixer:
         settings (MixerSettings): Settings of the mixer.
     """
 
+    @dataclass
+    class MixerSettings(Settings):
+        """Contains the settings of a mixer.
+
+        Args:
+            epsilon (float): Amplitude error added to the Q channel.
+            delta (float): Dephasing added by the mixer.
+            offset_i (float): Offset added to the I channel by the mixer.
+            offset_q (float): Offset added to the Q channel by the mixer.
+            up_conversion (bool): If True, mixer is used for up conversion. If False, mixer is used for down conversion.
+        """
+
+        epsilon: float
+        delta: float
+        offset_i: float
+        offset_q: float
+        up_conversion: bool
+
     settings: MixerSettings
 
     def __init__(self, settings: dict):
-        self.settings = MixerSettings(**settings)
+        self.settings = self.MixerSettings(**settings)
 
     @property
     def id_(self):

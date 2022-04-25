@@ -1,7 +1,6 @@
-from typing import Dict, List
+from typing import List
 
 from qililab.platform.components.bus import Bus
-from qililab.settings.platform.components.bus import BusSettings
 
 
 class Buses:
@@ -11,7 +10,7 @@ class Buses:
         buses (List[Bus]): List of Bus objects.
     """
 
-    def __init__(self, buses: List[BusSettings]):
+    def __init__(self, buses: List[Bus.BusSettings]):
         self.buses = [Bus(bus_settings) for bus_settings in buses]
 
     def append(self, bus: Bus):

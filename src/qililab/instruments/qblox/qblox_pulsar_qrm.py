@@ -1,7 +1,9 @@
 """Qblox pulsar QRM class"""
+from dataclasses import dataclass
+
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.settings import QbloxPulsarQRMSettings
+from qililab.typings import AcquireTriggerMode, IntegrationMode
 
 
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
@@ -11,11 +13,44 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         settings (QBloxPulsarQRMSettings): Settings of the instrument.
     """
 
+    @dataclass
+    class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
+        """Contains the settings of a specific pulsar.
+
+        Args:
+            acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
+            hardware_average_enabled (bool): Enable/disable hardware averaging of the data.
+            start_integrate (int): Time (in ns) to start integrating the signal.
+            integration_length (int): Duration (in ns) of the integration.
+            integration_mode (str): Integration mode. Options are 'ssb'.
+            sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
+            If timeout is reached a TimeoutError is raised.
+            acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
+            If timeout is reached a TimeoutError is raised.
+            acquisition_name (str): Name of the acquisition saved in the sequencer.
+        """
+
+        acquire_trigger_mode: AcquireTriggerMode
+        hardware_average_enabled: bool
+        start_integrate: int
+        sampling_rate: int
+        integration_length: int
+        integration_mode: IntegrationMode
+        sequence_timeout: int  # minutes
+        acquisition_timeout: int  # minutes
+        acquisition_name: str
+
+        def __post_init__(self):
+            """Cast acquire_trigger_mode and integration_mode to its corresponding Enum classes"""
+            super().__post_init__()
+            self.acquire_trigger_mode = AcquireTriggerMode(self.acquire_trigger_mode)
+            self.integration_mode = IntegrationMode(self.integration_mode)
+
     settings: QbloxPulsarQRMSettings
 
     def __init__(self, settings: dict):
         super().__init__()
-        self.settings = QbloxPulsarQRMSettings(**settings)
+        self.settings = self.QbloxPulsarQRMSettings(**settings)
 
     @QbloxPulsar.CheckConnected
     def setup(self):
