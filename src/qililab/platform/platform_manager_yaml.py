@@ -7,7 +7,7 @@ from qililab.typings import Category
 class PlatformManagerYAML(PlatformManager):
     """Manager of platform objects. Uses YAML file to get the corresponding settings."""
 
-    def _load_settings(self, **kwargs: str) -> dict:
+    def _load_all_settings(self, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:

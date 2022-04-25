@@ -10,7 +10,7 @@ from qililab.settings import SETTINGS_MANAGER
 class PlatformManagerDB(PlatformManager):
     """Manager of platform objects."""
 
-    def _load_settings(self, **kwargs: str) -> dict:
+    def _load_all_settings(self, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:
