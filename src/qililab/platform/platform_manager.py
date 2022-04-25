@@ -4,6 +4,7 @@ from pathlib import Path
 
 import yaml
 
+from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
@@ -21,6 +22,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Returns:
             Platform: Platform object describing the setup used.
         """
+        logger.info("Building platform")
         settings = self._load_settings(**kwargs)
         schema = Schema(settings=settings[YAMLNames.SCHEMA.value])
         buses = Buses(buses=schema.buses)
