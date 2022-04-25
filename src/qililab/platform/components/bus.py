@@ -3,9 +3,8 @@ from typing import List
 
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform.components.resonator import Resonator
-from qililab.platform.utils.bus_element_hash_table import BusElementHashTable
-from qililab.platform.utils.dict_factory import dict_factory
-from qililab.settings.settings import Settings
+from qililab.platform.utils import BusElementHashTable, dict_factory
+from qililab.settings import Settings
 from qililab.typings import YAMLNames
 
 

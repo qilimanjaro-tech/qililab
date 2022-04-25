@@ -3,8 +3,8 @@ from dataclasses import asdict, dataclass
 
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils.dict_factory import dict_factory
-from qililab.settings.settings import Settings
+from qililab.platform.utils import dict_factory
+from qililab.settings import Settings
 from qililab.typings import Category
 
 

@@ -5,8 +5,7 @@ from qililab.constants import (
     DEFAULT_PLATFORM_NAME,
     DEFAULT_SETTINGS_FOLDERNAME,
 )
-from qililab.platform import Platform
-from qililab.platform.components import Qubit
+from qililab.platform import Platform, Qubit
 from qililab.settings import SETTINGS_MANAGER
 from qililab.settings.settings_manager import SettingsManager
 

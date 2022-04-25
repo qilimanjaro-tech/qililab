@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable
 
-from qililab.settings.settings import Settings
+from qililab.settings import Settings
 from qililab.typings import Device
 
 

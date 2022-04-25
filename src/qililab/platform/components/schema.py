@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.bus import Bus
-from qililab.settings.settings import Settings
+from qililab.settings import Settings
 from qililab.typings import SchemaDrawOptions
 
 
