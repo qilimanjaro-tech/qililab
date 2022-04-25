@@ -13,7 +13,7 @@ class PlatformManagerDB(PlatformManager):
 
     PLATFORM_NAME = "platform_name"
 
-    def _load_settings(self, **kwargs: str) -> dict:
+    def _load_settings(self, *args, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -23,7 +23,7 @@ class PlatformManagerDB(PlatformManager):
             dict: Dictionary with platform and schema settings.
         """
         if self.PLATFORM_NAME not in kwargs:
-            raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' argument.")
+            raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' keyword argument.")
         platform_name = kwargs[self.PLATFORM_NAME]
         return {
             Category.PLATFORM.value: SETTINGS_MANAGER.load(

@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from types import NoneType
 from unittest.mock import MagicMock, patch
@@ -8,7 +9,6 @@ from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
-from qililab.typings import SchemaDrawOptions
 
 from ..utils.side_effect import yaml_safe_load_side_effect
 
@@ -34,9 +34,25 @@ def platform_yaml():
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
 
+    def test_id_property(self, platform: Platform):
+        """Test id property."""
+        assert platform.id_ == platform.settings.id_
+
+    def test_name_property(self, platform: Platform):
+        """Test name property."""
+        assert platform.name == platform.settings.name
+
+    def test_category_property(self, platform: Platform):
+        """Test name property."""
+        assert platform.category == platform.settings.category
+
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
+
+    def test_str_magic_method(self, platform: Platform):
+        """Test __str__ magic method."""
+        str(platform)
 
     def test_platform_settings_instance(self, platform: Platform):
         """Test platform settings instance."""
@@ -45,18 +61,6 @@ class TestPlatform:
     def test_platform_schema_instance(self, platform: Platform):
         """Test platform schema instance."""
         assert isinstance(platform.schema, Schema)
-
-    def test_platform_schema_settings_instance(self, platform: Platform):
-        """Test platform schema settings instance."""
-        assert isinstance(platform.schema.settings, Schema.SchemaSettings)
-
-    def test_platform_schema_draw_method(self, platform: Platform):
-        """Test platform schema draw method."""
-        platform.schema.draw(options=SchemaDrawOptions.PRINT)
-
-    def test_platform_schema_asdict_method(self, platform: Platform):
-        """Test platform schema asdict method."""
-        assert isinstance(platform.schema.to_dict(), dict)
 
     def test_platform_buses_instance(self, platform: Platform):
         """Test platform buses instance."""
@@ -99,3 +103,13 @@ class TestPlatform:
         """Test platform dump method."""
         PLATFORM_MANAGER_DB.dump(platform=platform)
         mock_dump.assert_called()
+
+    def test_platform_manager_yaml_build_method_without_kwarg(self, platform: Platform):
+        """Test PlatformManagerYAML build method with wrong argument."""
+        with pytest.raises(ValueError):
+            PLATFORM_MANAGER_YAML.build(platform.name)
+
+    def test_platform_manager_db_build_method_without_kwarg(self, platform: Platform):
+        """Test PlatformManagerYAML build method with wrong argument."""
+        with pytest.raises(ValueError):
+            PLATFORM_MANAGER_DB.build(platform.name)

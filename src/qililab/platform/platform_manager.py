@@ -16,7 +16,7 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    def build(self, **kwargs: str) -> Platform:
+    def build(self, *args, **kwargs: str) -> Platform:
         """Build platform.
 
         Returns:
