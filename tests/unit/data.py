@@ -3,7 +3,7 @@ import copy
 
 platform_settings_sample = {
     "id_": 0,
-    "name": "platform",
+    "name": "platform_0",
     "category": "platform",
     "number_qubits": 1,
     "hardware_average": 4096,
@@ -172,7 +172,7 @@ schema_settings_sample = {
 all_platform_yaml_sample = {
     "platform": {
         "id_": 0,
-        "name": "platform",
+        "name": "platform_0",
         "category": "platform",
         "number_qubits": 1,
         "hardware_average": 4096,

@@ -4,6 +4,7 @@ import pytest
 
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.gates import I, X, Y, Z
 from qililab.platform.platform import Platform
 
@@ -31,7 +32,7 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("platform_0")
+        backend.set_platform(DEFAULT_PLATFORM_NAME)
         mock_load.assert_called()
         assert isinstance(backend.platform, Platform)
 
@@ -44,16 +45,18 @@ class TestBackend:
         with pytest.raises(FileNotFoundError):
             backend.set_platform("unknown_platform")
 
+        mock_load.assert_not_called()
+
     def test_get_platform(self, mock_load: MagicMock, backend: QililabBackend):
         """Test the get_platform method of the QililabBackend class.
 
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("platform_0")
+        backend.set_platform(DEFAULT_PLATFORM_NAME)
         name = backend.get_platform()
         mock_load.assert_called()
-        assert name == "platform"
+        assert name == DEFAULT_PLATFORM_NAME
 
     def test_circuit_class(self, mock_load: MagicMock, backend: QililabBackend):
         """Test the circuit_class method of the QililabBackend class.

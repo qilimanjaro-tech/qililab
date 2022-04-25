@@ -1,18 +1,32 @@
-from typing import Dict
-
-from qililab.constants import DEFAULT_PLATFORM_FILENAME, DEFAULT_SCHEMA_FILENAME
+from qililab.constants import (
+    DEFAULT_PLATFORM_FILENAME,
+    DEFAULT_SCHEMA_FILENAME,
+    DEFAULT_SETTINGS_FOLDERNAME,
+)
 from qililab.platform.platform_manager import PlatformManager
-from qililab.settings import SETTINGS_MANAGER, Settings
-from qililab.typings import CategorySettings
+from qililab.settings import SETTINGS_MANAGER
 
 
 class PlatformManagerDB(PlatformManager):
     """Manager of platform objects."""
 
-    def _load_platform_settings(self):
-        """Load platform settings."""
-        return SETTINGS_MANAGER.load(filename=DEFAULT_PLATFORM_FILENAME)
+    def _load_settings(self, **kwargs: str) -> dict:
+        """Load platform and schema settings.
 
-    def _load_schema_settings(self):
-        """Load schema settings."""
-        return SETTINGS_MANAGER.load(filename=DEFAULT_SCHEMA_FILENAME)
+        Args:
+            platform_name (str): The name of the platform.
+
+        Returns:
+            dict: Dictionary with platform and schema settings.
+        """
+        if "platform_name" not in kwargs:
+            raise ValueError("Please provide a 'platform_name' argument.")
+        platform_name = kwargs["platform_name"]
+        return {
+            "platform": SETTINGS_MANAGER.load(
+                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME
+            ),
+            "schema": SETTINGS_MANAGER.load(
+                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_SCHEMA_FILENAME
+            ),
+        }

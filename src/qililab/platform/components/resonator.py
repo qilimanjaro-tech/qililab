@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.qubit import Qubit
-from qililab.settings.settings import Settings
+from qililab.settings import Settings
 
 
 class Resonator:

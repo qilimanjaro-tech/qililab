@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class CategorySettings(Enum):
+class Category(Enum):
     """Category of settings.
 
     Args:
@@ -63,3 +63,37 @@ class IntegrationMode(Enum):
     """
 
     SSB = "ssb"
+
+
+class SchemaDrawOptions(Enum):
+    """Schema draw options.
+
+    Args:
+        enum (str): Available types of schema draw options.
+        * print
+        * file
+    """
+
+    PRINT = "print"
+    FILE = "file"
+
+
+class YAMLNames(Enum):
+    """YAML names.
+
+    Args:
+        enum (str): Available types of YAML names.
+        * platform
+        * schema
+        * id_
+        * name
+        * category
+        * buses
+    """
+
+    PLATFORM = "platform"
+    SCHEMA = "schema"
+    ID_ = "id_"
+    NAME = "name"
+    CATEGORY = "category"
+    BUSES = "buses"

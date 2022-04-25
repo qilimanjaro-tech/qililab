@@ -1,7 +1,7 @@
 """Qubit class"""
 from dataclasses import dataclass
 
-from qililab.settings.settings import Settings
+from qililab.settings import Settings
 
 
 class Qubit:

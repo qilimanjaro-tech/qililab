@@ -5,9 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
-from qililab.platform import Platform
-from qililab.platform.components import Buses, Qubit, Resonator, Schema
+from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
+from qililab.typings import SchemaDrawOptions
 
 from .utils.side_effect import yaml_safe_load_side_effect
 
@@ -24,7 +25,7 @@ def platform_yaml():
     """Return PlatformBuilderYAML instance with loaded platform."""
     filepath = Path(__file__).parent.parent.parent / "examples" / "all_platform.yml"
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build_from_yaml(filepath=str(filepath))
+        platform = PLATFORM_MANAGER_YAML.build(filepath=str(filepath))
         mock_load.assert_called()
     return platform
 
@@ -35,7 +36,7 @@ class TestPlatform:
 
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
-        assert platform.name == "platform"
+        assert platform.name == DEFAULT_PLATFORM_NAME
 
     def test_platform_settings_instance(self, platform: Platform):
         """Test platform settings instance."""
@@ -51,7 +52,7 @@ class TestPlatform:
 
     def test_platform_schema_draw_method(self, platform: Platform):
         """Test platform schema draw method."""
-        platform.schema.draw()
+        platform.schema.draw(options=SchemaDrawOptions.PRINT)
 
     def test_platform_schema_asdict_method(self, platform: Platform):
         """Test platform schema asdict method."""

@@ -3,9 +3,9 @@ from dataclasses import asdict, dataclass
 
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils.dict_factory import dict_factory
-from qililab.settings.settings import Settings
-from qililab.typings import CategorySettings
+from qililab.platform.utils import dict_factory
+from qililab.settings import Settings
+from qililab.typings import Category
 
 
 class Platform:
@@ -73,8 +73,8 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {CategorySettings.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {CategorySettings.SCHEMA.value: self.schema.to_dict()}
+        platform_dict = {Category.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
+        schema_dict = {Category.SCHEMA.value: self.schema.to_dict()}
         return platform_dict | schema_dict
 
     def __str__(self) -> str:

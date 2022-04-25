@@ -4,6 +4,7 @@ from qibo.models import Circuit
 
 from qililab.backend import QililabBackend
 from qililab.circuit import HardwareCircuit
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.gates import I, X, Y, Z
 from qililab.platform.platform import Platform
 
@@ -23,7 +24,7 @@ def fixture_backend() -> QililabBackend:
         "is_hardware": True,
     }
     qibo.K.profile["backends"].append(backend)
-    qibo.set_backend(backend="qililab", platform="platform_0")
+    qibo.set_backend(backend="qililab", platform=DEFAULT_PLATFORM_NAME)
     return qibo.K.active_backend
 
 
@@ -43,7 +44,7 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("platform_0")
+        backend.set_platform(DEFAULT_PLATFORM_NAME)
         assert isinstance(backend.platform, Platform)
 
     def test_set_platform_using_unknown_platform(self, backend: QililabBackend):
@@ -61,9 +62,9 @@ class TestBackend:
         Args:
             backend (QililabBackend): Instance of the QililabBackend class.
         """
-        backend.set_platform("platform_0")
+        backend.set_platform(DEFAULT_PLATFORM_NAME)
         name = backend.get_platform()
-        assert name == "platform"
+        assert name == DEFAULT_PLATFORM_NAME
 
     def test_circuit_class(self, backend: QililabBackend):
         """Test the circuit_class method of the QililabBackend class.
