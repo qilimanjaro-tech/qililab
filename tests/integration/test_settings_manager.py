@@ -1,10 +1,8 @@
 import pytest
 
-from qililab.settings import (
-    SETTINGS_MANAGER,
-    PlatformSettings,
-    QubitCalibrationSettings,
-)
+from qililab.platform import Platform
+from qililab.platform.components import Qubit
+from qililab.settings import SETTINGS_MANAGER
 from qililab.settings.settings_manager import SettingsManager
 
 SETTINGS_MANAGER.platform_name = "platform_0"
@@ -22,13 +20,13 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with the default platform settings.
         Assert that errors are raised correctly."""
         settings = SETTINGS_MANAGER.load(filename="platform")
-        PlatformSettings(**settings)
+        Platform.PlatformSettings(**settings)
 
     def test_load_default_qubit_settings(self):
         """Test the load method of the SettingsManager class with the default qubit settings.
         Assert that errors are raised correctly."""
         settings = SETTINGS_MANAGER.load(filename="qubit_0")
-        QubitCalibrationSettings(**settings)
+        Qubit.QubitCalibrationSettings(**settings)
 
     def test_load_unknown_file(self):
         """Test the load method of the SettingsManager class with an unknown file."""

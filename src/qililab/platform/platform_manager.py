@@ -53,7 +53,7 @@ class PlatformManager(ABC):
 
     def _build_buses(self, schema: Schema) -> Buses:
         """Build platform buses."""
-        return Buses(schema.settings.buses)
+        return Buses(schema.buses)
 
     @abstractmethod
     def _load_platform_settings(self):

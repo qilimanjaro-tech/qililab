@@ -1,7 +1,5 @@
-# data.py
-import copy
-
 """ Data to use alongside the test suite. """
+import copy
 
 platform_settings_sample = {
     "id_": 0,

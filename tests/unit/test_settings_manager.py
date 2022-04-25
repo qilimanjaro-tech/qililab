@@ -2,11 +2,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab.settings import (
-    SETTINGS_MANAGER,
-    PlatformSettings,
-    QubitCalibrationSettings,
-)
+from qililab.platform import Platform
+from qililab.platform.components import Qubit
+from qililab.settings import SETTINGS_MANAGER
 from qililab.settings.settings_manager import SettingsManager
 
 from .data import platform_settings_sample, qubit_0_settings_sample
@@ -29,7 +27,7 @@ class TestSettingsManager:
         SETTINGS_MANAGER.platform_name = "platform_0"
         mock_load.return_value = platform_settings_sample
         settings = SETTINGS_MANAGER.load(filename="platform")
-        PlatformSettings(**settings)
+        Platform.PlatformSettings(**settings)
 
     def test_load_default_qubit_settings(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with the default qubit settings.
@@ -37,7 +35,7 @@ class TestSettingsManager:
         SETTINGS_MANAGER.platform_name = "platform_0"
         mock_load.return_value = qubit_0_settings_sample
         settings = SETTINGS_MANAGER.load(filename="qubit_0")
-        QubitCalibrationSettings(**settings)
+        Qubit.QubitCalibrationSettings(**settings)
 
     def test_load_unknown_file(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with an unknown file."""

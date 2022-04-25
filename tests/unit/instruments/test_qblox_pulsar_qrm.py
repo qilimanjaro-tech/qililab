@@ -47,8 +47,8 @@ class TestQbloxPulsarQRM:
     def test_inital_setup_method(self, qrm: QbloxPulsarQRM):
         """Test initial_setup method"""
         qrm.initial_setup()
-        qrm.device.reference_source.assert_called_with(qrm.settings.reference_clock)
-        qrm.device.sequencer0.sync_en.assert_called_with(qrm.settings.sync_enabled)
+        qrm.device.reference_source.assert_called_with(qrm.reference_clock)
+        qrm.device.sequencer0.sync_en.assert_called_with(qrm.sync_enabled)
 
     def test_start_method(self, qrm: QbloxPulsarQRM):
         """Test start method"""
@@ -59,12 +59,12 @@ class TestQbloxPulsarQRM:
     def test_setup_method(self, qrm: QbloxPulsarQRM):
         """Test setup method"""
         qrm.setup()
-        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.settings.gain)
-        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.settings.gain)
-        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.settings.hardware_average_enabled)
-        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.settings.hardware_average_enabled)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.settings.acquire_trigger_mode)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.settings.acquire_trigger_mode)
+        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
+        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_average_enabled)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""
@@ -89,14 +89,10 @@ class TestQbloxPulsarQRM:
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, dict)
         # Assert device calls
-        qrm.device.get_sequencer_state.assert_called_once_with(qrm.settings.sequencer, qrm.settings.sequence_timeout)
-        qrm.device.get_acquisition_state.assert_called_once_with(
-            qrm.settings.sequencer, qrm.settings.acquisition_timeout
-        )
-        qrm.device.store_scope_acquisition.assert_called_once_with(
-            qrm.settings.sequencer, qrm.settings.acquisition_name
-        )
-        qrm.device.get_acquisitions.assert_called_once_with(qrm.settings.sequencer)
+        qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
+        qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
+        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name)
+        qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
 
     def test_close_method(self, qrm: QbloxPulsarQRM):
         """Test close method"""

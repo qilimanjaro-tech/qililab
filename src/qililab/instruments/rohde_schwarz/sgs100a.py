@@ -1,8 +1,9 @@
 """
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
+from dataclasses import dataclass
+
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.settings import SGS100ASettings
 from qililab.typings import RohdeSchwarzSGS100A
 
 
@@ -14,12 +15,16 @@ class SGS100A(SignalGenerator):
         settings (SGS100ASettings): Settings of the instrument.
     """
 
+    @dataclass
+    class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):
+        """Contains the settings of a specific pulsar."""
+
     device: RohdeSchwarzSGS100A
     settings: SGS100ASettings
 
     def __init__(self, settings: dict):
         super().__init__()
-        self.settings = SGS100ASettings(**settings)
+        self.settings = self.SGS100ASettings(**settings)
 
     @SignalGenerator.CheckConnected
     def setup(self):
@@ -27,8 +32,8 @@ class SGS100A(SignalGenerator):
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
-        self.device.power(self.settings.power)
-        self.device.frequency(self.settings.frequency)
+        self.device.power(self.power)
+        self.device.frequency(self.frequency)
 
     @SignalGenerator.CheckConnected
     def start(self):
@@ -42,4 +47,4 @@ class SGS100A(SignalGenerator):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(self.settings.name, f"TCPIP0::{self.settings.ip}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(self.name, f"TCPIP0::{self.ip}::inst0::INSTR")

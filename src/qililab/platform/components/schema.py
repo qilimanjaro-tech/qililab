@@ -1,5 +1,9 @@
 """Schema class"""
-from qililab.settings.platform.components.schema import SchemaSettings
+from dataclasses import dataclass
+from typing import List
+
+from qililab.platform.components.bus import Bus
+from qililab.settings.settings import Settings
 
 
 class Schema:
@@ -9,23 +13,75 @@ class Schema:
         settings (SchemaSettings): Settings that define the schema of the platform.
     """
 
+    @dataclass
+    class SchemaSettings(Settings):
+        """Schema settings.
+
+        Args:
+            buses (BusesSettings): List containing the settings of the elements for each bus.
+        """
+
+        buses: List[Bus.BusSettings]
+
+        def __post_init__(self):
+            """Cast the settings of each element to the Settings class."""
+            super().__post_init__()
+            self.buses = [Bus.BusSettings(**bus_settings) for bus_settings in self.buses]
+
+        def to_dict(self):
+            """Return a dict representation of the SchemaSettings class."""
+            return {
+                "id_": self.id_,
+                "name": self.name,
+                "category": self.category.value,
+                "buses": [bus.to_dict() for bus in self.buses],
+            }
+
     def __init__(self, settings: dict):
-        self.settings = SchemaSettings(**settings)
+        self.settings = self.SchemaSettings(**settings)
 
     @property
-    def num_buses(self) -> int:
-        """
+    def id_(self):
+        """Schema 'id' property.
+
         Returns:
-            int: Number of buses in the platform.
+            int: settings.id_.
         """
-        return len(self.settings.buses)
+        return self.settings.id_
+
+    @property
+    def name(self):
+        """Schema 'name' property.
+
+        Returns:
+            str: settings.name.
+        """
+        return self.settings.name
+
+    @property
+    def category(self):
+        """Schema 'category' property.
+
+        Returns:
+            str: settings.category.
+        """
+        return self.settings.category
+
+    @property
+    def buses(self):
+        """Schema 'buses' property.
+
+        Returns:
+            List[BusSettings]: settings.buses.
+        """
+        return self.settings.buses
 
     def draw(self) -> None:
         """Draw schema."""
-        for idx, bus in enumerate(self.settings.buses):
+        for idx, bus in enumerate(self.buses):
             print(f"Bus {idx}:\t", end="------")
             for element in bus:
-                print(f"|{element.settings.name}_{element.settings.id_}", end="|------")
+                print(f"|{element.name}_{element.id_}", end="|------")
             print()
 
     def to_dict(self):
