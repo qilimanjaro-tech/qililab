@@ -4,7 +4,7 @@ import yaml
 
 from qililab.platform.platform import Platform
 from qililab.platform.platform_manager import PlatformManager
-from qililab.typings import CategorySettings
+from qililab.typings import Category
 
 
 class PlatformManagerYAML(PlatformManager):
@@ -49,8 +49,8 @@ class PlatformManagerYAML(PlatformManager):
 
     def _load_platform_settings(self):
         """Load platform settings."""
-        return self.data[CategorySettings.PLATFORM.value]
+        return self.data[Category.PLATFORM.value]
 
     def _load_schema_settings(self):
         """Load schema settings."""
-        return self.data[CategorySettings.SCHEMA.value]
+        return self.data[Category.SCHEMA.value]

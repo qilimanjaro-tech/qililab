@@ -4,6 +4,7 @@ from typing import List
 
 from qililab.platform.components.bus import Bus
 from qililab.settings.settings import Settings
+from qililab.typings import SchemaDrawOptions
 
 
 class Schema:
@@ -76,13 +77,20 @@ class Schema:
         """
         return self.settings.buses
 
-    def draw(self) -> None:
-        """Draw schema."""
-        for idx, bus in enumerate(self.buses):
-            print(f"Bus {idx}:\t", end="------")
-            for element in bus:
-                print(f"|{element.name}_{element.id_}", end="|------")
-            print()
+    def draw(self, options: SchemaDrawOptions) -> None:
+        """Draw schema.
+
+        Args:
+            options (SchemaDrawOptions): Method to generate the drawing.
+        """
+        if options == SchemaDrawOptions.PRINT:
+            for idx, bus in enumerate(self.buses):
+                print(f"Bus {idx}:\t", end="------")
+                for element in bus:
+                    print(f"|{element.name}_{element.id_}", end="|------")
+                print()
+        elif options == SchemaDrawOptions.FILE:
+            raise NotImplementedError("This function is not implemented yet.")
 
     def to_dict(self):
         """Return a dict representation of the Schema class."""

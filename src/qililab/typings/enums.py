@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class CategorySettings(Enum):
+class Category(Enum):
     """Category of settings.
 
     Args:
@@ -63,3 +63,16 @@ class IntegrationMode(Enum):
     """
 
     SSB = "ssb"
+
+
+class SchemaDrawOptions(Enum):
+    """Schema draw options.
+
+    Args:
+        enum (str): Available types of schema draw options.
+        * print
+        * file
+    """
+
+    PRINT = "print"
+    FILE = "file"
