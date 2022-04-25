@@ -13,8 +13,8 @@ class Buses:
     def __init__(self, buses: List[Bus.BusSettings]):
         self.buses = [Bus(bus_settings) for bus_settings in buses]
 
-    def append(self, bus: Bus):
-        """Append a bus to the list of buses.
+    def add(self, bus: Bus):
+        """Add a bus to the list of buses.
 
         Args:
             bus (Bus): Bus object to append."""
