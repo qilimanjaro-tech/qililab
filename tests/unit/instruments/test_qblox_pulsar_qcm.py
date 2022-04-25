@@ -13,14 +13,12 @@ from .data import qcm_0_settings_sample
 @patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qcm_0_settings_sample)
 def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQCM class"""
-    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["reference_source", "sequencer0"])
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
     # connect to instrument
-    SETTINGS_MANAGER.platform_name = "platform_0"
-    qcm_settings = SETTINGS_MANAGER.load(filename="qblox_qcm_0")
+    qcm_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="qblox_qcm_0")
     mock_load.assert_called_once()
     qcm = QbloxPulsarQCM(settings=qcm_settings)
     qcm.connect()

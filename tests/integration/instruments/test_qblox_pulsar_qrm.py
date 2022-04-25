@@ -8,8 +8,7 @@ from qililab.typings import CategorySettings
 @pytest.fixture(name="qrm")
 def fixture_qrm():
     """Return instance of QbloxPulsarQRM class."""
-    SETTINGS_MANAGER.platform_name = "platform_0"
-    qrm_settings = SETTINGS_MANAGER.load(filename="qblox_qrm_0")
+    qrm_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="qblox_qrm_0")
     return QbloxPulsarQRM(settings=qrm_settings)
 
 

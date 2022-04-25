@@ -8,11 +8,12 @@ from qililab.config import logger
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
-from qililab.settings import SETTINGS_MANAGER
 
 
 class PlatformManager(ABC):
     """Manager of platform objects."""
+
+    platform_name: str
 
     def build(self, platform_name: str) -> Platform:
         """Build platform.
@@ -25,7 +26,7 @@ class PlatformManager(ABC):
         """
         logger.info("Building platform %s", platform_name)
 
-        SETTINGS_MANAGER.platform_name = platform_name
+        self.platform_name = platform_name
 
         schema = self._build_schema()
         buses = self._build_buses(schema=schema)
@@ -56,9 +57,17 @@ class PlatformManager(ABC):
         return Buses(schema.buses)
 
     @abstractmethod
-    def _load_platform_settings(self):
-        """Load platform settings."""
+    def _load_platform_settings(self) -> dict:
+        """Load platform settings.
+
+        Returns:
+            dict: Dictionary with platform settings.
+        """
 
     @abstractmethod
-    def _load_schema_settings(self):
-        """Load schema settings."""
+    def _load_schema_settings(self) -> dict:
+        """Load schema settings.
+
+        Returns:
+            dict: Dictionary with schema settings.
+        """

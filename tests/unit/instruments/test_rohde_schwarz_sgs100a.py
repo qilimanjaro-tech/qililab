@@ -13,13 +13,11 @@ from .data import rohde_schwarz_0_settings_sample
 @patch("qililab.settings.settings_manager.yaml.safe_load", return_value=rohde_schwarz_0_settings_sample)
 def fixture_rohde_schwarz(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of SGS100A class"""
-    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
-    SETTINGS_MANAGER.platform_name = "platform_0"
-    rohde_schwarz_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
+    rohde_schwarz_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="rohde_schwarz_0")
     mock_load.assert_called_once()
     rohde_schwarz = SGS100A(settings=rohde_schwarz_settings)
     rohde_schwarz.connect()

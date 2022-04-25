@@ -4,13 +4,11 @@ from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import CategorySettings
 
-SETTINGS_MANAGER.platform_name = "platform_0"
-
 
 @pytest.fixture(name="rohde_schwarz")
 def fixture_rohde_schwarz():
     """Return instance of SGS100A class."""
-    rs_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
+    rs_settings = SETTINGS_MANAGER.load(platform_name="platform_0", filename="rohde_schwarz_0")
     return SGS100A(settings=rs_settings)
 
 
