@@ -4,11 +4,13 @@ from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sympy import Si
 
 from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
+from qililab.typings import Category
 
 from ..utils.side_effect import yaml_safe_load_side_effect
 
@@ -68,35 +70,27 @@ class TestPlatform:
 
     def test_platform_bus_0_signal_generator_instance(self, platform: Platform):
         """Test platform bus 0 signal generator instance."""
-        assert isinstance(platform.buses.buses[0].signal_generator, SignalGenerator)
+        assert isinstance(platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0), SignalGenerator)
 
     def test_platform_bus_0_mixer_instance(self, platform: Platform):
         """Test platform bus 0 mixer instance."""
-        assert isinstance(platform.buses.buses[0].mixer, Mixer)
+        assert isinstance(platform.get_element(category=Category.MIXER, id_=0), Mixer)
 
     def test_platform_bus_0_resonator_instance(self, platform: Platform):
         """Test platform bus 0 resonator instance."""
-        assert isinstance(platform.buses.buses[0].resonator, Resonator)
+        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=0), Resonator)
 
     def test_platform_bus_0_resonator_qubit_0_instance(self, platform: Platform):
         """Test platform bus 0 resonator qubit 0 instance."""
-        assert isinstance(platform.buses.buses[0].resonator.settings.qubits[0], Qubit)
+        assert isinstance(platform.get_element(category=Category.QUBIT, id_=0), Qubit)
 
     def test_platform_bus_0_qubit_control_instance(self, platform: Platform):
         """Test platform bus 0 qubit control instance."""
-        assert isinstance(platform.buses.buses[0].qubit_control, QubitControl)
-
-    def test_platform_bus_1_qubit_control_instance(self, platform: Platform):
-        """Test platform bus 1 qubit control instance."""
-        assert isinstance(platform.buses.buses[1].qubit_control, NoneType)
-
-    def test_platform_bus_0_qubit_readout_instance(self, platform: Platform):
-        """Test platform bus 0 qubit readout instance."""
-        assert isinstance(platform.buses.buses[0].qubit_readout, NoneType)
+        assert isinstance(platform.get_element(category=Category.QUBIT_CONTROL, id_=0), QubitControl)
 
     def test_platform_bus_1_qubit_readout_instance(self, platform: Platform):
         """Test platform bus 1 qubit readout instance."""
-        assert isinstance(platform.buses.buses[1].qubit_readout, QubitReadout)
+        assert isinstance(platform.get_element(category=Category.QUBIT_READOUT, id_=0), QubitReadout)
 
     @patch("qililab.settings.settings_manager.yaml.safe_dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

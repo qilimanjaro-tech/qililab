@@ -20,6 +20,7 @@ class Resonator:
 
         def __post_init__(self):
             """Cast list of qubits settings to Qubit objects."""
+            super().__post_init__()
             self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]
 
     settings: ResonatorSettings
@@ -62,3 +63,14 @@ class Resonator:
             List[Qubit]: settings.qubits.
         """
         return self.settings.qubits
+
+    def get_qubit(self, id_: int):
+        """Return specific Qubit class. Return None if qubit is not found.
+
+        Args:
+            id_ (int): ID of the qubit.
+
+        Returns:
+            (Qubit | None): Qubit class.
+        """
+        return next((qubit for qubit in self.qubits if qubit.id_ == id_), None)

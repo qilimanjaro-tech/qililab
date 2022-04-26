@@ -45,7 +45,7 @@ class Platform:
         self.schema = schema
         self.buses = buses
 
-    def get_element(self, category: str, id_: int):
+    def get_element(self, category: Category, id_: int):
         """Get platform element.
 
         Args:
@@ -55,10 +55,9 @@ class Platform:
         Returns:
             object: Element class.
         """
-        category_tmp = Category(category)
-        if category_tmp == Category.SCHEMA:
+        if category == Category.SCHEMA:
             return self.schema
-        if category_tmp == Category.BUSES:
+        if category == Category.BUSES:
             return self.buses
         return self.schema.get_element(category=category, id_=id_)
 

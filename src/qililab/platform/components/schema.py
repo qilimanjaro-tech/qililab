@@ -4,7 +4,7 @@ from typing import List
 
 from qililab.platform.components.bus import Bus
 from qililab.settings import Settings
-from qililab.typings import SchemaDrawOptions
+from qililab.typings import Category, SchemaDrawOptions
 
 
 class Schema:
@@ -41,15 +41,15 @@ class Schema:
     def __init__(self, settings: dict):
         self.settings = self.SchemaSettings(**settings)
 
-    def get_element(self, category: str, id_: int):
-        """Get buses element.
+    def get_element(self, category: Category, id_: int):
+        """Get buses element. Return None if element is not found.
 
         Args:
             category (str): Category of element.
             id_ (int): ID of element.
 
         Returns:
-            object: Element class.
+            (Qubit | QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
         for bus in self.buses:
             element = bus.get_element(category=category, id_=id_)

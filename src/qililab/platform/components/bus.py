@@ -5,7 +5,7 @@ from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerat
 from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.settings import Settings
-from qililab.typings import YAMLNames
+from qililab.typings import Category, YAMLNames
 
 
 @dataclass
@@ -43,8 +43,8 @@ class Bus:
                 self.elements[idx] = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
                 setattr(self, settings["category"], BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings))
 
-        def get_element(self, category: str, id_: int):
-            """Get bus element.
+        def get_element(self, category: Category, id_: int):
+            """Get bus element. Return None if element is not found.
 
             Args:
                 category (str): Category of element.
@@ -53,6 +53,8 @@ class Bus:
             Returns:
                 (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
             """
+            if category == Category.QUBIT:
+                return self.resonator.get_qubit(id_=id_)
             return next(
                 (element for element in self.elements if element.category == category and element.id_ == id_), None
             )
@@ -74,7 +76,8 @@ class Bus:
 
     def __init__(self, settings: dict | BusSettings):
         if isinstance(settings, dict):
-            self.settings = self.BusSettings(**settings)
+            settings = self.BusSettings(**settings)
+        self.settings = settings
 
     @property
     def id_(self):
