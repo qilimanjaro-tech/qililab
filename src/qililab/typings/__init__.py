@@ -2,6 +2,7 @@ from .enums import (
     AcquireTriggerMode,
     Category,
     IntegrationMode,
+    PulseShapeOptions,
     ReferenceClock,
     SchemaDrawOptions,
     YAMLNames,

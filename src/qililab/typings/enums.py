@@ -69,7 +69,7 @@ class SchemaDrawOptions(Enum):
     """Schema draw options.
 
     Args:
-        enum (str): Available types of schema draw options.
+        enum (str): Available types of schema draw options:
         * print
         * file
     """
@@ -82,7 +82,7 @@ class YAMLNames(Enum):
     """YAML names.
 
     Args:
-        enum (str): Available types of YAML names.
+        enum (str): Available types of YAML names:
         * platform
         * schema
         * id_
@@ -97,3 +97,14 @@ class YAMLNames(Enum):
     NAME = "name"
     CATEGORY = "category"
     BUSES = "buses"
+
+
+class PulseShapeOptions(Enum):
+    """Pulse shape options.
+
+    Args:
+        Enum (str): Available types of PulseShape options:
+        * gaussian
+    """
+
+    GAUSSIAN = "gaussian"

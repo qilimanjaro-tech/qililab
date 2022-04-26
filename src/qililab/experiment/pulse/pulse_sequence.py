@@ -1,11 +1,10 @@
 """PulseSequence class."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
 
 from qililab.experiment.pulse.pulse import Pulse
 
 
-@dataclass
 class PulseSequence:
     """List of pulses."""
 
@@ -13,6 +12,19 @@ class PulseSequence:
     class PulseSequenceSettings:
         """Settings of the PulseSequence class."""
 
-        pulses: List[Pulse.PulseSettings]
+        pulses: List[Pulse]
 
-    pulses: List[Pulse] = field(default_factory=list)
+    settings: PulseSequenceSettings
+
+    def __init__(self, pulses_dict: List[dict]):
+        pulses = [Pulse(settings) for settings in pulses_dict]
+        self.settings = self.PulseSequenceSettings(pulses=pulses)
+
+    @property
+    def pulses(self):
+        """PulseSequence 'pulses' property.
+
+        Returns:
+            List[Pulse]: settings.pulses.
+        """
+        return self.settings.pulses

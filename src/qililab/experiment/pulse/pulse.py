@@ -1,6 +1,8 @@
 """Pulse class."""
 from dataclasses import dataclass
 
+from qililab.typings import PulseShapeOptions
+
 
 @dataclass
 class Pulse:
@@ -26,8 +28,15 @@ class Pulse:
         amplitude: float
         frequency: float
         phase: float
-        shape: str
+        shape: PulseShapeOptions
         offset_i: float
         offset_q: float
 
+        def __post_init__(self):
+            """Cast 'shape' attribute to its corresponding Enum class."""
+            self.shape = PulseShapeOptions(self.shape)
+
     settings: PulseSettings
+
+    def __init__(self, settings: dict):
+        self.settings = self.PulseSettings(**settings)

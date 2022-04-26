@@ -12,22 +12,24 @@ class BusesExecution:
     class BusesExecutionSettings:
         """Settings for the BusesExecution class."""
 
-        buses: List[BusExecution.BusExecutionSettings]
-
-        def __post_init__(self):
-            """Cast settings to the BusExecutionSettings class."""
-            self.buses = [BusExecution.BusExecutionSettings(**settings) for settings in self.buses]
+        buses: List[BusExecution]
 
     settings: BusesExecutionSettings
 
-    def __init__(self, settings: dict):
-        self.settings = self.BusesExecutionSettings(**settings)
+    def __init__(self, buses_dict: List[dict]):
+        buses = [BusExecution(settings) for settings in buses_dict]
+        self.settings = self.BusesExecutionSettings(buses)
+
+    def run(self):
+        """Run execution."""
+        for bus in self.buses:
+            bus.run()
 
     @property
     def buses(self):
         """BusesExecution 'buses' property.
 
         Returns:
-            List[BusExecution.BusExecutionSettings]: settings.buses
+            List[BusExecution]: settings.buses
         """
         return self.settings.buses

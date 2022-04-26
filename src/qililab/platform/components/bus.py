@@ -58,6 +58,10 @@ class Bus:
 
     settings: BusSettings
 
+    def __init__(self, settings: dict | BusSettings):
+        if isinstance(settings, dict):
+            self.settings = self.BusSettings(**settings)
+
     @property
     def id_(self):
         """Bus 'id' property.

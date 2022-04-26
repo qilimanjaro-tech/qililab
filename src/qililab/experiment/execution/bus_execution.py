@@ -13,12 +13,20 @@ class BusExecution:
         """Settings of the BusExecution class."""
 
         bus: Bus
-        pulse_sequence: PulseSequence.PulseSequenceSettings
+        pulse_sequence: PulseSequence
+
+        def __post_init__(self):
+            """Cast the settings dict to its corresponding classes."""
+            self.bus = Bus(self.bus)
+            self.pulse_sequence = PulseSequence(self.pulse_sequence)
 
     settings: BusExecutionSettings
 
     def __init__(self, settings: dict):
         self.settings = self.BusExecutionSettings(**settings)
+
+    def run(self):
+        """Run execution."""
 
     @property
     def bus(self):

@@ -22,6 +22,7 @@ class Execution:
 
     def run(self):
         """Run execution."""
+        self.buses_execution.run()
 
     @property
     def platform(self):
@@ -33,7 +34,7 @@ class Execution:
         return self.settings.platform
 
     @property
-    def buses(self):
+    def buses_execution(self):
         """Execution 'buses' property.
 
         Returns:
