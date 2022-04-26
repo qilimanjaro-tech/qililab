@@ -13,9 +13,30 @@ class Execution:
         """Settings of the execution"""
 
         platform: Platform
-        buses: BusesExecution
+        buses_execution: BusesExecution
 
     settings: ExecutionSettings
 
     def __init__(self, platform: Platform, buses: BusesExecution):
-        self.settings = self.ExecutionSettings(platform=platform, buses=buses)
+        self.settings = self.ExecutionSettings(platform=platform, buses_execution=buses)
+
+    def run(self):
+        """Run execution."""
+
+    @property
+    def platform(self):
+        """Execution 'platform' property.
+
+        Returns:
+            Platform: settings.platform.
+        """
+        return self.settings.platform
+
+    @property
+    def buses(self):
+        """Execution 'buses' property.
+
+        Returns:
+            BusesExecution: settings.buses.
+        """
+        return self.settings.buses_execution
