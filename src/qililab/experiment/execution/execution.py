@@ -1,8 +1,7 @@
 """Execution class."""
 from dataclasses import dataclass
-from typing import List
 
-from qililab.experiment.execution.bus_execution import BusExecution
+from qililab.experiment.execution.buses_execution import BusesExecution
 from qililab.platform import Platform
 
 
@@ -13,5 +12,10 @@ class Execution:
     class ExecutionSettings:
         """Settings of the execution"""
 
-        buses: List[BusExecution]
         platform: Platform
+        buses: BusesExecution
+
+    settings: ExecutionSettings
+
+    def __init__(self, platform: Platform, buses: BusesExecution):
+        self.settings = self.ExecutionSettings(platform=platform, buses=buses)
