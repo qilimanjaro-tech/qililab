@@ -41,6 +41,22 @@ class Schema:
     def __init__(self, settings: dict):
         self.settings = self.SchemaSettings(**settings)
 
+    def get_element(self, category: str, id_: int):
+        """Get buses element.
+
+        Args:
+            category (str): Category of element.
+            id_ (int): ID of element.
+
+        Returns:
+            object: Element class.
+        """
+        for bus in self.buses:
+            element = bus.get_element(category=category, id_=id_)
+            if element is not None:
+                return element
+        return None
+
     @property
     def id_(self):
         """Schema 'id' property.

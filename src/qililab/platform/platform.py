@@ -45,6 +45,23 @@ class Platform:
         self.schema = schema
         self.buses = buses
 
+    def get_element(self, category: str, id_: int):
+        """Get platform element.
+
+        Args:
+            category (str): Category of element.
+            id_ (int): ID of element.
+
+        Returns:
+            object: Element class.
+        """
+        category_tmp = Category(category)
+        if category_tmp == Category.SCHEMA:
+            return self.schema
+        if category_tmp == Category.BUSES:
+            return self.buses
+        return self.schema.get_element(category=category, id_=id_)
+
     @property
     def id_(self):
         """Platform 'id_' property.

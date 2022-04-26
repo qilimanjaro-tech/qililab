@@ -43,6 +43,20 @@ class Bus:
                 self.elements[idx] = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
                 setattr(self, settings["category"], BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings))
 
+        def get_element(self, category: str, id_: int):
+            """Get bus element.
+
+            Args:
+                category (str): Category of element.
+                id_ (int): ID of element.
+
+            Returns:
+                (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
+            """
+            return next(
+                (element for element in self.elements if element.category == category and element.id_ == id_), None
+            )
+
         def __iter__(self):
             """Redirect __iter__ magic method to iterate over elements."""
             return self.elements.__iter__()
