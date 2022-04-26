@@ -96,7 +96,9 @@ class YAMLNames(Enum):
     ID_ = "id_"
     NAME = "name"
     CATEGORY = "category"
+    BUS = "bus"
     BUSES = "buses"
+    PULSE_SEQUENCE = "pulse_sequence"
 
 
 class PulseShapeOptions(Enum):
