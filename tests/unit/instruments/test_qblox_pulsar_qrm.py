@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
@@ -10,10 +11,9 @@ from .data import qrm_0_settings_sample
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.load", return_value=qrm_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qrm_0_settings_sample)
 def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQRM class"""
-    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(
@@ -28,9 +28,11 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     )
     mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
     # connect to instrument
-    qrm_settings = SETTINGS_MANAGER.load(filename="qrm_0")
+    qrm_settings = SETTINGS_MANAGER.load(
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"
+    )
     mock_load.assert_called_once()
-    qrm = QbloxPulsarQRM(name="qrm_0", settings=qrm_settings)
+    qrm = QbloxPulsarQRM(settings=qrm_settings)
     qrm.connect()
     return qrm
 
@@ -46,8 +48,8 @@ class TestQbloxPulsarQRM:
     def test_inital_setup_method(self, qrm: QbloxPulsarQRM):
         """Test initial_setup method"""
         qrm.initial_setup()
-        qrm.device.reference_source.assert_called_with(qrm.settings.reference_clock)
-        qrm.device.sequencer0.sync_en.assert_called_with(qrm.settings.sync_enabled)
+        qrm.device.reference_source.assert_called_with(qrm.reference_clock)
+        qrm.device.sequencer0.sync_en.assert_called_with(qrm.sync_enabled)
 
     def test_start_method(self, qrm: QbloxPulsarQRM):
         """Test start method"""
@@ -58,12 +60,12 @@ class TestQbloxPulsarQRM:
     def test_setup_method(self, qrm: QbloxPulsarQRM):
         """Test setup method"""
         qrm.setup()
-        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.settings.gain)
-        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.settings.gain)
-        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.settings.hardware_average_enabled)
-        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.settings.hardware_average_enabled)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.settings.acquire_trigger_mode)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.settings.acquire_trigger_mode)
+        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
+        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_average_enabled)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""
@@ -88,14 +90,10 @@ class TestQbloxPulsarQRM:
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, dict)
         # Assert device calls
-        qrm.device.get_sequencer_state.assert_called_once_with(qrm.settings.sequencer, qrm.settings.sequence_timeout)
-        qrm.device.get_acquisition_state.assert_called_once_with(
-            qrm.settings.sequencer, qrm.settings.acquisition_timeout
-        )
-        qrm.device.store_scope_acquisition.assert_called_once_with(
-            qrm.settings.sequencer, qrm.settings.acquisition_name
-        )
-        qrm.device.get_acquisitions.assert_called_once_with(qrm.settings.sequencer)
+        qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
+        qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
+        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name)
+        qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
 
     def test_close_method(self, qrm: QbloxPulsarQRM):
         """Test close method"""

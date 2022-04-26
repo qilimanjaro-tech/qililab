@@ -1,10 +1,14 @@
 """QubitControl class."""
+from dataclasses import dataclass
+
 from qililab.instruments.instrument import Instrument
 
 
 class QubitControl(Instrument):
-    """Abstract base class defining all instruments used to control the qubits
+    """Abstract base class defining all instruments used to control the qubits."""
 
-    Args:
-        name (str): Name of the instrument.
-    """
+    @dataclass
+    class QubitControlSettings(Instrument.InstrumentSettings):
+        """Contains the settings of a specific pulsar."""
+
+    settings: QubitControlSettings

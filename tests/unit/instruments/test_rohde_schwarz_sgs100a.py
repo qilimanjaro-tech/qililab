@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import SGS100A
 from qililab.settings import SETTINGS_MANAGER
 
@@ -10,17 +11,18 @@ from .data import rohde_schwarz_0_settings_sample
 
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.load", return_value=rohde_schwarz_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=rohde_schwarz_0_settings_sample)
 def fixture_rohde_schwarz(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of SGS100A class"""
-    SETTINGS_MANAGER.platform_name = "platform_0"
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
-    rohde_schwarz_settings = SETTINGS_MANAGER.load(filename="rohde_schwarz_0")
+    rohde_schwarz_settings = SETTINGS_MANAGER.load(
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="rohde_schwarz_0"
+    )
     mock_load.assert_called_once()
-    rohde_schwarz = SGS100A(name="rohde_schwarz", settings=rohde_schwarz_settings)
+    rohde_schwarz = SGS100A(settings=rohde_schwarz_settings)
     rohde_schwarz.connect()
     return rohde_schwarz
 
@@ -41,8 +43,8 @@ class TestSGS100A:
     def test_setup_method(self, rohde_schwarz: SGS100A):
         """Test setup method"""
         rohde_schwarz.setup()
-        rohde_schwarz.device.power.assert_called_once_with(rohde_schwarz.settings.power)
-        rohde_schwarz.device.frequency.assert_called_once_with(rohde_schwarz.settings.frequency)
+        rohde_schwarz.device.power.assert_called_once_with(rohde_schwarz.power)
+        rohde_schwarz.device.frequency.assert_called_once_with(rohde_schwarz.frequency)
 
     def test_stop_method(self, rohde_schwarz: SGS100A):
         """Test stop method"""

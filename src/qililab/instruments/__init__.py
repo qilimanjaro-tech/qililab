@@ -1,3 +1,4 @@
+from .mixer import Mixer
 from .qblox.qblox_pulsar_qcm import QbloxPulsarQCM
 from .qblox.qblox_pulsar_qrm import QbloxPulsarQRM
 from .qubit_control import QubitControl

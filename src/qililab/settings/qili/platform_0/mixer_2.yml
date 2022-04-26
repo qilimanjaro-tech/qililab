@@ -1,0 +1,8 @@
+id_: 2
+name: mixer  # unique name
+category: mixer  # general name
+epsilon: 0
+delta: 0
+offset_i: 0
+offset_q: 0
+up_conversion: false

@@ -1,34 +1,26 @@
 import pytest
 
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.instruments.qblox.qblox_pulsar_qcm import QbloxPulsarQCMSettings
-from qililab.typings import CategorySettings
-
-SETTINGS_MANAGER.platform_name = "platform_0"
+from qililab.typings import Category
 
 
 @pytest.fixture(name="qcm")
 def fixture_qcm():
     """Return instance of QbloxPulsarQCM class."""
-    qcm_settings = SETTINGS_MANAGER.load(filename="qcm_0")
-    return QbloxPulsarQCM(name="qcm_0", settings=qcm_settings)
+    qcm_settings = SETTINGS_MANAGER.load(
+        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qcm_0"
+    )
+    return QbloxPulsarQCM(settings=qcm_settings)
 
 
 class TestQbloxPulsarQCM:
     """Unit tests checking the QbloxPulsarQCM attributes and methods"""
 
-    def test_name(self, qcm: QbloxPulsarQCM):
-        """Test name attribute of QbloxPulsarQCM class"""
-        assert qcm.name == "qcm_0"
-
-    def test_settings(self, qcm: QbloxPulsarQCM):
-        """Test settings attribute type of QbloxPulsarQCM class"""
-        assert isinstance(qcm.settings, QbloxPulsarQCMSettings)
-
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qcm.settings.category == CategorySettings.QBLOX_QCM
+        assert qcm.category == Category.QUBIT_CONTROL
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running
