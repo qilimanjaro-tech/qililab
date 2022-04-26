@@ -5,7 +5,6 @@ from typing import List
 from qililab.experiment.execution.bus_execution import BusExecution
 
 
-@dataclass
 class BusesExecution:
     """BusesExecution class."""
 
@@ -16,3 +15,6 @@ class BusesExecution:
         buses: List[BusExecution.BusExecutionSettings]
 
     settings: BusesExecutionSettings
+
+    def __init__(self, settings: dict):
+        self.settings = self.BusesExecutionSettings(**settings)
