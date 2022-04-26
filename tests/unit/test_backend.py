@@ -1,3 +1,5 @@
+import ntpath
+from io import TextIOWrapper
 from unittest.mock import MagicMock, patch
 
 import pytest

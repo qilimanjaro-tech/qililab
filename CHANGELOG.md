@@ -1,4 +1,10 @@
 # CHANGELOG
+## 0.3.0 (2022-04-26)
+
+### Feat
+
+- [QILI-81] Implement schema class (#5)
+
 ## 0.2.0 (2022-04-19)
 
 ### Feat
