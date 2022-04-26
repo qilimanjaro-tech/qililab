@@ -5,12 +5,15 @@ from qililab.constants import (
 )
 from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER
+from qililab.typings import Category
 
 
 class PlatformManagerDB(PlatformManager):
     """Manager of platform objects."""
 
-    def _load_all_settings(self, **kwargs: str) -> dict:
+    PLATFORM_NAME = "platform_name"
+
+    def _load_settings(self, *args, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -19,14 +22,14 @@ class PlatformManagerDB(PlatformManager):
         Returns:
             dict: Dictionary with platform and schema settings.
         """
-        if "platform_name" not in kwargs:
-            raise ValueError("Please provide a 'platform_name' argument.")
-        platform_name = kwargs["platform_name"]
+        if self.PLATFORM_NAME not in kwargs:
+            raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' keyword argument.")
+        platform_name = kwargs[self.PLATFORM_NAME]
         return {
-            "platform": SETTINGS_MANAGER.load(
+            Category.PLATFORM.value: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME
             ),
-            "schema": SETTINGS_MANAGER.load(
+            Category.SCHEMA.value: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_SCHEMA_FILENAME
             ),
         }

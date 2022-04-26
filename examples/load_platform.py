@@ -30,8 +30,8 @@ def load_platform_from_database():
 def load_platform_from_yaml():
     """Load the platform configuration from the given yaml file."""
     filepath = Path(__file__).parent / DEFAULT_PLATFORM_DUMP_FILENAME
-    platform = PLATFORM_MANAGER_YAML.build_from_yaml(filepath=filepath)
-    print(f"Platform INFO: {platform}")
+    platform = PLATFORM_MANAGER_YAML.build(filepath=filepath)
+    print(f"Platform name: {platform}")
 
 
 if __name__ == "__main__":
