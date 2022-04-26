@@ -12,7 +12,7 @@ class Platform:
     """Platform object that describes setup used to control quantum devices.
 
     Args:
-        settings (Settings): Settings of the platform.
+        settings (PlatformSettings): Settings of the platform.
         schema (Schema): Schema object.
         buses (Buses): Container of Bus objects.
     """
@@ -90,8 +90,6 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        if not hasattr(self, "schema") or not hasattr(self, "buses"):
-            raise AttributeError("Platform is not loaded.")
         platform_dict = {Category.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {Category.SCHEMA.value: self.schema.to_dict()}
         return platform_dict | schema_dict

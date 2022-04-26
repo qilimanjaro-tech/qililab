@@ -6,12 +6,12 @@ from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
 
-from .data import qcm_0_settings_sample
+from ..data import qblox_qcm_0_settings_sample
 
 
 @pytest.fixture(name="qcm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qcm_0_settings_sample)
+@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qblox_qcm_0_settings_sample)
 def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQCM class"""
     # add dynamically created attributes
@@ -81,3 +81,19 @@ class TestQbloxPulsarQCM:
         qcm.close()
         with pytest.raises(AttributeError):
             qcm.start()
+
+    def test_ip_property(self, qcm: QbloxPulsarQCM):
+        """Test ip property."""
+        assert qcm.ip == qcm.settings.ip
+
+    def test_id_property(self, qcm: QbloxPulsarQCM):
+        """Test id property."""
+        assert qcm.id_ == qcm.settings.id_
+
+    def test_name_property(self, qcm: QbloxPulsarQCM):
+        """Test name property."""
+        assert qcm.name == qcm.settings.name
+
+    def test_category_property(self, qcm: QbloxPulsarQCM):
+        """Test category property."""
+        assert qcm.category == qcm.settings.category

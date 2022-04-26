@@ -26,7 +26,7 @@ qubit_0_settings_sample = {
     "max_voltage": 1775,
 }
 
-qcm_0_settings_sample = {
+qblox_qcm_0_settings_sample = {
     "id_": 0,
     "name": "qblox_qcm",
     "category": "qubit_control",
@@ -37,7 +37,7 @@ qcm_0_settings_sample = {
     "gain": 1,
 }
 
-qrm_0_settings_sample = {
+qblox_qrm_0_settings_sample = {
     "id_": 0,
     "name": "qblox_qrm",
     "category": "qubit_readout",
@@ -137,7 +137,7 @@ schema_settings_sample = {
             "name": "bus",
             "category": "bus",
             "elements": [
-                qcm_0_settings_sample,
+                qblox_qcm_0_settings_sample,
                 rohde_schwarz_0_settings_sample,
                 mixer_0_settings_sample,
                 resonator_0_settings_sample,
@@ -148,7 +148,7 @@ schema_settings_sample = {
             "name": "bus",
             "category": "bus",
             "elements": [
-                qrm_0_settings_sample,
+                qblox_qrm_0_settings_sample,
                 rohde_schwarz_1_settings_sample,
                 mixer_1_settings_sample,
                 resonator_0_settings_sample,
@@ -169,12 +169,30 @@ schema_settings_sample = {
 }
 
 
+all_platform_yaml_sample = {
+    "platform": {
+        "id_": 0,
+        "name": "platform_0",
+        "category": "platform",
+        "number_qubits": 1,
+        "hardware_average": 4096,
+        "software_average": 10,
+        "repetition_duration": 200000,
+        "delay_between_pulses": 0,
+        "delay_before_readout": 50,
+        "drag_coefficient": 0,
+        "number_of_sigmas": 4,
+    },
+    "schema": schema_settings_sample,
+}
+
+
 class MockedSettingsHashTable:
     """Hash table that relates settings files to mocked data."""
 
     platform = platform_settings_sample
-    qblox_qcm_0 = qcm_0_settings_sample
-    qblox_qrm_0 = qrm_0_settings_sample
+    qblox_qcm_0 = qblox_qcm_0_settings_sample
+    qblox_qrm_0 = qblox_qrm_0_settings_sample
     qubit_0 = qubit_0_settings_sample
     resonator_0 = resonator_0_settings_sample
     rohde_schwarz_0 = rohde_schwarz_0_settings_sample
@@ -183,6 +201,7 @@ class MockedSettingsHashTable:
     mixer_0 = mixer_0_settings_sample
     mixer_1 = mixer_1_settings_sample
     mixer_2 = mixer_2_settings_sample
+    all_platform = all_platform_yaml_sample
 
     @classmethod
     def get(cls, name: str) -> dict:

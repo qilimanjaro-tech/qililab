@@ -4,6 +4,7 @@ from pathlib import Path
 
 import yaml
 
+from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
@@ -15,13 +16,14 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    def build(self, **kwargs: str) -> Platform:
+    def build(self, *args, **kwargs: str) -> Platform:
         """Build platform.
 
         Returns:
             Platform: Platform object describing the setup used.
         """
-        settings = self._load_all_settings(**kwargs)
+        logger.info("Building platform")
+        settings = self._load_settings(**kwargs)
         schema = Schema(settings=settings[YAMLNames.SCHEMA.value])
         buses = Buses(buses=schema.buses)
         return Platform(settings=settings[YAMLNames.PLATFORM.value], schema=schema, buses=buses)
@@ -37,7 +39,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             yaml.safe_dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
     @abstractmethod
-    def _load_all_settings(self, **kwargs: str) -> dict:
+    def _load_settings(self, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Returns:
