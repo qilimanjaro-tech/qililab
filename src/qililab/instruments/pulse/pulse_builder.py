@@ -1,7 +1,7 @@
 """PulseBuilder class"""
 from typing import List
 
-from qililab.experiment.pulse.pulse_sequence import PulseSequence
+from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.utils import Singleton
 
 

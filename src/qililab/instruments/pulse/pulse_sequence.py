@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.experiment.pulse.pulse import Pulse
+from qililab.instruments.pulse.pulse import Pulse
 
 
 class PulseSequence:
@@ -28,3 +28,10 @@ class PulseSequence:
             List[Pulse]: settings.pulses.
         """
         return self.settings.pulses
+
+    @property
+    def waveforms(self):
+        """PulseSequence 'waveforms' property.
+
+        Returns:
+            Dict: Dictionary containing the I, Q waveforms."""

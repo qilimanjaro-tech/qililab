@@ -1,6 +1,7 @@
 """Pulse class."""
 from dataclasses import dataclass
 
+from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
 from qililab.typings import PulseShapeOptions
 
 

@@ -1,7 +1,7 @@
 """ReadoutPulse class."""
 from dataclasses import dataclass
 
-from qililab.experiment.pulse.pulse import Pulse
+from qililab.instruments.pulse.pulse import Pulse
 
 
 @dataclass
