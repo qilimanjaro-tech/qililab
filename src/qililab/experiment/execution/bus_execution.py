@@ -1,7 +1,7 @@
 """BusExecution class."""
 from dataclasses import dataclass
 
-from qililab.experiment.pulse.pulse_sequence import PulseSequence
+from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.platform import Bus
 
 

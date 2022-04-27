@@ -3,7 +3,7 @@ from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.experiment.execution.bus_execution import BusExecution
 from qililab.experiment.execution.buses_execution import BusesExecution
 from qililab.experiment.execution.execution import Execution
-from qililab.experiment.pulse import PULSE_BUILDER
+from qililab.instruments.pulse import PULSE_BUILDER
 from qililab.platform import Bus, Platform
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import YAMLNames
