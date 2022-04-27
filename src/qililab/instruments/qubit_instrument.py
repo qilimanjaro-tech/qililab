@@ -1,7 +1,9 @@
 """QubitControl class."""
+from abc import abstractmethod
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument
+from qililab.instruments.pulse.pulse_sequence import PulseSequence
 
 
 class QubitInstrument(Instrument):
@@ -12,3 +14,11 @@ class QubitInstrument(Instrument):
         """Contains the settings of a QubitInstrument."""
 
     settings: QubitInstrumentSettings
+
+    @abstractmethod
+    def execute(self, pulse_sequence: PulseSequence):
+        """Run execution of a pulse sequence.
+
+        Args:
+            pulse_sequence (PulseSequence): Pulse sequence.
+        """

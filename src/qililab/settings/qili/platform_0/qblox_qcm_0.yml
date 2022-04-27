@@ -6,3 +6,8 @@ reference_clock: internal
 sequencer: 0
 sync_enabled: true
 gain: 1
+hardware_average: 4096
+software_average: 10
+repetition_duration: 200000
+delay_between_pulses: 0
+delay_before_readout: 50
