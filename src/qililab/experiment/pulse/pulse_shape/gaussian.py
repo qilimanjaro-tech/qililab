@@ -11,7 +11,7 @@ class Gaussian(PulseShape):
         super().__init__(name=name)
         self.sigma = sigma
 
-    def envelope(self, duration: int, amplitude: int):
+    def envelope(self, duration: int, amplitude: float):
         """Gaussian envelope centered with respect to the pulse.
 
         Args:

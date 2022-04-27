@@ -7,12 +7,12 @@ from qililab.experiment.pulse.pulse_shape.pulse_shape import PulseShape
 class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 
-    def __init__(self, name, sigma, beta):
+    def __init__(self, name: str, sigma: float, beta: float):
         super().__init__(name=name)
         self.sigma = sigma
         self.beta = beta
 
-    def envelope(self, duration: int, amplitude: int):
+    def envelope(self, duration: int, amplitude: float):
         """DRAG envelope centered with respect to the pulse.
 
         Args:

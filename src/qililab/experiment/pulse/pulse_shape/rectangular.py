@@ -10,7 +10,7 @@ class Rectangular(PulseShape):
     def __init__(self, name: str):
         super().__init__(name=name)
 
-    def envelope(self, duration: int, amplitude: int):
+    def envelope(self, duration: int, amplitude: float):
         """Constant amplitude envelope.
 
         Args:

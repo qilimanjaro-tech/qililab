@@ -1,6 +1,8 @@
 """PulseShape abstract base class."""
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 
 class PulseShape(ABC):
     """Pulse shape abstract base class."""
@@ -9,7 +11,7 @@ class PulseShape(ABC):
         self.name = name
 
     @abstractmethod
-    def envelope(self, duration: int, amplitude: int):
+    def envelope(self, duration: int, amplitude: float) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
         Args:
