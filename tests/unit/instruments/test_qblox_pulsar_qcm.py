@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qblox_pysequence.sequence import Sequence
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
@@ -64,11 +65,12 @@ class TestQbloxPulsarQCM:
         qcm.reset()
         qcm.device.reset.assert_called_once()
 
-    def test_upload_method(self, qcm: QbloxPulsarQCM):
+    @patch("qililab.instruments.qblox.qblox_pulsar.yaml.safe_dump", return_value=None)
+    def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxPulsarQCM):
         """Test upload method"""
-        path = "dummy_path"
-        qcm.upload(sequence_path=path)
-        qcm.device.sequencer0.sequence.assert_called_once_with(path)
+        qcm.upload(sequence=Sequence())
+        qcm.device.sequencer0.sequence.assert_called_once()
+        mock_dump.assert_called_once()
 
     def test_close_method(self, qcm: QbloxPulsarQCM):
         """Test close method"""

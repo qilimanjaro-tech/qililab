@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qblox_pysequence.sequence import Sequence
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
@@ -26,7 +27,7 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
             "scope_acq_trigger_mode_path1",
         ]
     )
-    mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1"])
+    mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
     # connect to instrument
     qrm_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"
@@ -77,12 +78,12 @@ class TestQbloxPulsarQRM:
         qrm.reset()
         qrm.device.reset.assert_called_once()
 
-    def test_upload_method(self, qrm: QbloxPulsarQRM):
+    @patch("qililab.instruments.qblox.qblox_pulsar.yaml.safe_dump", return_value=None)
+    def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxPulsarQRM):
         """Test upload method"""
-        qrm.device.sequencer0.mock_add_spec(["sequence"])
-        path = "dummy_path"
-        qrm.upload(sequence_path=path)
-        qrm.device.sequencer0.sequence.assert_called_once_with(path)
+        qrm.upload(sequence=Sequence())
+        qrm.device.sequencer0.sequence.assert_called_once()
+        mock_dump.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxPulsarQRM):
         """Test get_acquisitions_method"""

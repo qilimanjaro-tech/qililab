@@ -1,11 +1,11 @@
 """Qblox pulsar class"""
-import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, Dict, List
 
 import numpy as np
+import yaml
 from qblox_pysequence.block import Loop
 from qblox_pysequence.instructions import acquire, play, wait
 from qblox_pysequence.program import Program
@@ -14,7 +14,6 @@ from qblox_pysequence.sequence import Sequence
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.pulse.pulse import Pulse
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
-from qililab.instruments.qblox.qblox_pulsar_qrm import QbloxPulsarQRM
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.typings import Pulsar, ReferenceClock
 
@@ -71,15 +70,10 @@ class QbloxPulsar(Instrument):
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
-
-        Returns:
-            (Dict | None): Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
         sequence = self._translate_pulse_sequence(pulse_sequence=pulse_sequence)
         self.upload(sequence=sequence)
         self.start()
-        if isinstance(self, QbloxPulsarQRM):
-            return self.get_acquisitions()
 
     def _translate_pulse_sequence(self, pulse_sequence: PulseSequence):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -156,13 +150,13 @@ class QbloxPulsar(Instrument):
         """Upload sequence to sequencer.
 
         Args:
-            sequence_path (str): Path to the json file containing the waveforms,
-            weights, acquisitions and program of the sequence.
+            sequence (Sequence): Sequence object containing the waveforms, weights,
+            acquisitions and program of the sequence.
         """
         # TODO: Discuss this sequence dump: use DB or files?
-        file_path = Path(sys.argv[0]).parent / f"{self.name}_sequence.json"
+        file_path = Path(sys.argv[0]).parent / f"{self.name}_sequence.yml"
         with open(file=file_path, mode="w", encoding="utf-8") as file:
-            json.dump(obj=sequence, fp=file, indent=4)
+            yaml.safe_dump(data=sequence, stream=file)
         getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)
 
     def _set_gain(self):
