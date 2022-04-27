@@ -8,7 +8,7 @@ buses:
     elements:
     - id_: 0
       name: qblox_qcm  # unique name
-      category: qubit_control  # general name
+      category: qubit_instrument  # general name
       ip: 192.168.0.3
       reference_clock: internal
       sequencer: 0
@@ -45,9 +45,9 @@ buses:
     name: bus
     category: bus
     elements:
-    - id_: 0
+    - id_: 1
       name: qblox_qrm  # unique name
-      category: qubit_readout  # general name
+      category: qubit_instrument  # general name
       ip: 192.168.0.4
       reference_clock: external
       sequencer: 0
@@ -93,9 +93,9 @@ buses:
     name: bus
     category: bus
     elements:
-    - id_: 0
+    - id_: 1
       name: qblox_qrm  # unique name
-      category: qubit_readout  # general name
+      category: qubit_instrument  # general name
       ip: 192.168.0.4
       reference_clock: external
       sequencer: 0

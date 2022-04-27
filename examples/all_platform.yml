@@ -21,7 +21,7 @@ schema:
     elements:
     - id_: 0
       name: qblox_qcm
-      category: qubit_control
+      category: qubit_instrument
       ip: 192.168.0.3
       reference_clock: internal
       sequencer: 0
@@ -58,9 +58,9 @@ schema:
     name: bus
     category: bus
     elements:
-    - id_: 0
+    - id_: 1
       name: qblox_qrm
-      category: qubit_readout
+      category: qubit_instrument
       ip: 192.168.0.4
       reference_clock: external
       sequencer: 0
@@ -106,9 +106,9 @@ schema:
     name: bus
     category: bus
     elements:
-    - id_: 0
+    - id_: 1
       name: qblox_qrm
-      category: qubit_readout
+      category: qubit_instrument
       ip: 192.168.0.4
       reference_clock: external
       sequencer: 0

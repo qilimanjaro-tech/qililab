@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import List
 
-from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
 from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.settings import Settings
@@ -22,19 +22,17 @@ class Bus:
     class BusSettings(Settings):
         """BusSettings class.
         Args:
-            qubit_control (None | QubitControl): Class containing the qubit control instrument.
-            qubit_readout (None | QubitReadout): Class containing the qubit readout instrument.
+            qubit_instrument (QubitInstrument): Class containing the instrument used for control/readout of the qubits.
             signal_generator (SignalGenerator): Class containing the signal generator instrument.
             mixer (Mixer): Class containing the mixer object, used for up- or down-conversion.
             resonator (Resonator): Class containing the resonator object.
         """
 
-        elements: List[QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator]
+        elements: List[QubitInstrument | SignalGenerator | Mixer | Resonator]
         signal_generator: SignalGenerator = field(init=False)
         mixer: Mixer = field(init=False)
         resonator: Resonator = field(init=False)
-        qubit_control: None | QubitControl = field(init=False, default=None)
-        qubit_readout: None | QubitReadout = field(init=False, default=None)
+        qubit_instrument: QubitInstrument = field(init=False)
 
         def __post_init__(self):
             """Cast each element to its corresponding class."""
@@ -143,22 +141,13 @@ class Bus:
         return self.settings.resonator
 
     @property
-    def qubit_control(self):
-        """Bus 'qubit_control' property.
+    def qubit_instrument(self):
+        """Bus 'qubit_instrument' property.
 
         Returns:
-            (QubitControl | None): settings.qubit_control.
+            QubitInstrument: settings.qubit_instrument.
         """
-        return self.settings.qubit_control
-
-    @property
-    def qubit_readout(self):
-        """Bus 'qubit_readout' property.
-
-        Returns:
-            (QubitReadout | None): settings.qubit_readout.
-        """
-        return self.settings.qubit_readout
+        return self.settings.qubit_instrument
 
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over bus elements."""

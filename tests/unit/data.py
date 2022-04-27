@@ -29,7 +29,7 @@ qubit_0_settings_sample = {
 qblox_qcm_0_settings_sample = {
     "id_": 0,
     "name": "qblox_qcm",
-    "category": "qubit_control",
+    "category": "qubit_instrument",
     "ip": "192.168.0.3",
     "reference_clock": "internal",
     "sequencer": 0,
@@ -38,9 +38,9 @@ qblox_qcm_0_settings_sample = {
 }
 
 qblox_qrm_0_settings_sample = {
-    "id_": 0,
+    "id_": 1,
     "name": "qblox_qrm",
-    "category": "qubit_readout",
+    "category": "qubit_instrument",
     "ip": "192.168.0.4",
     "reference_clock": "external",
     "sequencer": 0,

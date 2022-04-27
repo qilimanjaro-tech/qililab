@@ -20,4 +20,4 @@ class TestQbloxPulsarQRM:
 
     def test_settings_category(self, qrm: QbloxPulsarQRM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qrm.category == Category.QUBIT_READOUT
+        assert qrm.category == Category.QUBIT_INSTRUMENT

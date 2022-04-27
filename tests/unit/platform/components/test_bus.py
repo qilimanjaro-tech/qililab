@@ -62,13 +62,9 @@ class TestBus:
         """Test resonator property."""
         assert bus.resonator == bus.settings.resonator
 
-    def test_qubit_control_property(self, bus: Bus):
-        """Test qubit_control property."""
-        assert bus.qubit_control == bus.settings.qubit_control
-
-    def test_qubit_readout_property(self, bus: Bus):
-        """Test qubit_readout property."""
-        assert bus.qubit_readout == bus.settings.qubit_readout
+    def test_qubit_instrument_property(self, bus: Bus):
+        """Test qubit_instrument property."""
+        assert bus.qubit_instrument == bus.settings.qubit_instrument
 
     def test_iter_and_getitem_methods(self, bus: Bus):
         """Test __iter__ and __getitem__ magic methods."""

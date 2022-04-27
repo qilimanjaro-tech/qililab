@@ -18,8 +18,7 @@ class Category(Enum):
 
     PLATFORM = "platform"
     QUBIT = "qubit"
-    QUBIT_CONTROL = "qubit_control"
-    QUBIT_READOUT = "qubit_readout"
+    QUBIT_INSTRUMENT = "qubit_instrument"
     SIGNAL_GENERATOR = "signal_generator"
     SCHEMA = "schema"
     RESONATOR = "resonator"
