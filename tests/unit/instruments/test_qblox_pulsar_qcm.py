@@ -65,7 +65,7 @@ class TestQbloxPulsarQCM:
         qcm.reset()
         qcm.device.reset.assert_called_once()
 
-    @patch("qililab.instruments.qblox.qblox_pulsar.yaml.safe_dump", return_value=None)
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxPulsarQCM):
         """Test upload method"""
         qcm.upload(sequence=Sequence())

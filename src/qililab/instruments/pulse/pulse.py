@@ -1,8 +1,9 @@
 """Pulse class."""
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 
+from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
-from qililab.typings import PulseShapeOptions
+from qililab.typings import YAMLNames
 
 
 @dataclass
@@ -29,14 +30,15 @@ class Pulse:
         amplitude: float
         frequency: float
         phase: float
-        shape: PulseShapeOptions
+        pulse_shape: PulseShape = field(init=False)
+        shape: InitVar[dict]
         offset_i: float
         offset_q: float
         index: int = field(init=False)  # FIXME: This index is only for Qblox, find where to put it
 
-        def __post_init__(self):
+        def __post_init__(self, shape: dict):
             """Cast 'shape' attribute to its corresponding Enum class."""
-            self.shape = PulseShapeOptions(self.shape)
+            self.pulse_shape = PulseShapeHashTable.get(name=shape[YAMLNames.NAME.value])(**shape)
 
     settings: PulseSettings
 
@@ -50,8 +52,7 @@ class Pulse:
         Returns:
             List[float]: Amplitudes of the envelope of the pulse.
         """
-        pulse_shape = PulseShapeHashTable.get(name=self.shape)
-        return pulse_shape.envelope
+        return self.pulse_shape.envelope(duration=self.duration, amplitude=self.amplitude)
 
     @property
     def start(self):
@@ -99,13 +100,13 @@ class Pulse:
         return self.settings.phase
 
     @property
-    def shape(self):
-        """Pulse 'shape' property.
+    def pulse_shape(self):
+        """Pulse 'pulse_shape' property.
 
         Returns:
-            PulseShapeOptions: settings.shape.
+            PulseShape: settings.shape.
         """
-        return self.settings.shape
+        return self.settings.pulse_shape
 
     @property
     def offset_i(self):
@@ -133,3 +134,36 @@ class Pulse:
             int: settings.index.
         """
         return self.settings.index
+
+    @index.setter
+    def index(self, value: int):
+        """Pulse 'index' property setter.
+
+        Args:
+            value (int): Value of the index.
+        """
+        self.settings.index = value
+
+    def __repr__(self):
+        """Return string representation of the Pulse object."""
+        return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, f={self.frequency}, p={self.phase}, {self.pulse_shape.name})"""
+
+    def __eq__(self, other: object) -> bool:
+        """Compare Pulse with another object.
+
+        Args:
+            other (object): Pulse object.
+        """
+        return (
+            (
+                self.amplitude == other.amplitude
+                and self.duration == other.duration
+                and self.frequency == other.frequency
+                and self.offset_i == other.offset_i
+                and self.offset_q == other.offset_q
+                and self.phase == other.phase
+                and self.pulse_shape == other.pulse_shape
+            )
+            if isinstance(other, Pulse)
+            else NotImplementedError
+        )

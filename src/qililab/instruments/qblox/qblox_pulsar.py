@@ -1,16 +1,17 @@
 """Qblox pulsar class"""
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
-import yaml
 from qpysequence.instructions import Acquire, Play, Wait
 from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 
+from qililab.constants import QBLOX_MAX_WAIT_TIME
 from qililab.instruments.pulse.pulse import Pulse
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qubit_instrument import QubitInstrument
@@ -94,7 +95,9 @@ class QbloxPulsar(QubitInstrument):
         pulses = pulse_sequence.pulses
         program = Program()
         loop = Loop(name="loop", iterations=self.hardware_average)
-        loop.append_component(Wait(wait_time=pulses[0].start))
+        # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+        if pulses[0].start != 0:
+            loop.append_component(Wait(wait_time=pulses[0].start))
 
         for i, pulse in enumerate(pulses):
             if i < len(pulses) - 1:
@@ -104,6 +107,8 @@ class QbloxPulsar(QubitInstrument):
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
 
+        while self.repetition_duration - loop.duration_iter > QBLOX_MAX_WAIT_TIME:
+            loop.append_component(Wait(wait_time=QBLOX_MAX_WAIT_TIME))
         loop.append_component(Wait(wait_time=self.repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
         return program
@@ -146,7 +151,7 @@ class QbloxPulsar(QubitInstrument):
         # TODO: Discuss this sequence dump: use DB or files?
         file_path = Path(sys.argv[0]).parent / f"{self.name}_sequence.yml"
         with open(file=file_path, mode="w", encoding="utf-8") as file:
-            yaml.safe_dump(data=sequence, stream=file)
+            json.dump(obj=sequence.todict(), fp=file)
         getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)
 
     def _set_gain(self):
@@ -185,10 +190,10 @@ class QbloxPulsar(QubitInstrument):
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
                 pulse.index = idx
-                mod_waveforms = self._quadrature_amplitude_modulation(pulse=pulse)
+                mod_waveform = self._quadrature_amplitude_modulation(pulse=pulse)
                 for mod in ["I", "Q"]:
                     waveforms_dict |= {
-                        f"{pulse.serial()}_mod{mod}": {"data": mod_waveforms[:, 0] + pulse.offset_i, "index": idx}
+                        f"{pulse}_mod{mod}": {"data": (mod_waveform + pulse.offset_i).tolist(), "index": idx}
                     }
                     idx += 1
             else:
@@ -211,7 +216,7 @@ class QbloxPulsar(QubitInstrument):
         cosalpha = np.cos(2 * np.pi * pulse.frequency * time + pulse.phase)
         sinalpha = np.sin(2 * np.pi * pulse.frequency * time + pulse.phase)
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
-        return np.einsum("abt,bt->ta", mod_matrix, envelopes)
+        return np.einsum("abt,bt->ta", mod_matrix, envelopes)[:, 0]
 
     @property
     def reference_clock(self):

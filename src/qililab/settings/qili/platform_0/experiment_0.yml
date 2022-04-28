@@ -9,7 +9,9 @@ pulse_sequence:
     amplitude: 0.3
     frequency: 200000000.0
     phase: 0
-    shape: gaussian
+    shape:
+      name: gaussian
+      sigma: 1
     offset_i: 0
     offset_q: 0
 
@@ -18,6 +20,7 @@ pulse_sequence:
     amplitude: 0.5
     frequency: 200000000.0
     phase: 0
-    shape: gaussian
+    shape:
+      name: rectangular
     offset_i: 0
     offset_q: 0
