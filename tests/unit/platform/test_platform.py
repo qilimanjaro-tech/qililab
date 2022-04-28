@@ -52,15 +52,15 @@ class TestPlatform:
 
     def test_get_element_method_schema(self, platform: Platform):
         """Test get_element method with schema."""
-        assert isinstance(platform.get_element(category=Category.SCHEMA), Schema)
+        assert isinstance(platform.get_element(category=Category.SCHEMA)[0], Schema)
 
     def test_get_element_method_buses(self, platform: Platform):
         """Test get_element method with buses."""
-        assert isinstance(platform.get_element(category=Category.BUSES), Buses)
+        assert isinstance(platform.get_element(category=Category.BUSES)[0], Buses)
 
     def test_get_element_method_unknown(self, platform: Platform):
         """Test get_element method with unknown element."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=6), NoneType)
+        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=6)[0], NoneType)
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -80,27 +80,27 @@ class TestPlatform:
 
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
-        assert isinstance(platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0), SignalGenerator)
+        assert isinstance(platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)[0], SignalGenerator)
 
     def test_bus_0_mixer_instance(self, platform: Platform):
         """Test bus 0 mixer instance."""
-        assert isinstance(platform.get_element(category=Category.MIXER, id_=0), Mixer)
+        assert isinstance(platform.get_element(category=Category.MIXER, id_=0)[0], Mixer)
 
     def test_bus_0_resonator_instance(self, platform: Platform):
         """Test bus 0 resonator instance."""
-        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=0), Resonator)
+        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=0)[0], Resonator)
 
     def test_bus_0_resonator_qubit_0_instance(self, platform: Platform):
         """Test bus 0 resonator qubit 0 instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT, id_=0), Qubit)
+        assert isinstance(platform.get_element(category=Category.QUBIT, id_=0)[0], Qubit)
 
     def test_bus_0_qubit_instrument_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0), QubitControl)
+        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)[0], QubitControl)
 
     def test_bus_1_qubit_instrument_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1), QubitReadout)
+        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)[0], QubitReadout)
 
     @patch("qililab.settings.settings_manager.yaml.safe_dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

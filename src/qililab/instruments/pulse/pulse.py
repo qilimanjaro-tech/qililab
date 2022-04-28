@@ -34,6 +34,7 @@ class Pulse:
         shape: InitVar[dict]
         offset_i: float
         offset_q: float
+        qubit_id: int
         index: int = field(init=False)  # FIXME: This index is only for Qblox, find where to put it
 
         def __post_init__(self, shape: dict):
@@ -143,6 +144,15 @@ class Pulse:
             value (int): Value of the index.
         """
         self.settings.index = value
+
+    @property
+    def qubit_id(self):
+        """Pulse 'qubit_id' property.
+
+        Returns:
+            int: settings.qubit_id.
+        """
+        return self.settings.qubit_id
 
     def __repr__(self):
         """Return string representation of the Pulse object."""

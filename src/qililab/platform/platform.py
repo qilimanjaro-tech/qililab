@@ -44,12 +44,12 @@ class Platform:
             id_ (int): ID of element.
 
         Returns:
-            object: Element class.
+            Tuple[object, int | None]: Element class together with the index of the bus where the element is located.
         """
         if category == Category.SCHEMA:
-            return self.schema
+            return self.schema, None
         if category == Category.BUSES:
-            return self.buses
+            return self.buses, None
         return self.schema.get_element(category=category, id_=id_)
 
     @property

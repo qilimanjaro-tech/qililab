@@ -14,9 +14,10 @@ pulse_sequence:
       sigma: 1
     offset_i: 0
     offset_q: 0
+    qubit_id: 0
 
   - start: 70
-    duration: 60
+    duration: 3000
     amplitude: 0.5
     frequency: 200000000.0
     phase: 0
@@ -24,3 +25,4 @@ pulse_sequence:
       name: rectangular
     offset_i: 0
     offset_q: 0
+    qubit_id: 0

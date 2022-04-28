@@ -51,11 +51,11 @@ class Schema:
         Returns:
             (Qubit | QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
-        for bus in self.buses:
+        for bus_idx, bus in enumerate(self.buses):
             element = bus.get_element(category=category, id_=id_)
             if element is not None:
-                return element
-        return None
+                return element, bus_idx
+        return None, None
 
     @property
     def id_(self):

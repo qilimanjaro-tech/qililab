@@ -52,8 +52,8 @@ class TestExecution:
         execution.close()
         platform = execution.platform
         # assert that the class attributes of different instruments are equal to the platform settings
-        i_0 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
-        i_1 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
+        i_0, _ = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
+        i_1, _ = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
         assert i_0.hardware_average == i_1.hardware_average == execution.settings.hardware_average
         assert i_0.software_average == i_1.software_average == execution.settings.software_average
         assert i_0.delay_between_pulses == i_1.delay_between_pulses == execution.settings.delay_between_pulses

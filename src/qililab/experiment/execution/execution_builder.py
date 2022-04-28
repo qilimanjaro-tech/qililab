@@ -1,14 +1,13 @@
 """ExecutionBuilder class"""
-from typing import Dict, List
-
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.experiment.execution.bus_execution import BusExecution
 from qililab.experiment.execution.buses_execution import BusesExecution
 from qililab.experiment.execution.execution import Execution
 from qililab.instruments.pulse import PULSE_BUILDER
-from qililab.platform import Bus, Platform
+from qililab.instruments.pulse.pulse_sequence import PulseSequence
+from qililab.platform import Platform
 from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import YAMLNames
+from qililab.typings import Category, YAMLNames
 from qililab.utils import Singleton
 
 
@@ -31,11 +30,13 @@ class ExecutionBuilder(metaclass=Singleton):
         if YAMLNames.EXECUTION.value not in experiment_settings:
             raise ValueError(f"The loaded dictionary should contain the {YAMLNames.EXECUTION.value} key.")
 
+        pulse_sequences = PULSE_BUILDER.build(
+            pulse_sequence_settings=experiment_settings[YAMLNames.PULSE_SEQUENCE.value]
+        )
+
         buses = [
-            self._build_bus_execution(
-                bus=bus, pulse_sequence_settings=experiment_settings[YAMLNames.PULSE_SEQUENCE.value]
-            )
-            for bus in platform.buses
+            self._build_bus_execution(qubit_id=qubit_id, pulse_sequence=pulse_sequence, platform=platform)
+            for qubit_id, pulse_sequence in pulse_sequences.items()
         ]
 
         buses_execution = BusesExecution(buses=buses)
@@ -44,7 +45,7 @@ class ExecutionBuilder(metaclass=Singleton):
             platform=platform, buses_execution=buses_execution, settings=experiment_settings[YAMLNames.EXECUTION.value]
         )
 
-    def _build_bus_execution(self, bus: Bus, pulse_sequence_settings: List[Dict[str, float | str]]) -> BusExecution:
+    def _build_bus_execution(self, qubit_id: int, platform: Platform, pulse_sequence: PulseSequence) -> BusExecution:
         """Build BusExecution object.
 
         Args:
@@ -53,5 +54,6 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             BusExecution: BusExecution object.
         """
-        pulse_sequence = PULSE_BUILDER.build(pulse_sequence_settings=pulse_sequence_settings)
-        return BusExecution(bus=bus, pulse_sequence=pulse_sequence)
+        _, bus_idx = platform.get_element(category=Category.QUBIT, id_=qubit_id)
+
+        return BusExecution(bus=platform.buses[bus_idx], pulse_sequence=pulse_sequence)

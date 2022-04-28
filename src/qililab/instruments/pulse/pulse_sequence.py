@@ -16,9 +16,16 @@ class PulseSequence:
 
     settings: PulseSequenceSettings
 
-    def __init__(self, pulses_dict: List[dict]):
-        pulses = [Pulse(settings) for settings in pulses_dict]
+    def __init__(self, pulses: List[Pulse]):
         self.settings = self.PulseSequenceSettings(pulses=pulses)
+
+    def add(self, pulse: Pulse):
+        """Add pulse to sequence.
+
+        Args:
+            pulse (Pulse): Pulse object.
+        """
+        self.pulses.append(pulse)
 
     @property
     def pulses(self):
@@ -35,3 +42,7 @@ class PulseSequence:
 
         Returns:
             Dict: Dictionary containing the I, Q waveforms."""
+
+    def __iter__(self):
+        """Redirect __iter__ magic method to pulses."""
+        return self.pulses.__iter__()
