@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -29,6 +30,31 @@ def platform_yaml():
     return platform
 
 
+@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
+def connect_platform(mock_rs: MagicMock, mock_pulsar: MagicMock, platform: Platform):
+    """Return connected platform"""
+    # add dynamically created attributes
+    mock_rs_instance = mock_rs.return_value
+    mock_rs_instance.mock_add_spec(["power", "frequency"])
+    mock_pulsar_instance = mock_pulsar.return_value
+    mock_pulsar_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+        ]
+    )
+    mock_pulsar_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
+    platform.connect()
+    mock_rs.assert_called()
+    mock_pulsar.assert_called()
+    return platform
+
+
 @pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
@@ -57,30 +83,22 @@ class TestPlatform:
         """Test get_element method with buses."""
         assert isinstance(platform.get_element(category=Category.BUSES, id_=0), Buses)
 
-    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    def test_setup_method(self, mock_rs: MagicMock, mock_pulsar: MagicMock, platform: Platform):
+    def test_connect_method_raises_error_when_already_connected(self, platform: Platform):
+        """Test connect method raises error when already connected."""
+        connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
+        with pytest.raises(ValueError):
+            platform.connect()
+
+    def test_setup_method_raise_error(self, platform: Platform):
+        """Test setup method raise error."""
+        with pytest.raises(AttributeError):
+            platform.setup()
+
+    def test_setup_method(self, platform: Platform):
         """Test setup method."""
-        # add dynamically created attributes
-        mock_rs_instance = mock_rs.return_value
-        mock_rs_instance.mock_add_spec(["power", "frequency"])
-        mock_pulsar_instance = mock_pulsar.return_value
-        mock_pulsar_instance.mock_add_spec(
-            [
-                "reference_source",
-                "sequencer0",
-                "scope_acq_avg_mode_en_path0",
-                "scope_acq_avg_mode_en_path1",
-                "scope_acq_trigger_mode_path0",
-                "scope_acq_trigger_mode_path1",
-            ]
-        )
-        mock_pulsar_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
-        platform.connect()
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
+        connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
         platform.setup()
-        # assert that the class attributes of different instruments are the same
+        # assert that the class attributes of different instruments are equal to the platform settings
         assert (
             platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0).hardware_average
             == platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0).hardware_average
