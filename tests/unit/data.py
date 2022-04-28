@@ -9,8 +9,21 @@ platform_settings_sample = {
     "drag_coefficient": 0,
     "number_of_sigmas": 4,
 }
+
 qubit_0_settings_sample = {
     "id_": 0,
+    "name": "qubit",
+    "category": "qubit",
+    "pi_pulse_amplitude": 1,
+    "pi_pulse_duration": 100,
+    "pi_pulse_frequency": 100000000.0,
+    "qubit_frequency": 3544000000.0,
+    "min_voltage": 950,
+    "max_voltage": 1775,
+}
+
+qubit_1_settings_sample = {
+    "id_": 1,
     "name": "qubit",
     "category": "qubit",
     "pi_pulse_amplitude": 1,
@@ -69,7 +82,26 @@ resonator_0_settings_sample = {
             "min_voltage": 950,
             "max_voltage": 1775,
         }
-    ],  # id of the qubit connected to the resonator
+    ],
+}
+
+resonator_1_settings_sample = {
+    "id_": 1,
+    "name": "resonator",
+    "category": "resonator",
+    "qubits": [
+        {
+            "id_": 1,
+            "name": "qubit",
+            "category": "qubit",
+            "pi_pulse_amplitude": 1,
+            "pi_pulse_duration": 100,
+            "pi_pulse_frequency": 100000000.0,
+            "qubit_frequency": 3544000000.0,
+            "min_voltage": 950,
+            "max_voltage": 1775,
+        }
+    ],
 }
 
 rohde_schwarz_0_settings_sample = {
@@ -147,18 +179,7 @@ schema_settings_sample = {
                 qblox_qrm_0_settings_sample,
                 rohde_schwarz_1_settings_sample,
                 mixer_1_settings_sample,
-                resonator_0_settings_sample,
-            ],
-        },
-        {
-            "id_": 2,
-            "name": "bus",
-            "category": "bus",
-            "elements": [
-                qblox_qrm_0_settings_sample,
-                rohde_schwarz_1_settings_sample,
-                mixer_2_settings_sample,
-                resonator_0_settings_sample,
+                resonator_1_settings_sample,
             ],
         },
     ],

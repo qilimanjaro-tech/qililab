@@ -10,10 +10,10 @@ class PulseBuilder(metaclass=Singleton):
     """Builder of PulseSequence objects."""
 
     def build(self, pulse_sequence_settings: List[dict]) -> Dict[int, PulseSequence]:
-        """Build PulseSequence with its corresponding Pulse objects.
+        """Build PulseSequence objects.
 
         Returns:
-            PulseSequence: PulseSequence object.
+            Dict[int, PulseSequence]: Dictionary containing a PulseSequence for each different qubit.
         """
         pulses = [Pulse(settings) for settings in pulse_sequence_settings]
         pulse_sequences: Dict[int, PulseSequence] = {}
