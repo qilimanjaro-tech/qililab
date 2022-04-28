@@ -1,5 +1,5 @@
-from multiprocessing.sharedctypes import Value
 from pathlib import Path
+from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -77,11 +77,15 @@ class TestPlatform:
 
     def test_get_element_method_schema(self, platform: Platform):
         """Test get_element method with schema."""
-        assert isinstance(platform.get_element(category=Category.SCHEMA, id_=0), Schema)
+        assert isinstance(platform.get_element(category=Category.SCHEMA), Schema)
 
     def test_get_element_method_buses(self, platform: Platform):
         """Test get_element method with buses."""
-        assert isinstance(platform.get_element(category=Category.BUSES, id_=0), Buses)
+        assert isinstance(platform.get_element(category=Category.BUSES), Buses)
+
+    def test_get_element_method_unknown(self, platform: Platform):
+        """Test get_element method with unknown element."""
+        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=6), NoneType)
 
     def test_connect_method_raises_error_when_already_connected(self, platform: Platform):
         """Test connect method raises error when already connected."""
@@ -101,11 +105,12 @@ class TestPlatform:
         platform.setup()
         platform.close()
         # assert that the class attributes of different instruments are equal to the platform settings
-        assert (
-            platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0).hardware_average
-            == platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0).hardware_average
-            == platform.settings.hardware_average
-        )
+        i_0 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
+        i_1 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
+        assert i_0.hardware_average == i_1.hardware_average == platform.settings.hardware_average
+        assert i_0.software_average == i_1.software_average == platform.settings.software_average
+        assert i_0.delay_between_pulses == i_1.delay_between_pulses == platform.settings.delay_between_pulses
+        assert i_0.repetition_duration == i_1.repetition_duration == platform.settings.repetition_duration
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

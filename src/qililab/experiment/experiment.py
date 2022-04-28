@@ -15,4 +15,6 @@ class Experiment:
 
     def run(self):
         """Run execution."""
+        self.platform.connect()
+        self.platform.setup()
         self.execution.run()

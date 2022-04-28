@@ -37,7 +37,7 @@ class Platform:
         self.schema = schema
         self.buses = buses
 
-    def get_element(self, category: Category, id_: int):
+    def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
 
         Args:

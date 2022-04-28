@@ -144,7 +144,7 @@ schema_settings_sample = {
             ],
         },
         {
-            "id_": 0,
+            "id_": 1,
             "name": "bus",
             "category": "bus",
             "elements": [
@@ -155,7 +155,7 @@ schema_settings_sample = {
             ],
         },
         {
-            "id_": 0,
+            "id_": 2,
             "name": "bus",
             "category": "bus",
             "elements": [
@@ -169,7 +169,7 @@ schema_settings_sample = {
 }
 
 
-all_platform_yaml_sample = {
+all_platform_settings_sample = {
     "platform": {
         "id_": 0,
         "name": "platform_0",
@@ -183,6 +183,31 @@ all_platform_yaml_sample = {
         "delay_between_pulses": 0,
     },
     "schema": schema_settings_sample,
+}
+
+experiment_settings_sample = {
+    "pulse_sequence": [
+        {
+            "start": 0,
+            "duration": 60,
+            "amplitude": 0.3,
+            "frequency": 200000000.0,
+            "phase": 0,
+            "shape": "gaussian",
+            "offset_i": 0,
+            "offset_q": 0,
+        },
+        {
+            "start": 70,
+            "duration": 60,
+            "amplitude": 0.5,
+            "frequency": 200000000.0,
+            "phase": 0,
+            "shape": "gaussian",
+            "offset_i": 0,
+            "offset_q": 0,
+        },
+    ],
 }
 
 
@@ -200,7 +225,8 @@ class MockedSettingsHashTable:
     mixer_0 = mixer_0_settings_sample
     mixer_1 = mixer_1_settings_sample
     mixer_2 = mixer_2_settings_sample
-    all_platform = all_platform_yaml_sample
+    all_platform = all_platform_settings_sample
+    experiment_0 = experiment_settings_sample
 
     @classmethod
     def get(cls, name: str) -> dict:

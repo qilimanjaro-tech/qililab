@@ -159,3 +159,7 @@ class TestQbloxPulsarQRM:
     def test_acquisition_name_property(self, qrm: QbloxPulsarQRM):
         """Test acquisition_name property."""
         assert qrm.acquisition_name == qrm.settings.acquisition_name
+
+    def tests_delay_before_readout_property(self, qrm: QbloxPulsarQRM):
+        """Test delay_before_readout property."""
+        assert qrm.delay_before_readout == qrm.settings.delay_before_readout
