@@ -1,4 +1,6 @@
 """ExecutionBuilder class"""
+from typing import Dict, List
+
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.experiment.execution.bus_execution import BusExecution
 from qililab.experiment.execution.buses_execution import BusesExecution
@@ -19,23 +21,25 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             Execution: Execution object.
         """
-        execution_settings = SETTINGS_MANAGER.load(
+        experiment_settings: Dict[str, List[Dict[str, float | str]]] = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform.name, filename=experiment_name
         )
 
-        self._check_key_exists(key=YAMLNames.BUSES.value, dictionary=execution_settings)
+        if YAMLNames.PULSE_SEQUENCE.value not in experiment_settings:
+            raise ValueError(f"The loaded dictionary should contain the {YAMLNames.PULSE_SEQUENCE.value} key.")
 
-        buses_execution_list = []
-        for bus_execution_settings in execution_settings[YAMLNames.BUSES.value]:
-            self._check_key_exists(key=YAMLNames.PULSE_SEQUENCE.value, dictionary=bus_execution_settings)
-            self._check_key_exists(key=YAMLNames.BUS.value, dictionary=bus_execution_settings)
-            buses_execution_list.append(self._build_bus_execution(bus_execution_settings))
+        buses = [
+            self._build_bus_execution(
+                bus=bus, pulse_sequence_settings=experiment_settings[YAMLNames.PULSE_SEQUENCE.value]
+            )
+            for bus in platform.buses
+        ]
 
-        buses_execution = BusesExecution(buses=buses_execution_list)
+        buses_execution = BusesExecution(buses=buses)
 
         return Execution(platform=platform, buses=buses_execution)
 
-    def _build_bus_execution(self, bus_execution_settings: dict) -> BusExecution:
+    def _build_bus_execution(self, bus: Bus, pulse_sequence_settings: List[Dict[str, float | str]]) -> BusExecution:
         """Build BusExecution object.
 
         Args:
@@ -44,18 +48,5 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             BusExecution: BusExecution object.
         """
-        pulse_sequence = PULSE_BUILDER.build(
-            pulse_sequence_settings=bus_execution_settings[YAMLNames.PULSE_SEQUENCE.value]
-        )
-        bus = Bus(settings=bus_execution_settings[YAMLNames.BUS.value])
+        pulse_sequence = PULSE_BUILDER.build(pulse_sequence_settings=pulse_sequence_settings)
         return BusExecution(bus=bus, pulse_sequence=pulse_sequence)
-
-    def _check_key_exists(self, key: str, dictionary: dict):
-        """Raise ValueError if key not in dictionary.
-
-        Args:
-            key (str): key.
-            dictionary (dict): dictionary.
-        """
-        if key not in dictionary:
-            raise ValueError(f"Execution settings must contain the {key} key.")
