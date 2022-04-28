@@ -29,7 +29,7 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r dev-requirements.txt
           python -m pip install -r requirements.txt
-          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qpysequence
+          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qpysequence@feat/qili-69-implement-new-sequencer
 
       - name: Code Quality
         run: |
