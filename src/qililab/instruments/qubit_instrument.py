@@ -58,15 +58,6 @@ class QubitInstrument(Instrument):
         """
         return self.QubitInstrumentSettings.hardware_average
 
-    @hardware_average.setter
-    def hardware_average(self, value: int):
-        """QbloxPulsar 'hardware_average' property setter.
-
-        Args:
-            value (int): Hardware average value.
-        """
-        self.QubitInstrumentSettings.hardware_average = value
-
     @property
     def software_average(self):
         """QbloxPulsar 'software_average' property.
@@ -75,15 +66,6 @@ class QubitInstrument(Instrument):
             int: settings.software_average.
         """
         return self.settings.software_average
-
-    @software_average.setter
-    def software_average(self, value: int):
-        """QbloxPulsar 'software_average' property setter.
-
-        Args:
-            value (int): Software average value.
-        """
-        self.QubitInstrumentSettings.software_average = value
 
     @property
     def delay_between_pulses(self):
@@ -94,15 +76,6 @@ class QubitInstrument(Instrument):
         """
         return self.settings.delay_between_pulses
 
-    @delay_between_pulses.setter
-    def delay_between_pulses(self, value: int):
-        """QbloxPulsar 'delay_between_pulses' property setter.
-
-        Args:
-            value (int): Delay between pulses value.
-        """
-        self.QubitInstrumentSettings.delay_between_pulses = value
-
     @property
     def repetition_duration(self):
         """QbloxPulsar 'repetition_duration' property.
@@ -111,12 +84,3 @@ class QubitInstrument(Instrument):
             int: settings.repetition_duration.
         """
         return self.settings.repetition_duration
-
-    @repetition_duration.setter
-    def repetition_duration(self, value: int):
-        """QbloxPulsar 'repetition_duration' property setter.
-
-        Args:
-            value (int): Repetition duration value.
-        """
-        self.QubitInstrumentSettings.repetition_duration = value
