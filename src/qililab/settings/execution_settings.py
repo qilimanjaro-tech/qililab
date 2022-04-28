@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 
-from qililab.settings.settings import Settings
-
 # TODO: I moved this class inside the module settings/ to avoid circular imports,
-# because it is used by both the Platform and QubitInstrument classes.
+# because it is used by both the Execution and QubitInstrument classes.
 
 # FIXME: We should find a better way to setup the QubitInstrument class attributes.
-# Right now it is done by the Platform object.
+# Right now it is done by the Execution object.
 
 
 @dataclass
-class GenericQubitInstrumentSettings(Settings):
+class ExecutionSettings:
     """Contains the settings that are generic for all QubitInstrument objects.
 
     Args:

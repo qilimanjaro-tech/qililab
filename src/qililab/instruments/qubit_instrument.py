@@ -5,7 +5,7 @@ from typing import ClassVar
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
-from qililab.settings import GenericQubitInstrumentSettings
+from qililab.settings import ExecutionSettings
 
 
 class QubitInstrument(Instrument):
@@ -30,7 +30,7 @@ class QubitInstrument(Instrument):
     settings: QubitInstrumentSettings
 
     @abstractmethod
-    def execute(self, pulse_sequence: PulseSequence):
+    def run(self, pulse_sequence: PulseSequence):
         """Run execution of a pulse sequence.
 
         Args:
@@ -38,7 +38,7 @@ class QubitInstrument(Instrument):
         """
 
     @classmethod
-    def general_setup(cls, settings: GenericQubitInstrumentSettings):
+    def general_setup(cls, settings: ExecutionSettings):
         """Setup generic qubit instrument settings.
 
         Args:

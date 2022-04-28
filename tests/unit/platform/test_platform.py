@@ -30,31 +30,6 @@ def platform_yaml():
     return platform
 
 
-@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-def connect_platform(mock_rs: MagicMock, mock_pulsar: MagicMock, platform: Platform):
-    """Return connected platform"""
-    # add dynamically created attributes
-    mock_rs_instance = mock_rs.return_value
-    mock_rs_instance.mock_add_spec(["power", "frequency"])
-    mock_pulsar_instance = mock_pulsar.return_value
-    mock_pulsar_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-        ]
-    )
-    mock_pulsar_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
-    platform.connect()
-    mock_rs.assert_called()
-    mock_pulsar.assert_called()
-    return platform
-
-
 @pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
@@ -86,31 +61,6 @@ class TestPlatform:
     def test_get_element_method_unknown(self, platform: Platform):
         """Test get_element method with unknown element."""
         assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=6), NoneType)
-
-    def test_connect_method_raises_error_when_already_connected(self, platform: Platform):
-        """Test connect method raises error when already connected."""
-        connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
-        with pytest.raises(ValueError):
-            platform.connect()
-        platform.close()
-
-    def test_setup_method_raise_error(self, platform: Platform):
-        """Test setup method raise error."""
-        with pytest.raises(AttributeError):
-            platform.setup()
-
-    def test_setup_method(self, platform: Platform):
-        """Test setup method."""
-        connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
-        platform.setup()
-        platform.close()
-        # assert that the class attributes of different instruments are equal to the platform settings
-        i_0 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
-        i_1 = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
-        assert i_0.hardware_average == i_1.hardware_average == platform.settings.hardware_average
-        assert i_0.software_average == i_1.software_average == platform.settings.software_average
-        assert i_0.delay_between_pulses == i_1.delay_between_pulses == platform.settings.delay_between_pulses
-        assert i_0.repetition_duration == i_1.repetition_duration == platform.settings.repetition_duration
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

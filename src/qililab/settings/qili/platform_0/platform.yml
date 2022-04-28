@@ -4,8 +4,3 @@ category: platform  # general name
 number_qubits: 1
 drag_coefficient: 0
 number_of_sigmas: 4
-# FIXME: We should move the instrument generic settings below somewhere else
-hardware_average: 4096
-software_average: 10
-repetition_duration: 200000
-delay_between_pulses: 0

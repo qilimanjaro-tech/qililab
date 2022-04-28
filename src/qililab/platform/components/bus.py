@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import List
 
-from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
+from qililab.instruments import Mixer, PulseSequence, QubitInstrument, SignalGenerator
 from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.settings import Settings
@@ -86,6 +86,15 @@ class Bus:
         """Setup instruments."""
         self.qubit_instrument.setup()
         self.signal_generator.setup()
+
+    def start(self):
+        """Start/Turn on the instruments."""
+        self.qubit_instrument.start()
+        self.signal_generator.start()
+
+    def run(self, pulse_sequence: PulseSequence):
+        """Run the given pulse sequence."""
+        self.qubit_instrument.run(pulse_sequence=pulse_sequence)
 
     def close(self):
         """Close connection to the instruments."""

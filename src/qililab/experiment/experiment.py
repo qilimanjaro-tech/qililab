@@ -13,8 +13,6 @@ class Experiment:
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, experiment_name=experiment_name)
 
-    def run(self):
+    def execute(self):
         """Run execution."""
-        self.platform.connect()
-        self.platform.setup()
-        self.execution.run()
+        self.execution.execute()

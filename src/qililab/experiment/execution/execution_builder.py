@@ -21,12 +21,15 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             Execution: Execution object.
         """
-        experiment_settings: Dict[str, List[Dict[str, float | str]]] = SETTINGS_MANAGER.load(
+        experiment_settings = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform.name, filename=experiment_name
         )
 
         if YAMLNames.PULSE_SEQUENCE.value not in experiment_settings:
             raise ValueError(f"The loaded dictionary should contain the {YAMLNames.PULSE_SEQUENCE.value} key.")
+
+        if YAMLNames.EXECUTION.value not in experiment_settings:
+            raise ValueError(f"The loaded dictionary should contain the {YAMLNames.EXECUTION.value} key.")
 
         buses = [
             self._build_bus_execution(
@@ -37,7 +40,9 @@ class ExecutionBuilder(metaclass=Singleton):
 
         buses_execution = BusesExecution(buses=buses)
 
-        return Execution(platform=platform, buses=buses_execution)
+        return Execution(
+            platform=platform, buses_execution=buses_execution, settings=experiment_settings[YAMLNames.EXECUTION.value]
+        )
 
     def _build_bus_execution(self, bus: Bus, pulse_sequence_settings: List[Dict[str, float | str]]) -> BusExecution:
         """Build BusExecution object.

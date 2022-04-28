@@ -55,7 +55,7 @@ class QbloxPulsar(QubitInstrument):
         super().connect()
         self.initial_setup()
 
-    def execute(self, pulse_sequence: PulseSequence):
+    def run(self, pulse_sequence: PulseSequence):
         """Run execution of a pulse sequence.
 
         Args:

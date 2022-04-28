@@ -1,3 +1,8 @@
+execution:
+  hardware_average: 4096
+  software_average: 10
+  repetition_duration: 200000
+  delay_between_pulses: 0
 pulse_sequence:
   - start: 0
     duration: 60

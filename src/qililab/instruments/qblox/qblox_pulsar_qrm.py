@@ -55,7 +55,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         super().__init__()
         self.settings = self.QbloxPulsarQRMSettings(**settings)
 
-    def execute(self, pulse_sequence: PulseSequence):
+    def run(self, pulse_sequence: PulseSequence):
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:
@@ -64,7 +64,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Returns:
             Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
-        super().execute(pulse_sequence=pulse_sequence)
+        super().run(pulse_sequence=pulse_sequence)
         return self.get_acquisitions()
 
     @QbloxPulsar.CheckConnected
