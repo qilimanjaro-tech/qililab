@@ -159,7 +159,7 @@ schema_settings_sample = {
             "name": "bus",
             "category": "bus",
             "elements": [
-                resonator_0_settings_sample,
+                qblox_qrm_0_settings_sample,
                 rohde_schwarz_1_settings_sample,
                 mixer_2_settings_sample,
                 resonator_0_settings_sample,
