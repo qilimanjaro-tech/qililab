@@ -1,10 +1,11 @@
 import json
 from dataclasses import asdict, dataclass
 
+from qililab.instruments import QubitInstrument
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import dict_factory
-from qililab.settings import Settings
+from qililab.settings import GenericQubitInstrumentSettings
 from qililab.typings import Category
 
 
@@ -18,7 +19,7 @@ class Platform:
     """
 
     @dataclass
-    class PlatformSettings(Settings):
+    class PlatformSettings(GenericQubitInstrumentSettings):
         """Contains the settings of the platform.
 
         Args:
@@ -51,6 +52,11 @@ class Platform:
         if category == Category.BUSES:
             return self.buses
         return self.schema.get_element(category=category, id_=id_)
+
+    def setup(self):
+        """Setup instruments with platform settings."""
+        QubitInstrument.general_setup(settings=self.settings)
+        self.buses.setup(platform_settings=self.settings)
 
     @property
     def id_(self):

@@ -2,7 +2,7 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, Dict, List
+from typing import Dict, List
 
 import numpy as np
 import yaml
@@ -11,14 +11,14 @@ from qblox_pysequence.instructions import acquire, play, wait
 from qblox_pysequence.program import Program
 from qblox_pysequence.sequence import Sequence
 
-from qililab.instruments.instrument import Instrument
 from qililab.instruments.pulse.pulse import Pulse
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
+from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.typings import Pulsar, ReferenceClock
 
 
-class QbloxPulsar(Instrument):
+class QbloxPulsar(QubitInstrument):
     """Qblox pulsar class.
 
     Args:
@@ -27,7 +27,7 @@ class QbloxPulsar(Instrument):
     """
 
     @dataclass
-    class QbloxPulsarSettings(Instrument.InstrumentSettings):
+    class QbloxPulsarSettings(QubitInstrument.QubitInstrumentSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
@@ -35,22 +35,12 @@ class QbloxPulsar(Instrument):
             sequencer (int): Index of the sequencer to use.
             sync_enabled (bool): Enable synchronization over multiple instruments.
             gain (float): Gain step used by the sequencer.
-            hardware_average (int): Hardware average. Number of shots used when executing a sequence.
-            software_average (float): Software average.
-            repetition_duration (int): Duration (ns) of the whole program.
-            delay_between_pulses (int): Delay (ns) between two consecutive pulses.
-            delay_before_readout (int): Delay (ns) between the readout pulse and the acquisition.
         """
 
         reference_clock: ReferenceClock
         sequencer: int
         sync_enabled: bool
         gain: float
-        hardware_average: ClassVar[int]
-        software_average: ClassVar[int]
-        repetition_duration: ClassVar[int]
-        delay_between_pulses: ClassVar[int]
-        delay_before_readout: ClassVar[int]
 
         def __post_init__(self):
             """Cast reference_clock to its corresponding Enum class"""
@@ -118,34 +108,34 @@ class QbloxPulsar(Instrument):
         program.append_loop(loop=loop)
         return program
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def start(self):
         """Execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def reset(self):
         """Reset instrument."""
         self.device.reset()
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         self._set_reference_source()
         self._set_sync_enabled()
 
-    @Instrument.CheckConnected
+    @QubitInstrument.CheckConnected
     def upload(self, sequence: Sequence):
         """Upload sequence to sequencer.
 
@@ -258,48 +248,3 @@ class QbloxPulsar(Instrument):
             float: settings.gain.
         """
         return self.settings.gain
-
-    @property
-    def hardware_average(self):
-        """QbloxPulsar 'hardware_average' property.
-
-        Returns:
-            int: settings.hardware_average.
-        """
-        return self.settings.hardware_average
-
-    @property
-    def software_average(self):
-        """QbloxPulsar 'software_average' property.
-
-        Returns:
-            int: settings.software_average.
-        """
-        return self.settings.software_average
-
-    @property
-    def delay_between_pulses(self):
-        """QbloxPulsar 'delay_between_pulses' property.
-
-        Returns:
-            int: settings.delay_between_pulses.
-        """
-        return self.settings.delay_between_pulses
-
-    @property
-    def delay_before_readout(self):
-        """QbloxPulsar 'delay_before_readout' property.
-
-        Returns:
-            int: settings.delay_before_readout.
-        """
-        return self.settings.delay_before_readout
-
-    @property
-    def repetition_duration(self):
-        """QbloxPulsar 'repetition_duration' property.
-
-        Returns:
-            int: settings.repetition_duration.
-        """
-        return self.settings.repetition_duration

@@ -8,6 +8,10 @@ platform_settings_sample = {
     "number_qubits": 1,
     "drag_coefficient": 0,
     "number_of_sigmas": 4,
+    "hardware_average": 4096,
+    "software_average": 10,
+    "repetition_duration": 200000,
+    "delay_between_pulses": 0,
 }
 qubit_0_settings_sample = {
     "id_": 0,
@@ -50,6 +54,7 @@ qblox_qrm_0_settings_sample = {
     "sequence_timeout": 1,
     "acquisition_timeout": 1,
     "acquisition_name": "single",
+    "delay_before_readout": 50,
 }
 
 resonator_0_settings_sample = {
@@ -172,6 +177,10 @@ all_platform_yaml_sample = {
         "number_qubits": 1,
         "drag_coefficient": 0,
         "number_of_sigmas": 4,
+        "hardware_average": 4096,
+        "software_average": 10,
+        "repetition_duration": 200000,
+        "delay_between_pulses": 0,
     },
     "schema": schema_settings_sample,
 }

@@ -15,8 +15,4 @@ integration_mode: ssb
 sequence_timeout: 1
 acquisition_timeout: 1
 acquisition_name: "single"
-hardware_average: 4096
-software_average: 10
-repetition_duration: 200000
-delay_between_pulses: 0
-delay_before_readout: 50
+delay_before_readout: int

@@ -77,6 +77,10 @@ class Bus:
             settings = self.BusSettings(**settings)
         self.settings = settings
 
+    def setup(self):
+        """Setup instruments."""
+        self.qubit_instrument.setup()
+
     @property
     def id_(self):
         """Bus 'id' property.

@@ -62,6 +62,7 @@ buses:
       sequence_timeout: 1
       acquisition_timeout: 1
       acquisition_name: "single"
+      delay_before_readout: 50
     - id_: 1
       name: rohde_schwarz  # unique name
       category: signal_generator  # general name
@@ -110,6 +111,7 @@ buses:
       sequence_timeout: 1
       acquisition_timeout: 1
       acquisition_name: "single"
+      delay_before_readout: 50
     - id_: 1
       name: rohde_schwarz  # unique name
       category: signal_generator  # general name

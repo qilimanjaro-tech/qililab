@@ -29,6 +29,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
             If timeout is reached a TimeoutError is raised.
             acquisition_name (str): Name of the acquisition saved in the sequencer.
+            delay_before_readout (int): Delay (ns) between the readout pulse and the acquisition.
         """
 
         acquire_trigger_mode: AcquireTriggerMode
@@ -40,6 +41,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
         acquisition_name: str
+        delay_before_readout: int  # ns
 
         def __post_init__(self):
             """Cast acquire_trigger_mode and integration_mode to its corresponding Enum classes"""
@@ -197,3 +199,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             str: settings.acquisition_name.
         """
         return self.settings.acquisition_name
+
+    @property
+    def delay_before_readout(self):
+        """QbloxPulsar 'delay_before_readout' property.
+
+        Returns:
+            int: settings.delay_before_readout.
+        """
+        return self.settings.delay_before_readout

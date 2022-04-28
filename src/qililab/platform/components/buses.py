@@ -20,6 +20,11 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.buses.append(bus)
 
+    def setup(self):
+        """Setup instruments with platform settings."""
+        for bus in self.buses:
+            bus.setup()
+
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
         return self.buses.__iter__()

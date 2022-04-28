@@ -6,8 +6,7 @@ from qililab.constants import (
     DEFAULT_SETTINGS_FOLDERNAME,
 )
 from qililab.platform import Platform, Qubit
-from qililab.settings import SETTINGS_MANAGER
-from qililab.settings.settings_manager import SettingsManager
+from qililab.settings import SETTINGS_MANAGER, SettingsManager
 
 
 class TestSettingsManager:

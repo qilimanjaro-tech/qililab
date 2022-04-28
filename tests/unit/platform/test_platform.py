@@ -1,10 +1,7 @@
-from multiprocessing.sharedctypes import Value
 from pathlib import Path
-from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sympy import Si
 
 from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.constants import DEFAULT_PLATFORM_NAME
