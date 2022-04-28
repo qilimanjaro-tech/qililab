@@ -87,6 +87,11 @@ class Bus:
         self.qubit_instrument.setup()
         self.signal_generator.setup()
 
+    def close(self):
+        """Close connection to the instruments."""
+        self.qubit_instrument.close()
+        self.signal_generator.close()
+
     @property
     def id_(self):
         """Bus 'id' property.

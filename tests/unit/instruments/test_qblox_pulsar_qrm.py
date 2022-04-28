@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qblox_pysequence.sequence import Sequence
+from qpysequence.sequence import Sequence
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM

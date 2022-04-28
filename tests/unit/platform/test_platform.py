@@ -88,6 +88,7 @@ class TestPlatform:
         connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
         with pytest.raises(ValueError):
             platform.connect()
+        platform.close()
 
     def test_setup_method_raise_error(self, platform: Platform):
         """Test setup method raise error."""
@@ -98,6 +99,7 @@ class TestPlatform:
         """Test setup method."""
         connect_platform(platform=platform)  # pylint: disable=no-value-for-parameter
         platform.setup()
+        platform.close()
         # assert that the class attributes of different instruments are equal to the platform settings
         assert (
             platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0).hardware_average

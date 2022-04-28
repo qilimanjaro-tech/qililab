@@ -62,6 +62,10 @@ class Platform:
         QubitInstrument.general_setup(settings=self.settings)
         self.buses.setup()
 
+    def close(self):
+        """Close connection to the instruments."""
+        self.buses.close()
+
     @property
     def id_(self):
         """Platform 'id_' property.

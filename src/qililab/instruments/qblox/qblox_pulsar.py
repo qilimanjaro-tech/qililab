@@ -6,10 +6,10 @@ from typing import Dict, List
 
 import numpy as np
 import yaml
-from qblox_pysequence.block import Loop
-from qblox_pysequence.instructions import acquire, play, wait
-from qblox_pysequence.program import Program
-from qblox_pysequence.sequence import Sequence
+from qpysequence.instructions import Acquire, Play, Wait
+from qpysequence.loop import Loop
+from qpysequence.program import Program
+from qpysequence.sequence import Sequence
 
 from qililab.instruments.pulse.pulse import Pulse
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
@@ -94,18 +94,18 @@ class QbloxPulsar(QubitInstrument):
         pulses = pulse_sequence.pulses
         program = Program()
         loop = Loop(name="loop", iterations=self.hardware_average)
-        loop.append_component(wait(time=pulses[0].start))
+        loop.append_component(Wait(wait_time=pulses[0].start))
 
         for i, pulse in enumerate(pulses):
             if i < len(pulses) - 1:
                 pulse_wait = pulses[i + 1].start - pulse.start
-            loop.append_component(play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait=pulse_wait))
+            loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=pulse_wait))
 
         if isinstance(self, QubitReadout):
-            loop.append_component(acquire(acq_index=0, bin_index=1, wait=4))
+            loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
 
-        loop.append_component(wait(time=self.repetition_duration - loop.duration_iter))
-        program.append_loop(loop=loop)
+        loop.append_component(Wait(wait_time=self.repetition_duration - loop.duration_iter))
+        program.append_block(block=loop)
         return program
 
     @QubitInstrument.CheckConnected

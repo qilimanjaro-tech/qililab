@@ -30,6 +30,11 @@ class Buses:
         for bus in self.buses:
             bus.setup()
 
+    def close(self):
+        """Close connection to the instruments."""
+        for bus in self.buses:
+            bus.close()
+
     def __iter__(self):
         """Redirect __iter__ magic method to iterate over buses."""
         return self.buses.__iter__()
