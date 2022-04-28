@@ -20,6 +20,11 @@ class Buses:
             bus (Bus): Bus object to append."""
         self.buses.append(bus)
 
+    def connect(self):
+        """Connect to the instruments."""
+        for bus in self.buses:
+            bus.connect()
+
     def setup(self):
         """Setup instruments with platform settings."""
         for bus in self.buses:

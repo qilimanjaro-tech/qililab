@@ -53,10 +53,14 @@ class Platform:
             return self.buses
         return self.schema.get_element(category=category, id_=id_)
 
+    def connect(self):
+        """Connect to the instruments."""
+        self.buses.connect()
+
     def setup(self):
         """Setup instruments with platform settings."""
         QubitInstrument.general_setup(settings=self.settings)
-        self.buses.setup(platform_settings=self.settings)
+        self.buses.setup()
 
     @property
     def id_(self):

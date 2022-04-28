@@ -77,9 +77,15 @@ class Bus:
             settings = self.BusSettings(**settings)
         self.settings = settings
 
+    def connect(self):
+        """Connect to the instruments."""
+        self.qubit_instrument.connect()
+        self.signal_generator.connect()
+
     def setup(self):
         """Setup instruments."""
         self.qubit_instrument.setup()
+        self.signal_generator.setup()
 
     @property
     def id_(self):
