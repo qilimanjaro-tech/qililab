@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 
 from qililab.platform import BusControl, Buses, BusReadout, Schema
@@ -14,7 +16,7 @@ def fixture_schema() -> Schema:
         Schema: Instance of the Schema class.
     """
     schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-    buses_settings = []
+    buses_settings: List[BusReadout | BusControl] = []
     for bus_settings in schema_settings[YAMLNames.BUSES.value]:
         if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
             buses_settings.append(BusControl(bus_settings))
