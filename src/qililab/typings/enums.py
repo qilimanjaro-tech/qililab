@@ -27,6 +27,19 @@ class Category(Enum):
     BUS = "bus"
 
 
+class BusTypes(Enum):
+    """Bus types.
+
+    Args:
+        enum (str): Available types of bus:
+        * bus_control
+        * bus_readout
+    """
+
+    BUS_CONTROL = "bus_control"
+    BUS_READOUT = "bus_readout"
+
+
 class ReferenceClock(Enum):
     """Qblox reference clock.
 

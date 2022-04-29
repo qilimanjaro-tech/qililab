@@ -31,10 +31,9 @@ class Platform:
         drag_coefficient: float
         number_of_sigmas: float
 
-    def __init__(self, settings: dict, schema: Schema, buses: Buses):
+    def __init__(self, settings: dict, schema: Schema):
         self.settings = self.PlatformSettings(**settings)
         self.schema = schema
-        self.buses = buses
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -77,6 +76,15 @@ class Platform:
             str: settings.category.
         """
         return self.settings.category
+
+    @property
+    def buses(self):
+        """Platform 'buses' property.
+
+        Returns:
+            Buses: schema.buses.
+        """
+        return self.schema.buses
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

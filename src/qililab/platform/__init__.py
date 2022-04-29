@@ -1,4 +1,6 @@
 from .components.bus import Bus
+from .components.bus_control import BusControl
+from .components.bus_readout import BusReadout
 from .components.buses import Buses
 from .components.qubit import Qubit
 from .components.resonator import Resonator

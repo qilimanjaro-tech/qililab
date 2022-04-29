@@ -1,5 +1,6 @@
 from .enums import (
     AcquireTriggerMode,
+    BusTypes,
     Category,
     IntegrationMode,
     PulseShapeOptions,
