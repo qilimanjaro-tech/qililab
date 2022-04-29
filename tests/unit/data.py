@@ -70,38 +70,14 @@ resonator_0_settings_sample = {
     "id_": 0,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [
-        {
-            "id_": 0,
-            "name": "qubit",
-            "category": "qubit",
-            "pi_pulse_amplitude": 1,
-            "pi_pulse_duration": 100,
-            "pi_pulse_frequency": 100000000.0,
-            "qubit_frequency": 3544000000.0,
-            "min_voltage": 950,
-            "max_voltage": 1775,
-        }
-    ],
+    "qubits": [qubit_0_settings_sample],
 }
 
 resonator_1_settings_sample = {
     "id_": 1,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [
-        {
-            "id_": 1,
-            "name": "qubit",
-            "category": "qubit",
-            "pi_pulse_amplitude": 1,
-            "pi_pulse_duration": 100,
-            "pi_pulse_frequency": 100000000.0,
-            "qubit_frequency": 3544000000.0,
-            "min_voltage": 950,
-            "max_voltage": 1775,
-        }
-    ],
+    "qubits": [qubit_1_settings_sample],
 }
 
 rohde_schwarz_0_settings_sample = {
@@ -124,7 +100,7 @@ rohde_schwarz_1_settings_sample = {
 
 mixer_0_settings_sample = {
     "id_": 0,
-    "name": "mixer",  # unique name
+    "name": "mixer_up",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -135,7 +111,7 @@ mixer_0_settings_sample = {
 
 mixer_1_settings_sample = {
     "id_": 1,
-    "name": "mixer",  # unique name
+    "name": "mixer_up",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -146,7 +122,7 @@ mixer_1_settings_sample = {
 
 mixer_2_settings_sample = {
     "id_": 2,
-    "name": "mixer",  # unique name
+    "name": "mixer_down",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -156,24 +132,21 @@ mixer_2_settings_sample = {
 }
 
 schema_settings_sample = {
-    "id_": 0,
-    "name": "qili_schema",  # unique name
-    "category": "schema",  # general name
     "buses": [
         {
             "id_": 0,
-            "name": "bus",
+            "name": "bus_control",
             "category": "bus",
             "elements": [
                 qblox_qcm_0_settings_sample,
                 rohde_schwarz_0_settings_sample,
                 mixer_0_settings_sample,
-                resonator_0_settings_sample,
+                qubit_0_settings_sample,
             ],
         },
         {
             "id_": 1,
-            "name": "bus",
+            "name": "bus_readout",
             "category": "bus",
             "elements": [
                 qblox_qrm_0_settings_sample,

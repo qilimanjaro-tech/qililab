@@ -1,36 +1,30 @@
 import pytest
 
-from qililab.platform import Bus, Buses, Schema
+from qililab.platform import Bus, BusControl, Buses, BusReadout
 from qililab.typings import Category
+from qililab.typings.enums import BusTypes, YAMLNames
 
 from ...data import MockedSettingsHashTable
 
 
-@pytest.fixture(name="bus")
-def fixture_bus() -> Bus:
-    """Load Bus.
-
-    Returns:
-        Bus: Instance of the Bus class.
-    """
-    schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-    bus_dict = schema_settings["buses"][0]
-    bus_settings = Bus.BusSettings(**bus_dict)
-
-    return Bus(settings=bus_settings)
-
-
-@pytest.fixture(name="buses")
-def fixture_buses() -> Buses:
+def load_buses() -> Buses:
     """Load Buses.
 
     Returns:
         Buses: Instance of the Buses class.
     """
-    schema = Schema(MockedSettingsHashTable.get(Category.SCHEMA.value))
-    return Buses(buses=schema.buses)
+    schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
+    buses_settings = []
+    for bus_settings in schema_settings[YAMLNames.BUSES.value]:
+        if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
+            buses_settings.append(BusControl(bus_settings))
+        elif bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
+            buses_settings.append(BusReadout(bus_settings))
+
+    return Buses(buses=buses_settings)
 
 
+@pytest.mark.parametrize("bus", [load_buses().buses[0], load_buses().buses[1]])
 class TestBus:
     """Unit tests checking the Bus attributes and methods."""
 
@@ -54,13 +48,19 @@ class TestBus:
         """Test signal_generator property."""
         assert bus.signal_generator == bus.settings.signal_generator
 
-    def test_mixer_property(self, bus: Bus):
-        """Test mixer property."""
-        assert bus.mixer == bus.settings.mixer
+    def test_mixer_up_property(self, bus: Bus):
+        """Test mixer_up property."""
+        assert bus.mixer_up == bus.settings.mixer_up
 
     def test_resonator_property(self, bus: Bus):
         """Test resonator property."""
-        assert bus.resonator == bus.settings.resonator
+        if isinstance(bus, BusReadout):
+            assert bus.resonator == bus.settings.resonator
+
+    def test_qubit_property(self, bus: Bus):
+        """Test qubit property."""
+        if isinstance(bus, BusControl):
+            assert bus.qubit == bus.settings.qubit
 
     def test_qubit_instrument_property(self, bus: Bus):
         """Test qubit_instrument property."""
@@ -72,6 +72,8 @@ class TestBus:
             assert element == bus[idx]
 
 
+@pytest.mark.parametrize("buses", [load_buses()])
+@pytest.mark.parametrize("bus", [load_buses().buses[0]])
 class TestBuses:
     """Unit tests checking the Buses attributes and methods."""
 
@@ -80,7 +82,7 @@ class TestBuses:
         buses.add(bus=bus)
         assert buses[-1] == bus
 
-    def test_iter_and_getitem_methods(self, buses: Buses):
+    def test_iter_and_getitem_methods(self, buses: Buses, bus: Bus):
         """Test __iter__ and __getitem__ methods."""
         for bus_idx, bus in enumerate(buses):
             for element_idx, element in enumerate(bus):

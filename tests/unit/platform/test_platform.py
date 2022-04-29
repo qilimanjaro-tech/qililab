@@ -88,7 +88,7 @@ class TestPlatform:
 
     def test_bus_0_resonator_instance(self, platform: Platform):
         """Test bus 0 resonator instance."""
-        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=0)[0], Resonator)
+        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=1)[0], Resonator)
 
     def test_bus_0_resonator_qubit_0_instance(self, platform: Platform):
         """Test bus 0 resonator qubit 0 instance."""

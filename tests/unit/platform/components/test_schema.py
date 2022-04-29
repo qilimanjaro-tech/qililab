@@ -1,7 +1,7 @@
 import pytest
 
-from qililab.platform import Schema
-from qililab.typings import SchemaDrawOptions
+from qililab.platform import BusControl, Buses, BusReadout, Schema
+from qililab.typings import BusTypes, Category, SchemaDrawOptions, YAMLNames
 
 from ...data import MockedSettingsHashTable
 
@@ -13,29 +13,19 @@ def fixture_schema() -> Schema:
     Returns:
         Schema: Instance of the Schema class.
     """
-    schema_settings = MockedSettingsHashTable.get("schema")
+    schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
+    buses_settings = []
+    for bus_settings in schema_settings[YAMLNames.BUSES.value]:
+        if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
+            buses_settings.append(BusControl(bus_settings))
+        elif bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
+            buses_settings.append(BusReadout(bus_settings))
 
-    return Schema(settings=schema_settings)
+    return Schema(buses=Buses(buses=buses_settings))
 
 
 class Testschema:
     """Unit tests checking the Schema attributes and methods."""
-
-    def test_id_property(self, schema: Schema):
-        """Test id property."""
-        assert schema.id_ == schema.settings.id_
-
-    def test_name_property(self, schema: Schema):
-        """Test name property."""
-        assert schema.name == schema.settings.name
-
-    def test_category_property(self, schema: Schema):
-        """Test name property."""
-        assert schema.category == schema.settings.category
-
-    def test_settings_instance(self, schema: Schema):
-        """Test schema schema settings instance."""
-        assert isinstance(schema.settings, Schema.SchemaSettings)
 
     def test_asdict_method(self, schema: Schema):
         """Test schema schema asdict method."""
