@@ -11,9 +11,6 @@ platform:
   drag_coefficient: 0
   number_of_sigmas: 4
 schema:
-  id_: 0
-  name: qili_schema
-  category: schema
   buses:
   - id_: 0
     name: bus
