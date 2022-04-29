@@ -79,7 +79,7 @@ class TestBus:
 class TestBuses:
     """Unit tests checking the Buses attributes and methods."""
 
-    def test_add_method(self, buses: Buses, bus: Bus):
+    def test_add_method(self, buses: Buses, bus: BusReadout | BusControl):
         """Test add method."""
         buses.add(bus=bus)
         assert buses[-1] == bus
