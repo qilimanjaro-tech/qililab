@@ -80,27 +80,45 @@ class TestPlatform:
 
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
-        assert isinstance(platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)[0], SignalGenerator)
+        element, bus_idx = platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
+        assert isinstance(element, SignalGenerator)
+        assert bus_idx == 0
 
     def test_bus_0_mixer_instance(self, platform: Platform):
         """Test bus 0 mixer instance."""
-        assert isinstance(platform.get_element(category=Category.MIXER, id_=0)[0], Mixer)
+        element, bus_idx = platform.get_element(category=Category.MIXER, id_=0)
+        assert isinstance(element, Mixer)
+        assert bus_idx == 0
 
-    def test_bus_0_resonator_instance(self, platform: Platform):
-        """Test bus 0 resonator instance."""
-        assert isinstance(platform.get_element(category=Category.RESONATOR, id_=1)[0], Resonator)
+    def test_bus_1_resonator_instance(self, platform: Platform):
+        """Test bus 1 resonator instance."""
+        element, bus_idx = platform.get_element(category=Category.RESONATOR, id_=1)
+        assert isinstance(element, Resonator)
+        assert bus_idx == 1
 
-    def test_bus_0_resonator_qubit_0_instance(self, platform: Platform):
-        """Test bus 0 resonator qubit 0 instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT, id_=0)[0], Qubit)
+    def test_qubit_0_instance(self, platform: Platform):
+        """Test qubit 0 instance."""
+        element, bus_idx = platform.get_element(category=Category.QUBIT, id_=0)
+        assert isinstance(element, Qubit)
+        assert bus_idx == 0
+
+    def test_qubit_1_instance(self, platform: Platform):
+        """Test qubit 1 instance."""
+        element, bus_idx = platform.get_element(category=Category.QUBIT, id_=1)
+        assert isinstance(element, Qubit)
+        assert bus_idx == 1
 
     def test_bus_0_qubit_instrument_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)[0], QubitControl)
+        element, bus_idx = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
+        assert isinstance(element, QubitControl)
+        assert bus_idx == 0
 
     def test_bus_1_qubit_instrument_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)[0], QubitReadout)
+        element, bus_idx = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
+        assert isinstance(element, QubitReadout)
+        assert bus_idx == 1
 
     @patch("qililab.settings.settings_manager.yaml.safe_dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

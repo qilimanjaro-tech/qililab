@@ -10,11 +10,13 @@ from qililab.platform import Platform
 from ..utils.side_effect import yaml_safe_load_side_effect
 
 
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=yaml_safe_load_side_effect)
 @pytest.fixture(name="experiment")
-def fixture_experiment():
+@patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+def fixture_experiment(mock_load: MagicMock):
     """Return Experiment object."""
-    return Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    mock_load.assert_called()
+    return experiment
 
 
 class TestExperiment:

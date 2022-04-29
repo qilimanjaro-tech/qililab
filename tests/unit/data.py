@@ -153,6 +153,7 @@ schema_settings_sample = {
                 rohde_schwarz_1_settings_sample,
                 mixer_1_settings_sample,
                 resonator_1_settings_sample,
+                mixer_2_settings_sample,
             ],
         },
     ],
@@ -172,6 +173,12 @@ all_platform_settings_sample = {
 }
 
 experiment_settings_sample = {
+    "execution": {
+        "hardware_average": 4096,
+        "software_average": 10,
+        "repetition_duration": 200000,
+        "delay_between_pulses": 0,
+    },
     "pulse_sequence": [
         {
             "start": 0,
@@ -179,9 +186,10 @@ experiment_settings_sample = {
             "amplitude": 0.3,
             "frequency": 200000000.0,
             "phase": 0,
-            "shape": "gaussian",
+            "shape": {"name": "gaussian", "sigma": 1},
             "offset_i": 0,
             "offset_q": 0,
+            "qubit_id": 0,
         },
         {
             "start": 70,
@@ -189,9 +197,10 @@ experiment_settings_sample = {
             "amplitude": 0.5,
             "frequency": 200000000.0,
             "phase": 0,
-            "shape": "gaussian",
+            "shape": {"name": "rectangular"},
             "offset_i": 0,
             "offset_q": 0,
+            "qubit_id": 1,
         },
     ],
 }

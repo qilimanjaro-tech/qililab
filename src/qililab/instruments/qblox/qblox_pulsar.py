@@ -99,10 +99,17 @@ class QbloxPulsar(QubitInstrument):
         if pulses[0].start != 0:
             loop.append_component(Wait(wait_time=pulses[0].start))
 
+        if isinstance(self, QubitReadout):
+            final_wait_time = self.delay_before_readout
+        else:
+            final_wait_time = 4  # ns
+
         for i, pulse in enumerate(pulses):
             if i < len(pulses) - 1:
-                pulse_wait = pulses[i + 1].start - pulse.start
-            loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=pulse_wait))
+                wait_time = pulses[i + 1].start - pulse.start
+            else:
+                wait_time = final_wait_time
+            loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=wait_time))
 
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
