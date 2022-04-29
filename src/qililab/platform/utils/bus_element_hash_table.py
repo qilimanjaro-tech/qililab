@@ -14,7 +14,8 @@ class BusElementHashTable:
     rohde_schwarz = SGS100A
     resonator = Resonator
     qubit = Qubit
-    mixer = Mixer
+    mixer_up = Mixer
+    mixer_down = Mixer
 
     @classmethod
     def get(cls, name: str) -> Type[QbloxPulsarQRM | QbloxPulsarQCM | SGS100A | Resonator | Qubit | Mixer]:
