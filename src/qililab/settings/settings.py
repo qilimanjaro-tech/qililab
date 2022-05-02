@@ -1,10 +1,10 @@
 from abc import ABC
-from dataclasses import dataclass
 
 from qililab.typings import Category
+from qililab.utils import nested_dataclass
 
 
-@dataclass
+@nested_dataclass
 class Settings(ABC):
     """Settings class.
 
@@ -18,7 +18,3 @@ class Settings(ABC):
     id_: int
     name: str
     category: Category
-
-    def __post_init__(self):
-        """Cast category attribute to its corresponding Enum."""
-        self.category = Category(self.category)

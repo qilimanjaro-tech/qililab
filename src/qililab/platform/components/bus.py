@@ -1,5 +1,5 @@
 """Bus class."""
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, field
 from typing import List, Optional
 
 from qililab.instruments import Mixer, PulseSequence, QubitInstrument, SignalGenerator
@@ -8,6 +8,7 @@ from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.settings import Settings
 from qililab.typings import Category, YAMLNames
+from qililab.utils import nested_dataclass
 
 
 class Bus:
@@ -19,7 +20,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    @dataclass
+    @nested_dataclass
     class BusSettings(Settings):
         """BusSettings class.
         Args:
@@ -41,7 +42,6 @@ class Bus:
         def __post_init__(self):
             """Cast each element to its corresponding class."""
             # TODO: Move this code to a BusBuilder class?
-            super().__post_init__()
             for idx, settings in enumerate(self.elements):
                 elem_obj = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
                 self.elements[idx] = elem_obj

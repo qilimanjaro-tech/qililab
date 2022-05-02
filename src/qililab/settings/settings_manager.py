@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
@@ -6,7 +5,6 @@ import yaml
 from qililab.utils import Singleton
 
 
-@dataclass
 class SettingsManager(metaclass=Singleton):
     """Class used to load configuration settings."""
 

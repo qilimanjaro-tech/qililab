@@ -1,11 +1,10 @@
 """Qblox pulsar QRM class"""
-from dataclasses import dataclass
-
 from qililab.experiment.result import QbloxResult
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.typings import AcquireTriggerMode, IntegrationMode
+from qililab.utils import nested_dataclass
 
 
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
@@ -15,7 +14,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         settings (QBloxPulsarQRMSettings): Settings of the instrument.
     """
 
-    @dataclass
+    @nested_dataclass
     class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
         """Contains the settings of a specific pulsar.
 
@@ -41,12 +40,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
         acquisition_name: str
-
-        def __post_init__(self):
-            """Cast acquire_trigger_mode and integration_mode to its corresponding Enum classes"""
-            super().__post_init__()
-            self.acquire_trigger_mode = AcquireTriggerMode(self.acquire_trigger_mode)
-            self.integration_mode = IntegrationMode(self.integration_mode)
 
     settings: QbloxPulsarQRMSettings
 

@@ -1,7 +1,6 @@
 """QubitReadout class."""
-from dataclasses import dataclass
-
 from qililab.settings import Settings
+from qililab.utils import nested_dataclass
 
 
 class Mixer:
@@ -16,7 +15,7 @@ class Mixer:
         settings (MixerSettings): Settings of the mixer.
     """
 
-    @dataclass
+    @nested_dataclass
     class MixerSettings(Settings):
         """Contains the settings of a mixer.
 

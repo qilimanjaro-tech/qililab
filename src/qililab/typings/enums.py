@@ -123,3 +123,16 @@ class PulseShapeOptions(Enum):
     """
 
     GAUSSIAN = "gaussian"
+
+
+class PulseCategoryOptions(Enum):
+    """Pulse category options.
+
+    Args:
+        Enum (str): Available types of PulseCategory options:
+        * control
+        * readout
+    """
+
+    CONTROL = "control"
+    READOUT = "readout"

@@ -1,13 +1,12 @@
 """Qubit class"""
-from dataclasses import dataclass
-
 from qililab.settings import Settings
+from qililab.utils import nested_dataclass
 
 
 class Qubit:
     """Qubit class"""
 
-    @dataclass
+    @nested_dataclass
     class QubitCalibrationSettings(Settings):
         """Contains the settings obtained from calibrating the qubit.
 

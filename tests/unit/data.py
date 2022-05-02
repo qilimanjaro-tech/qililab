@@ -181,6 +181,7 @@ experiment_settings_sample = {
     },
     "pulse_sequence": [
         {
+            "category": "control",
             "start": 0,
             "duration": 60,
             "amplitude": 0.3,
@@ -192,6 +193,7 @@ experiment_settings_sample = {
             "qubit_id": 0,
         },
         {
+            "category": "readout",
             "start": 70,
             "duration": 60,
             "amplitude": 0.5,

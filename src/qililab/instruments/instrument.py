@@ -1,11 +1,11 @@
 """Instrument class"""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import partial
 from typing import Callable
 
 from qililab.settings import Settings
 from qililab.typings import Device
+from qililab.utils.nested_dataclass import nested_dataclass
 
 
 class Instrument(ABC):
@@ -17,7 +17,7 @@ class Instrument(ABC):
         settings (Settings): Class containing the settings of the instrument.
     """
 
-    @dataclass
+    @nested_dataclass
     class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
 

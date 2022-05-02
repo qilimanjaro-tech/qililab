@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from qililab.instruments import QubitControl
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.qubit import Qubit
+from qililab.utils import nested_dataclass
 
 
 @dataclass
@@ -15,7 +16,7 @@ class BusControl(Bus):
         settings (BusControlSettings): Bus settings.
     """
 
-    @dataclass
+    @nested_dataclass
     class BusControlSettings(Bus.BusSettings):
         """BusSettings class.
         Args:

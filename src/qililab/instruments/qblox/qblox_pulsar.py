@@ -1,7 +1,6 @@
 """Qblox pulsar class"""
 import json
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 
@@ -17,6 +16,7 @@ from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.typings import Pulsar, ReferenceClock
+from qililab.utils import nested_dataclass
 
 
 class QbloxPulsar(QubitInstrument):
@@ -27,7 +27,7 @@ class QbloxPulsar(QubitInstrument):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
-    @dataclass
+    @nested_dataclass
     class QbloxPulsarSettings(QubitInstrument.QubitInstrumentSettings):
         """Contains the settings of a specific pulsar.
 
@@ -42,11 +42,6 @@ class QbloxPulsar(QubitInstrument):
         sequencer: int
         sync_enabled: bool
         gain: float
-
-        def __post_init__(self):
-            """Cast reference_clock to its corresponding Enum class"""
-            super().__post_init__()
-            self.reference_clock = ReferenceClock(self.reference_clock)
 
     device: Pulsar
     settings: QbloxPulsarSettings

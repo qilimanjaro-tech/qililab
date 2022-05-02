@@ -3,6 +3,7 @@ from .enums import (
     BusTypes,
     Category,
     IntegrationMode,
+    PulseCategoryOptions,
     PulseShapeOptions,
     ReferenceClock,
     SchemaDrawOptions,

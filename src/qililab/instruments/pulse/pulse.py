@@ -3,14 +3,15 @@ from dataclasses import InitVar, dataclass, field
 
 from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
-from qililab.typings import YAMLNames
+from qililab.typings import PulseCategoryOptions, YAMLNames
+from qililab.utils import nested_dataclass
 
 
 @dataclass
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    @dataclass
+    @nested_dataclass
     class PulseSettings:
         """Contains the settings of a Pulse.
 
@@ -26,6 +27,7 @@ class Pulse:
             qubit_id (int): ID of the qubit.
         """
 
+        category: PulseCategoryOptions
         start: float
         duration: float
         amplitude: float
@@ -41,7 +43,7 @@ class Pulse:
         )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
 
         def __post_init__(self, shape: dict):
-            """Cast 'shape' attribute to its corresponding Enum class."""
+            """Cast pulse_shape attribute to its corresponding class."""
             self.pulse_shape = PulseShapeHashTable.get(name=shape[YAMLNames.NAME.value])(**shape)
 
     settings: PulseSettings

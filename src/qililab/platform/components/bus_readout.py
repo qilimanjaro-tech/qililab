@@ -5,6 +5,7 @@ from qililab.instruments import Mixer, QubitReadout
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.resonator import Resonator
 from qililab.typings import Category
+from qililab.utils import nested_dataclass
 
 
 @dataclass
@@ -17,7 +18,7 @@ class BusReadout(Bus):
         settings (BusReadoutSettings): Bus settings.
     """
 
-    @dataclass
+    @nested_dataclass
     class BusReadoutSettings(Bus.BusSettings):
         """BusSettings class.
         Args:
@@ -66,5 +67,5 @@ class BusReadout(Bus):
             (QubitReadout | SignalGenerator | Mixer | Resonator | Qubit | None): Element class.
         """
         if category == Category.QUBIT:
-            return self.resonator.get_qubit(id_=id_)
+            return self.resonator.get_qubit(id_=id_)  # pylint: disable=no-member
         return super().get_element(category=category, id_=id_)

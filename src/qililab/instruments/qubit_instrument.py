@@ -1,17 +1,17 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass
 from typing import ClassVar
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.settings import ExecutionSettings
+from qililab.utils import nested_dataclass
 
 
 class QubitInstrument(Instrument):
     """Abstract base class defining all instruments used to control or readout the qubits."""
 
-    @dataclass
+    @nested_dataclass
     class QubitInstrumentSettings(Instrument.InstrumentSettings):
         """Contains the settings of a QubitInstrument.
 

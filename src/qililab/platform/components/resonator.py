@@ -1,14 +1,14 @@
-from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.qubit import Qubit
 from qililab.settings import Settings
+from qililab.utils import nested_dataclass
 
 
 class Resonator:
     """Resonator class"""
 
-    @dataclass
+    @nested_dataclass
     class ResonatorSettings(Settings):
         """Contains the settings obtained from calibrating the qubit.
 
@@ -20,7 +20,6 @@ class Resonator:
 
         def __post_init__(self):
             """Cast list of qubits settings to Qubit objects."""
-            super().__post_init__()
             self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]
 
     settings: ResonatorSettings

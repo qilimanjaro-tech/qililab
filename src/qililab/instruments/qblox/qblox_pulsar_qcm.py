@@ -1,8 +1,7 @@
 """Qblox pulsar QCM class"""
-from dataclasses import dataclass
-
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_control import QubitControl
+from qililab.utils import nested_dataclass
 
 
 class QbloxPulsarQCM(QbloxPulsar, QubitControl):
@@ -12,7 +11,7 @@ class QbloxPulsarQCM(QbloxPulsar, QubitControl):
         settings (QBloxPulsarQCMSettings): Settings of the instrument.
     """
 
-    @dataclass
+    @nested_dataclass
     class QbloxPulsarQCMSettings(QbloxPulsar.QbloxPulsarSettings, QubitControl.QubitControlSettings):
         """Contains the settings of a specific pulsar."""
 
