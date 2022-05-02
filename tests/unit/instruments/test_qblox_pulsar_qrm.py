@@ -4,6 +4,7 @@ import pytest
 from qpysequence.sequence import Sequence
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
+from qililab.experiment.result import QbloxResult
 from qililab.instruments import QbloxPulsarQRM
 from qililab.settings import SETTINGS_MANAGER
 
@@ -87,9 +88,24 @@ class TestQbloxPulsarQRM:
 
     def test_get_acquisitions_method(self, qrm: QbloxPulsarQRM):
         """Test get_acquisitions_method"""
-        qrm.device.get_acquisitions.return_value = {}
+        qrm.device.get_acquisitions.return_value = {
+            "name": "test",
+            "index": 0,
+            "acquisition": {
+                "scope": {
+                    "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out_of_range": False, "avg_cnt": 1000},
+                    "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out_of_range": False, "avg_cnt": 1000},
+                },
+                "bins": {
+                    "integration": {"path_0": [1, 1, 1, 1], "path_1": [0, 0, 0, 0]},
+                    "threshold": [0.5, 0.5, 0.5, 0.5],
+                    "valid": [True, True, True, True],
+                    "avg_cnt": [1000, 1000, 1000, 1000],
+                },
+            },
+        }
         acquisitions = qrm.get_acquisitions()
-        assert isinstance(acquisitions, dict)
+        assert isinstance(acquisitions, QbloxResult)
         # Assert device calls
         qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
         qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
