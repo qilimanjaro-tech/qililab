@@ -40,6 +40,7 @@ class Bus:
 
         def __post_init__(self):
             """Cast each element to its corresponding class."""
+            # TODO: Move this code to a BusBuilder class?
             super().__post_init__()
             for idx, settings in enumerate(self.elements):
                 elem_obj = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)

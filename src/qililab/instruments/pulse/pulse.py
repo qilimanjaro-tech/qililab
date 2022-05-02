@@ -23,6 +23,7 @@ class Pulse:
             shape: (str): Pulse shape.
             offset_i (float): Optional pulse I offset (unitless). amplitude + offset should be in range [0 to 1].
             offset_q (float): Optional pulse Q offset (unitless). amplitude + offset should be in range [0 to 1].
+            qubit_id (int): ID of the qubit.
         """
 
         start: float
@@ -35,7 +36,9 @@ class Pulse:
         offset_i: float
         offset_q: float
         qubit_id: int
-        index: int = field(init=False)  # FIXME: This index is only for Qblox, find where to put it
+        index: int = field(
+            init=False
+        )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
 
         def __post_init__(self, shape: dict):
             """Cast 'shape' attribute to its corresponding Enum class."""
