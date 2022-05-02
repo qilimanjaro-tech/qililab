@@ -56,4 +56,7 @@ class ExecutionBuilder(metaclass=Singleton):
         """
         _, bus_idx = platform.get_element(category=Category.QUBIT, id_=qubit_id)
 
+        if bus_idx is None:
+            raise ValueError(f"Qubit with id {qubit_id} is not defined in the platform.")
+
         return BusExecution(bus=platform.buses[bus_idx], pulse_sequence=pulse_sequence)

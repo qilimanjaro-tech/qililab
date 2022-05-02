@@ -15,4 +15,4 @@ class Experiment:
 
     def execute(self):
         """Run execution."""
-        self.execution.execute()
+        return self.execution.execute()

@@ -38,6 +38,7 @@ class TestExperiment:
         mock_rs_instance = mock_rs.return_value
         mock_rs_instance.mock_add_spec(["power", "frequency"])
         mock_pulsar_instance = mock_pulsar.return_value
+        mock_pulsar_instance.get_acquisitions.return_value = 0
         mock_pulsar_instance.mock_add_spec(
             [
                 "reference_source",
@@ -49,6 +50,7 @@ class TestExperiment:
             ]
         )
         mock_pulsar_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
-        experiment.execute()
+        results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
+        assert results == [0]

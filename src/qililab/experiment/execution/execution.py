@@ -20,8 +20,9 @@ class Execution:
         self.connect()
         self.setup()
         self.start()
-        self.run()
+        results = self.run()
         self.close()
+        return results
 
     def connect(self):
         """Connect to the instruments."""
@@ -38,8 +39,44 @@ class Execution:
 
     def run(self):
         """Run the given pulse sequence."""
-        self.buses_execution.run()
+        return self.buses_execution.run()
 
     def close(self):
         """Close connection to the instruments."""
         self.buses_execution.close()
+
+    @property
+    def hardware_average(self):
+        """Execution 'hardware_average' property.
+
+        Returns:
+            int: settings.hardware_average.
+        """
+        return self.settings.hardware_average
+
+    @property
+    def software_average(self):
+        """Execution 'software_average' property.
+
+        Returns:
+            int: settings.software_average.
+        """
+        return self.settings.software_average
+
+    @property
+    def repetition_duration(self):
+        """Execution 'repetition_duration' property.
+
+        Returns:
+            int: settings.repetition_duration.
+        """
+        return self.settings.repetition_duration
+
+    @property
+    def delay_between_pulses(self):
+        """Execution 'delay_between_pulses' property.
+
+        Returns:
+            int: settings.delay_between_pulses.
+        """
+        return self.settings.delay_between_pulses

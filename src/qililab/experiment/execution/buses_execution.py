@@ -28,8 +28,13 @@ class BusesExecution:
 
     def run(self):
         """Run the given pulse sequence."""
+        results = []
         for bus in self.buses:
-            bus.run()
+            result = bus.run()
+            if result is not None:
+                results.append(result)
+
+        return results
 
     def close(self):
         """Close connection to the instruments."""

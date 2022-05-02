@@ -26,7 +26,7 @@ class BusExecution:
 
     def run(self):
         """Run the given pulse sequence."""
-        self.bus.run(pulse_sequence=self.pulse_sequence)
+        return self.bus.run(pulse_sequence=self.pulse_sequence)
 
     def close(self):
         """Close connection to the instruments."""

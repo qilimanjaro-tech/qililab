@@ -68,7 +68,7 @@ class Bus:
 
     def run(self, pulse_sequence: PulseSequence):
         """Run the given pulse sequence."""
-        self.qubit_instrument.run(pulse_sequence=pulse_sequence)
+        return self.qubit_instrument.run(pulse_sequence=pulse_sequence)
 
     def close(self):
         """Close connection to the instruments."""
