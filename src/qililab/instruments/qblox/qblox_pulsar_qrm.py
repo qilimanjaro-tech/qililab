@@ -1,6 +1,7 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
 
+from qililab.experiment.result import QbloxResult
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
@@ -73,39 +74,19 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self._set_acquisition_mode()
 
     @QbloxPulsar.CheckConnected
-    def get_acquisitions(self) -> dict:
+    def get_acquisitions(self):
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
-        If any of the timeouts is reached, a TimeoutError is raised. The returned dictionary is structured as follows:
+        If any of the timeouts is reached, a TimeoutError is raised.
 
-        - name: acquisition name.
-            - index: acquisition index used by the sequencer Q1ASM program to refer to the acquisition.
-            - acquisition: acquisition dictionary.
-                - scope: Scope data.
-                    -path0: input path 0.
-                        - data: acquisition samples in a range of 1.0 to -1.0.
-                        - out-of-range: out-of-range indication for the entire
-                        acquisition (False=in-range, True=out-of-range).
-                        - avg_cnt: number of averages.
-                    - path1: input path 1
-                        - data: acquisition samples in a range of 1.0 to -1.0.
-                        - out-of-range: out-of-range indication for the entire
-                        acquisition (False=in-range, True=out-of-range).
-                        - avg_cnt: number of averages.
-                - bins: bin data.
-                    - integration: integration data.
-                        - path_0: input path 0 integration result bin list.
-                        - path_1: input path 1 integration result bin list.
-                    - threshold: threshold result bin list.
-                    - valid: list of valid indications per bin.
-                    - avg_cnt: list of number of averages per bin.
         Returns:
-            dict: Dictionary with the acquisition results.
+            QbloxResult: Class containing the acquisition results.
 
         """
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
         self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
-        return self.device.get_acquisitions(sequencer=self.sequencer)
+
+        return QbloxResult(**self.device.get_acquisitions(sequencer=self.sequencer))
 
     def _set_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""

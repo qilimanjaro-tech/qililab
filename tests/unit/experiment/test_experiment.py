@@ -5,6 +5,7 @@ import pytest
 
 from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
 from qililab.experiment import Execution, Experiment
+from qililab.experiment.result import QbloxResult
 from qililab.platform import Platform
 
 from ..utils.side_effect import yaml_safe_load_side_effect
@@ -38,7 +39,22 @@ class TestExperiment:
         mock_rs_instance = mock_rs.return_value
         mock_rs_instance.mock_add_spec(["power", "frequency"])
         mock_pulsar_instance = mock_pulsar.return_value
-        mock_pulsar_instance.get_acquisitions.return_value = 0
+        mock_pulsar_instance.get_acquisitions.return_value = {
+            "name": "test",
+            "index": 0,
+            "acquisition": {
+                "scope": {
+                    "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out_of_range": False, "avg_cnt": 1000},
+                    "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out_of_range": False, "avg_cnt": 1000},
+                },
+                "bins": {
+                    "integration": {"path_0": [1, 1, 1, 1], "path_1": [0, 0, 0, 0]},
+                    "threshold": [0.5, 0.5, 0.5, 0.5],
+                    "valid": [True, True, True, True],
+                    "avg_cnt": [1000, 1000, 1000, 1000],
+                },
+            },
+        }
         mock_pulsar_instance.mock_add_spec(
             [
                 "reference_source",
@@ -53,4 +69,6 @@ class TestExperiment:
         results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
-        assert results == [0]
+        assert isinstance(results, list)
+        assert isinstance(results[0], QbloxResult)
+        assert isinstance(results[0].acquisition, QbloxResult.QbloxAcquisitionData)

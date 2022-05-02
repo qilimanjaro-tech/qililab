@@ -1,1 +1,2 @@
+from .nested_dataclass import nested_dataclass
 from .singleton import Singleton, SingletonABC
