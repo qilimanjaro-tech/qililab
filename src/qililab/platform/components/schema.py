@@ -41,7 +41,7 @@ class Schema:
             for idx, bus in enumerate(self.buses):
                 print(f"Bus {idx}:\t", end="------")
                 for element in bus:
-                    print(f"|{element.name}_{element.id_}", end="|------")
+                    print(f"|{element.name}", end="|------")
                 print()
         elif options == SchemaDrawOptions.FILE:
             raise NotImplementedError("This function is not implemented yet.")

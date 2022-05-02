@@ -62,19 +62,6 @@ buses:
       ip: 192.168.0.7
       frequency: 7307720000.0
       power: 15
-    - id_: 0
-      name: resonator
-      category: resonator
-      qubits:  # list of qubit settings
-        - id_: 0
-          name: qubit
-          category: qubit
-          pi_pulse_amplitude: 1
-          pi_pulse_duration: 100
-          pi_pulse_frequency: 100000000.0
-          qubit_frequency: 3544000000.0
-          min_voltage: 950
-          max_voltage: 1775
     - id_: 1
       name: mixer_up  # unique name
       category: mixer  # general name
@@ -83,6 +70,19 @@ buses:
       offset_i: 0
       offset_q: 0
       up_conversion: true
+    - id_: 0
+      name: resonator
+      category: resonator
+      qubits:  # list of qubit settings
+        - id_: 1
+          name: qubit
+          category: qubit
+          pi_pulse_amplitude: 1
+          pi_pulse_duration: 100
+          pi_pulse_frequency: 100000000.0
+          qubit_frequency: 3544000000.0
+          min_voltage: 950
+          max_voltage: 1775
 
     - id_: 2
       name: mixer_down  # unique name
