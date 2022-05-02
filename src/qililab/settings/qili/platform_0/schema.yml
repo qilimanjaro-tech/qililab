@@ -74,7 +74,7 @@ buses:
       name: resonator
       category: resonator
       qubits:  # list of qubit settings
-        - id_: 1
+        - id_: 0
           name: qubit
           category: qubit
           pi_pulse_amplitude: 1

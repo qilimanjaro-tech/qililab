@@ -1,5 +1,6 @@
 """Schema class"""
 from dataclasses import dataclass
+from typing import List
 
 from qililab.platform.components.buses import Buses
 from qililab.typings import Category, SchemaDrawOptions
@@ -23,13 +24,18 @@ class Schema:
             id_ (int): ID of element.
 
         Returns:
-            (Qubit | QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
+            Tuple[(Qubit | QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None), List]: Tuple
+            containing the element object and a list of the bus indeces where the element is located.
         """
+        element = None
+        bus_idxs: List[int] = []
         for bus_idx, bus in enumerate(self.buses):
-            element = bus.get_element(category=category, id_=id_)
-            if element is not None:
-                return element, bus_idx
-        return None, None
+            element_tmp = bus.get_element(category=category, id_=id_)
+            if element_tmp is not None:
+                # assert element == element_tmp
+                element = element_tmp
+                bus_idxs.append(bus_idx)
+        return element, bus_idxs
 
     def draw(self, options: SchemaDrawOptions) -> None:
         """Draw schema.

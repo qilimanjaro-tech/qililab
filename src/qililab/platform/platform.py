@@ -43,7 +43,7 @@ class Platform:
             id_ (int): ID of element.
 
         Returns:
-            Tuple[object, int | None]: Element class together with the index of the bus where the element is located.
+            Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if category == Category.SCHEMA:
             return self.schema, None

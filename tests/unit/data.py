@@ -152,7 +152,7 @@ schema_settings_sample = {
                 qblox_qrm_0_settings_sample,
                 rohde_schwarz_1_settings_sample,
                 mixer_1_settings_sample,
-                resonator_1_settings_sample,
+                resonator_0_settings_sample,
                 mixer_2_settings_sample,
             ],
         },
@@ -202,7 +202,7 @@ experiment_settings_sample = {
             "shape": {"name": "rectangular"},
             "offset_i": 0,
             "offset_q": 0,
-            "qubit_id": 1,
+            "qubit_id": 0,
         },
     ],
 }

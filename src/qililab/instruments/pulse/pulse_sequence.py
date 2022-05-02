@@ -3,12 +3,14 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.instruments.pulse.pulse import Pulse
+from qililab.typings import PulseCategoryOptions
 
 
 @dataclass
 class PulseSequence:
     """List of pulses."""
 
+    category: PulseCategoryOptions
     pulses: List[Pulse]
 
     def add(self, pulse: Pulse):
@@ -17,6 +19,8 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
+        if pulse.category != self.category:
+            raise ValueError("A single PulseSequence object cannot contain control and readout pulses.")
         self.pulses.append(pulse)
 
     @property

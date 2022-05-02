@@ -159,6 +159,15 @@ class Pulse:
         """
         return self.settings.qubit_id
 
+    @property
+    def category(self):
+        """Pulse 'category' property.
+
+        Returns:
+            PulseCategoryOptions: settings.category.
+        """
+        return self.settings.category
+
     def __repr__(self):
         """Return string representation of the Pulse object."""
         return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, f={self.frequency}, p={self.phase}, {self.pulse_shape.name})"""

@@ -1,13 +1,16 @@
 """ExecutionBuilder class"""
+from typing import List
+
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.experiment.execution.bus_execution import BusExecution
 from qililab.experiment.execution.buses_execution import BusesExecution
 from qililab.experiment.execution.execution import Execution
 from qililab.instruments.pulse import PULSE_BUILDER
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
-from qililab.platform import Platform
+from qililab.platform import Bus, BusControl, BusReadout, Platform
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import Category, YAMLNames
+from qililab.typings.enums import PulseCategoryOptions
 from qililab.utils import Singleton
 
 
@@ -30,14 +33,16 @@ class ExecutionBuilder(metaclass=Singleton):
         if YAMLNames.EXECUTION.value not in experiment_settings:
             raise ValueError(f"The loaded dictionary should contain the {YAMLNames.EXECUTION.value} key.")
 
-        pulse_sequences = PULSE_BUILDER.build(
+        control_pulse_sequences, readout_pulse_sequences = PULSE_BUILDER.build(
             pulse_sequence_settings=experiment_settings[YAMLNames.PULSE_SEQUENCE.value]
         )
 
-        buses = [
-            self._build_bus_execution(qubit_id=qubit_id, pulse_sequence=pulse_sequence, platform=platform)
-            for qubit_id, pulse_sequence in pulse_sequences.items()
-        ]
+        buses: List[BusExecution] = []
+        for pulse_sequences in (control_pulse_sequences, readout_pulse_sequences):
+            buses.extend(
+                self._build_bus_execution(qubit_id=qubit_id, pulse_sequence=pulse_sequence, platform=platform)
+                for qubit_id, pulse_sequence in pulse_sequences.items()
+            )
 
         buses_execution = BusesExecution(buses=buses)
 
@@ -54,9 +59,20 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             BusExecution: BusExecution object.
         """
-        _, bus_idx = platform.get_element(category=Category.QUBIT, id_=qubit_id)
+        _, bus_idxs = platform.get_element(category=Category.QUBIT, id_=qubit_id)
 
-        if bus_idx is None:
+        if not bus_idxs:
             raise ValueError(f"Qubit with id {qubit_id} is not defined in the platform.")
 
-        return BusExecution(bus=platform.buses[bus_idx], pulse_sequence=pulse_sequence)
+        bus: Bus | None = None
+        for bus_idx in bus_idxs:
+            bus_tmp = platform.buses[bus_idx]
+            if isinstance(bus_tmp, BusControl) and pulse_sequence.category == PulseCategoryOptions.CONTROL:
+                bus = bus_tmp
+            elif isinstance(bus_tmp, BusReadout) and pulse_sequence.category == PulseCategoryOptions.READOUT:
+                bus = bus_tmp
+
+        if bus is None:
+            raise ValueError(f"Qubit with id {qubit_id} is not connected to a {pulse_sequence.category.value} bus.")
+
+        return BusExecution(bus=bus, pulse_sequence=pulse_sequence)
