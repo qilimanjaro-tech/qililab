@@ -1,9 +1,9 @@
 from dataclasses import InitVar
 from typing import List
 
+from qililab.constants import YAML
 from qililab.platform.components.bus_control import BusControl
 from qililab.platform.components.bus_readout import BusReadout
-from qililab.typings import YAMLNames
 from qililab.utils import nested_dataclass
 
 
@@ -21,9 +21,9 @@ class Buses:
         """Cast each list element to its corresponding bus class."""
         self.buses: List[BusControl | BusReadout] = []
         for bus in elements:
-            if bus[YAMLNames.READOUT.value] is True:
+            if bus[YAML.READOUT] is True:
                 self.buses.append(BusControl(**bus))
-            elif bus[YAMLNames.READOUT.value] is False:
+            elif bus[YAML.READOUT] is False:
                 self.buses.append(BusReadout(**bus))
             else:
                 raise ValueError("Bus 'readout' key should contain a boolean.")

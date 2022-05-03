@@ -173,7 +173,7 @@ experiment_settings_sample = {
         "repetition_duration": 200000,
         "delay_between_pulses": 0,
     },
-    "pulse_sequence": [
+    "pulses": [
         {
             "readout": True,
             "start": 0,

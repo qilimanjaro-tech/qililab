@@ -3,7 +3,7 @@ execution:
   software_average: 10
   repetition_duration: 200000
   delay_between_pulses: 0
-pulse_sequence:
+pulses:
   - readout: true
     start: 0
     duration: 60

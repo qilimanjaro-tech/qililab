@@ -77,36 +77,6 @@ class SchemaDrawOptions(Enum):
     FILE = "file"
 
 
-class YAMLNames(Enum):
-    """YAML names.
-
-    Args:
-        enum (str): Available types of YAML names:
-        * platform
-        * schema
-        * id_
-        * name
-        * category
-        * buses
-        * pulse_sequence
-        * execution
-        * elements
-        * readout
-    """
-
-    PLATFORM = "platform"
-    SCHEMA = "schema"
-    ID_ = "id_"
-    NAME = "name"
-    CATEGORY = "category"
-    BUS = "bus"
-    BUSES = "buses"
-    PULSE_SEQUENCE = "pulse_sequence"
-    EXECUTION = "execution"
-    ELEMENTS = "elements"
-    READOUT = "readout"
-
-
 class PulseShapeOptions(Enum):
     """Pulse shape options.
 

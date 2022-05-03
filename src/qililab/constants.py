@@ -7,3 +7,10 @@ DEFAULT_PLATFORM_DUMP_FILENAME = "all_platform.yml"
 DEFAULT_PLATFORM_NAME = "platform_0"
 DEFAULT_EXPERIMENT_NAME = "experiment_0"
 QBLOX_MAX_WAIT_TIME = 65535
+
+
+class YAML:
+    """YAML constants."""
+
+    NAME = "name"
+    READOUT = "readout"

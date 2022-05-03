@@ -5,11 +5,12 @@ from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
+from qililab.execution.utils import ExecutionDict
 from qililab.instruments.pulse import PULSE_BUILDER
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.platform import Bus, BusControl, BusReadout, Platform
 from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import Category, YAMLNames
+from qililab.typings import Category
 from qililab.utils import Singleton
 
 
@@ -22,19 +23,13 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             Execution: Execution object.
         """
-        experiment_settings = SETTINGS_MANAGER.load(
+        execution_settings = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform.name, filename=experiment_name
         )
 
-        if YAMLNames.PULSE_SEQUENCE.value not in experiment_settings:
-            raise ValueError(f"The loaded dictionary should contain the {YAMLNames.PULSE_SEQUENCE.value} key.")
+        execution_dict = ExecutionDict(**execution_settings)
 
-        if YAMLNames.EXECUTION.value not in experiment_settings:
-            raise ValueError(f"The loaded dictionary should contain the {YAMLNames.EXECUTION.value} key.")
-
-        control_pulse_sequences, readout_pulse_sequences = PULSE_BUILDER.build(
-            pulse_sequence_settings=experiment_settings[YAMLNames.PULSE_SEQUENCE.value]
-        )
+        control_pulse_sequences, readout_pulse_sequences = PULSE_BUILDER.build(pulses=execution_dict.pulses)
 
         buses: List[BusExecution] = []
         for pulse_sequences in (control_pulse_sequences, readout_pulse_sequences):
@@ -45,9 +40,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
         buses_execution = BusesExecution(buses=buses)
 
-        return Execution(
-            platform=platform, buses_execution=buses_execution, settings=experiment_settings[YAMLNames.EXECUTION.value]
-        )
+        return Execution(platform=platform, buses_execution=buses_execution, settings=execution_dict.execution)
 
     def _build_bus_execution(self, qubit_id: int, platform: Platform, pulse_sequence: PulseSequence) -> BusExecution:
         """Build BusExecution object.

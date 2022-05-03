@@ -9,20 +9,20 @@ from qililab.utils import Singleton
 class PulseBuilder(metaclass=Singleton):
     """Builder of PulseSequence objects."""
 
-    def build(self, pulse_sequence_settings: List[dict]):
+    def build(self, pulses: List[Pulse]):
         """Build PulseSequence objects.
 
         Returns:
             Dict[int, PulseSequence]: Dictionary containing all control/readout PulseSequence for each different qubit.
         """
-        control_pulses, readout_pulses = self._load_pulses(pulse_sequence_settings=pulse_sequence_settings)
+        control_pulses, readout_pulses = self._classify_pulses(pulses=pulses)
 
         control_pulse_sequences = self._load_pulse_sequences(pulses=control_pulses)
         readout_pulse_sequences = self._load_pulse_sequences(pulses=readout_pulses)
 
         return control_pulse_sequences, readout_pulse_sequences
 
-    def _load_pulses(self, pulse_sequence_settings: List[dict]):
+    def _classify_pulses(self, pulses: List[Pulse]):
         """Cast control and readout pulse settings into Pulse objects.
 
         Args:
@@ -33,8 +33,7 @@ class PulseBuilder(metaclass=Singleton):
         """
         control_pulses = []
         readout_pulses = []
-        for settings in pulse_sequence_settings:
-            pulse = Pulse(settings)
+        for pulse in pulses:
             if pulse.readout is False:
                 control_pulses.append(pulse)
             elif pulse.readout is True:

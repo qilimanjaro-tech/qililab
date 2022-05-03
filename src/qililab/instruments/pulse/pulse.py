@@ -1,9 +1,9 @@
 """Pulse class."""
 from dataclasses import InitVar, dataclass, field
 
+from qililab.constants import YAML
 from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
-from qililab.typings import YAMLNames
 from qililab.utils import nested_dataclass
 
 
@@ -44,7 +44,7 @@ class Pulse:
 
         def __post_init__(self, shape: dict):
             """Cast pulse_shape attribute to its corresponding class."""
-            self.pulse_shape = PulseShapeHashTable.get(name=shape[YAMLNames.NAME.value])(**shape)
+            self.pulse_shape = PulseShapeHashTable.get(name=shape[YAML.NAME])(**shape)
 
     settings: PulseSettings
 

@@ -5,7 +5,6 @@ from .enums import (
     PulseShapeOptions,
     ReferenceClock,
     SchemaDrawOptions,
-    YAMLNames,
 )
 from .instruments.device import Device
 from .instruments.pulsar import Pulsar
