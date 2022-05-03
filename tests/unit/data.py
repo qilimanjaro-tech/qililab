@@ -39,6 +39,7 @@ qblox_qcm_0_settings_sample = {
     "name": "qblox_qcm",
     "category": "qubit_instrument",
     "ip": "192.168.0.3",
+    "firmware": "0.7.0",
     "reference_clock": "internal",
     "sequencer": 0,
     "sync_enabled": True,
@@ -50,6 +51,7 @@ qblox_qrm_0_settings_sample = {
     "name": "qblox_qrm",
     "category": "qubit_instrument",
     "ip": "192.168.0.4",
+    "firmware": "0.7.0",
     "reference_clock": "external",
     "sequencer": 0,
     "sync_enabled": True,
@@ -85,6 +87,7 @@ rohde_schwarz_0_settings_sample = {
     "name": "rohde_schwarz",
     "category": "signal_generator",
     "ip": "192.168.0.10",
+    "firmware": "4.30.046.295",
     "frequency": 3644000000.0,
     "power": 15,
 }
@@ -94,6 +97,7 @@ rohde_schwarz_1_settings_sample = {
     "name": "rohde_schwarz",  # unique name
     "category": "signal_generator",  # general name
     "ip": "192.168.0.7",
+    "firmware": "4.30.046.295",
     "frequency": 7307720000.0,
     "power": 15,
 }

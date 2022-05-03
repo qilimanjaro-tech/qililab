@@ -26,6 +26,7 @@ class Instrument(ABC):
         """
 
         ip: str
+        firmware: str
 
     class CheckConnected:
         """Property used to check if the instrument is connected."""
@@ -120,3 +121,12 @@ class Instrument(ABC):
             str: settings.ip.
         """
         return self.settings.ip
+
+    @property
+    def firmware(self):
+        """Instrument 'firmware' property.
+
+        Returns:
+            str: settings.firmware.
+        """
+        return self.settings.firmware
