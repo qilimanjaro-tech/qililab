@@ -1,10 +1,11 @@
 from types import NoneType
+from unittest.mock import patch
 
 import pytest
 
 from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
 from qililab.platform import (
-    PLATFORM_MANAGER_YAML,
+    PLATFORM_MANAGER_DB,
     Bus,
     BusControl,
     Buses,
@@ -12,9 +13,8 @@ from qililab.platform import (
     Qubit,
     Resonator,
 )
-from qililab.typings import Category
 
-from ...data import MockedSettingsHashTable
+from ...utils.side_effect import yaml_safe_load_side_effect
 
 
 def load_buses() -> Buses:
@@ -23,9 +23,10 @@ def load_buses() -> Buses:
     Returns:
         Buses: Instance of the Buses class.
     """
-    schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-
-    return PLATFORM_MANAGER_YAML.build_schema(schema_settings=schema_settings).buses
+    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
+        platform = PLATFORM_MANAGER_DB.build(platform_name="platform_0")
+        mock_load.assert_called()
+    return platform.buses
 
 
 @pytest.mark.parametrize("bus", [load_buses().buses[0], load_buses().buses[1]])
