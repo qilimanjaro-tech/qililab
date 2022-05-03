@@ -37,9 +37,10 @@ class Experiment:
             axes = [axes]  # make axes subscriptable
         for idx, pulse in self.pulses.items():
             axes[idx].set_title(f"Qubit {idx}")
-            axes[idx].plot(pulse[0])  # I waveform
-            axes[idx].plot(pulse[1])  # Q waveform
+            axes[idx].plot(pulse[0], label="I")
+            axes[idx].plot(pulse[1], label="Q")
+            axes[idx].legend()
 
         plt.tight_layout()
-        plt.savefig("test.png")
+        # plt.savefig("test.png")
         plt.show()
