@@ -1,12 +1,12 @@
 """Schema class"""
-from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.buses import Buses
 from qililab.typings import Category, SchemaDrawOptions
+from qililab.utils import nested_dataclass
 
 
-@dataclass
+@nested_dataclass
 class Schema:
     """Class representing the schema of the platform.
 

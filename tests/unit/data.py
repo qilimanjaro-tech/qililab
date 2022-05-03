@@ -132,31 +132,25 @@ mixer_2_settings_sample = {
 }
 
 schema_settings_sample = {
-    "buses": [
-        {
-            "id_": 0,
-            "name": "bus_control",
-            "category": "bus",
-            "elements": [
-                qblox_qcm_0_settings_sample,
-                rohde_schwarz_0_settings_sample,
-                mixer_0_settings_sample,
-                qubit_0_settings_sample,
-            ],
-        },
-        {
-            "id_": 1,
-            "name": "bus_readout",
-            "category": "bus",
-            "elements": [
-                qblox_qrm_0_settings_sample,
-                rohde_schwarz_1_settings_sample,
-                mixer_1_settings_sample,
-                resonator_0_settings_sample,
-                mixer_2_settings_sample,
-            ],
-        },
-    ],
+    "buses": {
+        "elements": [
+            {
+                "readout": True,
+                "qubit_instrument": qblox_qcm_0_settings_sample,
+                "signal_generator": rohde_schwarz_0_settings_sample,
+                "mixer_up": mixer_0_settings_sample,
+                "qubit": qubit_0_settings_sample,
+            },
+            {
+                "readout": False,
+                "qubit_instrument": qblox_qrm_0_settings_sample,
+                "signal_generator": rohde_schwarz_1_settings_sample,
+                "mixer_up": mixer_1_settings_sample,
+                "resonator": resonator_0_settings_sample,
+                "mixer_down": mixer_2_settings_sample,
+            },
+        ],
+    }
 }
 
 
@@ -181,7 +175,7 @@ experiment_settings_sample = {
     },
     "pulse_sequence": [
         {
-            "category": "control",
+            "readout": True,
             "start": 0,
             "duration": 60,
             "amplitude": 0.3,
@@ -193,7 +187,7 @@ experiment_settings_sample = {
             "qubit_id": 0,
         },
         {
-            "category": "readout",
+            "readout": False,
             "start": 70,
             "duration": 60,
             "amplitude": 0.5,

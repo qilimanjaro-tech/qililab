@@ -1,56 +1,39 @@
 """Bus class."""
-from dataclasses import asdict, field
-from typing import List, Optional
+from dataclasses import asdict
+from types import NoneType
+from typing import Generator, Optional
 
 from qililab.instruments import Mixer, PulseSequence, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
-from qililab.platform.utils import BusElementHashTable, dict_factory
-from qililab.settings import Settings
-from qililab.typings import Category, YAMLNames
+from qililab.platform.utils import dict_factory
+from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
 
+@nested_dataclass
 class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object, which
     is connected to one or multiple qubits.
 
     Args:
-        settings (BusSettings): Bus settings.
+        readout (bool): readout flag.
+        qubit_instrument (QubitInstrument): Class containing the instrument used for control/readout of the qubits.
+        signal_generator (SignalGenerator): Class containing the signal generator instrument.
+        mixer_up (Mixer): Class containing the mixer object used for up-conversion.
+        mixer_down (Optional[Mixer]): Class containing the mixer object used for down-conversion.
+        resonator (Optional[Resonator]): Class containing the resonator object.
+        qubit (Optional[Qubit]): Class containing the qubit object.
     """
 
-    @nested_dataclass
-    class BusSettings(Settings):
-        """BusSettings class.
-        Args:
-            qubit_instrument (QubitInstrument): Class containing the instrument used for control/readout of the qubits.
-            signal_generator (SignalGenerator): Class containing the signal generator instrument.
-            mixer (Mixer): Class containing the mixer object, used for up- or down-conversion.
-            resonator (Optional[Resonator]): Class containing the resonator object.
-            qubit (Optional[Qubit]): Class containing the qubit object.
-        """
-
-        elements: List[QubitInstrument | SignalGenerator | Mixer | Qubit | Resonator]
-        signal_generator: SignalGenerator = field(init=False)
-        mixer_up: Mixer = field(init=False)
-        mixer_down: Optional[Mixer] = field(init=False)
-        qubit_instrument: QubitInstrument = field(init=False)
-        resonator: Optional[Resonator] = field(init=False)
-        qubit: Optional[Qubit] = field(init=False)
-
-        def __post_init__(self):
-            """Cast each element to its corresponding class."""
-            # TODO: Move this code to a BusBuilder class?
-            for idx, settings in enumerate(self.elements):
-                elem_obj = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
-                self.elements[idx] = elem_obj
-                attr_name = settings[YAMLNames.CATEGORY.value]
-                if Category(attr_name) == Category.MIXER:
-                    attr_name = settings[YAMLNames.NAME.value]
-                setattr(self, attr_name, elem_obj)
-
-    settings: BusSettings
+    readout: bool
+    signal_generator: SignalGenerator
+    mixer_up: Mixer
+    qubit_instrument: QubitInstrument
+    mixer_down: Optional[Mixer] = None
+    resonator: Optional[Resonator] = None
+    qubit: Optional[Qubit] = None
 
     def connect(self):
         """Connect to the instruments."""
@@ -79,10 +62,8 @@ class Bus:
     def to_dict(self):
         """Return a dict representation of the BusSettings class"""
         return {
-            "id_": self.id_,
-            "name": self.name,
-            "category": self.category.value,
-            "elements": [asdict(element.settings, dict_factory=dict_factory) for element in self.elements],
+            "readout": self.readout,
+            "elements": [asdict(element.settings, dict_factory=dict_factory) for element in self],
         }
 
     def get_element(self, category: Category, id_: int):
@@ -95,75 +76,16 @@ class Bus:
         Returns:
             (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
-        return next((element for element in self.elements if element.category == category and element.id_ == id_), None)
+        return next((element for element in self if element.category == category and element.id_ == id_), None)
 
-    @property
-    def id_(self):
-        """Bus 'id' property.
+    def __iter__(
+        self,
+    ) -> Generator[SignalGenerator | Mixer | Resonator | QubitInstrument | Qubit, None, None]:
+        """Iterate over Bus elements.
 
-        Returns:
-            int: settings.id_.
+        Yields:
+            Tuple[str, ]: _description_
         """
-        return self.settings.id_
-
-    @property
-    def name(self):
-        """Bus 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
-
-    @property
-    def category(self):
-        """Bus 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def elements(self):
-        """Bus 'elements' property.
-
-        Returns:
-            List[QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator]: settings.elements.
-        """
-        return self.settings.elements
-
-    @property
-    def signal_generator(self):
-        """Bus 'signal_generator' property.
-
-        Returns:
-            SignalGenerator: settings.signal_generator.
-        """
-        return self.settings.signal_generator
-
-    @property
-    def mixer_up(self):
-        """Bus 'mixer' property.
-
-        Returns:
-            Mixer: settings.mixer.
-        """
-        return self.settings.mixer_up
-
-    @property
-    def qubit_instrument(self):
-        """Bus 'qubit_instrument' property.
-
-        Returns:
-            QubitInstrument: settings.qubit_instrument.
-        """
-        return self.settings.qubit_instrument
-
-    def __iter__(self):
-        """Redirect __iter__ magic method to iterate over elements."""
-        return self.elements.__iter__()
-
-    def __getitem__(self, key):
-        """Redirect __get_item__ magic method."""
-        return self.elements.__getitem__(key)
+        for _, value in self.__dict__.items():
+            if not isinstance(value, (NoneType, bool)):
+                yield value

@@ -1,7 +1,7 @@
 import pytest
 
-from qililab.platform import Buses, Schema
-from qililab.typings import Category, SchemaDrawOptions, YAMLNames
+from qililab.platform import PLATFORM_MANAGER_YAML, Schema
+from qililab.typings import Category, SchemaDrawOptions
 
 from ...data import MockedSettingsHashTable
 
@@ -14,9 +14,8 @@ def fixture_schema() -> Schema:
         Schema: Instance of the Schema class.
     """
     schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-    buses_settings: list = schema_settings[YAMLNames.BUSES.value]
 
-    return Schema(buses=Buses(buses=buses_settings))
+    return PLATFORM_MANAGER_YAML.build_schema(schema_settings=schema_settings)
 
 
 class Testschema:
