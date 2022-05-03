@@ -1,9 +1,9 @@
 """Class used as hashtable to load the class corresponding to a given category"""
 from typing import Type
 
-from qililab.instruments.pulse.pulse_shape.drag import Drag
-from qililab.instruments.pulse.pulse_shape.gaussian import Gaussian
-from qililab.instruments.pulse.pulse_shape.rectangular import Rectangular
+from qililab.pulse.pulse_shape.drag import Drag
+from qililab.pulse.pulse_shape.gaussian import Gaussian
+from qililab.pulse.pulse_shape.rectangular import Rectangular
 
 
 class PulseShapeHashTable:

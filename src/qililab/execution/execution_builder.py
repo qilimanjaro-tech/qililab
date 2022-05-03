@@ -6,9 +6,9 @@ from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
 from qililab.execution.utils import ExecutionDict
-from qililab.instruments.pulse import PULSE_BUILDER
-from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.platform import Bus, BusControl, BusReadout, Platform
+from qililab.pulse import PULSE_BUILDER
+from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import Category
 from qililab.utils import Singleton

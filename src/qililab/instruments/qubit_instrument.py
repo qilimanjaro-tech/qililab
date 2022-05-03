@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import ClassVar
 
 from qililab.instruments.instrument import Instrument
-from qililab.instruments.pulse.pulse_sequence import PulseSequence
+from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.settings import ExecutionSettings
 from qililab.utils import nested_dataclass
 

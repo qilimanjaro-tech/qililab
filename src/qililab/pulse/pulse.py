@@ -2,8 +2,8 @@
 from dataclasses import InitVar, dataclass, field
 
 from qililab.constants import YAML
-from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
+from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.pulse.pulse_shape.utils.pulse_shape_hashtable import PulseShapeHashTable
 from qililab.utils import nested_dataclass
 
 

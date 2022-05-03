@@ -3,10 +3,11 @@ from dataclasses import asdict
 from types import NoneType
 from typing import Generator, Optional
 
-from qililab.instruments import Mixer, PulseSequence, QubitInstrument, SignalGenerator
+from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import dict_factory
+from qililab.pulse import PulseSequence
 from qililab.typings import Category
 from qililab.utils import nested_dataclass
 

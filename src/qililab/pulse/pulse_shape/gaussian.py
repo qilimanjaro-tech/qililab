@@ -1,7 +1,7 @@
 """Gaussian pulse shape."""
 import numpy as np
 
-from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 
 
 class Gaussian(PulseShape):

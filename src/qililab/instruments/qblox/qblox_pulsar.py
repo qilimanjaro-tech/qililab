@@ -11,10 +11,10 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 
 from qililab.constants import QBLOX_MAX_WAIT_TIME
-from qililab.instruments.pulse.pulse import Pulse
-from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
+from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
