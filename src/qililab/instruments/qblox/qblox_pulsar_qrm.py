@@ -1,8 +1,8 @@
 """Qblox pulsar QRM class"""
-from qililab.experiment.result import QbloxResult
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
+from qililab.result import QbloxResult
 from qililab.typings import AcquireTriggerMode, IntegrationMode
 from qililab.utils import nested_dataclass
 

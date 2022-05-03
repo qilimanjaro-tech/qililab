@@ -1,5 +1,5 @@
 """Execution class."""
-from qililab.experiment.execution.buses_execution import BusesExecution
+from qililab.execution.buses_execution import BusesExecution
 from qililab.instruments import QubitInstrument
 from qililab.platform import Platform
 from qililab.settings import ExecutionSettings

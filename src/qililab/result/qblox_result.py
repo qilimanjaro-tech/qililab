@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.experiment.result.result import Result
+from qililab.result.result import Result
 from qililab.utils import nested_dataclass
 
 

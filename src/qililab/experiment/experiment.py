@@ -1,5 +1,5 @@
 """Experiment class."""
-from qililab.experiment.execution import EXECUTION_BUILDER, Execution
+from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 
 

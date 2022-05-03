@@ -5,8 +5,8 @@ import pytest
 
 from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
 from qililab.experiment import Execution, Experiment
-from qililab.experiment.result import QbloxResult
 from qililab.platform import Platform
+from qililab.result import QbloxResult
 
 from ..utils.side_effect import yaml_safe_load_side_effect
 

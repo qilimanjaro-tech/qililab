@@ -4,8 +4,8 @@ import pytest
 from qpysequence.sequence import Sequence
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
-from qililab.experiment.result import QbloxResult
 from qililab.instruments import QbloxPulsarQRM
+from qililab.result import QbloxResult
 from qililab.settings import SETTINGS_MANAGER
 
 from ..data import qblox_qrm_0_settings_sample

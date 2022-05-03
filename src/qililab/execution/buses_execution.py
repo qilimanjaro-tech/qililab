@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.experiment.execution.bus_execution import BusExecution
+from qililab.execution.bus_execution import BusExecution
 
 
 @dataclass

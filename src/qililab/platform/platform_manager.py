@@ -9,8 +9,8 @@ from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
-from qililab.platform.utils.schema_dict import SchemaDict
 from qililab.typings import YAMLNames
+from qililab.typings.schema_dict import SchemaDict
 from qililab.utils import SingletonABC
 
 

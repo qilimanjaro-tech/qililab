@@ -2,9 +2,9 @@
 from typing import List
 
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
-from qililab.experiment.execution.bus_execution import BusExecution
-from qililab.experiment.execution.buses_execution import BusesExecution
-from qililab.experiment.execution.execution import Execution
+from qililab.execution.bus_execution import BusExecution
+from qililab.execution.buses_execution import BusesExecution
+from qililab.execution.execution import Execution
 from qililab.instruments.pulse import PULSE_BUILDER
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.platform import Bus, BusControl, BusReadout, Platform
