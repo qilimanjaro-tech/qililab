@@ -1,17 +1,19 @@
 """Pulse class."""
 from dataclasses import InitVar, dataclass, field
 
+import numpy as np
+import numpy.typing as npt
+
 from qililab.constants import YAML
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.pulse.pulse_shape.utils.pulse_shape_hashtable import PulseShapeHashTable
-from qililab.utils import nested_dataclass
 
 
 @dataclass
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    @nested_dataclass
+    @dataclass
     class PulseSettings:
         """Contains the settings of a Pulse.
 
@@ -50,6 +52,24 @@ class Pulse:
 
     def __init__(self, settings: dict):
         self.settings = self.PulseSettings(**settings)
+
+    @property
+    def modulated_waveforms(self) -> np.ndarray:
+        """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
+
+        Args:
+            pulse (Pulse): Pulse object.
+
+        Returns:
+            Tuple[List[float], List[float]]: I and Q modulated waveforms.
+        """
+        envelope = self.envelope
+        envelopes = [np.real(envelope), np.imag(envelope)]
+        time = np.arange(self.duration) * 1e-9
+        cosalpha = np.cos(2 * np.pi * self.frequency * time + self.phase)
+        sinalpha = np.sin(2 * np.pi * self.frequency * time + self.phase)
+        mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
+        return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
 
     @property
     def envelope(self):

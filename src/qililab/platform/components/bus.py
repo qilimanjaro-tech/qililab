@@ -60,6 +60,15 @@ class Bus:
         self.qubit_instrument.close()
         self.signal_generator.close()
 
+    @property
+    def qubit_ids(self):
+        """Bus 'qubit_id' property.
+
+        Returns:
+            List[int]: ID of the qubit connected to the bus.
+        """
+        return self.resonator.qubit_ids if self.readout else [self.qubit.id_]
+
     def to_dict(self):
         """Return a dict representation of the BusSettings class"""
         return {

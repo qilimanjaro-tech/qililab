@@ -1,6 +1,6 @@
 buses:
   elements:
-    - readout: true
+    - readout: false
       qubit_instrument:
         id_: 0
         name: qblox_qcm  # unique name
@@ -38,7 +38,7 @@ buses:
         qubit_frequency: 3544000000.0
         min_voltage: 950
         max_voltage: 1775
-    - readout: false
+    - readout: true
       qubit_instrument:
         id_: 1
         name: qblox_qrm  # unique name

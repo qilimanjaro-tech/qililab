@@ -21,9 +21,9 @@ class Buses:
         """Cast each list element to its corresponding bus class."""
         self.buses: List[BusControl | BusReadout] = []
         for bus in elements:
-            if bus[YAML.READOUT] is True:
+            if bus[YAML.READOUT] is False:
                 self.buses.append(BusControl(**bus))
-            elif bus[YAML.READOUT] is False:
+            elif bus[YAML.READOUT] is True:
                 self.buses.append(BusReadout(**bus))
             else:
                 raise ValueError("Bus 'readout' key should contain a boolean.")
@@ -42,3 +42,7 @@ class Buses:
     def __getitem__(self, key):
         """Redirect __get_item__ magic method."""
         return self.buses.__getitem__(key)
+
+    def __len__(self):
+        """Redirect __len__ magic method."""
+        return len(self.buses)

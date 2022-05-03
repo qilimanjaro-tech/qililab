@@ -46,6 +46,16 @@ class Execution:
         self.buses_execution.close()
 
     @property
+    def pulses(self):
+        """Execution 'pulses' property.
+
+        Returns:
+            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
+            pulses applied on each qubit.
+        """
+        return self.buses_execution.pulses
+
+    @property
     def hardware_average(self):
         """Execution 'hardware_average' property.
 

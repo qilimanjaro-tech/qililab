@@ -139,14 +139,14 @@ schema_settings_sample = {
     "buses": {
         "elements": [
             {
-                "readout": True,
+                "readout": False,
                 "qubit_instrument": qblox_qcm_0_settings_sample,
                 "signal_generator": rohde_schwarz_0_settings_sample,
                 "mixer_up": mixer_0_settings_sample,
                 "qubit": qubit_0_settings_sample,
             },
             {
-                "readout": False,
+                "readout": True,
                 "qubit_instrument": qblox_qrm_0_settings_sample,
                 "signal_generator": rohde_schwarz_1_settings_sample,
                 "mixer_up": mixer_1_settings_sample,

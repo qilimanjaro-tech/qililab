@@ -53,7 +53,9 @@ class PulseBuilder(metaclass=Singleton):
         pulse_sequences: Dict[int, PulseSequence] = {}
         for pulse in pulses:
             if pulse.qubit_id not in pulse_sequences:
-                pulse_sequences[pulse.qubit_id] = PulseSequence(readout=pulse.readout, pulses=[pulse])
+                pulse_sequences[pulse.qubit_id] = PulseSequence(
+                    readout=pulse.readout, pulses=[pulse], qubit_id=pulse.qubit_id
+                )
                 continue
             pulse_sequences[pulse.qubit_id].add(pulse=pulse)
         return pulse_sequences

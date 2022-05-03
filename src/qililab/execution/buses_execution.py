@@ -1,6 +1,9 @@
 """BusesExecution class."""
 from dataclasses import dataclass
-from typing import List
+from itertools import zip_longest
+from typing import Dict, List
+
+import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
 
@@ -40,3 +43,25 @@ class BusesExecution:
         """Close connection to the instruments."""
         for bus in self.buses:
             bus.close()
+
+    @property
+    def pulses(self):
+        """BusesExecution 'pulses' property.
+
+        Returns:
+            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
+            pulses applied on each qubit.
+        """
+        pulses: Dict[int, np.ndarray] = {}
+        for bus in self.buses:
+            new_pulses = np.array(bus.pulses)
+            for qubit_id in bus.qubit_ids:
+                if qubit_id not in pulses:
+                    pulses[qubit_id] = np.array(bus.pulses)
+                    continue
+                old_pulses = pulses[qubit_id]
+                pulses[qubit_id] = np.array(
+                    [[x + y for x, y in zip_longest(old, new, fillvalue=0)] for old, new in zip(old_pulses, new_pulses)]
+                )
+
+        return pulses

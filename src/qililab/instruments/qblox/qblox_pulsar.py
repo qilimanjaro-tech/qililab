@@ -192,33 +192,16 @@ class QbloxPulsar(QubitInstrument):
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
                 pulse.index = idx
-                mod_waveform = self._quadrature_amplitude_modulation(pulse=pulse)
-                for mod in ["I", "Q"]:
-                    waveforms_dict |= {
-                        f"{pulse}_mod{mod}": {"data": (mod_waveform + pulse.offset_i).tolist(), "index": idx}
-                    }
-                    idx += 1
+                waveform_i, waveform_q = pulse.modulated_waveforms
+                waveforms_dict |= {
+                    f"{pulse}_I": {"data": (waveform_i + pulse.offset_i).tolist(), "index": idx},
+                    f"{pulse}_Q": {"data": (waveform_q + pulse.offset_q).tolist(), "index": idx},
+                }
+                idx += 2
             else:
                 pulse.index = unique_pulses.index(pulse) * 2
 
         return waveforms_dict
-
-    def _quadrature_amplitude_modulation(self, pulse: Pulse) -> np.ndarray:
-        """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
-
-        Args:
-            pulse (Pulse): Pulse object.
-
-        Returns:
-            ndarray: Modulated waveform
-        """
-        envelope = pulse.envelope
-        envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(pulse.duration) * 1e-9
-        cosalpha = np.cos(2 * np.pi * pulse.frequency * time + pulse.phase)
-        sinalpha = np.sin(2 * np.pi * pulse.frequency * time + pulse.phase)
-        mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
-        return np.einsum("abt,bt->ta", mod_matrix, envelopes)[:, 0]
 
     @property
     def reference_clock(self):

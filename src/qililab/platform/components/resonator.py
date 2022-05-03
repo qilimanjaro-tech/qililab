@@ -13,7 +13,7 @@ class Resonator:
         """Contains the settings obtained from calibrating the qubit.
 
         Args:
-            qubits (List[int]): List containing the IDs of the qubits connected to the resonator.
+            qubits (List[Qubit]): List containing the class of the qubits connected to the resonator.
         """
 
         qubits: List[Qubit]
@@ -62,6 +62,15 @@ class Resonator:
             List[Qubit]: settings.qubits.
         """
         return self.settings.qubits
+
+    @property
+    def qubit_ids(self):
+        """Resonator 'qubit_ids' property.
+
+        Returns:
+            List[int]: List containing the IDs of the qubits connected to the resonator.
+        """
+        return [qubit.id_ for qubit in self.qubits]
 
     def get_qubit(self, id_: int):
         """Return specific Qubit class. Return None if qubit is not found.

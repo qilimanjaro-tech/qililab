@@ -4,21 +4,36 @@ execution:
   repetition_duration: 200000
   delay_between_pulses: 0
 pulses:
-  - readout: true
+  - readout: false
     start: 0
     duration: 60
     amplitude: 0.3
     frequency: 200000000.0
     phase: 0
     shape:
-      name: gaussian
+      name: drag
       sigma: 1
+      beta: 1
     offset_i: 0
     offset_q: 0
     qubit_id: 0
 
   - readout: false
     start: 70
+    duration: 60
+    amplitude: 0.3
+    frequency: 200000000.0
+    phase: 0
+    shape:
+      name: drag
+      sigma: 1
+      beta: 1
+    offset_i: 0
+    offset_q: 0
+    qubit_id: 0
+
+  - readout: true
+    start: 140
     duration: 3000
     amplitude: 0.5
     frequency: 200000000.0

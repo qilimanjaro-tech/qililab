@@ -86,6 +86,18 @@ class Platform:
         """
         return self.schema.buses
 
+    @property
+    def num_qubits(self):
+        """Platform 'num_qubits' property.
+
+        Returns:
+            int: Number of different qubits that the platform contains.
+        """
+        qubit_sum = 0
+        while self.get_element(category=Category.QUBIT, id_=qubit_sum)[0] is not None:
+            qubit_sum += 1
+        return qubit_sum
+
     def to_dict(self):
         """Return all platform information as a dictionary."""
         platform_dict = {Category.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
