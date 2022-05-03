@@ -1,9 +1,7 @@
-from typing import List
-
 import pytest
 
-from qililab.platform import BusControl, Buses, BusReadout, Schema
-from qililab.typings import BusTypes, Category, SchemaDrawOptions, YAMLNames
+from qililab.platform import Buses, Schema
+from qililab.typings import Category, SchemaDrawOptions, YAMLNames
 
 from ...data import MockedSettingsHashTable
 
@@ -16,12 +14,7 @@ def fixture_schema() -> Schema:
         Schema: Instance of the Schema class.
     """
     schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-    buses_settings: List[BusReadout | BusControl] = []
-    for bus_settings in schema_settings[YAMLNames.BUSES.value]:
-        if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
-            buses_settings.append(BusControl(bus_settings))
-        elif bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
-            buses_settings.append(BusReadout(bus_settings))
+    buses_settings: list = schema_settings[YAMLNames.BUSES.value]
 
     return Schema(buses=Buses(buses=buses_settings))
 

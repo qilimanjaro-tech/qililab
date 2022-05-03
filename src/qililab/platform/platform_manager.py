@@ -1,18 +1,15 @@
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
 
 import yaml
 
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
-from qililab.platform.components.bus_control import BusControl
-from qililab.platform.components.bus_readout import BusReadout
 from qililab.platform.components.buses import Buses
 from qililab.platform.components.schema import Schema
 from qililab.platform.platform import Platform
-from qililab.typings import BusTypes, YAMLNames
+from qililab.typings import YAMLNames
 from qililab.utils import SingletonABC
 
 
@@ -53,13 +50,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         # a generic dictionary, and when calling a key does the check inside and throws a personalised error.
         if YAMLNames.BUSES.value not in schema_settings:
             raise ValueError(f"Schema settings must contain the {YAMLNames.BUSES.value} key.")
-        buses_dict_settings: dict = schema_settings[YAMLNames.BUSES.value]
-        buses_settings: List[BusReadout | BusControl] = []
-        for bus_settings in buses_dict_settings:
-            if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
-                buses_settings.append(BusControl(bus_settings))
-            elif bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
-                buses_settings.append(BusReadout(bus_settings))
+        buses_settings: list = schema_settings[YAMLNames.BUSES.value]
 
         buses = Buses(buses=buses_settings)
 

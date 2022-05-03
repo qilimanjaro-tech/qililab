@@ -1,10 +1,8 @@
-from typing import List
-
 import pytest
 
 from qililab.platform import Bus, BusControl, Buses, BusReadout
 from qililab.typings import Category
-from qililab.typings.enums import BusTypes, YAMLNames
+from qililab.typings.enums import YAMLNames
 
 from ...data import MockedSettingsHashTable
 
@@ -16,12 +14,7 @@ def load_buses() -> Buses:
         Buses: Instance of the Buses class.
     """
     schema_settings = MockedSettingsHashTable.get(Category.SCHEMA.value)
-    buses_settings: List[BusReadout | BusControl] = []
-    for bus_settings in schema_settings[YAMLNames.BUSES.value]:
-        if bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
-            buses_settings.append(BusControl(bus_settings))
-        elif bus_settings[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
-            buses_settings.append(BusReadout(bus_settings))
+    buses_settings: list = schema_settings[YAMLNames.BUSES.value]
 
     return Buses(buses=buses_settings)
 
