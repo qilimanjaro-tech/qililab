@@ -4,7 +4,7 @@ execution:
   repetition_duration: 200000
   delay_between_pulses: 0
 pulse_sequence:
-  - category: control
+  - readout: true
     start: 0
     duration: 60
     amplitude: 0.3
@@ -17,7 +17,7 @@ pulse_sequence:
     offset_q: 0
     qubit_id: 0
 
-  - category: readout
+  - readout: false
     start: 70
     duration: 3000
     amplitude: 0.5

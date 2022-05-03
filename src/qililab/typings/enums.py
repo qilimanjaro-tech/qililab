@@ -27,19 +27,6 @@ class Category(Enum):
     BUS = "bus"
 
 
-class BusTypes(Enum):
-    """Bus types.
-
-    Args:
-        enum (str): Available types of bus:
-        * bus_control
-        * bus_readout
-    """
-
-    BUS_CONTROL = "bus_control"
-    BUS_READOUT = "bus_readout"
-
-
 class ReferenceClock(Enum):
     """Qblox reference clock.
 
@@ -101,6 +88,10 @@ class YAMLNames(Enum):
         * name
         * category
         * buses
+        * pulse_sequence
+        * execution
+        * elements
+        * readout
     """
 
     PLATFORM = "platform"
@@ -112,6 +103,8 @@ class YAMLNames(Enum):
     BUSES = "buses"
     PULSE_SEQUENCE = "pulse_sequence"
     EXECUTION = "execution"
+    ELEMENTS = "elements"
+    READOUT = "readout"
 
 
 class PulseShapeOptions(Enum):
@@ -123,16 +116,3 @@ class PulseShapeOptions(Enum):
     """
 
     GAUSSIAN = "gaussian"
-
-
-class PulseCategoryOptions(Enum):
-    """Pulse category options.
-
-    Args:
-        Enum (str): Available types of PulseCategory options:
-        * control
-        * readout
-    """
-
-    CONTROL = "control"
-    READOUT = "readout"

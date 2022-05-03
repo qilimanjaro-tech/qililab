@@ -1,12 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import InitVar
 from typing import List
 
 from qililab.platform.components.bus_control import BusControl
 from qililab.platform.components.bus_readout import BusReadout
-from qililab.typings import BusTypes, YAMLNames
+from qililab.typings import YAMLNames
+from qililab.utils import nested_dataclass
 
 
-@dataclass
+@nested_dataclass
 class Buses:
     """Class used as a container of Bus objects.
 
@@ -14,19 +15,18 @@ class Buses:
         buses (List[Bus]): List of Bus objects.
     """
 
-    buses: List[BusControl | BusReadout]
+    elements: InitVar[List[dict]]
 
-    def __post_init__(self):
+    def __post_init__(self, elements: List[dict]):
         """Cast each list element to its corresponding bus class."""
-        for bus_idx, bus in enumerate(self.buses):
-            if bus[YAMLNames.NAME.value] == BusTypes.BUS_CONTROL.value:
-                self.buses[bus_idx] = BusControl(bus)
-            elif bus[YAMLNames.NAME.value] == BusTypes.BUS_READOUT.value:
-                self.buses[bus_idx] = BusReadout(bus)
+        self.buses: List[BusControl | BusReadout] = []
+        for bus in elements:
+            if bus[YAMLNames.READOUT.value] is True:
+                self.buses.append(BusControl(**bus))
+            elif bus[YAMLNames.READOUT.value] is False:
+                self.buses.append(BusReadout(**bus))
             else:
-                raise ValueError(
-                    f"Bus name should be either {BusTypes.BUS_CONTROL.value} or {BusTypes.BUS_READOUT.value}"
-                )
+                raise ValueError("Bus 'readout' key should contain a boolean.")
 
     def add(self, bus: BusControl | BusReadout):
         """Add a bus to the list of buses.

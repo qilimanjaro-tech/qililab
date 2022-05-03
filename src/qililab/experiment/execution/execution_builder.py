@@ -10,7 +10,6 @@ from qililab.instruments.pulse.pulse_sequence import PulseSequence
 from qililab.platform import Bus, BusControl, BusReadout, Platform
 from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import Category, YAMLNames
-from qililab.typings.enums import PulseCategoryOptions
 from qililab.utils import Singleton
 
 
@@ -67,12 +66,13 @@ class ExecutionBuilder(metaclass=Singleton):
         bus: Bus | None = None
         for bus_idx in bus_idxs:
             bus_tmp = platform.buses[bus_idx]
-            if isinstance(bus_tmp, BusControl) and pulse_sequence.category == PulseCategoryOptions.CONTROL:
-                bus = bus_tmp
-            elif isinstance(bus_tmp, BusReadout) and pulse_sequence.category == PulseCategoryOptions.READOUT:
+            if (isinstance(bus_tmp, BusControl) and pulse_sequence.readout is False) or (
+                isinstance(bus_tmp, BusReadout) and pulse_sequence.readout is True
+            ):
                 bus = bus_tmp
 
         if bus is None:
-            raise ValueError(f"Qubit with id {qubit_id} is not connected to a {pulse_sequence.category.value} bus.")
+            literal = "readout" if pulse_sequence.readout else "control"
+            raise ValueError(f"Qubit with id {qubit_id} is not connected to a {literal} bus.")
 
         return BusExecution(bus=bus, pulse_sequence=pulse_sequence)

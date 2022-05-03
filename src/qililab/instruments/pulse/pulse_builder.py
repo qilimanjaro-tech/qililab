@@ -3,7 +3,6 @@ from typing import Dict, List
 
 from qililab.instruments.pulse.pulse import Pulse
 from qililab.instruments.pulse.pulse_sequence import PulseSequence
-from qililab.typings import PulseCategoryOptions
 from qililab.utils import Singleton
 
 
@@ -36,9 +35,9 @@ class PulseBuilder(metaclass=Singleton):
         readout_pulses = []
         for settings in pulse_sequence_settings:
             pulse = Pulse(settings)
-            if pulse.category == PulseCategoryOptions.CONTROL:
+            if pulse.readout is False:
                 control_pulses.append(pulse)
-            elif pulse.category == PulseCategoryOptions.READOUT:
+            elif pulse.readout is True:
                 readout_pulses.append(pulse)
 
         return control_pulses, readout_pulses
@@ -55,7 +54,7 @@ class PulseBuilder(metaclass=Singleton):
         pulse_sequences: Dict[int, PulseSequence] = {}
         for pulse in pulses:
             if pulse.qubit_id not in pulse_sequences:
-                pulse_sequences[pulse.qubit_id] = PulseSequence(category=pulse.category, pulses=[pulse])
+                pulse_sequences[pulse.qubit_id] = PulseSequence(readout=pulse.readout, pulses=[pulse])
                 continue
             pulse_sequences[pulse.qubit_id].add(pulse=pulse)
         return pulse_sequences

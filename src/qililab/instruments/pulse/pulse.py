@@ -3,7 +3,7 @@ from dataclasses import InitVar, dataclass, field
 
 from qililab.instruments.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.instruments.pulse.utils.pulse_shape_hashtable import PulseShapeHashTable
-from qililab.typings import PulseCategoryOptions, YAMLNames
+from qililab.typings import YAMLNames
 from qililab.utils import nested_dataclass
 
 
@@ -27,7 +27,7 @@ class Pulse:
             qubit_id (int): ID of the qubit.
         """
 
-        category: PulseCategoryOptions
+        readout: bool
         start: float
         duration: float
         amplitude: float
@@ -160,13 +160,13 @@ class Pulse:
         return self.settings.qubit_id
 
     @property
-    def category(self):
-        """Pulse 'category' property.
+    def readout(self):
+        """Pulse 'readout' property.
 
         Returns:
-            PulseCategoryOptions: settings.category.
+            bool: settings.readout.
         """
-        return self.settings.category
+        return self.settings.readout
 
     def __repr__(self):
         """Return string representation of the Pulse object."""
