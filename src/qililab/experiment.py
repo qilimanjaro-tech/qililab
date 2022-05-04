@@ -1,5 +1,6 @@
 """Experiment class."""
 import matplotlib.pyplot as plt
+import numpy as np
 
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
@@ -19,27 +20,38 @@ class Experiment:
         """Run execution."""
         return self.execution.execute()
 
-    @property
-    def pulses(self):
-        """Experiment 'pulses' property.
+    def pulses(self, resolution: float = 1.0):
+        """Return pulses applied on each qubit.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
 
         Returns:
             Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
             pulses applied on each qubit.
         """
-        return self.execution.pulses
+        return self.execution.pulses(resolution=resolution)
 
-    def draw(self):
-        """Save figure with the waveforms sent to each bus."""
+    def draw(self, resolution: float = 1.0):
+        """Save figure with the waveforms sent to each bus.
+
+        Args:
+            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
+        """
         num_qubits = self.platform.num_qubits
         _, axes = plt.subplots(num_qubits, 1)
         if num_qubits == 1:
             axes = [axes]  # make axes subscriptable
-        for idx, pulse in self.pulses.items():
+        for idx, pulse in self.pulses(resolution=resolution).items():
+            time = np.arange(len(pulse[0])) * resolution
             axes[idx].set_title(f"Qubit {idx}")
-            axes[idx].plot(pulse[0], label="I")
-            axes[idx].plot(pulse[1], label="Q")
+            axes[idx].plot(time, pulse[0], label="I")
+            axes[idx].plot(time, pulse[1], label="Q")
             axes[idx].legend()
+            axes[idx].minorticks_on()
+            axes[idx].grid(which="both")
+            axes[idx].set_ylabel("Amplitude")
+            axes[idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
         # plt.savefig("test.png")

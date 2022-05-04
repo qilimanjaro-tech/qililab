@@ -4,7 +4,7 @@ platform:
   category: platform
   number_qubits: 1
   drag_coefficient: 0
-  number_of_sigmas: 4
+  num_sigmas: 4
 schema:
   buses:
   - id_: 0

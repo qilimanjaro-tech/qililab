@@ -32,14 +32,16 @@ class BusExecution:
         """Close connection to the instruments."""
         self.bus.close()
 
-    @property
-    def pulses(self):
-        """BusExecution 'pulses' property.
+    def pulses(self, resolution: float = 1.0):
+        """Return pulses applied on this bus.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
 
         Returns:
             Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on this bus.
         """
-        return self.pulse_sequence.waveforms
+        return self.pulse_sequence.waveforms(resolution=resolution)
 
     @property
     def qubit_ids(self):

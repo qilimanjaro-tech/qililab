@@ -11,7 +11,7 @@ class PulseShape(ABC):
         self.name = name
 
     @abstractmethod
-    def envelope(self, duration: int, amplitude: float) -> np.ndarray:
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
         Args:

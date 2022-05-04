@@ -30,9 +30,11 @@ class PulseSequence:
             raise ValueError("A single PulseSequence object cannot contain pulses of different qubits.")
         self.pulses.append(pulse)
 
-    @property
-    def waveforms(self):
+    def waveforms(self, resolution: float = 1.0):
         """PulseSequence 'waveforms' property.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
 
         Returns:
             Tuple[List[float], List[float]]: Dictionary containing the I, Q waveforms for a specific qubit.
@@ -41,10 +43,11 @@ class PulseSequence:
         waveforms_q: List[float] = []
         time = 0
         for pulse in self.pulses:
-            waveforms_i += [0 for _ in range(pulse.start - time)]
-            waveforms_q += [0 for _ in range(pulse.start - time)]
+            wait_time = round((pulse.start - time) / resolution)
+            waveforms_i += [0 for _ in range(wait_time)]
+            waveforms_q += [0 for _ in range(wait_time)]
             time += pulse.start
-            waveform_i, waveform_q = pulse.modulated_waveforms
+            waveform_i, waveform_q = pulse.modulated_waveforms(resolution=resolution)
             waveforms_i += waveform_i.tolist()
             waveforms_q += waveform_q.tolist()
             time += pulse.duration

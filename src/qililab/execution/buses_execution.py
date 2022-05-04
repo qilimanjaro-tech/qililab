@@ -44,9 +44,11 @@ class BusesExecution:
         for bus in self.buses:
             bus.close()
 
-    @property
-    def pulses(self):
-        """BusesExecution 'pulses' property.
+    def pulses(self, resolution: float = 1.0):
+        """Get pulses of each bus and sum pulses by their qubit id.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
 
         Returns:
             Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
@@ -54,10 +56,10 @@ class BusesExecution:
         """
         pulses: Dict[int, np.ndarray] = {}
         for bus in self.buses:
-            new_pulses = np.array(bus.pulses)
+            new_pulses = np.array(bus.pulses(resolution=resolution))
             for qubit_id in bus.qubit_ids:
                 if qubit_id not in pulses:
-                    pulses[qubit_id] = np.array(bus.pulses)
+                    pulses[qubit_id] = new_pulses
                     continue
                 old_pulses = pulses[qubit_id]
                 pulses[qubit_id] = np.array(

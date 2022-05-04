@@ -192,7 +192,7 @@ class QbloxPulsar(QubitInstrument):
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
                 pulse.index = idx
-                waveform_i, waveform_q = pulse.modulated_waveforms
+                waveform_i, waveform_q = pulse.modulated_waveforms()
                 waveforms_dict |= {
                     f"{pulse}_I": {"data": (waveform_i + pulse.offset_i).tolist(), "index": idx},
                     f"{pulse}_Q": {"data": (waveform_q + pulse.offset_q).tolist(), "index": idx},

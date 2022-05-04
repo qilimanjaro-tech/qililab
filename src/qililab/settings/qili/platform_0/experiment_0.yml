@@ -11,9 +11,8 @@ pulses:
     frequency: 200000000.0
     phase: 0
     shape:
-      name: drag
-      sigma: 1
-      beta: 1
+      name: gaussian
+      num_sigmas: 4
     offset_i: 0
     offset_q: 0
     qubit_id: 0
@@ -26,7 +25,7 @@ pulses:
     phase: 0
     shape:
       name: drag
-      sigma: 1
+      num_sigmas: 4
       beta: 1
     offset_i: 0
     offset_q: 0

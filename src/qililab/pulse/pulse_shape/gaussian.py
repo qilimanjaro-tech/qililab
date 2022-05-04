@@ -7,11 +7,11 @@ from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
-    def __init__(self, name: str, sigma: float):
+    def __init__(self, name: str, num_sigmas: float):
         super().__init__(name=name)
-        self.sigma = sigma
+        self.num_sigmas = num_sigmas
 
-    def envelope(self, duration: int, amplitude: float):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
 
         Args:
@@ -21,6 +21,8 @@ class Gaussian(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        time = np.arange(duration)
+        sigma = duration / self.num_sigmas
+        time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
-        return amplitude * np.exp(-0.5 * (time - mu_) ** 2 / self.sigma**2)
+        gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
+        return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0

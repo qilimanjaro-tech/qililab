@@ -73,7 +73,7 @@ class TestExperiment:
         assert isinstance(results[0], QbloxResult)
         assert isinstance(results[0].acquisition, QbloxResult.QbloxAcquisitionData)
 
-    def test_pulses_property(self, experiment: Experiment):
+    def test_pulses_method(self, experiment: Experiment):
         """Test pulses property."""
-        pulses = experiment.pulses
+        pulses = experiment.pulses()
         assert isinstance(pulses, dict)

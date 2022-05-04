@@ -10,7 +10,7 @@ class Rectangular(PulseShape):
     def __init__(self, name: str):
         super().__init__(name=name)
 
-    def envelope(self, duration: int, amplitude: float):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
 
         Args:
@@ -20,4 +20,4 @@ class Rectangular(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        return amplitude * np.ones(duration)
+        return amplitude * np.ones(round(duration / resolution))

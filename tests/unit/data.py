@@ -7,7 +7,7 @@ platform_settings_sample = {
     "category": "platform",
     "number_qubits": 1,
     "drag_coefficient": 0,
-    "number_of_sigmas": 4,
+    "num_sigmas": 4,
 }
 
 qubit_0_settings_sample = {
@@ -165,7 +165,7 @@ all_platform_settings_sample = {
         "category": "platform",
         "number_qubits": 1,
         "drag_coefficient": 0,
-        "number_of_sigmas": 4,
+        "num_sigmas": 4,
     },
     "schema": schema_settings_sample,
 }
@@ -185,7 +185,7 @@ experiment_settings_sample = {
             "amplitude": 0.3,
             "frequency": 200000000.0,
             "phase": 0,
-            "shape": {"name": "gaussian", "sigma": 1},
+            "shape": {"name": "gaussian", "num_sigmas": 1},
             "offset_i": 0,
             "offset_q": 0,
             "qubit_id": 0,

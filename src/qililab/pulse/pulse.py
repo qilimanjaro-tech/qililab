@@ -53,32 +53,30 @@ class Pulse:
     def __init__(self, settings: dict):
         self.settings = self.PulseSettings(**settings)
 
-    @property
-    def modulated_waveforms(self) -> np.ndarray:
+    def modulated_waveforms(self, resolution: float = 1.0) -> np.ndarray:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
-            pulse (Pulse): Pulse object.
+            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
-            Tuple[List[float], List[float]]: I and Q modulated waveforms.
+            NDArray: I and Q modulated waveforms.
         """
-        envelope = self.envelope
+        envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(self.duration) * 1e-9
+        time = np.arange(self.duration / resolution) * 1e-9 * resolution
         cosalpha = np.cos(2 * np.pi * self.frequency * time + self.phase)
         sinalpha = np.sin(2 * np.pi * self.frequency * time + self.phase)
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
         return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
 
-    @property
-    def envelope(self):
+    def envelope(self, resolution: float):
         """Pulse 'envelope' property.
 
         Returns:
             List[float]: Amplitudes of the envelope of the pulse.
         """
-        return self.pulse_shape.envelope(duration=self.duration, amplitude=self.amplitude)
+        return self.pulse_shape.envelope(duration=self.duration, amplitude=self.amplitude, resolution=resolution)
 
     @property
     def start(self):

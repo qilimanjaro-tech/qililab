@@ -45,15 +45,17 @@ class Execution:
         """Close connection to the instruments."""
         self.buses_execution.close()
 
-    @property
-    def pulses(self):
-        """Execution 'pulses' property.
+    def pulses(self, resolution: float = 1.0):
+        """Return pulses applied on each qubit.
+
+        Args:
+            resolution (float): The resolution of the pulses in ns.
 
         Returns:
             Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
             pulses applied on each qubit.
         """
-        return self.buses_execution.pulses
+        return self.buses_execution.pulses(resolution=resolution)
 
     @property
     def hardware_average(self):

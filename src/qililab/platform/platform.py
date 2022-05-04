@@ -24,12 +24,12 @@ class Platform:
         Args:
             number_qubits (int): Number of qubits used in the platform.
             drag_coefficient (float): Coefficient used for the drag pulse.
-            number_of_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / number_of_sigmas.
+            num_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / num_sigmas.
         """
 
         number_qubits: int
         drag_coefficient: float
-        number_of_sigmas: float
+        num_sigmas: float
 
     def __init__(self, settings: dict, schema: Schema):
         self.settings = self.PlatformSettings(**settings)
