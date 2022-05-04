@@ -7,7 +7,7 @@ pulses:
   - readout: false
     start: 0
     duration: 60
-    amplitude: 0.3
+    amplitude: 1.6
     frequency: 200000000.0
     phase: 0
     shape:
@@ -20,7 +20,7 @@ pulses:
   - readout: false
     start: 70
     duration: 60
-    amplitude: 0.3
+    amplitude: 0.6
     frequency: 200000000.0
     phase: 0
     shape:
@@ -42,3 +42,42 @@ pulses:
     offset_i: 0
     offset_q: 0
     qubit_id: 0
+
+  - readout: false
+    start: 0
+    duration: 90
+    amplitude: 0.4
+    frequency: 200000000.0
+    phase: 0
+    shape:
+      name: gaussian
+      num_sigmas: 4
+    offset_i: 0
+    offset_q: 0
+    qubit_id: 1
+
+  - readout: false
+    start: 100
+    duration: 40
+    amplitude: 0.2
+    frequency: 200000000.0
+    phase: 0
+    shape:
+      name: drag
+      num_sigmas: 4
+      beta: 1
+    offset_i: 0
+    offset_q: 0
+    qubit_id: 1
+
+  - readout: true
+    start: 140
+    duration: 3000
+    amplitude: 0.5
+    frequency: 200000000.0
+    phase: 0
+    shape:
+      name: rectangular
+    offset_i: 0
+    offset_q: 0
+    qubit_id: 1
