@@ -82,7 +82,7 @@ class TestQbloxPulsarQRM:
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxPulsarQRM):
         """Test upload method"""
-        qrm.upload(sequence=Sequence())
+        qrm.upload(sequence=Sequence(program={}, waveforms={}, acquisitions={}, weights={}))
         qrm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 

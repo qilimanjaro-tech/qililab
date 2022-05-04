@@ -72,11 +72,7 @@ class QbloxPulsar(QubitInstrument):
         """
         waveforms_dict = self._generate_waveforms(pulse_sequence=pulse_sequence)
         program = self._generate_program(pulse_sequence=pulse_sequence)
-        # FIXME: (Joel) Add waveforms and program in Sequence constructor.
-        sequence = Sequence()
-        sequence.set_waveforms(waveforms=waveforms_dict)
-        sequence.set_program(program=program)
-        return sequence
+        return Sequence(program=program, waveforms=waveforms_dict, acquisitions={}, weights={})
 
     def _generate_program(self, pulse_sequence: PulseSequence):
         """Generate Q1ASM program
