@@ -1,5 +1,5 @@
 """Bus class."""
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from types import NoneType
 from typing import Generator, Optional, Tuple
 
@@ -10,10 +10,9 @@ from qililab.platform.components.resonator import Resonator
 from qililab.platform.utils import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import Category
-from qililab.utils import nested_dataclass
 
 
-@nested_dataclass
+@dataclass
 class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object, which
@@ -33,9 +32,9 @@ class Bus:
     signal_generator: SignalGenerator
     mixer_up: Mixer
     qubit_instrument: QubitInstrument
-    mixer_down: Optional[Mixer] = None
-    resonator: Optional[Resonator] = None
-    qubit: Optional[Qubit] = None
+    mixer_down: Optional[Mixer]
+    resonator: Optional[Resonator]
+    qubit: Optional[Qubit]
 
     def connect(self):
         """Connect to the instruments."""
