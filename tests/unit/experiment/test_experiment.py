@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
-from qililab.experiment import Execution, Experiment
+from qililab.execution import Execution
+from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import QbloxResult
 

@@ -1,6 +1,6 @@
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
-from .execution_settings import ExecutionSettings
+from .experiment_settings import ExperimentSettings
 from .settings import Settings
 from .settings_manager import SettingsManager
 

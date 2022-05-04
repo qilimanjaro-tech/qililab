@@ -20,7 +20,7 @@ class BusesExecution:
             bus.connect()
 
     def setup(self):
-        """Setup instruments with platform settings."""
+        """Setup instruments with experiment settings."""
         for bus in self.buses:
             bus.setup()
 

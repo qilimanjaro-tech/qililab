@@ -171,7 +171,7 @@ all_platform_settings_sample = {
 }
 
 experiment_settings_sample = {
-    "execution": {
+    "settings": {
         "hardware_average": 4096,
         "software_average": 10,
         "repetition_duration": 200000,

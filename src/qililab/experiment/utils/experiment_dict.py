@@ -6,7 +6,7 @@ from qililab.pulse.pulse import Pulse
 
 
 @dataclass
-class ExecutionDict:
+class ExperimentDict:
     """ExecutionDict class. Casts the execution dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
@@ -14,7 +14,7 @@ class ExecutionDict:
     - pulse_sequence: list of pulse settings dictionaries.
     """
 
-    execution: dict
+    settings: dict
     pulses: List[Pulse]
 
     def __post_init__(self):

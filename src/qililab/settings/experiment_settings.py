@@ -1,14 +1,15 @@
+"""ExperimentSettings class"""
 from dataclasses import dataclass
 
 # TODO: I moved this class inside the module settings/ to avoid circular imports,
-# because it is used by both the Execution and QubitInstrument classes.
+# because it is used by both the Experiment and QubitInstrument classes.
 
 # FIXME: We should find a better way to setup the QubitInstrument class attributes.
-# Right now it is done by the Execution object.
+# Right now it is done by the Experiment object.
 
 
 @dataclass
-class ExecutionSettings:
+class ExperimentSettings:
     """Contains the settings that are generic for all QubitInstrument objects.
 
     Args:

@@ -1,15 +1,12 @@
 """ExecutionBuilder class"""
 from typing import List
 
-from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
-from qililab.execution.utils import ExecutionDict
 from qililab.platform import Bus, BusControl, BusReadout, Platform
-from qililab.pulse import PULSE_BUILDER
+from qililab.pulse import PULSE_BUILDER, Pulse
 from qililab.pulse.pulse_sequence import PulseSequence
-from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import Category
 from qililab.utils import Singleton
 
@@ -17,19 +14,14 @@ from qililab.utils import Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, experiment_name: str) -> Execution:
+    def build(self, platform: Platform, pulses: List[Pulse]) -> Execution:
         """Build Execution class.
 
         Returns:
             Execution: Execution object.
         """
-        execution_settings = SETTINGS_MANAGER.load(
-            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform.name, filename=experiment_name
-        )
 
-        execution_dict = ExecutionDict(**execution_settings)
-
-        control_pulse_sequences, readout_pulse_sequences = PULSE_BUILDER.build(pulses=execution_dict.pulses)
+        control_pulse_sequences, readout_pulse_sequences = PULSE_BUILDER.build(pulses=pulses)
 
         buses: List[BusExecution] = []
         for pulse_sequences in (control_pulse_sequences, readout_pulse_sequences):
@@ -40,7 +32,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
         buses_execution = BusesExecution(buses=buses)
 
-        return Execution(platform=platform, buses_execution=buses_execution, settings=execution_dict.execution)
+        return Execution(platform=platform, buses_execution=buses_execution)
 
     def _build_bus_execution(self, qubit_id: int, platform: Platform, pulse_sequence: PulseSequence) -> BusExecution:
         """Build BusExecution object.

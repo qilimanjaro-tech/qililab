@@ -2,23 +2,20 @@
 from qililab.execution.buses_execution import BusesExecution
 from qililab.instruments import QubitInstrument
 from qililab.platform import Platform
-from qililab.settings import ExecutionSettings
+from qililab.settings import ExperimentSettings
 
 
 class Execution:
     """Execution class."""
 
-    settings: ExecutionSettings
-
-    def __init__(self, platform: Platform, buses_execution: BusesExecution, settings: dict):
+    def __init__(self, platform: Platform, buses_execution: BusesExecution):
         self.platform = platform
         self.buses_execution = buses_execution
-        self.settings = ExecutionSettings(**settings)
 
-    def execute(self):
+    def execute(self, settings: ExperimentSettings):
         """Run execution."""
         self.connect()
-        self.setup()
+        self.setup(settings=settings)
         self.start()
         results = self.run()
         self.close()
@@ -28,9 +25,9 @@ class Execution:
         """Connect to the instruments."""
         self.buses_execution.connect()
 
-    def setup(self):
-        """Setup instruments with platform settings."""
-        QubitInstrument.general_setup(settings=self.settings)
+    def setup(self, settings: ExperimentSettings):
+        """Setup instruments with experiment settings."""
+        QubitInstrument.general_setup(settings=settings)
         self.buses_execution.setup()
 
     def start(self):
@@ -56,39 +53,3 @@ class Execution:
             pulses applied on each qubit.
         """
         return self.buses_execution.pulses(resolution=resolution)
-
-    @property
-    def hardware_average(self):
-        """Execution 'hardware_average' property.
-
-        Returns:
-            int: settings.hardware_average.
-        """
-        return self.settings.hardware_average
-
-    @property
-    def software_average(self):
-        """Execution 'software_average' property.
-
-        Returns:
-            int: settings.software_average.
-        """
-        return self.settings.software_average
-
-    @property
-    def repetition_duration(self):
-        """Execution 'repetition_duration' property.
-
-        Returns:
-            int: settings.repetition_duration.
-        """
-        return self.settings.repetition_duration
-
-    @property
-    def delay_between_pulses(self):
-        """Execution 'delay_between_pulses' property.
-
-        Returns:
-            int: settings.delay_between_pulses.
-        """
-        return self.settings.delay_between_pulses
