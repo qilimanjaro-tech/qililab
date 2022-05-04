@@ -1,8 +1,9 @@
 """Bus class."""
 from dataclasses import asdict
 from types import NoneType
-from typing import Generator, Optional
+from typing import Generator, Optional, Tuple
 
+from qililab.constants import YAML
 from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
@@ -71,9 +72,8 @@ class Bus:
 
     def to_dict(self):
         """Return a dict representation of the BusSettings class"""
-        return {
-            "readout": self.readout,
-            "elements": [asdict(element.settings, dict_factory=dict_factory) for element in self],
+        return {YAML.READOUT: self.readout} | {
+            name: asdict(element.settings, dict_factory=dict_factory) for name, element in self
         }
 
     def get_element(self, category: Category, id_: int):
@@ -86,16 +86,16 @@ class Bus:
         Returns:
             (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
-        return next((element for element in self if element.category == category and element.id_ == id_), None)
+        return next((element for _, element in self if element.category == category and element.id_ == id_), None)
 
     def __iter__(
         self,
-    ) -> Generator[SignalGenerator | Mixer | Resonator | QubitInstrument | Qubit, None, None]:
+    ) -> Generator[Tuple[str, SignalGenerator | Mixer | Resonator | QubitInstrument | Qubit], None, None]:
         """Iterate over Bus elements.
 
         Yields:
             Tuple[str, ]: _description_
         """
-        for _, value in self.__dict__.items():
+        for name, value in self.__dict__.items():
             if not isinstance(value, (NoneType, bool)):
-                yield value
+                yield name, value

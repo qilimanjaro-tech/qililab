@@ -14,3 +14,5 @@ class YAML:
 
     NAME = "name"
     READOUT = "readout"
+    ELEMENTS = "elements"
+    READOUT = "readout"

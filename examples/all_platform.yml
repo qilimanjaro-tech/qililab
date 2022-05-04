@@ -7,74 +7,37 @@ platform:
   num_sigmas: 4
 schema:
   buses:
-  - id_: 0
-    name: bus_control
-    category: bus
     elements:
-    - id_: 0
-      name: qblox_qcm
-      category: qubit_instrument
-      ip: 192.168.0.3
-      reference_clock: internal
-      sequencer: 0
-      sync_enabled: true
-      gain: 1
-    - id_: 0
-      name: rohde_schwarz
-      category: signal_generator
-      ip: 192.168.0.10
-      power: 15
-      frequency: 3644000000.0
-    - id_: 0
-      name: mixer_up
-      category: mixer
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0
-      up_conversion: true
-    - id_: 0
-      name: qubit
-      category: qubit
-      pi_pulse_amplitude: 1
-      pi_pulse_duration: 100
-      pi_pulse_frequency: 100000000.0
-      qubit_frequency: 3544000000.0
-      min_voltage: 950
-      max_voltage: 1775
-  - id_: 1
-    name: bus_readout
-    category: bus
-    elements:
-    - id_: 1
-      name: qblox_qrm
-      category: qubit_instrument
-      ip: 192.168.0.4
-      delay_before_readout: 50
-      reference_clock: external
-      sequencer: 0
-      sync_enabled: true
-      gain: 0.5
-      acquire_trigger_mode: sequencer
-      hardware_average_enabled: true
-      start_integrate: 130
-      sampling_rate: 1000000000
-      integration_length: 2000
-      integration_mode: ssb
-      sequence_timeout: 1
-      acquisition_timeout: 1
-      acquisition_name: single
-    - id_: 1
-      name: rohde_schwarz
-      category: signal_generator
-      ip: 192.168.0.7
-      power: 15
-      frequency: 7307720000.0
-    - id_: 0
-      name: resonator
-      category: resonator
-      qubits:
-      - id_: 0
+    - readout: false
+      signal_generator:
+        id_: 0
+        name: rohde_schwarz
+        category: signal_generator
+        ip: 192.168.0.10
+        firmware: 4.30.046.295
+        power: 15
+        frequency: 3644000000.0
+      mixer_up:
+        id_: 0
+        name: mixer_up
+        category: mixer
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+        up_conversion: true
+      qubit_instrument:
+        id_: 0
+        name: qblox_qcm
+        category: qubit_instrument
+        ip: 192.168.0.3
+        firmware: 0.7.0
+        reference_clock: internal
+        sequencer: 0
+        sync_enabled: true
+        gain: 1
+      qubit:
+        id_: 0
         name: qubit
         category: qubit
         pi_pulse_amplitude: 1
@@ -83,19 +46,64 @@ schema:
         qubit_frequency: 3544000000.0
         min_voltage: 950
         max_voltage: 1775
-    - id_: 1
-      name: mixer_up
-      category: mixer
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0
-      up_conversion: true
-    - id_: 2
-      name: mixer_down
-      category: mixer
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0
-      up_conversion: false
+    - readout: true
+      signal_generator:
+        id_: 1
+        name: rohde_schwarz
+        category: signal_generator
+        ip: 192.168.0.7
+        firmware: 4.30.046.295
+        power: 15
+        frequency: 7307720000.0
+      mixer_up:
+        id_: 1
+        name: mixer_up
+        category: mixer
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+        up_conversion: true
+      qubit_instrument:
+        id_: 1
+        name: qblox_qrm
+        category: qubit_instrument
+        ip: 192.168.0.4
+        firmware: 0.7.0
+        delay_before_readout: 50
+        reference_clock: external
+        sequencer: 0
+        sync_enabled: true
+        gain: 0.5
+        acquire_trigger_mode: sequencer
+        hardware_average_enabled: true
+        start_integrate: 130
+        sampling_rate: 1000000000
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        acquisition_name: single
+      mixer_down:
+        id_: 2
+        name: mixer_down
+        category: mixer
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+        up_conversion: false
+      resonator:
+        id_: 0
+        name: resonator
+        category: resonator
+        qubits:
+        - id_: 0
+          name: qubit
+          category: qubit
+          pi_pulse_amplitude: 1
+          pi_pulse_duration: 100
+          pi_pulse_frequency: 100000000.0
+          qubit_frequency: 3544000000.0
+          min_voltage: 950
+          max_voltage: 1775

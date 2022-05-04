@@ -1,6 +1,7 @@
 """Schema class"""
 from typing import List
 
+from qililab.constants import YAML
 from qililab.platform.components.buses import Buses
 from qililab.typings import Category, SchemaDrawOptions
 from qililab.utils import nested_dataclass
@@ -46,7 +47,7 @@ class Schema:
         if options == SchemaDrawOptions.PRINT:
             for idx, bus in enumerate(self.buses):
                 print(f"Bus {idx}:\t", end="------")
-                for element in bus:
+                for _, element in bus:
                     print(f"|{element.name}", end="|------")
                 print()
         elif options == SchemaDrawOptions.FILE:
@@ -55,5 +56,5 @@ class Schema:
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
         return {
-            "buses": [bus.to_dict() for bus in self.buses],
+            Category.BUSES.value: {YAML.ELEMENTS: [bus.to_dict() for bus in self.buses]},
         }
