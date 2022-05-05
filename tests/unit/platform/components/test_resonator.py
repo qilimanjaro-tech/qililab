@@ -1,6 +1,7 @@
 import pytest
 
 from qililab.platform import Resonator
+from qililab.typings import Category
 
 from ...data import MockedSettingsHashTable
 
@@ -13,7 +14,7 @@ def fixture_resonator() -> Resonator:
         Resonator: Instance of the Resonator class.
     """
     resonator_settings = MockedSettingsHashTable.get("resonator_0")
-
+    resonator_settings.pop("name")
     return Resonator(settings=resonator_settings)
 
 
@@ -26,7 +27,7 @@ class Testresonator:
 
     def test_name_property(self, resonator: Resonator):
         """Test name property."""
-        assert resonator.name == resonator.settings.name
+        assert resonator.name == Category.RESONATOR.value
 
     def test_category_property(self, resonator: Resonator):
         """Test name property."""

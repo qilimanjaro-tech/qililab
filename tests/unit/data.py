@@ -72,14 +72,36 @@ resonator_0_settings_sample = {
     "id_": 0,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [qubit_0_settings_sample],
+    "qubits": [
+        {
+            "id_": 0,
+            "category": "qubit",
+            "pi_pulse_amplitude": 1,
+            "pi_pulse_duration": 100,
+            "pi_pulse_frequency": 100000000.0,
+            "qubit_frequency": 3544000000.0,
+            "min_voltage": 950,
+            "max_voltage": 1775,
+        }
+    ],
 }
 
 resonator_1_settings_sample = {
     "id_": 1,
     "name": "resonator",
     "category": "resonator",
-    "qubits": [qubit_1_settings_sample],
+    "qubits": [
+        {
+            "id_": 1,
+            "category": "qubit",
+            "pi_pulse_amplitude": 1,
+            "pi_pulse_duration": 100,
+            "pi_pulse_frequency": 100000000.0,
+            "qubit_frequency": 3544000000.0,
+            "min_voltage": 950,
+            "max_voltage": 1775,
+        }
+    ],
 }
 
 rohde_schwarz_0_settings_sample = {
@@ -110,7 +132,6 @@ mixer_0_settings_sample = {
     "delta": 0,
     "offset_i": 0,
     "offset_q": 0,
-    "up_conversion": True,
 }
 
 mixer_1_settings_sample = {
@@ -121,7 +142,6 @@ mixer_1_settings_sample = {
     "delta": 0,
     "offset_i": 0,
     "offset_q": 0,
-    "up_conversion": True,
 }
 
 mixer_2_settings_sample = {
@@ -132,7 +152,6 @@ mixer_2_settings_sample = {
     "delta": 0,
     "offset_i": 0,
     "offset_q": 0,
-    "up_conversion": False,
 }
 
 schema_settings_sample = {

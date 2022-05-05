@@ -21,8 +21,10 @@ def fixture_rohde_schwarz(mock_load: MagicMock, mock_rs: MagicMock):
     rohde_schwarz_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="rohde_schwarz_0"
     )
+    settings = rohde_schwarz_settings.copy()
+    settings.pop("name")
     mock_load.assert_called_once()
-    rohde_schwarz = SGS100A(settings=rohde_schwarz_settings)
+    rohde_schwarz = SGS100A(settings=settings)
     rohde_schwarz.connect()
     return rohde_schwarz
 

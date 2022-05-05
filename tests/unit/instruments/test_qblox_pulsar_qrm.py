@@ -33,8 +33,10 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
     qrm_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"
     )
+    settings = qrm_settings.copy()
+    settings.pop("name")
     mock_load.assert_called_once()
-    qrm = QbloxPulsarQRM(settings=qrm_settings)
+    qrm = QbloxPulsarQRM(settings=settings)
     qrm.connect()
     return qrm
 
@@ -134,7 +136,7 @@ class TestQbloxPulsarQRM:
 
     def test_name_property(self, qrm: QbloxPulsarQRM):
         """Test name property."""
-        assert qrm.name == qrm.settings.name
+        assert qrm.name == "qblox_qrm"
 
     def test_category_property(self, qrm: QbloxPulsarQRM):
         """Test category property."""

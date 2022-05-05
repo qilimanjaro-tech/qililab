@@ -23,8 +23,10 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     qcm_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qcm_0"
     )
+    settings = qcm_settings.copy()
+    settings.pop("name")
     mock_load.assert_called_once()
-    qcm = QbloxPulsarQCM(settings=qcm_settings)
+    qcm = QbloxPulsarQCM(settings=settings)
     qcm.connect()
     return qcm
 
@@ -94,7 +96,7 @@ class TestQbloxPulsarQCM:
 
     def test_name_property(self, qcm: QbloxPulsarQCM):
         """Test name property."""
-        assert qcm.name == qcm.settings.name
+        assert qcm.name == "qblox_qcm"
 
     def test_category_property(self, qcm: QbloxPulsarQCM):
         """Test category property."""

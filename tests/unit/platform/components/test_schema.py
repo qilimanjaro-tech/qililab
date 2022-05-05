@@ -24,10 +24,6 @@ def fixture_schema() -> Schema:
 class Testschema:
     """Unit tests checking the Schema attributes and methods."""
 
-    def test_asdict_method(self, schema: Schema):
-        """Test schema schema asdict method."""
-        assert isinstance(schema.to_dict(), dict)
-
     def test_draw_method_print(self, schema: Schema):
         """Test schema schema draw method."""
         schema.draw(options=SchemaDrawOptions.PRINT)

@@ -38,9 +38,11 @@ class TestSettingsManager:
         """Test the load method of the SettingsManager class with the default qubit settings.
         Assert that errors are raised correctly."""
         mock_load.return_value = qubit_0_settings_sample
-        settings = SETTINGS_MANAGER.load(
+        qubit_settings = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qubit_0"
         )
+        settings = qubit_settings.copy()
+        settings.pop("name")
         Qubit.QubitCalibrationSettings(**settings)
 
     def test_load_unknown_file(self, mock_load: MagicMock):
