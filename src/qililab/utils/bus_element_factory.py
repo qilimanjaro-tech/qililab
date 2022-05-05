@@ -7,7 +7,7 @@ from qililab.typings import BusElement
 class BusElementFactory:
     """Hash table that loads a specific class given an object's name."""
 
-    bus_element_handlers: Dict[str, Type[BusElement]] = {}
+    handlers: Dict[str, Type[BusElement]] = {}
 
     # FIXME: Can't add 'Type[BusElement]' as argument type because
     # mypy gets confused.
@@ -18,10 +18,10 @@ class BusElementFactory:
         Args:
             output_type (type): Class type to register.
         """
-        cls.bus_element_handlers[handler_cls.name.value] = handler_cls
+        cls.handlers[handler_cls.name.value] = handler_cls
         return handler_cls
 
     @classmethod
     def get(cls, name: str):
         """Return class attribute."""
-        return cls.bus_element_handlers[name]
+        return cls.handlers[name]
