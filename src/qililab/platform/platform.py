@@ -1,6 +1,7 @@
 import json
 from dataclasses import asdict
 
+from qililab.constants import YAML
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import dict_factory
 from qililab.settings import Settings
@@ -100,7 +101,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {Category.PLATFORM.value: asdict(self.settings, dict_factory=dict_factory)}
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {Category.SCHEMA.value: self.schema.to_dict()}
         return platform_dict | schema_dict
 

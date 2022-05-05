@@ -1,13 +1,15 @@
 """Schema class"""
+from dataclasses import InitVar, dataclass
 from typing import List
 
 from qililab.constants import YAML
+from qililab.platform.components.bus_control import BusControl
+from qililab.platform.components.bus_readout import BusReadout
 from qililab.platform.components.buses import Buses
 from qililab.typings import Category, SchemaDrawOptions
-from qililab.utils import nested_dataclass
 
 
-@nested_dataclass
+@dataclass
 class Schema:
     """Class representing the schema of the platform.
 
@@ -15,7 +17,20 @@ class Schema:
         settings (SchemaSettings): Settings that define the schema of the platform.
     """
 
-    buses: Buses
+    elements: InitVar[List[dict]]
+
+    def __post_init__(self, elements: List[dict]):
+        """Cast each list element to its corresponding bus class and instantiate class Buses."""
+        buses: List[BusControl | BusReadout] = []
+        for bus in elements:
+            if bus[YAML.READOUT] is False:
+                buses.append(BusControl(**bus))
+            elif bus[YAML.READOUT] is True:
+                buses.append(BusReadout(**bus))
+            else:
+                raise ValueError("Bus 'readout' key should contain a boolean.")
+
+        self.buses = Buses(buses=buses)
 
     def get_element(self, category: Category, id_: int):
         """Get buses element. Return None if element is not found.
@@ -56,5 +71,5 @@ class Schema:
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
         return {
-            Category.BUSES.value: {YAML.ELEMENTS: [bus.to_dict() for bus in self.buses]},
+            YAML.ELEMENTS: [bus.to_dict() for bus in self.buses],
         }
