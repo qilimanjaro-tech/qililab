@@ -3,7 +3,7 @@ from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings import AcquireTriggerMode, IntegrationMode
+from qililab.typings import AcquireTriggerMode, BusElementName, IntegrationMode
 from qililab.utils import BusElementFactory, nested_dataclass
 
 
@@ -15,7 +15,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         settings (QBloxPulsarQRMSettings): Settings of the instrument.
     """
 
-    name = "qblox_qrm"
+    name = BusElementName.QBLOX_QRM
 
     @nested_dataclass
     class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):

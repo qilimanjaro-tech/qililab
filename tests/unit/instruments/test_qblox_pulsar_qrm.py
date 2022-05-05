@@ -7,6 +7,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
 from qililab.result import QbloxResult
 from qililab.settings import SETTINGS_MANAGER
+from qililab.typings import BusElementName
 
 from ..data import qblox_qrm_0_settings_sample
 
@@ -136,7 +137,7 @@ class TestQbloxPulsarQRM:
 
     def test_name_property(self, qrm: QbloxPulsarQRM):
         """Test name property."""
-        assert qrm.name == "qblox_qrm"
+        assert qrm.name == BusElementName.QBLOX_QRM
 
     def test_category_property(self, qrm: QbloxPulsarQRM):
         """Test category property."""

@@ -1,5 +1,6 @@
 """Mixer for up conversion. """
 from qililab.instruments.mixer.mixer import Mixer
+from qililab.typings import BusElementName
 from qililab.utils import BusElementFactory
 
 
@@ -7,4 +8,4 @@ from qililab.utils import BusElementFactory
 class MixerUp(Mixer):
     """MixerUp class. Mixer used for up conversion."""
 
-    name = "mixer_up"
+    name = BusElementName.MIXER_UP

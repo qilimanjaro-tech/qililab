@@ -6,6 +6,7 @@ from qpysequence.sequence import Sequence
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
 from qililab.settings import SETTINGS_MANAGER
+from qililab.typings import BusElementName
 
 from ..data import qblox_qcm_0_settings_sample
 
@@ -96,7 +97,7 @@ class TestQbloxPulsarQCM:
 
     def test_name_property(self, qcm: QbloxPulsarQCM):
         """Test name property."""
-        assert qcm.name == "qblox_qcm"
+        assert qcm.name == BusElementName.QBLOX_QCM
 
     def test_category_property(self, qcm: QbloxPulsarQCM):
         """Test category property."""

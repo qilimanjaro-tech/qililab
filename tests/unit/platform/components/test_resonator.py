@@ -1,7 +1,7 @@
 import pytest
 
 from qililab.platform import Resonator
-from qililab.typings import Category
+from qililab.typings import BusElementName
 
 from ...data import MockedSettingsHashTable
 
@@ -27,7 +27,7 @@ class Testresonator:
 
     def test_name_property(self, resonator: Resonator):
         """Test name property."""
-        assert resonator.name == Category.RESONATOR.value
+        assert resonator.name == BusElementName.RESONATOR
 
     def test_category_property(self, resonator: Resonator):
         """Test name property."""

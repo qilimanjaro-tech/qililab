@@ -17,8 +17,6 @@ class Instrument(ABC):
         settings (Settings): Class containing the settings of the instrument.
     """
 
-    name: str
-
     @nested_dataclass
     class InstrumentSettings(Settings):
         """Contains the settings of an instrument.

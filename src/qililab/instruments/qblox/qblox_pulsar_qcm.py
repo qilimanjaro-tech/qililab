@@ -1,6 +1,7 @@
 """Qblox pulsar QCM class"""
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_control import QubitControl
+from qililab.typings import BusElementName
 from qililab.utils import BusElementFactory, nested_dataclass
 
 
@@ -12,7 +13,7 @@ class QbloxPulsarQCM(QbloxPulsar, QubitControl):
         settings (QBloxPulsarQCMSettings): Settings of the instrument.
     """
 
-    name = "qblox_qcm"
+    name = BusElementName.QBLOX_QCM
 
     @nested_dataclass
     class QbloxPulsarQCMSettings(QbloxPulsar.QbloxPulsarSettings, QubitControl.QubitControlSettings):

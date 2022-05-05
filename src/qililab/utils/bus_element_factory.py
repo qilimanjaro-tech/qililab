@@ -16,7 +16,7 @@ class BusElementFactory:
         Args:
             output_type (type): Class type to register.
         """
-        cls.bus_element_handlers[handler_cls.name] = handler_cls
+        cls.bus_element_handlers[handler_cls.name.value] = handler_cls
         return handler_cls
 
     @classmethod

@@ -2,7 +2,7 @@ from typing import List
 
 from qililab.platform.components.qubit import Qubit
 from qililab.settings import Settings
-from qililab.typings import BusElement
+from qililab.typings import BusElement, BusElementName
 from qililab.utils import BusElementFactory, nested_dataclass
 
 
@@ -10,7 +10,7 @@ from qililab.utils import BusElementFactory, nested_dataclass
 class Resonator(BusElement):
     """Resonator class"""
 
-    name = "resonator"
+    name = BusElementName.RESONATOR
 
     @nested_dataclass
     class ResonatorSettings(Settings):

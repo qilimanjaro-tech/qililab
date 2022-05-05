@@ -1,7 +1,7 @@
 import pytest
 
 from qililab.platform import Qubit
-from qililab.typings import Category
+from qililab.typings import BusElementName
 
 from ...data import MockedSettingsHashTable
 
@@ -27,7 +27,7 @@ class Testqubit:
 
     def test_name_property(self, qubit: Qubit):
         """Test name property."""
-        assert qubit.name == Category.QUBIT.value
+        assert qubit.name == BusElementName.QUBIT
 
     def test_category_property(self, qubit: Qubit):
         """Test name property."""

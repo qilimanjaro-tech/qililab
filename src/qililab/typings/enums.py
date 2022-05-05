@@ -9,9 +9,11 @@ class Category(Enum):
         enum (str): Available types of settings cattegories:
         * platform
         * qubit
-        * qblox_qcm
-        * qblox_qrm
-        * rohde_schwarz
+        * qubit_instrument
+        * signal_generator
+        * buses
+        * bus
+        * mixer
         * schema
         * resonator
     """
@@ -86,3 +88,25 @@ class PulseShapeOptions(Enum):
     """
 
     GAUSSIAN = "gaussian"
+
+
+class BusElementName(Enum):
+    """Bus element names.
+
+    Args:
+        enum (str): Available bus element names:
+        * mixer_up
+        * mixer_down
+        * qubit
+        * qblox_qcm
+        * qblox_qrm
+        * rohde_schwarz
+    """
+
+    MIXER_UP = "mixer_up"
+    MIXER_DOWN = "mixer_down"
+    QUBIT = "qubit"
+    RESONATOR = "resonator"
+    QBLOX_QCM = "qblox_qcm"
+    QBLOX_QRM = "qblox_qrm"
+    ROHDE_SCHWARZ = "rohde_schwarz"

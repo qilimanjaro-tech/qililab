@@ -1,6 +1,6 @@
 """Qubit class"""
 from qililab.settings import Settings
-from qililab.typings import BusElement
+from qililab.typings import BusElement, BusElementName
 from qililab.utils import BusElementFactory, nested_dataclass
 
 
@@ -8,7 +8,7 @@ from qililab.utils import BusElementFactory, nested_dataclass
 class Qubit(BusElement):
     """Qubit class"""
 
-    name = "qubit"
+    name = BusElementName.QUBIT
 
     @nested_dataclass
     class QubitCalibrationSettings(Settings):
