@@ -9,8 +9,10 @@ class BusElementFactory:
 
     bus_element_handlers: Dict[str, Type[BusElement]] = {}
 
+    # FIXME: Can't add 'Type[BusElement]' as argument type because
+    # mypy gets confused.
     @classmethod
-    def register(cls, handler_cls: Type[BusElement]):
+    def register(cls, handler_cls):
         """Register handler in the factory.
 
         Args:
