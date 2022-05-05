@@ -5,9 +5,6 @@ platform_settings_sample = {
     "id_": 0,
     "name": "platform_0",
     "category": "platform",
-    "number_qubits": 1,
-    "drag_coefficient": 0,
-    "num_sigmas": 4,
 }
 
 qubit_0_settings_sample = {
@@ -180,9 +177,6 @@ all_platform_settings_sample = {
         "id_": 0,
         "name": "platform_0",
         "category": "platform",
-        "number_qubits": 1,
-        "drag_coefficient": 0,
-        "num_sigmas": 4,
     },
     "schema": schema_settings_sample,
 }

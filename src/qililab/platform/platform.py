@@ -28,9 +28,6 @@ class Platform:
         """
 
         name: str
-        number_qubits: int
-        drag_coefficient: float
-        num_sigmas: float
 
     settings: PlatformSettings
     schema: Schema
