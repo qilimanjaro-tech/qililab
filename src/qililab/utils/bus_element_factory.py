@@ -9,8 +9,7 @@ class BusElementFactory:
 
     handlers: Dict[str, Type[BusElement]] = {}
 
-    # FIXME: Can't add 'Type[BusElement]' as argument type because
-    # mypy gets confused.
+    # FIXME: Can't add 'Type[BusElement]' as argument type because then Python casts all classes to BusElement
     @classmethod
     def register(cls, handler_cls):
         """Register handler in the factory.
