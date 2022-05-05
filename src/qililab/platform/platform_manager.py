@@ -20,8 +20,8 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
-        settings = self._load_platform_settings(**kwargs)
-        return Platform(**settings)
+        platform_schema = self._load_platform_settings(**kwargs)
+        return Platform(platform_schema=platform_schema)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.

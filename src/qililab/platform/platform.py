@@ -1,15 +1,13 @@
 import json
 from dataclasses import asdict
 
-from qililab.constants import YAML
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import dict_factory
+from qililab.platform.utils import PlatformSchema, dict_factory
 from qililab.settings import Settings
 from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
 
-@nested_dataclass
 class Platform:
     """Platform object that describes setup used to control quantum devices.
 
@@ -29,12 +27,19 @@ class Platform:
             num_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / num_sigmas.
         """
 
+        name: str
         number_qubits: int
         drag_coefficient: float
         num_sigmas: float
 
     settings: PlatformSettings
     schema: Schema
+    _platform_schema: PlatformSchema
+
+    def __init__(self, platform_schema: dict):
+        self._platform_schema = PlatformSchema(**platform_schema)
+        self.settings = self.PlatformSettings(**self._platform_schema.settings)
+        self.schema = Schema(**asdict(self._platform_schema.schema, dict_factory=dict_factory))
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -66,7 +71,8 @@ class Platform:
         """Platform 'name' property.
 
         Returns:
-            str: settings.name."""
+            str: settings.name.
+        """
         return self.settings.name
 
     @property
@@ -101,9 +107,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {Category.SCHEMA.value: self.schema.to_dict()}
-        return platform_dict | schema_dict
+        return asdict(self._platform_schema, dict_factory=dict_factory)
 
     def __str__(self) -> str:
         """String representation of the platform
