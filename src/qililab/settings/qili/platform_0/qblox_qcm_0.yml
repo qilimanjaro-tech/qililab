@@ -1,5 +1,4 @@
 id_: 0
-name: qblox_qcm  # unique name
 category: qubit_instrument  # general name
 ip: 192.168.0.3
 firmware: 0.7.0

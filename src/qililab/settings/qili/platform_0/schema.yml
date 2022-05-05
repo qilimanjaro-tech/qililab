@@ -26,7 +26,6 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: true
     qubit:
       id_: 0
       name: qubit
@@ -74,14 +73,12 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: true
     resonator:
       id_: 0
       name: resonator
       category: resonator
       qubits:  # list of qubit settings
         - id_: 0
-          name: qubit
           category: qubit
           pi_pulse_amplitude: 1
           pi_pulse_duration: 100
@@ -97,7 +94,6 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: false
   - readout: false
     qubit_instrument:
       id_: 0
@@ -125,7 +121,6 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: true
     qubit:
       id_: 1
       name: qubit
@@ -173,14 +168,12 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: true
     resonator:
       id_: 0
       name: resonator
       category: resonator
       qubits:  # list of qubit settings
         - id_: 1
-          name: qubit
           category: qubit
           pi_pulse_amplitude: 1
           pi_pulse_duration: 100
@@ -196,4 +189,3 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-      up_conversion: false

@@ -1,5 +1,4 @@
 id_: 0
-name: qubit  # unique name
 category: qubit  # general name
 pi_pulse_amplitude: 1
 pi_pulse_duration: 100

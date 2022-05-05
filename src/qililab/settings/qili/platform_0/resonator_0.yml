@@ -1,9 +1,7 @@
 id_: 0
-name: resonator
 category: resonator
 qubits:  # list of qubit settings
   - id_: 0
-    name: qubit
     category: qubit
     pi_pulse_amplitude: 1
     pi_pulse_duration: 100
