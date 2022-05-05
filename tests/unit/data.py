@@ -159,7 +159,7 @@ schema_settings_sample = {
 
 
 all_platform_settings_sample = {
-    "platform": {
+    "settings": {
         "id_": 0,
         "name": "platform_0",
         "category": "platform",

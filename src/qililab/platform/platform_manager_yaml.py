@@ -1,5 +1,6 @@
 import yaml
 
+from qililab.constants import YAML
 from qililab.platform.platform_manager import PlatformManager
 from qililab.typings import Category
 
@@ -9,7 +10,7 @@ class PlatformManagerYAML(PlatformManager):
 
     FILEPATH = "filepath"
 
-    def _load_settings(self, *args, **kwargs: str) -> dict:
+    def _load_platform_settings(self, *args, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -24,6 +25,6 @@ class PlatformManagerYAML(PlatformManager):
         with open(file=filepath, mode="r", encoding="utf-8") as file:
             data = yaml.safe_load(file)
         return {
-            Category.PLATFORM.value: data[Category.PLATFORM.value],
+            YAML.SETTINGS: data[YAML.SETTINGS],
             Category.SCHEMA.value: data[Category.SCHEMA.value],
         }

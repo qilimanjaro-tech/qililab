@@ -8,6 +8,7 @@ from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
 
+@nested_dataclass
 class Platform:
     """Platform object that describes setup used to control quantum devices.
 
@@ -31,9 +32,8 @@ class Platform:
         drag_coefficient: float
         num_sigmas: float
 
-    def __init__(self, settings: dict, schema: Schema):
-        self.settings = self.PlatformSettings(**settings)
-        self.schema = schema
+    settings: PlatformSettings
+    schema: Schema
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.

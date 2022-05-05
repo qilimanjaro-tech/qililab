@@ -36,3 +36,12 @@ class BusReadout(Bus):
         if category == Category.QUBIT:
             return self.resonator.get_qubit(id_=id_)  # pylint: disable=no-member
         return super().get_element(category=category, id_=id_)
+
+    @property
+    def qubit_ids(self):
+        """Bus 'qubit_ids' property.
+
+        Returns:
+            List[int]: IDs of the qubit connected to the bus.
+        """
+        return self.resonator.qubit_ids

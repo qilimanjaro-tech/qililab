@@ -18,3 +18,12 @@ class BusControl(Bus):
 
     qubit: Qubit
     qubit_instrument: QubitControl
+
+    @property
+    def qubit_ids(self):
+        """Bus 'qubit_ids' property.
+
+        Returns:
+            List[int]: IDs of the qubit connected to the bus.
+        """
+        return [self.qubit.id_]

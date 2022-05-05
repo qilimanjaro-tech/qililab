@@ -1,13 +1,13 @@
 """Bus class."""
 from dataclasses import asdict, dataclass
 from types import NoneType
-from typing import Generator, Optional, Tuple
+from typing import Generator, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
-from qililab.platform.utils import dict_factory
+from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import Category
 
@@ -15,8 +15,8 @@ from qililab.typings import Category
 @dataclass
 class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
-    through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object, which
-    is connected to one or multiple qubits.
+    through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
+    which is connected to one or multiple qubits.
 
     Args:
         readout (bool): readout flag.
@@ -32,9 +32,13 @@ class Bus:
     signal_generator: SignalGenerator
     mixer_up: Mixer
     qubit_instrument: QubitInstrument
-    mixer_down: Optional[Mixer]
-    resonator: Optional[Resonator]
-    qubit: Optional[Qubit]
+
+    def __post_init__(self):
+        """Cast each bus element to its corresponding class."""
+        for name, value in self.__dict__.items():
+            if isinstance(value, dict):
+                elem_obj = BusElementHashTable.get(value[YAML.NAME])(value)
+                setattr(self, name, elem_obj)
 
     def connect(self):
         """Connect to the instruments."""
@@ -61,13 +65,14 @@ class Bus:
         self.signal_generator.close()
 
     @property
-    def qubit_ids(self):
-        """Bus 'qubit_id' property.
+    def qubit_ids(self) -> list:
+        """Bus 'qubit_ids' property.
 
         Returns:
-            List[int]: ID of the qubit connected to the bus.
+            List[int]: IDs of the qubit connected to the bus.
         """
-        return self.resonator.qubit_ids if self.readout else [self.qubit.id_]
+        # FIXME: Cannot use ABC with dataclass
+        raise NotImplementedError
 
     def to_dict(self):
         """Return a dict representation of the BusSettings class"""

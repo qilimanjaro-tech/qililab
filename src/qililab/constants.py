@@ -16,3 +16,4 @@ class YAML:
     READOUT = "readout"
     ELEMENTS = "elements"
     READOUT = "readout"
+    SETTINGS = "settings"

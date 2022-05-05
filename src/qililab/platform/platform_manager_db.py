@@ -2,6 +2,7 @@ from qililab.constants import (
     DEFAULT_PLATFORM_FILENAME,
     DEFAULT_SCHEMA_FILENAME,
     DEFAULT_SETTINGS_FOLDERNAME,
+    YAML,
 )
 from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER
@@ -13,7 +14,7 @@ class PlatformManagerDB(PlatformManager):
 
     PLATFORM_NAME = "platform_name"
 
-    def _load_settings(self, *args, **kwargs: str) -> dict:
+    def _load_platform_settings(self, *args, **kwargs: str) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -26,7 +27,7 @@ class PlatformManagerDB(PlatformManager):
             raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' keyword argument.")
         platform_name = kwargs[self.PLATFORM_NAME]
         return {
-            Category.PLATFORM.value: SETTINGS_MANAGER.load(
+            YAML.SETTINGS: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME
             ),
             Category.SCHEMA.value: SETTINGS_MANAGER.load(
