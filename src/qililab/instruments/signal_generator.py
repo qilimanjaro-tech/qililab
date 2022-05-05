@@ -1,9 +1,10 @@
 """SignalGenerator class."""
 from qililab.instruments.instrument import Instrument
-from qililab.utils.nested_dataclass import nested_dataclass
+from qililab.typings import BusElement
+from qililab.utils import nested_dataclass
 
 
-class SignalGenerator(Instrument):
+class SignalGenerator(Instrument, BusElement):
     """Abstract base class defining all instruments used to generate signals."""
 
     @nested_dataclass()

@@ -1,3 +1,4 @@
+from .bus_element import BusElement
 from .enums import (
     AcquireTriggerMode,
     Category,

@@ -1,15 +1,15 @@
 """Bus class."""
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from types import NoneType
 from typing import Generator, Tuple
 
 from qililab.constants import YAML
-from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
+from qililab.instruments import MixerUp, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
-from qililab.platform.utils import BusElementHashTable, dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import Category
+from qililab.utils import BusElementFactory
 
 
 @dataclass
@@ -30,14 +30,14 @@ class Bus:
 
     readout: bool
     signal_generator: SignalGenerator
-    mixer_up: Mixer
+    mixer_up: MixerUp
     qubit_instrument: QubitInstrument
 
     def __post_init__(self):
         """Cast each bus element to its corresponding class."""
-        for name, value in self.__dict__.items():
+        for name, value in self:
             if isinstance(value, dict):
-                elem_obj = BusElementHashTable.get(value[YAML.NAME])(value)
+                elem_obj = BusElementFactory.get(value.pop(YAML.NAME))(value)
                 setattr(self, name, elem_obj)
 
     def connect(self):
@@ -74,12 +74,6 @@ class Bus:
         # FIXME: Cannot use ABC with dataclass
         raise NotImplementedError
 
-    def to_dict(self):
-        """Return a dict representation of the BusSettings class"""
-        return {YAML.READOUT: self.readout} | {
-            name: asdict(element.settings, dict_factory=dict_factory) for name, element in self
-        }
-
     def get_element(self, category: Category, id_: int):
         """Get bus element. Return None if element is not found.
 
@@ -94,7 +88,7 @@ class Bus:
 
     def __iter__(
         self,
-    ) -> Generator[Tuple[str, SignalGenerator | Mixer | Resonator | QubitInstrument | Qubit], None, None]:
+    ) -> Generator[Tuple[str, SignalGenerator | MixerUp | Resonator | QubitInstrument | Qubit], None, None]:
         """Iterate over Bus elements.
 
         Yields:

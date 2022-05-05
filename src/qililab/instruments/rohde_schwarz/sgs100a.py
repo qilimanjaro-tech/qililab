@@ -3,9 +3,10 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.typings import RohdeSchwarzSGS100A
-from qililab.utils import nested_dataclass
+from qililab.utils import BusElementFactory, nested_dataclass
 
 
+@BusElementFactory.register
 class SGS100A(SignalGenerator):
     """Rohde & Schwarz SGS100A class
 
@@ -13,6 +14,8 @@ class SGS100A(SignalGenerator):
         device (RohdeSchwarz_SGS100A): Instance of the qcodes SGS100A class.
         settings (SGS100ASettings): Settings of the instrument.
     """
+
+    name = "rohde_schwarz"
 
     @nested_dataclass
     class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):

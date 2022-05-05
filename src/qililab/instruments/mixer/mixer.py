@@ -1,9 +1,10 @@
 """QubitReadout class."""
 from qililab.settings import Settings
+from qililab.typings import BusElement, Category
 from qililab.utils import nested_dataclass
 
 
-class Mixer:
+class Mixer(BusElement):
     """Mixer class. The mixer can be described by the following function:
 
     I + (1 + epsilon) * exp(j * pi/2 + delta) * Q, where I and Q are the two input signals.
@@ -15,6 +16,8 @@ class Mixer:
         settings (MixerSettings): Settings of the mixer.
     """
 
+    category = Category.MIXER
+
     @nested_dataclass
     class MixerSettings(Settings):
         """Contains the settings of a mixer.
@@ -24,14 +27,12 @@ class Mixer:
             delta (float): Dephasing added by the mixer.
             offset_i (float): Offset added to the I channel by the mixer.
             offset_q (float): Offset added to the Q channel by the mixer.
-            up_conversion (bool): If True, mixer is used for up conversion. If False, mixer is used for down conversion.
         """
 
         epsilon: float
         delta: float
         offset_i: float
         offset_q: float
-        up_conversion: bool
 
     settings: MixerSettings
 
@@ -46,24 +47,6 @@ class Mixer:
             int: settings.id_.
         """
         return self.settings.id_
-
-    @property
-    def name(self):
-        """Mixer 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
-
-    @property
-    def category(self):
-        """Mixer 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
 
     @property
     def epsilon(self):
@@ -100,12 +83,3 @@ class Mixer:
             float: settings.offset_q.
         """
         return self.settings.offset_q
-
-    @property
-    def up_conversion(self):
-        """Mixer 'up_conversion' property.
-
-        Returns:
-            float: settings.up_conversion.
-        """
-        return self.settings.up_conversion

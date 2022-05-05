@@ -17,6 +17,8 @@ class Instrument(ABC):
         settings (Settings): Class containing the settings of the instrument.
     """
 
+    name: str
+
     @nested_dataclass
     class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
@@ -94,15 +96,6 @@ class Instrument(ABC):
             int: settings.id_.
         """
         return self.settings.id_
-
-    @property
-    def name(self):
-        """Instrument 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
 
     @property
     def category(self):

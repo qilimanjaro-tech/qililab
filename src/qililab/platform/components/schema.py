@@ -67,9 +67,3 @@ class Schema:
                 print()
         elif options == SchemaDrawOptions.FILE:
             raise NotImplementedError("This function is not implemented yet.")
-
-    def to_dict(self):
-        """Return a dict representation of the SchemaSettings class."""
-        return {
-            YAML.ELEMENTS: [bus.to_dict() for bus in self.buses],
-        }

@@ -5,10 +5,11 @@ from typing import ClassVar
 from qililab.instruments.instrument import Instrument
 from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.settings import ExperimentSettings
+from qililab.typings import BusElement
 from qililab.utils import nested_dataclass
 
 
-class QubitInstrument(Instrument):
+class QubitInstrument(Instrument, BusElement):
     """Abstract base class defining all instruments used to control or readout the qubits."""
 
     @nested_dataclass
@@ -38,7 +39,9 @@ class QubitInstrument(Instrument):
         """
 
     @classmethod
-    def general_setup(cls, settings: ExperimentSettings):
+    def general_setup(
+        cls, settings: ExperimentSettings
+    ):  # TODO: Use PlatformSetupBuilder to build Platform with this ExperimentSettings
         """Setup generic qubit instrument settings.
 
         Args:

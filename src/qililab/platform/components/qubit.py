@@ -1,10 +1,14 @@
 """Qubit class"""
 from qililab.settings import Settings
-from qililab.utils import nested_dataclass
+from qililab.typings import BusElement
+from qililab.utils import BusElementFactory, nested_dataclass
 
 
-class Qubit:
+@BusElementFactory.register
+class Qubit(BusElement):
     """Qubit class"""
+
+    name = "qubit"
 
     @nested_dataclass
     class QubitCalibrationSettings(Settings):
@@ -37,15 +41,6 @@ class Qubit:
             int: settings.id_.
         """
         return self.settings.id_
-
-    @property
-    def name(self):
-        """Qubit 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
 
     @property
     def category(self):

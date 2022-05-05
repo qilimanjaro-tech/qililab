@@ -2,11 +2,15 @@ from typing import List
 
 from qililab.platform.components.qubit import Qubit
 from qililab.settings import Settings
-from qililab.utils import nested_dataclass
+from qililab.typings import BusElement
+from qililab.utils import BusElementFactory, nested_dataclass
 
 
-class Resonator:
+@BusElementFactory.register
+class Resonator(BusElement):
     """Resonator class"""
+
+    name = "resonator"
 
     @nested_dataclass
     class ResonatorSettings(Settings):
@@ -35,15 +39,6 @@ class Resonator:
             int: settings.id_.
         """
         return self.settings.id_
-
-    @property
-    def name(self):
-        """Resonator 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
 
     @property
     def category(self):

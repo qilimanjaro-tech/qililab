@@ -1,7 +1,7 @@
 """BusReadout class."""
 from dataclasses import dataclass
 
-from qililab.instruments import Mixer, QubitReadout
+from qililab.instruments import MixerDown, QubitReadout
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.resonator import Resonator
 from qililab.typings import Category
@@ -19,7 +19,7 @@ class BusReadout(Bus):
         resonator (Resonator): Class containing the resonator object.
     """
 
-    mixer_down: Mixer
+    mixer_down: MixerDown
     resonator: Resonator
     qubit_instrument: QubitReadout
 
@@ -34,7 +34,7 @@ class BusReadout(Bus):
             (QubitReadout | SignalGenerator | Mixer | Resonator | Qubit | None): Element class.
         """
         if category == Category.QUBIT:
-            return self.resonator.get_qubit(id_=id_)  # pylint: disable=no-member
+            return self.resonator.get_qubit(id_=id_)
         return super().get_element(category=category, id_=id_)
 
     @property
