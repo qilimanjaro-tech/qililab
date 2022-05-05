@@ -1,7 +1,9 @@
 """Class used as hashtable to load the class corresponding to a given category"""
-from typing import Dict, Type
+from typing import Dict, Type, TypeVar
 
 from qililab.typings import BusElement
+
+Element = TypeVar("Element", bound=BusElement)
 
 
 class BusElementFactory:
@@ -9,9 +11,8 @@ class BusElementFactory:
 
     handlers: Dict[str, Type[BusElement]] = {}
 
-    # FIXME: Can't add 'Type[BusElement]' as argument type because then Python casts all classes to BusElement
     @classmethod
-    def register(cls, handler_cls):
+    def register(cls, handler_cls: Type[Element]):
         """Register handler in the factory.
 
         Args:
