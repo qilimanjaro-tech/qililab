@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.pulse.pulse import Pulse
+from qililab.utils import nested_dataclass
 
 
-@dataclass
-class ExperimentDict:
-    """ExecutionDict class. Casts the execution dictionary into a class.
+@nested_dataclass
+class ExperimentSchema:
+    """ExecutionSchema class. Casts the execution dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
     - execution: settings dictionary.

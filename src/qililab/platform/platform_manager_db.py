@@ -14,7 +14,7 @@ class PlatformManagerDB(PlatformManager):
 
     PLATFORM_NAME = "platform_name"
 
-    def _load_platform_settings(self, *args, **kwargs: str) -> dict:
+    def _load_platform_settings(self, *args, **kwargs: str | dict) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -25,7 +25,12 @@ class PlatformManagerDB(PlatformManager):
         """
         if self.PLATFORM_NAME not in kwargs:
             raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' keyword argument.")
+
         platform_name = kwargs[self.PLATFORM_NAME]
+
+        if not isinstance(platform_name, str):
+            raise ValueError(f"Please provide a string in the '{self.PLATFORM_NAME}' keyword argument.")
+
         return {
             YAML.SETTINGS: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME

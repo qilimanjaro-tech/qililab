@@ -10,6 +10,10 @@ elements:
       sequencer: 0
       sync_enabled: true
       gain: 1
+      hardware_average: 4096
+      software_average: 10
+      repetition_duration: 200000
+      delay_between_pulses: 0
     signal_generator:
       id_: 0
       name: rohde_schwarz  # unique name
@@ -57,6 +61,10 @@ elements:
       acquisition_timeout: 1
       acquisition_name: "single"
       delay_before_readout: 50
+      hardware_average: 4096
+      software_average: 10
+      repetition_duration: 200000
+      delay_between_pulses: 0
     signal_generator:
       id_: 1
       name: rohde_schwarz  # unique name
@@ -105,6 +113,10 @@ elements:
       sequencer: 0
       sync_enabled: true
       gain: 1
+      hardware_average: 2345
+      software_average: 14
+      repetition_duration: 2234
+      delay_between_pulses: 123
     signal_generator:
       id_: 0
       name: rohde_schwarz  # unique name
@@ -152,6 +164,10 @@ elements:
       acquisition_timeout: 1
       acquisition_name: "single"
       delay_before_readout: 50
+      hardware_average: 1000
+      software_average: 100
+      repetition_duration: 2000
+      delay_between_pulses: 15
     signal_generator:
       id_: 1
       name: rohde_schwarz  # unique name

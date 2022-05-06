@@ -125,13 +125,3 @@ class TestPlatform:
         """Test PlatformManager dump method."""
         PLATFORM_MANAGER_DB.dump(platform=platform)
         mock_dump.assert_called()
-
-    def test_platform_manager_yaml_build_method_without_kwarg(self, platform: Platform):
-        """Test PlatformManagerYAML build method with wrong argument."""
-        with pytest.raises(ValueError):
-            PLATFORM_MANAGER_YAML.build(platform.name)
-
-    def test_platform_manager_db_build_method_without_kwarg(self, platform: Platform):
-        """Test PlatformManagerYAML build method with wrong argument."""
-        with pytest.raises(ValueError):
-            PLATFORM_MANAGER_DB.build(platform.name)

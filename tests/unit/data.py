@@ -41,6 +41,10 @@ qblox_qcm_0_settings_sample = {
     "sequencer": 0,
     "sync_enabled": True,
     "gain": 1,
+    "hardware_average": 2341,
+    "software_average": 12,
+    "repetition_duration": 1234,
+    "delay_between_pulses": 1234,
 }
 
 qblox_qrm_0_settings_sample = {
@@ -63,6 +67,10 @@ qblox_qrm_0_settings_sample = {
     "acquisition_timeout": 1,
     "acquisition_name": "single",
     "delay_before_readout": 50,
+    "hardware_average": 1235,
+    "software_average": 154,
+    "repetition_duration": 23452,
+    "delay_between_pulses": 123,
 }
 
 resonator_0_settings_sample = {

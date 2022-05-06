@@ -49,7 +49,7 @@ class TestExecution:
     def test_setup_method(self, experiment: Experiment):
         """Test setup method."""
         connect_instruments(execution=experiment.execution)  # pylint: disable=no-value-for-parameter
-        experiment.execution.setup(settings=experiment.settings)
+        experiment.execution.setup()
         experiment.execution.close()
         platform = experiment.platform
         # assert that the class attributes of different instruments are equal to the platform settings

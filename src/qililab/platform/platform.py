@@ -33,10 +33,10 @@ class Platform:
     schema: Schema
     _platform_schema: PlatformSchema
 
-    def __init__(self, platform_schema: dict):
-        self._platform_schema = PlatformSchema(**platform_schema)
-        self.settings = self.PlatformSettings(**self._platform_schema.settings)
-        self.schema = Schema(**asdict(self._platform_schema.schema, dict_factory=dict_factory))
+    def __init__(self, platform_schema: PlatformSchema):
+        self.settings = self.PlatformSettings(**platform_schema.settings)
+        self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
+        self._platform_schema = platform_schema
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.

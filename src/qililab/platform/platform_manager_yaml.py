@@ -10,7 +10,7 @@ class PlatformManagerYAML(PlatformManager):
 
     FILEPATH = "filepath"
 
-    def _load_platform_settings(self, *args, **kwargs: str) -> dict:
+    def _load_platform_settings(self, *args, **kwargs: str | dict) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -21,7 +21,12 @@ class PlatformManagerYAML(PlatformManager):
         """
         if self.FILEPATH not in kwargs:
             raise ValueError(f"Please provide a '{self.FILEPATH}' keyword argument.")
+
         filepath = kwargs[self.FILEPATH]
+
+        if not isinstance(filepath, str):
+            raise ValueError(f"Please provide a string in the '{self.FILEPATH}' keyword argument.")
+
         with open(file=filepath, mode="r", encoding="utf-8") as file:
             data = yaml.safe_load(file)
         return {

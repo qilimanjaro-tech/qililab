@@ -1,13 +1,31 @@
 """Experiment class."""
+from dataclasses import asdict, dataclass
+
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.experiment.utils import ExperimentDict
+from qililab.experiment.utils import ExperimentSchema
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
-from qililab.settings import SETTINGS_MANAGER, ExperimentSettings
+from qililab.settings import SETTINGS_MANAGER
 
 
 class Experiment:
     """Execution class"""
+
+    @dataclass
+    class ExperimentSettings:
+        """Contains the settings that are generic for all QubitInstrument objects.
+
+        Args:
+            hardware_average (int): Hardware average. Number of shots used when executing a sequence.
+            software_average (int): Software average.
+            repetition_duration (int): Duration (ns) of the whole program.
+            delay_between_pulses (int): Delay (ns) between two consecutive pulses.
+        """
+
+        hardware_average: int
+        software_average: int
+        repetition_duration: int
+        delay_between_pulses: int
 
     platform: Platform
     execution: Execution
@@ -15,13 +33,15 @@ class Experiment:
 
     def __init__(self, experiment_name: str, platform_name: str):
         experiment_dict = self._load_settings(experiment_name=experiment_name, platform_name=platform_name)
-        self.settings = ExperimentSettings(**experiment_dict.settings)
-        self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
+        self.settings = self.ExperimentSettings(**experiment_dict.settings)
+        self.platform = PLATFORM_MANAGER_DB.build(
+            platform_name=platform_name, experiment_settings=asdict(self.settings)
+        )
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulses=experiment_dict.pulses)
 
     def execute(self):
         """Run execution."""
-        return self.execution.execute(settings=self.settings)
+        return self.execution.execute()
 
     def draw(self, resolution: float = 1.0):
         """Return figure with the waveforms sent to each bus.
@@ -83,4 +103,4 @@ class Experiment:
         settings = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=experiment_name
         )
-        return ExperimentDict(**settings)
+        return ExperimentSchema(**settings)

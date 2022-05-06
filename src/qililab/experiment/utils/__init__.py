@@ -1,1 +1,1 @@
-from .experiment_dict import ExperimentDict
+from .experiment_schema import ExperimentSchema

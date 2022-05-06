@@ -1,8 +1,6 @@
 """Execution class."""
 from qililab.execution.buses_execution import BusesExecution
-from qililab.instruments import QubitInstrument
 from qililab.platform import Platform
-from qililab.settings import ExperimentSettings
 
 
 class Execution:
@@ -12,10 +10,10 @@ class Execution:
         self.platform = platform
         self.buses_execution = buses_execution
 
-    def execute(self, settings: ExperimentSettings):
+    def execute(self):
         """Run execution."""
         self.connect()
-        self.setup(settings=settings)
+        self.setup()
         self.start()
         results = self.run()
         self.close()
@@ -25,9 +23,8 @@ class Execution:
         """Connect to the instruments."""
         self.buses_execution.connect()
 
-    def setup(self, settings: ExperimentSettings):
+    def setup(self):
         """Setup instruments with experiment settings."""
-        QubitInstrument.general_setup(settings=settings)
         self.buses_execution.setup()
 
     def start(self):
