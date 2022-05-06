@@ -23,8 +23,9 @@ class QubitInstrument(Instrument, BusElement):
 
         hardware_average: int = 4096
         software_average: int = 10
-        repetition_duration: int = 200000
-        delay_between_pulses: int = 0
+        repetition_duration: int = 200000  # ns
+        delay_between_pulses: int = 0  # ns
+        max_frequency: float = 100000000.0  # Hz
 
     settings: QubitInstrumentSettings
 

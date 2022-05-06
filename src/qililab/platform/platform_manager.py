@@ -25,14 +25,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         """
         logger.info("Building platform")
         platform_schema = PlatformSchema(**self._load_platform_settings(**kwargs))
-
-        if self.EXPERIMENT_SETTINGS in kwargs:
-            experiment_settings = kwargs[self.EXPERIMENT_SETTINGS]
-            if not isinstance(experiment_settings, dict):
-                raise ValueError(f"Please provide a dictionary for the '{self.EXPERIMENT_SETTINGS}' keyword argument.")
-            for bus in platform_schema.schema.elements:
-                bus.qubit_instrument |= experiment_settings
-
+        self._overwrite_experiment_settings(platform_schema=platform_schema, **kwargs)
         return Platform(platform_schema=platform_schema)
 
     def dump(self, platform: Platform):
@@ -52,3 +45,20 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Returns:
             dict: Dictionary with platform and schema settings.
         """
+
+    def _overwrite_experiment_settings(self, platform_schema: PlatformSchema, **kwargs: str | dict):
+        """If experiment settings are given, overwrite them in every qubit instrument of the platform. If they are not
+        given, either the individual settings defined in the schema or the default settings are used.
+
+        Args:
+            platform_schema (PlatformSchema): Class containing the settings of the platform.
+
+        Raises:
+            ValueError: If experiment settings is not a dictionary.
+        """
+        if self.EXPERIMENT_SETTINGS in kwargs:
+            experiment_settings = kwargs[self.EXPERIMENT_SETTINGS]
+            if not isinstance(experiment_settings, dict):
+                raise ValueError(f"Please provide a dictionary for the '{self.EXPERIMENT_SETTINGS}' keyword argument.")
+            for bus in platform_schema.schema.elements:
+                bus.qubit_instrument |= experiment_settings
