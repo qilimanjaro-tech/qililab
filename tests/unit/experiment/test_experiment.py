@@ -5,7 +5,7 @@ import pytest
 
 from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
 from qililab.execution import Execution
-from qililab.experiment import Experiment
+from qililab.experiment import HardwareExperiment
 from qililab.platform import Platform
 from qililab.result import QbloxResult
 
@@ -16,7 +16,7 @@ from ..utils.side_effect import yaml_safe_load_side_effect
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock):
     """Return Experiment object."""
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    experiment = HardwareExperiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
     mock_load.assert_called()
     return experiment
 
@@ -24,17 +24,17 @@ def fixture_experiment(mock_load: MagicMock):
 class TestExperiment:
     """Unit tests checking the Experiment attributes and methods"""
 
-    def test_platform_attribute_instance(self, experiment: Experiment):
+    def test_platform_attribute_instance(self, experiment: HardwareExperiment):
         """Test platform attribute instance."""
         assert isinstance(experiment.platform, Platform)
 
-    def test_execution_attribute_instance(self, experiment: Experiment):
+    def test_execution_attribute_instance(self, experiment: HardwareExperiment):
         """Test execution attribute instance."""
         assert isinstance(experiment.execution, Execution)
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    def test_execute_method(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: Experiment):
+    def test_execute_method(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: HardwareExperiment):
         """Test run method."""
         # add dynamically created attributes
         mock_rs_instance = mock_rs.return_value
@@ -74,6 +74,6 @@ class TestExperiment:
         assert isinstance(results[0], QbloxResult)
         assert isinstance(results[0].acquisition, QbloxResult.QbloxAcquisitionData)
 
-    def test_draw_method(self, experiment: Experiment):
+    def test_draw_method(self, experiment: HardwareExperiment):
         """Test draw method"""
         experiment.draw()

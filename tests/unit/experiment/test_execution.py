@@ -5,7 +5,7 @@ import pytest
 
 from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
 from qililab.execution import Execution
-from qililab.experiment import Experiment
+from qililab.experiment import HardwareExperiment
 from qililab.typings import Category
 
 from ..utils.side_effect import yaml_safe_load_side_effect
@@ -15,7 +15,7 @@ from ..utils.side_effect import yaml_safe_load_side_effect
 @pytest.fixture(name="experiment")
 def fixture_experiment():
     """Return Experiment object."""
-    return Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    return HardwareExperiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
 
 
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
@@ -46,7 +46,7 @@ def connect_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, execution: E
 class TestExecution:
     """Unit tests checking the Execution attributes and methods"""
 
-    def test_setup_method(self, experiment: Experiment):
+    def test_setup_method(self, experiment: HardwareExperiment):
         """Test setup method."""
         connect_instruments(execution=experiment.execution)  # pylint: disable=no-value-for-parameter
         experiment.execution.setup()
@@ -60,7 +60,7 @@ class TestExecution:
         assert i_0.delay_between_pulses == i_1.delay_between_pulses
         assert i_0.repetition_duration == i_1.repetition_duration
 
-    def test_connect_method_raises_error_when_already_connected(self, experiment: Experiment):
+    def test_connect_method_raises_error_when_already_connected(self, experiment: HardwareExperiment):
         """Test connect method raises error when already connected."""
         connect_instruments(execution=experiment.execution)  # pylint: disable=no-value-for-parameter
         with pytest.raises(ValueError):
