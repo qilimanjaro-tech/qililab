@@ -49,8 +49,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         """
 
     def _overwrite_experiment_settings(self, platform_schema: PlatformSchema, **kwargs: str | dict):
-        """If experiment settings are given, overwrite them in every qubit instrument of the platform. If they are not
-        given, either the individual settings defined in the schema or the default settings are used.
+        """If experiment settings are given, overwrite them in every qubit instrument of the platform.
 
         Args:
             platform_schema (PlatformSchema): Class containing the settings of the platform.
