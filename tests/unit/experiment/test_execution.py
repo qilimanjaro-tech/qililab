@@ -55,10 +55,10 @@ class TestExecution:
         # assert that the class attributes of different instruments are equal to the platform settings
         i_0, _ = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
         i_1, _ = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
-        assert i_0.hardware_average == i_1.hardware_average == experiment.settings.hardware_average
-        assert i_0.software_average == i_1.software_average == experiment.settings.software_average
-        assert i_0.delay_between_pulses == i_1.delay_between_pulses == experiment.settings.delay_between_pulses
-        assert i_0.repetition_duration == i_1.repetition_duration == experiment.settings.repetition_duration
+        assert i_0.hardware_average == i_1.hardware_average
+        assert i_0.software_average == i_1.software_average
+        assert i_0.delay_between_pulses == i_1.delay_between_pulses
+        assert i_0.repetition_duration == i_1.repetition_duration
 
     def test_connect_method_raises_error_when_already_connected(self, experiment: Experiment):
         """Test connect method raises error when already connected."""
