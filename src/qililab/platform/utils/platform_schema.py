@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
+from qililab.settings import Settings
 from qililab.utils import nested_dataclass
 
 
@@ -27,17 +28,34 @@ class PlatformSchema:
     class Schema:
         """SchemaDict class."""
 
-        @dataclass
+        @nested_dataclass
         class Bus:
             """BusDict class."""
+
+            @dataclass
+            class MixerSchema(Settings):
+                """MixerSchema class."""
+
+                epsilon: float
+                delta: float
+                offset_i: float
+                offset_q: float
+
+                def __iter__(self):
+                    """Iterate over Bus elements.
+
+                    Yields:
+                        Tuple[str, float]: MixerSchema attributes.
+                    """
+                    yield from self.__dict__.items()
 
             readout: bool
             qubit_instrument: dict
             signal_generator: dict
-            mixer_up: dict
+            mixer_up: MixerSchema
             qubit: Optional[dict] = None
             resonator: Optional[dict] = None
-            mixer_down: Optional[dict] = None
+            mixer_down: Optional[MixerSchema] = None
 
         elements: List[Bus]
 

@@ -1,3 +1,4 @@
+"""Platform Manager"""
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -26,6 +27,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         logger.info("Building platform")
         platform_schema = PlatformSchema(**self._load_platform_settings(**kwargs))
         self._overwrite_experiment_settings(platform_schema=platform_schema, **kwargs)
+        self._configure_mixer_offsets(platform_schema=platform_schema)
         return Platform(platform_schema=platform_schema)
 
     def dump(self, platform: Platform):
@@ -62,3 +64,17 @@ class PlatformManager(ABC, metaclass=SingletonABC):
                 raise ValueError(f"Please provide a dictionary for the '{self.EXPERIMENT_SETTINGS}' keyword argument.")
             for bus in platform_schema.schema.elements:
                 bus.qubit_instrument |= experiment_settings
+
+    def _configure_mixer_offsets(self, platform_schema: PlatformSchema):
+        """Configure offsets, epsilon and delta of qubit instrument from mixer settings
+        (if they are not already defined).
+
+        Args:
+            platform_schema (PlatformSchema): Class containing the settings of the platform.
+        """
+        # TODO: I just realized that (if I am not wrong) we just need to know the specifications of the
+        # mixer used for up-conversion. If that's the case then we can delete the MixerDown class.
+        for bus in platform_schema.schema.elements:
+            for name, value in bus.mixer_up:
+                if name not in bus.qubit_instrument:
+                    bus.qubit_instrument[name] = value

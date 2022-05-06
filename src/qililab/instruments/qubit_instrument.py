@@ -19,6 +19,10 @@ class QubitInstrument(Instrument, BusElement):
             software_average (int): Software average.
             repetition_duration (int): Duration (ns) of the whole program.
             delay_between_pulses (int): Delay (ns) between two consecutive pulses.
+            offset_i (float): I offset (unitless). amplitude + offset should be in range [0 to 1].
+            offset_q (float): Q offset (unitless). amplitude + offset should be in range [0 to 1].
+            epsilon (float): Amplitude added to the Q channel.
+            delta (float): Dephasing.
         """
 
         hardware_average: int = 4096
@@ -26,6 +30,10 @@ class QubitInstrument(Instrument, BusElement):
         repetition_duration: int = 200000  # ns
         delay_between_pulses: int = 0  # ns
         max_frequency: float = 100000000.0  # Hz
+        offset_i: float
+        offset_q: float
+        epsilon: float
+        delta: float
 
     settings: QubitInstrumentSettings
 

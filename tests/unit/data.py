@@ -45,6 +45,10 @@ qblox_qcm_0_settings_sample = {
     "software_average": 12,
     "repetition_duration": 1234,
     "delay_between_pulses": 1234,
+    "epsilon": 0,
+    "delta": 0,
+    "offset_i": 0,
+    "offset_q": 0,
 }
 
 qblox_qrm_0_settings_sample = {
@@ -71,6 +75,10 @@ qblox_qrm_0_settings_sample = {
     "software_average": 154,
     "repetition_duration": 23452,
     "delay_between_pulses": 123,
+    "epsilon": 0,
+    "delta": 0,
+    "offset_i": 0,
+    "offset_q": 0,
 }
 
 resonator_0_settings_sample = {
@@ -131,7 +139,6 @@ rohde_schwarz_1_settings_sample = {
 
 mixer_0_settings_sample = {
     "id_": 0,
-    "name": "mixer_up",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -141,7 +148,6 @@ mixer_0_settings_sample = {
 
 mixer_1_settings_sample = {
     "id_": 1,
-    "name": "mixer_up",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -151,7 +157,6 @@ mixer_1_settings_sample = {
 
 mixer_2_settings_sample = {
     "id_": 2,
-    "name": "mixer_down",  # unique name
     "category": "mixer",  # general name
     "epsilon": 0,
     "delta": 0,
@@ -205,8 +210,6 @@ experiment_settings_sample = {
             "frequency": 200000000.0,
             "phase": 0,
             "shape": {"name": "gaussian", "num_sigmas": 1},
-            "offset_i": 0,
-            "offset_q": 0,
             "qubit_id": 0,
         },
         {
@@ -217,8 +220,6 @@ experiment_settings_sample = {
             "frequency": 200000000.0,
             "phase": 0,
             "shape": {"name": "rectangular"},
-            "offset_i": 0,
-            "offset_q": 0,
             "qubit_id": 0,
         },
     ],

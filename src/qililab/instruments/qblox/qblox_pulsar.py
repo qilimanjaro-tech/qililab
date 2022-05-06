@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-import numpy as np
 from qpysequence.instructions import Acquire, Play, Wait
 from qpysequence.loop import Loop
 from qpysequence.program import Program
@@ -13,7 +12,6 @@ from qpysequence.sequence import Sequence
 from qililab.constants import QBLOX_MAX_WAIT_TIME
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequence import PulseSequence
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
@@ -190,8 +188,8 @@ class QbloxPulsar(QubitInstrument):
                 pulse.index = idx
                 waveform_i, waveform_q = pulse.modulated_waveforms()
                 waveforms_dict |= {
-                    f"{pulse}_I": {"data": (waveform_i + pulse.offset_i).tolist(), "index": idx},
-                    f"{pulse}_Q": {"data": (waveform_q + pulse.offset_q).tolist(), "index": idx},
+                    f"{pulse}_I": {"data": (waveform_i + self.offset_i).tolist(), "index": idx},
+                    f"{pulse}_Q": {"data": (waveform_q + self.offset_q).tolist(), "index": idx},
                 }
                 idx += 2
             else:
@@ -234,3 +232,21 @@ class QbloxPulsar(QubitInstrument):
             float: settings.gain.
         """
         return self.settings.gain
+
+    @property
+    def offset_i(self):
+        """QbloxPulsar 'offset_i' property.
+
+        Returns:
+            float: settings.offset_i
+        """
+        return self.settings.offset_i
+
+    @property
+    def offset_q(self):
+        """QbloxPulsar 'offset_q' property.
+
+        Returns:
+            float: settings.offset_q.
+        """
+        return self.settings.offset_q

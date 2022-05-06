@@ -24,7 +24,6 @@ elements:
       power: 15
     mixer_up:
       id_: 0
-      name: mixer_up  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0
@@ -75,7 +74,6 @@ elements:
       power: 15
     mixer_up:
       id_: 1
-      name: mixer_up  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0
@@ -96,7 +94,6 @@ elements:
           max_voltage: 1775
     mixer_down:
       id_: 2
-      name: mixer_down  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0
@@ -127,7 +124,6 @@ elements:
       power: 15
     mixer_up:
       id_: 0
-      name: mixer_up  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0
@@ -178,7 +174,6 @@ elements:
       power: 15
     mixer_up:
       id_: 1
-      name: mixer_up  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0
@@ -199,7 +194,6 @@ elements:
           max_voltage: 1775
     mixer_down:
       id_: 2
-      name: mixer_down  # unique name
       category: mixer  # general name
       epsilon: 0
       delta: 0

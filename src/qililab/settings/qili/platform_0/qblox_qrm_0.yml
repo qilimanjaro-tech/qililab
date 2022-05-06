@@ -16,3 +16,7 @@ sequence_timeout: 1
 acquisition_timeout: 1
 acquisition_name: "single"
 delay_before_readout: int
+epsilon: 0
+delta: 0
+offset_i: 0
+offset_q: 0

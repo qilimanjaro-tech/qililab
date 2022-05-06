@@ -2,7 +2,6 @@
 from dataclasses import InitVar, dataclass, field
 
 import numpy as np
-import numpy.typing as npt
 
 from qililab.constants import YAML
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
@@ -24,8 +23,6 @@ class Pulse:
             frequency (float): Pulse intermediate frequency (Hz) [10e6 to 300e6].
             phase (float): Pulse phase.
             shape: (str): Pulse shape.
-            offset_i (float): Optional pulse I offset (unitless). amplitude + offset should be in range [0 to 1].
-            offset_q (float): Optional pulse Q offset (unitless). amplitude + offset should be in range [0 to 1].
             qubit_id (int): ID of the qubit.
         """
 
@@ -37,8 +34,6 @@ class Pulse:
         phase: float
         pulse_shape: PulseShape = field(init=False)
         shape: InitVar[dict]
-        offset_i: float
-        offset_q: float
         qubit_id: int
         index: int = field(
             init=False
@@ -134,24 +129,6 @@ class Pulse:
         return self.settings.pulse_shape
 
     @property
-    def offset_i(self):
-        """Pulse 'offset_i' property.
-
-        Returns:
-            float: settings.offset_i
-        """
-        return self.settings.offset_i
-
-    @property
-    def offset_q(self):
-        """Pulse 'offset_q' property.
-
-        Returns:
-            float: settings.offset_q.
-        """
-        return self.settings.offset_q
-
-    @property
     def index(self):
         """Pulse 'index' property.
 
@@ -202,8 +179,6 @@ class Pulse:
                 self.amplitude == other.amplitude
                 and self.duration == other.duration
                 and self.frequency == other.frequency
-                and self.offset_i == other.offset_i
-                and self.offset_q == other.offset_q
                 and self.phase == other.phase
                 and self.pulse_shape == other.pulse_shape
             )

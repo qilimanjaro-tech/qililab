@@ -1,7 +1,6 @@
 import pytest
 
 from qililab.instruments import Mixer, MixerDown, MixerUp
-from qililab.typings import Category
 
 from ..data import mixer_0_settings_sample
 
@@ -13,7 +12,6 @@ def mixer_up() -> MixerUp:
         Mixer: Instance of the Mixer class.
     """
     settings = mixer_0_settings_sample.copy()
-    settings.pop("name")
     return MixerUp(settings=settings)
 
 
@@ -24,7 +22,6 @@ def mixer_down() -> MixerDown:
         Mixer: Instance of the Mixer class.
     """
     settings = mixer_0_settings_sample.copy()
-    settings.pop("name")
     return MixerDown(settings=settings)
 
 

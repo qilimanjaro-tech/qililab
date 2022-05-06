@@ -1,10 +1,10 @@
 """Bus class."""
 from dataclasses import dataclass
 from types import NoneType
-from typing import Generator, Tuple
+from typing import Generator, Optional, Tuple
 
 from qililab.constants import YAML
-from qililab.instruments import MixerUp, QubitInstrument, SignalGenerator
+from qililab.instruments import MixerDown, MixerUp, QubitInstrument, SignalGenerator
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
 from qililab.pulse import PulseSequence
@@ -12,7 +12,7 @@ from qililab.typings import Category
 from qililab.utils import BusElementFactory
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
@@ -32,11 +32,18 @@ class Bus:
     signal_generator: SignalGenerator
     mixer_up: MixerUp
     qubit_instrument: QubitInstrument
+    mixer_down: Optional[MixerDown] = None
+    qubit: Optional[Qubit] = None
+    resonator: Optional[Resonator] = None
 
     def __post_init__(self):
         """Cast each bus element to its corresponding class."""
         for name, value in self:
-            if isinstance(value, dict):
+            if name == MixerUp.name.value:
+                setattr(self, name, MixerUp(value))
+            elif name == MixerDown.name.value:
+                setattr(self, name, MixerDown(value))
+            elif isinstance(value, dict):
                 elem_obj = BusElementFactory.get(value.pop(YAML.NAME))(value)
                 setattr(self, name, elem_obj)
 

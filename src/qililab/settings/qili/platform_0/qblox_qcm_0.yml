@@ -6,3 +6,7 @@ reference_clock: internal
 sequencer: 0
 sync_enabled: true
 gain: 1
+epsilon: 0
+delta: 0
+offset_i: 0
+offset_q: 0
