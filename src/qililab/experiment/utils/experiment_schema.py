@@ -1,5 +1,4 @@
 """SchemaDict class."""
-from dataclasses import dataclass
 from typing import List
 
 from qililab.pulse.pulse import Pulse

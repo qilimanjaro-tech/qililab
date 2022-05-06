@@ -62,6 +62,7 @@ class Pulse:
         Returns:
             NDArray: I and Q modulated waveforms.
         """
+        # TODO: Find where to put this method
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
         time = np.arange(self.duration / resolution) * 1e-9 * resolution

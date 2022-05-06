@@ -31,12 +31,12 @@ class Platform:
 
     settings: PlatformSettings
     schema: Schema
-    _platform_schema: PlatformSchema
+    _schema: PlatformSchema
 
     def __init__(self, platform_schema: PlatformSchema):
         self.settings = self.PlatformSettings(**platform_schema.settings)
         self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
-        self._platform_schema = platform_schema
+        self._schema = platform_schema
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -104,7 +104,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        return asdict(self._platform_schema, dict_factory=dict_factory)
+        return asdict(self._schema, dict_factory=dict_factory)
 
     def __str__(self) -> str:
         """String representation of the platform
