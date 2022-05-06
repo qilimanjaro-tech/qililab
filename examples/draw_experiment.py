@@ -1,4 +1,5 @@
 """Draw experiment"""
+import matplotlib.pyplot as plt
 import qibo
 
 from qililab import Experiment
@@ -21,7 +22,9 @@ def load_experiment():
     qibo.set_backend(backend="qililab", platform=DEFAULT_PLATFORM_NAME)
     # Using PLATFORM_MANAGER_DB
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
-    experiment.draw(resolution=0.1)
+    figure = experiment.draw(resolution=0.1)
+    figure.show()
+    plt.show()
 
 
 if __name__ == "__main__":

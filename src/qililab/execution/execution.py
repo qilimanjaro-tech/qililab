@@ -42,14 +42,13 @@ class Execution:
         """Close connection to the instruments."""
         self.buses_execution.close()
 
-    def pulses(self, resolution: float = 1.0):
-        """Return pulses applied on each qubit.
+    def draw(self, resolution: float):
+        """Save figure with the waveforms sent to each bus.
 
         Args:
-            resolution (float): The resolution of the pulses in ns.
+            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
-            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
-            pulses applied on each qubit.
+            Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.pulses(resolution=resolution)
+        return self.buses_execution.draw(resolution=resolution, num_qubits=self.platform.num_qubits)

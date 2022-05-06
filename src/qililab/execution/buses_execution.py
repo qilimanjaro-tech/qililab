@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from itertools import zip_longest
 from typing import Dict, List
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
@@ -67,3 +68,30 @@ class BusesExecution:
                 )
 
         return pulses
+
+    def draw(self, resolution: float, num_qubits: int):
+        """Save figure with the waveforms sent to each bus.
+
+        Args:
+            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
+
+        Returns:
+            Figure: Matplotlib figure with the waveforms sent to each bus.
+        """
+        figure, axes = plt.subplots(num_qubits, 1)
+        if num_qubits == 1:
+            axes = [axes]  # make axes subscriptable
+        for idx, pulse in self.pulses(resolution=resolution).items():
+            time = np.arange(len(pulse[0])) * resolution
+            axes[idx].set_title(f"Qubit {idx}")
+            axes[idx].plot(time, pulse[0], label="I")
+            axes[idx].plot(time, pulse[1], label="Q")
+            axes[idx].legend()
+            axes[idx].minorticks_on()
+            axes[idx].grid(which="both")
+            axes[idx].set_ylabel("Amplitude")
+            axes[idx].set_xlabel("Time (ns)")
+
+        plt.tight_layout()
+        # plt.savefig("test.png")
+        return figure
