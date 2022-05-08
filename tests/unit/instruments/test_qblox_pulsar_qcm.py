@@ -19,7 +19,9 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(["reference_source", "sequencer0"])
-    mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
+    mock_instance.sequencer0.mock_add_spec(
+        ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+    )
     # connect to instrument
     qcm_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qcm_0"

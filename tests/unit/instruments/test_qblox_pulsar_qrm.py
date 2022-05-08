@@ -29,7 +29,9 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
             "scope_acq_trigger_mode_path1",
         ]
     )
-    mock_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
+    mock_instance.sequencer0.mock_add_spec(
+        ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+    )
     # connect to instrument
     qrm_settings = SETTINGS_MANAGER.load(
         foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"

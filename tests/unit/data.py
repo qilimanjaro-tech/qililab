@@ -49,6 +49,7 @@ qblox_qcm_0_settings_sample = {
     "delta": 0,
     "offset_i": 0,
     "offset_q": 0,
+    "frequency": 100000000,
 }
 
 qblox_qrm_0_settings_sample = {
@@ -79,6 +80,7 @@ qblox_qrm_0_settings_sample = {
     "delta": 0,
     "offset_i": 0,
     "offset_q": 0,
+    "frequency": 20000000,
 }
 
 resonator_0_settings_sample = {
@@ -208,7 +210,7 @@ experiment_settings_sample = {
             "duration": 60,
             "amplitude": 0.3,
             "frequency": 200000000.0,
-            "phase": 0,
+            "phase": 1.57,
             "shape": {"name": "gaussian", "num_sigmas": 1},
             "qubit_id": 0,
         },
@@ -218,7 +220,7 @@ experiment_settings_sample = {
             "duration": 60,
             "amplitude": 0.5,
             "frequency": 200000000.0,
-            "phase": 0,
+            "phase": 3.14,
             "shape": {"name": "rectangular"},
             "qubit_id": 0,
         },

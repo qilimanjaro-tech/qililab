@@ -51,13 +51,13 @@ class Pulse:
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
         return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
 
-    def envelope(self, resolution: float):
+    def envelope(self, resolution: float = 1.0):
         """Pulse 'envelope' property.
 
         Returns:
-            List[float]: Amplitudes of the envelope of the pulse.
+            List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
-        return self.pulse_shape.envelope(duration=self.duration, amplitude=self.amplitude, resolution=resolution)
+        return self.pulse_shape.envelope(duration=self.duration, amplitude=1.0, resolution=resolution)
 
     def __repr__(self):
         """Return string representation of the Pulse object."""

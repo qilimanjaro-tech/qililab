@@ -29,7 +29,7 @@ class QubitInstrument(Instrument, BusElement):
         software_average: int = 10
         repetition_duration: int = 200000  # ns
         delay_between_pulses: int = 0  # ns
-        max_frequency: float = 100000000.0  # Hz
+        frequency: float
         offset_i: float
         offset_q: float
         epsilon: float

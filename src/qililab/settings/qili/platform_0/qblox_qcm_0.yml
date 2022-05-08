@@ -2,6 +2,7 @@ id_: 0
 category: qubit_instrument  # general name
 ip: 192.168.0.3
 firmware: 0.7.0
+frequency: 100000000
 reference_clock: internal
 sequencer: 0
 sync_enabled: true

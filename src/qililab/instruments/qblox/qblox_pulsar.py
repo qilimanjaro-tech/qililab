@@ -4,12 +4,13 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-from qpysequence.instructions import Acquire, Play, Wait
+import numpy as np
+from qpysequence.instructions import Acquire, Play, SetAwgGain, Wait
+from qpysequence.library import long_wait, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 
-from qililab.constants import QBLOX_MAX_WAIT_TIME
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse.pulse_sequence import PulseSequence
@@ -98,14 +99,14 @@ class QbloxPulsar(QubitInstrument):
                 wait_time = pulses[i + 1].start - pulse.start
             else:
                 wait_time = final_wait_time
+            loop.append_component(set_phase_rad(rads=pulse.phase))
+            loop.append_component(SetAwgGain(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
             loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=wait_time))
 
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
 
-        while self.repetition_duration - loop.duration_iter > QBLOX_MAX_WAIT_TIME:
-            loop.append_component(Wait(wait_time=QBLOX_MAX_WAIT_TIME))
-        loop.append_component(Wait(wait_time=self.repetition_duration - loop.duration_iter))
+        loop.append_component(long_wait(wait_time=self.repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
         return program
 
@@ -119,6 +120,7 @@ class QbloxPulsar(QubitInstrument):
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
+        self._set_nco()
 
     @QubitInstrument.CheckConnected
     def stop(self):
@@ -155,6 +157,11 @@ class QbloxPulsar(QubitInstrument):
         getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path0(self.gain)
         getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path1(self.gain)
 
+    def _set_nco(self):
+        """Enable modulation of pulses and setup NCO frequency."""
+        getattr(self.device, f"sequencer{self.sequencer}").mod_en_awg(True)
+        getattr(self.device, f"sequencer{self.sequencer}").nco_freq(self.frequency)
+
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
         self.device.reference_source(self.reference_clock)
@@ -186,10 +193,10 @@ class QbloxPulsar(QubitInstrument):
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
                 pulse.index = idx
-                waveform_i, waveform_q = pulse.modulated_waveforms()
+                envelope = pulse.envelope()
                 waveforms_dict |= {
-                    f"{pulse}_I": {"data": (waveform_i + self.offset_i).tolist(), "index": idx},
-                    f"{pulse}_Q": {"data": (waveform_q + self.offset_q).tolist(), "index": idx},
+                    f"{pulse}_I": {"data": (np.real(envelope) + self.offset_i).tolist(), "index": idx},
+                    f"{pulse}_Q": {"data": (np.imag(envelope) + self.offset_q).tolist(), "index": idx},
                 }
                 idx += 2
             else:
@@ -250,3 +257,12 @@ class QbloxPulsar(QubitInstrument):
             float: settings.offset_q.
         """
         return self.settings.offset_q
+
+    @property
+    def frequency(self):
+        """QbloxPulsar 'frequency' property.
+
+        Returns:
+            float: settings.frequency.
+        """
+        return self.settings.frequency

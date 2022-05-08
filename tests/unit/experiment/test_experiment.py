@@ -66,7 +66,9 @@ class TestExperiment:
                 "scope_acq_trigger_mode_path1",
             ]
         )
-        mock_pulsar_instance.sequencer0.mock_add_spec(["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence"])
+        mock_pulsar_instance.sequencer0.mock_add_spec(
+            ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+        )
         results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
