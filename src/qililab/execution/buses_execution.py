@@ -1,5 +1,5 @@
 """BusesExecution class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import zip_longest
 from typing import Dict, List
 
@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
+from qililab.gates import HardwareGate
 
 
 @dataclass
 class BusesExecution:
     """BusesExecution class."""
 
-    buses: List[BusExecution]
+    buses: List[BusExecution] = field(default_factory=list)
 
     def connect(self):
         """Connect to the instruments."""
@@ -95,3 +96,11 @@ class BusesExecution:
         plt.tight_layout()
         # plt.savefig("test.png")
         return figure
+
+    def add_gate(self, gate: HardwareGate):
+        """Add gate to BusesExecution.
+
+        Args:
+            gate (HardwareGate): Hardware gate.
+        """
+        # Find if there is a BusExecution with the correct qubit_id, if not create one. If there is add the pulse.

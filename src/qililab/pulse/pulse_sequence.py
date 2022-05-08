@@ -1,5 +1,5 @@
 """PulseSequence class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 from qililab.pulse.pulse import Pulse
@@ -16,7 +16,7 @@ class PulseSequence:
 
     readout: bool
     qubit_id: int
-    pulses: List[Pulse]
+    pulses: List[Pulse] = field(default_factory=list)
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
