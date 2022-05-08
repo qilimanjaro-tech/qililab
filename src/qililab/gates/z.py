@@ -1,17 +1,14 @@
-from dataclasses import dataclass
+from qibo.gates import Z as ZQibo
 
 from qililab.gates.hardware_gate import HardwareGate
 
 
-@dataclass
-class Z(HardwareGate):  # pylint: disable=invalid-name
+class Z(HardwareGate, ZQibo):  # pylint: disable=invalid-name
     """Z gate
 
     Args:
         q (int): Index of the qubit to which the gate is applied.
     """
-
-    q: int  # pylint: disable=invalid-name
 
     def to_sequence(self, sequence: object):
         """Translates the gate to pulses and adds them to the given PulseSequence.

@@ -1,5 +1,6 @@
 """Execution class."""
 from qililab.execution.buses_execution import BusesExecution
+from qililab.gates import HardwareGate
 from qililab.platform import Platform
 
 
@@ -49,3 +50,11 @@ class Execution:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
         return self.buses_execution.draw(resolution=resolution, num_qubits=self.platform.num_qubits)
+
+    def add_gate(self, gate: HardwareGate):
+        """Add gate to BusesExecution.
+
+        Args:
+            gate (HardwareGate): Hardware gate.
+        """
+        self.buses_execution.add_gate(gate=gate)
