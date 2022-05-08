@@ -26,6 +26,8 @@ class QbloxPulsar(QubitInstrument):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
+    MAX_GAIN = 2**16 - 1
+
     @nested_dataclass
     class QbloxPulsarSettings(QubitInstrument.QubitInstrumentSettings):
         """Contains the settings of a specific pulsar.
@@ -100,7 +102,9 @@ class QbloxPulsar(QubitInstrument):
             else:
                 wait_time = final_wait_time
             loop.append_component(set_phase_rad(rads=pulse.phase))
-            loop.append_component(SetAwgGain(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
+            loop.append_component(
+                SetAwgGain(gain_0=self.MAX_GAIN * pulse.amplitude, gain_1=self.MAX_GAIN * pulse.amplitude)
+            )
             loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=wait_time))
 
         if isinstance(self, QubitReadout):
