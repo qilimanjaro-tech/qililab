@@ -1,9 +1,9 @@
 """Run circuit"""
 import qibo
 
-from qililab import HardwareCircuit
+from qililab.circuit import HardwareCircuit
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.gates import I, X, Y, Z
+from qililab.gates import I, X, Y
 
 # FIXME: Need to add backend in qibo's profiles.yml file
 backend = {

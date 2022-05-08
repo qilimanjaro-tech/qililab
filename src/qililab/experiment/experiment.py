@@ -1,9 +1,8 @@
 """Experiment class"""
-from qililab import PLATFORM_MANAGER_DB
 from qililab.execution import Execution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.gates import HardwareGate
-from qililab.platform import Platform
+from qililab.platform import PLATFORM_MANAGER_DB, Platform
 
 
 class Experiment:

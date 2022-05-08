@@ -1,5 +1,6 @@
 """Pulse class."""
 from dataclasses import InitVar, dataclass, field
+from typing import Optional
 
 import numpy as np
 
@@ -16,11 +17,11 @@ class Pulse:
     start: int
     duration: int
     amplitude: float
-    frequency: float
     phase: float
     pulse_shape: PulseShape = field(init=False)
     shape: InitVar[dict]
     qubit_id: int
+    frequency: Optional[float] = None  # frequency is set by the QRM
     index: int = field(
         init=False
     )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
@@ -39,6 +40,9 @@ class Pulse:
             NDArray: I and Q modulated waveforms.
         """
         # TODO: Find where to put this method
+        if self.frequency is None:
+            raise AttributeError("You must define a frequency for the pulse.")
+
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
         time = np.arange(self.duration / resolution) * 1e-9 * resolution
