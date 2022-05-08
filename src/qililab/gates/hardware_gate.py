@@ -3,8 +3,6 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-from qibo.abstractions.abstract_gates import Gate
-
 
 class HardwareGate(ABC):
     """Abstract Base Class of a hardware gate."""
