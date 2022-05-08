@@ -19,4 +19,4 @@ class ExperimentSchema:
 
     def __post_init__(self):
         """Cast each pulse settings into a Pulse class."""
-        self.pulses = [Pulse(settings=pulse) for pulse in self.pulses]
+        self.pulses = [Pulse(**pulse) for pulse in self.pulses]
