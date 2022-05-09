@@ -2,11 +2,11 @@
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import numpy as np
-from qpysequence.instructions import Acquire, Play, SetAwgGain, Wait
-from qpysequence.library import long_wait, set_phase_rad
+from qpysequence.instructions import Acquire, Play, Wait
+from qpysequence.library import long_wait, set_phase_rad, set_awg_gain_relative
 from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
@@ -74,7 +74,7 @@ class QbloxPulsar(QubitInstrument):
         """
         waveforms = self._generate_waveforms(pulses=pulses)
         program = self._generate_program(pulses=pulses, waveforms=waveforms)
-        return Sequence(program=program, waveforms=waveforms, acquisitions={}, weights={})
+        return Sequence(program=program, waveforms=waveforms, acquisitions= {"single": {"num_bins": 1, "index": 0}}, weights={})
 
     def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms):
         """Generate Q1ASM program
@@ -104,9 +104,7 @@ class QbloxPulsar(QubitInstrument):
             else:
                 wait_time = final_wait_time
             loop.append_component(set_phase_rad(rads=pulse.phase))
-            loop.append_component(
-                SetAwgGain(gain_0=self.MAX_GAIN * pulse.amplitude, gain_1=self.MAX_GAIN * pulse.amplitude)
-            )
+            loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
             loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -116,10 +114,11 @@ class QbloxPulsar(QubitInstrument):
             )
 
         if isinstance(self, QubitReadout):
-            loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
+            loop.append_component(Acquire(acq_index=0, bin_index=0, wait_time=4))
 
         loop.append_component(long_wait(wait_time=self.repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
+        print(program)
         return program
 
     @QubitInstrument.CheckConnected

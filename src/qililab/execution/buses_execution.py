@@ -8,6 +8,7 @@ import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.gates import HardwareGate
+from qililab.result.qblox_result import QbloxResult
 
 
 @dataclass
@@ -33,7 +34,7 @@ class BusesExecution:
 
     def run(self):
         """Run the given pulse sequence."""
-        results = []
+        results: List[QbloxResult] = []
         for bus in self.buses:
             result = bus.run()
             if result is not None:

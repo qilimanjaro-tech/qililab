@@ -5,6 +5,7 @@ from typing import List
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import Pulse
 from qililab.typings import BusElement
+from qililab.result import QbloxResult
 from qililab.utils import nested_dataclass
 
 
@@ -37,7 +38,7 @@ class QubitInstrument(Instrument, BusElement):
     settings: QubitInstrumentSettings
 
     @abstractmethod
-    def run(self, pulses: List[Pulse]):
+    def run(self, pulses: List[Pulse]) -> QbloxResult:
         """Run execution of a pulse sequence.
 
         Args:

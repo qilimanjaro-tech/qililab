@@ -83,8 +83,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
         self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
+        return QbloxResult(integration_length=self.integration_length, start_integrate=self.start_integrate, result=self.device.get_acquisitions(sequencer=self.sequencer))
 
-        return QbloxResult(**self.device.get_acquisitions(sequencer=self.sequencer))
+    def _set_nco(self):
+        """Enable modulation of pulses and setup NCO frequency."""
+        super()._set_nco()
+        getattr(self.device, f"sequencer{self.sequencer}").demod_en_acq(True)
 
     def _set_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""

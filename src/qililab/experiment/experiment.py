@@ -13,6 +13,7 @@ from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
 from qililab.typings import Category
+from qililab.result import QbloxResult
 from qililab.utils import nested_dataclass
 
 
@@ -32,9 +33,9 @@ class Experiment:
             phase: float = 0
 
         readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
-        hardware_average: int = 4096
-        software_average: int = 10
-        repetition_duration: int = 20000
+        hardware_average: int = 1000
+        software_average: int = 1
+        repetition_duration: int = 2000
         delay_between_pulses: int = 0
         gate_duration: int = 100
         num_sigmas: float = 4
@@ -59,9 +60,9 @@ class Experiment:
 
     def execute(self):
         """Run execution."""
-        results = []
-        for element, parameter, start, stop, step in self._parameters_to_change:
-            for value in range(start, stop, step):
+        results: List[List[QbloxResult]] = []
+        for element, parameter, start, stop, num in self._parameters_to_change:
+            for value in np.linspace(start, stop, num):
                 element.set_parameter(name=parameter, value=value)
                 results.append(self.execution.execute())
         return results
@@ -78,11 +79,11 @@ class Experiment:
     @property
     def _parameters_to_change(self):
         """Generator returning the information of the parameters to loop over."""
-        for category, id_, parameter, start, stop, step in self._parameter_dicts:
+        for category, id_, parameter, start, stop, num in self._parameter_dicts:
             element, _ = self.platform.get_element(category=category, id_=id_)
-            yield element, parameter, start, stop, step
+            yield element, parameter, start, stop, num
 
-    def add_parameter_to_loop(self, category: str, id_: int, parameter: str, start: float, stop: float, step: float):
+    def add_parameter_to_loop(self, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
         """Add parameter to loop over during an experiment.
 
         Args:
@@ -90,7 +91,7 @@ class Experiment:
             id_ (int): ID of the element.
             parameter (str): Name of the parameter to change.
         """
-        self._parameter_dicts.append((Category(category), id_, parameter, start, stop, step))
+        self._parameter_dicts.append((Category(category), id_, parameter, start, stop, num))
 
     def draw(self, resolution: float = 1.0):
         """Return figure with the waveforms sent to each bus.
@@ -129,10 +130,10 @@ class Experiment:
             amplitude = 0.0
             phase = 0.0
         elif isinstance(gate, X):
-            amplitude = 1.0
+            amplitude = 1
             phase = 0.0
         elif isinstance(gate, Y):
-            amplitude = 1.0
+            amplitude = 1
             phase = np.pi / 2
         elif isinstance(gate, M):
             return ReadoutPulse(
@@ -195,3 +196,10 @@ class Experiment:
             ReadoutPulseSettings: settings.readout_pulse.
         """
         return self.settings.readout_pulse
+
+    def to_dict(self):
+        """Convert Experiment into a dictionary."""
+        return {
+            "settings": asdict(self.settings)
+
+        }
