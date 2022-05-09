@@ -15,7 +15,6 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      delay_between_pulses: 0
       frequency: 100000000
     signal_generator:
       id_: 0
@@ -68,7 +67,6 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      delay_between_pulses: 0
       frequency: 20000000
     signal_generator:
       id_: 1
@@ -121,7 +119,6 @@ elements:
       hardware_average: 2345
       software_average: 14
       repetition_duration: 2234
-      delay_between_pulses: 123
       frequency: 100000000
     signal_generator:
       id_: 0
@@ -174,7 +171,6 @@ elements:
       hardware_average: 1000
       software_average: 100
       repetition_duration: 2000
-      delay_between_pulses: 15
       frequency: 20000000
     signal_generator:
       id_: 1

@@ -1,6 +1,6 @@
 """PulseSequence class."""
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 
 from qililab.pulse.pulse import Pulse
 
@@ -14,6 +14,8 @@ class PulseSequence:
     """
 
     pulses: List[Pulse] = field(default_factory=list)
+    delay_between_pulses: int = 0
+    time: Dict[str, int] = field(init=False, default_factory=dict)
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -21,8 +23,12 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
-        pulse.start = 0
-        pulse.duration = 50
+        key = str(pulse.qubit_ids)
+        if key not in self.time:
+            self.time[key] = 0
+        if pulse.start_time is None:
+            pulse.start_time = self.time[key]
+            self.time[key] += pulse.duration + self.delay_between_pulses
         self.pulses.append(pulse)
 
     def __iter__(self):

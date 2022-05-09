@@ -71,7 +71,7 @@ class Platform:
                 for bus_idx, bus in enumerate(self.buses)
                 if bus.qubit_ids == qubit_ids and bus.bus_type == bus_type
             ),
-            None,
+            ([], None),
         )
 
     @property

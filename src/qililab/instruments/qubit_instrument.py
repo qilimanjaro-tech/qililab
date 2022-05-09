@@ -19,7 +19,6 @@ class QubitInstrument(Instrument, BusElement):
             hardware_average (int): Hardware average. Number of shots used when executing a sequence.
             software_average (int): Software average.
             repetition_duration (int): Duration (ns) of the whole program.
-            delay_between_pulses (int): Delay (ns) between two consecutive pulses.
             offset_i (float): I offset (unitless). amplitude + offset should be in range [0 to 1].
             offset_q (float): Q offset (unitless). amplitude + offset should be in range [0 to 1].
             epsilon (float): Amplitude added to the Q channel.
@@ -29,7 +28,6 @@ class QubitInstrument(Instrument, BusElement):
         hardware_average: int = 4096
         software_average: int = 10
         repetition_duration: int = 200000  # ns
-        delay_between_pulses: int = 0  # ns
         frequency: float
         offset_i: float
         offset_q: float
@@ -63,15 +61,6 @@ class QubitInstrument(Instrument, BusElement):
             int: settings.software_average.
         """
         return self.settings.software_average
-
-    @property
-    def delay_between_pulses(self):
-        """QbloxPulsar 'delay_between_pulses' property.
-
-        Returns:
-            int: settings.delay_between_pulses.
-        """
-        return self.settings.delay_between_pulses
 
     @property
     def repetition_duration(self):

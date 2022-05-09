@@ -45,8 +45,6 @@ class BusPulses:
         for pulse in self.pulses:
             if pulse.start is None:
                 raise ValueError("Start time of pulse is not defined.")
-            if pulse.duration is None:
-                raise ValueError("Duration of pulse is not defined.")
             wait_time = round((pulse.start - time) / resolution)
             waveforms_i += [0 for _ in range(wait_time)]
             waveforms_q += [0 for _ in range(wait_time)]

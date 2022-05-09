@@ -7,7 +7,7 @@ from qililab.pulse.pulse_shape import Drag
 def test_experiment():
     """Test experiment"""
     pulse_sequence = PulseSequence()
-    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), qubit_ids=[0]))
-    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, qubit_ids=[0]))
+    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), duration=50, qubit_ids=[0]))
+    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, duration=50, qubit_ids=[0]))
 
     Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=pulse_sequence)

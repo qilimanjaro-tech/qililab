@@ -18,8 +18,8 @@ from ..utils.side_effect import yaml_safe_load_side_effect
 def fixture_experiment():
     """Return Experiment object."""
     pulse_sequence = PulseSequence()
-    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), qubit_ids=[0]))
-    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, qubit_ids=[0]))
+    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), duration=50, qubit_ids=[0]))
+    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, duration=50, qubit_ids=[0]))
 
     return Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=pulse_sequence)
 
@@ -65,7 +65,6 @@ class TestExecution:
         i_1, _ = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
         assert i_0.hardware_average == i_1.hardware_average
         assert i_0.software_average == i_1.software_average
-        assert i_0.delay_between_pulses == i_1.delay_between_pulses
         assert i_0.repetition_duration == i_1.repetition_duration
 
     def test_connect_method_raises_error_when_already_connected(self, experiment: Experiment):

@@ -19,7 +19,6 @@ class Experiment:
         hardware_average: int = 4096
         software_average: int = 10
         repetition_duration: int = 20000
-        delay_between_pulses: int = 0
 
     platform: Platform
     execution: Execution

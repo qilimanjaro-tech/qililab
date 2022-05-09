@@ -203,7 +203,7 @@ class QbloxPulsar(QubitInstrument):
         for pulse in pulses:
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
-                envelope = pulse.envelope()
+                envelope = pulse.envelope(amplitude=1)
                 real = np.real(envelope) + self.offset_i
                 imag = np.imag(envelope) + self.offset_q
                 waveforms.add_pair((real, imag), name=str(pulse))

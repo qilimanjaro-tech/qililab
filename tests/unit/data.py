@@ -44,7 +44,6 @@ qblox_qcm_0_settings_sample = {
     "hardware_average": 2341,
     "software_average": 12,
     "repetition_duration": 1234,
-    "delay_between_pulses": 1234,
     "epsilon": 0,
     "delta": 0,
     "offset_i": 0,
@@ -75,7 +74,6 @@ qblox_qrm_0_settings_sample = {
     "hardware_average": 1235,
     "software_average": 154,
     "repetition_duration": 23452,
-    "delay_between_pulses": 123,
     "epsilon": 0,
     "delta": 0,
     "offset_i": 0,
@@ -205,7 +203,6 @@ experiment_settings_sample = {
         "hardware_average": 4096,
         "software_average": 10,
         "repetition_duration": 200000,
-        "delay_between_pulses": 0,
     },
     "pulses": [
         {

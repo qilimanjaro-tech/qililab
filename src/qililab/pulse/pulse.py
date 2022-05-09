@@ -1,5 +1,5 @@
 """Pulse class."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
@@ -14,10 +14,10 @@ class Pulse:
     name = "Pulse"
     amplitude: float
     phase: float
+    duration: int
     qubit_ids: List[int]
     pulse_shape: PulseShape
-    start: Optional[int] = None
-    duration: Optional[int] = None
+    start_time: Optional[int] = None
 
     def __post_init__(self):
         """Cast qubit_ids to list."""
@@ -33,8 +33,6 @@ class Pulse:
         Returns:
             NDArray: I and Q modulated waveforms.
         """
-        if self.duration is None:
-            raise ValueError("Duration of the pulse is not defined.")
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
         time = np.arange(self.duration / resolution) * 1e-9 * resolution
@@ -43,15 +41,29 @@ class Pulse:
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
         return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
 
-    def envelope(self, resolution: float = 1.0):
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Pulse 'envelope' property.
 
         Returns:
             List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
-        if self.duration is None:
-            raise ValueError("Duration of the pulse is not defined.")
+        if amplitude is None:
+            amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=1.0, resolution=resolution)
+
+    @property
+    def start(self):
+        """Pulse 'start' property.
+
+        Raises:
+            ValueError: Is start time is not defined.
+
+        Returns:
+            int: Start time of the pulse.
+        """
+        if self.start_time is None:
+            raise ValueError("Start time is not specified.")
+        return self.start_time
 
     def __repr__(self):
         """Return string representation of the Pulse object."""
