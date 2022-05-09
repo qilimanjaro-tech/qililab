@@ -159,7 +159,7 @@ class QbloxPulsar(QubitInstrument):
             acquisitions and program of the sequence.
         """
         # TODO: Discuss this sequence dump: use DB or files?
-        file_path = Path(sys.argv[0]).parent / f"{self.name}_sequence.yml"
+        file_path = str(Path(sys.argv[0]).parent / f"{self.name}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
         getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)
@@ -176,7 +176,7 @@ class QbloxPulsar(QubitInstrument):
 
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
-        self.device.reference_source(self.reference_clock)
+        self.device.reference_source(self.reference_clock.value)
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
@@ -185,7 +185,7 @@ class QbloxPulsar(QubitInstrument):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        self.device = Pulsar(name=self.name, identifier=self.ip)
+        self.device = Pulsar(name=f"{self.name}_{self.id_}", identifier=self.ip)
 
     def _generate_waveforms(self, pulses: List[Pulse]):
         """Generate I and Q waveforms from a PulseSequence object.
