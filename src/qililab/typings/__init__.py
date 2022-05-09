@@ -2,6 +2,7 @@ from .bus_element import BusElement
 from .enums import (
     AcquireTriggerMode,
     BusElementName,
+    BusType,
     Category,
     IntegrationMode,
     PulseShapeOptions,

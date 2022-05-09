@@ -6,7 +6,7 @@ from qililab.constants import YAML
 from qililab.platform.components.bus_control import BusControl
 from qililab.platform.components.bus_readout import BusReadout
 from qililab.platform.components.buses import Buses
-from qililab.typings import Category, SchemaDrawOptions
+from qililab.typings import BusType, Category, SchemaDrawOptions
 
 
 @dataclass
@@ -23,10 +23,11 @@ class Schema:
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         buses: List[BusControl | BusReadout] = []
         for bus in elements:
-            if bus[YAML.READOUT] is False:
-                buses.append(BusControl(**bus))
-            elif bus[YAML.READOUT] is True:
-                buses.append(BusReadout(**bus))
+            bus_type = bus.pop(YAML.TYPE)
+            if BusType(bus_type) is BusType.CONTROL:
+                buses.append(BusControl(settings=bus))
+            elif BusType(bus_type) is BusType.READOUT:
+                buses.append(BusReadout(settings=bus))
             else:
                 raise ValueError("Bus 'readout' key should contain a boolean.")
 

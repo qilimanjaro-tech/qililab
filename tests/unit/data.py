@@ -169,14 +169,18 @@ mixer_2_settings_sample = {
 schema_settings_sample = {
     "elements": [
         {
-            "readout": False,
+            "id_": 0,
+            "category": "bus",
+            "type": "control",
             "qubit_instrument": qblox_qcm_0_settings_sample,
             "signal_generator": rohde_schwarz_0_settings_sample,
             "mixer_up": mixer_0_settings_sample,
             "qubit": qubit_0_settings_sample,
         },
         {
-            "readout": True,
+            "id_": 0,
+            "category": "bus",
+            "type": "readout",
             "qubit_instrument": qblox_qrm_0_settings_sample,
             "signal_generator": rohde_schwarz_1_settings_sample,
             "mixer_up": mixer_1_settings_sample,
@@ -205,7 +209,7 @@ experiment_settings_sample = {
     },
     "pulses": [
         {
-            "readout": True,
+            "type": "readout",
             "start": 0,
             "duration": 60,
             "amplitude": 0.3,
@@ -215,7 +219,7 @@ experiment_settings_sample = {
             "qubit_id": 0,
         },
         {
-            "readout": False,
+            "type": "control",
             "start": 70,
             "duration": 60,
             "amplitude": 0.5,

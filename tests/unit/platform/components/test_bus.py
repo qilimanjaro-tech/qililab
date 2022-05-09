@@ -33,10 +33,6 @@ def load_buses() -> Buses:
 class TestBus:
     """Unit tests checking the Bus attributes and methods."""
 
-    def test_category_instance(self, bus: Bus):
-        """Test name instance."""
-        assert isinstance(bus.readout, bool)
-
     def test_signal_generator_instance(self, bus: Bus):
         """Test signal_generator instance."""
         assert isinstance(bus.signal_generator, SignalGenerator)

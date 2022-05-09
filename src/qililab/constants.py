@@ -12,7 +12,7 @@ class YAML:
     """YAML constants."""
 
     NAME = "name"
-    READOUT = "readout"
+    TYPE = "type"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"

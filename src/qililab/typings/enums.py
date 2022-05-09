@@ -90,6 +90,19 @@ class PulseShapeOptions(Enum):
     GAUSSIAN = "gaussian"
 
 
+class BusType(Enum):
+    """Bus types.
+
+    Args:
+        enum (str): Available types of Bus:
+        * control
+        * readout
+    """
+
+    CONTROL = "control"
+    READOUT = "readout"
+
+
 class BusElementName(Enum):
     """Bus element names.
 

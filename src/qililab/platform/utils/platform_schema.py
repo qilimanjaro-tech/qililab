@@ -2,11 +2,9 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from qililab.settings import Settings
 from qililab.utils import nested_dataclass
 
 
-# TODO: I am currently not using this class. I leave it here if we need to use it later on.
 @nested_dataclass
 class PlatformSchema:
     """PlatformSchema class. Casts the platform dictionary into a class.
@@ -16,7 +14,7 @@ class PlatformSchema:
     - schema: schema dictionary:
         - buses: buses dictionary:
             - elements: list of bus dictionaries with the following structure:
-                - name: "readout" or "readout"
+                - name: "readout" or "control"
                 - qubit_instrument: settings dictionary.
                 - signal_generator: settings dictionary.
                 - mixer_up: settings dictionary.
@@ -33,9 +31,11 @@ class PlatformSchema:
             """BusDict class."""
 
             @dataclass
-            class MixerSchema(Settings):
+            class MixerSchema:
                 """MixerSchema class."""
 
+                id_: int
+                category: str
                 epsilon: float
                 delta: float
                 offset_i: float
@@ -49,7 +49,9 @@ class PlatformSchema:
                     """
                     yield from self.__dict__.items()
 
-            readout: bool
+            id_: int
+            category: str
+            type: str
             qubit_instrument: dict
             signal_generator: dict
             mixer_up: MixerSchema

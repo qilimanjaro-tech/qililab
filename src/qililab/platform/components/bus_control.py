@@ -6,7 +6,6 @@ from qililab.platform.components.bus import Bus
 from qililab.platform.components.qubit import Qubit
 
 
-@dataclass
 class BusControl(Bus):
     """BusControl class. This bus contains a qubit control and a signal generator, which are connected
     through a mixer for up-conversion, and a qubit at the end of the bus.
@@ -16,8 +15,17 @@ class BusControl(Bus):
         qubit (Qubit): Class containing the qubit object.
     """
 
-    qubit: Qubit
-    qubit_instrument: QubitControl
+    @dataclass
+    class BusControlSettings(Bus.BusSettings):
+        """BusControl settings"""
+
+        qubit: Qubit
+        qubit_instrument: QubitControl
+
+    settings: BusControlSettings
+
+    def __init__(self, settings: dict):
+        self.settings = self.BusControlSettings(**settings)
 
     @property
     def qubit_ids(self):

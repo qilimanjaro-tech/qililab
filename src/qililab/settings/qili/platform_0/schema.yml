@@ -1,5 +1,7 @@
 elements:
-  - readout: false
+  - id_: 0
+    category: bus
+    type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm  # unique name
@@ -40,7 +42,9 @@ elements:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - readout: true
+  - id_: 0
+    category: bus
+    type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm  # unique name
@@ -101,7 +105,9 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-  - readout: false
+  - id_: 0
+    category: bus
+    type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm  # unique name
@@ -142,7 +148,9 @@ elements:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - readout: true
+  - id_: 0
+    category: bus
+    type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm  # unique name
