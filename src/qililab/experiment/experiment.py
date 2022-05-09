@@ -2,13 +2,16 @@
 from dataclasses import asdict, dataclass
 from typing import List, Tuple
 
-from qibo.core.circuit import Circuit
+import numpy as np
+from qibo.abstractions.gates import Gate
+from qibo.gates import I, X, Y
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
-from qililab.pulse import PulseSequence
-from qililab.typings import Category
+from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse.pulse_shape import Drag
+from qililab.typings import Category, Circuit
 
 
 class Experiment:
@@ -21,6 +24,10 @@ class Experiment:
         hardware_average: int = 4096
         software_average: int = 10
         repetition_duration: int = 20000
+        delay_between_pulses: int = 0
+        gate_duration: int = 60
+        num_sigmas: float = 4
+        drag_coefficient: float = 0.3
 
     platform: Platform
     execution: Execution
@@ -34,8 +41,10 @@ class Experiment:
         self.platform = PLATFORM_MANAGER_DB.build(
             platform_name=platform_name, experiment_settings=asdict(self.settings)
         )
-        if isinstance(sequence, PulseSequence):
-            self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
+        if isinstance(sequence, Circuit):
+            sequence = self.from_circuit(circuit=sequence)
+        sequence.delay_between_pulses = self.delay_between_pulses
+        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
 
     def execute(self):
         """Run execution."""
@@ -82,3 +91,76 @@ class Experiment:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
         return self.execution.draw(resolution=resolution)
+
+    def from_circuit(self, circuit: Circuit):
+        """Translate a Qibo Circuit into a PulseSequence object.
+
+        Args:
+            circuit (Circuit): Qibo Circuit object.
+        """
+        sequence = PulseSequence()
+        for gate in circuit.queue:
+            sequence.add(self._gate_to_pulse(gate=gate))
+        return sequence
+
+    def _gate_to_pulse(self, gate: Gate):
+        """Translate gate int pulse.
+
+        Args:
+            gate (Gate): Qibo Gate.
+
+        Returns:
+            Pulse: Pulse object.
+        """
+        if isinstance(gate, I):
+            amplitude = 0.0
+            phase = 0.0
+        elif isinstance(gate, X):
+            amplitude = 1.0
+            phase = 0.0
+        elif isinstance(gate, Y):
+            amplitude = 1.0
+            phase = np.pi / 2
+        return Pulse(
+            amplitude=amplitude,
+            phase=phase,
+            duration=self.gate_duration,
+            qubit_ids=gate.target_qubits,
+            pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
+        )
+
+    @property
+    def delay_between_pulses(self):
+        """Experiment 'delay_between_pulses' property.
+
+        Returns:
+            int: settings.delay_between_pulses.
+        """
+        return self.settings.delay_between_pulses
+
+    @property
+    def num_sigmas(self):
+        """Experiment 'num_sigmas' property.
+
+        Returns:
+            float: settings.num_sigmas.
+        """
+        return self.settings.num_sigmas
+
+    @property
+    def drag_coefficient(self):
+        """Experiment 'drag_coefficient' property.
+
+        Returns:
+            float: settings.drag_coefficient.
+        """
+        return self.settings.drag_coefficient
+
+    @property
+    def gate_duration(self):
+        """Experiment 'drag_duration' property.
+
+        Returns:
+            int: settings.gate_duration.
+        """
+        return self.settings.gate_duration
