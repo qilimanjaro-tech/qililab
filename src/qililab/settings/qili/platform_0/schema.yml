@@ -41,7 +41,7 @@ elements:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - id_: 0
+  - id_: 1
     category: bus
     bus_type: readout
     qubit_instrument:
@@ -103,7 +103,7 @@ elements:
       delta: 0
       offset_i: 0
       offset_q: 0
-  - id_: 0
+  - id_: 2
     category: bus
     bus_type: control
     qubit_instrument:
@@ -145,7 +145,7 @@ elements:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - id_: 0
+  - id_: 3
     category: bus
     bus_type: readout
     qubit_instrument:

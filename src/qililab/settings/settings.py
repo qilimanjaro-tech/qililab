@@ -1,11 +1,11 @@
 from abc import ABC
 
-from qililab.typings import Category
+from qililab.typings import Category, SettingsType
 from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class Settings(ABC):
+class Settings(SettingsType, ABC):
     """Settings class.
 
     Args:

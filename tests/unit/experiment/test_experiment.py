@@ -1,7 +1,6 @@
 """Test experiment."""
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -76,12 +75,15 @@ class TestExperiment:
         mock_pulsar_instance.sequencer0.mock_add_spec(
             ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
         )
+        experiment.add_parameter_to_loop(
+            category="signal_generator", id_=1, parameter="frequency", start=3544000000, stop=3744000000, step=10000000
+        )
         results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, list)
-        assert isinstance(results[0], QbloxResult)
-        assert isinstance(results[0].acquisition, QbloxResult.QbloxAcquisitionData)
+        assert isinstance(results[0][0], QbloxResult)
+        assert isinstance(results[0][0].acquisition, QbloxResult.QbloxAcquisitionData)
 
     def test_draw_method(self, experiment: Experiment):
         """Test draw method"""

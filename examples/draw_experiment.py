@@ -17,6 +17,10 @@ def load_experiment():
     sequence.add(ReadoutPulse(amplitude=1, phase=0, duration=1000, qubit_ids=[0]))
 
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=sequence)
+    print(experiment.parameters)
+    experiment.add_parameter_to_loop(
+        category="signal_generator", id_=1, parameter="frequency", start=3544000000, stop=3744000000, step=10000000
+    )
     figure = experiment.draw(resolution=0.1)
     figure.show()
     plt.show()
