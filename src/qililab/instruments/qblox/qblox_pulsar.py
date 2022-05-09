@@ -74,14 +74,15 @@ class QbloxPulsar(QubitInstrument):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
-        program = self._generate_program(pulse_sequence=pulse_sequence)
+        program = self._generate_program(pulse_sequence=pulse_sequence, waveforms=waveforms)
         return Sequence(program=program, waveforms=waveforms, acquisitions={}, weights={})
 
-    def _generate_program(self, pulse_sequence: PulseSequence):
+    def _generate_program(self, pulse_sequence: PulseSequence, waveforms: Waveforms):
         """Generate Q1ASM program
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
+            waveforms (Waveforms): Waveforms.
 
         Returns:
             Program: Q1ASM program.
@@ -99,6 +100,7 @@ class QbloxPulsar(QubitInstrument):
             final_wait_time = 4  # ns
 
         for i, pulse in enumerate(pulses):
+            waveform_pair = waveforms.find_pair_by_name(str(pulse))
             if i < len(pulses) - 1:
                 wait_time = pulses[i + 1].start - pulse.start
             else:
@@ -107,7 +109,7 @@ class QbloxPulsar(QubitInstrument):
             loop.append_component(
                 SetAwgGain(gain_0=self.MAX_GAIN * pulse.amplitude, gain_1=self.MAX_GAIN * pulse.amplitude)
             )
-            loop.append_component(Play(waveform_0=pulse.indices, waveform_1=pulse.indices + 1, wait_time=wait_time))
+            loop.append_component(Play(waveform_0=waveform_pair.waveform_i.index, waveform_1=waveform_pair.waveform_q.index, wait_time=wait_time))
 
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
@@ -200,9 +202,7 @@ class QbloxPulsar(QubitInstrument):
                 envelope = pulse.envelope()
                 real = np.real(envelope) + self.offset_i
                 imag = np.imag(envelope) + self.offset_q
-                pulse.indices = waveforms.add_pair((real, imag), name=str(pulse))
-            else:
-                pulse.indices = unique_pulses[unique_pulses.index(pulse)].indices
+                waveforms.add_pair((real, imag), name=str(pulse))
 
         return waveforms
 

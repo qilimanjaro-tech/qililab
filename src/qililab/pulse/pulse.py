@@ -22,9 +22,6 @@ class Pulse:
     shape: InitVar[dict]
     qubit_id: int
     frequency: Optional[float] = None  # frequency is set by the QRM
-    indices: Tuple[int, int] = field(
-        init=False
-    )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
 
     def __post_init__(self, shape: dict):
         """Cast pulse_shape attribute to its corresponding class."""
