@@ -1,5 +1,4 @@
 from .bus_element import BusElement
-from .circuit import Circuit
 from .enums import (
     AcquireTriggerMode,
     BusElementName,

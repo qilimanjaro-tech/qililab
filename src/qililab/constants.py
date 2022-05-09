@@ -15,3 +15,6 @@ class YAML:
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"
+    HARDWARE_AVERAGE = "hardware_average"
+    SOFTWARE_AVERAGE = "software_average"
+    REPETITION_DURATION = "repetition_duration"

@@ -4,28 +4,39 @@ from typing import List, Tuple
 
 import numpy as np
 from qibo.abstractions.gates import Gate
-from qibo.gates import I, X, Y
+from qibo.core.circuit import Circuit
+from qibo.gates import I, M, X, Y
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
-from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
-from qililab.typings import Category, Circuit
+from qililab.typings import Category
+from qililab.utils import nested_dataclass
 
 
 class Experiment:
     """HardwareExperiment class"""
 
-    @dataclass
+    @nested_dataclass
     class ExperimentSettings:
         """Experiment settings."""
 
+        @dataclass
+        class ReadoutPulseSettings:
+            """ReadoutPulseSettings class."""
+
+            amplitude: float = 0.4
+            duration: int = 2000
+            phase: float = 0
+
+        readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
         hardware_average: int = 4096
         software_average: int = 10
         repetition_duration: int = 20000
         delay_between_pulses: int = 0
-        gate_duration: int = 60
+        gate_duration: int = 100
         num_sigmas: float = 4
         drag_coefficient: float = 0.3
 
@@ -99,7 +110,9 @@ class Experiment:
             circuit (Circuit): Qibo Circuit object.
         """
         sequence = PulseSequence()
-        for gate in circuit.queue:
+        gates = list(circuit.queue)
+        gates.append(circuit.measurement_gate)
+        for gate in gates:
             sequence.add(self._gate_to_pulse(gate=gate))
         return sequence
 
@@ -121,11 +134,20 @@ class Experiment:
         elif isinstance(gate, Y):
             amplitude = 1.0
             phase = np.pi / 2
+        elif isinstance(gate, M):
+            return ReadoutPulse(
+                amplitude=self.readout_pulse.amplitude,
+                phase=self.readout_pulse.phase,
+                duration=self.readout_pulse.duration,
+                qubit_ids=list(gate.target_qubits),
+            )
+        else:
+            raise ValueError(f"Qililab has not defined a gate {type(gate).__class__}")
         return Pulse(
             amplitude=amplitude,
             phase=phase,
             duration=self.gate_duration,
-            qubit_ids=gate.target_qubits,
+            qubit_ids=list(gate.target_qubits),
             pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
         )
 
@@ -164,3 +186,12 @@ class Experiment:
             int: settings.gate_duration.
         """
         return self.settings.gate_duration
+
+    @property
+    def readout_pulse(self):
+        """Experiment 'readout_pulse' property.
+
+        Returns:
+            ReadoutPulseSettings: settings.readout_pulse.
+        """
+        return self.settings.readout_pulse

@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
+from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME, YAML
 from qililab.platform.platform import Platform
 from qililab.platform.utils import PlatformSchema
 from qililab.utils import SingletonABC
@@ -62,7 +62,9 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             if not isinstance(experiment_settings, dict):
                 raise ValueError(f"Please provide a dictionary for the '{self.EXPERIMENT_SETTINGS}' keyword argument.")
             for bus in platform_schema.schema.elements:
-                bus.qubit_instrument |= experiment_settings
+                bus.qubit_instrument[YAML.REPETITION_DURATION] = experiment_settings[YAML.REPETITION_DURATION]
+                bus.qubit_instrument[YAML.HARDWARE_AVERAGE] = experiment_settings[YAML.HARDWARE_AVERAGE]
+                bus.qubit_instrument[YAML.SOFTWARE_AVERAGE] = experiment_settings[YAML.SOFTWARE_AVERAGE]
 
     def _configure_mixer_offsets(self, platform_schema: PlatformSchema):
         """Configure offsets, epsilon and delta of qubit instrument from mixer settings

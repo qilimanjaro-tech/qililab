@@ -1,3 +1,7 @@
 hardware_average: 4096
 software_average: 10
 repetition_duration: 200000
+readout_pulse:
+  amplitude: 0.4
+  duration: 2000
+  phase: 0
