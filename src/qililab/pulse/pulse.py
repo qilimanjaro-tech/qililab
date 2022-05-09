@@ -1,6 +1,6 @@
 """Pulse class."""
 from dataclasses import InitVar, dataclass, field
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -22,7 +22,7 @@ class Pulse:
     shape: InitVar[dict]
     qubit_id: int
     frequency: Optional[float] = None  # frequency is set by the QRM
-    index: int = field(
+    indices: Tuple[int, int] = field(
         init=False
     )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
 

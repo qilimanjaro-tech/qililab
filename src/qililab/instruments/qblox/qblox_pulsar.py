@@ -9,11 +9,13 @@ from qpysequence.instructions import Acquire, Play, SetAwgGain, Wait
 from qpysequence.library import long_wait, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
+from qpysequence.waveforms import Waveforms
 from qpysequence.sequence import Sequence
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse.pulse import Pulse
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
@@ -71,9 +73,9 @@ class QbloxPulsar(QubitInstrument):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms_dict = self._generate_waveforms(pulse_sequence=pulse_sequence)
+        waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
         program = self._generate_program(pulse_sequence=pulse_sequence)
-        return Sequence(program=program, waveforms=waveforms_dict, acquisitions={}, weights={})
+        return Sequence(program=program, waveforms=waveforms, acquisitions={}, weights={})
 
     def _generate_program(self, pulse_sequence: PulseSequence):
         """Generate Q1ASM program
@@ -105,7 +107,7 @@ class QbloxPulsar(QubitInstrument):
             loop.append_component(
                 SetAwgGain(gain_0=self.MAX_GAIN * pulse.amplitude, gain_1=self.MAX_GAIN * pulse.amplitude)
             )
-            loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=wait_time))
+            loop.append_component(Play(waveform_0=pulse.indices, waveform_1=pulse.indices + 1, wait_time=wait_time))
 
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
@@ -186,27 +188,23 @@ class QbloxPulsar(QubitInstrument):
             pulse_sequence (PulseSequence): PulseSequence object.
 
         Returns:
-            Dict[str, Dict[str, List]]: Dictionary containing the generated waveforms.
+            Waveforms: Waveforms object containing the generated waveforms.
         """
-        waveforms_dict: Dict[str, Dict[str, List | int]] = {}
+        waveforms = Waveforms()
 
-        unique_pulses = []
-        idx = 0
+        unique_pulses: List[Pulse] = []
 
         for pulse in pulse_sequence.pulses:
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
-                pulse.index = idx
                 envelope = pulse.envelope()
-                waveforms_dict |= {
-                    f"{pulse}_I": {"data": (np.real(envelope) + self.offset_i).tolist(), "index": idx},
-                    f"{pulse}_Q": {"data": (np.imag(envelope) + self.offset_q).tolist(), "index": idx},
-                }
-                idx += 2
+                real = np.real(envelope) + self.offset_i
+                imag = np.imag(envelope) + self.offset_q
+                pulse.indices = waveforms.add_pair((real, imag), name=str(pulse))
             else:
-                pulse.index = unique_pulses.index(pulse) * 2
+                pulse.indices = unique_pulses[unique_pulses.index(pulse)].indices
 
-        return waveforms_dict
+        return waveforms
 
     @property
     def reference_clock(self):
