@@ -18,7 +18,6 @@ class Pulse:
     pulse_shape: PulseShape
     start: Optional[int] = None
     duration: Optional[int] = None
-    index: int = field(init=False)
 
     def __post_init__(self):
         """Cast qubit_ids to list."""

@@ -10,6 +10,7 @@ from qpysequence.library import long_wait, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
+from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
@@ -71,15 +72,16 @@ class QbloxPulsar(QubitInstrument):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms_dict = self._generate_waveforms(pulses=pulses)
-        program = self._generate_program(pulses=pulses)
-        return Sequence(program=program, waveforms=waveforms_dict, acquisitions={}, weights={})
+        waveforms = self._generate_waveforms(pulses=pulses)
+        program = self._generate_program(pulses=pulses, waveforms=waveforms)
+        return Sequence(program=program, waveforms=waveforms, acquisitions={}, weights={})
 
-    def _generate_program(self, pulses: List[Pulse]):
+    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms):
         """Generate Q1ASM program
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
+            waveforms (Waveforms): Waveforms.
 
         Returns:
             Program: Q1ASM program.
@@ -96,6 +98,7 @@ class QbloxPulsar(QubitInstrument):
             final_wait_time = 4  # ns
 
         for i, pulse in enumerate(pulses):
+            waveform_pair = waveforms.find_pair_by_name(str(pulse))
             if i < len(pulses) - 1:
                 wait_time = pulses[i + 1].start - pulse.start
             else:
@@ -104,7 +107,13 @@ class QbloxPulsar(QubitInstrument):
             loop.append_component(
                 SetAwgGain(gain_0=self.MAX_GAIN * pulse.amplitude, gain_1=self.MAX_GAIN * pulse.amplitude)
             )
-            loop.append_component(Play(waveform_0=pulse.index, waveform_1=pulse.index + 1, wait_time=wait_time))
+            loop.append_component(
+                Play(
+                    waveform_0=waveform_pair.waveform_i.index,
+                    waveform_1=waveform_pair.waveform_q.index,
+                    wait_time=wait_time,
+                )
+            )
 
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=1, wait_time=4))
@@ -185,27 +194,21 @@ class QbloxPulsar(QubitInstrument):
             pulse_sequence (PulseSequence): PulseSequence object.
 
         Returns:
-            Dict[str, Dict[str, List]]: Dictionary containing the generated waveforms.
+            Waveforms: Waveforms object containing the generated waveforms.
         """
-        waveforms_dict: Dict[str, Dict[str, List | int]] = {}
+        waveforms = Waveforms()
 
-        unique_pulses = []
-        idx = 0
+        unique_pulses: List[Pulse] = []
 
         for pulse in pulses:
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
-                pulse.index = idx
                 envelope = pulse.envelope()
-                waveforms_dict |= {
-                    f"{pulse}_I": {"data": (np.real(envelope) + self.offset_i).tolist(), "index": idx},
-                    f"{pulse}_Q": {"data": (np.imag(envelope) + self.offset_q).tolist(), "index": idx},
-                }
-                idx += 2
-            else:
-                pulse.index = unique_pulses.index(pulse) * 2
+                real = np.real(envelope) + self.offset_i
+                imag = np.imag(envelope) + self.offset_q
+                waveforms.add_pair((real, imag), name=str(pulse))
 
-        return waveforms_dict
+        return waveforms
 
     @property
     def reference_clock(self):
