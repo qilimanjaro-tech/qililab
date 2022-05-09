@@ -7,8 +7,7 @@ import numpy as np
 class PulseShape(ABC):
     """Pulse shape abstract base class."""
 
-    def __init__(self, name: str):
-        self.name = name
+    name: str
 
     @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:

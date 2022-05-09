@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from qililab.instruments import MixerDown, QubitReadout
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.resonator import Resonator
-from qililab.typings import Category
+from qililab.typings import BusType, Category
 
 
 class BusReadout(Bus):
@@ -27,6 +27,7 @@ class BusReadout(Bus):
         qubit_instrument: QubitReadout
 
     settings: BusReadoutSettings
+    bus_type = BusType.READOUT
 
     def __init__(self, settings: dict):
         self.settings = self.BusReadoutSettings(**settings)

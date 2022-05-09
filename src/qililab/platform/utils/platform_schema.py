@@ -51,7 +51,7 @@ class PlatformSchema:
 
             id_: int
             category: str
-            type: str
+            bus_type: str
             qubit_instrument: dict
             signal_generator: dict
             mixer_up: MixerSchema

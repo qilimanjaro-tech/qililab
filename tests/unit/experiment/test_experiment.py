@@ -1,12 +1,15 @@
 """Test experiment."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
-from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
+from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
+from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
 
 from ..utils.side_effect import yaml_safe_load_side_effect
@@ -16,7 +19,11 @@ from ..utils.side_effect import yaml_safe_load_side_effect
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock):
     """Return Experiment object."""
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    pulse_sequence = PulseSequence()
+    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), qubit_ids=[0]))
+    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, qubit_ids=[0]))
+
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=pulse_sequence)
     mock_load.assert_called()
     return experiment
 

@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.platform import Bus
-from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse import BusPulses, Pulse
 
 
 @dataclass
@@ -10,7 +10,7 @@ class BusExecution:
     """BusExecution class."""
 
     bus: Bus
-    pulse_sequence: PulseSequence
+    pulses: BusPulses
 
     def connect(self):
         """Connect to the instruments."""
@@ -26,13 +26,21 @@ class BusExecution:
 
     def run(self):
         """Run the given pulse sequence."""
-        return self.bus.run(pulse_sequence=self.pulse_sequence)
+        return self.bus.run(pulses=self.pulses.pulses)
 
     def close(self):
         """Close connection to the instruments."""
         self.bus.close()
 
-    def pulses(self, resolution: float = 1.0):
+    def add_pulse(self, pulse: Pulse):
+        """Add pulse to BusExecution.
+
+        Args:
+            pulse (Pulse): Pulse object.
+        """
+        self.pulses.add(pulse=pulse)
+
+    def waveforms(self, resolution: float = 1.0):
         """Return pulses applied on this bus.
 
         Args:
@@ -41,13 +49,22 @@ class BusExecution:
         Returns:
             Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on this bus.
         """
-        return self.pulse_sequence.waveforms(resolution=resolution)
+        return self.pulses.waveforms(frequency=self.qubit_instrument.frequency, resolution=resolution)
 
     @property
     def qubit_ids(self):
-        """BusExecution 'qubit_id' property
+        """BusExecution 'qubit_ids' property
 
         Returns:
             int: ID of the qubit connected to the bus.
         """
         return self.bus.qubit_ids
+
+    @property
+    def qubit_instrument(self):
+        """BusExecution 'qubit_instrument' property.
+
+        Returns:
+            QubitInstrument: bus.qubit_instrument
+        """
+        return self.bus.qubit_instrument

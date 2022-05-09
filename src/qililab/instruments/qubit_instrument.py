@@ -1,8 +1,9 @@
 """QubitControl class."""
 from abc import abstractmethod
+from typing import List
 
 from qililab.instruments.instrument import Instrument
-from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse import Pulse
 from qililab.typings import BusElement
 from qililab.utils import nested_dataclass
 
@@ -38,7 +39,7 @@ class QubitInstrument(Instrument, BusElement):
     settings: QubitInstrumentSettings
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence):
+    def run(self, pulses: List[Pulse]):
         """Run execution of a pulse sequence.
 
         Args:
@@ -80,3 +81,12 @@ class QubitInstrument(Instrument, BusElement):
             int: settings.repetition_duration.
         """
         return self.settings.repetition_duration
+
+    @property
+    def frequency(self):
+        """QbloxPulsar 'frequency' property.
+
+        Returns:
+            float: settings.frequency.
+        """
+        return self.settings.frequency

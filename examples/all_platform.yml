@@ -4,7 +4,7 @@ settings:
   category: platform
 schema:
   elements:
-  - type: control
+  - bus_type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm
@@ -41,7 +41,7 @@ schema:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - type: readout
+  - bus_type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm
@@ -99,7 +99,7 @@ schema:
       delta: 0
       offset_i: 0
       offset_q: 0
-  - type: control
+  - bus_type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm
@@ -136,7 +136,7 @@ schema:
       qubit_frequency: 3544000000.0
       min_voltage: 950
       max_voltage: 1775
-  - type: readout
+  - bus_type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm

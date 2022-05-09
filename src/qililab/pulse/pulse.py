@@ -1,36 +1,31 @@
 """Pulse class."""
-from dataclasses import InitVar, dataclass, field
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 import numpy as np
 
-from qililab.constants import YAML
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.pulse.pulse_shape.utils.pulse_shape_hashtable import PulseShapeHashTable
 
 
 @dataclass
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    readout: bool
-    start: int
-    duration: int
+    name = "Pulse"
     amplitude: float
     phase: float
-    pulse_shape: PulseShape = field(init=False)
-    shape: InitVar[dict]
-    qubit_id: int
-    frequency: Optional[float] = None  # frequency is set by the QRM
-    index: int = field(
-        init=False
-    )  # FIXME: This index is only for Qblox (it points to the specific waveform in the used dictionary), find where to put it
+    qubit_ids: List[int]
+    pulse_shape: PulseShape
+    start: Optional[int] = None
+    duration: Optional[int] = None
+    index: int = field(init=False)
 
-    def __post_init__(self, shape: dict):
-        """Cast pulse_shape attribute to its corresponding class."""
-        self.pulse_shape = PulseShapeHashTable.get(name=shape[YAML.NAME])(**shape)
+    def __post_init__(self):
+        """Cast qubit_ids to list."""
+        if isinstance(self.qubit_ids, int):
+            self.qubit_ids = [self.qubit_ids]
 
-    def modulated_waveforms(self, resolution: float = 1.0) -> np.ndarray:
+    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> np.ndarray:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
@@ -39,15 +34,13 @@ class Pulse:
         Returns:
             NDArray: I and Q modulated waveforms.
         """
-        # TODO: Find where to put this method
-        if self.frequency is None:
-            raise AttributeError("You must define a frequency for the pulse.")
-
+        if self.duration is None:
+            raise ValueError("Duration of the pulse is not defined.")
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
         time = np.arange(self.duration / resolution) * 1e-9 * resolution
-        cosalpha = np.cos(2 * np.pi * self.frequency * time + self.phase)
-        sinalpha = np.sin(2 * np.pi * self.frequency * time + self.phase)
+        cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
+        sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
         return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
 
@@ -57,11 +50,13 @@ class Pulse:
         Returns:
             List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
+        if self.duration is None:
+            raise ValueError("Duration of the pulse is not defined.")
         return self.pulse_shape.envelope(duration=self.duration, amplitude=1.0, resolution=resolution)
 
     def __repr__(self):
         """Return string representation of the Pulse object."""
-        return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, f={self.frequency}, p={self.phase}, {self.pulse_shape.name})"""
+        return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, p={self.phase}, {self.pulse_shape.name})"""
 
     def __eq__(self, other: object) -> bool:
         """Compare Pulse with another object.
@@ -74,7 +69,6 @@ class Pulse:
         return (
             self.amplitude == other.amplitude
             and self.duration == other.duration
-            and self.frequency == other.frequency
             and self.phase == other.phase
             and self.pulse_shape == other.pulse_shape
         )

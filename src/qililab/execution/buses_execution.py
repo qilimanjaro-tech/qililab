@@ -46,7 +46,7 @@ class BusesExecution:
         for bus in self.buses:
             bus.close()
 
-    def pulses(self, resolution: float = 1.0):
+    def waveforms(self, resolution: float = 1.0):
         """Get pulses of each bus and sum pulses by their qubit id.
 
         Args:
@@ -58,13 +58,13 @@ class BusesExecution:
         """
         pulses: Dict[int, np.ndarray] = {}
         for bus in self.buses:
-            new_pulses = np.array(bus.pulses(resolution=resolution))
-            for qubit_id in bus.qubit_ids:
-                if qubit_id not in pulses:
-                    pulses[qubit_id] = new_pulses
+            new_pulses = np.array(bus.waveforms(resolution=resolution))
+            for qubit_ids in bus.qubit_ids:
+                if qubit_ids not in pulses:
+                    pulses[qubit_ids] = new_pulses
                     continue
-                old_pulses = pulses[qubit_id]
-                pulses[qubit_id] = np.array(
+                old_pulses = pulses[qubit_ids]
+                pulses[qubit_ids] = np.array(
                     [[x + y for x, y in zip_longest(old, new, fillvalue=0)] for old, new in zip(old_pulses, new_pulses)]
                 )
 
@@ -82,7 +82,7 @@ class BusesExecution:
         figure, axes = plt.subplots(num_qubits, 1)
         if num_qubits == 1:
             axes = [axes]  # make axes subscriptable
-        for idx, pulse in self.pulses(resolution=resolution).items():
+        for idx, pulse in self.waveforms(resolution=resolution).items():
             time = np.arange(len(pulse[0])) * resolution
             axes[idx].set_title(f"Qubit {idx}")
             axes[idx].plot(time, pulse[0], label="I")
@@ -103,4 +103,4 @@ class BusesExecution:
         Args:
             gate (HardwareGate): Hardware gate.
         """
-        # Find if there is a BusExecution with the correct qubit_id, if not create one. If there is add the pulse.
+        # Find if there is a BusExecution with the correct qubit_ids, if not create one. If there is add the pulse.

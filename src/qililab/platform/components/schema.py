@@ -23,7 +23,7 @@ class Schema:
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         buses: List[BusControl | BusReadout] = []
         for bus in elements:
-            bus_type = bus.pop(YAML.TYPE)
+            bus_type = bus[YAML.BUS_TYPE]
             if BusType(bus_type) is BusType.CONTROL:
                 buses.append(BusControl(settings=bus))
             elif BusType(bus_type) is BusType.READOUT:

@@ -7,8 +7,9 @@ from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
-    def __init__(self, name: str, num_sigmas: float):
-        super().__init__(name=name)
+    name = "Gaussian"
+
+    def __init__(self, num_sigmas: float):
         self.num_sigmas = num_sigmas
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):

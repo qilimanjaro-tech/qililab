@@ -7,8 +7,7 @@ from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 class Rectangular(PulseShape):
     """Rectangular/square pulse shape."""
 
-    def __init__(self, name: str):
-        super().__init__(name=name)
+    name = "Rectangular"
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.

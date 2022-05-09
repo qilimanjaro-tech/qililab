@@ -1,7 +1,9 @@
 """Qblox pulsar QRM class"""
+from typing import List
+
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse import Pulse
 from qililab.result import QbloxResult
 from qililab.typings import AcquireTriggerMode, BusElementName, IntegrationMode
 from qililab.utils import BusElementFactory, nested_dataclass
@@ -50,7 +52,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         super().__init__()
         self.settings = self.QbloxPulsarQRMSettings(**settings)
 
-    def run(self, pulse_sequence: PulseSequence):
+    def run(self, pulses: List[Pulse]):
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:
@@ -59,7 +61,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Returns:
             Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
-        super().run(pulse_sequence=pulse_sequence)
+        super().run(pulses=pulses)
         return self.get_acquisitions()
 
     @QbloxPulsar.CheckConnected

@@ -7,8 +7,9 @@ from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 
-    def __init__(self, name: str, num_sigmas: float, beta: float):
-        super().__init__(name=name)
+    name = "Drag"
+
+    def __init__(self, num_sigmas: float, beta: float):
         self.num_sigmas = num_sigmas
         self.beta = beta
 

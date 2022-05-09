@@ -1,7 +1,13 @@
-from qililab.constants import DEFAULT_EXPERIMENT_NAME, DEFAULT_PLATFORM_NAME
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.experiment import Experiment
+from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
+from qililab.pulse.pulse_shape import Drag
 
 
 def test_experiment():
     """Test experiment"""
-    return Experiment(platform_name=DEFAULT_PLATFORM_NAME, experiment_name=DEFAULT_EXPERIMENT_NAME)
+    pulse_sequence = PulseSequence()
+    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), qubit_ids=[0]))
+    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, qubit_ids=[0]))
+
+    Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=pulse_sequence)

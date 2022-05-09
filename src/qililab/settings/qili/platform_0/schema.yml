@@ -1,7 +1,7 @@
 elements:
   - id_: 0
     category: bus
-    type: control
+    bus_type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm  # unique name
@@ -44,7 +44,7 @@ elements:
       max_voltage: 1775
   - id_: 0
     category: bus
-    type: readout
+    bus_type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm  # unique name
@@ -107,7 +107,7 @@ elements:
       offset_q: 0
   - id_: 0
     category: bus
-    type: control
+    bus_type: control
     qubit_instrument:
       id_: 0
       name: qblox_qcm  # unique name
@@ -150,7 +150,7 @@ elements:
       max_voltage: 1775
   - id_: 0
     category: bus
-    type: readout
+    bus_type: readout
     qubit_instrument:
       id_: 1
       name: qblox_qrm  # unique name

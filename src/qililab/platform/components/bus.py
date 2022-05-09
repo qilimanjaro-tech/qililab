@@ -1,7 +1,6 @@
 """Bus class."""
 from dataclasses import dataclass
-from types import NoneType
-from typing import Generator, Optional, Tuple
+from typing import Generator, List, Optional, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments import (
@@ -13,9 +12,9 @@ from qililab.instruments import (
 )
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
-from qililab.pulse import PulseSequence
+from qililab.pulse import Pulse
 from qililab.settings import Settings
-from qililab.typings import Category
+from qililab.typings import BusType, Category
 from qililab.utils import BusElementFactory
 
 
@@ -41,6 +40,7 @@ class Bus:
             qubit (Optional[Qubit]): Class containing the qubit object.
         """
 
+        bus_type: BusType
         signal_generator: SignalGenerator
         mixer_up: MixerUp
         qubit_instrument: QubitInstrument
@@ -88,9 +88,9 @@ class Bus:
         self.qubit_instrument.start()
         self.signal_generator.start()
 
-    def run(self, pulse_sequence: PulseSequence):
+    def run(self, pulses: List[Pulse]):
         """Run the given pulse sequence."""
-        return self.qubit_instrument.run(pulse_sequence=pulse_sequence)
+        return self.qubit_instrument.run(pulses=pulses)
 
     def close(self):
         """Close connection to the instruments."""

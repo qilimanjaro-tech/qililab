@@ -13,7 +13,7 @@ from qpysequence.sequence import Sequence
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse import Pulse
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
@@ -52,17 +52,17 @@ class QbloxPulsar(QubitInstrument):
         super().connect()
         self.initial_setup()
 
-    def run(self, pulse_sequence: PulseSequence):
+    def run(self, pulses: List[Pulse]):
         """Run execution of a pulse sequence.
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-        sequence = self._translate_pulse_sequence(pulse_sequence=pulse_sequence)
+        sequence = self._translate_pulse_sequence(pulses=pulses)
         self.upload(sequence=sequence)
         self.start()
 
-    def _translate_pulse_sequence(self, pulse_sequence: PulseSequence):
+    def _translate_pulse_sequence(self, pulses: List[Pulse]):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -71,11 +71,11 @@ class QbloxPulsar(QubitInstrument):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms_dict = self._generate_waveforms(pulse_sequence=pulse_sequence)
-        program = self._generate_program(pulse_sequence=pulse_sequence)
+        waveforms_dict = self._generate_waveforms(pulses=pulses)
+        program = self._generate_program(pulses=pulses)
         return Sequence(program=program, waveforms=waveforms_dict, acquisitions={}, weights={})
 
-    def _generate_program(self, pulse_sequence: PulseSequence):
+    def _generate_program(self, pulses: List[Pulse]):
         """Generate Q1ASM program
 
         Args:
@@ -84,7 +84,6 @@ class QbloxPulsar(QubitInstrument):
         Returns:
             Program: Q1ASM program.
         """
-        pulses = pulse_sequence.pulses
         program = Program()
         loop = Loop(name="loop", iterations=self.hardware_average)
         # TODO: Make sure that start time of Pulse is 0 or bigger than 4
@@ -179,7 +178,7 @@ class QbloxPulsar(QubitInstrument):
         # TODO: We need to update the firmware of the instruments to be able to connect
         self.device = Pulsar(name=self.name, identifier=self.ip)
 
-    def _generate_waveforms(self, pulse_sequence: PulseSequence):
+    def _generate_waveforms(self, pulses: List[Pulse]):
         """Generate I and Q waveforms from a PulseSequence object.
 
         Args:
@@ -193,7 +192,7 @@ class QbloxPulsar(QubitInstrument):
         unique_pulses = []
         idx = 0
 
-        for pulse in pulse_sequence.pulses:
+        for pulse in pulses:
             if pulse not in unique_pulses:
                 unique_pulses.append(pulse)
                 pulse.index = idx
