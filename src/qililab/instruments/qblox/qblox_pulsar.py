@@ -131,6 +131,7 @@ class QbloxPulsar(QubitInstrument):
             Acquisitions: Acquisitions object.
         """
         acquisitions = Acquisitions
+        # Create the acquisition: {"single": {"num_bins": 1, "index": 0}}
         acquisitions.add("single")
         return acquisitions
 
