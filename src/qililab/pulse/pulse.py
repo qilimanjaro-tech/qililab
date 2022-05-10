@@ -49,7 +49,7 @@ class Pulse:
         """
         if amplitude is None:
             amplitude = self.amplitude
-        return self.pulse_shape.envelope(duration=self.duration, amplitude=1.0, resolution=resolution)
+        return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
     @property
     def start(self):

@@ -22,16 +22,13 @@ def load_experiment():
     # Using PLATFORM_MANAGER_DB
     circuit = Circuit(1)
     # circuit.add(X(0))
+    circuit.add(I(0))
     circuit.add(M(0))
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit, connection=connection)
     experiment.add_parameter_to_loop(
-        category="signal_generator", id_=1, parameter="frequency", start=7300000000.0, stop=7313000000.0, num=50
+        category="signal_generator", id_=1, parameter="frequency", start=7.345e9, stop=7.35e9, num=1000
     )
     results = experiment.execute()
-    voltages = [result[0].voltages() for result in results]
-    plt.plot(voltages)
-    plt.savefig(fname="test.png")
-
 
 if __name__ == "__main__":
     load_experiment()

@@ -106,17 +106,9 @@ class QbloxResult(Result):
         """
         voltages = []
         for result in self.results:
-            acqu_i = np.mean(
-                result.acquisition.scope.path0.data[
-                    self.start_integrate : self.start_integrate + self.integration_length
-                ]
-            )
-            acqu_q = np.mean(
-                result.acquisition.scope.path1.data[
-                    self.start_integrate : self.start_integrate + self.integration_length
-                ]
-            )
-            voltages.append(np.sqrt(acqu_i**2 + acqu_q**2))
+            integrated_i = result.acquisition.bins.integration.path0[0]
+            integrated_q = result.acquisition.bins.integration.path1[0]
+            voltages.append(np.sqrt(integrated_i**2 + integrated_q**2))
 
         return voltages
 

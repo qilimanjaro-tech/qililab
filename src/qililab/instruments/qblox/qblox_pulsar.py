@@ -52,6 +52,7 @@ class QbloxPulsar(QubitInstrument):
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         super().connect()
+        self.reset()
         self.initial_setup()
 
     def run(self, pulses: List[Pulse]):
@@ -129,9 +130,9 @@ class QbloxPulsar(QubitInstrument):
         Returns:
             Acquisitions: Acquisitions object.
         """
-        acquisitions = Acquisitions
+        acquisitions = Acquisitions()
         # Create the acquisition: {"single": {"num_bins": 1, "index": 0}}
-        acquisitions.add("single")
+        acquisitions.add(name="single", num_bins=1, index=0)
         return acquisitions
 
     @QubitInstrument.CheckConnected
@@ -161,6 +162,7 @@ class QbloxPulsar(QubitInstrument):
         """Initial setup of the instrument."""
         self._set_reference_source()
         self._set_sync_enabled()
+        self._map_outputs()
 
     @QubitInstrument.CheckConnected
     def upload(self, sequence: Sequence):
@@ -171,7 +173,7 @@ class QbloxPulsar(QubitInstrument):
             acquisitions and program of the sequence.
         """
         # TODO: Discuss this sequence dump: use DB or files?
-        file_path = str(Path(sys.argv[0]).parent / f"{self.name}_sequence.yml")
+        file_path = str(Path(sys.argv[0]).parent / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
         getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)
@@ -193,6 +195,15 @@ class QbloxPulsar(QubitInstrument):
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
         getattr(self.device, f"sequencer{self.sequencer}").sync_en(self.sync_enabled)
+
+    def _map_outputs(self):
+        # Disable all connections
+        for sequencer in self.device.sequencers:
+            for out in range(0, 4):
+                if hasattr(sequencer, "channel_map_path{}_out{}_en".format(out%2, out)):
+                    sequencer.set("channel_map_path{}_out{}_en".format(out%2, out), False)
+        getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
+        getattr(self.device, f"sequencer{self.sequencer}").channel_map_path1_out1_en(True)
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""

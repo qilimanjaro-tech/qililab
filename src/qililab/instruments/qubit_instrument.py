@@ -1,18 +1,18 @@
 """QubitControl class."""
 from abc import abstractmethod
 from typing import List
+from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import Pulse
 from qililab.typings import BusElement
 from qililab.result import QbloxResult
-from qililab.utils import nested_dataclass
 
 
 class QubitInstrument(Instrument, BusElement):
     """Abstract base class defining all instruments used to control or readout the qubits."""
 
-    @nested_dataclass(kw_only=True)
+    @dataclass
     class QubitInstrumentSettings(Instrument.InstrumentSettings):
         """Contains the settings of a QubitInstrument.
 
@@ -26,9 +26,9 @@ class QubitInstrument(Instrument, BusElement):
             delta (float): Dephasing.
         """
 
-        hardware_average: int = 4096
-        software_average: int = 10
-        repetition_duration: int = 200000  # ns
+        hardware_average: int
+        software_average: int
+        repetition_duration: int  # ns
         frequency: float
         offset_i: float
         offset_q: float
@@ -52,7 +52,7 @@ class QubitInstrument(Instrument, BusElement):
         Returns:
             int: settings.hardware_average.
         """
-        return self.QubitInstrumentSettings.hardware_average
+        return self.settings.hardware_average
 
     @property
     def software_average(self):

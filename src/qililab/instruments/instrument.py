@@ -1,11 +1,12 @@
 """Instrument class"""
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable
 
+from qililab.config import logger
 from qililab.settings import Settings
-from qililab.typings import Device
-from qililab.utils.nested_dataclass import nested_dataclass
+from qililab.typings import Device, BusElementName
 
 
 class Instrument(ABC):
@@ -17,7 +18,7 @@ class Instrument(ABC):
         settings (Settings): Class containing the settings of the instrument.
     """
 
-    @nested_dataclass
+    @dataclass
     class InstrumentSettings(Settings):
         """Contains the settings of an instrument.
 
@@ -52,12 +53,14 @@ class Instrument(ABC):
 
     device: Device  # a subtype of device must be specified by the subclass
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    name: BusElementName
 
     def __init__(self):
         self._connected = False
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
+        logger.info(f"Connecting to instrument {self.name.value}.")
         if self._connected:
             raise ValueError("Instrument is already connected")
         self._initialize_device()
@@ -66,6 +69,7 @@ class Instrument(ABC):
     @CheckConnected
     def close(self):
         """Close connection with the instrument."""
+        logger.info(f"Closing instrument {self.name.value}.")
         self.stop()
         self.device.close()
         self._connected = False

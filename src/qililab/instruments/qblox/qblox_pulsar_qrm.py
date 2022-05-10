@@ -97,8 +97,10 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
+        self.device.scope_acq_sequencer_select(self.sequencer)
         self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
         self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
+        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(self.integration_length)
 
     @property
     def acquire_trigger_mode(self):
