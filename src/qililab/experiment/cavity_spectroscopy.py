@@ -1,3 +1,4 @@
+"""Cavity spectroscopy."""
 from qibo.core.circuit import Circuit
 from qibo.gates import I, M
 from qiboconnection.api import API
