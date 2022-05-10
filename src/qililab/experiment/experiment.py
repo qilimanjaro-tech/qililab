@@ -45,6 +45,7 @@ class Experiment:
     platform: Platform
     execution: Execution
     settings: ExperimentSettings
+    sequence: PulseSequence
     _parameter_dicts: List[Tuple[Category, int, str, float, float, float]] = []
 
     def __init__(
@@ -62,6 +63,7 @@ class Experiment:
         if isinstance(sequence, Circuit):
             sequence = self.from_circuit(circuit=sequence)
         sequence.delay_between_pulses = self.delay_between_pulses
+        self.sequence = sequence
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
 
     def execute(self):
@@ -227,7 +229,9 @@ class Experiment:
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""
-        return {"settings": asdict(self.settings)}
+        return {"settings": asdict(self.settings),
+        "platform": self.platform.to_dict(),
+        "sequence": self.sequence}
 
 
     def __del__(self):

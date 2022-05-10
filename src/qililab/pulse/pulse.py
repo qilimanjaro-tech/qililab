@@ -65,6 +65,19 @@ class Pulse:
             raise ValueError("Start time is not specified.")
         return self.start_time
 
+    def to_dict(self):
+        """Return dictionary of pulse.
+
+        Returns:
+            dict: Dictionary describing the pulse.
+        """
+        return {"amplitude": self.amplitude,
+                "phase": self.phase,
+                "duration": self.duration,
+                "qubit_ids": self.qubit_ids,
+                "pulse_shape": self.pulse_shape.name,
+                "start_time": self.start_time}
+
     def __repr__(self):
         """Return string representation of the Pulse object."""
         return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, p={self.phase}, {self.pulse_shape.name})"""
