@@ -28,7 +28,9 @@ def load_experiment():
     experiment.add_parameter_to_loop(
         category="signal_generator", id_=1, parameter="frequency", start=7.345e9, stop=7.35e9, num=1000
     )
-    results = experiment.execute()
+    print(experiment.to_dict())
+    # experiment.execute()
+
 
 if __name__ == "__main__":
     load_experiment()

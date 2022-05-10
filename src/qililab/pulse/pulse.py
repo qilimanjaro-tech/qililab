@@ -71,12 +71,14 @@ class Pulse:
         Returns:
             dict: Dictionary describing the pulse.
         """
-        return {"amplitude": self.amplitude,
-                "phase": self.phase,
-                "duration": self.duration,
-                "qubit_ids": self.qubit_ids,
-                "pulse_shape": self.pulse_shape.name,
-                "start_time": self.start_time}
+        return {
+            "amplitude": self.amplitude,
+            "phase": self.phase,
+            "duration": self.duration,
+            "qubit_ids": self.qubit_ids,
+            "pulse_shape": self.pulse_shape.name,
+            "start_time": self.start_time,
+        }
 
     def __repr__(self):
         """Return string representation of the Pulse object."""

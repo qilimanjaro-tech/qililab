@@ -229,9 +229,7 @@ class Experiment:
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""
-        return {"settings": asdict(self.settings),
-        "platform": self.platform.to_dict(),
-        "sequence": self.sequence}
+        return {"settings": asdict(self.settings), "platform": self.platform.to_dict(), "sequence": self.sequence}
 
     def __del__(self):
         """Destructor"""

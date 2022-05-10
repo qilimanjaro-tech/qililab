@@ -32,9 +32,16 @@ class PulseSequence:
         self.pulses.append(pulse)
 
     def to_dict(self):
-        return {"pulses": [pulse.to_dict() from pulse in self.pulses],
-        "time": self.time,
-        "delay_between_pulses": self.delay_between_pulses}
+        """Return dictionary representation of the class.
+
+        Returns:
+            dict: Dictionary representation of the class.
+        """
+        return {
+            "pulses": [pulse.to_dict() for pulse in self.pulses],
+            "time": self.time,
+            "delay_between_pulses": self.delay_between_pulses,
+        }
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulses."""
