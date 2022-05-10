@@ -1,4 +1,5 @@
 """Test experiment."""
+import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -46,22 +47,24 @@ class TestExperiment:
         mock_rs_instance = mock_rs.return_value
         mock_rs_instance.mock_add_spec(["power", "frequency"])
         mock_pulsar_instance = mock_pulsar.return_value
-        mock_pulsar_instance.get_acquisitions.return_value = {
-            "name": "test",
-            "index": 0,
-            "acquisition": {
-                "scope": {
-                    "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out_of_range": False, "avg_cnt": 1000},
-                    "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out_of_range": False, "avg_cnt": 1000},
-                },
-                "bins": {
-                    "integration": {"path_0": [1, 1, 1, 1], "path_1": [0, 0, 0, 0]},
-                    "threshold": [0.5, 0.5, 0.5, 0.5],
-                    "valid": [True, True, True, True],
-                    "avg_cnt": [1000, 1000, 1000, 1000],
-                },
-            },
-        }
+        mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
+            {
+                "single": {
+                    "index": 0,
+                    "acquisition": {
+                        "scope": {
+                            "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                            "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                        },
+                        "bins": {
+                            "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                            "threshold": [0.5, 0.5, 0.5, 0.5],
+                            "avg_cnt": [1000, 1000, 1000, 1000],
+                        },
+                    },
+                }
+            }
+        )
         mock_pulsar_instance.mock_add_spec(
             [
                 "reference_source",
@@ -70,20 +73,34 @@ class TestExperiment:
                 "scope_acq_avg_mode_en_path1",
                 "scope_acq_trigger_mode_path0",
                 "scope_acq_trigger_mode_path1",
+                "sequencers",
+                "scope_acq_sequencer_select",
             ]
         )
         mock_pulsar_instance.sequencer0.mock_add_spec(
-            ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+            [
+                "sync_en",
+                "gain_awg_path0",
+                "gain_awg_path1",
+                "sequence",
+                "mod_en_awg",
+                "nco_freq",
+                "scope_acq_sequencer_select",
+                "channel_map_path0_out0_en",
+                "channel_map_path1_out1_en",
+                "demod_en_acq",
+                "integration_length_acq",
+            ]
         )
         experiment.add_parameter_to_loop(
-            category="signal_generator", id_=1, parameter="frequency", start=3544000000, stop=3744000000, step=10000000
+            category="signal_generator", id_=1, parameter="frequency", start=3544000000, stop=3744000000, num=500
         )
         results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, list)
         assert isinstance(results[0][0], QbloxResult)
-        assert isinstance(results[0][0].acquisition, QbloxResult.QbloxAcquisitionData)
+        assert isinstance(results[0][0].results[0], QbloxResult.QbloxAcquisitions)
 
     def test_draw_method(self, experiment: Experiment):
         """Test draw method"""

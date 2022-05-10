@@ -2,12 +2,15 @@
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.typings import PulseShapeName
+from qililab.utils import Factory
 
 
+@Factory.register
 class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 
-    name = "Drag"
+    name = PulseShapeName.DRAG
 
     def __init__(self, num_sigmas: float, beta: float):
         self.num_sigmas = num_sigmas

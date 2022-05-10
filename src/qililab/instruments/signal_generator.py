@@ -4,7 +4,7 @@ from qililab.typings import BusElement
 from qililab.utils import nested_dataclass
 
 
-class SignalGenerator(Instrument, BusElement):
+class SignalGenerator(Instrument):
     """Abstract base class defining all instruments used to generate signals."""
 
     @nested_dataclass()

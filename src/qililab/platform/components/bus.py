@@ -15,7 +15,7 @@ from qililab.platform.components.resonator import Resonator
 from qililab.pulse import Pulse
 from qililab.settings import Settings
 from qililab.typings import BusType, Category
-from qililab.utils import BusElementFactory
+from qililab.utils import Factory
 
 
 class Bus:
@@ -56,7 +56,7 @@ class Bus:
                 elif name == MixerDown.name.value:
                     setattr(self, name, MixerDown(value))
                 elif isinstance(value, dict):
-                    elem_obj = BusElementFactory.get(value.pop(YAML.NAME))(value)
+                    elem_obj = Factory.get(value.pop(YAML.NAME))(value)
                     setattr(self, name, elem_obj)
 
         def __iter__(

@@ -6,10 +6,10 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import Pulse
 from qililab.result import QbloxResult
 from qililab.typings import AcquireTriggerMode, BusElementName, IntegrationMode
-from qililab.utils import BusElementFactory, nested_dataclass
+from qililab.utils import Factory, nested_dataclass
 
 
-@BusElementFactory.register
+@Factory.register
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     """Qblox pulsar QRM class.
 
@@ -83,7 +83,11 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
         self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
-        return QbloxResult(integration_length=self.integration_length, start_integrate=self.start_integrate, result=self.device.get_acquisitions(sequencer=self.sequencer))
+        return QbloxResult(
+            integration_length=self.integration_length,
+            start_integrate=self.start_integrate,
+            result=self.device.get_acquisitions(sequencer=self.sequencer),
+        )
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""

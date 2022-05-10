@@ -1,15 +1,15 @@
 """Class used as hashtable to load the class corresponding to a given category"""
 from typing import Dict, Type, TypeVar
 
-from qililab.typings import BusElement
+from qililab.typings import FactoryElement
 
-Element = TypeVar("Element", bound=BusElement)
+Element = TypeVar("Element", bound=FactoryElement)
 
 
-class BusElementFactory:
+class Factory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: Dict[str, Type[BusElement]] = {}
+    handlers: Dict[str, Type[FactoryElement]] = {}
 
     @classmethod
     def register(cls, handler_cls: Type[Element]):

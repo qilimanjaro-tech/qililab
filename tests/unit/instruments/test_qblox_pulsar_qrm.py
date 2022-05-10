@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
+from qpysequence.waveforms import Waveforms
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQRM
@@ -27,10 +29,24 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
+            "sequencers",
+            "scope_acq_sequencer_select",
         ]
     )
     mock_instance.sequencer0.mock_add_spec(
-        ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+        ]
     )
     # connect to instrument
     qrm_settings = SETTINGS_MANAGER.load(
@@ -55,7 +71,7 @@ class TestQbloxPulsarQRM:
     def test_inital_setup_method(self, qrm: QbloxPulsarQRM):
         """Test initial_setup method"""
         qrm.initial_setup()
-        qrm.device.reference_source.assert_called_with(qrm.reference_clock)
+        qrm.device.reference_source.assert_called_with(qrm.reference_clock.value)
         qrm.device.sequencer0.sync_en.assert_called_with(qrm.sync_enabled)
 
     def test_start_method(self, qrm: QbloxPulsarQRM):
@@ -71,8 +87,8 @@ class TestQbloxPulsarQRM:
         qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
         qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_average_enabled)
         qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
+        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""
@@ -87,27 +103,27 @@ class TestQbloxPulsarQRM:
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxPulsarQRM):
         """Test upload method"""
-        qrm.upload(sequence=Sequence(program={}, waveforms={}, acquisitions={}, weights={}))
+        qrm.upload(sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
         qrm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxPulsarQRM):
         """Test get_acquisitions_method"""
         qrm.device.get_acquisitions.return_value = {
-            "name": "test",
-            "index": 0,
-            "acquisition": {
-                "scope": {
-                    "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out_of_range": False, "avg_cnt": 1000},
-                    "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out_of_range": False, "avg_cnt": 1000},
+            "single": {
+                "index": 0,
+                "acquisition": {
+                    "scope": {
+                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
+                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
+                    },
+                    "bins": {
+                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
+                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "avg_cnt": [1000, 1000, 1000, 1000],
+                    },
                 },
-                "bins": {
-                    "integration": {"path_0": [1, 1, 1, 1], "path_1": [0, 0, 0, 0]},
-                    "threshold": [0.5, 0.5, 0.5, 0.5],
-                    "valid": [True, True, True, True],
-                    "avg_cnt": [1000, 1000, 1000, 1000],
-                },
-            },
+            }
         }
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, QbloxResult)

@@ -40,11 +40,25 @@ def connect_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, execution: E
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
+            "sequencers",
+            "scope_acq_sequencer_select",
         ]
     )
     mock_pulsar_instance.sequencer0.mock_add_spec(
-        ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+        ]
     )
+    mock_pulsar.sequencers.return_value = []
     execution.connect()
     mock_rs.assert_called()
     mock_pulsar.assert_called()

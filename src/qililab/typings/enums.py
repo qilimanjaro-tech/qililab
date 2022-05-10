@@ -79,7 +79,7 @@ class SchemaDrawOptions(Enum):
     FILE = "file"
 
 
-class PulseShapeOptions(Enum):
+class PulseShapeName(Enum):
     """Pulse shape options.
 
     Args:
@@ -88,6 +88,8 @@ class PulseShapeOptions(Enum):
     """
 
     GAUSSIAN = "gaussian"
+    DRAG = "drag"
+    RECTANGULAR = "rectangular"
 
 
 class BusType(Enum):

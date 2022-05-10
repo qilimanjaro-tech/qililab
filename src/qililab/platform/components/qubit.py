@@ -1,10 +1,10 @@
 """Qubit class"""
 from qililab.settings import Settings
 from qililab.typings import BusElement, BusElementName
-from qililab.utils import BusElementFactory, nested_dataclass
+from qililab.utils import Factory, nested_dataclass
 
 
-@BusElementFactory.register
+@Factory.register
 class Qubit(BusElement):
     """Qubit class"""
 
