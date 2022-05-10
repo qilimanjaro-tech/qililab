@@ -172,7 +172,6 @@ class QbloxPulsar(QubitInstrument):
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
-        # TODO: Discuss this sequence dump: use DB or files?
         file_path = str(Path(sys.argv[0]).parent / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)

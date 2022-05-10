@@ -51,11 +51,11 @@ class Experiment:
         self,
         sequence: Circuit | PulseSequence,
         platform_name: str = DEFAULT_PLATFORM_NAME,
-        settings: dict = None,
+        settings: ExperimentSettings = None,
         connection: API | None = None,
     ):
         self.connection = connection
-        self.settings = self.ExperimentSettings() if settings is None else self.ExperimentSettings(**settings)
+        self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(
             platform_name=platform_name, experiment_settings=asdict(self.settings)
         )
