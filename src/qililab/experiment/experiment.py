@@ -229,8 +229,7 @@ class Experiment:
         """Convert Experiment into a dictionary."""
         return {"settings": asdict(self.settings)}
 
-
     def __del__(self):
         """Destructor"""
         # FIXME: Gives qcodes error
-        # self.execution.close()
+        self.execution.close()
