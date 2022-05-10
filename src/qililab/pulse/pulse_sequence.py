@@ -31,6 +31,11 @@ class PulseSequence:
             self.time[key] += pulse.duration + self.delay_between_pulses
         self.pulses.append(pulse)
 
+    def to_dict(self):
+        return {"pulses": [pulse.to_dict() from pulse in self.pulses],
+        "time": self.time,
+        "delay_between_pulses": self.delay_between_pulses}
+
     def __iter__(self):
         """Redirect __iter__ magic method to pulses."""
         return self.pulses.__iter__()

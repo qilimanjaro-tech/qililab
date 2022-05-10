@@ -15,14 +15,14 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      frequency: 20000000
+      frequency: 100000000
     signal_generator:
       id_: 0
       name: rohde_schwarz  # unique name
       category: signal_generator  # general name
       ip: 192.168.0.10
       firmware: 4.30.046.295
-      frequency: 3644000000.0
+      frequency: 3663514000.0
       power: 15
     mixer_up:
       id_: 0
@@ -67,14 +67,14 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      frequency: 100000000
+      frequency: 20000000
     signal_generator:
       id_: 1
       name: rohde_schwarz  # unique name
       category: signal_generator  # general name
       ip: 192.168.0.7
       firmware: 4.30.046.295
-      frequency: 7307720000.0
+      frequency: 7347407000.0
       power: 15
     mixer_up:
       id_: 1
