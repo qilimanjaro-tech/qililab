@@ -251,8 +251,3 @@ class Experiment:
         platform_name = dictionary["platform_name"]
         sequence = PulseSequence.from_dict(dictionary["sequence"])
         return Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
-
-    def __del__(self):
-        """Destructor"""
-        # FIXME: Gives qcodes error
-        self.execution.close()
