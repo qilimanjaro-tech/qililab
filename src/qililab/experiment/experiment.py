@@ -60,11 +60,16 @@ class Experiment:
 
     def execute(self):
         """Run execution."""
+        self.execution.connect()
+        self.execution.setup()
+        self.execution.start()
         results: List[List[QbloxResult]] = []
         for element, parameter, start, stop, num in self._parameters_to_change:
             for value in np.linspace(start, stop, num):
+                print(f"{parameter}: {value}")
                 element.set_parameter(name=parameter, value=value)
-                results.append(self.execution.execute())
+                results.append(self.execution.run())
+        self.execution.close()
         return results
 
     @property

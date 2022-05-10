@@ -118,7 +118,6 @@ class QbloxPulsar(QubitInstrument):
 
         loop.append_component(long_wait(wait_time=self.repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
-        print(program)
         return program
 
     @QubitInstrument.CheckConnected

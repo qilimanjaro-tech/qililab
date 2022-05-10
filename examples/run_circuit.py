@@ -12,11 +12,11 @@ def load_experiment():
     """Load the platform 'platform_0' from the DB."""
     # Using PLATFORM_MANAGER_DB
     circuit = Circuit(1)
-    circuit.add(X(0))
+    # circuit.add(X(0))
     circuit.add(M(0))
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit)
     experiment.add_parameter_to_loop(
-        category="qubit_instrument", id_=0, parameter="gain", start=0, stop=1, num=20
+        category="signal_generator", id_=1, parameter="frequency", start=7300000000.0, stop=7313000000.0, num=50
     )
     results = experiment.execute()
     voltages = []
