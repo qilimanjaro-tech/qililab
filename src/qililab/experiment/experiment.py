@@ -77,11 +77,12 @@ class Experiment:
             for value in np.linspace(start, stop, num):
                 print(f"{parameter}: {value}")
                 element.set_parameter(name=parameter, value=value)
-                result = self.execution.execute()
+                self.execution.setup()
+                result = self.execution.run()
                 results.append(result)
                 if self.connection is not None:
                     # TODO: Plot voltages of every BusReadout in the platform
-                    self.connection.send_plot_points(plot_id=plot_id, x=value, y=result[0].voltages())
+                    self.connection.send_plot_points(plot_id=plot_id, x=value, y=result[0].voltages()[0])
         self.execution.close()
         return results
 
@@ -215,6 +216,21 @@ class Experiment:
         """
         return self.settings.readout_pulse
 
+    @property
+    def hardware_average(self):
+        """Experiment 'hardware_average' property.
+
+        Returns:
+            int: settings.hardware_average.
+        """
+        return self.settings.hardware_average
+
     def to_dict(self):
         """Convert Experiment into a dictionary."""
         return {"settings": asdict(self.settings)}
+
+
+    def __del__(self):
+        """Destructor"""
+        # FIXME: Gives qcodes error
+        # self.execution.close()
