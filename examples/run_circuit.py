@@ -28,9 +28,9 @@ def load_experiment():
     experiment.add_parameter_to_loop(
         category="signal_generator", id_=1, parameter="frequency", start=7.345e9, stop=7.35e9, num=1000
     )
-    import json
-    print(json.dumps(experiment.to_dict(), indent=4))
-    # experiment.execute()
+    dictionary = experiment.to_dict()
+    experiment_2 = Experiment.from_dict(dictionary=dictionary)
+    experiment_2.execute()
 
 
 if __name__ == "__main__":

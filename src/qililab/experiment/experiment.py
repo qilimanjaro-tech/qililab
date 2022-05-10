@@ -10,7 +10,12 @@ from qiboconnection.api import API
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import PLATFORM_MANAGER_DB, Platform
+from qililab.platform import (
+    PLATFORM_MANAGER_DB,
+    PLATFORM_MANAGER_YAML,
+    Platform,
+    PlatformSchema,
+)
 from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
@@ -229,7 +234,23 @@ class Experiment:
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""
-        return {"settings": asdict(self.settings), "platform": self.platform.to_dict(), "sequence": self.sequence.to_dict()}
+        return {
+            "settings": asdict(self.settings),
+            "platform_name": self.platform.name,
+            "sequence": self.sequence.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Load experiment from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary description of an experiment.
+        """
+        settings = cls.ExperimentSettings(**dictionary["settings"])
+        platform_name = dictionary["platform_name"]
+        sequence = PulseSequence.from_dict(dictionary["sequence"])
+        return Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
 
     def __del__(self):
         """Destructor"""

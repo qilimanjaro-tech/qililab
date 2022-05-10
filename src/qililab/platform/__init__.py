@@ -8,6 +8,7 @@ from .components.schema import Schema
 from .platform import Platform
 from .platform_manager_db import PlatformManagerDB
 from .platform_manager_yaml import PlatformManagerYAML
+from .utils import PlatformSchema
 
 PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()

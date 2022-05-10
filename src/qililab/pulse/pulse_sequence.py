@@ -15,7 +15,7 @@ class PulseSequence:
 
     pulses: List[Pulse] = field(default_factory=list)
     delay_between_pulses: int = 0
-    time: Dict[str, int] = field(init=False, default_factory=dict)
+    time: Dict[str, int] = field(default_factory=dict)
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -42,6 +42,21 @@ class PulseSequence:
             "time": self.time,
             "delay_between_pulses": self.delay_between_pulses,
         }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Build PulseSequence instance from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary description of the class.
+
+        Returns:
+            PulseSequence: Class instance.
+        """
+        delay_between_pulses = dictionary["delay_between_pulses"]
+        time = dictionary["time"]
+        pulses = [Pulse(**settings) for settings in dictionary["pulses"]]
+        return PulseSequence(pulses=pulses, delay_between_pulses=delay_between_pulses, time=time)
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulses."""
