@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List
+
 import numpy as np
 
 from qililab.result.result import Result
@@ -15,6 +16,8 @@ from qililab.utils import nested_dataclass
 # a dataclass for each dicionary inside the main dict. Given that these extra classes (QbloxAcquisitionData, ...)
 # will ONLY be used by the QbloxResult class, I added them inside the class.
 class QbloxResult(Result):
+    """QbloxResult class."""
+
     @nested_dataclass
     class QbloxAcquisitionDict:
         """QbloxResult class. Contains the acquisition results obtained from the `Pulsar.get_acquisitions` method.
@@ -59,15 +62,14 @@ class QbloxResult(Result):
                     out_of_range: bool
                     avg_cnt: int
 
-                path0: QbloxPathData
-                path1: QbloxPathData
+                path0: QbloxPathData | dict
+                path1: QbloxPathData | dict
 
                 def __post_init__(self):
                     self.path0["out_of_range"] = self.path0.pop("out-of-range")
                     self.path1["out_of_range"] = self.path1.pop("out-of-range")
                     self.path0 = self.QbloxPathData(**self.path0)
                     self.path1 = self.QbloxPathData(**self.path1)
-
 
             @nested_dataclass
             class QbloxBinData:
@@ -91,19 +93,29 @@ class QbloxResult(Result):
         index: int
         acquisition: QbloxAcquisitionData
 
-
     def __init__(self, integration_length: int, start_integrate: int, result: dict):
         self.integration_length = integration_length
         self.start_integrate = start_integrate
-        self.results: List[self.QbloxAcquisitionDict] = []
-        for key, item in result.items():
-            self.results.append(self.QbloxAcquisitionDict(**item | {"name": key}))
+        self.results = [self.QbloxAcquisitionDict(**item | {"name": key}) for key, item in result.items()]
 
     def voltages(self):
+        """Return computed voltage.
+
+        Returns:
+            float: Voltage
+        """
         voltages = []
         for result in self.results:
-            acqu_i = np.mean(result.acquisition.scope.path0.data[self.start_integrate : self.start_integrate + self.integration_length])
-            acqu_q = np.mean(result.acquisition.scope.path1.data[self.start_integrate : self.start_integrate + self.integration_length])
+            acqu_i = np.mean(
+                result.acquisition.scope.path0.data[
+                    self.start_integrate : self.start_integrate + self.integration_length
+                ]
+            )
+            acqu_q = np.mean(
+                result.acquisition.scope.path1.data[
+                    self.start_integrate : self.start_integrate + self.integration_length
+                ]
+            )
             voltages.append(np.sqrt(acqu_i**2 + acqu_q**2))
 
         return voltages

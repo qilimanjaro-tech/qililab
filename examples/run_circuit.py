@@ -2,10 +2,19 @@
 import matplotlib.pyplot as plt
 from qibo.core.circuit import Circuit
 from qibo.gates import I, M, X, Y
-import matplotlib.pyplot as plt
+from qiboconnection.api import API
+from qiboconnection.connection import ConnectionConfiguration
 
 from qililab import Experiment
 from qililab.constants import DEFAULT_PLATFORM_NAME
+
+configuration = ConnectionConfiguration(
+    user_id=3,
+    username="qili-admin-test",
+    api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
+)
+
+connection = API(configuration=configuration)
 
 
 def load_experiment():
@@ -14,18 +23,12 @@ def load_experiment():
     circuit = Circuit(1)
     circuit.add(X(0))
     circuit.add(M(0))
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit)
-    experiment.add_parameter_to_loop(
-        category="qubit_instrument", id_=0, parameter="gain", start=0, stop=1, num=20
-    )
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit, connection=connection)
+    experiment.add_parameter_to_loop(category="qubit_instrument", id_=0, parameter="gain", start=0, stop=1, num=20)
     results = experiment.execute()
-    voltages = []
-    for result in results:
-        voltages.append(result[0].voltages())
+    voltages = [result[0].voltages() for result in results]
     plt.plot(voltages)
     plt.savefig(fname="test.png")
-
-
 
 
 if __name__ == "__main__":

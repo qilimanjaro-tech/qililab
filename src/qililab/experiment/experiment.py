@@ -6,14 +6,15 @@ import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 from qibo.gates import I, M, X, Y
+from qiboconnection.api import API
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
-from qililab.typings import Category
 from qililab.result import QbloxResult
+from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
 
@@ -47,8 +48,13 @@ class Experiment:
     _parameter_dicts: List[Tuple[Category, int, str, float, float, float]] = []
 
     def __init__(
-        self, sequence: Circuit | PulseSequence, platform_name: str = DEFAULT_PLATFORM_NAME, settings: dict = None
+        self,
+        sequence: Circuit | PulseSequence,
+        platform_name: str = DEFAULT_PLATFORM_NAME,
+        settings: dict = None,
+        connection: API | None = None,
     ):
+        self.connection = connection
         self.settings = self.ExperimentSettings() if settings is None else self.ExperimentSettings(**settings)
         self.platform = PLATFORM_MANAGER_DB.build(
             platform_name=platform_name, experiment_settings=asdict(self.settings)
@@ -60,11 +66,18 @@ class Experiment:
 
     def execute(self):
         """Run execution."""
+        if self.connection is not None:
+            # TODO: Create plot for each different BusReadout
+            plot_id = self.connection.create_liveplot(plot_type="LINES")
         results: List[List[QbloxResult]] = []
         for element, parameter, start, stop, num in self._parameters_to_change:
             for value in np.linspace(start, stop, num):
                 element.set_parameter(name=parameter, value=value)
-                results.append(self.execution.execute())
+                result = self.execution.execute()
+                results.append(result)
+                if self.connection is not None:
+                    # TODO: Plot voltages of every BusReadout in the platform
+                    self.connection.send_plot_points(plot_id=plot_id, x=value, y=result[0].voltages())
         return results
 
     @property
@@ -199,7 +212,4 @@ class Experiment:
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""
-        return {
-            "settings": asdict(self.settings)
-
-        }
+        return {"settings": asdict(self.settings)}
