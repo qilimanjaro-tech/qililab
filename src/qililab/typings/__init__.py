@@ -5,10 +5,11 @@ from .enums import (
     BusType,
     Category,
     IntegrationMode,
-    PulseShapeOptions,
+    PulseShapeName,
     ReferenceClock,
     SchemaDrawOptions,
 )
+from .factory_element import FactoryElement
 from .instruments.device import Device
 from .instruments.pulsar import Pulsar
 from .instruments.rohde_schwarz import RohdeSchwarzSGS100A

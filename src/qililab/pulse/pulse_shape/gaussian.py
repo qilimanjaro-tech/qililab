@@ -2,12 +2,15 @@
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.typings import PulseShapeName
+from qililab.utils import Factory
 
 
+@Factory.register
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
-    name = "Gaussian"
+    name = PulseShapeName.GAUSSIAN
 
     def __init__(self, num_sigmas: float):
         self.num_sigmas = num_sigmas

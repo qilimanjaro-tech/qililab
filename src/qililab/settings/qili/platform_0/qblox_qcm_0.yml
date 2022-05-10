@@ -11,3 +11,6 @@ epsilon: 0
 delta: 0
 offset_i: 0
 offset_q: 0
+hardware_average: 4096
+software_average: 10
+repetition_duration: 200000

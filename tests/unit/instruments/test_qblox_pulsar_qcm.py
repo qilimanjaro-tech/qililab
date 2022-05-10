@@ -1,7 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
+from qpysequence.waveforms import Waveforms
 
 from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
@@ -18,9 +20,32 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
-    mock_instance.mock_add_spec(["reference_source", "sequencer0"])
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "sequencers",
+            "scope_acq_sequencer_select",
+        ]
+    )
     mock_instance.sequencer0.mock_add_spec(
-        ["sync_en", "gain_awg_path0", "gain_awg_path1", "sequence", "mod_en_awg", "nco_freq"]
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+        ]
     )
     # connect to instrument
     qcm_settings = SETTINGS_MANAGER.load(
@@ -45,7 +70,7 @@ class TestQbloxPulsarQCM:
     def test_inital_setup_method(self, qcm: QbloxPulsarQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
-        qcm.device.reference_source.assert_called_with(qcm.reference_clock)
+        qcm.device.reference_source.assert_called_with(qcm.reference_clock.value)
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.sync_enabled)
 
     def test_start_method(self, qcm: QbloxPulsarQCM):
@@ -73,7 +98,7 @@ class TestQbloxPulsarQCM:
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxPulsarQCM):
         """Test upload method"""
-        qcm.upload(sequence=Sequence(program={}, waveforms={}, acquisitions={}, weights={}))
+        qcm.upload(sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
         qcm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 

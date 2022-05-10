@@ -2,10 +2,10 @@
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_control import QubitControl
 from qililab.typings import BusElementName
-from qililab.utils import BusElementFactory, nested_dataclass
+from qililab.utils import Factory, nested_dataclass
 
 
-@BusElementFactory.register
+@Factory.register
 class QbloxPulsarQCM(QbloxPulsar, QubitControl):
     """Qblox pulsar QCM class.
 

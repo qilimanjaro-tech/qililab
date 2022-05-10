@@ -1,15 +1,14 @@
 """QubitControl class."""
 from abc import abstractmethod
-from typing import List
 from dataclasses import dataclass
+from typing import List
 
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import Pulse
-from qililab.typings import BusElement
 from qililab.result import QbloxResult
 
 
-class QubitInstrument(Instrument, BusElement):
+class QubitInstrument(Instrument):
     """Abstract base class defining all instruments used to control or readout the qubits."""
 
     @dataclass

@@ -19,7 +19,7 @@ class QbloxResult(Result):
     """QbloxResult class."""
 
     @nested_dataclass
-    class QbloxAcquisitionDict:
+    class QbloxAcquisitions:
         """QbloxResult class. Contains the acquisition results obtained from the `Pulsar.get_acquisitions` method.
         The input to the constructor should be a dictionary with the following structure:
 
@@ -96,7 +96,7 @@ class QbloxResult(Result):
     def __init__(self, integration_length: int, start_integrate: int, result: dict):
         self.integration_length = integration_length
         self.start_integrate = start_integrate
-        self.results = [self.QbloxAcquisitionDict(**item | {"name": key}) for key, item in result.items()]
+        self.results = [self.QbloxAcquisitions(**item | {"name": key}) for key, item in result.items()]
 
     def voltages(self):
         """Return computed voltage.

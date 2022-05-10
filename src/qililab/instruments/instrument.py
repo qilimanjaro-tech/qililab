@@ -1,15 +1,15 @@
 """Instrument class"""
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from functools import partial
 from typing import Callable
 
 from qililab.config import logger
 from qililab.settings import Settings
-from qililab.typings import Device, BusElementName
+from qililab.typings import BusElement, BusElementName, Device
 
 
-class Instrument(ABC):
+class Instrument(BusElement, ABC):
     """Abstract base class declaring the necessary attributes
     and methods for the instruments connected via TCP/IP.
 
@@ -60,19 +60,19 @@ class Instrument(ABC):
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
-        logger.info(f"Connecting to instrument {self.name.value}.")
+        logger.info("Connecting to instrument %s.", self.name.value)
         if self._connected:
             raise ValueError("Instrument is already connected")
         self._initialize_device()
         self._connected = True
 
-    @CheckConnected
     def close(self):
         """Close connection with the instrument."""
-        logger.info(f"Closing instrument {self.name.value}.")
-        self.stop()
-        self.device.close()
-        self._connected = False
+        if self._connected:
+            logger.info("Closing instrument %s.", self.name.value)
+            self.stop()
+            self.device.close()
+            self._connected = False
 
     @abstractmethod
     def start(self):

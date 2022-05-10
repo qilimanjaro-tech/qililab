@@ -3,11 +3,13 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from qililab.typings import FactoryElement, PulseShapeName
 
-class PulseShape(ABC):
+
+class PulseShape(FactoryElement, ABC):
     """Pulse shape abstract base class."""
 
-    name: str
+    name: PulseShapeName
 
     @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:

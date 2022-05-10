@@ -1,17 +1,19 @@
 """Qblox pulsar class"""
+
+import itertools
 import json
 import sys
 from pathlib import Path
 from typing import List
 
 import numpy as np
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.instructions import Acquire, Play, Wait
-from qpysequence.library import long_wait, set_phase_rad, set_awg_gain_relative
+from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
-from qpysequence.acquisitions import Acquisitions
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
@@ -52,7 +54,6 @@ class QbloxPulsar(QubitInstrument):
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
         super().connect()
-        self.reset()
         self.initial_setup()
 
     def run(self, pulses: List[Pulse]):
@@ -196,11 +197,11 @@ class QbloxPulsar(QubitInstrument):
         getattr(self.device, f"sequencer{self.sequencer}").sync_en(self.sync_enabled)
 
     def _map_outputs(self):
+        """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer in self.device.sequencers:
-            for out in range(0, 4):
-                if hasattr(sequencer, "channel_map_path{}_out{}_en".format(out%2, out)):
-                    sequencer.set("channel_map_path{}_out{}_en".format(out%2, out), False)
+        for sequencer, out in itertools.product(self.device.sequencers, range(4)):
+            if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
+                sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path1_out1_en(True)
 

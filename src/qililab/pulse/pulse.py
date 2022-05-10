@@ -5,6 +5,7 @@ from typing import List, Optional
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.utils import Factory
 
 
 @dataclass
@@ -23,6 +24,8 @@ class Pulse:
         """Cast qubit_ids to list."""
         if isinstance(self.qubit_ids, int):
             self.qubit_ids = [self.qubit_ids]
+        if isinstance(self.pulse_shape, str):
+            self.pulse_shape = Factory.get(name=self.pulse_shape)
 
     def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> np.ndarray:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
