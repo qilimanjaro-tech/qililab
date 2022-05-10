@@ -11,6 +11,7 @@ from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
+from qpysequence.acquisitions import Acquisitions
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
@@ -74,7 +75,8 @@ class QbloxPulsar(QubitInstrument):
         """
         waveforms = self._generate_waveforms(pulses=pulses)
         program = self._generate_program(pulses=pulses, waveforms=waveforms)
-        return Sequence(program=program, waveforms=waveforms, acquisitions= {"single": {"num_bins": 1, "index": 0}}, weights={})
+        acquisitions = self._generate_acquisitions()
+        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
 
     def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms):
         """Generate Q1ASM program
@@ -119,6 +121,18 @@ class QbloxPulsar(QubitInstrument):
         loop.append_component(long_wait(wait_time=self.repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
         return program
+
+    def _generate_acquisitions(self) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = Acquisitions
+        # Create the acquisition: {"single": {"num_bins": 1, "index": 0}}
+        acquisitions.add("single")
+        return acquisitions
 
     @QubitInstrument.CheckConnected
     def start(self):
