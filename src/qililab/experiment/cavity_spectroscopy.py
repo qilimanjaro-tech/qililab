@@ -23,7 +23,7 @@ def cavity_spectroscopy(connection: API):
     settings.readout_pulse.amplitude = 1
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit, connection=connection, settings=settings)
     experiment.add_parameter_to_loop(
-        category="signal_generator", id_=1, parameter="frequency", start=7.42e9, stop=7.435e9, num=1000
+        category="signal_generator", id_=1, parameter="frequency", start=7.34e9, stop=7.36e9, num=1000
     )
     experiment.execute()
 

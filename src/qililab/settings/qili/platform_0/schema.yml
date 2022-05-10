@@ -15,7 +15,7 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      frequency: 20000000
+      frequency: 100000000
     signal_generator:
       id_: 0
       name: rohde_schwarz  # unique name
@@ -67,7 +67,7 @@ elements:
       hardware_average: 4096
       software_average: 10
       repetition_duration: 200000
-      frequency: 100000000
+      frequency: 20000000
     signal_generator:
       id_: 1
       name: rohde_schwarz  # unique name
