@@ -41,7 +41,7 @@ def load_parameters(category: str, id_: int):
 def my_form():
     parameter_list = load_parameters(category=selected_category, id_=selected_id)
     category_list = load_categories(platform_name=selected_platform)
-    return render_template('index.html', platforms=platform_list, categories=category_list, gates=gate_list, ids=id_list,
+    return render_template('dashboard.html', platforms=platform_list, categories=category_list, gates=gate_list, ids=id_list,
     selected_platform=selected_platform, selected_gate=selected_gate, selected_category=selected_category, selected_id=selected_id,
     parameters=parameter_list)
 
@@ -59,15 +59,16 @@ def set_category():
     selected_id = int(request.form.get('ids'))
     return my_form()
 
-@app.route('/run', methods=['GET', 'POST'])
+@app.route('/run', methods=['POST'])
 def run():
-    gate = request.form['gates']
-    parameter = request.form['parameters']
-    start = request.form['start']
-    stop = request.form['stop']
-    num = request.form['num']
+    data = request.get_json()
+    gate = data['gate']
+    parameter = data['parameter']
+    start = data['start']
+    stop = data['stop']
+    num = data['num']
     run_experiment(gate=gate, category=selected_category, id_=selected_id, parameter=parameter, start=float(start), stop=float(stop), num=int(num))
-    return my_form()
+    return "Done"
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=3000)

@@ -51,7 +51,7 @@ class Experiment:
     execution: Execution
     settings: ExperimentSettings
     sequence: PulseSequence
-    _parameter_dicts: List[Tuple[str, int, str, float, float, float]] = []
+    _parameter_dicts: List[Tuple[str, int, str, float, float, float]]
 
     def __init__(
         self,
@@ -60,6 +60,7 @@ class Experiment:
         settings: ExperimentSettings = None,
         connection: API | None = None,
     ):
+        self._parameter_dicts = []
         self.connection = connection
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(
