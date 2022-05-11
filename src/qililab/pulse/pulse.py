@@ -79,7 +79,7 @@ class Pulse:
             "phase": self.phase,
             "duration": self.duration,
             "qubit_ids": self.qubit_ids,
-            "pulse_shape": self.pulse_shape.name,
+            "pulse_shape": self.pulse_shape.name.value,
             "start_time": self.start_time,
         }
 

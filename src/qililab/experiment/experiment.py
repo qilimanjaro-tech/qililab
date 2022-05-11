@@ -51,7 +51,7 @@ class Experiment:
     execution: Execution
     settings: ExperimentSettings
     sequence: PulseSequence
-    _parameter_dicts: List[Tuple[Category, int, str, float, float, float]] = []
+    _parameter_dicts: List[Tuple[str, int, str, float, float, float]] = []
 
     def __init__(
         self,
@@ -106,7 +106,7 @@ class Experiment:
     def _parameters_to_change(self):
         """Generator returning the information of the parameters to loop over."""
         for category, id_, parameter, start, stop, num in self._parameter_dicts:
-            element, _ = self.platform.get_element(category=category, id_=id_)
+            element, _ = self.platform.get_element(category=Category(category), id_=id_)
             yield element, parameter, start, stop, num
 
     def add_parameter_to_loop(self, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
@@ -117,7 +117,7 @@ class Experiment:
             id_ (int): ID of the element.
             parameter (str): Name of the parameter to change.
         """
-        self._parameter_dicts.append((Category(category), id_, parameter, start, stop, num))
+        self._parameter_dicts.append((category, id_, parameter, start, stop, num))
 
     def draw(self, resolution: float = 1.0):
         """Return figure with the waveforms sent to each bus.
@@ -238,6 +238,7 @@ class Experiment:
             "settings": asdict(self.settings),
             "platform_name": self.platform.name,
             "sequence": self.sequence.to_dict(),
+            "parameters": self._parameter_dicts
         }
 
     @classmethod
@@ -250,4 +251,7 @@ class Experiment:
         settings = cls.ExperimentSettings(**dictionary["settings"])
         platform_name = dictionary["platform_name"]
         sequence = PulseSequence.from_dict(dictionary["sequence"])
-        return Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
+        parameters = dictionary["parameters"]
+        experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
+        experiment._parameter_dicts = parameters
+        return experiment
