@@ -82,6 +82,62 @@
 
         <h3 class="i-name">Live Plotting</h3>
         <div id="live-plotting">
+            <div>
+                <form method="POST" action="{{url_for('set_platform')}}">
+                    &emsp; &emsp; &emsp; &emsp; Platform:
+                    <select name=platforms method="GET" onchange="this.form.submit()">
+                    <text name="selected_platform" method="GET"></text>
+                    {% for platform in platforms %}
+                        <option value= "{{platform}}" {% if platform == selected_platform %} selected="selected" {% endif %}>{{platform}}</option>"
+                    {% endfor %}
+                    </select>
+                    <input type="submit" style="display: none;">
+                </form>
+                <br>
+                &emsp; &emsp; &emsp; &emsp; Gate:
+                <select id="gate_id" name=gates method="GET">
+                    <text name="selected_gate" method="GET"></text>
+                    {% for gate in gates %}
+                    <option value= "{{gate}}" {% if gate == selected_gate %} selected="selected" {% endif %}>{{gate}}</option>"
+                    {% endfor %}
+                </select>
+                &emsp;
+                Category:
+                <select  id="category_id" name=categories method="GET" onchange="set_category()">
+                <text name="selected_category" method="GET"></text>
+                {% for category in categories %}
+                    <option value= "{{category}}" {% if category == selected_category %} selected="selected" {% endif %}>{{category}}</option>"
+                {% endfor %}
+                </select>
+                &emsp;
+                ID:
+                <select id="id_id" name=ids method="GET" onchange="set_category()">
+                <text name="selected_id" method="GET"></text>
+                {% for id in ids %}
+                    <option value= "{{id}}" {% if id == selected_id %} selected="selected" {% endif %}>{{id}}</option>"
+                {% endfor %}
+                </select>
+                &emsp;
+                Name: <text id="name"> {{ name }}</text>
+                &emsp;
+                Parameter:
+                <select id="parameter_id" name=parameters method="GET">
+                    {% for parameter in parameters %}
+                    <option value= "{{parameter}}" SELECTED>{{parameter}}</option>"
+                    {% endfor %}
+                </select>
+                <br>
+                <br>
+                &emsp; &emsp; &emsp; &emsp;
+                Start: <input name="start" style="width:150px">
+                &emsp;
+                Stop: <input name="stop" style="width:150px">
+                &emsp;
+                Num: <input name="num" style="width:150px">
+                <br>
+                <br>
+                &emsp; &emsp; &emsp; &emsp; <button onclick="run();" style="height:30px;width:150px">Run Experiment</button>
+            </div>
             <iframe height=100% width=100% src="https://83.51.78.191:8080/plotting/live-plotting/data-viewer/"></iframe>
         </div>
     </section>

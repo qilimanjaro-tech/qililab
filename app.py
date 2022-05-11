@@ -1,7 +1,7 @@
 from dataclasses import fields
 from unicodedata import category
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from qililab.experiment.run_experiment import run_experiment
 from qililab import PLATFORM_MANAGER_DB
 from qililab.platform import Platform
@@ -45,6 +45,14 @@ def my_form():
     selected_platform=selected_platform, selected_gate=selected_gate, selected_category=selected_category, selected_id=selected_id,
     parameters=parameter_list, name=name)
 
+@app.route('/experiments', methods=['GET'])
+def launch_experiments():
+    parameter_list, name = load_parameters(category=selected_category, id_=selected_id)
+    category_list = load_categories(platform_name=selected_platform)
+    return render_template('experiments.html', platforms=platform_list, categories=category_list, gates=gate_list, ids=id_list,
+    selected_platform=selected_platform, selected_gate=selected_gate, selected_category=selected_category, selected_id=selected_id,
+    parameters=parameter_list, name=name)
+
 @app.route("/set_platform", methods=['GET', 'POST'])
 def set_platform():
     global selected_platform
@@ -61,7 +69,7 @@ def set_category():
     parameter_list, name = load_parameters(category=selected_category, id_=selected_id)
     return {"parameters": parameter_list, "name": name}
 
-@app.route('/run', methods=['POST'])
+@app.route('/run', methods=['GET', 'POST'])
 def run():
     data = request.get_json()
     gate = data['gate']
@@ -70,7 +78,7 @@ def run():
     stop = data['stop']
     num = data['num']
     run_experiment(gate=gate, category=selected_category, id_=selected_id, parameter=parameter, start=float(start), stop=float(stop), num=int(num))
-    return "Success"
+    return jsonify(success=True)
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=3000)
