@@ -21,6 +21,7 @@ from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
 from qililab.typings import Category
 from qililab.utils import nested_dataclass
+from qililab.config import logger
 
 
 class Experiment:
@@ -163,7 +164,9 @@ class Experiment:
             amplitude = 1
             phase = np.pi / 2
         elif isinstance(gate, RX):
+            logger.debug("Getting angle.")
             theta = gate.parameters
+            logger.debug(f"The angle is {theta}")
             theta = (theta) % (2*np.pi)
             if theta > np.pi:
                 theta -= 2*np.pi
