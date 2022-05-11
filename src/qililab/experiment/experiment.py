@@ -187,7 +187,7 @@ class Experiment:
                 qubit_ids=list(gate.target_qubits),
             )
         else:
-            raise ValueError(f"Qililab has not defined a gate {type(gate).__class__}")
+            raise ValueError(f"Qililab has not defined a gate {gate.__class__.__name__}")
         return Pulse(
             amplitude=amplitude,
             phase=phase,
