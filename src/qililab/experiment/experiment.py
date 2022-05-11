@@ -5,7 +5,7 @@ from typing import List, Tuple
 import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
-from qibo.gates import I, M, X, Y
+from qibo.gates import I, M, X, Y, RX, RY
 from qiboconnection.api import API
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -162,6 +162,20 @@ class Experiment:
         elif isinstance(gate, Y):
             amplitude = 1
             phase = np.pi / 2
+        elif isinstance(gate, RX):
+            theta = gate.parameters
+            theta = (theta) % (2*np.pi)
+            if theta > np.pi:
+                theta -= 2*np.pi
+            amplitude = np.abs(theta) / np.pi
+            phase = 0 if theta > 0 else np.pi
+        elif isinstance(gate, RY):
+            theta = gate.parameters
+            theta = (theta) % (2*np.pi)
+            if theta > np.pi:
+                theta -= 2*np.pi
+            amplitude = np.abs(theta) / np.pi
+            phase = np.pi / 2 if theta > 0 else 3 * np.pi / 4
         elif isinstance(gate, M):
             return ReadoutPulse(
                 amplitude=self.readout_pulse.amplitude,
@@ -256,3 +270,6 @@ class Experiment:
         experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
         experiment._parameter_dicts = parameters
         return experiment
+
+    def __del__(self):
+        self.execution.close()

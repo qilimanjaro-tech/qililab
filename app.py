@@ -17,7 +17,7 @@ selected_category = "signal_generator"
 selected_id = 0
 platform_list = ["platform_0", "unknown_platform"]
 qili_category_list = ["signal_generator", "qubit_instrument", "resonator", "qubit", "mixer"]
-gate_list = ["I", "X", "Y"]
+gate_list = ["I", "X", "Y", "RX", "RY"]
 id_list = [0, 1]
 
 def load_categories(platform_name: str):
@@ -35,15 +35,15 @@ def load_parameters(category: str, id_: int):
     else:
         parameter_list = [name for name, value in element.settings.__dict__.items() if isinstance(value, (int, float)) and name != "id_"]
 
-    return parameter_list
+    return parameter_list, element.name.value
 
 @app.route('/', methods=['GET'])
 def my_form():
-    parameter_list = load_parameters(category=selected_category, id_=selected_id)
+    parameter_list, name = load_parameters(category=selected_category, id_=selected_id)
     category_list = load_categories(platform_name=selected_platform)
     return render_template('dashboard.html', platforms=platform_list, categories=category_list, gates=gate_list, ids=id_list,
     selected_platform=selected_platform, selected_gate=selected_gate, selected_category=selected_category, selected_id=selected_id,
-    parameters=parameter_list)
+    parameters=parameter_list, name=name)
 
 @app.route("/set_platform", methods=['GET', 'POST'])
 def set_platform():
@@ -55,9 +55,11 @@ def set_platform():
 @app.route("/set_category" , methods=['GET', 'POST'])
 def set_category():
     global selected_category, selected_id
-    selected_category = request.form.get('categories')
-    selected_id = int(request.form.get('ids'))
-    return my_form()
+    data = request.get_json()
+    selected_category = data['category']
+    selected_id = int(data['id'])
+    parameter_list, name = load_parameters(category=selected_category, id_=selected_id)
+    return {"parameters": parameter_list, "name": name}
 
 @app.route('/run', methods=['POST'])
 def run():
@@ -68,7 +70,7 @@ def run():
     stop = data['stop']
     num = data['num']
     run_experiment(gate=gate, category=selected_category, id_=selected_id, parameter=parameter, start=float(start), stop=float(stop), num=int(num))
-    return "Done"
+    return "Success"
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=3000)

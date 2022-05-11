@@ -25,7 +25,37 @@
             dataType: 'json',
             contentType: 'application/json',
             data: JSON.stringify({"parameter": parameter.options[parameter.selectedIndex].text, "gate": gate.options[gate.selectedIndex].text, "start": start, "stop": stop_, "num": num}),
-            success:function(res){console.log(res)}
+            success:function(res){alert(res)},
+            error: function (request, status, error) {
+                alert("Couldn't run execution. Please check that the entered data is correct.");
+            }
+        });
+    }
+    function set_category() {
+        category = document.getElementById("category_id")
+        id = document.getElementById("id_id")
+
+        $.ajax({
+            type: "POST",
+            url: "{{url_for('set_category')}}",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({"category": category.options[category.selectedIndex].text, "id": id.options[id.selectedIndex].text}),
+            success:function(res){
+                id_ = document.getElementById("name")
+                id_.innerHTML = res["name"]
+                parameters = document.getElementById("parameter_id")
+                var length = parameters.options.length;
+                for (i = length-1; i >= 0; i--) {
+                    parameters.options[i] = null;
+                }
+                for (parameter of res["parameters"]) {
+                    var opt = document.createElement('option');
+                    opt.value = parameter;
+                    opt.innerHTML = parameter;
+                    parameters.appendChild(opt);
+                }
+            }
         });
     }</script>
 </head>
@@ -54,7 +84,7 @@
         <div id="live-plotting">
             <div>
                 <form method="POST" action="{{url_for('set_platform')}}">
-                    Platforms:
+                    &emsp; &emsp; &emsp; &emsp; Platform:
                     <select name=platforms method="GET" onchange="this.form.submit()">
                     <text name="selected_platform" method="GET"></text>
                     {% for platform in platforms %}
@@ -63,40 +93,50 @@
                     </select>
                     <input type="submit" style="display: none;">
                 </form>
-                Gate:
+                <br>
+                &emsp; &emsp; &emsp; &emsp; Gate:
                 <select id="gate_id" name=gates method="GET">
                     <text name="selected_gate" method="GET"></text>
                     {% for gate in gates %}
                     <option value= "{{gate}}" {% if gate == selected_gate %} selected="selected" {% endif %}>{{gate}}</option>"
                     {% endfor %}
                 </select>
-                <form method="POST", action="{{url_for('set_category')}}">
-                    Category:
-                    <select name=categories method="GET" onchange="this.form.submit()">
-                    <text name="selected_category" method="GET"></text>
-                    {% for category in categories %}
-                        <option value= "{{category}}" {% if category == selected_category %} selected="selected" {% endif %}>{{category}}</option>"
-                    {% endfor %}
-                    </select>
-                    ID:
-                    <select name=ids method="GET" onchange="this.form.submit()">
-                    <text name="selected_id" method="GET"></text>
-                    {% for id in ids %}
-                        <option value= "{{id}}" {% if id == selected_id %} selected="selected" {% endif %}>{{id}}</option>"
-                    {% endfor %}
-                    </select>
-                    <input type="submit" style="display: none;">
-                </form>
+                &emsp;
+                Category:
+                <select  id="category_id" name=categories method="GET" onchange="set_category()">
+                <text name="selected_category" method="GET"></text>
+                {% for category in categories %}
+                    <option value= "{{category}}" {% if category == selected_category %} selected="selected" {% endif %}>{{category}}</option>"
+                {% endfor %}
+                </select>
+                &emsp;
+                ID:
+                <select id="id_id" name=ids method="GET" onchange="set_category()">
+                <text name="selected_id" method="GET"></text>
+                {% for id in ids %}
+                    <option value= "{{id}}" {% if id == selected_id %} selected="selected" {% endif %}>{{id}}</option>"
+                {% endfor %}
+                </select>
+                &emsp;
+                Name: <text id="name"> {{ name }}</text>
+                &emsp;
                 Parameter:
                 <select id="parameter_id" name=parameters method="GET">
                     {% for parameter in parameters %}
                     <option value= "{{parameter}}" SELECTED>{{parameter}}</option>"
                     {% endfor %}
                 </select>
-                Min: <input name="start">
-                Max: <input name="stop">
-                Num: <input name="num">
-                <button onclick="run();">Run</button>
+                <br>
+                <br>
+                &emsp; &emsp; &emsp; &emsp;
+                Start: <input name="start" style="width:150px">
+                &emsp;
+                Stop: <input name="stop" style="width:150px">
+                &emsp;
+                Num: <input name="num" style="width:150px">
+                <br>
+                <br>
+                &emsp; &emsp; &emsp; &emsp; <button onclick="run();" style="height:30px;width:150px">Run Experiment</button>
             </div>
             <iframe height=100% width=100% src="https://83.51.78.191:8080/plotting/live-plotting/data-viewer/"></iframe>
         </div>
