@@ -268,3 +268,7 @@ class Experiment:
         experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
         experiment._parameter_dicts = parameters
         return experiment
+
+    def __del__(self):
+        """Destructor."""
+        self.execution.close()

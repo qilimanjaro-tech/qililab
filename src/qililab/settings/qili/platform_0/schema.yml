@@ -22,7 +22,7 @@ elements:
       category: signal_generator  # general name
       ip: 192.168.0.10
       firmware: 4.30.046.295
-      frequency: 3663514000.0
+      frequency: 3663226000.0
       power: 15
     mixer_up:
       id_: 0
