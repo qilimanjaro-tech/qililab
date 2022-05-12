@@ -11,12 +11,7 @@ from qiboconnection.api import API
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import (
-    PLATFORM_MANAGER_DB,
-    PLATFORM_MANAGER_YAML,
-    Platform,
-    PlatformSchema,
-)
+from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
@@ -166,9 +161,7 @@ class Experiment:
             amplitude = 1
             phase = np.pi / 2
         elif isinstance(gate, RX):
-            logger.debug("Getting angle.")
             theta = gate.parameters
-            logger.debug(f"The angle is {theta}")
             theta = (theta) % (2 * np.pi)
             if theta > np.pi:
                 theta -= 2 * np.pi
