@@ -76,7 +76,7 @@ class Experiment:
         if self.connection is not None:
             # TODO: Create plot for each different BusReadout
             plot_id = self.connection.create_liveplot(plot_type="LINES")
-        if not self._parameters_to_change:
+        if not self._parameter_dicts:
             return [self.execution.run()]
         results: List[List[QbloxResult]] = []
         for element, parameter, start, stop, num in self._parameters_to_change:
