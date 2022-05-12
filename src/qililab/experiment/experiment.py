@@ -5,23 +5,18 @@ from typing import List, Tuple
 import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
-from qibo.gates import I, M, X, Y, RX, RY
+from qibo.gates import RX, RY, I, M, X, Y
 from qiboconnection.api import API
 
+from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import (
-    PLATFORM_MANAGER_DB,
-    PLATFORM_MANAGER_YAML,
-    Platform,
-    PlatformSchema,
-)
+from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
 from qililab.typings import Category
 from qililab.utils import nested_dataclass
-from qililab.config import logger
 
 
 class Experiment:
@@ -81,6 +76,8 @@ class Experiment:
         if self.connection is not None:
             # TODO: Create plot for each different BusReadout
             plot_id = self.connection.create_liveplot(plot_type="LINES")
+        if not self._parameters_to_change:
+            return [self.execution.run()]
         results: List[List[QbloxResult]] = []
         for element, parameter, start, stop, num in self._parameters_to_change:
             for value in np.linspace(start, stop, num):
@@ -164,19 +161,17 @@ class Experiment:
             amplitude = 1
             phase = np.pi / 2
         elif isinstance(gate, RX):
-            logger.debug("Getting angle.")
             theta = gate.parameters
-            logger.debug(f"The angle is {theta}")
-            theta = (theta) % (2*np.pi)
+            theta = (theta) % (2 * np.pi)
             if theta > np.pi:
-                theta -= 2*np.pi
+                theta -= 2 * np.pi
             amplitude = np.abs(theta) / np.pi
             phase = 0 if theta > 0 else np.pi
         elif isinstance(gate, RY):
             theta = gate.parameters
-            theta = (theta) % (2*np.pi)
+            theta = (theta) % (2 * np.pi)
             if theta > np.pi:
-                theta -= 2*np.pi
+                theta -= 2 * np.pi
             amplitude = np.abs(theta) / np.pi
             phase = np.pi / 2 if theta > 0 else 3 * np.pi / 4
         elif isinstance(gate, M):
@@ -256,7 +251,7 @@ class Experiment:
             "settings": asdict(self.settings),
             "platform_name": self.platform.name,
             "sequence": self.sequence.to_dict(),
-            "parameters": self._parameter_dicts
+            "parameters": self._parameter_dicts,
         }
 
     @classmethod
@@ -273,6 +268,3 @@ class Experiment:
         experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
         experiment._parameter_dicts = parameters
         return experiment
-
-    def __del__(self):
-        self.execution.close()
