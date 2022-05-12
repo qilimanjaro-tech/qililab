@@ -24,7 +24,8 @@
             url: "{{url_for('run')}}",
             dataType: 'json',
             contentType: 'application/json',
-            data: JSON.stringify({"parameter": parameter.options[parameter.selectedIndex].text, "gate": gate.options[gate.selectedIndex].text, "start": start, "stop": stop_, "num": num}),
+            data: JSON.stringify({"parameter": parameter.options[parameter.selectedIndex].text,
+            "gate": gate.options[gate.selectedIndex].text, "start": start, "stop": stop_, "num": num}),
             success:function(res){},
             error: function (request, status, error) {
                 alert("Couldn't run execution. Please check that the entered data is correct.");
@@ -40,7 +41,8 @@
             url: "{{url_for('set_category')}}",
             dataType: 'json',
             contentType: 'application/json',
-            data: JSON.stringify({"category": category.options[category.selectedIndex].text, "id": id.options[id.selectedIndex].text}),
+            data: JSON.stringify({"category": category.options[category.selectedIndex].text,
+            "id": id.options[id.selectedIndex].text}),
             success:function(res){
                 id_ = document.getElementById("name")
                 id_.innerHTML = res["name"]
@@ -66,9 +68,11 @@
             <h2>QiboLab Dashboard</h2>
         </div>
         <div class="items">
-            <li><i class="fa-solid fa-chart-line"></i><a href="#" onclick="window.location.href='{{ url_for('my_form') }}';">Live Plotting</a></li>
+            <li><i class="fa-solid fa-chart-line"></i><a href="#"
+                onclick="window.location.href='{{ url_for('my_form') }}';">Live Plotting</a></li>
             <li><i class="fa-solid fa-desktop"></i><a href="#">Lab Monitoring</a></li>
-            <li><i class="fa-solid fa-rocket"></i></i><a href="#" onclick="window.location.href='{{ url_for('launch_experiments') }}';">Launch Experiments</a></li>
+            <li><i class="fa-solid fa-rocket"></i></i><a href="#"
+                onclick="window.location.href='{{ url_for('launch_experiments') }}';">Launch Experiments</a></li>
         </div>
     </section>
 
@@ -88,7 +92,8 @@
                     <select name=platforms method="GET" onchange="this.form.submit()">
                     <text name="selected_platform" method="GET"></text>
                     {% for platform in platforms %}
-                        <option value= "{{platform}}" {% if platform == selected_platform %} selected="selected" {% endif %}>{{platform}}</option>"
+                        <option value= "{{platform}}"
+                        {% if platform == selected_platform %} selected="selected" {% endif %}>{{platform}}</option>"
                     {% endfor %}
                     </select>
                     <input type="submit" style="display: none;">
@@ -98,7 +103,8 @@
                 <select id="gate_id" name=gates method="GET">
                     <text name="selected_gate" method="GET"></text>
                     {% for gate in gates %}
-                    <option value= "{{gate}}" {% if gate == selected_gate %} selected="selected" {% endif %}>{{gate}}</option>"
+                    <option value= "{{gate}}"
+                    {% if gate == selected_gate %} selected="selected" {% endif %}>{{gate}}</option>"
                     {% endfor %}
                 </select>
                 &emsp;
@@ -106,7 +112,8 @@
                 <select  id="category_id" name=categories method="GET" onchange="set_category()">
                 <text name="selected_category" method="GET"></text>
                 {% for category in categories %}
-                    <option value= "{{category}}" {% if category == selected_category %} selected="selected" {% endif %}>{{category}}</option>"
+                    <option value= "{{category}}"
+                    {% if category == selected_category %} selected="selected" {% endif %}>{{category}}</option>"
                 {% endfor %}
                 </select>
                 &emsp;
@@ -136,7 +143,8 @@
                 Num: <input name="num" style="width:150px">
                 <br>
                 <br>
-                &emsp; &emsp; &emsp; &emsp; <button onclick="run();" style="height:30px;width:150px">Run Experiment</button>
+                &emsp; &emsp; &emsp; &emsp;
+                <button onclick="run();" style="height:30px;width:150px">Run Experiment</button>
             </div>
             <iframe height=100% width=100% src="https://83.51.78.191:8080/plotting/live-plotting/data-viewer/"></iframe>
         </div>
