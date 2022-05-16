@@ -139,7 +139,18 @@ class Experiment:
         gates = list(circuit.queue)
         gates.append(circuit.measurement_gate)
         for gate in gates:
-            sequence.add(self._gate_to_pulse(gate=gate))
+            if isinstance(gate, M):
+                for qubit_id in gate.target_qubits:
+                    sequence.add(
+                        ReadoutPulse(
+                            amplitude=self.readout_pulse.amplitude,
+                            phase=self.readout_pulse.phase,
+                            duration=self.readout_pulse.duration,
+                            qubit_ids=[qubit_id],
+                        )
+                    )
+            else:
+                sequence.add(self._gate_to_pulse(gate=gate))
         return sequence
 
     def _gate_to_pulse(self, gate: Gate):
@@ -174,13 +185,6 @@ class Experiment:
                 theta -= 2 * np.pi
             amplitude = np.abs(theta) / np.pi
             phase = np.pi / 2 if theta > 0 else 3 * np.pi / 4
-        elif isinstance(gate, M):
-            return ReadoutPulse(
-                amplitude=self.readout_pulse.amplitude,
-                phase=self.readout_pulse.phase,
-                duration=self.readout_pulse.duration,
-                qubit_ids=list(gate.target_qubits),
-            )
         else:
             raise ValueError(f"Qililab has not defined a gate {gate.__class__.__name__}")
         return Pulse(
