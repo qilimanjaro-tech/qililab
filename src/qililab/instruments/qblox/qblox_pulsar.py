@@ -146,7 +146,6 @@ class QbloxPulsar(QubitInstrument):
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
-        self._set_nco()
 
     @QubitInstrument.CheckConnected
     def stop(self):
@@ -164,6 +163,7 @@ class QbloxPulsar(QubitInstrument):
         self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()
+        self._set_nco()
 
     @QubitInstrument.CheckConnected
     def upload(self, sequence: Sequence):
