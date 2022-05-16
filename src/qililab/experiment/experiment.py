@@ -41,13 +41,14 @@ class Experiment:
         delay_between_pulses: int = 0
         gate_duration: int = 100
         num_sigmas: float = 4
-        drag_coefficient: float = 0.3
+        drag_coefficient: float = 0
 
     platform: Platform
     execution: Execution
+    connection: API
     settings: ExperimentSettings
     sequence: PulseSequence
-    _parameter_dicts: List[Tuple[str, int, str, float, float, float]]
+    _loop_parameters: List[Tuple[str, int, str, List[float]]]
 
     def __init__(
         self,
@@ -56,39 +57,30 @@ class Experiment:
         settings: ExperimentSettings = None,
         connection: API | None = None,
     ):
-        self._parameter_dicts = []
+        self._loop_parameters = []
         self.connection = connection
         self.settings = self.ExperimentSettings() if settings is None else settings
-        self.platform = PLATFORM_MANAGER_DB.build(
-            platform_name=platform_name, experiment_settings=asdict(self.settings)
-        )
-        if isinstance(sequence, Circuit):
-            sequence = self.from_circuit(circuit=sequence)
-        sequence.delay_between_pulses = self.delay_between_pulses
-        self.sequence = sequence
-        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
+        self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name, exp=asdict(self.settings))
+        self._build_execution(sequence=sequence)
 
     def execute(self):
         """Run execution."""
         self.execution.connect()
         self.execution.setup()
         self.execution.start()
-        if self.connection is not None:
-            # TODO: Create plot for each different BusReadout
-            plot_id = self.connection.create_liveplot(plot_type="LINES")
-        if not self._parameter_dicts:
+        plot_id = self._create_live_plot()
+        if not self._loop_parameters:
             return [self.execution.run()]
         results: List[List[QbloxResult]] = []
-        for element, parameter, start, stop, num in self._parameters_to_change:
-            for value in np.linspace(start, stop, num):
-                print(f"{parameter}: {value}")
+        for category, id_, parameter, loop_range in self._loop_parameters:
+            element, _ = self.platform.get_element(category=Category(category), id_=id_)
+            for value in loop_range:
+                logger.info("%s: %f", parameter, value)
                 element.set_parameter(name=parameter, value=value)
                 self.execution.setup()
                 result = self.execution.run()
                 results.append(result)
-                if self.connection is not None:
-                    # TODO: Plot voltages of every BusReadout in the platform
-                    self.connection.send_plot_points(plot_id=plot_id, x=value, y=result[0].voltages()[0])
+                self._send_plot_points(plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0])
         self.execution.close()
         return results
 
@@ -101,13 +93,6 @@ class Experiment:
         """
         return str(self.platform)
 
-    @property
-    def _parameters_to_change(self):
-        """Generator returning the information of the parameters to loop over."""
-        for category, id_, parameter, start, stop, num in self._parameter_dicts:
-            element, _ = self.platform.get_element(category=Category(category), id_=id_)
-            yield element, parameter, start, stop, num
-
     def add_parameter_to_loop(self, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
         """Add parameter to loop over during an experiment.
 
@@ -116,7 +101,8 @@ class Experiment:
             id_ (int): ID of the element.
             parameter (str): Name of the parameter to change.
         """
-        self._parameter_dicts.append((category, id_, parameter, start, stop, num))
+        loop_range = list(np.linspace(start, stop, num))
+        self._loop_parameters.append((category, id_, parameter, loop_range))
 
     def draw(self, resolution: float = 1.0):
         """Return figure with the waveforms sent to each bus.
@@ -195,6 +181,36 @@ class Experiment:
             pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
         )
 
+    def _build_execution(self, sequence: Circuit | PulseSequence):
+        """Build Execution class.
+
+        Args:
+            sequence (Circuit | PulseSequence): Sequence of gates/pulses.
+        """
+        if isinstance(sequence, Circuit):
+            sequence = self.from_circuit(circuit=sequence)
+        sequence.delay_between_pulses = self.delay_between_pulses
+        self.sequence = sequence
+        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
+
+    def _create_live_plot(self):
+        """Create live plot."""
+        if self.connection is not None:
+            # TODO: Create plot for each different BusReadout
+            return self.connection.create_liveplot(plot_type="LINES")
+
+    def _send_plot_points(self, plot_id: str | None, x_value: float, y_value: float):
+        """Send plot points to live plot viewer.
+
+        Args:
+            plot_id (str | None): Plot ID.
+            x_value (float): X value.
+            y_value (float): Y value.
+        """
+        if plot_id and self.connection:
+            # TODO: Plot voltages of every BusReadout in the platform
+            self.connection.send_plot_points(plot_id=plot_id, x=x_value, y=y_value)
+
     @property
     def delay_between_pulses(self):
         """Experiment 'delay_between_pulses' property.
@@ -255,7 +271,7 @@ class Experiment:
             "settings": asdict(self.settings),
             "platform_name": self.platform.name,
             "sequence": self.sequence.to_dict(),
-            "parameters": self._parameter_dicts,
+            "parameters": self._loop_parameters,
         }
 
     @classmethod
@@ -270,7 +286,7 @@ class Experiment:
         sequence = PulseSequence.from_dict(dictionary["sequence"])
         parameters = dictionary["parameters"]
         experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
-        experiment._parameter_dicts = parameters
+        experiment._loop_parameters = parameters
         return experiment
 
     def __del__(self):
