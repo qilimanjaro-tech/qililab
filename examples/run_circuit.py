@@ -1,7 +1,7 @@
 """Run circuit experiment"""
 import matplotlib.pyplot as plt
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import RX, M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -28,9 +28,7 @@ def load_experiment():
     # experiment.add_parameter_to_loop(
     #     category="signal_generator", id_=1, parameter="frequency", start=7.345e9, stop=7.35e9, num=1000
     # )
-    dictionary = experiment.to_dict()
-    experiment2 = Experiment.from_dict(dictionary)
-    experiment2.draw()
+    experiment.draw()
     plt.show()
 
 

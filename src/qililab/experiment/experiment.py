@@ -65,12 +65,23 @@ class Experiment:
 
     def execute(self):
         """Run execution."""
-        self.execution.connect()
-        self.execution.setup()
-        self.execution.start()
+        self._start_instruments()
         plot_id = self._create_live_plot()
         if not self._loop_parameters:
             return [self.execution.run()]
+        results = self._execute_loop(plot_id=plot_id)
+        self.execution.close()
+        return results
+
+    def _execute_loop(self, plot_id: str):
+        """Loop and execute sequence over given Platform parameters.
+
+        Args:
+            plot_id (str): Plot ID.
+
+        Returns:
+            List[List[QbloxResult]]: List containing the results for each loop execution.
+        """
         results: List[List[QbloxResult]] = []
         for category, id_, parameter, loop_range in self._loop_parameters:
             element, _ = self.platform.get_element(category=Category(category), id_=id_)
@@ -81,8 +92,14 @@ class Experiment:
                 result = self.execution.run()
                 results.append(result)
                 self._send_plot_points(plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0])
-        self.execution.close()
+
         return results
+
+    def _start_instruments(self):
+        """Connect, setup and start instruments."""
+        self.execution.connect()
+        self.execution.setup()
+        self.execution.start()
 
     @property
     def parameters(self):
