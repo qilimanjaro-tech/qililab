@@ -37,7 +37,7 @@ class BusPulses:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Tuple[List[float], List[float]]: Dictionary containing the I, Q waveforms for a specific qubit.
+            Tuple[List[float], List[float]]: Tuple containing the I, Q waveforms for a specific qubit.
         """
         waveforms_i: List[float] = []
         waveforms_q: List[float] = []

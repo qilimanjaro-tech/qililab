@@ -15,6 +15,7 @@ from qililab.result.qblox_result import QbloxResult
 class BusesExecution:
     """BusesExecution class."""
 
+    num_sequences: int
     buses: List[BusExecution] = field(default_factory=list)
 
     def connect(self):
@@ -35,10 +36,11 @@ class BusesExecution:
     def run(self):
         """Run the given pulse sequence."""
         results: List[QbloxResult] = []
-        for bus in self.buses:
-            result = bus.run()
-            if result is not None:
-                results.append(result)
+        for idx in range(self.num_sequences):
+            for bus in self.buses:
+                result = bus.run(idx=idx)
+                if result is not None:
+                    results.append(result)
 
         return results
 

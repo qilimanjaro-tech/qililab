@@ -23,7 +23,7 @@ def fixture_experiment(mock_load: MagicMock):
     pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), duration=50, qubit_ids=[0]))
     pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, duration=50, qubit_ids=[0]))
 
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=pulse_sequence)
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[pulse_sequence, pulse_sequence])
     mock_load.assert_called()
     return experiment
 

@@ -1,9 +1,9 @@
 """Run circuit experiment"""
+import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import I, M, X, Y, RX, RY
+from qibo.gates import RX, RY, I, M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
-import numpy as np
 
 from qililab import Experiment
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -24,17 +24,11 @@ def run_experiment(gate: str, category: str, id_: int, parameter: str, start: fl
     elif gate == "X":
         gate = X(0)
     elif gate == "RX":
-        gate = RX(0, np.pi/2)
+        gate = RX(0, np.pi / 2)
     elif gate == "RY":
-        gate = RY(0, np.pi/2)
+        gate = RY(0, np.pi / 2)
     circuit.add(gate)
     circuit.add(M(0))
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit, connection=connection)
-    experiment.add_parameter_to_loop(
-        category=category, id_=id_, parameter=parameter, start=start, stop=stop, num=num
-    )
-    experiment.execute()
-
-
-if __name__ == "__main__":
-    run_experiment()
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit])
+    experiment.add_parameter_to_loop(category=category, id_=id_, parameter=parameter, start=start, stop=stop, num=num)
+    experiment.execute(connection=connection)

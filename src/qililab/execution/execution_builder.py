@@ -1,5 +1,5 @@
 """ExecutionBuilder class"""
-from typing import Dict
+from typing import Dict, List
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
@@ -13,33 +13,35 @@ from qililab.utils import Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_sequence: PulseSequence) -> Execution:
+    def build(self, platform: Platform, pulse_sequences: List[PulseSequence]) -> Execution:
         """Build Execution class.
 
         Returns:
             Execution: Execution object.
         """
 
-        buses_execution = self._build_buses_execution(platform=platform, pulse_sequence=pulse_sequence)
+        buses_execution = self._build_buses_execution(platform=platform, pulse_sequences=pulse_sequences)
 
-        return Execution(platform=platform, buses_execution=buses_execution)
+        return Execution(buses_execution=buses_execution)
 
-    def _build_buses_execution(self, platform: Platform, pulse_sequence: PulseSequence):
+    def _build_buses_execution(self, platform: Platform, pulse_sequences: List[PulseSequence]):
         """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.
 
         Returns:
             BusesExecution: BusesExecution object.
         """
         buses: Dict[int, BusExecution] = {}
-        for pulse in pulse_sequence.pulses:
-            bus_type = BusType.READOUT if isinstance(pulse, ReadoutPulse) else BusType.CONTROL
-            bus_idx, bus = platform.get_bus(qubit_ids=pulse.qubit_ids, bus_type=bus_type)
-            if bus is None:
-                raise ValueError(f"There is no bus of type {bus_type.value} connected to qubits {pulse.qubit_ids}.")
-            if bus_idx not in buses:
-                buses[bus_idx] = BusExecution(bus=bus, pulses=BusPulses(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
-                continue
+        for idx, pulse_sequence in enumerate(pulse_sequences):
+            for pulse in pulse_sequence.pulses:
+                bus_type = BusType.READOUT if isinstance(pulse, ReadoutPulse) else BusType.CONTROL
+                bus_idx, bus = platform.get_bus(qubit_ids=pulse.qubit_ids, bus_type=bus_type)
+                if bus is None:
+                    raise ValueError(f"There is no bus of type {bus_type.value} connected to qubits {pulse.qubit_ids}.")
+                if bus_idx not in buses:
+                    buses[bus_idx] = BusExecution(
+                        bus=bus, pulse_sequences=[BusPulses(qubit_ids=pulse.qubit_ids, pulses=[pulse])]
+                    )
+                    continue
+                buses[bus_idx].add_pulse(pulse=pulse, idx=idx)
 
-            buses[bus_idx].add_pulse(pulse=pulse)
-
-        return BusesExecution(buses=list(buses.values()))
+        return BusesExecution(buses=list(buses.values()), num_sequences=len(pulse_sequences))

@@ -45,35 +45,37 @@ class Experiment:
 
     platform: Platform
     execution: Execution
-    connection: API
     settings: ExperimentSettings
-    sequence: PulseSequence
+    sequences: List[PulseSequence]
     _loop_parameters: List[Tuple[str, int, str, List[float]]]
 
     def __init__(
         self,
-        sequence: Circuit | PulseSequence,
+        sequences: List[Circuit | PulseSequence] | Circuit | PulseSequence,
         platform_name: str = DEFAULT_PLATFORM_NAME,
         settings: ExperimentSettings = None,
-        connection: API | None = None,
     ):
+        if not isinstance(sequences, list):
+            sequences = [sequences]
         self._loop_parameters = []
-        self.connection = connection
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name, exp=asdict(self.settings))
-        self._build_execution(sequence=sequence)
+        self._build_execution(sequence_list=sequences)
 
-    def execute(self):
+    def execute(self, connection: API | None = None):
         """Run execution."""
         self._start_instruments()
-        plot_id = self._create_live_plot()
-        if not self._loop_parameters:
-            return [self.execution.run()]
-        results = self._execute_loop(plot_id=plot_id)
+        plot_id = self._create_live_plot(connection=connection)
+        results = (
+            self._execute_loop(connection=connection, plot_id=plot_id)
+            if self._loop_parameters
+            else [self.execution.run()]
+        )
+
         self.execution.close()
         return results
 
-    def _execute_loop(self, plot_id: str):
+    def _execute_loop(self, connection: API | None, plot_id: str | None):
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -91,8 +93,9 @@ class Experiment:
                 self.execution.setup()
                 result = self.execution.run()
                 results.append(result)
-                self._send_plot_points(plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0])
-
+                self._send_plot_points(
+                    connection=connection, plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0]
+                )
         return results
 
     def _start_instruments(self):
@@ -130,7 +133,7 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(resolution=resolution)
+        return self.execution.draw(resolution=resolution, num_qubits=self.platform.num_qubits)
 
     def from_circuit(self, circuit: Circuit):
         """Translate a Qibo Circuit into a PulseSequence object.
@@ -198,25 +201,27 @@ class Experiment:
             pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
         )
 
-    def _build_execution(self, sequence: Circuit | PulseSequence):
+    def _build_execution(self, sequence_list: List[Circuit | PulseSequence]):
         """Build Execution class.
 
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        if isinstance(sequence, Circuit):
-            sequence = self.from_circuit(circuit=sequence)
-        sequence.delay_between_pulses = self.delay_between_pulses
-        self.sequence = sequence
-        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequence=sequence)
+        self.sequences = []
+        for sequence in sequence_list:
+            if isinstance(sequence, Circuit):
+                sequence = self.from_circuit(circuit=sequence)
+            sequence.delay_between_pulses = self.delay_between_pulses
+            self.sequences.append(sequence)
+        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=self.sequences)
 
-    def _create_live_plot(self):
+    def _create_live_plot(self, connection: API | None):
         """Create live plot."""
-        if self.connection is not None:
+        if connection is not None:
             # TODO: Create plot for each different BusReadout
-            return self.connection.create_liveplot(plot_type="LINES")
+            return connection.create_liveplot(plot_type="LINES")
 
-    def _send_plot_points(self, plot_id: str | None, x_value: float, y_value: float):
+    def _send_plot_points(self, connection: API | None, plot_id: str | None, x_value: float, y_value: float):
         """Send plot points to live plot viewer.
 
         Args:
@@ -224,9 +229,9 @@ class Experiment:
             x_value (float): X value.
             y_value (float): Y value.
         """
-        if plot_id and self.connection:
+        if plot_id and connection:
             # TODO: Plot voltages of every BusReadout in the platform
-            self.connection.send_plot_points(plot_id=plot_id, x=x_value, y=y_value)
+            connection.send_plot_points(plot_id=plot_id, x=x_value, y=y_value)
 
     @property
     def delay_between_pulses(self):
@@ -287,7 +292,7 @@ class Experiment:
         return {
             "settings": asdict(self.settings),
             "platform_name": self.platform.name,
-            "sequence": self.sequence.to_dict(),
+            "sequence": [sequence.to_dict() for sequence in self.sequences],
             "parameters": self._loop_parameters,
         }
 
@@ -300,9 +305,9 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary["settings"])
         platform_name = dictionary["platform_name"]
-        sequence = PulseSequence.from_dict(dictionary["sequence"])
+        sequences = [PulseSequence.from_dict(settings) for settings in dictionary["sequence"]]
         parameters = dictionary["parameters"]
-        experiment = Experiment(sequence=sequence, platform_name=platform_name, settings=settings)
+        experiment = Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
         experiment._loop_parameters = parameters
         return experiment
 
