@@ -20,18 +20,17 @@ connection = API(configuration=configuration)
 def load_experiment():
     """Load the platform 'platform_0' from the DB."""
     # Using PLATFORM_MANAGER_DB
-    circuit = Circuit(2)
+    circuit = Circuit(1)
     circuit.add(X(0))
-    circuit.add(Y(1))
-    circuit.add(I(1))
     circuit.add(RX(0, 20))
     circuit.add(M(0))
-    circuit.add(M(1))
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequence=circuit)
     # experiment.add_parameter_to_loop(
     #     category="signal_generator", id_=1, parameter="frequency", start=7.345e9, stop=7.35e9, num=1000
     # )
-    experiment.draw()
+    dictionary = experiment.to_dict()
+    experiment2 = Experiment.from_dict(dictionary)
+    experiment2.draw()
     plt.show()
 
 

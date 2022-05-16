@@ -15,7 +15,7 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    EXPERIMENT_SETTINGS = "experiment_settings"
+    EXPERIMENT_SETTINGS = "exp_settings"
 
     def build(self, **kwargs: str | dict) -> Platform:
         """Build platform. If 'experiment_settings' kwarg is given, add/overwrite them
@@ -73,8 +73,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Args:
             platform_schema (PlatformSchema): Class containing the settings of the platform.
         """
-        # TODO: I just realized that (if I am not wrong) we just need to know the specifications of the
-        # mixer used for up-conversion. If that's the case then we can delete the MixerDown class.
+        # TODO: Ask Ramiro if mixer offsets for down-conversion are needed. If not we can delete the MixerDown class.
         for bus in platform_schema.schema.elements:
             for name, value in bus.mixer_up:
                 if name not in bus.qubit_instrument:

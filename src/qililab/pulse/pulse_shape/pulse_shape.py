@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from qililab.constants import YAML
 from qililab.typings import FactoryElement, PulseShapeName
 
 
@@ -22,3 +23,11 @@ class PulseShape(FactoryElement, ABC):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+
+    def to_dict(self):
+        """Return dictionary representation of the pulse shape.
+
+        Returns:
+            dict: Dictionary.
+        """
+        return {YAML.NAME: self.name.value} | self.__dict__
