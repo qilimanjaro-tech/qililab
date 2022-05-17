@@ -38,7 +38,7 @@ class Experiment:
         hardware_average: int = 1000
         software_average: int = 1
         repetition_duration: int = 2000
-        delay_between_pulses: int = 0
+        delay_between_pulses: int = 50
         gate_duration: int = 100
         num_sigmas: float = 4
         drag_coefficient: float = 0
@@ -141,7 +141,7 @@ class Experiment:
         Args:
             circuit (Circuit): Qibo Circuit object.
         """
-        sequence = PulseSequence()
+        sequence = PulseSequence(delay_between_pulses=self.delay_between_pulses)
         gates = list(circuit.queue)
         gates.append(circuit.measurement_gate)
         for gate in gates:
@@ -211,7 +211,6 @@ class Experiment:
         for sequence in sequence_list:
             if isinstance(sequence, Circuit):
                 sequence = self.from_circuit(circuit=sequence)
-            sequence.delay_between_pulses = self.delay_between_pulses
             self.sequences.append(sequence)
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=self.sequences)
 

@@ -22,14 +22,16 @@ def load_experiment():
     """Load the platform 'platform_0' from the DB."""
     # Using PLATFORM_MANAGER_DB
     circuits = []
-    for rotation in range(np.pi * 3):
+    for rotation in np.linspace(0, np.pi * 3, 10):
         circuit = Circuit(1)
         circuit.add(RX(0, rotation))
         circuit.add(M(0))
         circuits.append(circuit)
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuits)
-    results = experiment.execute()
-    print(results[0][0].voltages())
+    experiment.draw()
+    plt.show()
+    # results = experiment.execute()
+    # print(results[0][0].voltages())
 
 
 if __name__ == "__main__":
