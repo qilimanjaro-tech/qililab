@@ -25,9 +25,6 @@ class QubitInstrument(Instrument):
             delta (float): Dephasing.
         """
 
-        hardware_average: int
-        software_average: int
-        repetition_duration: int  # ns
         frequency: float
         offset_i: float
         offset_q: float
@@ -37,39 +34,12 @@ class QubitInstrument(Instrument):
     settings: QubitInstrumentSettings
 
     @abstractmethod
-    def run(self, pulses: List[Pulse]) -> QbloxResult:
+    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int) -> QbloxResult:
         """Run execution of a pulse sequence.
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-
-    @property
-    def hardware_average(self):
-        """QbloxPulsar 'hardware_average' property.
-
-        Returns:
-            int: settings.hardware_average.
-        """
-        return self.settings.hardware_average
-
-    @property
-    def software_average(self):
-        """QbloxPulsar 'software_average' property.
-
-        Returns:
-            int: settings.software_average.
-        """
-        return self.settings.software_average
-
-    @property
-    def repetition_duration(self):
-        """QbloxPulsar 'repetition_duration' property.
-
-        Returns:
-            int: settings.repetition_duration.
-        """
-        return self.settings.repetition_duration
 
     @property
     def frequency(self):

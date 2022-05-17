@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qililab.instruments import Mixer, QubitInstrument, SignalGenerator
+from qililab.instruments import QubitInstrument, SignalGenerator, SystemControl
 from qililab.platform import (
     PLATFORM_MANAGER_DB,
     Bus,
@@ -33,13 +33,9 @@ def load_buses() -> Buses:
 class TestBus:
     """Unit tests checking the Bus attributes and methods."""
 
-    def test_signal_generator_instance(self, bus: Bus):
-        """Test signal_generator instance."""
-        assert isinstance(bus.signal_generator, SignalGenerator)
-
-    def test_mixer_up_instance(self, bus: Bus):
-        """Test mixer_up instance."""
-        assert isinstance(bus.mixer_up, Mixer)
+    def test_system_control_instance(self, bus: Bus):
+        """Test system_control instance."""
+        assert isinstance(bus.system_control, SystemControl)
 
     def test_resonator_instance(self, bus: Bus):
         """Test resonator instance."""
@@ -50,10 +46,6 @@ class TestBus:
         """Test qubit instance."""
         if isinstance(bus, BusControl):
             assert isinstance(bus.qubit, Qubit)
-
-    def test_qubit_instrument_instance(self, bus: Bus):
-        """Test qubit_instrument instance."""
-        assert isinstance(bus.qubit_instrument, QubitInstrument)
 
     def test_iter_and_getitem_methods(self, bus: Bus):
         """Test __iter__ magic method."""

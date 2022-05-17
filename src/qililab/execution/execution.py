@@ -11,15 +11,6 @@ class Execution:
 
     buses_execution: BusesExecution
 
-    def execute(self):
-        """Run execution."""
-        self.connect()
-        self.setup()
-        self.start()
-        results = self.run()
-        self.close()
-        return results
-
     def connect(self):
         """Connect to the instruments."""
         self.buses_execution.connect()
@@ -32,15 +23,15 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self):
+    def run(self, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
-        return self.buses_execution.run()
+        return self.buses_execution.run(nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""
         self.buses_execution.close()
 
-    def draw(self, resolution: float, num_qubits: int):
+    def draw(self, loop_duration: int, resolution: float, num_qubits: int):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -49,7 +40,7 @@ class Execution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.draw(resolution=resolution, num_qubits=num_qubits)
+        return self.buses_execution.draw(loop_duration=loop_duration, resolution=resolution, num_qubits=num_qubits)
 
     def add_gate(self, gate: HardwareGate):
         """Add gate to BusesExecution.

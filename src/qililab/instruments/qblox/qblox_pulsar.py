@@ -56,17 +56,17 @@ class QbloxPulsar(QubitInstrument):
         super().connect()
         self.initial_setup()
 
-    def run(self, pulses: List[Pulse]):
+    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int):
         """Run execution of a pulse sequence.
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-        sequence = self._translate_pulse_sequence(pulses=pulses)
+        sequence = self._translate_pulse_sequence(pulses=pulses, nshots=nshots, loop_duration=loop_duration)
         self.upload(sequence=sequence)
         self.start()
 
-    def _translate_pulse_sequence(self, pulses: List[Pulse]):
+    def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, loop_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -76,11 +76,11 @@ class QbloxPulsar(QubitInstrument):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulses=pulses)
-        program = self._generate_program(pulses=pulses, waveforms=waveforms)
+        program = self._generate_program(pulses=pulses, waveforms=waveforms, nshots=nshots, loop_duration=loop_duration)
         acquisitions = self._generate_acquisitions()
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
 
-    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms):
+    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms, nshots: int, loop_duration: int):
         """Generate Q1ASM program
 
         Args:
@@ -91,7 +91,7 @@ class QbloxPulsar(QubitInstrument):
             Program: Q1ASM program.
         """
         program = Program()
-        loop = Loop(name="loop", iterations=self.hardware_average)
+        loop = Loop(name="loop", iterations=nshots)
         # TODO: Make sure that start time of Pulse is 0 or bigger than 4
         if pulses[0].start != 0:
             loop.append_component(Wait(wait_time=pulses[0].start))
@@ -120,7 +120,7 @@ class QbloxPulsar(QubitInstrument):
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=0, wait_time=4))
 
-        loop.append_component(long_wait(wait_time=self.repetition_duration - loop.duration_iter))
+        loop.append_component(long_wait(wait_time=loop_duration - loop.duration_iter))
         program.append_block(block=loop)
         return program
 

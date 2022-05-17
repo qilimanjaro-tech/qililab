@@ -33,12 +33,12 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self):
+    def run(self, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
         results: List[QbloxResult] = []
         for idx in range(self.num_sequences):
             for bus in self.buses:
-                result = bus.run(idx=idx)
+                result = bus.run(nshots=nshots, loop_duration=loop_duration, idx=idx)
                 if result is not None:
                     results.append(result)
 
@@ -49,7 +49,7 @@ class BusesExecution:
         for bus in self.buses:
             bus.close()
 
-    def waveforms(self, resolution: float = 1.0):
+    def waveforms(self, loop_duration: int, resolution: float = 1.0):
         """Get pulses of each bus and sum pulses by their qubit id.
 
         Args:
@@ -61,7 +61,7 @@ class BusesExecution:
         """
         pulses: Dict[int, np.ndarray] = {}
         for bus in self.buses:
-            new_pulses = np.array(bus.waveforms(resolution=resolution))
+            new_pulses = np.array(bus.waveforms(loop_duration=loop_duration, resolution=resolution))
             for qubit_ids in bus.qubit_ids:
                 if qubit_ids not in pulses:
                     pulses[qubit_ids] = new_pulses
@@ -73,7 +73,7 @@ class BusesExecution:
 
         return pulses
 
-    def draw(self, resolution: float, num_qubits: int):
+    def draw(self, loop_duration: int, resolution: float, num_qubits: int):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -85,7 +85,7 @@ class BusesExecution:
         figure, axes = plt.subplots(num_qubits, 1)
         if num_qubits == 1:
             axes = [axes]  # make axes subscriptable
-        for idx, pulse in self.waveforms(resolution=resolution).items():
+        for idx, pulse in self.waveforms(loop_duration=loop_duration, resolution=resolution).items():
             time = np.arange(len(pulse[0])) * resolution
             axes[idx].set_title(f"Qubit {idx}")
             axes[idx].plot(time, pulse[0], label="I")

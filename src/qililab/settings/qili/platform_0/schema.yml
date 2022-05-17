@@ -2,35 +2,40 @@ elements:
   - id_: 0
     category: bus
     bus_type: control
-    qubit_instrument:
+    system_control:
       id_: 0
-      name: qblox_qcm  # unique name
-      category: qubit_instrument  # general name
-      ip: 192.168.0.3
-      firmware: 0.7.0
-      reference_clock: internal
-      sequencer: 0
-      sync_enabled: true
-      gain: 1
-      hardware_average: 4096
-      software_average: 10
-      repetition_duration: 200000
-      frequency: 100000000
-    signal_generator:
-      id_: 0
-      name: rohde_schwarz  # unique name
-      category: signal_generator  # general name
-      ip: 192.168.0.10
-      firmware: 4.30.046.295
-      frequency: 3663869000.0
-      power: 15
-    mixer_up:
-      id_: 0
-      category: mixer  # general name
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0
+      category: system_control
+      name: mixer_based_system_control  # unique name
+      qubit_instrument:
+        id_: 0
+        name: qblox_qcm  # unique name
+        category: qubit_instrument  # general name
+        ip: 192.168.0.3
+        firmware: 0.7.0
+        reference_clock: internal
+        sequencer: 0
+        sync_enabled: true
+        gain: 1
+        frequency: 100000000
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+      signal_generator:
+        id_: 0
+        name: rohde_schwarz  # unique name
+        category: signal_generator  # general name
+        ip: 192.168.0.10
+        firmware: 4.30.046.295
+        frequency: 3663869000.0
+        power: 15
+      mixer_up:
+        id_: 0
+        category: mixer  # general name
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
     qubit:
       id_: 0
       name: qubit
@@ -44,45 +49,57 @@ elements:
   - id_: 1
     category: bus
     bus_type: readout
-    qubit_instrument:
+    system_control:
       id_: 1
-      name: qblox_qrm  # unique name
-      category: qubit_instrument  # general name
-      ip: 192.168.0.4
-      firmware: 0.7.0
-      reference_clock: external
-      sequencer: 0
-      sync_enabled: true
-      gain: 0.5
-      acquire_trigger_mode: sequencer
-      hardware_average_enabled: true
-      start_integrate: 130
-      sampling_rate: 1000000000
-      integration_length: 2000
-      integration_mode: ssb
-      sequence_timeout: 1
-      acquisition_timeout: 1
-      acquisition_name: "single"
-      delay_before_readout: 50
-      hardware_average: 4096
-      software_average: 10
-      repetition_duration: 200000
-      frequency: 20000000
-    signal_generator:
-      id_: 1
-      name: rohde_schwarz  # unique name
-      category: signal_generator  # general name
-      ip: 192.168.0.7
-      firmware: 4.30.046.295
-      frequency: 7347367000.0
-      power: 15
-    mixer_up:
-      id_: 1
-      category: mixer  # general name
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0
+      category: system_control
+      name: mixer_based_system_control  # unique name
+      qubit_instrument:
+        id_: 1
+        name: qblox_qrm  # unique name
+        category: qubit_instrument  # general name
+        ip: 192.168.0.4
+        firmware: 0.7.0
+        reference_clock: external
+        sequencer: 0
+        sync_enabled: true
+        gain: 0.5
+        acquire_trigger_mode: sequencer
+        hardware_average_enabled: true
+        start_integrate: 130
+        sampling_rate: 1000000000
+        integration_length: 2000
+        integration_mode: ssb
+        sequence_timeout: 1
+        acquisition_timeout: 1
+        acquisition_name: "single"
+        delay_before_readout: 50
+        frequency: 20000000
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+      signal_generator:
+        id_: 1
+        name: rohde_schwarz  # unique name
+        category: signal_generator  # general name
+        ip: 192.168.0.7
+        firmware: 4.30.046.295
+        frequency: 7347367000.0
+        power: 15
+      mixer_up:
+        id_: 1
+        category: mixer  # general name
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
+      mixer_down:
+        id_: 2
+        category: mixer  # general name
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
     resonator:
       id_: 0
       name: resonator
@@ -96,10 +113,3 @@ elements:
           qubit_frequency: 3544000000.0
           min_voltage: 950
           max_voltage: 1775
-    mixer_down:
-      id_: 2
-      category: mixer  # general name
-      epsilon: 0
-      delta: 0
-      offset_i: 0
-      offset_q: 0

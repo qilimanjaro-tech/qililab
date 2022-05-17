@@ -1,7 +1,6 @@
 """BusControl class."""
 from dataclasses import dataclass
 
-from qililab.instruments import QubitControl
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.qubit import Qubit
 from qililab.typings import BusType
@@ -21,7 +20,6 @@ class BusControl(Bus):
         """BusControl settings"""
 
         qubit: Qubit
-        qubit_instrument: QubitControl
 
     settings: BusControlSettings
     bus_type = BusType.CONTROL

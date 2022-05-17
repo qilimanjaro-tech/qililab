@@ -30,34 +30,12 @@ class PlatformSchema:
         class Bus:
             """BusDict class."""
 
-            @dataclass
-            class MixerSchema:
-                """MixerSchema class."""
-
-                id_: int
-                category: str
-                epsilon: float
-                delta: float
-                offset_i: float
-                offset_q: float
-
-                def __iter__(self):
-                    """Iterate over Bus elements.
-
-                    Yields:
-                        Tuple[str, float]: MixerSchema attributes.
-                    """
-                    yield from self.__dict__.items()
-
             id_: int
             category: str
             bus_type: str
-            qubit_instrument: dict
-            signal_generator: dict
-            mixer_up: MixerSchema
+            system_control: dict
             qubit: Optional[dict] = None
             resonator: Optional[dict] = None
-            mixer_down: Optional[MixerSchema] = None
 
         elements: List[Bus]
 

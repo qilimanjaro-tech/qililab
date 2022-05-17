@@ -37,7 +37,7 @@ class Experiment:
         readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
         hardware_average: int = 1000
         software_average: int = 1
-        repetition_duration: int = 2000
+        loop_duration: int = 10000
         delay_between_pulses: int = 50
         gate_duration: int = 100
         num_sigmas: float = 4
@@ -59,7 +59,7 @@ class Experiment:
             sequences = [sequences]
         self._loop_parameters = []
         self.settings = self.ExperimentSettings() if settings is None else settings
-        self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name, exp=asdict(self.settings))
+        self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self._build_execution(sequence_list=sequences)
 
     def execute(self, connection: API | None = None):
@@ -69,7 +69,7 @@ class Experiment:
         results = (
             self._execute_loop(connection=connection, plot_id=plot_id)
             if self._loop_parameters
-            else [self.execution.run()]
+            else [self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)]
         )
 
         self.execution.close()
@@ -91,7 +91,7 @@ class Experiment:
                 logger.info("%s: %f", parameter, value)
                 element.set_parameter(name=parameter, value=value)
                 self.execution.setup()
-                result = self.execution.run()
+                result = self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)
                 results.append(result)
                 self._send_plot_points(
                     connection=connection, plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0]
@@ -133,7 +133,9 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(resolution=resolution, num_qubits=self.platform.num_qubits)
+        return self.execution.draw(
+            loop_duration=self.loop_duration, resolution=resolution, num_qubits=self.platform.num_qubits
+        )
 
     def from_circuit(self, circuit: Circuit):
         """Translate a Qibo Circuit into a PulseSequence object.
@@ -285,6 +287,15 @@ class Experiment:
             int: settings.hardware_average.
         """
         return self.settings.hardware_average
+
+    @property
+    def loop_duration(self):
+        """Experiment 'loop_duration' property.
+
+        Returns:
+            int: settings.loop_duration.
+        """
+        return self.settings.loop_duration
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""

@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME, YAML
+from qililab.constants import DEFAULT_PLATFORM_DUMP_FILENAME
 from qililab.platform.platform import Platform
 from qililab.platform.utils import PlatformSchema
 from qililab.utils import SingletonABC
@@ -18,16 +18,13 @@ class PlatformManager(ABC, metaclass=SingletonABC):
     EXPERIMENT_SETTINGS = "exp_settings"
 
     def build(self, **kwargs: str | dict) -> Platform:
-        """Build platform. If 'experiment_settings' kwarg is given, add/overwrite them
-        in every qubit instrument of the platform.
+        """Build platform.
 
         Returns:
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
         platform_schema = PlatformSchema(**self._load_platform_settings(**kwargs))
-        self._overwrite_experiment_settings(platform_schema=platform_schema, **kwargs)
-        self._configure_mixer_offsets(platform_schema=platform_schema)
         return Platform(platform_schema=platform_schema)
 
     def dump(self, platform: Platform):
@@ -47,34 +44,3 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Returns:
             dict: Dictionary with platform and schema settings.
         """
-
-    def _overwrite_experiment_settings(self, platform_schema: PlatformSchema, **kwargs: str | dict):
-        """If experiment settings are given, overwrite them in every qubit instrument of the platform.
-
-        Args:
-            platform_schema (PlatformSchema): Class containing the settings of the platform.
-
-        Raises:
-            ValueError: If experiment settings is not a dictionary.
-        """
-        if self.EXPERIMENT_SETTINGS in kwargs:
-            experiment_settings = kwargs[self.EXPERIMENT_SETTINGS]
-            if not isinstance(experiment_settings, dict):
-                raise ValueError(f"Please provide a dictionary for the '{self.EXPERIMENT_SETTINGS}' keyword argument.")
-            for bus in platform_schema.schema.elements:
-                bus.qubit_instrument[YAML.REPETITION_DURATION] = experiment_settings[YAML.REPETITION_DURATION]
-                bus.qubit_instrument[YAML.HARDWARE_AVERAGE] = experiment_settings[YAML.HARDWARE_AVERAGE]
-                bus.qubit_instrument[YAML.SOFTWARE_AVERAGE] = experiment_settings[YAML.SOFTWARE_AVERAGE]
-
-    def _configure_mixer_offsets(self, platform_schema: PlatformSchema):
-        """Configure offsets, epsilon and delta of qubit instrument from mixer settings
-        (if they are not already defined).
-
-        Args:
-            platform_schema (PlatformSchema): Class containing the settings of the platform.
-        """
-        # TODO: Ask Ramiro if mixer offsets for down-conversion are needed. If not we can delete the MixerDown class.
-        for bus in platform_schema.schema.elements:
-            for name, value in bus.mixer_up:
-                if name not in bus.qubit_instrument:
-                    bus.qubit_instrument[name] = value

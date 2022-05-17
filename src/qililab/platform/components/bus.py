@@ -3,13 +3,7 @@ from dataclasses import dataclass
 from typing import Generator, List, Optional, Tuple
 
 from qililab.constants import YAML
-from qililab.instruments import (
-    Mixer,
-    MixerDown,
-    MixerUp,
-    QubitInstrument,
-    SignalGenerator,
-)
+from qililab.instruments import MixerBasedSystemControl, SystemControl
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
 from qililab.pulse import Pulse
@@ -41,85 +35,58 @@ class Bus:
         """
 
         bus_type: BusType
-        signal_generator: SignalGenerator
-        mixer_up: MixerUp
-        qubit_instrument: QubitInstrument
-        mixer_down: Optional[MixerDown] = None
+        system_control: SystemControl
         qubit: Optional[Qubit] = None
         resonator: Optional[Resonator] = None
 
         def __post_init__(self):
             """Cast each bus element to its corresponding class."""
             for name, value in self:
-                if name == MixerUp.name.value:
-                    setattr(self, name, MixerUp(value))
-                elif name == MixerDown.name.value:
-                    setattr(self, name, MixerDown(value))
-                elif isinstance(value, dict):
+                if isinstance(value, dict):
                     elem_obj = Factory.get(value.pop(YAML.NAME))(value)
                     setattr(self, name, elem_obj)
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SignalGenerator | Mixer | Resonator | QubitInstrument | Qubit | dict], None, None]:
+        ) -> Generator[Tuple[str, SystemControl | Resonator | Qubit | dict], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SignalGenerator | Mixer | QubitInstrument | Qubit | Resonator | dict):
+                if isinstance(value, SystemControl | Qubit | Resonator | dict):
                     yield name, value
 
     settings: BusSettings
 
     def connect(self):
         """Connect to the instruments."""
-        self.qubit_instrument.connect()
-        self.signal_generator.connect()
+        self.system_control.connect()
 
     def setup(self):
         """Setup instruments."""
-        self.qubit_instrument.setup()
-        self.signal_generator.setup()
+        self.system_control.setup()
 
     def start(self):
         """Start/Turn on the instruments."""
-        self.qubit_instrument.start()
-        self.signal_generator.start()
+        self.system_control.start()
 
-    def run(self, pulses: List[Pulse]):
+    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
-        return self.qubit_instrument.run(pulses=pulses)
+        return self.system_control.run(pulses=pulses, nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""
-        self.qubit_instrument.close()
-        self.signal_generator.close()
+        self.system_control.close()
 
     @property
-    def signal_generator(self):
-        """Bus 'signal_generator' property.
+    def system_control(self):
+        """Bus 'system_control' property.
         Returns:
-            SignalGenerator: settings.signal_generator.
+            Resonator: settings.system_control.
         """
-        return self.settings.signal_generator
-
-    @property
-    def mixer_up(self):
-        """Bus 'mixer_up' property.
-        Returns:
-            Mixer: settings.mixer_up.
-        """
-        return self.settings.mixer_up
-
-    @property
-    def mixer_down(self):
-        """Bus 'mixer_down' property.
-        Returns:
-            Mixer: settings.mixer_down.
-        """
-        return self.settings.mixer_down
+        return self.settings.system_control
 
     @property
     def resonator(self):
@@ -128,14 +95,6 @@ class Bus:
             Resonator: settings.resonator.
         """
         return self.settings.resonator
-
-    @property
-    def qubit_instrument(self):
-        """Bus 'qubit_instrument' property.
-        Returns:
-            (QubitControl | None): settings.qubit_control.
-        """
-        return self.settings.qubit_instrument
 
     @property
     def qubit(self):
@@ -166,7 +125,12 @@ class Bus:
         Returns:
             (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
-        return next((element for _, element in self if element.category == category and element.id_ == id_), None)
+        return next(
+            (element for _, element in self if element.category == category and element.id_ == id_),
+            self.system_control.get_element(category=category, id_=id_)
+            if isinstance(self.system_control, MixerBasedSystemControl)
+            else None,
+        )
 
     def __iter__(self):
         """Redirect __iter__ magic method."""

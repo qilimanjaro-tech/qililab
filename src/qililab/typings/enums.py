@@ -27,6 +27,7 @@ class Category(Enum):
     BUSES = "buses"
     MIXER = "mixer"
     BUS = "bus"
+    SYSTEM_CONTROL = "system_control"
 
 
 class ReferenceClock(Enum):
@@ -125,3 +126,5 @@ class BusElementName(Enum):
     QBLOX_QCM = "qblox_qcm"
     QBLOX_QRM = "qblox_qrm"
     ROHDE_SCHWARZ = "rohde_schwarz"
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
+    INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"

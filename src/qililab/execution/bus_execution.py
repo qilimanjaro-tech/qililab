@@ -2,8 +2,6 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from sympy import Q
-
 from qililab.platform import Bus
 from qililab.pulse import BusPulses, Pulse
 
@@ -27,9 +25,9 @@ class BusExecution:
         """Start/Turn on the instruments."""
         self.bus.start()
 
-    def run(self, idx: int):
+    def run(self, nshots: int, loop_duration: int, idx: int):
         """Run the given pulse sequence."""
-        return self.bus.run(pulses=self.pulse_sequences[idx].pulses)
+        return self.bus.run(pulses=self.pulse_sequences[idx].pulses, nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""
@@ -49,7 +47,7 @@ class BusExecution:
         else:
             self.pulse_sequences[idx].add(pulse)
 
-    def waveforms(self, resolution: float = 1.0):
+    def waveforms(self, loop_duration: int, resolution: float = 1.0):
         """Return pulses applied on this bus.
 
         Args:
@@ -61,12 +59,13 @@ class BusExecution:
         waveforms_i, waveforms_q = [], []
         for pulse_sequence in self.pulse_sequences:
             waveform_i, waveform_q = pulse_sequence.waveforms(
-                frequency=self.qubit_instrument.frequency, resolution=resolution
+                frequency=self.system_control.frequency, resolution=resolution
             )
-            waveform_i += [0] * (self.qubit_instrument.repetition_duration - len(waveform_i))
-            waveform_q += [0] * (self.qubit_instrument.repetition_duration - len(waveform_q))
             waveforms_i += waveform_i
             waveforms_q += waveform_q
+            wait_time = round(loop_duration / resolution - len(waveform_i))
+            waveforms_i += [0] * wait_time
+            waveforms_q += [0] * wait_time
         return waveforms_i, waveforms_q
 
     @property
@@ -79,10 +78,10 @@ class BusExecution:
         return self.bus.qubit_ids
 
     @property
-    def qubit_instrument(self):
-        """BusExecution 'qubit_instrument' property.
+    def system_control(self):
+        """BusExecution 'system_control' property.
 
         Returns:
-            QubitInstrument: bus.qubit_instrument
+            QubitInstrument: bus.system_control
         """
-        return self.bus.qubit_instrument
+        return self.bus.system_control

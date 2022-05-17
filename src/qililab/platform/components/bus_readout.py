@@ -22,9 +22,7 @@ class BusReadout(Bus):
     class BusReadoutSettings(Bus.BusSettings):
         """BusReadout settings."""
 
-        mixer_down: MixerDown
         resonator: Resonator
-        qubit_instrument: QubitReadout
 
     settings: BusReadoutSettings
     bus_type = BusType.READOUT
