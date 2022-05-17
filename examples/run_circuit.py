@@ -1,7 +1,8 @@
 """Run circuit experiment"""
 import matplotlib.pyplot as plt
+import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, I, M, X, Y
+from qibo.gates import RX, M
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -21,16 +22,14 @@ def load_experiment():
     """Load the platform 'platform_0' from the DB."""
     # Using PLATFORM_MANAGER_DB
     circuits = []
-    for rotation in range(5):
+    for rotation in range(np.pi * 3):
         circuit = Circuit(1)
         circuit.add(RX(0, rotation))
         circuit.add(M(0))
         circuits.append(circuit)
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuits)
-    experiment.draw()
-    plt.show()
-    # results = experiment.execute()
-    # print(results[0][0].voltages())
+    results = experiment.execute()
+    print(results[0][0].voltages())
 
 
 if __name__ == "__main__":
