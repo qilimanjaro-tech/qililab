@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.readout_pulse import ReadoutPulse
 
 
 @dataclass
@@ -12,9 +13,9 @@ class PulseSequence:
     Args:
         pulses (List[Pulse]): List of pulses.
     """
-
+    delay_between_pulses: int
+    delay_before_readout: int
     pulses: List[Pulse] = field(default_factory=list)
-    delay_between_pulses: int = 0
     time: Dict[str, int] = field(default_factory=dict)
 
     def add(self, pulse: Pulse):
@@ -27,8 +28,12 @@ class PulseSequence:
         if key not in self.time:
             self.time[key] = 0
         if pulse.start_time is None:
-            pulse.start_time = self.time[key]
-            self.time[key] += pulse.duration + self.delay_between_pulses
+            if isinstance(pulse, ReadoutPulse):
+                pulse.start_time = self.time[key] + self.delay_before_readout
+                self.time[key] += pulse.duration + self.delay_before_readout
+            else:
+                pulse.start_time = self.time[key]
+                self.time[key] += pulse.duration + self.delay_between_pulses
         self.pulses.append(pulse)
 
     def to_dict(self):

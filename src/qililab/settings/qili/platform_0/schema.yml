@@ -62,7 +62,7 @@ elements:
         reference_clock: external
         sequencer: 0
         sync_enabled: true
-        gain: 0.5
+        gain: 1
         acquire_trigger_mode: sequencer
         hardware_average_enabled: true
         start_integrate: 130
@@ -72,7 +72,7 @@ elements:
         sequence_timeout: 1
         acquisition_timeout: 1
         acquisition_name: "single"
-        delay_before_readout: 50
+        delay_time: 100
         frequency: 20000000
         epsilon: 0
         delta: 0

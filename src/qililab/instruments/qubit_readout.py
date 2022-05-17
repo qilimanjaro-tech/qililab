@@ -14,15 +14,15 @@ class QubitReadout(QubitInstrument):
             delay_before_readout (int): Delay (ns) between the readout pulse and the acquisition.
         """
 
-        delay_before_readout: int  # ns
+        delay_time: int  # ns
 
     settings: QubitReadoutSettings
 
     @property
-    def delay_before_readout(self):
+    def delay_time(self):
         """QbloxPulsar 'delay_before_readout' property.
 
         Returns:
             int: settings.delay_before_readout.
         """
-        return self.settings.delay_before_readout
+        return self.settings.delay_time
