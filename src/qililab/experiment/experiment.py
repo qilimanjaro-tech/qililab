@@ -35,7 +35,7 @@ class Experiment:
             phase: float = 0
 
         readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
-        hardware_average: int = 4096
+        hardware_average: int = 4024
         software_average: int = 1
         loop_duration: int = 20000
         delay_between_pulses: int = 0
