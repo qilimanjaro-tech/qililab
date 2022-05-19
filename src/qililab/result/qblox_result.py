@@ -1,6 +1,4 @@
 """QbloxResult class."""
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import List
 
@@ -111,6 +109,15 @@ class QbloxResult(Result):
             voltages.append(np.sqrt(integrated_i**2 + integrated_q**2))
 
         return voltages
+
+    def probabilities(self):
+        """Return probabilities of being in the ground and excited state.
+
+        Returns:
+            Tuple[float, float]: Probabilities of being in the ground and excited state.
+        """
+        # FIXME: Compute probabilities
+        return self.voltages(), self.voltages()
 
     def plot(self):
         """Plot data."""

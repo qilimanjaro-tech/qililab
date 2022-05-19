@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, M
+from qibo.gates import RX, M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -20,18 +20,13 @@ connection = API(configuration=configuration)
 
 def load_experiment():
     """Load the platform 'platform_0' from the DB."""
-    # Using PLATFORM_MANAGER_DB
-    circuits = []
-    for rotation in np.linspace(0, np.pi * 3, 10):
-        circuit = Circuit(1)
-        circuit.add(RX(0, rotation))
-        circuit.add(M(0))
-        circuits.append(circuit)
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuits)
-    experiment.draw()
-    plt.show()
-    # results = experiment.execute()
-    # print(results[0][0].voltages())
+    circuit = Circuit(1)
+    circuit.add(X(0))
+    experiment = Experiment(platform_name="flux_qubit", sequences=[circuit])
+    experiment.add_parameter_to_loop(
+        category="system_control", id_=0, parameter="frequency", start=2.08e9, stop=2.0899e9, num=20
+    )
+    experiment.execute(connection=connection)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, I, M, X, Y
 from qiboconnection.api import API
+from tqdm import tqdm
 
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -14,7 +15,7 @@ from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import Pulse, PulseSequences, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
-from qililab.result import QbloxResult
+from qililab.result import Result
 from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
@@ -40,8 +41,8 @@ class Experiment:
         loop_duration: int = 20000
         delay_between_pulses: int = 0
         delay_before_readout: int = 50
-        gate_duration: int = 100
-        num_sigmas: float = 4
+        gate_duration: int = 125
+        num_sigmas: float = 8
         drag_coefficient: float = 0
 
     platform: Platform
@@ -83,19 +84,22 @@ class Experiment:
             plot_id (str): Plot ID.
 
         Returns:
-            List[List[QbloxResult]]: List containing the results for each loop execution.
+            List[List[Result]]: List containing the results for each loop execution.
         """
-        results: List[List[QbloxResult]] = []
+        results: List[List[Result]] = []
         for category, id_, parameter, loop_range in self._loop_parameters:
             element, _ = self.platform.get_element(category=Category(category), id_=id_)
-            for value in loop_range:
+            for value in tqdm(loop_range):
                 logger.info("%s: %f", parameter, value)
                 element.set_parameter(name=parameter, value=value)
                 self.execution.setup()
                 result = self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)
                 results.append(result)
                 self._send_plot_points(
-                    connection=connection, plot_id=plot_id, x_value=value, y_value=result[0].voltages()[0]
+                    connection=connection,
+                    plot_id=plot_id,
+                    x_value=value,
+                    y_value=np.round(result[0].probabilities()[0], 4),
                 )
         return results
 
@@ -148,7 +152,8 @@ class Experiment:
             delay_between_pulses=self.delay_between_pulses, delay_before_readout=self.delay_before_readout
         )
         gates = list(circuit.queue)
-        gates.append(circuit.measurement_gate)
+        if circuit.measurement_gate is not None:
+            gates.append(circuit.measurement_gate)
         for gate in gates:
             if isinstance(gate, M):
                 for qubit_id in gate.target_qubits:
@@ -187,7 +192,7 @@ class Experiment:
             theta = (theta) % (2 * np.pi)
             if theta > np.pi:
                 theta -= 2 * np.pi
-            amplitude = np.abs(theta) / np.pi
+            amplitude = np.abs(theta) / np.pi * 951944763.0783958  # FIXME: This number is from flux_qubit
             phase = 0 if theta >= 0 else np.pi
         elif isinstance(gate, RY):
             theta = gate.parameters

@@ -128,3 +128,4 @@ class BusElementName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"

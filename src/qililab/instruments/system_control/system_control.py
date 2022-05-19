@@ -1,16 +1,17 @@
 """SystemControl class."""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 from qililab.pulse import PulseSequence
+from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings import BusElement
+from qililab.utils import nested_dataclass
 
 
 class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
-    @dataclass
+    @nested_dataclass
     class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
@@ -29,7 +30,7 @@ class SystemControl(BusElement, ABC):
         """Start/Turn on the instruments."""
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int) -> Result:
         """Run the given pulse sequence."""
 
     @abstractmethod
