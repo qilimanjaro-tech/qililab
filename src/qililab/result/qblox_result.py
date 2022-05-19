@@ -108,7 +108,7 @@ class QbloxResult(Result):
             integrated_q = result.acquisition.bins.integration.path1[0]
             voltages.append(np.sqrt(integrated_i**2 + integrated_q**2))
 
-        return voltages
+        return voltages[0]  # TODO: Remove the index
 
     def probabilities(self):
         """Return probabilities of being in the ground and excited state.

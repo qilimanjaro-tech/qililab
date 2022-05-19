@@ -5,21 +5,10 @@ from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
-from qiboconnection.api import API
-from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.gates import HardwareGate
 from qililab.result import Result
-
-configuration = ConnectionConfiguration(
-    user_id=3,
-    username="qili-admin-test",
-    api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
-)
-
-connection = API(configuration=configuration)
-plot_id = connection.create_liveplot(plot_type="LINES")
 
 
 @dataclass
@@ -50,10 +39,8 @@ class BusesExecution:
         for idx in range(self.num_sequences):
             for bus in self.buses:
                 result = bus.run(nshots=nshots, loop_duration=loop_duration, idx=idx)
-                connection.send_plot_points(plot_id=plot_id, x=float(idx), y=result.probabilities()[0])
                 if result is not None:
                     results.append(result)
-
         return results
 
     def close(self):

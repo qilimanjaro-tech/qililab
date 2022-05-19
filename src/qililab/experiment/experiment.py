@@ -41,7 +41,7 @@ class Experiment:
         loop_duration: int = 20000
         delay_between_pulses: int = 0
         delay_before_readout: int = 50
-        gate_duration: int = 125
+        gate_duration: int = 100
         num_sigmas: float = 8
         drag_coefficient: float = 0
 
@@ -192,7 +192,7 @@ class Experiment:
             theta = (theta) % (2 * np.pi)
             if theta > np.pi:
                 theta -= 2 * np.pi
-            amplitude = np.abs(theta) / np.pi * 951944763.0783958  # FIXME: This number is from flux_qubit
+            amplitude = np.abs(theta) / np.pi
             phase = 0 if theta >= 0 else np.pi
         elif isinstance(gate, RY):
             theta = gate.parameters

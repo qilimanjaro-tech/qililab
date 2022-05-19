@@ -59,8 +59,8 @@ class SimulatedSystemControl(SystemControl):
     def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
         logger.debug("Running pulse sequence")
-        waveforms_i, waveforms_q = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
-        waveforms = np.array(waveforms_i)  # np.array(waveforms_i) + 1j * np.array(waveforms_q)
+        waveforms_i, _ = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
+        waveforms = np.array(waveforms_i) * self.amplitude_norm_factor
         hamiltonian = self.hamiltonian(
             qubit=self.qubit,
             waveforms=waveforms,
@@ -78,6 +78,16 @@ class SimulatedSystemControl(SystemControl):
 
     def close(self):
         """Close connection to the instruments."""
+
+    @property
+    def amplitude_norm_factor(self) -> float:
+        """SimulatedSystemControl 'amplitude_norm_factor' property.
+
+        Returns:
+            float: Normalization factor used for the pulse amplitude.
+        """
+        # TODO: Add this 0.2 in the pi_pulse_amplitude parameter of the qubit
+        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.2
 
     @property
     def hamiltonian(self):
