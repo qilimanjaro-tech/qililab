@@ -2,7 +2,6 @@
 
 import itertools
 import json
-import sys
 from pathlib import Path
 from typing import List
 
@@ -17,7 +16,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.pulse import Pulse
+from qililab.pulse import Pulse, PulseSequence
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
@@ -56,13 +55,15 @@ class QbloxPulsar(QubitInstrument):
         super().connect()
         self.initial_setup()
 
-    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run execution of a pulse sequence.
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-        sequence = self._translate_pulse_sequence(pulses=pulses, nshots=nshots, loop_duration=loop_duration)
+        sequence = self._translate_pulse_sequence(
+            pulses=pulse_sequence.pulses, nshots=nshots, loop_duration=loop_duration
+        )
         self.upload(sequence=sequence)
         self.start()
 

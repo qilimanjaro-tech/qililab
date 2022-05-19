@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from qililab.platform import Bus
-from qililab.pulse import BusPulses, Pulse
+from qililab.pulse import Pulse, PulseSequence
 
 
 @dataclass
@@ -11,7 +11,7 @@ class BusExecution:
     """BusExecution class."""
 
     bus: Bus
-    pulse_sequences: List[BusPulses] = field(default_factory=list)
+    pulse_sequences: List[PulseSequence] = field(default_factory=list)
 
     def connect(self):
         """Connect to the instruments."""
@@ -27,7 +27,7 @@ class BusExecution:
 
     def run(self, nshots: int, loop_duration: int, idx: int):
         """Run the given pulse sequence."""
-        return self.bus.run(pulses=self.pulse_sequences[idx].pulses, nshots=nshots, loop_duration=loop_duration)
+        return self.bus.run(pulse_sequence=self.pulse_sequences[idx], nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""
@@ -43,7 +43,7 @@ class BusExecution:
         if idx > len(self.pulse_sequences):
             raise ValueError("Bad index value.")
         if idx == len(self.pulse_sequences):
-            self.pulse_sequences.append(BusPulses(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
+            self.pulse_sequences.append(PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
         else:
             self.pulse_sequences[idx].add(pulse)
 

@@ -6,7 +6,7 @@ from qililab.pulse.pulse import Pulse
 
 
 @dataclass
-class BusPulses:
+class PulseSequence:
     """Container of Pulse objects addressed to the same bus."""
 
     qubit_ids: List[int]

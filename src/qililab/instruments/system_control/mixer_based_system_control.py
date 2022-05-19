@@ -7,7 +7,7 @@ from qililab.instruments.mixer import Mixer, MixerDown, MixerUp
 from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import Pulse
+from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
 from qililab.utils import Factory
 
@@ -71,9 +71,9 @@ class MixerBasedSystemControl(SystemControl):
         self.qubit_instrument.start()
         self.signal_generator.start()
 
-    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
-        return self.qubit_instrument.run(pulses=pulses, nshots=nshots, loop_duration=loop_duration)
+        return self.qubit_instrument.run(pulse_sequence=pulse_sequence, nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""

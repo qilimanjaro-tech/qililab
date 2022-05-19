@@ -1,9 +1,8 @@
 """SystemControl class."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
-from qililab.pulse import Pulse
+from qililab.pulse import PulseSequence
 from qililab.settings import Settings
 from qililab.typings import BusElement
 
@@ -30,7 +29,7 @@ class SystemControl(BusElement, ABC):
         """Start/Turn on the instruments."""
 
     @abstractmethod
-    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
 
     @abstractmethod

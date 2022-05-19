@@ -1,10 +1,9 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 from qililab.instruments.instrument import Instrument
-from qililab.pulse import Pulse
+from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
 
 
@@ -34,7 +33,7 @@ class QubitInstrument(Instrument):
     settings: QubitInstrumentSettings
 
     @abstractmethod
-    def run(self, pulses: List[Pulse], nshots: int, loop_duration: int) -> QbloxResult:
+    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int) -> QbloxResult:
         """Run execution of a pulse sequence.
 
         Args:

@@ -12,7 +12,7 @@ from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
-from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
+from qililab.pulse import Pulse, PulseSequences, ReadoutPulse
 from qililab.pulse.pulse_shape import Drag
 from qililab.result import QbloxResult
 from qililab.typings import Category
@@ -46,12 +46,12 @@ class Experiment:
     platform: Platform
     execution: Execution
     settings: ExperimentSettings
-    sequences: List[PulseSequence]
+    sequences: List[PulseSequences]
     _loop_parameters: List[Tuple[str, int, str, List[float]]]
 
     def __init__(
         self,
-        sequences: List[Circuit | PulseSequence] | Circuit | PulseSequence,
+        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
         platform_name: str = DEFAULT_PLATFORM_NAME,
         settings: ExperimentSettings = None,
     ):
@@ -143,7 +143,7 @@ class Experiment:
         Args:
             circuit (Circuit): Qibo Circuit object.
         """
-        sequence = PulseSequence(delay_between_pulses=self.delay_between_pulses)
+        sequence = PulseSequences(delay_between_pulses=self.delay_between_pulses)
         gates = list(circuit.queue)
         gates.append(circuit.measurement_gate)
         for gate in gates:
@@ -203,7 +203,7 @@ class Experiment:
             pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
         )
 
-    def _build_execution(self, sequence_list: List[Circuit | PulseSequence]):
+    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]):
         """Build Execution class.
 
         Args:
@@ -315,7 +315,7 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary["settings"])
         platform_name = dictionary["platform_name"]
-        sequences = [PulseSequence.from_dict(settings) for settings in dictionary["sequence"]]
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequence"]]
         parameters = dictionary["parameters"]
         experiment = Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
         experiment._loop_parameters = parameters

@@ -6,7 +6,7 @@ from qililab.pulse.pulse import Pulse
 
 
 @dataclass
-class PulseSequence:
+class PulseSequences:
     """Class containing a list of pulses used for control/readout of the qubit.
 
     Args:
@@ -56,7 +56,7 @@ class PulseSequence:
         delay_between_pulses = dictionary["delay_between_pulses"]
         time = dictionary["time"]
         pulses = [Pulse(**settings) for settings in dictionary["pulses"]]
-        return PulseSequence(pulses=pulses, delay_between_pulses=delay_between_pulses, time=time)
+        return PulseSequences(pulses=pulses, delay_between_pulses=delay_between_pulses, time=time)
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulses."""
