@@ -67,7 +67,7 @@ qblox_qrm_0_settings_sample = {
     "sequence_timeout": 1,
     "acquisition_timeout": 1,
     "acquisition_name": "single",
-    "delay_before_readout": 50,
+    "delay_time": 50,
     "epsilon": 0,
     "delta": 0,
     "offset_i": 0,

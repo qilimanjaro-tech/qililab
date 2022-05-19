@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.readout_pulse import ReadoutPulse
 
 
 @dataclass
@@ -13,8 +14,9 @@ class PulseSequences:
         pulses (List[Pulse]): List of pulses.
     """
 
+    delay_between_pulses: int
+    delay_before_readout: int
     pulses: List[Pulse] = field(default_factory=list)
-    delay_between_pulses: int = 0
     time: Dict[str, int] = field(default_factory=dict)
 
     def add(self, pulse: Pulse):
@@ -27,8 +29,12 @@ class PulseSequences:
         if key not in self.time:
             self.time[key] = 0
         if pulse.start_time is None:
-            pulse.start_time = self.time[key]
-            self.time[key] += pulse.duration + self.delay_between_pulses
+            if isinstance(pulse, ReadoutPulse):
+                pulse.start_time = self.time[key] + self.delay_before_readout
+                self.time[key] += pulse.duration + self.delay_before_readout
+            else:
+                pulse.start_time = self.time[key]
+                self.time[key] += pulse.duration + self.delay_between_pulses
         self.pulses.append(pulse)
 
     def to_dict(self):
@@ -41,6 +47,7 @@ class PulseSequences:
             "pulses": [pulse.to_dict() for pulse in self.pulses],
             "time": self.time,
             "delay_between_pulses": self.delay_between_pulses,
+            "delay_before_readout": self.delay_before_readout,
         }
 
     @classmethod
@@ -54,9 +61,15 @@ class PulseSequences:
             PulseSequence: Class instance.
         """
         delay_between_pulses = dictionary["delay_between_pulses"]
+        delay_before_readout = dictionary["delay_before_readout"]
         time = dictionary["time"]
         pulses = [Pulse(**settings) for settings in dictionary["pulses"]]
-        return PulseSequences(pulses=pulses, delay_between_pulses=delay_between_pulses, time=time)
+        return PulseSequences(
+            pulses=pulses,
+            delay_between_pulses=delay_between_pulses,
+            delay_before_readout=delay_before_readout,
+            time=time,
+        )
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulses."""

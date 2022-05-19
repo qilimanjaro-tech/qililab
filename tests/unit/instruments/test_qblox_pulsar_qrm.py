@@ -98,7 +98,7 @@ class TestQbloxPulsarQRM:
     def test_reset_method(self, qrm: QbloxPulsarQRM):
         """Test reset method"""
         qrm.reset()
-        qrm.device.reset.assert_called_once()
+        qrm.device.reset.assert_called()
 
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxPulsarQRM):
@@ -197,6 +197,6 @@ class TestQbloxPulsarQRM:
         """Test acquisition_name property."""
         assert qrm.acquisition_name == qrm.settings.acquisition_name
 
-    def tests_delay_before_readout_property(self, qrm: QbloxPulsarQRM):
-        """Test delay_before_readout property."""
-        assert qrm.delay_before_readout == qrm.settings.delay_before_readout
+    def tests_delay_time_property(self, qrm: QbloxPulsarQRM):
+        """Test delay_time property."""
+        assert qrm.delay_time == qrm.settings.delay_time

@@ -93,7 +93,7 @@ class TestQbloxPulsarQCM:
     def test_reset_method(self, qcm: QbloxPulsarQCM):
         """Test reset method"""
         qcm.reset()
-        qcm.device.reset.assert_called_once()
+        qcm.device.reset.assert_called()
 
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxPulsarQCM):

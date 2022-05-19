@@ -68,7 +68,6 @@ class MixerBasedSystemControl(SystemControl):
 
     def start(self):
         """Start/Turn on the instruments."""
-        self.qubit_instrument.start()
         self.signal_generator.start()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):

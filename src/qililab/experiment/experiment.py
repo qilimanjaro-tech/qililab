@@ -35,10 +35,11 @@ class Experiment:
             phase: float = 0
 
         readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
-        hardware_average: int = 1000
+        hardware_average: int = 4024
         software_average: int = 1
-        loop_duration: int = 10000
-        delay_between_pulses: int = 50
+        loop_duration: int = 20000
+        delay_between_pulses: int = 0
+        delay_before_readout: int = 50
         gate_duration: int = 100
         num_sigmas: float = 4
         drag_coefficient: float = 0
@@ -143,7 +144,9 @@ class Experiment:
         Args:
             circuit (Circuit): Qibo Circuit object.
         """
-        sequence = PulseSequences(delay_between_pulses=self.delay_between_pulses)
+        sequence = PulseSequences(
+            delay_between_pulses=self.delay_between_pulses, delay_before_readout=self.delay_before_readout
+        )
         gates = list(circuit.queue)
         gates.append(circuit.measurement_gate)
         for gate in gates:
@@ -185,14 +188,14 @@ class Experiment:
             if theta > np.pi:
                 theta -= 2 * np.pi
             amplitude = np.abs(theta) / np.pi
-            phase = 0 if theta > 0 else np.pi
+            phase = 0 if theta >= 0 else np.pi
         elif isinstance(gate, RY):
             theta = gate.parameters
             theta = (theta) % (2 * np.pi)
             if theta > np.pi:
                 theta -= 2 * np.pi
             amplitude = np.abs(theta) / np.pi
-            phase = np.pi / 2 if theta > 0 else 3 * np.pi / 4
+            phase = np.pi / 2 if theta >= 0 else 3 * np.pi / 4
         else:
             raise ValueError(f"Qililab has not defined a gate {gate.__class__.__name__}")
         return Pulse(
@@ -242,6 +245,15 @@ class Experiment:
             int: settings.delay_between_pulses.
         """
         return self.settings.delay_between_pulses
+
+    @property
+    def delay_before_readout(self):
+        """Experiment 'delay_before_readout' property.
+
+        Returns:
+            int: settings.delay_before_readout.
+        """
+        return self.settings.delay_before_readout
 
     @property
     def num_sigmas(self):

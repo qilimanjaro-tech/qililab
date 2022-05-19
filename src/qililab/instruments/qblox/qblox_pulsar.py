@@ -98,7 +98,7 @@ class QbloxPulsar(QubitInstrument):
             loop.append_component(Wait(wait_time=pulses[0].start))
 
         if isinstance(self, QubitReadout):
-            final_wait_time = self.delay_before_readout
+            final_wait_time = self.delay_time
         else:
             final_wait_time = 4  # ns
 
@@ -161,6 +161,7 @@ class QbloxPulsar(QubitInstrument):
     @QubitInstrument.CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
+        self.reset()
         self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()

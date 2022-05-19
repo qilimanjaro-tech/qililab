@@ -15,7 +15,7 @@ integration_mode: ssb
 sequence_timeout: 1
 acquisition_timeout: 1
 acquisition_name: "single"
-delay_before_readout: int
+delay_time: 50
 epsilon: 0
 delta: 0
 offset_i: 0
