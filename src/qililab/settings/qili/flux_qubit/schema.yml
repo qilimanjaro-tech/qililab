@@ -7,7 +7,7 @@ elements:
       category: system_control
       name: simulated_system_control  # unique name
       qubit: csfq4jj
-      frequency: 2094614382.461435
+      frequency: 2085540698
       driving_hamiltonian: zport
       resolution: 0.01  # ns
       nsteps: 100000000

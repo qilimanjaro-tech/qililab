@@ -42,7 +42,7 @@ class Experiment:
         delay_between_pulses: int = 0
         delay_before_readout: int = 50
         gate_duration: int = 100
-        num_sigmas: float = 8
+        num_sigmas: float = 4
         drag_coefficient: float = 0
 
     platform: Platform

@@ -58,7 +58,6 @@ class SimulatedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
-        logger.debug("Running pulse sequence")
         waveforms_i, _ = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
         waveforms = np.array(waveforms_i) * self.amplitude_norm_factor
         hamiltonian = self.hamiltonian(
@@ -86,8 +85,8 @@ class SimulatedSystemControl(SystemControl):
         Returns:
             float: Normalization factor used for the pulse amplitude.
         """
-        # TODO: Add this 0.2 in the pi_pulse_amplitude parameter of the qubit
-        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.2
+        # TODO: Add the 0.1 in the pi_pulse_amplitude parameter of the qubit
+        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.4
 
     @property
     def hamiltonian(self):
