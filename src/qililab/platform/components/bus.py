@@ -6,7 +6,6 @@ from qililab.constants import YAML
 from qililab.instruments import MixerBasedSystemControl, SystemControl
 from qililab.platform.components.qubit import Qubit
 from qililab.platform.components.resonator import Resonator
-from qililab.pulse import PulseSequence
 from qililab.settings import Settings
 from qililab.typings import BusType, Category
 from qililab.utils import Factory
@@ -59,26 +58,6 @@ class Bus:
                     yield name, value
 
     settings: BusSettings
-
-    def connect(self):
-        """Connect to the instruments."""
-        self.system_control.connect()
-
-    def setup(self):
-        """Setup instruments."""
-        self.system_control.setup()
-
-    def start(self):
-        """Start/Turn on the instruments."""
-        self.system_control.start()
-
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
-        """Run the given pulse sequence."""
-        return self.system_control.run(pulse_sequence=pulse_sequence, nshots=nshots, loop_duration=loop_duration)
-
-    def close(self):
-        """Close connection to the instruments."""
-        self.system_control.close()
 
     @property
     def system_control(self):

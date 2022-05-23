@@ -15,23 +15,25 @@ class BusExecution:
 
     def connect(self):
         """Connect to the instruments."""
-        self.bus.connect()
+        self.system_control.connect()
 
     def setup(self):
         """Setup instruments."""
-        self.bus.setup()
+        self.system_control.setup()
 
     def start(self):
         """Start/Turn on the instruments."""
-        self.bus.start()
+        self.system_control.start()
 
     def run(self, nshots: int, loop_duration: int, idx: int):
         """Run the given pulse sequence."""
-        return self.bus.run(pulse_sequence=self.pulse_sequences[idx], nshots=nshots, loop_duration=loop_duration)
+        return self.system_control.run(
+            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, loop_duration=loop_duration
+        )
 
     def close(self):
         """Close connection to the instruments."""
-        self.bus.close()
+        self.system_control.close()
 
     def add_pulse(self, pulse: Pulse, idx: int):
         """Add pulse to the BusPulseSequence given by idx.
