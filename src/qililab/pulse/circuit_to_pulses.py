@@ -5,10 +5,10 @@ import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 
+from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.pulse_shape import Drag
-from qililab.pulse.pulsed_gates import PulsedGateFactory
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.utils import nested_dataclass
 
@@ -78,7 +78,7 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        amplitude, phase = PulsedGateFactory.get(gate)
+        amplitude, phase = HardwareGateFactory.get(gate)
         if amplitude is None or phase is None:
             raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")
 

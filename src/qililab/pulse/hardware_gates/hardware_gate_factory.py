@@ -3,16 +3,16 @@ from typing import List, Tuple, Type
 
 from qibo.abstractions.gates import Gate
 
-from qililab.pulse.pulsed_gates.pulsed_gate import PulsedGate
+from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 
 
-class PulsedGateFactory:
+class HardwareGateFactory:
     """Contains the gates that can be directly translated into a pulse."""
 
-    pulsed_gates: List[Type[PulsedGate]] = []
+    pulsed_gates: List[Type[HardwareGate]] = []
 
     @classmethod
-    def register(cls, handler_cls: Type[PulsedGate]):
+    def register(cls, handler_cls: Type[HardwareGate]):
         """Register handler in the factory.
 
         Args:
@@ -33,7 +33,7 @@ class PulsedGateFactory:
         """
         return next(
             (
-                pulsed_gate.translate(parameters=gate.parameters)
+                pulsed_gate.translate(gate=gate)
                 for pulsed_gate in cls.pulsed_gates
                 if isinstance(gate, pulsed_gate.class_type)
             ),
