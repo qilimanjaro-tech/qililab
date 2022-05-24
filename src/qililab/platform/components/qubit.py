@@ -30,6 +30,8 @@ class Qubit(BusElement):
         min_voltage: float  # V
         max_voltage: float  # V
 
+    settings: QubitCalibrationSettings
+
     def __init__(self, settings: dict):
         self.settings = self.QubitCalibrationSettings(**settings)
 
