@@ -1,3 +1,4 @@
+"""Buses class."""
 from dataclasses import dataclass
 from typing import List
 

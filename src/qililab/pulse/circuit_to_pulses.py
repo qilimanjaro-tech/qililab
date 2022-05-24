@@ -1,7 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 from dataclasses import dataclass
 
-import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 

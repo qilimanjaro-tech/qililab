@@ -1,16 +1,14 @@
 """BusReadout class."""
 from dataclasses import dataclass
 
-from qililab.instruments import MixerDown, QubitReadout
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.resonator import Resonator
 from qililab.typings import BusType, Category
 
 
 class BusReadout(Bus):
-    """BusReadout class. This bus contains a qubit readout and a signal generator, which are connected
-    through a mixer for up-conversion. The bus also contains a resonator, which should be connected to one or multiple qubits.
-    We finally have another mixer used for down-conversion.
+    """BusReadout class. This bus contains a system control and a resonator, which is connected to
+    one or multiple qubits.
 
     Args:
         qubit_instrument (QubitReadout): Class containing the instrument used for readout of the qubits.

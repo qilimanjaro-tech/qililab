@@ -1,7 +1,7 @@
 """Run circuit experiment"""
 import matplotlib.pyplot as plt
 from qibo.core.circuit import Circuit
-from qibo.gates import I, M, X, Y
+from qibo.gates import M, X, Y
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 

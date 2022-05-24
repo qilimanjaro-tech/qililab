@@ -1,5 +1,4 @@
 """PlatformSchema class."""
-from dataclasses import dataclass
 from typing import List, Optional
 
 from qililab.utils import nested_dataclass

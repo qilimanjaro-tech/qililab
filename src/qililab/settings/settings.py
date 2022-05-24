@@ -1,3 +1,4 @@
+"""Settings class."""
 from abc import ABC
 
 from qililab.typings import Category, SettingsType

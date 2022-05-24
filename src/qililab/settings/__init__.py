@@ -1,3 +1,4 @@
+"""__init__.py"""
 from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 
 from .settings import Settings

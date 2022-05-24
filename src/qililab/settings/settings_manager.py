@@ -1,3 +1,4 @@
+"""SettingsManager class."""
 from pathlib import Path
 
 import yaml

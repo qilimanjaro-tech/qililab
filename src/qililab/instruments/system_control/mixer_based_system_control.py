@@ -1,6 +1,6 @@
 """MixerBasedSystemControl class."""
 from dataclasses import dataclass
-from typing import Generator, List, Optional, Tuple
+from typing import Generator, Optional, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments.mixer import Mixer, MixerDown, MixerUp

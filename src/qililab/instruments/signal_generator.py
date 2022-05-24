@@ -1,6 +1,5 @@
 """SignalGenerator class."""
 from qililab.instruments.instrument import Instrument
-from qililab.typings import BusElement
 from qililab.utils import nested_dataclass
 
 

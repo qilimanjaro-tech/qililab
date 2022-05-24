@@ -18,6 +18,7 @@ connection = API(configuration=configuration)
 
 
 def run_experiment(gate: str, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
+    """Run experiment."""
     circuit = Circuit(1)
     if gate == "I":
         gate = I(0)

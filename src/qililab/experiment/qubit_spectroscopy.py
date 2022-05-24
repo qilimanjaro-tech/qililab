@@ -13,7 +13,7 @@ configuration = ConnectionConfiguration(
     api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
 )
 
-connection = API(configuration=configuration)
+api = API(configuration=configuration)
 
 
 def qubit_spectroscopy(connection: API):
@@ -31,4 +31,4 @@ def qubit_spectroscopy(connection: API):
 
 
 if __name__ == "__main__":
-    qubit_spectroscopy(connection=connection)
+    qubit_spectroscopy(connection=api)

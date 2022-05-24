@@ -1,7 +1,6 @@
 """BusesExecution class."""
 from dataclasses import dataclass, field
-from itertools import zip_longest
-from typing import Dict, List
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -8,7 +8,6 @@ from qilisimulator.driving_hamiltonian import DrivingHamiltonian
 from qilisimulator.qubits import Qubit
 from qilisimulator.utils import Factory as SimulatorFactory
 
-from qililab.config import logger
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult

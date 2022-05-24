@@ -1,3 +1,4 @@
+"""PlatformManagerYAML class."""
 import yaml
 
 from qililab.constants import YAML
@@ -10,7 +11,7 @@ class PlatformManagerYAML(PlatformManager):
 
     FILEPATH = "filepath"
 
-    def _load_platform_settings(self, *args, **kwargs: str | dict) -> dict:
+    def _load_platform_settings(self, **kwargs: str | dict) -> dict:
         """Load platform and schema settings.
 
         Args:

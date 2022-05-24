@@ -56,7 +56,8 @@ class BusExecution:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on this bus.
+            Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
+            of the pulses applied on this bus.
         """
         waveforms_i, waveforms_q = [], []
         for pulse_sequence in self.pulse_sequences:

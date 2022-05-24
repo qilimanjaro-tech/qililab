@@ -1,3 +1,4 @@
+"""PlatformManagerDB class."""
 from qililab.constants import (
     DEFAULT_PLATFORM_FILENAME,
     DEFAULT_SCHEMA_FILENAME,
@@ -14,7 +15,7 @@ class PlatformManagerDB(PlatformManager):
 
     PLATFORM_NAME = "platform_name"
 
-    def _load_platform_settings(self, *args, **kwargs: str | dict) -> dict:
+    def _load_platform_settings(self, **kwargs: str | dict) -> dict:
         """Load platform and schema settings.
 
         Args:

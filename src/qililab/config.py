@@ -1,4 +1,4 @@
-# config.py
+"""config.py"""
 # global configuration settings
 import logging
 import os

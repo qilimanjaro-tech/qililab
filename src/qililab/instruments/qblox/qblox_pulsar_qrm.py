@@ -1,6 +1,4 @@
 """Qblox pulsar QRM class"""
-from typing import List
-
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import PulseSequence

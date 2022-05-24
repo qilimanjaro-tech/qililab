@@ -1,3 +1,4 @@
+"""Resonator class."""
 from typing import List
 
 from qililab.platform.components.qubit import Qubit
