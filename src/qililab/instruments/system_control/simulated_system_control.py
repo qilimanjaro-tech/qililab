@@ -85,8 +85,8 @@ class SimulatedSystemControl(SystemControl):
         Returns:
             float: Normalization factor used for the pulse amplitude.
         """
-        # TODO: Add the 0.1 in the pi_pulse_amplitude parameter of the qubit
-        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.4
+        # TODO: Add the 0.2 in the pi_pulse_amplitude parameter of the qubit
+        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.2
 
     @property
     def hamiltonian(self):
