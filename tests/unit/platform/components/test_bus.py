@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qililab.instruments import QubitInstrument, SignalGenerator, SystemControl
+from qililab.instruments import SystemControl
 from qililab.platform import (
     PLATFORM_MANAGER_DB,
     Bus,
@@ -58,12 +58,16 @@ class TestBus:
 class TestBuses:
     """Unit tests checking the Buses attributes and methods."""
 
-    def test_add_method(self, buses: Buses, bus: BusReadout | BusControl):
+    def test_add_method(self, buses: Buses, bus: BusControl | BusReadout):
         """Test add method."""
         buses.add(bus=bus)
         assert buses[-1] == bus
 
     def test_iter_and_getitem_methods(self, buses: Buses, bus: Bus):
-        """Test __iter__ and __getitem__ methods."""
+        """Test __iter__, and __getitem__ methods."""
         for bus_idx, bus in enumerate(buses):
             assert buses[bus_idx] == bus
+
+    def test_len_method(self, buses: Buses, bus: Bus):
+        """Test __len__ method."""
+        assert len(buses) == len(buses.buses)

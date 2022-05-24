@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from qpysequence.acquisitions import Acquisitions
@@ -28,10 +28,10 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
-            "sequencers",
             "scope_acq_sequencer_select",
         ]
     )
+    mock_instance.sequencers = [mock_instance.sequencer0]
     mock_instance.sequencer0.mock_add_spec(
         [
             "sync_en",
@@ -45,6 +45,7 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
             "channel_map_path1_out1_en",
             "demod_en_acq",
             "integration_length_acq",
+            "set",
         ]
     )
     # connect to instrument
@@ -129,3 +130,11 @@ class TestQbloxPulsarQCM:
     def test_category_property(self, qcm: QbloxPulsarQCM):
         """Test category property."""
         assert qcm.category == qcm.settings.category
+
+    def test_firmware_property(self, qcm: QbloxPulsarQCM):
+        """Test firmware property."""
+        assert qcm.firmware == qcm.settings.firmware
+
+    def test_frequency_property(self, qcm: QbloxPulsarQCM):
+        """Test frequency property."""
+        assert qcm.frequency == qcm.settings.frequency

@@ -28,8 +28,6 @@ class Schema:
                 buses.append(BusControl(settings=bus))
             elif BusType(bus_type) is BusType.READOUT:
                 buses.append(BusReadout(settings=bus))
-            else:
-                raise ValueError("Bus 'readout' key should contain a boolean.")
 
         self.buses = Buses(buses=buses)
 

@@ -43,8 +43,12 @@ class TestPlatform:
         assert platform.name == platform.settings.name
 
     def test_category_property(self, platform: Platform):
-        """Test name property."""
+        """Test category property."""
         assert platform.category == platform.settings.category
+
+    def test_num_qubits_property(self, platform: Platform):
+        """Test num_qubits property."""
+        assert platform.num_qubits == 1
 
     def test_platform_name(self, platform: Platform):
         """Test platform name."""

@@ -284,12 +284,3 @@ class QbloxPulsar(QubitInstrument):
             float: settings.offset_q.
         """
         return self.settings.offset_q
-
-    @property
-    def frequency(self):
-        """QbloxPulsar 'frequency' property.
-
-        Returns:
-            float: settings.frequency.
-        """
-        return self.settings.frequency
