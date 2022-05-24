@@ -60,6 +60,14 @@ class Bus:
     settings: BusSettings
 
     @property
+    def id_(self):
+        """Bus 'id_' property.
+        Returns:
+            int: settings.id_.
+        """
+        return self.settings.id_
+
+    @property
     def system_control(self):
         """Bus 'system_control' property.
         Returns:

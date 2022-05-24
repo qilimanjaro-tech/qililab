@@ -49,7 +49,7 @@ class BusExecution:
         else:
             self.pulse_sequences[idx].add(pulse)
 
-    def waveforms(self, loop_duration: int, resolution: float = 1.0):
+    def waveforms(self, resolution: float = 1.0):
         """Return pulses applied on this bus.
 
         Args:
@@ -65,9 +65,6 @@ class BusExecution:
             )
             waveforms_i += waveform_i
             waveforms_q += waveform_q
-            wait_time = round(loop_duration / resolution - len(waveform_i))
-            waveforms_i += [0] * wait_time
-            waveforms_q += [0] * wait_time
         return waveforms_i, waveforms_q
 
     @property
@@ -87,3 +84,12 @@ class BusExecution:
             QubitInstrument: bus.system_control
         """
         return self.bus.system_control
+
+    @property
+    def id_(self):
+        """BusExecution 'id_' property.
+
+        Returns:
+            int: bus.id_
+        """
+        return self.bus.id_

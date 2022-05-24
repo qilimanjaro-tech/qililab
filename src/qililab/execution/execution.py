@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 
 from qililab.execution.buses_execution import BusesExecution
-from qililab.gates import HardwareGate
 
 
 @dataclass
@@ -31,7 +30,7 @@ class Execution:
         """Close connection to the instruments."""
         self.buses_execution.close()
 
-    def draw(self, loop_duration: int, resolution: float, num_qubits: int):
+    def draw(self, resolution: float):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -40,12 +39,4 @@ class Execution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.draw(loop_duration=loop_duration, resolution=resolution, num_qubits=num_qubits)
-
-    def add_gate(self, gate: HardwareGate):
-        """Add gate to BusesExecution.
-
-        Args:
-            gate (HardwareGate): Hardware gate.
-        """
-        self.buses_execution.add_gate(gate=gate)
+        return self.buses_execution.draw(resolution=resolution)

@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
-from qililab.gates import HardwareGate
 from qililab.result import Result
 
 
@@ -41,6 +40,7 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, loop_duration=loop_duration, idx=idx)
                 if result is not None:
                     results.append(result)
+                    print(result.probabilities()[0])
         return results
 
     def close(self):
@@ -48,31 +48,18 @@ class BusesExecution:
         for bus in self.buses:
             bus.close()
 
-    def waveforms(self, loop_duration: int, resolution: float = 1.0):
-        """Get pulses of each bus and sum pulses by their qubit id.
+    def waveforms(self, resolution: float = 1.0):
+        """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the control and readout
-            pulses applied on each qubit.
+            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        pulses: Dict[int, np.ndarray] = {}
-        for bus in self.buses:
-            new_pulses = np.array(bus.waveforms(loop_duration=loop_duration, resolution=resolution))
-            for qubit_ids in bus.qubit_ids:
-                if qubit_ids not in pulses:
-                    pulses[qubit_ids] = new_pulses
-                    continue
-                old_pulses = pulses[qubit_ids]
-                pulses[qubit_ids] = np.array(
-                    [[x + y for x, y in zip_longest(old, new, fillvalue=0)] for old, new in zip(old_pulses, new_pulses)]
-                )
+        return {bus.id_: np.array(bus.waveforms(resolution=resolution)) for bus in self.buses}
 
-        return pulses
-
-    def draw(self, loop_duration: int, resolution: float, num_qubits: int):
+    def draw(self, resolution: float):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -81,28 +68,20 @@ class BusesExecution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        figure, axes = plt.subplots(num_qubits, 1)
-        if num_qubits == 1:
+        figure, axes = plt.subplots(len(self.buses), 1)
+        if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
-        for idx, pulse in self.waveforms(loop_duration=loop_duration, resolution=resolution).items():
+        for bus_idx, pulse in self.waveforms(resolution=resolution).items():
             time = np.arange(len(pulse[0])) * resolution
-            axes[idx].set_title(f"Qubit {idx}")
-            axes[idx].plot(time, pulse[0], label="I")
-            axes[idx].plot(time, pulse[1], label="Q")
-            axes[idx].legend()
-            axes[idx].minorticks_on()
-            axes[idx].grid(which="both")
-            axes[idx].set_ylabel("Amplitude")
-            axes[idx].set_xlabel("Time (ns)")
+            axes[bus_idx].set_title(f"Bus {bus_idx}")
+            axes[bus_idx].plot(time, pulse[0], label="I")
+            axes[bus_idx].plot(time, pulse[1], label="Q")
+            axes[bus_idx].legend()
+            axes[bus_idx].minorticks_on()
+            axes[bus_idx].grid(which="both")
+            axes[bus_idx].set_ylabel("Amplitude")
+            axes[bus_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
         # plt.savefig("test.png")
         return figure
-
-    def add_gate(self, gate: HardwareGate):
-        """Add gate to BusesExecution.
-
-        Args:
-            gate (HardwareGate): Hardware gate.
-        """
-        # Find if there is a BusExecution with the correct qubit_ids, if not create one. If there is add the pulse.

@@ -122,9 +122,7 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(
-            loop_duration=self.loop_duration, resolution=resolution, num_qubits=self.platform.num_qubits
-        )
+        return self.execution.draw(resolution=resolution)
 
     def _build_execution(self, sequence_list: List[Circuit | PulseSequences]):
         """Build Execution class.
