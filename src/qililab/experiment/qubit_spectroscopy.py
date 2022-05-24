@@ -29,5 +29,6 @@ def qubit_spectroscopy(connection: API):
     )
     experiment.execute(connection=connection)
 
+
 if __name__ == "__main__":
     qubit_spectroscopy(connection=connection)

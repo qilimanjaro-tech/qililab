@@ -4,11 +4,11 @@ from dataclasses import dataclass
 import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, RY, RZ, I, M, X, Y, Z
 
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.pulse_shape import Drag
+from qililab.pulse.pulsed_gates import PulsedGateFactory
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.utils import nested_dataclass
 
@@ -50,22 +50,23 @@ class CircuitToPulses:
         sequence = PulseSequences(
             delay_between_pulses=self.delay_between_pulses, delay_before_readout=self.delay_before_readout
         )
-        gates = list(circuit.queue)
-        if circuit.measurement_gate is not None:
-            gates.append(circuit.measurement_gate)
-        for gate in gates:
-            if isinstance(gate, M):
-                for qubit_id in gate.target_qubits:
-                    sequence.add(
-                        ReadoutPulse(
-                            amplitude=self.readout_pulse.amplitude,
-                            phase=self.readout_pulse.phase,
-                            duration=self.readout_pulse.duration,
-                            qubit_ids=[qubit_id],
-                        )
+        control_gates = list(circuit.queue)
+        readout_gates = circuit.measurement_gate
+
+        for gate in control_gates:
+            sequence.add(self._gate_to_pulse(gate=gate))
+
+        # FIXME: Check ChipPlaceHolder and assign a ReadoutPulse to the corresponding readout line
+        if readout_gates is not None:
+            for qubit_id in circuit.measurement_gate.target_qubits:
+                sequence.add(
+                    ReadoutPulse(
+                        amplitude=self.readout_pulse.amplitude,
+                        phase=self.readout_pulse.phase,
+                        duration=self.readout_pulse.duration,
+                        qubit_ids=[qubit_id],
                     )
-            else:
-                sequence.add(self._gate_to_pulse(gate=gate))
+                )
         return sequence
 
     def _gate_to_pulse(self, gate: Gate):
@@ -77,31 +78,10 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        if isinstance(gate, I):
-            amplitude = 0.0
-            phase = 0.0
-        elif isinstance(gate, X):
-            amplitude = 1
-            phase = 0.0
-        elif isinstance(gate, Y):
-            amplitude = 1
-            phase = np.pi / 2
-        elif isinstance(gate, RX):
-            theta = gate.parameters
-            theta = (theta) % (2 * np.pi)
-            if theta > np.pi:
-                theta -= 2 * np.pi
-            amplitude = np.abs(theta) / np.pi
-            phase = 0 if theta >= 0 else np.pi
-        elif isinstance(gate, RY):
-            theta = gate.parameters
-            theta = (theta) % (2 * np.pi)
-            if theta > np.pi:
-                theta -= 2 * np.pi
-            amplitude = np.abs(theta) / np.pi
-            phase = np.pi / 2 if theta >= 0 else 3 * np.pi / 4
-        else:
-            raise ValueError(f"Qililab has not defined a gate {gate.__class__.__name__}")
+        amplitude, phase = PulsedGateFactory.get(gate)
+        if amplitude is None or phase is None:
+            raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")
+
         return Pulse(
             amplitude=amplitude,
             phase=phase,
