@@ -1,28 +1,9 @@
+"""Tests for the Mixer class."""
 import pytest
 
-from qililab.instruments import Mixer, MixerDown, MixerUp
+from qililab.instruments import Mixer
 
-from ..data import mixer_0_settings_sample
-
-
-def mixer_up() -> MixerUp:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = mixer_0_settings_sample.copy()
-    return MixerUp(settings=settings)
-
-
-def mixer_down() -> MixerDown:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = mixer_0_settings_sample.copy()
-    return MixerDown(settings=settings)
+from ...conftest import mixer_down, mixer_up
 
 
 @pytest.mark.parametrize("mixer", [mixer_up(), mixer_down()])

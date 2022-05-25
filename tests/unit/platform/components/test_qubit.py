@@ -1,21 +1,6 @@
-import pytest
-
+"""Tests for the Qubit class."""
 from qililab.platform import Qubit
 from qililab.typings import BusElementName
-
-from ...data import MockedSettingsHashTable
-
-
-@pytest.fixture(name="qubit")
-def fixture_qubit() -> Qubit:
-    """Load Qubit.
-
-    Returns:
-        Qubit: Instance of the Qubit class.
-    """
-    qubit_settings = MockedSettingsHashTable.get("resonator_0")["qubits"][0]
-
-    return Qubit(settings=qubit_settings)
 
 
 class Testqubit:

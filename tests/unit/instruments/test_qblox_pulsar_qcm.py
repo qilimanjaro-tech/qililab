@@ -1,63 +1,13 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+"""Tests for the QbloxPulsarQCM class."""
+from unittest.mock import MagicMock, patch
 
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import QbloxPulsarQCM
-from qililab.settings import SETTINGS_MANAGER
 from qililab.typings import BusElementName
-
-from ..data import qblox_qcm_0_settings_sample
-
-
-@pytest.fixture(name="qcm")
-@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qblox_qcm_0_settings_sample)
-def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
-    """Return connected instance of QbloxPulsarQCM class"""
-    # add dynamically created attributes
-    mock_instance = mock_pulsar.return_value
-    mock_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-            "scope_acq_sequencer_select",
-        ]
-    )
-    mock_instance.sequencers = [mock_instance.sequencer0]
-    mock_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "set",
-        ]
-    )
-    # connect to instrument
-    qcm_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qcm_0"
-    )
-    settings = qcm_settings.copy()
-    settings.pop("name")
-    mock_load.assert_called_once()
-    qcm = QbloxPulsarQCM(settings=settings)
-    qcm.connect()
-    return qcm
 
 
 class TestQbloxPulsarQCM:

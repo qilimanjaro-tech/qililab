@@ -1,24 +1,8 @@
-from unittest.mock import patch
-
+"""Tests for the Schema class."""
 import pytest
 
-from qililab.platform import PLATFORM_MANAGER_DB, Schema
+from qililab.platform import Schema
 from qililab.typings import SchemaDrawOptions
-
-from ...utils.side_effect import yaml_safe_load_side_effect
-
-
-@pytest.fixture(name="schema")
-def fixture_schema() -> Schema:
-    """Load Schema.
-
-    Returns:
-        Schema: Instance of the Schema class.
-    """
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_DB.build(platform_name="platform_0")
-        mock_load.assert_called()
-    return platform.schema
 
 
 class Testschema:

@@ -1,32 +1,7 @@
-from unittest.mock import MagicMock, patch
-
+"""Tests for the SGS100A class."""
 import pytest
 
-from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.instruments import SGS100A
-from qililab.settings import SETTINGS_MANAGER
-
-from ..data import rohde_schwarz_0_settings_sample
-
-
-@pytest.fixture(name="rohde_schwarz")
-@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=rohde_schwarz_0_settings_sample)
-def fixture_rohde_schwarz(mock_load: MagicMock, mock_rs: MagicMock):
-    """Return connected instance of SGS100A class"""
-    # add dynamically created attributes
-    mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
-    # connect to instrument
-    rohde_schwarz_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="rohde_schwarz_0"
-    )
-    settings = rohde_schwarz_settings.copy()
-    settings.pop("name")
-    mock_load.assert_called_once()
-    rohde_schwarz = SGS100A(settings=settings)
-    rohde_schwarz.connect()
-    return rohde_schwarz
 
 
 class TestSGS100A:

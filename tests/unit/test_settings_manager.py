@@ -10,7 +10,7 @@ from qililab.constants import (
 from qililab.platform import Platform, Qubit
 from qililab.settings import SETTINGS_MANAGER, SettingsManager
 
-from .data import platform_settings_sample, qubit_0_settings_sample
+from ..data import platform_settings_sample, qubit_0_settings_sample
 
 
 @patch("qililab.settings.settings_manager.yaml.safe_load")

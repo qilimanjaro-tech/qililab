@@ -1,3 +1,4 @@
+"""Tests for the PlatformManagerDB and the PlatformManagerYAML classes."""
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -7,7 +8,7 @@ from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.platform import Platform
 
-from ..utils import yaml_safe_load_side_effect
+from ...utils import yaml_safe_load_side_effect
 
 
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)

@@ -1,3 +1,4 @@
+"""Side effect of the yaml.safe_load() function."""
 import ntpath
 from io import TextIOWrapper
 

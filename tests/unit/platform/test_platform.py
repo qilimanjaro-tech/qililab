@@ -1,33 +1,16 @@
-from pathlib import Path
+"""Tests for the Platform class."""
 from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
+from qililab import PLATFORM_MANAGER_DB
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
 from qililab.typings import Category
 
-from ..utils.side_effect import yaml_safe_load_side_effect
-
-
-def platform_db():
-    """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_DB.build(platform_name="platform_0")
-        mock_load.assert_called()
-    return platform
-
-
-def platform_yaml():
-    """Return PlatformBuilderYAML instance with loaded platform."""
-    filepath = Path(__file__).parent.parent.parent.parent / "examples" / "all_platform.yml"
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(filepath=str(filepath))
-        mock_load.assert_called()
-    return platform
+from ...conftest import platform_db, platform_yaml
 
 
 @pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])

@@ -1,21 +1,6 @@
-import pytest
-
+"""Tests for the Resonator class."""
 from qililab.platform import Resonator
 from qililab.typings import BusElementName
-
-from ...data import MockedSettingsHashTable
-
-
-@pytest.fixture(name="resonator")
-def fixture_resonator() -> Resonator:
-    """Load Resonator.
-
-    Returns:
-        Resonator: Instance of the Resonator class.
-    """
-    resonator_settings = MockedSettingsHashTable.get("resonator_0")
-    resonator_settings.pop("name")
-    return Resonator(settings=resonator_settings)
 
 
 class Testresonator:
