@@ -1,5 +1,11 @@
 """ Data to use alongside the test suite. """
 import copy
+from typing import List
+
+from qibo.core.circuit import Circuit
+from qibo.gates import RX, RY, I, M, X, Y
+
+from qililab.constants import DEFAULT_PLATFORM_NAME
 
 platform_settings_sample = {
     "id_": 0,
@@ -254,3 +260,16 @@ class MockedSettingsHashTable:
     def get(cls, name: str) -> dict:
         """Return attribute with corresponding name."""
         return copy.deepcopy(getattr(cls, name))
+
+
+experiment_params: List[List[str | Circuit | List[Circuit]]] = []
+for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
+    circuit = Circuit(1)
+    circuit.add(I(0))
+    circuit.add(X(0))
+    circuit.add(Y(0))
+    circuit.add(RX(0, 34))
+    circuit.add(RY(0, 23))
+    if p_name == DEFAULT_PLATFORM_NAME:
+        circuit.add(M(0))
+    experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])

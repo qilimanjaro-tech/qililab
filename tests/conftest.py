@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import PLATFORM_MANAGER_DB, PLATFORM_MANAGER_YAML
-from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
+from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
@@ -15,24 +15,15 @@ from qililab.instruments import (
     QbloxPulsarQRM,
 )
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
-from qililab.pulse import Pulse, PulseSequences, ReadoutPulse
-from qililab.pulse.pulse_shape import Drag
-from qililab.settings import SETTINGS_MANAGER
+from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseSequences
 
-from .data import (
-    MockedSettingsHashTable,
-    mixer_0_settings_sample,
-    qblox_qcm_0_settings_sample,
-    qblox_qrm_0_settings_sample,
-    rohde_schwarz_0_settings_sample,
-)
+from .data import MockedSettingsHashTable, circuit, experiment_params
 from .utils.side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="qcm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qblox_qcm_0_settings_sample)
-def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
+def fixture_qcm(mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -65,12 +56,8 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
         ]
     )
     # connect to instrument
-    qcm_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qcm_0"
-    )
-    settings = qcm_settings.copy()
+    settings = MockedSettingsHashTable.get("qblox_qcm_0")
     settings.pop("name")
-    mock_load.assert_called_once()
     qcm = QbloxPulsarQCM(settings=settings)
     qcm.connect()
     return qcm
@@ -78,8 +65,7 @@ def fixture_qcm(mock_load: MagicMock, mock_pulsar: MagicMock):
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=qblox_qrm_0_settings_sample)
-def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
+def fixture_qrm(mock_pulsar: MagicMock):
     """Return connected instance of QbloxPulsarQRM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -112,12 +98,8 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
         ]
     )
     # connect to instrument
-    qrm_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qblox_qrm_0"
-    )
-    settings = qrm_settings.copy()
+    settings = MockedSettingsHashTable.get("qblox_qrm_0")
     settings.pop("name")
-    mock_load.assert_called_once()
     qrm = QbloxPulsarQRM(settings=settings)
     qrm.connect()
     return qrm
@@ -125,19 +107,14 @@ def fixture_qrm(mock_load: MagicMock, mock_pulsar: MagicMock):
 
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=rohde_schwarz_0_settings_sample)
-def fixture_rohde_schwarz(mock_load: MagicMock, mock_rs: MagicMock):
+def fixture_rohde_schwarz(mock_rs: MagicMock):
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
-    rohde_schwarz_settings = SETTINGS_MANAGER.load(
-        foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="rohde_schwarz_0"
-    )
-    settings = rohde_schwarz_settings.copy()
+    settings = MockedSettingsHashTable.get("rohde_schwarz_0")
     settings.pop("name")
-    mock_load.assert_called_once()
     rohde_schwarz = SGS100A(settings=settings)
     rohde_schwarz.connect()
     return rohde_schwarz
@@ -168,26 +145,72 @@ def fixture_resonator() -> Resonator:
 
 
 @pytest.fixture(name="schema")
-def fixture_schema() -> Schema:
+def fixture_schema(platform: Platform) -> Schema:
     """Load Schema.
 
     Returns:
         Schema: Instance of the Schema class.
     """
-    return platform_db().schema
+    return platform.schema
 
 
-@pytest.fixture(name="experiment")
+@pytest.fixture(name="circuit_to_pulses")
+def fixture_circuit_to_pulses() -> CircuitToPulses:
+    """Return CircuitToPulses instance."""
+    return CircuitToPulses(settings=CircuitToPulses.CircuitToPulsesSettings())
+
+
+@pytest.fixture(name="pulse_sequence", params=experiment_params)
+def fixture_pulse_sequence(circuit_to_pulses: CircuitToPulses) -> PulseSequences:
+    """Return PulseSequences instance."""
+    return circuit_to_pulses.translate(circuit=circuit)
+
+
+@pytest.fixture(name="experiment", params=experiment_params)
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment(mock_load: MagicMock):
+def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    pulse_sequence = PulseSequences(delay_between_pulses=0, delay_before_readout=50)
-    pulse_sequence.add(Pulse(amplitude=1, phase=0, pulse_shape=Drag(num_sigmas=4, beta=1), duration=50, qubit_ids=[0]))
-    pulse_sequence.add(ReadoutPulse(amplitude=1, phase=0, duration=50, qubit_ids=[0]))
-
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[pulse_sequence, pulse_sequence])
+    platform_name, sequences = request.param  # type: ignore
+    experiment = Experiment(platform_name=platform_name, sequences=sequences)
     mock_load.assert_called()
     return experiment
+
+
+@pytest.fixture(name="buses_execution")
+def fixture_buses_execution(experiment: Experiment) -> BusesExecution:
+    """Load BusesExecution.
+
+    Returns:
+        BusesExecution: Instance of the BusesExecution class.
+    """
+    return experiment.execution.buses_execution
+
+
+@pytest.fixture(name="bus_execution")
+def fixture_bus_execution(buses_execution: BusesExecution) -> BusExecution:
+    """Load BusExecution.
+
+    Returns:
+        BusExecution: Instance of the BusExecution class.
+    """
+    return buses_execution.buses[0]
+
+
+@pytest.fixture(name="pulse")
+def fixture_pulse() -> Pulse:
+    """Load Pulse.
+
+    Returns:
+        Pulse: Instance of the Pulse class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    return Pulse(amplitude=1, phase=0, duration=50, qubit_ids=[0], pulse_shape=pulse_shape, start_time=0)
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db()
 
 
 def platform_db() -> Platform:
@@ -225,7 +248,7 @@ def mixer_up() -> MixerUp:
     Returns:
         Mixer: Instance of the Mixer class.
     """
-    settings = mixer_0_settings_sample.copy()
+    settings = MockedSettingsHashTable.get("mixer_0")
     return MixerUp(settings=settings)
 
 
@@ -235,5 +258,5 @@ def mixer_down() -> MixerDown:
     Returns:
         Mixer: Instance of the Mixer class.
     """
-    settings = mixer_0_settings_sample.copy()
+    settings = MockedSettingsHashTable.get("mixer_0")
     return MixerDown(settings=settings)

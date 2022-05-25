@@ -39,7 +39,7 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, loop_duration=loop_duration, idx=idx)
                 if result is not None:
                     results.append(result)
-                    print(result.probabilities()[0])
+                    # print(result.probabilities()[0])
         return results
 
     def close(self):
