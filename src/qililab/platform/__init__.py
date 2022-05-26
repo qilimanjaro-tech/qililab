@@ -1,10 +1,8 @@
 """__init__.py"""
 from .components.bus import Bus
-from .components.bus_control import BusControl
-from .components.bus_readout import BusReadout
+from .components.bus_target.qubit import Qubit
+from .components.bus_target.resonator import Resonator
 from .components.buses import Buses
-from .components.qubit import Qubit
-from .components.resonator import Resonator
 from .components.schema import Schema
 from .platform import Platform
 from .platform_manager_db import PlatformManagerDB

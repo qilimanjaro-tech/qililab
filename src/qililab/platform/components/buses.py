@@ -2,8 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.platform.components.bus_control import BusControl
-from qililab.platform.components.bus_readout import BusReadout
+from qililab.platform.components.bus import Bus
 
 
 @dataclass
@@ -14,9 +13,9 @@ class Buses:
         buses (List[Bus]): List of Bus objects.
     """
 
-    buses: List[BusControl | BusReadout]
+    buses: List[Bus]
 
-    def add(self, bus: BusControl | BusReadout):
+    def add(self, bus: Bus):
         """Add a bus to the list of buses.
 
         Args:

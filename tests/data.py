@@ -175,7 +175,7 @@ class Platform0:
             {
                 "id_": 0,
                 "category": "bus",
-                "bus_type": "control",
+                "subcategory": "control",
                 "system_control": {
                     "id_": 0,
                     "category": "system_control",
@@ -184,12 +184,12 @@ class Platform0:
                     "signal_generator": rohde_schwarz_0,
                     "mixer_up": mixer_0,
                 },
-                "qubit": qubit_0,
+                "target": qubit_0,
             },
             {
                 "id_": 0,
                 "category": "bus",
-                "bus_type": "readout",
+                "subcategory": "readout",
                 "system_control": {
                     "id_": 1,
                     "category": "system_control",
@@ -199,7 +199,7 @@ class Platform0:
                     "mixer_up": mixer_1,
                     "mixer_down": mixer_2,
                 },
-                "resonator": resonator_0,
+                "target": resonator_0,
             },
         ],
     }
@@ -230,7 +230,7 @@ class FluxQubit:
             {
                 "id_": 0,
                 "category": "bus",
-                "bus_type": "control",
+                "subcategory": "control",
                 "system_control": {
                     "id_": 0,
                     "category": "system_control",
@@ -243,7 +243,7 @@ class FluxQubit:
                     "store_states": False,
                     "dimension": 10,
                 },
-                "qubit": {
+                "target": {
                     "id_": 0,
                     "name": "qubit",
                     "category": "qubit",

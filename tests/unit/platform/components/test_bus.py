@@ -4,7 +4,8 @@ from types import NoneType
 import pytest
 
 from qililab.instruments import SystemControl
-from qililab.platform import Bus, BusControl, BusReadout, Qubit, Resonator
+from qililab.platform import Bus, Qubit, Resonator
+from qililab.typings import BusSubcategory
 
 from ....conftest import buses as load_buses
 
@@ -17,15 +18,15 @@ class TestBus:
         """Test system_control instance."""
         assert isinstance(bus.system_control, SystemControl)
 
-    def test_resonator_instance(self, bus: Bus):
+    def test_target_instance(self, bus: Bus):
         """Test resonator instance."""
-        if isinstance(bus, BusReadout):
-            assert isinstance(bus.resonator, Resonator)
+        if bus.subcategory == BusSubcategory.READOUT:
+            assert isinstance(bus.target, Resonator)
 
     def test_qubit_instance(self, bus: Bus):
         """Test qubit instance."""
-        if isinstance(bus, BusControl):
-            assert isinstance(bus.qubit, Qubit)
+        if bus.subcategory == BusSubcategory.CONTROL:
+            assert isinstance(bus.target, Qubit)
 
     def test_iter_and_getitem_methods(self, bus: Bus):
         """Test __iter__ magic method."""

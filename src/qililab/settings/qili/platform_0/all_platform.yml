@@ -6,7 +6,7 @@ schema:
   elements:
   - id_: 0
     category: bus
-    bus_type: control
+    subcategory: control
     system_control:
       id_: 0
       category: system_control
@@ -41,7 +41,7 @@ schema:
         delta: 0
         offset_i: 0
         offset_q: 0
-    qubit:
+    target:
       id_: 0
       name: qubit
       category: qubit
@@ -53,7 +53,7 @@ schema:
       max_voltage: 1775
   - id_: 1
     category: bus
-    bus_type: readout
+    subcategory: readout
     system_control:
       id_: 1
       category: system_control
@@ -105,7 +105,7 @@ schema:
         delta: 0
         offset_i: 0
         offset_q: 0
-    resonator:
+    target:
       id_: 0
       name: resonator
       category: resonator

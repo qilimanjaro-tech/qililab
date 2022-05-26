@@ -1,7 +1,7 @@
 """Tests for the Buses class."""
 import pytest
 
-from qililab.platform import Bus, BusControl, Buses, BusReadout
+from qililab.platform import Bus, Buses
 
 from ....conftest import buses as load_buses
 
@@ -11,7 +11,7 @@ from ....conftest import buses as load_buses
 class TestBuses:
     """Unit tests checking the Buses attributes and methods."""
 
-    def test_add_method(self, buses: Buses, bus: BusControl | BusReadout):
+    def test_add_method(self, buses: Buses, bus: Bus):
         """Test add method."""
         buses.add(bus=bus)
         assert buses[-1] == bus

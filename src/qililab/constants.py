@@ -11,7 +11,7 @@ class YAML:
     """YAML constants."""
 
     NAME = "name"
-    BUS_TYPE = "bus_type"
+    SUBCATEGORY = "subcategory"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"

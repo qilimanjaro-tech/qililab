@@ -93,7 +93,7 @@ class PulseShapeName(Enum):
     RECTANGULAR = "rectangular"
 
 
-class BusType(Enum):
+class BusSubcategory(Enum):
     """Bus types.
 
     Args:

@@ -31,10 +31,9 @@ class PlatformSchema:
 
             id_: int
             category: str
-            bus_type: str
+            subcategory: str
             system_control: dict
-            qubit: Optional[dict] = None
-            resonator: Optional[dict] = None
+            target: dict
 
         elements: List[Bus]
 

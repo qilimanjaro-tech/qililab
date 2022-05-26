@@ -1,14 +1,15 @@
 """Resonator class."""
 from typing import List
 
-from qililab.platform.components.qubit import Qubit
+from qililab.platform.components.bus_target.bus_target import BusTarget
+from qililab.platform.components.bus_target.qubit import Qubit
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName
+from qililab.typings import BusElementName
 from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
-class Resonator(BusElement):
+class Resonator(BusTarget):
     """Resonator class"""
 
     name = BusElementName.RESONATOR
@@ -33,24 +34,6 @@ class Resonator(BusElement):
         self.settings = self.ResonatorSettings(**settings)
 
     @property
-    def id_(self):
-        """Resonator 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
-    def category(self):
-        """Resonator 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
-    @property
     def qubits(self):
         """Resonator 'qubits' property.
 
@@ -68,7 +51,7 @@ class Resonator(BusElement):
         """
         return [qubit.id_ for qubit in self.qubits]
 
-    def get_qubit(self, id_: int):
+    def get_qubit(self, id_: int) -> Qubit | None:
         """Return specific Qubit class. Return None if qubit is not found.
 
         Args:

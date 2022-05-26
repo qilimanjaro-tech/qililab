@@ -1,7 +1,7 @@
 elements:
   - id_: 0
     category: bus
-    bus_type: control
+    subcategory: control
     system_control:
       id_: 0
       category: system_control
@@ -13,7 +13,7 @@ elements:
       nsteps: 100000000
       store_states: false
       dimension: 10
-    qubit:
+    target:
       id_: 0
       name: qubit
       category: qubit

@@ -6,7 +6,7 @@ from typing import List
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema, dict_factory
 from qililab.settings import Settings
-from qililab.typings import BusType, Category
+from qililab.typings import BusSubcategory, Category
 from qililab.utils import nested_dataclass
 
 
@@ -56,12 +56,12 @@ class Platform:
             return self.buses, None
         return self.schema.get_element(category=category, id_=id_)
 
-    def get_bus(self, qubit_ids: List[int], bus_type: BusType):
-        """Find bus of type 'bus_type' that contains the given qubits.
+    def get_bus(self, qubit_ids: List[int], bus_subcategory: BusSubcategory):
+        """Find bus of type 'bus_subcategory' that contains the given qubits.
 
         Args:
             qubit_ids (List[int]): List of qubit IDs.
-            bus_type (BusType): Type of bus. Options are "control" and "readout".
+            bus_subcategory (BusSubcategory): Type of bus. Options are "control" and "readout".
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.
@@ -70,7 +70,7 @@ class Platform:
             (
                 (bus_idx, bus)
                 for bus_idx, bus in enumerate(self.buses)
-                if bus.qubit_ids == qubit_ids and bus.bus_type == bus_type
+                if bus.qubit_ids == qubit_ids and bus.subcategory == bus_subcategory
             ),
             ([], None),
         )

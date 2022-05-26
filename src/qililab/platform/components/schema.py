@@ -2,11 +2,9 @@
 from dataclasses import InitVar, dataclass
 from typing import List
 
-from qililab.constants import YAML
-from qililab.platform.components.bus_control import BusControl
-from qililab.platform.components.bus_readout import BusReadout
+from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
-from qililab.typings import BusType, Category, SchemaDrawOptions
+from qililab.typings import Category, SchemaDrawOptions
 
 
 @dataclass
@@ -21,14 +19,7 @@ class Schema:
 
     def __post_init__(self, elements: List[dict]):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
-        buses: List[BusControl | BusReadout] = []
-        for bus in elements:
-            bus_type = bus[YAML.BUS_TYPE]
-            if BusType(bus_type) is BusType.CONTROL:
-                buses.append(BusControl(settings=bus))
-            elif BusType(bus_type) is BusType.READOUT:
-                buses.append(BusReadout(settings=bus))
-
+        buses: List[Bus] = [Bus(settings=bus) for bus in elements]
         self.buses = Buses(buses=buses)
 
     def get_element(self, category: Category, id_: int):

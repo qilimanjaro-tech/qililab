@@ -1,14 +1,12 @@
 """Bus class."""
-from dataclasses import dataclass
-from typing import Generator, Optional, Tuple
+from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments import MixerBasedSystemControl, SystemControl
-from qililab.platform.components.qubit import Qubit
-from qililab.platform.components.resonator import Resonator
+from qililab.platform.components.bus_target.bus_target import BusTarget
 from qililab.settings import Settings
-from qililab.typings import BusType, Category
-from qililab.utils import Factory
+from qililab.typings import BusSubcategory, Category
+from qililab.utils import Factory, nested_dataclass
 
 
 class Bus:
@@ -20,7 +18,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    @dataclass(kw_only=True)
+    @nested_dataclass
     class BusSettings(Settings):
         """Bus settings.
 
@@ -33,10 +31,9 @@ class Bus:
             qubit (Optional[Qubit]): Class containing the qubit object.
         """
 
-        bus_type: BusType
+        subcategory: BusSubcategory
         system_control: SystemControl
-        qubit: Optional[Qubit] = None
-        resonator: Optional[Resonator] = None
+        target: BusTarget
 
         def __post_init__(self):
             """Cast each bus element to its corresponding class."""
@@ -47,17 +44,20 @@ class Bus:
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SystemControl | Resonator | Qubit | dict], None, None]:
+        ) -> Generator[Tuple[str, SystemControl | BusTarget], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | Qubit | Resonator | dict):
+                if isinstance(value, SystemControl | BusTarget | dict):
                     yield name, value
 
     settings: BusSettings
+
+    def __init__(self, settings: dict):
+        self.settings = self.BusSettings(**settings)
 
     @property
     def id_(self):
@@ -76,31 +76,30 @@ class Bus:
         return self.settings.system_control
 
     @property
-    def resonator(self):
+    def target(self):
         """Bus 'resonator' property.
         Returns:
             Resonator: settings.resonator.
         """
-        return self.settings.resonator
+        return self.settings.target
 
     @property
-    def qubit(self):
-        """Bus 'qubit' property.
-
-        Returns:
-            Qubit: settings.qubit.
-        """
-        return self.settings.qubit
-
-    @property
-    def qubit_ids(self) -> list:
+    def qubit_ids(self) -> List[int]:
         """Bus 'qubit_ids' property.
 
         Returns:
             List[int]: IDs of the qubit connected to the bus.~
         """
-        # FIXME: Cannot use ABC with dataclass
-        raise NotImplementedError
+        return self.target.qubit_ids
+
+    @property
+    def subcategory(self) -> BusSubcategory:
+        """Bus 'subcategory' property.
+
+        Returns:
+            BusSubcategory: Subcategory of the bus. Options are "control" or "readout".
+        """
+        return self.settings.subcategory
 
     def get_element(self, category: Category, id_: int):
         """Get bus element. Return None if element is not found.
@@ -112,6 +111,8 @@ class Bus:
         Returns:
             (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
+        if category == Category.QUBIT:
+            return self.target.get_qubit(id_=id_)
         return next(
             (element for _, element in self if element.category == category and element.id_ == id_),
             self.system_control.get_element(category=category, id_=id_)

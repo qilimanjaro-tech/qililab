@@ -1,11 +1,14 @@
 """Qubit class"""
+from typing import Union
+
+from qililab.platform.components.bus_target.bus_target import BusTarget
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName
+from qililab.typings import BusElementName
 from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
-class Qubit(BusElement):
+class Qubit(BusTarget):
     """Qubit class"""
 
     name = BusElementName.QUBIT
@@ -36,22 +39,13 @@ class Qubit(BusElement):
         self.settings = self.QubitCalibrationSettings(**settings)
 
     @property
-    def id_(self):
-        """Qubit 'id' property.
+    def qubit_ids(self):
+        """Resonator 'qubit_ids' property.
 
         Returns:
-            int: settings.id_.
+            List[int]: List containing the IDs of the qubits connected to the resonator.
         """
-        return self.settings.id_
-
-    @property
-    def category(self):
-        """Qubit 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
+        return [self.id_]
 
     @property
     def pi_pulse_amplitude(self):
@@ -106,3 +100,14 @@ class Qubit(BusElement):
             float: settings.max_voltage.
         """
         return self.settings.max_voltage
+
+    def get_qubit(self, id_: int) -> Union["Qubit", None]:
+        """Return specific Qubit class. Return None if qubit is not found.
+
+        Args:
+            id_ (int): ID of the qubit.
+
+        Returns:
+            (Qubit | None): Qubit class.
+        """
+        return self if self.id_ == id_ else None

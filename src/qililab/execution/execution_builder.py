@@ -6,7 +6,7 @@ from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
 from qililab.platform import Platform
 from qililab.pulse import PulseSequence, PulseSequences, ReadoutPulse
-from qililab.typings import BusType
+from qililab.typings import BusSubcategory
 from qililab.utils import Singleton
 
 
@@ -33,10 +33,12 @@ class ExecutionBuilder(metaclass=Singleton):
         buses: Dict[int, BusExecution] = {}
         for idx, pulse_sequence in enumerate(pulse_sequences):
             for pulse in pulse_sequence.pulses:
-                bus_type = BusType.READOUT if isinstance(pulse, ReadoutPulse) else BusType.CONTROL
-                bus_idx, bus = platform.get_bus(qubit_ids=pulse.qubit_ids, bus_type=bus_type)
+                bus_subcategory = BusSubcategory.READOUT if isinstance(pulse, ReadoutPulse) else BusSubcategory.CONTROL
+                bus_idx, bus = platform.get_bus(qubit_ids=pulse.qubit_ids, bus_subcategory=bus_subcategory)
                 if bus is None:
-                    raise ValueError(f"There is no bus of type {bus_type.value} connected to qubits {pulse.qubit_ids}.")
+                    raise ValueError(
+                        f"There is no bus of type {bus_subcategory.value} connected to qubits {pulse.qubit_ids}."
+                    )
                 if bus_idx not in buses:
                     buses[bus_idx] = BusExecution(
                         bus=bus, pulse_sequences=[PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse])]
