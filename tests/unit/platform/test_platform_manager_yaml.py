@@ -16,7 +16,15 @@ class TestPlatformManagerYAML:
 
     def test_build_method(self, mock_load: MagicMock):
         """Test build method."""
-        filepath = Path(__file__).parent.parent.parent.parent / "examples" / "all_platform.yml"
+        filepath = (
+            Path(__file__).parent.parent.parent.parent
+            / "src"
+            / "qililab"
+            / "settings"
+            / "qili"
+            / "platform_0"
+            / "all_platform.yml"
+        )
         platform = PLATFORM_MANAGER_YAML.build(filepath=str(filepath))
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()

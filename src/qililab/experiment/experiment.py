@@ -46,6 +46,7 @@ class Experiment:
         self._loop_parameters = []
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
+        PLATFORM_MANAGER_DB.dump(platform=self.platform)
         self._build_execution(sequence_list=sequences)
 
     def execute(self, connection: API | None = None):
@@ -152,7 +153,7 @@ class Experiment:
             x_value (float): X value.
             y_value (float): Y value.
         """
-        if plot_id and connection:
+        if plot_id is not None and connection is not None:
             # TODO: Plot voltages of every BusReadout in the platform
             connection.send_plot_points(plot_id=plot_id, x=x_value, y=y_value)
 

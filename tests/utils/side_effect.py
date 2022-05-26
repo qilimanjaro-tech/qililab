@@ -2,10 +2,11 @@
 import ntpath
 from io import TextIOWrapper
 
-from ..data import MockedSettingsHashTable
+from ..data import MockedSettingsFactory
 
 
 def yaml_safe_load_side_effect(stream: TextIOWrapper):
     """Side effect for the function safe_load of yaml module."""
+    platform_name = ntpath.basename(ntpath.dirname(stream.name))
     filename = ntpath.splitext(ntpath.basename(stream.name))[0]
-    return MockedSettingsHashTable.get(name=filename)
+    return MockedSettingsFactory.get(platform_name=platform_name, filename=filename)

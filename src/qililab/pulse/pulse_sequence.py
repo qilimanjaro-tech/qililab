@@ -11,6 +11,7 @@ class PulseSequence:
 
     qubit_ids: List[int]
     pulses: List[Pulse] = field(default_factory=list)
+    _name: str | None = field(init=False, default=None)
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -18,9 +19,11 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
+        if self._name is None:
+            self._name = pulse.name
         if pulse.qubit_ids != self.qubit_ids:
             raise ValueError("All Pulse objects inside a BusPulses class should contain the same qubit_ids.")
-        if pulse.name != self.pulses[0].name:
+        if pulse.name != self.name:
             raise ValueError(
                 "All Pulse objects inside a BusPulses class should have the same type (Pulse or ReadoutPulse)."
             )
@@ -43,8 +46,6 @@ class PulseSequence:
         waveforms_q: List[float] = []
         time = 0
         for pulse in self.pulses:
-            if pulse.start is None:
-                raise ValueError("Start time of pulse is not defined.")
             wait_time = round((pulse.start - time) / resolution)
             waveforms_i += [0] * wait_time
             waveforms_q += [0] * wait_time
@@ -55,3 +56,11 @@ class PulseSequence:
             time += pulse.duration
 
         return waveforms_i, waveforms_q
+
+    @property
+    def name(self):
+        """Name of the pulses of the pulse sequence.
+
+        Returns:
+            str: Name of the pulses. Options are "Pulse" or "ReadoutPulse"""
+        return self._name

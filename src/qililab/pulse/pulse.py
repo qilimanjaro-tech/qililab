@@ -23,8 +23,6 @@ class Pulse:
 
     def __post_init__(self):
         """Cast qubit_ids to list."""
-        if isinstance(self.qubit_ids, int):
-            self.qubit_ids = [self.qubit_ids]
         if isinstance(self.pulse_shape, dict):
             self.pulse_shape = Factory.get(name=self.pulse_shape.pop(YAML.NAME))(
                 **self.pulse_shape  # pylint: disable=not-a-mapping

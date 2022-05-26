@@ -1,5 +1,4 @@
 """MixerBasedSystemControl class."""
-from dataclasses import dataclass
 from typing import Generator, Optional, Tuple
 
 from qililab.constants import YAML
@@ -9,7 +8,7 @@ from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
-from qililab.utils import Factory
+from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
@@ -18,7 +17,7 @@ class MixerBasedSystemControl(SystemControl):
 
     name = BusElementName.MIXER_BASED_SYSTEM_CONTROL
 
-    @dataclass(kw_only=True)
+    @nested_dataclass(kw_only=True)
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):
         """MixerBasedSystemControlSettings class."""
 

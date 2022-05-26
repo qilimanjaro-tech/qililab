@@ -44,6 +44,7 @@ class SimulatedSystemControl(SystemControl):
 
     def __init__(self, settings: dict):
         self.settings = self.SimulatedSystemControlSettings(**settings)
+        self.options = qutip.Options()
 
     def connect(self):
         """Connect to the instruments."""
