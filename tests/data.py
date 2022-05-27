@@ -179,7 +179,7 @@ class Platform0:
                 "system_control": {
                     "id_": 0,
                     "category": "system_control",
-                    "name": "mixer_based_system_control",
+                    "subcategory": "mixer_based_system_control",
                     "qubit_instrument": qblox_qcm_0,
                     "signal_generator": rohde_schwarz_0,
                     "mixer_up": mixer_0,
@@ -193,7 +193,7 @@ class Platform0:
                 "system_control": {
                     "id_": 1,
                     "category": "system_control",
-                    "name": "mixer_based_system_control",
+                    "subcategory": "mixer_based_system_control",
                     "qubit_instrument": qblox_qrm_0,
                     "signal_generator": rohde_schwarz_1,
                     "mixer_up": mixer_1,
@@ -234,7 +234,7 @@ class FluxQubit:
                 "system_control": {
                     "id_": 0,
                     "category": "system_control",
-                    "name": "simulated_system_control",
+                    "subcategory": "simulated_system_control",
                     "qubit": "csfq4jj",
                     "frequency": 2085540698,
                     "driving_hamiltonian": "zport",

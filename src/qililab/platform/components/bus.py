@@ -1,4 +1,5 @@
 """Bus class."""
+from multiprocessing.sharedctypes import Value
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
@@ -39,7 +40,11 @@ class Bus:
             """Cast each bus element to its corresponding class."""
             for name, value in self:
                 if isinstance(value, dict):
-                    elem_obj = Factory.get(value.pop(YAML.NAME))(value)
+                    try:
+                        dict_name = value.pop(YAML.NAME)
+                    except KeyError:
+                        dict_name = value.get(YAML.SUBCATEGORY)
+                    elem_obj = Factory.get(dict_name)(value)
                     setattr(self, name, elem_obj)
 
         def __iter__(

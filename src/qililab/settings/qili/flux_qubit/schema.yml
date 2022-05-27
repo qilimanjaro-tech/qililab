@@ -5,7 +5,7 @@ elements:
     system_control:
       id_: 0
       category: system_control
-      name: simulated_system_control  # unique name
+      subcategory: simulated_system_control  # unique name
       qubit: csfq4jj
       frequency: 2085540698
       driving_hamiltonian: zport

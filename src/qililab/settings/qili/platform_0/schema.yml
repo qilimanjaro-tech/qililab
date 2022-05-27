@@ -5,7 +5,7 @@ elements:
     system_control:
       id_: 0
       category: system_control
-      name: mixer_based_system_control  # unique name
+      subcategory: mixer_based_system_control  # unique name
       qubit_instrument:
         id_: 0
         name: qblox_qcm  # unique name
@@ -52,7 +52,7 @@ elements:
     system_control:
       id_: 1
       category: system_control
-      name: mixer_based_system_control  # unique name
+      subcategory: mixer_based_system_control  # unique name
       qubit_instrument:
         id_: 1
         name: qblox_qrm  # unique name

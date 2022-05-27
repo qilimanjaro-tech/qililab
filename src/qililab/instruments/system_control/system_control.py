@@ -15,6 +15,8 @@ class SystemControl(BusElement, ABC):
     class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
+        subcategory: str
+
     settings: SystemControlSettings
 
     @abstractmethod
@@ -54,6 +56,15 @@ class SystemControl(BusElement, ABC):
             str: settings.category.
         """
         return self.settings.category
+
+    @property
+    def name(self):
+        """SystemControl 'name' property.
+
+        Returns:
+            str: settings.subcategory.
+        """
+        return self.settings.subcategory
 
     @property
     @abstractmethod
