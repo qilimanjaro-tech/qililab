@@ -85,7 +85,7 @@ class Experiment:
                     connection=connection,
                     plot_id=plot_id,
                     x_value=value,
-                    y_value=np.round(result[0].probabilities()[0][0], 4),
+                    y_value=np.round(result[0].probabilities()[0], 4),
                 )
         return results
 
