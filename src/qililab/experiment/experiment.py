@@ -48,7 +48,6 @@ class Experiment:
         self._loop_parameters = []
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
-        PLATFORM_MANAGER_DB.dump(platform=self.platform)
         self._build_execution(sequence_list=sequences)
 
     def execute(self, connection: API | None = None):
@@ -57,7 +56,7 @@ class Experiment:
         results = (
             self._execute_loop(connection=connection)
             if self._loop_parameters
-            else [self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)]
+            else self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)
         )
 
         self.execution.close()
@@ -86,7 +85,7 @@ class Experiment:
                     connection=connection,
                     plot_id=plot_id,
                     x_value=value,
-                    y_value=np.round(result[0].probabilities()[0], 4),
+                    y_value=np.round(result[0].probabilities()[0][0], 4),
                 )
         return results
 
@@ -157,7 +156,7 @@ class Experiment:
         """Create live plot."""
         if connection is not None:
             # TODO: Create plot for each different BusReadout
-            return connection.create_liveplot(plot_type="LINES", title=self.name, x_label=x_label, y_label=y_label)
+            return connection.create_liveplot(plot_type="LINES")
 
     def _send_plot_points(self, connection: API | None, plot_id: str | None, x_value: float, y_value: float):
         """Send plot points to live plot viewer.
