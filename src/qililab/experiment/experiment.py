@@ -40,9 +40,11 @@ class Experiment:
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
         platform_name: str = DEFAULT_PLATFORM_NAME,
         settings: ExperimentSettings = None,
+        experiment_name="experiment",
     ):
         if not isinstance(sequences, list):
             sequences = [sequences]
+        self.name = experiment_name
         self._loop_parameters = []
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
@@ -52,9 +54,8 @@ class Experiment:
     def execute(self, connection: API | None = None):
         """Run execution."""
         self._start_instruments()
-        plot_id = self._create_live_plot(connection=connection)
         results = (
-            self._execute_loop(connection=connection, plot_id=plot_id)
+            self._execute_loop(connection=connection)
             if self._loop_parameters
             else [self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)]
         )
@@ -62,7 +63,7 @@ class Experiment:
         self.execution.close()
         return results
 
-    def _execute_loop(self, connection: API | None, plot_id: str | None):
+    def _execute_loop(self, connection: API | None):
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -73,6 +74,7 @@ class Experiment:
         """
         results: List[List[Result]] = []
         for category, id_, parameter, loop_range in self._loop_parameters:
+            plot_id = self._create_live_plot(connection=connection, x_label=parameter, y_label="Voltage")
             element, _ = self.platform.get_element(category=Category(category), id_=id_)
             for value in tqdm(loop_range):
                 logger.info("%s: %f", parameter, value)
@@ -87,6 +89,18 @@ class Experiment:
                     y_value=np.round(result[0].probabilities()[0], 4),
                 )
         return results
+
+    def set_parameter(self, category: str, id_: int, parameter: str, value: float):
+        """Set parameter of a platform element.
+
+        Args:
+            category (str): Category of the element.
+            id_ (int): ID of the element.
+            parameter (str): Name of the parameter to change.
+            value (float): New value.
+        """
+        element, _ = self.platform.get_element(category=Category(category), id_=id_)
+        element.set_parameter(name=parameter, value=value)
 
     def _start_instruments(self):
         """Connect, setup and start instruments."""
@@ -139,11 +153,11 @@ class Experiment:
             self.sequences.append(sequence)
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=self.sequences)
 
-    def _create_live_plot(self, connection: API | None):
+    def _create_live_plot(self, connection: API | None, x_label: str, y_label: str):
         """Create live plot."""
         if connection is not None:
             # TODO: Create plot for each different BusReadout
-            return connection.create_liveplot(plot_type="LINES")
+            return connection.create_liveplot(plot_type="LINES", title=self.name, x_label=x_label, y_label=y_label)
 
     def _send_plot_points(self, connection: API | None, plot_id: str | None, x_value: float, y_value: float):
         """Send plot points to live plot viewer.

@@ -1,5 +1,4 @@
 """Bus class."""
-from multiprocessing.sharedctypes import Value
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
