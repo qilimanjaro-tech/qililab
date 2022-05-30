@@ -97,9 +97,11 @@ class Experiment:
             loop = loops[depth]
 
             if depth == 0:
+                x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
+                if previous_loop is not None:
+                    x_label += f"({previous_loop.category} {previous_loop.id_}: {previous_loop.parameter}={np.round(x_value, 4)})"
                 plot.create_live_plot(
-                    title=self.name, x_label=f"{loop.category} {loop.id_}: {loop.parameter} " +
-                    f"({previous_loop.category} {previous_loop.id_}: {previous_loop.parameter}={np.round(x_value, 4)})", y_label="Amplitude"
+                    title=self.name, x_label=x_label, y_label="Amplitude"
                 )
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
