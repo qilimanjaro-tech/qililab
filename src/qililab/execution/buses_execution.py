@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
-from qililab.result import Result
+from qililab.result import Results
 
 
 @dataclass
@@ -31,15 +31,15 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int):
+    def run(self, nshots: int, repetition_duration: int) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
-        results: List[Result] = []
+        results = Results.ExecutionResults()
         for idx in range(self.num_sequences):
+            results.new()
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx)
                 if result is not None:
-                    results.append(result)
-                    # print(result.probabilities()[0])
+                    results.add(result=result)
         return results
 
     def close(self):

@@ -292,3 +292,21 @@ class QbloxPulsar(AWG):
             float: settings.offset_q.
         """
         return self.settings.offset_q
+
+    @property
+    def epsilon(self):
+        """QbloxPulsar 'epsilon' property.
+
+        Returns:
+            float: settings.epsilon.
+        """
+        return self.settings.epsilon
+
+    @property
+    def delta(self):
+        """QbloxPulsar 'delta' property.
+
+        Returns:
+            float: settings.delta.
+        """
+        return self.settings.delta

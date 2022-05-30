@@ -5,7 +5,7 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.experiment import Experiment, settings
+from qililab.experiment import Experiment, Loop, settings
 
 
 def cavity_spectroscopy(connection: API):
@@ -15,10 +15,8 @@ def cavity_spectroscopy(connection: API):
     circuit.add(M(0))
     settings.translation.readout_pulse.amplitude = 1
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit], settings=settings)
-    experiment.add_parameter_to_loop(
-        category="signal_generator", id_=1, parameter="frequency", start=7.34e9, stop=7.36e9, num=1000
-    )
-    experiment.execute(connection=connection)
+    loop = Loop(category="signal_generator", id_=1, parameter="frequency", start=7.34e9, stop=7.36e9, num=1000)
+    experiment.execute(loops=loop, connection=connection)
 
 
 if __name__ == "__main__":

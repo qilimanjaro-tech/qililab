@@ -3,10 +3,10 @@ from unittest.mock import MagicMock, patch
 
 from qiboconnection.api import API
 
-from qililab import Experiment
 from qililab.execution import Execution
+from qililab.experiment import Experiment, Loop
 from qililab.platform import Platform
-from qililab.result import Result
+from qililab.result import Results
 
 from ...conftest import mock_instruments
 
@@ -57,19 +57,30 @@ class TestExperiment:
         """Test draw method with all platforms."""
         experiment_all_platforms.draw()
 
-    def test_add_parameter_to_loop_method(self, experiment: Experiment):
-        """Test add_parameter_to_loop method."""
-        experiment.add_parameter_to_loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=100)
+    def test_str_method(self, experiment_all_platforms: Experiment):
+        """Test __str__ method with all platforms."""
+        str(experiment_all_platforms)
+        str(experiment_all_platforms.settings)
+
+    def test_set_parameter_method(self, experiment: Experiment):
+        """Test set_parameter method with all platforms."""
+        experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
+
+    @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
+    def test_execute_method_without_loop(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
+        """Test execute method with simulated qubit."""
+        simulated_experiment.execute()  # type: ignore
+        mock_qutip.Options.assert_called()
+        mock_qutip.ket2dm.assert_called()
+        mock_qutip.mesolve.assert_called()
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     def test_execute_method_with_simulated_qubit(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
         """Test execute method with simulated qubit."""
         connection = MagicMock(name="API", spec=API, autospec=True)
         connection.create_liveplot.return_value = 0
-        simulated_experiment.add_parameter_to_loop(
-            category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2
-        )
-        simulated_experiment.execute(connection=connection)  # type: ignore
+        loop = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
+        simulated_experiment.execute(loops=loop, connection=connection)  # type: ignore
         connection.create_liveplot.assert_called_once()
         connection.send_plot_points.assert_called()
         mock_qutip.Options.assert_called()
@@ -81,11 +92,12 @@ class TestExperiment:
     def test_execute_method_with_instruments(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: Experiment):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        experiment.add_parameter_to_loop(
-            category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2
-        )
-        results = experiment.execute()
+        loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
+        results = experiment.execute(loops=loop)
         mock_rs.assert_called()
         mock_pulsar.assert_called()
-        assert isinstance(results, list)
-        assert isinstance(results[0][0], Result)
+        assert isinstance(results, Results)
+        probabilities = results.probabilities()
+        acquisitions = results.acquisitions()
+        assert isinstance(probabilities, list)
+        assert isinstance(acquisitions, list)

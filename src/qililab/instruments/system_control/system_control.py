@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from qililab.pulse import PulseSequence
 from qililab.result import Result
 from qililab.settings import Settings
-from qililab.typings import BusElement
+from qililab.typings import BusElement, BusElementName
 from qililab.utils import nested_dataclass
 
 
@@ -15,7 +15,7 @@ class SystemControl(BusElement, ABC):
     class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
-        subcategory: str
+        subcategory: BusElementName
 
     settings: SystemControlSettings
 

@@ -1,18 +1,14 @@
 """QbloxResult class."""
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
 from qililab.result.result import Result
+from qililab.typings import AcquisitionName
 from qililab.utils import nested_dataclass
 
 
-# TODO: Here you probably can see my excitemenmt when using nested classes! XD
-# I can perfectly understand that this structure may be overwhelming, but it's the best
-# approach I found. Given that we receive a nested dictionary from Qblox, it's nice to have
-# a dataclass for each dicionary inside the main dict. Given that these extra classes (QbloxAcquisitionData, ...)
-# will ONLY be used by the QbloxResult class, I added them inside the class.
 class QbloxResult(Result):
     """QbloxResult class."""
 
@@ -94,21 +90,27 @@ class QbloxResult(Result):
     def __init__(self, integration_length: int, start_integrate: int, result: dict):
         self.integration_length = integration_length
         self.start_integrate = start_integrate
-        self.results = [self.QbloxAcquisitions(**item | {"name": key}) for key, item in result.items()]
+        self.results = [self.QbloxAcquisitions(**item | {"name": AcquisitionName(key)}) for key, item in result.items()]
 
-    def voltages(self):
-        """Return computed voltage.
+    def acquisitions(self, acquisition_name: str = "single") -> Tuple[float, float, float, float]:
+        """Return acquisition values.
+
+        Args:
+            acquisition_name (str, optional): Name of the acquisition. Defaults to "single".
 
         Returns:
-            float: Voltage
+            Tuple[float]: I, Q, amplitude and phase.
         """
-        voltages = []
-        for result in self.results:
-            integrated_i = result.acquisition.bins.integration.path0[0]
-            integrated_q = result.acquisition.bins.integration.path1[0]
-            voltages.append(np.sqrt(integrated_i**2 + integrated_q**2))
+        result = [res for res in self.results if res.name == AcquisitionName(acquisition_name)][0]
+        i_data = result.acquisition.bins.integration.path0[0]
+        q_data = result.acquisition.bins.integration.path1[0]
 
-        return voltages[0]  # TODO: Remove the index
+        return (
+            i_data,
+            q_data,
+            np.sqrt(i_data**2 + q_data**2),
+            np.arctan2(q_data, i_data),
+        )
 
     def probabilities(self):
         """Return probabilities of being in the ground and excited state.
@@ -116,8 +118,7 @@ class QbloxResult(Result):
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
-        # FIXME: Compute probabilities
-        return self.voltages(), self.voltages()
+        return self.acquisitions()[2], self.acquisitions()[2]
 
     def plot(self):
         """Plot data."""

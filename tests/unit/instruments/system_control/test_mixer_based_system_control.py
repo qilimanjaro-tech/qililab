@@ -38,3 +38,7 @@ class TestMixerBasedSystemControl:
     def test_awg_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test awg property."""
         assert mixer_based_system_control.awg == mixer_based_system_control.settings.awg
+
+    def test_name_property(self, mixer_based_system_control: MixerBasedSystemControl):
+        """Test name property."""
+        assert mixer_based_system_control.name == mixer_based_system_control.settings.subcategory

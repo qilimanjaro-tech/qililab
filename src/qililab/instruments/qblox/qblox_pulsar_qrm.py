@@ -3,7 +3,12 @@ from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings import AcquireTriggerMode, BusElementName, IntegrationMode
+from qililab.typings import (
+    AcquireTriggerMode,
+    AcquisitionName,
+    BusElementName,
+    IntegrationMode,
+)
 from qililab.utils import Factory, nested_dataclass
 
 
@@ -42,7 +47,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         integration_mode: IntegrationMode
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
-        acquisition_name: str
+        acquisition_name: AcquisitionName
 
     settings: QbloxPulsarQRMSettings
 

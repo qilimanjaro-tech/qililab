@@ -50,3 +50,7 @@ class TestSimulatedSystemControl:
     def test_resolution_property(self, simulated_system_control: SimulatedSystemControl):
         """Test resolution property."""
         assert simulated_system_control.resolution == simulated_system_control.settings.resolution
+
+    def test_name_property(self, simulated_system_control: SimulatedSystemControl):
+        """Test name property."""
+        assert simulated_system_control.name == simulated_system_control.settings.subcategory

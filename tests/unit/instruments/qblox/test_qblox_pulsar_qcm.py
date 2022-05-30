@@ -98,3 +98,13 @@ class TestQbloxPulsarQCM:
     def test_frequency_property(self, qcm: QbloxPulsarQCM):
         """Test frequency property."""
         assert qcm.frequency == qcm.settings.frequency
+
+    def tests_epsilon_property_raises_error(self, qcm: QbloxPulsarQCM):
+        """Test epsilon property."""
+        with pytest.raises(AttributeError):
+            print(qcm.epsilon)
+
+    def tests_delta_property_raises_error(self, qcm: QbloxPulsarQCM):
+        """Test delta property."""
+        with pytest.raises(AttributeError):
+            print(qcm.delta)

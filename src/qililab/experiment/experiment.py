@@ -1,7 +1,7 @@
 """HardwareExperiment class."""
 import json
-from dataclasses import asdict
-from typing import List, Tuple
+from dataclasses import asdict, dataclass
+from typing import List
 
 import numpy as np
 from qibo.core.circuit import Circuit
@@ -9,13 +9,12 @@ from qiboconnection.api import API
 from tqdm import tqdm
 
 from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
-from qililab.result import Result
+from qililab.result import Results
 from qililab.typings import Category
-from qililab.utils import nested_dataclass
+from qililab.utils import Plot, nested_dataclass
 
 
 class Experiment:
@@ -34,6 +33,7 @@ class Experiment:
             """Returns a string representation of the experiment settings."""
             return json.dumps(asdict(self), indent=4)
 
+    @dataclass
     class ExperimentLoop:
         """ExperimentLoop class."""
 
@@ -47,40 +47,55 @@ class Experiment:
         def __post_init__(self):
             self.category = Category(self.category)
 
+        @property
+        def range(self) -> np.ndarray:
+            """ExperimentLoop 'range' property.
+
+            Returns:
+                ndarray: Range of values of loop.
+            """
+            return np.linspace(start=self.start, stop=self.stop, num=self.num)
+
     platform: Platform
     execution: Execution
     settings: ExperimentSettings
     sequences: List[PulseSequences]
-    _loop_parameters: List[Tuple[str, int, str, List[float]]]
 
     def __init__(
         self,
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
-        platform_name: str = DEFAULT_PLATFORM_NAME,
+        platform_name: str,
         settings: ExperimentSettings = None,
-        experiment_name="experiment",
+        experiment_name: str = "experiment",
     ):
         if not isinstance(sequences, list):
             sequences = [sequences]
         self.name = experiment_name
-        self._loop_parameters = []
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self._build_execution(sequence_list=sequences)
 
-    def execute(self, connection: API | None = None):
+    def execute(self, loops: ExperimentLoop | List[ExperimentLoop] | None = None, connection: API | None = None):
         """Run execution."""
-        self._start_instruments()
-        results = (
-            self._execute_loop(connection=connection)
-            if self._loop_parameters
-            else self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
-        )
+        loops_tmp: List[self.ExperimentLoop] | List[None]  # type: ignore
+        if loops is None:
+            loops_tmp = [loops]
+        else:
+            loops_tmp = loops if isinstance(loops, list) else [loops]
 
+        plot = Plot(connection=connection)
+        self._start_instruments()
+        results = self._execute_loop(loops=loops_tmp, plot=plot)
         self.execution.close()
         return results
 
-    def _execute_loop(self, connection: API | None):
+    def _execute_loop(
+        self,
+        loops: List[ExperimentLoop] | List[None],
+        plot: Plot,
+        results: Results = None,
+        x_value=0,
+    ):
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -89,22 +104,23 @@ class Experiment:
         Returns:
             List[List[Result]]: List containing the results for each loop execution.
         """
-        results: List[List[Result]] = []
-        for category, id_, parameter, loop_range in self._loop_parameters:
-            plot_id = self._create_live_plot(connection=connection, x_label=parameter, y_label="Voltage")
-            element, _ = self.platform.get_element(category=Category(category), id_=id_)
-            for value in tqdm(loop_range):
-                logger.info("%s: %f", parameter, value)
-                element.set_parameter(name=parameter, value=value)
-                self.execution.setup()
-                result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
-                results.append(result)
-                self._send_plot_points(
-                    connection=connection,
-                    plot_id=plot_id,
-                    x_value=value,
-                    y_value=np.round(result[0].probabilities()[0], 4),
-                )
+        if results is None:
+            results = Results()
+        for loop in loops[:]:
+            loops.pop(0)
+            if loop is not None:
+                plot.create_live_plot(title=self.name, x_label=loop.parameter, y_label="Amplitude")
+                element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
+                for value in tqdm(loop.range):
+                    logger.info("%s: %f", loop.parameter, value)
+                    element.set_parameter(name=loop.parameter, value=value)
+                    self._execute_loop(loops=loops, plot=plot, x_value=value, results=results)
+            self.execution.setup()
+            result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            results.add(execution_results=result)
+            # FIXME: In here we only plot the amplitude of the last sequence. Find a way to plot all the
+            # sequences in the list
+            plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0], 4))
         return results
 
     def set_parameter(self, category: str, id_: int, parameter: str, value: float):
@@ -134,17 +150,6 @@ class Experiment:
         """
         return str(self.platform)
 
-    def add_parameter_to_loop(self, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
-        """Add parameter to loop over during an experiment.
-
-        Args:
-            category (str): Category of the element.
-            id_ (int): ID of the element.
-            parameter (str): Name of the parameter to change.
-        """
-        loop_range = list(np.linspace(start, stop, num))
-        self._loop_parameters.append((category, id_, parameter, loop_range))
-
     def draw(self, resolution: float = 1.0):
         """Return figure with the waveforms sent to each bus.
 
@@ -169,24 +174,6 @@ class Experiment:
                 sequence = translator.translate(circuit=sequence)
             self.sequences.append(sequence)
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=self.sequences)
-
-    def _create_live_plot(self, connection: API | None, x_label: str, y_label: str):
-        """Create live plot."""
-        if connection is not None:
-            # TODO: Create plot for each different BusReadout
-            return connection.create_liveplot(plot_type="LINES")
-
-    def _send_plot_points(self, connection: API | None, plot_id: str | None, x_value: float, y_value: float):
-        """Send plot points to live plot viewer.
-
-        Args:
-            plot_id (str | None): Plot ID.
-            x_value (float): X value.
-            y_value (float): Y value.
-        """
-        if plot_id is not None and connection is not None:
-            # TODO: Plot voltages of every BusReadout in the platform
-            connection.send_plot_points(plot_id=plot_id, x=x_value, y=y_value)
 
     @property
     def software_average(self):
@@ -230,7 +217,6 @@ class Experiment:
             "settings": asdict(self.settings),
             "platform_name": self.platform.name,
             "sequence": [sequence.to_dict() for sequence in self.sequences],
-            "parameters": self._loop_parameters,
         }
 
     @classmethod
@@ -243,10 +229,7 @@ class Experiment:
         settings = cls.ExperimentSettings(**dictionary["settings"])
         platform_name = dictionary["platform_name"]
         sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequence"]]
-        parameters = dictionary["parameters"]
-        experiment = Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
-        experiment._loop_parameters = parameters
-        return experiment
+        return Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
 
     def __del__(self):
         """Destructor."""

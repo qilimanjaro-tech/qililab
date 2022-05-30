@@ -67,6 +67,17 @@ class IntegrationMode(Enum):
     SSB = "ssb"
 
 
+class AcquisitionName(Enum):
+    """Acquisition names.
+
+    Args:
+        enum (str): Available types of acquisition names:
+        * single
+    """
+
+    SINGLE = "single"
+
+
 class SchemaDrawOptions(Enum):
     """Schema draw options.
 

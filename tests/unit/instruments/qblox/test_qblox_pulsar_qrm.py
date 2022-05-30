@@ -169,3 +169,13 @@ class TestQbloxPulsarQRM:
     def tests_frequency_property(self, qrm: QbloxPulsarQRM):
         """Test frequency property."""
         assert qrm.frequency == qrm.settings.frequency
+
+    def tests_epsilon_property_raises_error(self, qrm: QbloxPulsarQRM):
+        """Test epsilon property."""
+        with pytest.raises(AttributeError):
+            print(qrm.epsilon)
+
+    def tests_delta_property_raises_error(self, qrm: QbloxPulsarQRM):
+        """Test delta property."""
+        with pytest.raises(AttributeError):
+            print(qrm.delta)
