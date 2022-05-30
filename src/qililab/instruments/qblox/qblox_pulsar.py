@@ -14,14 +14,14 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.instruments.qubit_instrument import QubitInstrument
+from qililab.instruments.awg import AWG
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import Pulse, PulseSequence
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
 
-class QbloxPulsar(QubitInstrument):
+class QbloxPulsar(AWG):
     """Qblox pulsar class.
 
     Args:
@@ -32,7 +32,7 @@ class QbloxPulsar(QubitInstrument):
     MAX_GAIN = 2**16 - 1
 
     @nested_dataclass
-    class QbloxPulsarSettings(QubitInstrument.QubitInstrumentSettings):
+    class QbloxPulsarSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
@@ -133,29 +133,29 @@ class QbloxPulsar(QubitInstrument):
         acquisitions.add(name="single", num_bins=1, index=0)
         return acquisitions
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def start(self):
         """Execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
         self._set_offsets()
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def reset(self):
         """Reset instrument."""
         self.device.reset()
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         self.reset()
@@ -164,7 +164,7 @@ class QbloxPulsar(QubitInstrument):
         self._map_outputs()
         self._set_nco()
 
-    @QubitInstrument.CheckConnected
+    @AWG.CheckConnected
     def upload(self, sequence: Sequence):
         """Upload sequence to sequencer.
 

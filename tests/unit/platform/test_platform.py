@@ -47,7 +47,7 @@ class TestPlatform:
 
     def test_get_element_method_unknown(self, platform: Platform):
         """Test get_element method with unknown element."""
-        assert isinstance(platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=6)[0], NoneType)
+        assert isinstance(platform.get_element(category=Category.AWG, id_=6)[0], NoneType)
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -95,15 +95,15 @@ class TestPlatform:
         assert isinstance(element, NoneType)
         assert bus_idxs == []
 
-    def test_bus_0_qubit_instrument_instance(self, platform: Platform):
+    def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        element, bus_idxs = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
+        element, bus_idxs = platform.get_element(category=Category.AWG, id_=0)
         assert isinstance(element, QubitControl)
         assert bus_idxs[0] == 0
 
-    def test_bus_1_qubit_instrument_instance(self, platform: Platform):
+    def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element, bus_idxs = platform.get_element(category=Category.QUBIT_INSTRUMENT, id_=1)
+        element, bus_idxs = platform.get_element(category=Category.AWG, id_=1)
         assert isinstance(element, QubitReadout)
         assert bus_idxs[0] == 1
 

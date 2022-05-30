@@ -2,8 +2,8 @@
 from typing import Generator, Optional, Tuple
 
 from qililab.constants import YAML
+from qililab.instruments.awg import AWG
 from qililab.instruments.mixer import Mixer, MixerDown, MixerUp
-from qililab.instruments.qubit_instrument import QubitInstrument
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
@@ -22,7 +22,7 @@ class MixerBasedSystemControl(SystemControl):
         """MixerBasedSystemControlSettings class."""
 
         mixer_up: MixerUp
-        qubit_instrument: QubitInstrument
+        awg: AWG
         signal_generator: SignalGenerator
         mixer_down: Optional[MixerDown] = None
 
@@ -39,14 +39,14 @@ class MixerBasedSystemControl(SystemControl):
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SignalGenerator | Mixer | QubitInstrument | dict], None, None]:
+        ) -> Generator[Tuple[str, SignalGenerator | Mixer | AWG | dict], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SignalGenerator | Mixer | QubitInstrument | dict):
+                if isinstance(value, SignalGenerator | Mixer | AWG | dict):
                     yield name, value
 
     settings: MixerBasedSystemControlSettings
@@ -57,13 +57,13 @@ class MixerBasedSystemControl(SystemControl):
 
     def connect(self):
         """Connect to the instruments."""
-        self.qubit_instrument.connect()
+        self.awg.connect()
         self.signal_generator.connect()
 
     def setup(self):
         """Setup instruments."""
-        self.qubit_instrument.setup_mixer_settings(mixer=self.mixer_up)
-        self.qubit_instrument.setup()
+        self.awg.setup_mixer_settings(mixer=self.mixer_up)
+        self.awg.setup()
         self.signal_generator.setup()
 
     def start(self):
@@ -72,17 +72,17 @@ class MixerBasedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
         """Run the given pulse sequence."""
-        return self.qubit_instrument.run(pulse_sequence=pulse_sequence, nshots=nshots, loop_duration=loop_duration)
+        return self.awg.run(pulse_sequence=pulse_sequence, nshots=nshots, loop_duration=loop_duration)
 
     def close(self):
         """Close connection to the instruments."""
-        self.qubit_instrument.close()
+        self.awg.close()
         self.signal_generator.close()
 
     @property
     def frequency(self):
         """SystemControl 'frequency' property."""
-        return self.qubit_instrument.frequency
+        return self.awg.frequency
 
     @property
     def signal_generator(self):
@@ -109,12 +109,12 @@ class MixerBasedSystemControl(SystemControl):
         return self.settings.mixer_down
 
     @property
-    def qubit_instrument(self):
-        """Bus 'qubit_instrument' property.
+    def awg(self):
+        """Bus 'awg' property.
         Returns:
             (QubitControl | None): settings.qubit_control.
         """
-        return self.settings.qubit_instrument
+        return self.settings.awg
 
     def get_element(self, category: Category, id_: int):
         """Get system control element. Return None if element is not found.
@@ -124,7 +124,7 @@ class MixerBasedSystemControl(SystemControl):
             id_ (int): ID of element.
 
         Returns:
-            (QubitInstrument | SignalGenerator | Mixer | None): Element class.
+            (AWG | SignalGenerator | Mixer | None): Element class.
         """
         return next((element for _, element in self if element.category == category and element.id_ == id_), None)
 

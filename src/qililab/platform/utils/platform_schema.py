@@ -14,7 +14,7 @@ class PlatformSchema:
         - buses: buses dictionary:
             - elements: list of bus dictionaries with the following structure:
                 - name: "readout" or "control"
-                - qubit_instrument: settings dictionary.
+                - awg: settings dictionary.
                 - signal_generator: settings dictionary.
                 - mixer_up: settings dictionary.
                 - qubit / resonator: settings dictionary.

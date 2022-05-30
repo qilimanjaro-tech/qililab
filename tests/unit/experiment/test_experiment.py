@@ -61,9 +61,7 @@ class TestExperiment:
 
     def test_add_parameter_to_loop_method(self, experiment: Experiment):
         """Test add_parameter_to_loop method."""
-        experiment.add_parameter_to_loop(
-            category="qubit_instrument", id_=0, parameter="frequency", start=0, stop=1, num=100
-        )
+        experiment.add_parameter_to_loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=100)
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     def test_execute_method_with_simulated_qubit(self, mock_qutip: MagicMock, simulated_experiment: Experiment):

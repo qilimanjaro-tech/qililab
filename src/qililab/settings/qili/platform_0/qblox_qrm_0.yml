@@ -1,5 +1,5 @@
 id_: 1
-category: qubit_instrument  # general name
+category: awg  # general name
 ip: 192.168.0.4
 firmware: 0.7.0
 reference_clock: external

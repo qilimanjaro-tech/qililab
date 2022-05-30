@@ -1,10 +1,5 @@
 """Tests for the MixerBasedSystemControl class."""
-from qililab.instruments import (
-    Mixer,
-    MixerBasedSystemControl,
-    QubitInstrument,
-    SignalGenerator,
-)
+from qililab.instruments import AWG, Mixer, MixerBasedSystemControl, SignalGenerator
 from qililab.typings import BusElement, Category
 
 
@@ -13,14 +8,10 @@ class TestMixerBasedSystemControl:
 
     def test_get_element_method(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test get_element method."""
-        qubit_instrument = mixer_based_system_control.get_element(category=Category.QUBIT_INSTRUMENT, id_=0)
+        awg = mixer_based_system_control.get_element(category=Category.AWG, id_=0)
         signal_generator = mixer_based_system_control.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
         mixer = mixer_based_system_control.get_element(category=Category.MIXER, id_=0)
-        assert (
-            isinstance(qubit_instrument, QubitInstrument)
-            and isinstance(signal_generator, SignalGenerator)
-            and isinstance(mixer, Mixer)
-        )
+        assert isinstance(awg, AWG) and isinstance(signal_generator, SignalGenerator) and isinstance(mixer, Mixer)
 
     def test_iter_method(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test __iter__ method."""
@@ -30,7 +21,7 @@ class TestMixerBasedSystemControl:
 
     def test_frequency_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test frequency property."""
-        assert mixer_based_system_control.frequency == mixer_based_system_control.qubit_instrument.frequency
+        assert mixer_based_system_control.frequency == mixer_based_system_control.awg.frequency
 
     def test_signal_generator_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test signal_generator property."""
@@ -44,6 +35,6 @@ class TestMixerBasedSystemControl:
         """Test mixer_down property."""
         assert mixer_based_system_control.mixer_down == mixer_based_system_control.settings.mixer_down
 
-    def test_qubit_instrument_property(self, mixer_based_system_control: MixerBasedSystemControl):
-        """Test qubit_instrument property."""
-        assert mixer_based_system_control.qubit_instrument == mixer_based_system_control.settings.qubit_instrument
+    def test_awg_property(self, mixer_based_system_control: MixerBasedSystemControl):
+        """Test awg property."""
+        assert mixer_based_system_control.awg == mixer_based_system_control.settings.awg

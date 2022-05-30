@@ -1,13 +1,13 @@
 """QubitReadout class."""
-from qililab.instruments.qubit_instrument import QubitInstrument
+from qililab.instruments.awg import AWG
 from qililab.utils import nested_dataclass
 
 
-class QubitReadout(QubitInstrument):
+class QubitReadout(AWG):
     """Abstract base class defining all instruments used to readout the qubits."""
 
     @nested_dataclass
-    class QubitReadoutSettings(QubitInstrument.QubitInstrumentSettings):
+    class QubitReadoutSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar.
 
         Args:

@@ -11,10 +11,10 @@ schema:
       id_: 0
       category: system_control
       subcategory: mixer_based_system_control
-      qubit_instrument:
+      awg:
         id_: 0
         name: qblox_qcm
-        category: qubit_instrument
+        category: awg
         ip: 192.168.0.3
         firmware: 0.7.0
         reference_clock: internal
@@ -54,10 +54,10 @@ schema:
       id_: 1
       category: system_control
       subcategory: mixer_based_system_control
-      qubit_instrument:
+      awg:
         id_: 1
         name: qblox_qrm
-        category: qubit_instrument
+        category: awg
         ip: 192.168.0.4
         firmware: 0.7.0
         reference_clock: external

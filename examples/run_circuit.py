@@ -32,7 +32,7 @@ def load_experiment():
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit)
     experiment.set_parameter(category="signal_generator", id_=0, parameter="frequency", value=3.451759e9)
     experiment.set_parameter(category="signal_generator", id_=1, parameter="frequency", value=7.347367e9)
-    experiment.add_parameter_to_loop(category="qubit_instrument", id_=0, parameter="gain", start=0, stop=1, num=20)
+    experiment.add_parameter_to_loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=20)
     experiment.draw()
     plt.savefig("test.png")
     # experiment.execute(connection=connection)

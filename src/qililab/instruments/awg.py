@@ -8,12 +8,12 @@ from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
 
 
-class QubitInstrument(Instrument):
+class AWG(Instrument):
     """Abstract base class defining all instruments used to control or readout the qubits."""
 
     @dataclass
-    class QubitInstrumentSettings(Instrument.InstrumentSettings):
-        """Contains the settings of a QubitInstrument.
+    class AWGSettings(Instrument.InstrumentSettings):
+        """Contains the settings of a AWG.
 
         Args:
             frequency (float): Intermediate frequency (IF).
@@ -62,7 +62,7 @@ class QubitInstrument(Instrument):
             """
             return self.mixer_settings.offset_q
 
-    settings: QubitInstrumentSettings
+    settings: AWGSettings
 
     @abstractmethod
     def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int) -> QbloxResult:

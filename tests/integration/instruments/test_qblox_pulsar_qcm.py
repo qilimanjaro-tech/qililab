@@ -20,7 +20,7 @@ class TestQbloxPulsarQCM:
 
     def test_settings_category(self, qcm: QbloxPulsarQCM):
         """Test category attribute of settings attribute of QbloxPulsarQCM class"""
-        assert qcm.category == Category.QUBIT_INSTRUMENT
+        assert qcm.category == Category.AWG
 
     def test_getattr_error(self, qcm: QbloxPulsarQCM):
         """Test that the class raises an error when running

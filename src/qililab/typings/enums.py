@@ -9,7 +9,7 @@ class Category(Enum):
         enum (str): Available types of settings cattegories:
         * platform
         * qubit
-        * qubit_instrument
+        * awg
         * signal_generator
         * buses
         * bus
@@ -20,7 +20,7 @@ class Category(Enum):
 
     PLATFORM = "platform"
     QUBIT = "qubit"
-    QUBIT_INSTRUMENT = "qubit_instrument"
+    AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     SCHEMA = "schema"
     RESONATOR = "resonator"
