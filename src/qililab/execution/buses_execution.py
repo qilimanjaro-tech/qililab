@@ -67,7 +67,7 @@ class BusesExecution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        figure, axes = plt.subplots(len(self.buses), 1)
+        figure, axes = plt.subplots(nrows=len(self.buses), ncols=1, sharex=True)
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
         for bus_idx, pulse in self.waveforms(resolution=resolution).items():
