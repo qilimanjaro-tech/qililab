@@ -34,6 +34,19 @@ class Experiment:
             """Returns a string representation of the experiment settings."""
             return json.dumps(asdict(self), indent=4)
 
+    class ExperimentLoop:
+        """ExperimentLoop class."""
+
+        category: str | Category
+        id_: int
+        parameter: str
+        start: float
+        stop: float
+        num: int
+
+        def __post_init__(self):
+            self.category = Category(self.category)
+
     platform: Platform
     execution: Execution
     settings: ExperimentSettings

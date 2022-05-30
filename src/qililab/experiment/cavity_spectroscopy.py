@@ -4,8 +4,8 @@ from qibo.gates import I, M
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
-from qililab import Experiment, experiment_settings
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.experiment import Experiment, settings
 
 
 def cavity_spectroscopy(connection: API):
@@ -13,8 +13,8 @@ def cavity_spectroscopy(connection: API):
     circuit = Circuit(1)
     circuit.add(I(0))  # need to add this to use QCM (because QRM uses QCM clock)
     circuit.add(M(0))
-    experiment_settings.translation.readout_pulse.amplitude = 1
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit], settings=experiment_settings)
+    settings.translation.readout_pulse.amplitude = 1
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit], settings=settings)
     experiment.add_parameter_to_loop(
         category="signal_generator", id_=1, parameter="frequency", start=7.34e9, stop=7.36e9, num=1000
     )
