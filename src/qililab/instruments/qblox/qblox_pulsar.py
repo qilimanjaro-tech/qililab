@@ -55,19 +55,19 @@ class QbloxPulsar(AWG):
         super().connect()
         self.initial_setup()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
         """Run execution of a pulse sequence.
 
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
         sequence = self._translate_pulse_sequence(
-            pulses=pulse_sequence.pulses, nshots=nshots, loop_duration=loop_duration
+            pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
         )
         self.upload(sequence=sequence)
         self.start()
 
-    def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, loop_duration: int):
+    def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -77,11 +77,13 @@ class QbloxPulsar(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulses=pulses)
-        program = self._generate_program(pulses=pulses, waveforms=waveforms, nshots=nshots, loop_duration=loop_duration)
+        program = self._generate_program(
+            pulses=pulses, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
+        )
         acquisitions = self._generate_acquisitions()
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
 
-    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms, nshots: int, loop_duration: int):
+    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms, nshots: int, repetition_duration: int):
         """Generate Q1ASM program
 
         Args:
@@ -117,7 +119,7 @@ class QbloxPulsar(AWG):
         if isinstance(self, QubitReadout):
             loop.append_component(Acquire(acq_index=0, bin_index=0, wait_time=4))
 
-        loop.append_component(long_wait(wait_time=loop_duration - loop.duration_iter))
+        loop.append_component(long_wait(wait_time=repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
         return program
 

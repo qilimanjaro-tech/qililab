@@ -25,10 +25,10 @@ class BusExecution:
         """Start/Turn on the instruments."""
         self.system_control.start()
 
-    def run(self, nshots: int, loop_duration: int, idx: int):
+    def run(self, nshots: int, repetition_duration: int, idx: int):
         """Run the given pulse sequence."""
         return self.system_control.run(
-            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, loop_duration=loop_duration
+            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration
         )
 
     def close(self):

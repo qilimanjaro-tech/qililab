@@ -4,10 +4,10 @@ from dataclasses import asdict
 from typing import List
 
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import PlatformSchema, dict_factory
+from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
-from qililab.utils import nested_dataclass
+from qililab.utils import dict_factory, nested_dataclass
 
 
 class Platform:

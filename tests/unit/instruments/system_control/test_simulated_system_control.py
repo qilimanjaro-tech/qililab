@@ -16,7 +16,7 @@ class TestSimulatedSystemControl:
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_sequence: PulseSequence):
         """Test run method."""
-        result = simulated_system_control.run(pulse_sequence=pulse_sequence, nshots=100, loop_duration=2000)
+        result = simulated_system_control.run(pulse_sequence=pulse_sequence, nshots=100, repetition_duration=2000)
         assert isinstance(result, SimulatorResult)
 
     def test_amplitude_norm_factor_property(self, simulated_system_control: SimulatedSystemControl):

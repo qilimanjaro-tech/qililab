@@ -1,4 +1,5 @@
 """HardwareExperiment class."""
+import json
 from dataclasses import asdict
 from typing import List, Tuple
 
@@ -26,8 +27,12 @@ class Experiment:
 
         hardware_average: int = 4024
         software_average: int = 1
-        loop_duration: int = 20000
-        circuit_to_pulse = CircuitToPulses.CircuitToPulsesSettings()
+        repetition_duration: int = 20000
+        translation: CircuitToPulses.CircuitToPulsesSettings = CircuitToPulses.CircuitToPulsesSettings()
+
+        def __str__(self):
+            """Returns a string representation of the experiment settings."""
+            return json.dumps(asdict(self), indent=4)
 
     platform: Platform
     execution: Execution
@@ -56,7 +61,7 @@ class Experiment:
         results = (
             self._execute_loop(connection=connection)
             if self._loop_parameters
-            else self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)
+            else self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
         )
 
         self.execution.close()
@@ -79,7 +84,7 @@ class Experiment:
                 logger.info("%s: %f", parameter, value)
                 element.set_parameter(name=parameter, value=value)
                 self.execution.setup()
-                result = self.execution.run(nshots=self.hardware_average, loop_duration=self.loop_duration)
+                result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
                 results.append(result)
                 self._send_plot_points(
                     connection=connection,
@@ -144,7 +149,7 @@ class Experiment:
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        translator = CircuitToPulses(settings=self.circuit_to_pulse)
+        translator = CircuitToPulses(settings=self.translation)
         self.sequences = []
         for sequence in sequence_list:
             if isinstance(sequence, Circuit):
@@ -189,22 +194,22 @@ class Experiment:
         return self.settings.hardware_average
 
     @property
-    def loop_duration(self):
-        """Experiment 'loop_duration' property.
+    def repetition_duration(self):
+        """Experiment 'repetition_duration' property.
 
         Returns:
-            int: settings.loop_duration.
+            int: settings.repetition_duration.
         """
-        return self.settings.loop_duration
+        return self.settings.repetition_duration
 
     @property
-    def circuit_to_pulse(self):
-        """Experiment 'circuit_to_pulse' property.
+    def translation(self):
+        """Experiment 'translation' property.
 
         Returns:
-            int: settings.circuit_to_pulse.
+            int: settings.translation.
         """
-        return self.settings.circuit_to_pulse
+        return self.settings.translation
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""

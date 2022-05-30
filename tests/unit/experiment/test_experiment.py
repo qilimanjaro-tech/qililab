@@ -1,12 +1,10 @@
 """Tests for the Experiment class."""
-import copy
 from unittest.mock import MagicMock, patch
 
 from qiboconnection.api import API
 
-from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab import Experiment
 from qililab.execution import Execution
-from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import Result
 
@@ -36,13 +34,13 @@ class TestExperiment:
         """Test hardware_average property."""
         assert experiment.hardware_average == experiment.settings.hardware_average
 
-    def test_loop_duration_property(self, experiment: Experiment):
-        """Test loop_duration property."""
-        assert experiment.loop_duration == experiment.settings.loop_duration
+    def test_repetition_duration_property(self, experiment: Experiment):
+        """Test repetition_duration property."""
+        assert experiment.repetition_duration == experiment.settings.repetition_duration
 
     def test_circuit_to_pulse_property(self, experiment: Experiment):
         """Test circuit_to_pulse property."""
-        assert experiment.circuit_to_pulse == experiment.settings.circuit_to_pulse
+        assert experiment.translation == experiment.settings.translation
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method with all platforms."""

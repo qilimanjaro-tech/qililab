@@ -65,7 +65,7 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int) -> QbloxResult:
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int) -> QbloxResult:
         """Run execution of a pulse sequence.
 
         Args:

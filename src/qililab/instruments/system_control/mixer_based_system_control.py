@@ -70,9 +70,9 @@ class MixerBasedSystemControl(SystemControl):
         """Start/Turn on the instruments."""
         self.signal_generator.start()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
         """Run the given pulse sequence."""
-        return self.awg.run(pulse_sequence=pulse_sequence, nshots=nshots, loop_duration=loop_duration)
+        return self.awg.run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration)
 
     def close(self):
         """Close connection to the instruments."""

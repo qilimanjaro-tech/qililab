@@ -32,7 +32,7 @@ class SystemControl(BusElement, ABC):
         """Start/Turn on the instruments."""
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, loop_duration: int) -> Result:
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int) -> Result:
         """Run the given pulse sequence."""
 
     @abstractmethod

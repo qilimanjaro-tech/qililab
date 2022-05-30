@@ -28,7 +28,7 @@ class CircuitToPulses:
             duration: int = 2000
             phase: float = 0
 
-        readout_pulse = ReadoutPulseSettings()
+        readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
         delay_between_pulses: int = 0
         delay_before_readout: int = 50
         gate_duration: int = 100

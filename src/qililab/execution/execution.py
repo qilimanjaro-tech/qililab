@@ -22,9 +22,9 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, loop_duration: int):
+    def run(self, nshots: int, repetition_duration: int):
         """Run the given pulse sequence."""
-        return self.buses_execution.run(nshots=nshots, loop_duration=loop_duration)
+        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration)
 
     def close(self):
         """Close connection to the instruments."""

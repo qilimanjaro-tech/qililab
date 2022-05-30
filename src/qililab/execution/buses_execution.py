@@ -31,12 +31,12 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, loop_duration: int):
+    def run(self, nshots: int, repetition_duration: int):
         """Run the given pulse sequence."""
         results: List[Result] = []
         for idx in range(self.num_sequences):
             for bus in self.buses:
-                result = bus.run(nshots=nshots, loop_duration=loop_duration, idx=idx)
+                result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx)
                 if result is not None:
                     results.append(result)
                     # print(result.probabilities()[0])
