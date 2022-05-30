@@ -7,7 +7,8 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.experiment import Experiment, settings, Loop
+from qililab.experiment import Experiment, settings
+from qililab.utils import Loop
 
 configuration = ConnectionConfiguration(
     user_id=3,

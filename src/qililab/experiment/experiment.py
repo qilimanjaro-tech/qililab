@@ -23,9 +23,9 @@ class Experiment:
     class ExperimentSettings:
         """Experiment settings."""
 
-        hardware_average: int = 4024
+        hardware_average: int = 1024
         software_average: int = 1
-        repetition_duration: int = 20000
+        repetition_duration: int = 200000
         translation: CircuitToPulses.CircuitToPulsesSettings = CircuitToPulses.CircuitToPulsesSettings()
 
         def __str__(self):
