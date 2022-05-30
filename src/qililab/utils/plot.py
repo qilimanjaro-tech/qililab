@@ -34,4 +34,4 @@ class Plot:
             y_value (float): Y value.
         """
         if self.connection is not None and self.plot_ids:
-            self.connection.send_plot_points(plot_id=self.plot_ids[-1], x=x_value, y=y_value)
+            self.connection.send_plot_points(plot_id=self.plot_ids[-1], x=float(x_value), y=float(y_value))

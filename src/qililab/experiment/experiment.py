@@ -94,7 +94,7 @@ class Experiment:
         loops: List[ExperimentLoop] | List[None],
         plot: Plot,
         results: Results = None,
-        x_value=0,
+        x_value: int = None,
     ):
         """Loop and execute sequence over given Platform parameters.
 
@@ -106,21 +106,21 @@ class Experiment:
         """
         if results is None:
             results = Results()
+        if x_value is not None:
+            self.execution.setup()
+            result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            results.add(execution_results=result)
+            # FIXME: In here we only plot the amplitude of the last sequence. Find a way to plot all the
+            # sequences in the list
+            plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
         for loop in loops[:]:
             loops.pop(0)
             if loop is not None:
                 plot.create_live_plot(title=self.name, x_label=loop.parameter, y_label="Amplitude")
                 element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
                 for value in tqdm(loop.range):
-                    logger.info("%s: %f", loop.parameter, value)
                     element.set_parameter(name=loop.parameter, value=value)
-                    self._execute_loop(loops=loops, plot=plot, x_value=value, results=results)
-            self.execution.setup()
-            result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
-            results.add(execution_results=result)
-            # FIXME: In here we only plot the amplitude of the last sequence. Find a way to plot all the
-            # sequences in the list
-            plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0], 4))
+                    results = self._execute_loop(loops=loops, plot=plot, x_value=value, results=results)
         return results
 
     def set_parameter(self, category: str, id_: int, parameter: str, value: float):

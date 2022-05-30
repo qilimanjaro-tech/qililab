@@ -7,7 +7,7 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.experiment import Experiment, settings
+from qililab.experiment import Experiment, settings, Loop
 
 configuration = ConnectionConfiguration(
     user_id=3,
@@ -29,13 +29,12 @@ def load_experiment():
     circuit = Circuit(1)
     circuit.add(X(0))
     circuit.add(M(0))
+    settings.repetition_duration = 200000
     experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, settings=settings)
     experiment.set_parameter(category="signal_generator", id_=0, parameter="frequency", value=3.451759e9)
     experiment.set_parameter(category="signal_generator", id_=1, parameter="frequency", value=7.347367e9)
-    experiment.add_parameter_to_loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=20)
-    experiment.draw()
-    plt.savefig("test.png")
-    # experiment.execute(connection=connection)
+    loop = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=20)
+    experiment.execute(loops=loop, connection=connection)
 
 
 if __name__ == "__main__":

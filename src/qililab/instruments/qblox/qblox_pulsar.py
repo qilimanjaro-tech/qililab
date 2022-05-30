@@ -186,8 +186,8 @@ class QbloxPulsar(AWG):
 
     def _set_offsets(self):
         """Set I and Q offsets of sequencer."""
-        getattr(self.device, f"sequencer{self.sequencer}").offs_awg_path0(self.offset_i)
-        getattr(self.device, f"sequencer{self.sequencer}").offs_awg_path1(self.offset_q)
+        getattr(self.device, f"sequencer{self.sequencer}").offset_awg_path0(self.offset_i)
+        getattr(self.device, f"sequencer{self.sequencer}").offset_awg_path1(self.offset_q)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
