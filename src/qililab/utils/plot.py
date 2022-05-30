@@ -23,10 +23,11 @@ class Plot:
         """
         if self.connection is not None:
             self.plot_ids.append(
-                self.connection.create_liveplot(plot_type=plot_type)
-            )  # title=title, x_label=x_label, y_label=y_label, plot_type=plot_type)
+                self.connection.create_liveplot(title=title, x_label=x_label, y_label=y_label, plot_type=plot_type)
+            )
 
     def send_points(self, x_value: float, y_value: float):
+        # sourcery skip: remove-unnecessary-cast
         """Send plot points.
 
         Args:
