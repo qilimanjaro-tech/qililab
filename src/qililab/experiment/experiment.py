@@ -75,27 +75,22 @@ class Experiment:
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self._build_execution(sequence_list=sequences)
 
-    def execute(self, loops: ExperimentLoop | List[ExperimentLoop] | None = None, connection: API | None = None):
+    def execute(
+        self, loops: ExperimentLoop | List[ExperimentLoop] | None = None, connection: API | None = None
+    ) -> Results:
         """Run execution."""
-        loops_tmp: List[self.ExperimentLoop] | List[None]  # type: ignore
-        if loops is None:
-            loops_tmp = [loops]
-        else:
-            loops_tmp = loops if isinstance(loops, list) else [loops]
-
         plot = Plot(connection=connection)
         self._start_instruments()
-        results = self._execute_loop(loops=loops_tmp, plot=plot)
+        if loops is None:
+            results = Results()
+            self._execute(results=results)
+        else:
+            loops_tmp = [loops] if isinstance(loops, self.ExperimentLoop) else loops
+            results = self._execute_loop(loops=loops_tmp, plot=plot)
         self.execution.close()
         return results
 
-    def _execute_loop(
-        self,
-        loops: List[ExperimentLoop] | List[None],
-        plot: Plot,
-        results: Results = None,
-        x_value: int = None,
-    ):
+    def _execute_loop(self, loops: List[ExperimentLoop], plot: Plot) -> Results:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -104,24 +99,45 @@ class Experiment:
         Returns:
             List[List[Result]]: List containing the results for each loop execution.
         """
-        if results is None:
-            results = Results()
-        if x_value is not None:
-            self.execution.setup()
-            result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
-            results.add(execution_results=result)
-            # FIXME: In here we only plot the amplitude of the last sequence. Find a way to plot all the
-            # sequences in the list
-            plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
-        for loop in loops[:]:
-            loops.pop(0)
-            if loop is not None:
-                plot.create_live_plot(title=self.name, x_label=loop.parameter, y_label="Amplitude")
-                element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
-                for value in tqdm(loop.range):
-                    element.set_parameter(name=loop.parameter, value=value)
-                    results = self._execute_loop(loops=loops, plot=plot, x_value=value, results=results)
-        return results
+
+        def recursive_loop(depth: int, results: Results, x_value: float) -> Results:
+            """Loop over all given parameters.
+
+            Args:
+                depth (int): Depth of the recursive loop.
+                results (Results): Results class.
+                x_value (float): X value.
+
+            Returns:
+                Results: Results class.
+            """
+            if depth < 0:
+                result = self._execute(results=results)
+                plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
+                return results
+            loop = loops[depth]
+            plot.create_live_plot(title=self.name, x_label=loop.parameter, y_label="Amplitude")
+            element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
+            for value in tqdm(loop.range):
+                element.set_parameter(name=loop.parameter, value=value)
+                results = recursive_loop(depth=depth - 1, results=results, x_value=value)
+            return results
+
+        return recursive_loop(depth=len(loops) - 1, results=Results(), x_value=0)
+
+    def _execute(self, results: Results) -> Results.ExecutionResults:
+        """Execute pulse sequences.
+
+        Args:
+            results (Results): Results class.
+
+        Returns:
+            Results.ExecutionResults: ExecutionResults class.
+        """
+        self.execution.setup()
+        result = self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+        results.add(execution_results=result)
+        return result
 
     def set_parameter(self, category: str, id_: int, parameter: str, value: float):
         """Set parameter of a platform element.

@@ -41,8 +41,8 @@ class TestQbloxPulsarQRM:
         qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
-        qrm.device.sequencer0.offs_awg_path0.assert_called_once_with(qrm.offset_i)
-        qrm.device.sequencer0.offs_awg_path1.assert_called_once_with(qrm.offset_q)
+        qrm.device.sequencer0.offset_awg_path0.assert_called_once_with(qrm.offset_i)
+        qrm.device.sequencer0.offset_awg_path1.assert_called_once_with(qrm.offset_q)
 
     def test_setup_method_raises_attribute_error(self, qrm: QbloxPulsarQRM):
         """Test setup method"""
@@ -91,7 +91,7 @@ class TestQbloxPulsarQRM:
         # Assert device calls
         qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
         qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
-        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name)
+        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name.value)
         qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
 
     def test_close_method(self, qrm: QbloxPulsarQRM):

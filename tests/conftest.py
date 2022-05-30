@@ -68,8 +68,8 @@ def fixture_qcm(mock_pulsar: MagicMock):
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "offs_awg_path0",
-            "offs_awg_path1",
+            "offset_awg_path0",
+            "offset_awg_path1",
         ]
     )
     # connect to instrument
@@ -112,8 +112,8 @@ def fixture_qrm(mock_pulsar: MagicMock):
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "offs_awg_path0",
-            "offs_awg_path1",
+            "offset_awg_path0",
+            "offset_awg_path1",
         ]
     )
     # connect to instrument
@@ -409,7 +409,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
             "channel_map_path1_out1_en",
             "demod_en_acq",
             "integration_length_acq",
-            "offs_awg_path0",
-            "offs_awg_path1",
+            "offset_awg_path0",
+            "offset_awg_path1",
         ]
     )

@@ -74,16 +74,16 @@ class TestExperiment:
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
 
-    @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    def test_execute_method_with_nested_loop(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
+    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
+    def test_execute_method_with_nested_loop(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: Experiment):
         """Test execute method with nested loops."""
-        loop1 = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        loop2 = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        loop3 = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        simulated_experiment.execute(loops=[loop1, loop2, loop3])  # type: ignore
-        mock_qutip.Options.assert_called()
-        mock_qutip.ket2dm.assert_called()
-        mock_qutip.mesolve.assert_called()
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
+        loop1 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
+        loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=2)
+        loop3 = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2)
+        results = experiment.execute(loops=[loop1, loop2, loop3])  # type: ignore
+        assert isinstance(results, Results)
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     def test_execute_method_with_simulated_qubit(self, mock_qutip: MagicMock, simulated_experiment: Experiment):

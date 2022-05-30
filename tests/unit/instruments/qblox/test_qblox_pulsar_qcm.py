@@ -36,8 +36,8 @@ class TestQbloxPulsarQCM:
         qcm.setup()
         qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
         qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.offs_awg_path0.assert_called_once_with(qcm.offset_i)
-        qcm.device.sequencer0.offs_awg_path1.assert_called_once_with(qcm.offset_q)
+        qcm.device.sequencer0.offset_awg_path0.assert_called_once_with(qcm.offset_i)
+        qcm.device.sequencer0.offset_awg_path1.assert_called_once_with(qcm.offset_q)
 
     def test_setup_method_raises_attribute_error(self, qcm: QbloxPulsarQCM):
         """Test setup method"""
