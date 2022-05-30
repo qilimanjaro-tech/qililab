@@ -76,7 +76,7 @@ class Experiment:
             List[List[Result]]: List containing the results for each loop execution.
         """
 
-        def recursive_loop(depth: int, results: Results, x_value: float = 0) -> Results:
+        def recursive_loop(depth: int, results: Results, previous_loop: Loop = None, x_value: float = 0) -> Results:
             """Loop over all given parameters.
 
             Args:
@@ -98,13 +98,14 @@ class Experiment:
 
             if depth == 0:
                 plot.create_live_plot(
-                    title=self.name, x_label=f"{loop.category} {loop.id_}: {loop.parameter}", y_label="Amplitude"
+                    title=self.name, x_label=f"{loop.category} {loop.id_}: {loop.parameter} " +
+                    f"({previous_loop.category} {previous_loop.id_}: {previous_loop.parameter}={np.round(x_value, 4)})", y_label="Amplitude"
                 )
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
             for value in tqdm(loop.range):
                 element.set_parameter(name=loop.parameter, value=value)
-                results = recursive_loop(depth=depth - 1, results=results, x_value=value)
+                results = recursive_loop(depth=depth - 1, results=results, previous_loop=loop, x_value=value)
             return results
 
         return recursive_loop(depth=len(loops) - 1, results=Results(loops=loops))
