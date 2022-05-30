@@ -5,7 +5,8 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.experiment import Experiment, Loop
+from qililab.experiment import Experiment
+from qililab.utils import Loop
 
 
 def qubit_spectroscopy(connection: API):

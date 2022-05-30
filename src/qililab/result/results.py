@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
+from qililab.utils import Loop
 
 
 @dataclass
@@ -79,6 +80,7 @@ class Results:
             """
             return [result.acquisitions() for result in self.results]
 
+    loops: List[Loop]
     results: List[ExecutionResults] = field(default_factory=list)
 
     def add(self, execution_results: ExecutionResults):

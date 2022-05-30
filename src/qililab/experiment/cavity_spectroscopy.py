@@ -5,7 +5,8 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.experiment import Experiment, Loop, settings
+from qililab.experiment import Experiment, settings
+from qililab.utils import Loop
 
 
 def cavity_spectroscopy(connection: API):

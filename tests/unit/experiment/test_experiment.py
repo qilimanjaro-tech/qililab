@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, patch
 from qiboconnection.api import API
 
 from qililab.execution import Execution
-from qililab.experiment import Experiment, Loop
+from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import Results
+from qililab.utils import Loop
 
 from ...conftest import mock_instruments
 
@@ -84,6 +85,8 @@ class TestExperiment:
         loop3 = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2)
         results = experiment.execute(loops=[loop1, loop2, loop3])  # type: ignore
         assert isinstance(results, Results)
+        assert len(results.results) == 8
+        assert results.loops == [loop1, loop2, loop3]
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     def test_execute_method_with_simulated_qubit(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
