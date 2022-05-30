@@ -1,6 +1,7 @@
 """Tests for the Experiment class."""
 from unittest.mock import MagicMock, patch
 
+import pytest
 from qiboconnection.api import API
 
 from qililab.execution import Execution
@@ -94,7 +95,9 @@ class TestExperiment:
         connection = MagicMock(name="API", spec=API, autospec=True)
         connection.create_liveplot.return_value = 0
         loop = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        simulated_experiment.execute(loops=loop, connection=connection)  # type: ignore
+        results = simulated_experiment.execute(loops=loop, connection=connection)  # type: ignore
+        with pytest.raises(ValueError):
+            results.acquisitions()
         connection.create_liveplot.assert_called_once()
         connection.send_plot_points.assert_called()
         mock_qutip.Options.assert_called()

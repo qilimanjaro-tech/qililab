@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from qililab.execution.buses_execution import BusesExecution
 from qililab.result import Results
+from qililab.utils import Plot
 
 
 @dataclass
@@ -23,9 +24,9 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, repetition_duration: int) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
-        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration)
+        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot)
 
     def close(self):
         """Close connection to the instruments."""

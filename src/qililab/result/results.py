@@ -2,9 +2,6 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-from qiboconnection.api import API
-import numpy as np
-
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import Loop
@@ -82,18 +79,6 @@ class Results:
                 List[List[Tuple[float, float, float, float]]]: Acquisition values.
             """
             return [result.acquisitions() for result in self.results]
-
-        def plot(self, connection: API):
-            """Plot results.
-
-            Args:
-                connection (API): qiboconnection.api.API
-            """
-            ground_probs = np.array(self.probabilities())[:, :, 0]
-            probabilities: List[List[float]] = np.transpose(ground_probs).tolist()
-            for idx, qubit_probs in enumerate(probabilities):
-                plot_id = connection.create_liveplot(plot_type="LINES", title=f"Qubit {idx}", x_label="Sequence idx", y_label="Amplitude")
-                connection.send_plot_points(plot_id=plot_id, x=np.arange(len(qubit_probs)).tolist(), y=qubit_probs)
 
     loops: List[Loop]
     results: List[ExecutionResults] = field(default_factory=list)

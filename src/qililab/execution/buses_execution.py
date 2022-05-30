@@ -7,6 +7,7 @@ import numpy as np
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Results
+from qililab.utils import Plot
 
 
 @dataclass
@@ -31,7 +32,7 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
         results = Results.ExecutionResults()
         for idx in range(self.num_sequences):
@@ -40,6 +41,8 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx)
                 if result is not None:
                     results.add(result=result)
+                    if plot is not None:
+                        plot.send_points(x_value=idx, y_value=result.probabilities()[0])
         return results
 
     def close(self):

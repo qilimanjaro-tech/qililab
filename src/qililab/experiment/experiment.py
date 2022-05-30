@@ -59,7 +59,7 @@ class Experiment:
         plot = Plot(connection=connection)
         self._start_instruments()
         if loops is None:
-            results = self._execute()
+            results = self._execute(plot=plot)
         else:
             loops_tmp = [loops] if isinstance(loops, Loop) else loops
             results = self._execute_loop(loops=loops_tmp, plot=plot)
@@ -97,7 +97,9 @@ class Experiment:
             loop = loops[depth]
 
             if depth == 0:
-                plot.create_live_plot(title=self.name, x_label=f"{loop.category.value} {loop.id_}: {loop.parameter}", y_label="Amplitude")
+                plot.create_live_plot(
+                    title=self.name, x_label=f"{loop.category} {loop.id_}: {loop.parameter}", y_label="Amplitude"
+                )
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
             for value in tqdm(loop.range):
@@ -107,7 +109,7 @@ class Experiment:
 
         return recursive_loop(depth=len(loops) - 1, results=Results(loops=loops))
 
-    def _execute(self) -> Results.ExecutionResults:
+    def _execute(self, plot: Plot = None) -> Results.ExecutionResults:
         """Execute pulse sequences.
 
         Args:
@@ -116,8 +118,10 @@ class Experiment:
         Returns:
             Results.ExecutionResults: ExecutionResults class.
         """
+        if plot is not None:
+            plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
         self.execution.setup()
-        return self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+        return self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot)
 
     def set_parameter(self, category: str, id_: int, parameter: str, value: float):
         """Set parameter of a platform element.
