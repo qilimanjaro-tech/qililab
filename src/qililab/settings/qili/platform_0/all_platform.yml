@@ -22,10 +22,6 @@ schema:
         sync_enabled: true
         gain: 1
         frequency: 100000000
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
       signal_generator:
         id_: 0
         name: rohde_schwarz
@@ -79,10 +75,6 @@ schema:
         acquisition_name: single
         delay_time: 100
         frequency: 20000000
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
       signal_generator:
         id_: 1
         name: rohde_schwarz

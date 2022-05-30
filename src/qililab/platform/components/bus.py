@@ -23,12 +23,9 @@ class Bus:
         """Bus settings.
 
         Args:
-            qubit_instrument (QubitInstrument): Class containing the instrument used for control/readout of the qubits.
-            signal_generator (SignalGenerator): Class containing the signal generator instrument.
-            mixer_up (Mixer): Class containing the mixer object used for up-conversion.
-            mixer_down (Optional[Mixer]): Class containing the mixer object used for down-conversion.
-            resonator (Optional[Resonator]): Class containing the resonator object.
-            qubit (Optional[Qubit]): Class containing the qubit object.
+            subcategory (BusSubcategory): Bus subcategory. Options are "readout" and "control".
+            system_control (SystemControl): System control used to control and readout the qubits of the bus.
+            target (BusTarget): Bus target (qubit, resonator, coupler).
         """
 
         subcategory: BusSubcategory

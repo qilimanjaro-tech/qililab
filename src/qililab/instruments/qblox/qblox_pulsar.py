@@ -143,6 +143,7 @@ class QbloxPulsar(QubitInstrument):
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
+        self._set_offsets()
 
     @QubitInstrument.CheckConnected
     def stop(self):
@@ -180,6 +181,11 @@ class QbloxPulsar(QubitInstrument):
         """Set gain of sequencer for all paths."""
         getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path0(self.gain)
         getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path1(self.gain)
+
+    def _set_offsets(self):
+        """Set I and Q offsets of sequencer."""
+        getattr(self.device, f"sequencer{self.sequencer}").offs_awg_path0(self.offset_i)
+        getattr(self.device, f"sequencer{self.sequencer}").offs_awg_path1(self.offset_q)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""

@@ -11,6 +11,7 @@ from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
+    Mixer,
     MixerBasedSystemControl,
     MixerDown,
     MixerUp,
@@ -67,6 +68,8 @@ def fixture_qcm(mock_pulsar: MagicMock):
             "demod_en_acq",
             "integration_length_acq",
             "set",
+            "offs_awg_path0",
+            "offs_awg_path1",
         ]
     )
     # connect to instrument
@@ -109,6 +112,8 @@ def fixture_qrm(mock_pulsar: MagicMock):
             "demod_en_acq",
             "integration_length_acq",
             "set",
+            "offs_awg_path0",
+            "offs_awg_path1",
         ]
     )
     # connect to instrument
@@ -293,6 +298,12 @@ def fixture_platform() -> Platform:
     return platform_db()
 
 
+@pytest.fixture(name="mixer")
+def fixture_mixer() -> Mixer:
+    """Return Platform object."""
+    return mixer_up()
+
+
 @pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -398,5 +409,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
             "channel_map_path1_out1_en",
             "demod_en_acq",
             "integration_length_acq",
+            "offs_awg_path0",
+            "offs_awg_path1",
         ]
     )

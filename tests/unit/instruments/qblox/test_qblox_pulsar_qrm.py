@@ -6,7 +6,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.instruments import QbloxPulsarQRM
+from qililab.instruments import Mixer, QbloxPulsarQRM
 from qililab.result import QbloxResult
 from qililab.typings import BusElementName
 
@@ -31,8 +31,9 @@ class TestQbloxPulsarQRM:
         qrm.device.arm_sequencer.assert_called()
         qrm.device.start_sequencer.assert_called()
 
-    def test_setup_method(self, qrm: QbloxPulsarQRM):
+    def test_setup_method(self, qrm: QbloxPulsarQRM, mixer: Mixer):
         """Test setup method"""
+        qrm.setup_mixer_settings(mixer=mixer)
         qrm.setup()
         qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
         qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
@@ -40,6 +41,15 @@ class TestQbloxPulsarQRM:
         qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
+        qrm.device.sequencer0.offs_awg_path0.assert_called_once_with(qrm.offset_i)
+        qrm.device.sequencer0.offs_awg_path1.assert_called_once_with(qrm.offset_q)
+
+    def test_setup_method_raises_attribute_error(self, qrm: QbloxPulsarQRM):
+        """Test setup method"""
+        with pytest.raises(AttributeError):
+            qrm.setup()
+        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
+        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""

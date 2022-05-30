@@ -62,6 +62,7 @@ class MixerBasedSystemControl(SystemControl):
 
     def setup(self):
         """Setup instruments."""
+        self.qubit_instrument.setup_mixer_settings(mixer=self.mixer_up)
         self.qubit_instrument.setup()
         self.signal_generator.setup()
 

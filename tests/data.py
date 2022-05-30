@@ -53,10 +53,6 @@ class Platform0:
         "sequencer": 0,
         "sync_enabled": True,
         "gain": 1,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
         "frequency": 100000000,
     }
 
@@ -80,10 +76,6 @@ class Platform0:
         "acquisition_timeout": 1,
         "acquisition_name": "single",
         "delay_time": 50,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
         "frequency": 20000000,
     }
 

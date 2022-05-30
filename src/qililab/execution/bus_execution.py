@@ -82,7 +82,7 @@ class BusExecution:
         """BusExecution 'system_control' property.
 
         Returns:
-            QubitInstrument: bus.system_control
+            SystemControl: bus.system_control
         """
         return self.bus.system_control
 
