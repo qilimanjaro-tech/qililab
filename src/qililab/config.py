@@ -5,7 +5,7 @@ import os
 from qililab import __version__
 
 # Logging level from 0 (all) to 4 (errors) (see https://docs.python.org/3/library/logging.html#logging-levels)
-LIBRARY_LOG_LEVEL = int(os.environ.get("LIBRARY_LOG_LEVEL", 1))
+LIBRARY_LOG_LEVEL = int(os.environ.get("LIBRARY_LOG_LEVEL", 10))
 
 
 class CustomHandler(logging.StreamHandler):
