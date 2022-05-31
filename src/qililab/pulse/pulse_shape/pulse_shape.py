@@ -31,3 +31,15 @@ class PulseShape(FactoryElement, ABC):
             dict: Dictionary.
         """
         return {YAML.NAME: self.name.value} | self.__dict__
+
+    @abstractmethod
+    def __repr__(self):
+        """Return string representation of the PulseShape object."""
+
+    @abstractmethod
+    def __eq__(self, other: object) -> bool:
+        """Compare PulseShape with another object.
+
+        Args:
+            other (object): PulseShape object.
+        """

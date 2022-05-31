@@ -86,7 +86,7 @@ class Pulse:
 
     def __repr__(self):
         """Return string representation of the Pulse object."""
-        return f"""P(s={self.start}, d={self.duration}, a={self.amplitude}, p={self.phase}, {self.pulse_shape.name})"""
+        return f"{str(self.pulse_shape)} - {self.duration}ns"
 
     def __eq__(self, other: object) -> bool:
         """Compare Pulse with another object.
@@ -96,9 +96,4 @@ class Pulse:
         """
         if not isinstance(other, Pulse):
             raise NotImplementedError
-        return (
-            self.amplitude == other.amplitude
-            and self.duration == other.duration
-            and self.phase == other.phase
-            and self.pulse_shape == other.pulse_shape
-        )
+        return self.duration == other.duration and self.pulse_shape == other.pulse_shape

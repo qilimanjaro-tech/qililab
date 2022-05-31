@@ -30,3 +30,15 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+
+    def __repr__(self):
+        """Return string representation of the PulseShape object."""
+        return f"{self.name}(num_sigmas={self.num_sigmas})"
+
+    def __eq__(self, other: object) -> bool:
+        """Compare PulseShape with another object.
+
+        Args:
+            other (object): PulseShape object.
+        """
+        return self.num_sigmas == other.num_sigmas if isinstance(other, Gaussian) else False
