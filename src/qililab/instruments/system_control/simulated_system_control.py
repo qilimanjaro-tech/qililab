@@ -1,4 +1,5 @@
 """SimulatedSystemControl class."""
+from pathlib import Path
 from typing import Type
 
 import numpy as np
@@ -56,7 +57,7 @@ class SimulatedSystemControl(SystemControl):
     def start(self):
         """Start/Turn on the instruments."""
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
         waveforms_i, _ = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
         waveforms = np.array(waveforms_i) * self.amplitude_norm_factor

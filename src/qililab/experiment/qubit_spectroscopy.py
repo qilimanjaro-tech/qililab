@@ -16,7 +16,9 @@ def qubit_spectroscopy(connection: API):
     # circuit.add(X(0))
     circuit.add(X(0))
     circuit.add(M(0))
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit])
+    experiment = Experiment(
+        platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit], experiment_name="qubit_spectroscopy"
+    )
     loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=3.64e9, stop=3.69e9, num=1000)
     experiment.execute(loops=loop, connection=connection)
 

@@ -1,9 +1,11 @@
 """BusesExecution class."""
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Results
@@ -32,15 +34,17 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
         results = Results.ExecutionResults()
         for idx in range(self.num_sequences):
             results.new()
             for bus in self.buses:
-                result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx)
+                result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
                     results.add(result=result)
+                    with open(file=path / "results.yml", mode="w", encoding="utf8") as data_file:
+                        yaml.safe_dump(data=asdict(results), stream=data_file)
                     if plot is not None:
                         plot.send_points(x_value=idx, y_value=result.probabilities()[0])
         return results

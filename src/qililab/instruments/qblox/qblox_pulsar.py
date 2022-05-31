@@ -55,7 +55,7 @@ class QbloxPulsar(AWG):
         super().connect()
         self.initial_setup()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
         Args:
@@ -64,7 +64,7 @@ class QbloxPulsar(AWG):
         sequence = self._translate_pulse_sequence(
             pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
         )
-        self.upload(sequence=sequence)
+        self.upload(sequence=sequence, path=path)
         self.start()
 
     def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
@@ -167,14 +167,14 @@ class QbloxPulsar(AWG):
         self._set_nco()
 
     @AWG.CheckConnected
-    def upload(self, sequence: Sequence):
+    def upload(self, sequence: Sequence, path: Path):
         """Upload sequence to sequencer.
 
         Args:
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
-        file_path = str(Path(__file__).parent / f"{self.name.value}_sequence.yml")
+        file_path = str(path / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
         getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)

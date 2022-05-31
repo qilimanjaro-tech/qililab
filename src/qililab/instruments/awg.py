@@ -1,6 +1,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.mixer import Mixer
@@ -65,7 +66,7 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int) -> QbloxResult:
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
         """Run execution of a pulse sequence.
 
         Args:

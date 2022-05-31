@@ -1,4 +1,5 @@
 """MixerBasedSystemControl class."""
+from pathlib import Path
 from typing import Generator, Optional, Tuple
 
 from qililab.constants import YAML
@@ -70,9 +71,11 @@ class MixerBasedSystemControl(SystemControl):
         """Start/Turn on the instruments."""
         self.signal_generator.start()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-        return self.awg.run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration)
+        return self.awg.run(
+            pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
+        )
 
     def close(self):
         """Close connection to the instruments."""

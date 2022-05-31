@@ -68,17 +68,33 @@ class TestExperiment:
         """Test set_parameter method with all platforms."""
         experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
 
+    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    def test_execute_method_without_loop(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
+    def test_execute_method_without_loop(
+        self, mock_dump_0: MagicMock, mock_dump_1: MagicMock, mock_qutip: MagicMock, simulated_experiment: Experiment
+    ):
         """Test execute method with simulated qubit."""
+        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
         simulated_experiment.execute()  # type: ignore
         mock_qutip.Options.assert_called()
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    def test_execute_method_with_nested_loop(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: Experiment):
+    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
+    def test_execute_method_with_nested_loop(
+        self,
+        mock_dump_0: MagicMock,
+        mock_dump_1: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment: Experiment,
+    ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         loop1 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
@@ -88,10 +104,17 @@ class TestExperiment:
         assert isinstance(results, Results)
         assert len(results.results) == 8
         assert results.loops == [loop1, loop2, loop3]
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    def test_execute_method_with_simulated_qubit(self, mock_qutip: MagicMock, simulated_experiment: Experiment):
+    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
+    def test_execute_method_with_simulated_qubit(
+        self, mock_dump_0: MagicMock, mock_dump_1: MagicMock, mock_qutip: MagicMock, simulated_experiment: Experiment
+    ):
         """Test execute method with simulated qubit."""
+        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
         connection = MagicMock(name="API", spec=API, autospec=True)
         connection.create_liveplot.return_value = 0
         loop = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
@@ -103,10 +126,21 @@ class TestExperiment:
         mock_qutip.Options.assert_called()
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    def test_execute_method_with_instruments(self, mock_rs: MagicMock, mock_pulsar: MagicMock, experiment: Experiment):
+    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
+    def test_execute_method_with_instruments(
+        self,
+        mock_dump_0: MagicMock,
+        mock_dump_1: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment: Experiment,
+    ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
@@ -118,3 +152,5 @@ class TestExperiment:
         acquisitions = results.acquisitions()
         assert isinstance(probabilities, list)
         assert isinstance(acquisitions, list)
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()

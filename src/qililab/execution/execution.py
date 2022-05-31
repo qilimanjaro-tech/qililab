@@ -1,5 +1,6 @@
 """Execution class."""
 from dataclasses import dataclass
+from pathlib import Path
 
 from qililab.execution.buses_execution import BusesExecution
 from qililab.result import Results
@@ -24,9 +25,9 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
-        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot)
+        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot, path=path)
 
     def close(self):
         """Close connection to the instruments."""

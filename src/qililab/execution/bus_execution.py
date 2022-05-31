@@ -1,5 +1,6 @@
 """BusExecution class."""
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
@@ -25,10 +26,10 @@ class BusExecution:
         """Start/Turn on the instruments."""
         self.system_control.start()
 
-    def run(self, nshots: int, repetition_duration: int, idx: int):
+    def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
         return self.system_control.run(
-            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration
+            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
 
     def close(self):

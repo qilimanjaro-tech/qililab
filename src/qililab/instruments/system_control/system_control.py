@@ -1,5 +1,6 @@
 """SystemControl class."""
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from qililab.pulse import PulseSequence
 from qililab.result import Result
@@ -32,7 +33,7 @@ class SystemControl(BusElement, ABC):
         """Start/Turn on the instruments."""
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int) -> Result:
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> Result:
         """Run the given pulse sequence."""
 
     @abstractmethod

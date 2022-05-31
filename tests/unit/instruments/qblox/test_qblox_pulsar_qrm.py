@@ -1,4 +1,5 @@
 """Test for the QbloxPulsarQRM class."""
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -64,7 +65,10 @@ class TestQbloxPulsarQRM:
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxPulsarQRM):
         """Test upload method"""
-        qrm.upload(sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
+        qrm.upload(
+            sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
+            path=Path(__file__).parent,
+        )
         qrm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 

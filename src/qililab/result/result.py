@@ -3,18 +3,20 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple
 
+
+# FIXME: Cannot use dataclass and ABC at the same time
 @dataclass
-class Result(ABC):
+class Result:
     """Result class."""
 
-    @abstractmethod
     def plot(self):
         """Plot results."""
+        raise NotImplementedError
 
-    @abstractmethod
     def probabilities(self) -> Tuple[float, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
+        raise NotImplementedError

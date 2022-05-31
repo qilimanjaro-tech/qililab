@@ -1,6 +1,9 @@
 """HardwareExperiment class."""
 import json
+import os
 from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -100,9 +103,7 @@ class Experiment:
                 x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
                 if previous_loop is not None:
                     x_label += f"({previous_loop.category} {previous_loop.id_}: {previous_loop.parameter}={np.round(x_value, 4)})"
-                plot.create_live_plot(
-                    title=self.name, x_label=x_label, y_label="Amplitude"
-                )
+                plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
             for value in tqdm(loop.range):
@@ -121,10 +122,20 @@ class Experiment:
         Returns:
             Results.ExecutionResults: ExecutionResults class.
         """
+        now = datetime.now()
+        path = (
+            Path(__file__).parent.parent
+            / "data"
+            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
+        )
+        if not os.path.exists(path):
+            os.makedirs(path)
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
         self.execution.setup()
-        return self.execution.run(nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot)
+        return self.execution.run(
+            nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
+        )
 
     def set_parameter(self, category: str, id_: int, parameter: str, value: float):
         """Set parameter of a platform element.
