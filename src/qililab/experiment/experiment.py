@@ -9,7 +9,7 @@ from typing import List, Tuple
 import numpy as np
 from qibo.core.circuit import Circuit
 from qiboconnection.api import API
-from tqdm import tqdm_notebook as tqdm
+from tqdm.auto import tqdm
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
@@ -107,9 +107,12 @@ class Experiment:
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
             leave = loop.previous is False
-            for value in tqdm(loop.range, position=depth, leave=leave, desc=f"{loop.parameter}"):
-                element.set_parameter(name=loop.parameter, value=value)
-                results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
+            with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
+                for value in loop.range:
+                    pbar.set_description(f"{loop.parameter}: {value} ")
+                    pbar.update()
+                    element.set_parameter(name=loop.parameter, value=value)
+                    results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
 
         if self.loop is None:
