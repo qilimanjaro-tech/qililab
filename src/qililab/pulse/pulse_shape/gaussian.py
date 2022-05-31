@@ -33,7 +33,7 @@ class Gaussian(PulseShape):
 
     def __repr__(self):
         """Return string representation of the PulseShape object."""
-        return f"{self.name}(num_sigmas={self.num_sigmas})"
+        return f"{self.name.value}(num_sigmas={self.num_sigmas})"
 
     def __eq__(self, other: object) -> bool:
         """Compare PulseShape with another object.

@@ -26,7 +26,7 @@ class Rectangular(PulseShape):
 
     def __repr__(self):
         """Return string representation of the PulseShape object."""
-        return f"{self.name}"
+        return f"{self.name.value}"
 
     def __eq__(self, other: object) -> bool:
         """Compare PulseShape with another object.
