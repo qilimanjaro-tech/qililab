@@ -106,9 +106,14 @@ class Experiment:
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
-            for value in tqdm(loop.range):
-                element.set_parameter(name=loop.parameter, value=value)
-                results = recursive_loop(loop=loop.loop, results=results, x_value=value)
+            with tqdm(iterable=loop.range) as pbar:
+                if loop.previous is not None:
+                    pbar.leave = False
+                for value in loop.range:
+                    pbar.set_description(desc=f"{loop.parameter}: {value}")
+                    pbar.update(1)
+                    element.set_parameter(name=loop.parameter, value=value)
+                    results = recursive_loop(loop=loop.loop, results=results, x_value=value)
             return results
 
         if self.loop is None:
