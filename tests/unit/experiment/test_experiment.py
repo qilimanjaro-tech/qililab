@@ -106,17 +106,13 @@ class TestExperiment:
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
-        experiment: Experiment,
+        nested_experiment: Experiment,
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        loop1 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=2)
-        loop3 = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        results = experiment.execute(loops=[loop1, loop2, loop3])  # type: ignore
+        results = nested_experiment.execute()  # type: ignore
         assert isinstance(results, Results)
         assert len(results.results) == 8
-        assert results.loops == [loop1, loop2, loop3]
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
@@ -139,8 +135,7 @@ class TestExperiment:
         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
         connection = MagicMock(name="API", spec=API, autospec=True)
         connection.create_liveplot.return_value = 0
-        loop = Loop(category="system_control", id_=0, parameter="frequency", start=0, stop=1, num=2)
-        results = simulated_experiment.execute(loops=loop, connection=connection)  # type: ignore
+        results = simulated_experiment.execute(connection=connection)  # type: ignore
         with pytest.raises(ValueError):
             results.acquisitions()
         connection.create_liveplot.assert_called_once()
@@ -172,8 +167,7 @@ class TestExperiment:
     ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
-        results = experiment.execute(loops=loop)
+        results = experiment.execute()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)

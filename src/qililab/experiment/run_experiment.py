@@ -7,6 +7,7 @@ from qiboconnection.connection import ConnectionConfiguration
 
 from qililab import Experiment
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.utils import Loop
 
 configuration = ConnectionConfiguration(
     user_id=3,
@@ -30,6 +31,6 @@ def run_experiment(gate: str, category: str, id_: int, parameter: str, start: fl
         gate = RY(0, np.pi / 2)
     circuit.add(gate)
     circuit.add(M(0))
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit])
-    experiment.add_parameter_to_loop(category=category, id_=id_, parameter=parameter, start=start, stop=stop, num=num)
+    loop = Loop(category=category, id_=id_, parameter=parameter, start=start, stop=stop, num=num)
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, loop=loop)
     experiment.execute(connection=connection)

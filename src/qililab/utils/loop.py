@@ -1,9 +1,9 @@
 """Loop class."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 import numpy as np
-
-from qililab.typings import Category
 
 
 @dataclass
@@ -16,6 +16,13 @@ class Loop:
     start: float
     stop: float
     num: int
+    loop: Loop | None = None
+    previous: Loop | None = None
+
+    def __post_init__(self):
+        """Overwrite 'previous' attribute of next loop with self."""
+        if self.loop is not None:
+            self.loop.previous = self
 
     @property
     def range(self) -> np.ndarray:

@@ -42,5 +42,5 @@ class TestExperiments:
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
-        mock_open_0.assert_called()
+        mock_open_1.assert_called()
         mock_makedirs.assert_called()
