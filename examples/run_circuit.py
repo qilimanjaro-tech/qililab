@@ -10,16 +10,8 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.experiment import Experiment, settings
 from qililab.utils import Loop
 
-configuration = ConnectionConfiguration(
-    user_id=3,
-    username="qili-admin-test",
-    api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
-)
 
-connection = API(configuration=configuration)
-
-
-def load_experiment():
+def load_experiment(connection: API):
     """Load the platform 'platform_0' from the DB."""
     # circuits = []
     # for rotation in np.linspace(0, 3*np.pi):
@@ -37,4 +29,11 @@ def load_experiment():
 
 
 if __name__ == "__main__":
-    load_experiment()
+    configuration = ConnectionConfiguration(
+        user_id=3,
+        username="qili-admin-test",
+        api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
+    )
+
+    connection = API(configuration=configuration)
+    load_experiment(connection=connection)
