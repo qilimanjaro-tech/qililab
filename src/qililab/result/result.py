@@ -1,8 +1,9 @@
 """Result class."""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Tuple
 
-
+@dataclass
 class Result(ABC):
     """Result class."""
 
