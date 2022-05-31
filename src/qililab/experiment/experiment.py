@@ -1,6 +1,7 @@
 """HardwareExperiment class."""
 import json
 import os
+import sys
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -106,7 +107,7 @@ class Experiment:
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
-            with tqdm(iterable=loop.range) as pbar:
+            with tqdm(iterable=loop.range, file=sys.stdout) as pbar:
                 if loop.previous is not None:
                     pbar.leave = False
                 for value in loop.range:
