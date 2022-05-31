@@ -90,7 +90,9 @@ class QbloxResult(Result):
     def __init__(self, integration_length: int, start_integrate: int, result: dict):
         self.integration_length = integration_length
         self.start_integrate = start_integrate
-        self.results = [self.QbloxAcquisitions(**item | {"name": AcquisitionName(key)}) for key, item in result.items()]
+        self.results = [
+            self.QbloxAcquisitions(**item | {"name": AcquisitionName(key).value}) for key, item in result.items()
+        ]
 
     def acquisitions(self, acquisition_name: str = "single") -> Tuple[float, float, float, float]:
         """Return acquisition values.
@@ -101,7 +103,7 @@ class QbloxResult(Result):
         Returns:
             Tuple[float]: I, Q, amplitude and phase.
         """
-        result = [res for res in self.results if res.name == AcquisitionName(acquisition_name)][0]
+        result = [res for res in self.results if AcquisitionName(res.name) == AcquisitionName(acquisition_name)][0]
         i_data = result.acquisition.bins.integration.path0[0]
         q_data = result.acquisition.bins.integration.path1[0]
 
