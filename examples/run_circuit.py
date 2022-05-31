@@ -31,11 +31,9 @@ def load_experiment():
     circuit.add(X(0))
     circuit.add(M(0))
     settings.repetition_duration = 200000
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, settings=settings)
-    experiment.set_parameter(category="signal_generator", id_=0, parameter="frequency", value=3.451759e9)
-    experiment.set_parameter(category="signal_generator", id_=1, parameter="frequency", value=7.347367e9)
     loop = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=20)
-    experiment.execute(loops=loop, connection=connection)
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, settings=settings, loops=loop)
+    experiment.execute(connection=connection)
 
 
 if __name__ == "__main__":

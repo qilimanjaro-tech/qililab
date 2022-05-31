@@ -31,6 +31,7 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
+from qililab.utils import Loop
 
 from .data import MockedSettingsFactory, circuit, experiment_params
 from .utils.side_effect import yaml_safe_load_side_effect
@@ -206,7 +207,21 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    experiment = Experiment(platform_name=platform_name, sequences=sequences)
+    loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
+    experiment = Experiment(platform_name=platform_name, sequences=sequences, loops=loop)
+    mock_load.assert_called()
+    return experiment
+
+
+@pytest.fixture(name="nested_experiment", params=experiment_params[:2])
+@patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    platform_name, sequences = request.param  # type: ignore
+    loop1 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
+    loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=2)
+    loop3 = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2)
+    experiment = Experiment(platform_name=platform_name, sequences=sequences, loops=[loop1, loop2, loop3])
     mock_load.assert_called()
     return experiment
 

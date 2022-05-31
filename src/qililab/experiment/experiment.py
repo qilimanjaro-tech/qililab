@@ -39,11 +39,13 @@ class Experiment:
     execution: Execution
     settings: ExperimentSettings
     sequences: List[PulseSequences]
+    loops: List[Loop] | None
 
     def __init__(
         self,
-        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
         platform_name: str,
+        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
+        loops: Loop | List[Loop] | None = None,
         settings: ExperimentSettings = None,
         experiment_name: str = "experiment",
     ):
@@ -52,28 +54,19 @@ class Experiment:
         self.name = experiment_name
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
+        self.loops = [loops] if isinstance(loops, Loop) else loops
         self._build_execution(sequence_list=sequences)
 
-    def execute(
-        self, loops: Loop | List[Loop] | None = None, connection: API | None = None
-    ) -> Results | Results.ExecutionResults:
+    def execute(self, connection: API | None = None) -> Results | Results.ExecutionResults:
         """Run execution."""
         results: Results | Results.ExecutionResults
-        now = datetime.now()
-        path = (
-            Path(__file__).parent.parent
-            / "data"
-            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
-        )
-        if not os.path.exists(path):
-            os.makedirs(path)
+        folder_path = self._create_folder()
         plot = Plot(connection=connection)
         self._start_instruments()
-        if loops is None:
-            results = self._execute(plot=plot, path=path)
+        if self.loops is None:
+            results = self._execute(plot=plot, path=folder_path)
         else:
-            loops_tmp = [loops] if isinstance(loops, Loop) else loops
-            results = self._execute_loop(loops=loops_tmp, plot=plot, path=path)
+            results = self._execute_loop(loops=self.loops, plot=plot, path=folder_path)
         self.execution.close()
         return results
 
@@ -110,7 +103,10 @@ class Experiment:
             if depth == 0:
                 x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
                 if previous_loop is not None:
-                    x_label += f"({previous_loop.category} {previous_loop.id_}: {previous_loop.parameter}={np.round(x_value, 4)})"
+                    x_label += (
+                        f"({previous_loop.category} {previous_loop.id_}:"
+                        + f"{previous_loop.parameter}={np.round(x_value, 4)})"
+                    )
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
@@ -188,6 +184,23 @@ class Experiment:
                 sequence = translator.translate(circuit=sequence)
             self.sequences.append(sequence)
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=self.sequences)
+
+    def _create_folder(self) -> Path:
+        """Create folder where the data will be saved.
+
+        Returns:
+            Path: Path to folder.
+        """
+        now = datetime.now()
+        path = (
+            Path(__file__).parent.parent
+            / "data"
+            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
+        )
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        return path
 
     @property
     def software_average(self):
