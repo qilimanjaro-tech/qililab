@@ -1,5 +1,5 @@
 """QbloxResult class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar, field
 from typing import List, Tuple
 
 import numpy as np
@@ -8,7 +8,7 @@ from qililab.result.result import Result
 from qililab.typings import AcquisitionName
 from qililab.utils import nested_dataclass
 
-
+@dataclass
 class QbloxResult(Result):
     """QbloxResult class."""
 
@@ -87,9 +87,12 @@ class QbloxResult(Result):
         index: int
         acquisition: QbloxAcquisitionData
 
-    def __init__(self, integration_length: int, start_integrate: int, result: dict):
-        self.integration_length = integration_length
-        self.start_integrate = start_integrate
+    integration_length: int
+    start_integrate: int
+    result: InitVar[dict]
+    results: List[QbloxAcquisitions] = field(init=False)
+
+    def __post_init__(self, result: dict):
         self.results = [
             self.QbloxAcquisitions(**item | {"name": AcquisitionName(key).value}) for key, item in result.items()
         ]
