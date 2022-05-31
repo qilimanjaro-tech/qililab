@@ -59,17 +59,25 @@ class Experiment:
     ) -> Results | Results.ExecutionResults:
         """Run execution."""
         results: Results | Results.ExecutionResults
+        now = datetime.now()
+        path = (
+            Path(__file__).parent.parent
+            / "data"
+            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
+        )
+        if not os.path.exists(path):
+            os.makedirs(path)
         plot = Plot(connection=connection)
         self._start_instruments()
         if loops is None:
-            results = self._execute(plot=plot)
+            results = self._execute(plot=plot, path=path)
         else:
             loops_tmp = [loops] if isinstance(loops, Loop) else loops
-            results = self._execute_loop(loops=loops_tmp, plot=plot)
+            results = self._execute_loop(loops=loops_tmp, plot=plot, path=path)
         self.execution.close()
         return results
 
-    def _execute_loop(self, loops: List[Loop], plot: Plot) -> Results:
+    def _execute_loop(self, loops: List[Loop], plot: Plot, path: Path) -> Results:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -92,7 +100,7 @@ class Experiment:
             """
 
             if depth < 0:
-                result = self._execute()
+                result = self._execute(path=path)
                 results.add(execution_results=result)
                 plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
                 return results
@@ -113,7 +121,7 @@ class Experiment:
 
         return recursive_loop(depth=len(loops) - 1, results=Results(loops=loops))
 
-    def _execute(self, plot: Plot = None) -> Results.ExecutionResults:
+    def _execute(self, path: Path, plot: Plot = None) -> Results.ExecutionResults:
         """Execute pulse sequences.
 
         Args:
@@ -122,14 +130,6 @@ class Experiment:
         Returns:
             Results.ExecutionResults: ExecutionResults class.
         """
-        now = datetime.now()
-        path = (
-            Path(__file__).parent.parent
-            / "data"
-            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
-        )
-        if not os.path.exists(path):
-            os.makedirs(path)
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
         self.execution.setup()
