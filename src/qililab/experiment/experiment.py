@@ -79,7 +79,7 @@ class Experiment:
         """
         results: Results | Results.ExecutionResults  # define type of results variable
 
-        def recursive_loop(loop: Loop | None, results: Results, x_value: float = 0) -> Results:
+        def recursive_loop(loop: Loop | None, results: Results, x_value: float = 0, depth: int = 0) -> Results:
             """Loop over all given parameters.
 
             Args:
@@ -107,14 +107,14 @@ class Experiment:
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
-            with tqdm(iterable=loop.range, file=sys.stdout) as pbar:
+            with tqdm(iterable=loop.range, position=depth, leave=True) as pbar:
                 if loop.previous is not None:
                     pbar.leave = False
                 for value in loop.range:
                     pbar.set_description(desc=f"{loop.parameter}: {value}")
                     pbar.update(1)
                     element.set_parameter(name=loop.parameter, value=value)
-                    results = recursive_loop(loop=loop.loop, results=results, x_value=value)
+                    results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
 
         if self.loop is None:
