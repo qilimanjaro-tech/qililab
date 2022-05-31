@@ -1,7 +1,6 @@
 """HardwareExperiment class."""
 import json
 import os
-import sys
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -10,7 +9,7 @@ from typing import List, Tuple
 import numpy as np
 from qibo.core.circuit import Circuit
 from qiboconnection.api import API
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
@@ -108,7 +107,7 @@ class Experiment:
 
             element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
             leave = loop.previous is False
-            for value in tqdm(loop.range, position=depth, leave=leave):
+            for value in tqdm(loop.range, position=depth, leave=leave, desc=f"{loop.parameter}"):
                 element.set_parameter(name=loop.parameter, value=value)
                 results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
