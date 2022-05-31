@@ -11,6 +11,7 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm import tqdm
 
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
@@ -43,7 +44,7 @@ class Experiment:
     def __init__(
         self,
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
-        platform_name: str,
+        platform_name: str = DEFAULT_PLATFORM_NAME,
         settings: ExperimentSettings = None,
         experiment_name: str = "experiment",
     ):
