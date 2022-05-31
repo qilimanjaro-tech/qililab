@@ -32,7 +32,7 @@ def load_experiment():
     circuit.add(M(0))
     settings.repetition_duration = 200000
     loop = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=20)
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, settings=settings, loops=loop)
+    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, settings=settings, loop=loop)
     experiment.execute(connection=connection)
 
 

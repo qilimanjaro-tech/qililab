@@ -80,7 +80,7 @@ class Results:
             """
             return [result.acquisitions() for result in self.results]
 
-    loops: List[Loop]
+    loop: Loop
     results: List[ExecutionResults] = field(default_factory=list)
 
     def add(self, execution_results: ExecutionResults):

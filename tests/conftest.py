@@ -208,7 +208,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
     loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
-    experiment = Experiment(platform_name=platform_name, sequences=sequences, loops=loop)
+    experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
 
@@ -218,10 +218,10 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop1 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
-    loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=2)
-    loop3 = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2)
-    experiment = Experiment(platform_name=platform_name, sequences=sequences, loops=[loop1, loop2, loop3])
+    loop3 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
+    loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, num=2, loop=loop3)
+    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2, loop=loop2)
+    experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
 

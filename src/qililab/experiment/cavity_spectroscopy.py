@@ -19,7 +19,7 @@ def cavity_spectroscopy(connection: API):
     experiment = Experiment(
         platform_name=DEFAULT_PLATFORM_NAME,
         sequences=[circuit],
-        loops=loop,
+        loop=loop,
         settings=settings,
         experiment_name="cavity_spectroscopy",
     )
