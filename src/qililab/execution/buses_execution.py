@@ -6,6 +6,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+from tqdm.auto import tqdm
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Results
@@ -37,7 +38,7 @@ class BusesExecution:
     def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
         results = Results.ExecutionResults()
-        for idx in range(self.num_sequences):
+        for idx in tqdm(range(self.num_sequences), leave=False):
             results.new()
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
