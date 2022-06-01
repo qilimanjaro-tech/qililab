@@ -93,11 +93,10 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
         self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name.value)
-        return QbloxResult(
-            integration_length=self.integration_length,
-            start_integrate=self.start_integrate,
-            result=self.device.get_acquisitions(sequencer=self.sequencer),
-        )
+        result = self.device.get_acquisitions(sequencer=self.sequencer)[self.acquisition_name.value]["acquisition"][
+            "bins"
+        ]
+        return QbloxResult(**result)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
