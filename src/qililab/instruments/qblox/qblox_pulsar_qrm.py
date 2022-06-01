@@ -1,6 +1,10 @@
 """Qblox pulsar QRM class"""
 from pathlib import Path
 
+from qpysequence.acquisitions import Acquisitions
+from qpysequence.instructions import Acquire
+from qpysequence.loop import Loop
+
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import PulseSequence
@@ -30,7 +34,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
         Args:
             acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
-            hardware_average_enabled (bool): Enable/disable hardware averaging of the data.
+            scope_acquisition_averaging (bool): Enable/disable hardware averaging of the data.
             start_integrate (int): Time (in ns) to start integrating the signal.
             integration_length (int): Duration (in ns) of the integration.
             integration_mode (str): Integration mode. Options are 'ssb'.
@@ -42,7 +46,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
 
         acquire_trigger_mode: AcquireTriggerMode
-        hardware_average_enabled: bool
+        scope_acquisition_averaging: bool
         start_integrate: int
         sampling_rate: int
         integration_length: int
@@ -51,6 +55,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         acquisition_timeout: int  # minutes
         acquisition_name: AcquisitionName
 
+    acquisition_idx: int
     settings: QbloxPulsarQRMSettings
 
     def __init__(self, settings: dict):
@@ -101,8 +106,8 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
     def _set_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.hardware_average_enabled)
-        self.device.scope_acq_avg_mode_en_path1(self.hardware_average_enabled)
+        self.device.scope_acq_avg_mode_en_path0(self.scope_acquisition_averaging)
+        self.device.scope_acq_avg_mode_en_path1(self.scope_acquisition_averaging)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
@@ -110,6 +115,23 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
         self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
         getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(self.integration_length)
+
+    def _generate_acquisitions(self) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = super()._generate_acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="large", num_bins=131072, index=1)
+        self.acquisition_idx = acquisitions.find_by_name(name=self.acquisition_name.value).index
+        return acquisitions
+
+    def _append_acquire_instruction(self, loop: Loop):
+        """Append an acquire instruction to the loop."""
+        loop.append_component(Acquire(acq_index=self.acquisition_idx, bin_index=0, wait_time=4))
 
     @property
     def acquire_trigger_mode(self):
@@ -121,13 +143,13 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         return self.settings.acquire_trigger_mode
 
     @property
-    def hardware_average_enabled(self):
-        """QbloxPulsarQRM 'hardware_average_enabled' property.
+    def scope_acquisition_averaging(self):
+        """QbloxPulsarQRM 'scope_acquisition_averaging' property.
 
         Returns:
-            bool: settings.hardware_average_enabled.
+            bool: settings.scope_acquisition_averaging.
         """
-        return self.settings.hardware_average_enabled
+        return self.settings.scope_acquisition_averaging
 
     @property
     def start_integrate(self):
@@ -191,3 +213,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             str: settings.acquisition_name.
         """
         return self.settings.acquisition_name
+
+    @property
+    def final_wait_time(self) -> int:
+        """QbloxPulsarQRM 'final_wait_time' property.
+
+        Returns:
+            int: Final wait time.
+        """
+        return self.delay_time

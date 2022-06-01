@@ -8,7 +8,7 @@ from typing import List, Tuple
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.block import Block
-from qpysequence.instructions import Acquire, Play, Stop, Wait
+from qpysequence.instructions import Play, Stop, Wait
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
@@ -17,7 +17,6 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
-from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import Pulse, PulseSequence, PulseShape
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
@@ -86,11 +85,12 @@ class QbloxPulsar(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulses=pulses)
+        acquisitions = self._generate_acquisitions()
         program = self._generate_program(
             pulses=pulses, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
         )
-        acquisitions = self._generate_acquisitions()
-        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
+        weights = self._generate_weights()
+        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms, nshots: int, repetition_duration: int):
         """Generate Q1ASM program
@@ -110,13 +110,9 @@ class QbloxPulsar(AWG):
         if pulses[0].start != 0:
             loop.append_component(Wait(wait_time=pulses[0].start))
 
-        final_wait_time = self.delay_time if isinstance(self, QubitReadout) else 4  # type: ignore
         for i, pulse in enumerate(pulses):
             waveform_pair = waveforms.find_pair_by_name(str(pulse))
-            if i < len(pulses) - 1:
-                wait_time = pulses[i + 1].start - pulse.start
-            else:
-                wait_time = final_wait_time
+            wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
             loop.append_component(set_phase_rad(rads=pulse.phase))
             loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
             loop.append_component(
@@ -127,8 +123,7 @@ class QbloxPulsar(AWG):
                 )
             )
 
-        if isinstance(self, QubitReadout):
-            loop.append_component(Acquire(acq_index=0, bin_index=0, wait_time=4))
+        self._append_acquire_instruction(loop=loop)
 
         loop.append_component(long_wait(wait_time=repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
@@ -136,16 +131,23 @@ class QbloxPulsar(AWG):
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-        and index = 0.
+        """Generate Acquisitions object.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
-        acquisitions = Acquisitions()
-        # Create the acquisition: {"single": {"num_bins": 1, "index": 0}}
-        acquisitions.add(name="single", num_bins=1, index=0)
-        return acquisitions
+        return Acquisitions()
+
+    def _generate_weights(self) -> dict:
+        """Generate acquisition weights.
+
+        Returns:
+            dict: Acquisition weights.
+        """
+        return {}
+
+    def _append_acquire_instruction(self, loop: Loop):
+        """Append an acquire instruction to the loop."""
 
     @AWG.CheckConnected
     def start(self):
@@ -328,3 +330,12 @@ class QbloxPulsar(AWG):
             float: settings.delta.
         """
         return self.settings.delta
+
+    @property
+    def final_wait_time(self) -> int:
+        """QbloxPulsar 'final_wait_time' property.
+
+        Returns:
+            int: Final wait time.
+        """
+        return 4

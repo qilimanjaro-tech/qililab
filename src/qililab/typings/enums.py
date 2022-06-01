@@ -76,6 +76,7 @@ class AcquisitionName(Enum):
     """
 
     SINGLE = "single"
+    LARGE = "large"
 
 
 class SchemaDrawOptions(Enum):

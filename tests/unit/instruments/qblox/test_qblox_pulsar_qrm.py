@@ -38,8 +38,8 @@ class TestQbloxPulsarQRM:
         qrm.setup()
         qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
         qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
-        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_average_enabled)
-        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_average_enabled)
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.scope_acquisition_averaging)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.scope_acquisition_averaging)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.sequencer0.offset_awg_path0.assert_called_once_with(qrm.offset_i)
@@ -130,9 +130,9 @@ class TestQbloxPulsarQRM:
         """Test acquire_trigger_mode property."""
         assert qrm.acquire_trigger_mode == qrm.settings.acquire_trigger_mode
 
-    def test_hardware_average_enabled_property(self, qrm: QbloxPulsarQRM):
-        """Test hardware_average_enabled property."""
-        assert qrm.hardware_average_enabled == qrm.settings.hardware_average_enabled
+    def test_scope_acquisition_averaging_property(self, qrm: QbloxPulsarQRM):
+        """Test scope_acquisition_averaging property."""
+        assert qrm.scope_acquisition_averaging == qrm.settings.scope_acquisition_averaging
 
     def test_start_integrate_property(self, qrm: QbloxPulsarQRM):
         """Test start_integrate property."""
