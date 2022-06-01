@@ -71,6 +71,11 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Returns:
             Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
+        if (pulse_sequence, nshots, repetition_duration) == self._cache:
+            # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
+            self.device._delete_acquisition(sequencer=self.sequencer, name=self.acquisition_name.value)
+            acquisition = self._generate_acquisitions()
+            self.device._add_acquisitions(sequencer=self.sequencer, acquisitions=acquisition.to_dict())
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 
