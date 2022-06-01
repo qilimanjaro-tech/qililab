@@ -15,5 +15,5 @@ integration_mode: ssb
 sequence_timeout: 1
 acquisition_timeout: 1
 acquisition_name: "single"
-delay_time: 50
+delay_time: 100
 frequency: 20000000

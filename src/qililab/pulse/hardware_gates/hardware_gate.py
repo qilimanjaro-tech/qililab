@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Tuple, Type
 
+import numpy as np
 from qibo.abstractions.gates import Gate
 
 
@@ -11,6 +12,18 @@ class HardwareGate(ABC):
     class_type: Type[Gate]
     amplitude: float
     phase: float
+
+    @classmethod
+    def normalize_angle(cls, angle: float):
+        """Normalize angle in range [-pi, pi].
+
+        Args:
+            angle (float): Normalized angle.
+        """
+        angle %= 2 * np.pi
+        if angle > np.pi:
+            angle -= 2 * np.pi
+        return angle
 
     @classmethod
     @abstractmethod

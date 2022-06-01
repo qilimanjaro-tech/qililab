@@ -3,7 +3,7 @@ import copy
 from typing import Dict, List
 
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import RX, RY, U2, I, M, X, Y
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 
@@ -75,7 +75,7 @@ class Platform0:
         "sequence_timeout": 1,
         "acquisition_timeout": 1,
         "acquisition_name": "single",
-        "delay_time": 50,
+        "delay_time": 100,
         "frequency": 20000000,
     }
 
@@ -267,7 +267,8 @@ for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
     circuit.add(X(0))
     circuit.add(Y(0))
     circuit.add(RX(0, 23))
-    circuit.add(RY(0, 23))
+    circuit.add(RY(0, 15))
+    circuit.add(U2(0, 14, 25))
     if p_name == DEFAULT_PLATFORM_NAME:
         circuit.add(M(0))
     experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])

@@ -22,9 +22,7 @@ class RY(HardwareGate):
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
         theta = gate.parameters
-        theta = (theta) % (2 * np.pi)
-        if theta > np.pi:
-            theta -= 2 * np.pi
+        theta = cls.normalize_angle(angle=theta)
         amplitude = np.abs(theta) / np.pi
         phase = np.pi / 2 if theta >= 0 else 3 * np.pi / 4
         return amplitude, phase

@@ -30,7 +30,7 @@ class CircuitToPulses:
 
         readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
         delay_between_pulses: int = 0
-        delay_before_readout: int = 50
+        delay_before_readout: int = 40
         gate_duration: int = 100
         num_sigmas: float = 4
         drag_coefficient: float = 0

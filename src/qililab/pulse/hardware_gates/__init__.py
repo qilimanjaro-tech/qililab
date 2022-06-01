@@ -4,4 +4,5 @@ from .i import I
 from .rx import RX
 from .ry import RY
 from .x import X
+from .xy import XY
 from .y import Y
