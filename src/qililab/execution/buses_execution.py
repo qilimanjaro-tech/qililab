@@ -38,7 +38,8 @@ class BusesExecution:
     def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
         """Run the given pulse sequence."""
         results = Results.ExecutionResults()
-        for idx in tqdm(range(self.num_sequences), desc="Sequences", leave=False):
+        disable = self.num_sequences == 1
+        for idx in tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable):
             results.new()
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
