@@ -11,6 +11,7 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
+from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
@@ -111,6 +112,7 @@ class Experiment:
                     pbar.set_description(f"{loop.parameter}: {value} ")
                     pbar.update()
                     element.set_parameter(name=loop.parameter, value=value)
+                    logger.debug("Setting %s parameter to value %f.", loop.parameter, value)
                     results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
 
