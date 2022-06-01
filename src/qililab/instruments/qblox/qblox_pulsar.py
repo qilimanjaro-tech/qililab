@@ -7,7 +7,8 @@ from typing import List, Tuple
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.instructions import Acquire, Play, Wait
+from qpysequence.block import Block
+from qpysequence.instructions import Acquire, Play, Stop, Wait
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program
@@ -103,6 +104,8 @@ class QbloxPulsar(AWG):
         """
         program = Program()
         loop = Loop(name="loop", iterations=nshots)
+        stop = Block(name="stop")
+        stop.append_component(Stop())
         # TODO: Make sure that start time of Pulse is 0 or bigger than 4
         if pulses[0].start != 0:
             loop.append_component(Wait(wait_time=pulses[0].start))
@@ -129,6 +132,7 @@ class QbloxPulsar(AWG):
 
         loop.append_component(long_wait(wait_time=repetition_duration - loop.duration_iter))
         program.append_block(block=loop)
+        program.append_block(block=stop)
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
