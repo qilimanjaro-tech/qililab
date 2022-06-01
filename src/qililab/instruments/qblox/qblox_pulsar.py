@@ -30,6 +30,8 @@ class QbloxPulsar(AWG):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
+    MAX_BINS = 131072
+
     @nested_dataclass
     class QbloxPulsarSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar.
@@ -66,13 +68,16 @@ class QbloxPulsar(AWG):
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-        if (pulse_sequence, nshots, repetition_duration) != self._cache:
-            logger.debug("Pulse sequence uploaded.")
-            self._cache = (pulse_sequence, nshots, repetition_duration)
-            sequence = self._translate_pulse_sequence(
-                pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
-            )
-            self.upload(sequence=sequence, path=path)
+        # TODO: We can't skip the upload of the program because CURRENTLY there is no way of resetting the
+        # acquisition memory.
+
+        # if (pulse_sequence, nshots, repetition_duration) != self._cache:
+        # logger.debug("Pulse sequence uploaded.")
+        self._cache = (pulse_sequence, nshots, repetition_duration)
+        sequence = self._translate_pulse_sequence(
+            pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
+        )
+        self.upload(sequence=sequence, path=path)
         self.start()
 
     def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):

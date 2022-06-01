@@ -124,7 +124,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
         acquisitions = super()._generate_acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="large", num_bins=131072, index=1)
+        acquisitions.add(name="large", num_bins=self.MAX_BINS, index=1)
         self.acquisition_idx = acquisitions.find_by_name(name=self.acquisition_name.value).index
         return acquisitions
 
