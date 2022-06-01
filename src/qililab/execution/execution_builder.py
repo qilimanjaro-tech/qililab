@@ -40,9 +40,9 @@ class ExecutionBuilder(metaclass=Singleton):
                         f"There is no bus of type {bus_subcategory.value} connected to qubits {pulse.qubit_ids}."
                     )
                 if bus_idx not in buses:
-                    buses[bus_idx] = BusExecution(
-                        bus=bus, pulse_sequences=[PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse])]
-                    )
+                    pulse_sequence_tmp = PulseSequence(qubit_ids=pulse.qubit_ids)
+                    pulse_sequence_tmp.add(pulse=pulse)
+                    buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[pulse_sequence_tmp])
                     continue
                 buses[bus_idx].add_pulse(pulse=pulse, idx=idx)
 
