@@ -1,4 +1,6 @@
 """Gaussian pulse shape."""
+from dataclasses import dataclass
+
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
@@ -7,13 +9,13 @@ from qililab.utils import Factory
 
 
 @Factory.register
+@dataclass
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
     name = PulseShapeName.GAUSSIAN
 
-    def __init__(self, num_sigmas: float):
-        self.num_sigmas = num_sigmas
+    num_sigmas: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
@@ -30,15 +32,3 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
-
-    def __repr__(self):
-        """Return string representation of the PulseShape object."""
-        return f"{self.name.value}(num_sigmas={self.num_sigmas})"
-
-    def __eq__(self, other: object) -> bool:
-        """Compare PulseShape with another object.
-
-        Args:
-            other (object): PulseShape object.
-        """
-        return self.num_sigmas == other.num_sigmas if isinstance(other, Gaussian) else False

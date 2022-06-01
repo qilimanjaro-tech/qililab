@@ -8,7 +8,6 @@ from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import Results
-from qililab.utils import Loop
 
 from ...conftest import mock_instruments
 

@@ -1,5 +1,5 @@
 """PulseShape abstract base class."""
-from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -7,12 +7,12 @@ from qililab.constants import YAML
 from qililab.typings import FactoryElement, PulseShapeName
 
 
-class PulseShape(FactoryElement, ABC):
+@dataclass
+class PulseShape(FactoryElement):
     """Pulse shape abstract base class."""
 
-    name: PulseShapeName
+    name: PulseShapeName = field(init=False, repr=False)
 
-    @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
@@ -23,6 +23,7 @@ class PulseShape(FactoryElement, ABC):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+        raise NotImplementedError
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
@@ -31,15 +32,3 @@ class PulseShape(FactoryElement, ABC):
             dict: Dictionary.
         """
         return {YAML.NAME: self.name.value} | self.__dict__
-
-    @abstractmethod
-    def __repr__(self):
-        """Return string representation of the PulseShape object."""
-
-    @abstractmethod
-    def __eq__(self, other: object) -> bool:
-        """Compare PulseShape with another object.
-
-        Args:
-            other (object): PulseShape object.
-        """

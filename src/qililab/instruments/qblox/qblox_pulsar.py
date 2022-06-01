@@ -3,7 +3,7 @@
 import itertools
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -16,7 +16,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.qubit_readout import QubitReadout
-from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse import Pulse, PulseSequence, PulseShape
 from qililab.typings import Pulsar, ReferenceClock
 from qililab.utils import nested_dataclass
 
@@ -28,8 +28,6 @@ class QbloxPulsar(AWG):
         device (Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
-
-    MAX_GAIN = 2**16 - 1
 
     @nested_dataclass
     class QbloxPulsarSettings(AWG.AWGSettings):
@@ -49,6 +47,12 @@ class QbloxPulsar(AWG):
 
     device: Pulsar
     settings: QbloxPulsarSettings
+    # Cache containing the last PulseSequence, nshots and repetition_duration used.
+    _cache: Tuple[PulseSequence, int, int] | None
+
+    def __init__(self):
+        super().__init__()
+        self._cache = None
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
@@ -61,10 +65,12 @@ class QbloxPulsar(AWG):
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
-        sequence = self._translate_pulse_sequence(
-            pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
-        )
-        self.upload(sequence=sequence, path=path)
+        if (pulse_sequence, nshots, repetition_duration) != self._cache:
+            self._cache = (pulse_sequence, nshots, repetition_duration)
+            sequence = self._translate_pulse_sequence(
+                pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
+            )
+            self.upload(sequence=sequence, path=path)
         self.start()
 
     def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
@@ -227,11 +233,11 @@ class QbloxPulsar(AWG):
         """
         waveforms = Waveforms()
 
-        unique_pulses: List[Pulse] = []
+        unique_pulses: List[Tuple[int, PulseShape]] = []
 
         for pulse in pulses:
-            if pulse not in unique_pulses:
-                unique_pulses.append(pulse)
+            if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
+                unique_pulses.append((pulse.duration, pulse.pulse_shape))
                 envelope = pulse.envelope(amplitude=1)
                 real = np.real(envelope) + self.offset_i
                 imag = np.imag(envelope) + self.offset_q

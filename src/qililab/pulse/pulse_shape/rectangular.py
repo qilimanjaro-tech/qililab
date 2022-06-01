@@ -1,4 +1,6 @@
 """Rectangular pulse shape."""
+from dataclasses import dataclass
+
 import numpy as np
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
@@ -7,6 +9,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
+@dataclass
 class Rectangular(PulseShape):
     """Rectangular/square pulse shape."""
 
@@ -23,15 +26,3 @@ class Rectangular(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
         return amplitude * np.ones(round(duration / resolution))
-
-    def __repr__(self):
-        """Return string representation of the PulseShape object."""
-        return f"{self.name.value}"
-
-    def __eq__(self, other: object) -> bool:
-        """Compare PulseShape with another object.
-
-        Args:
-            other (object): PulseShape object.
-        """
-        return isinstance(other, Rectangular)
