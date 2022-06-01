@@ -13,6 +13,16 @@ class Execution:
 
     buses_execution: BusesExecution
 
+    def __enter__(self):
+        """Code executed when starting a with statement."""
+        self.connect()
+        self.setup()
+        self.start()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Code executed when stopping a with statement."""
+        self.close()
+
     def connect(self):
         """Connect to the instruments."""
         self.buses_execution.connect()

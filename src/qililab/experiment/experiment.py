@@ -62,9 +62,8 @@ class Experiment:
         """Run execution."""
         folder_path = self._create_folder()
         plot = Plot(connection=connection)
-        self._start_instruments()
-        results = self._execute_loop(plot=plot, path=folder_path)
-        self.execution.close()
+        with self.execution:
+            results = self._execute_loop(plot=plot, path=folder_path)
         return results
 
     def _execute_loop(self, plot: Plot, path: Path) -> Results | Results.ExecutionResults:
@@ -149,12 +148,6 @@ class Experiment:
         """
         element, _ = self.platform.get_element(category=Category(category), id_=id_)
         element.set_parameter(name=parameter, value=value)
-
-    def _start_instruments(self):
-        """Connect, setup and start instruments."""
-        self.execution.connect()
-        self.execution.setup()
-        self.execution.start()
 
     @property
     def parameters(self):
@@ -263,7 +256,3 @@ class Experiment:
         platform_name = dictionary["platform_name"]
         sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequence"]]
         return Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
-
-    def __del__(self):
-        """Destructor."""
-        self.execution.close()
