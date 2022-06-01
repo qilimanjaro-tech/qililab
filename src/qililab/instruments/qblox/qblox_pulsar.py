@@ -14,6 +14,7 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.pulse import Pulse, PulseSequence, PulseShape
@@ -66,6 +67,7 @@ class QbloxPulsar(AWG):
             pulse_sequence (PulseSequence): Pulse sequence.
         """
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
+            logger.debug("Pulse sequence uploaded.")
             self._cache = (pulse_sequence, nshots, repetition_duration)
             sequence = self._translate_pulse_sequence(
                 pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
