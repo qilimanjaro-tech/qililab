@@ -161,6 +161,12 @@ class QbloxPulsar(AWG):
         self.device.stop_sequencer()
 
     @AWG.CheckConnected
+    def close(self):
+        """Empty cache and close connection with the instrument."""
+        self._cache = None
+        super().close()
+
+    @AWG.CheckConnected
     def reset(self):
         """Reset instrument."""
         self.device.reset()
