@@ -2,6 +2,16 @@ settings:
   id_: 1
   name: flux_qubit
   category: platform
+  translation_settings:
+    readout_duration: 2000
+    readout_amplitude: 0.4
+    readout_phase: 0
+    delay_between_pulses: 0
+    delay_before_readout: 40
+    gate_duration: 100
+    num_sigmas: 4
+    drag_coefficient: 0
+
 schema:
   elements:
   - id_: 0

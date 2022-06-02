@@ -31,7 +31,6 @@ class Experiment:
         hardware_average: int = 1024
         software_average: int = 1
         repetition_duration: int = 200000
-        translation: CircuitToPulses.CircuitToPulsesSettings = CircuitToPulses.CircuitToPulsesSettings()
 
         def __str__(self):
             """Returns a string representation of the experiment settings."""
@@ -147,6 +146,9 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        if Category(category) == Category.PLATFORM:
+            setattr(self.platform, parameter, value)
+            return
         element, _ = self.platform.get_element(category=Category(category), id_=id_)
         element.set_parameter(name=parameter, value=value)
 
@@ -176,11 +178,12 @@ class Experiment:
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        translator = CircuitToPulses(settings=self.translation)
         sequences = []
         for sequence in sequence_list:
             if isinstance(sequence, Circuit):
-                sequence = translator.translate(circuit=sequence)
+                sequence = CircuitToPulses().translate(
+                    circuit=sequence, translation_settings=self.platform.translation_settings
+                )
             sequences.append(sequence)
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequences)
         return execution, sequences
@@ -228,15 +231,6 @@ class Experiment:
             int: settings.repetition_duration.
         """
         return self.settings.repetition_duration
-
-    @property
-    def translation(self):
-        """Experiment 'translation' property.
-
-        Returns:
-            int: settings.translation.
-        """
-        return self.settings.translation
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""

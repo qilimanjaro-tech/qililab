@@ -13,10 +13,20 @@ class Platform0:
 
     name = "platform_0"
 
-    platform: dict = {
+    platform = {
         "id_": 0,
         "name": "platform_0",
         "category": "platform",
+        "translation_settings": {
+            "readout_duration": 2000,
+            "readout_amplitude": 0.4,
+            "readout_phase": 0,
+            "delay_between_pulses": 0,
+            "delay_before_readout": 40,
+            "gate_duration": 100,
+            "num_sigmas": 4,
+            "drag_coefficient": 0,
+        },
     }
 
     qubit_0: dict = {
@@ -197,11 +207,7 @@ class Platform0:
     }
 
     all_platform = {
-        "settings": {
-            "id_": 0,
-            "name": "platform_0",
-            "category": "platform",
-        },
+        "settings": platform,
         "schema": schema,
     }
 
@@ -215,6 +221,16 @@ class FluxQubit:
         "id_": 0,
         "name": "flux_qubit",
         "category": "platform",
+        "translation_settings": {
+            "readout_duration": 2000,
+            "readout_amplitude": 0.4,
+            "readout_phase": 0,
+            "delay_between_pulses": 0,
+            "delay_before_readout": 40,
+            "gate_duration": 100,
+            "num_sigmas": 4,
+            "drag_coefficient": 0,
+        },
     }
 
     schema = {
@@ -251,11 +267,7 @@ class FluxQubit:
     }
 
     all_platform = {
-        "settings": {
-            "id_": 0,
-            "name": "flux_qubit",
-            "category": "platform",
-        },
+        "settings": platform,
         "schema": schema,
     }
 

@@ -39,10 +39,6 @@ class TestExperiment:
         """Test repetition_duration property."""
         assert experiment.repetition_duration == experiment.settings.repetition_duration
 
-    def test_circuit_to_pulse_property(self, experiment: Experiment):
-        """Test circuit_to_pulse property."""
-        assert experiment.translation == experiment.settings.translation
-
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method with all platforms."""
         dictionary = experiment_all_platforms.to_dict()

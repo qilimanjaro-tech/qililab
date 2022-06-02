@@ -9,35 +9,14 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.pulse_shape import Drag
 from qililab.pulse.readout_pulse import ReadoutPulse
-from qililab.utils import nested_dataclass
+from qililab.settings import TranslationSettings
 
 
 @dataclass
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
-    @nested_dataclass
-    class CircuitToPulsesSettings:
-        """Settings of the CircuitToPulses class."""
-
-        @dataclass
-        class ReadoutPulseSettings:
-            """ReadoutPulseSettings class."""
-
-            amplitude: float = 0.4
-            duration: int = 2000
-            phase: float = 0
-
-        readout_pulse: ReadoutPulseSettings = ReadoutPulseSettings()
-        delay_between_pulses: int = 0
-        delay_before_readout: int = 40
-        gate_duration: int = 100
-        num_sigmas: float = 4
-        drag_coefficient: float = 0
-
-    settings: CircuitToPulsesSettings
-
-    def translate(self, circuit: Circuit) -> PulseSequences:
+    def translate(self, circuit: Circuit, translation_settings: TranslationSettings) -> PulseSequences:
         """Translate a circuit into a pulse sequence.
 
         Args:
@@ -47,28 +26,29 @@ class CircuitToPulses:
             PulseSequences: Object containing the translated pulses.
         """
         sequence = PulseSequences(
-            delay_between_pulses=self.delay_between_pulses, delay_before_readout=self.delay_before_readout
+            delay_between_pulses=translation_settings.delay_between_pulses,
+            delay_before_readout=translation_settings.delay_before_readout,
         )
         control_gates = list(circuit.queue)
         readout_gates = circuit.measurement_gate
 
         for gate in control_gates:
-            sequence.add(self._gate_to_pulse(gate=gate))
+            sequence.add(self._gate_to_pulse(gate=gate, translation_settings=translation_settings))
 
         # FIXME: Check ChipPlaceHolder and assign a ReadoutPulse to the corresponding readout line
         if readout_gates is not None:
             for qubit_id in circuit.measurement_gate.target_qubits:
                 sequence.add(
                     ReadoutPulse(
-                        amplitude=self.readout_pulse.amplitude,
-                        phase=self.readout_pulse.phase,
-                        duration=self.readout_pulse.duration,
+                        amplitude=translation_settings.readout_amplitude,
+                        phase=translation_settings.readout_phase,
+                        duration=translation_settings.readout_duration,
                         qubit_ids=[qubit_id],
                     )
                 )
         return sequence
 
-    def _gate_to_pulse(self, gate: Gate):
+    def _gate_to_pulse(self, gate: Gate, translation_settings: TranslationSettings):
         """Translate a gate into a pulse.
 
         Args:
@@ -84,61 +64,7 @@ class CircuitToPulses:
         return Pulse(
             amplitude=amplitude,
             phase=phase,
-            duration=self.gate_duration,
+            duration=translation_settings.gate_duration,
             qubit_ids=list(gate.target_qubits),
-            pulse_shape=Drag(num_sigmas=self.num_sigmas, beta=self.drag_coefficient),
+            pulse_shape=Drag(num_sigmas=translation_settings.num_sigmas, beta=translation_settings.drag_coefficient),
         )
-
-    @property
-    def delay_between_pulses(self):
-        """CircuitToPulse 'delay_between_pulses' property.
-
-        Returns:
-            int: settings.delay_between_pulses.
-        """
-        return self.settings.delay_between_pulses
-
-    @property
-    def delay_before_readout(self):
-        """CircuitToPulse 'delay_before_readout' property.
-
-        Returns:
-            int: settings.delay_before_readout.
-        """
-        return self.settings.delay_before_readout
-
-    @property
-    def num_sigmas(self):
-        """CircuitToPulse 'num_sigmas' property.
-
-        Returns:
-            float: settings.num_sigmas.
-        """
-        return self.settings.num_sigmas
-
-    @property
-    def drag_coefficient(self):
-        """CircuitToPulse 'drag_coefficient' property.
-
-        Returns:
-            float: settings.drag_coefficient.
-        """
-        return self.settings.drag_coefficient
-
-    @property
-    def gate_duration(self):
-        """CircuitToPulse 'drag_duration' property.
-
-        Returns:
-            int: settings.gate_duration.
-        """
-        return self.settings.gate_duration
-
-    @property
-    def readout_pulse(self):
-        """CircuitToPulse 'readout_pulse' property.
-
-        Returns:
-            ReadoutPulseSettings: settings.readout_pulse.
-        """
-        return self.settings.readout_pulse

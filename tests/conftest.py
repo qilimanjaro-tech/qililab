@@ -174,16 +174,10 @@ def fixture_schema(platform: Platform) -> Schema:
     return platform.schema
 
 
-@pytest.fixture(name="circuit_to_pulses")
-def fixture_circuit_to_pulses() -> CircuitToPulses:
-    """Return CircuitToPulses instance."""
-    return CircuitToPulses(settings=CircuitToPulses.CircuitToPulsesSettings())
-
-
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
-def fixture_pulse_sequences(circuit_to_pulses: CircuitToPulses) -> PulseSequences:
+def fixture_pulse_sequences(platform: Platform) -> PulseSequences:
     """Return PulseSequences instance."""
-    return circuit_to_pulses.translate(circuit=circuit)
+    return CircuitToPulses().translate(circuit=circuit, translation_settings=platform.translation_settings)
 
 
 @pytest.fixture(name="pulse_sequence")

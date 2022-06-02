@@ -14,16 +14,14 @@ def cavity_spectroscopy(connection: API):
     circuit = Circuit(1)
     circuit.add(I(0))  # need to add this to use QCM (because QRM uses QCM clock)
     circuit.add(M(0))
-    settings = Experiment.ExperimentSettings()
-    settings.translation.readout_pulse.amplitude = 1
     loop = Loop(category="signal_generator", id_=1, parameter="frequency", start=7.34e9, stop=7.36e9, num=1000)
     experiment = Experiment(
         platform_name=DEFAULT_PLATFORM_NAME,
         sequences=[circuit],
         loop=loop,
-        settings=settings,
         experiment_name="cavity_spectroscopy",
     )
+    experiment.set_parameter(category="platform", id_=0, parameter="translation.readout_pulse.amplitude", value=1)
     experiment.execute(connection=connection)
 
 
