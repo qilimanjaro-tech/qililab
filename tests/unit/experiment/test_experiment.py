@@ -65,7 +65,8 @@ class TestExperiment:
 
     def test_set_parameter_method(self, experiment: Experiment):
         """Test set_parameter method with all platforms."""
-        experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
+        with pytest.raises(AttributeError):
+            experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")

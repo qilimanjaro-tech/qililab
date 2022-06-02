@@ -74,6 +74,11 @@ class Instrument(BusElement, ABC):
             self.device.close()
             self._connected = False
 
+    def set_parameter(self, name: str, value: float):
+        """Redirect __setattr__ magic method."""
+        super().set_parameter(name=name, value=value)
+        self.setup()
+
     @abstractmethod
     def start(self):
         """Start instrument."""

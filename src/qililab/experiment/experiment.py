@@ -134,7 +134,6 @@ class Experiment:
         """
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
-        self.execution.setup()
         return self.execution.run(
             nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
         )
