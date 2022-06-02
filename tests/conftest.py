@@ -207,7 +207,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
+    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
     experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
