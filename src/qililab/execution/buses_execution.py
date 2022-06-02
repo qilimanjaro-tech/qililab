@@ -47,11 +47,11 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
                     results.add(result=result)
-                    self._handle_data(result=result, path=path, plot=plot, x_value=idx)
+                    self._asynchronous_data_handling(result=result, path=path, plot=plot, x_value=idx)
 
         return results
 
-    def _handle_data(self, result: Result, path: Path, plot: Plot | None, x_value: float):
+    def _asynchronous_data_handling(self, result: Result, path: Path, plot: Plot | None, x_value: float):
         """Asynchronously dumps data in file and plots the data.
 
         Args:
