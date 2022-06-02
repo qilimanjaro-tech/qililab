@@ -39,6 +39,7 @@ class Experiment:
     platform: Platform
     execution: Execution
     settings: ExperimentSettings
+    _initial_sequences: List[Circuit | PulseSequences]
     sequences: List[PulseSequences]
     loop: Loop | None
 
@@ -51,12 +52,12 @@ class Experiment:
         experiment_name: str = "experiment",
     ):
         if not isinstance(sequences, list):
-            sequences = [sequences]
+            self._initial_sequences = [sequences]
         self.name = experiment_name
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self.loop = loop
-        self.execution, self.sequences = self._build_execution(sequence_list=sequences)
+        self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     def execute(self, connection: API | None = None) -> Results | Results.ExecutionResults:
         """Run execution."""
@@ -147,6 +148,8 @@ class Experiment:
             value (float): New value.
         """
         self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
+        if Category(category) == Category.PLATFORM:
+            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
     def parameters(self):
