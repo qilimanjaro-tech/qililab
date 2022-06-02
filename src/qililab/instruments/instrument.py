@@ -77,7 +77,8 @@ class Instrument(BusElement, ABC):
     def set_parameter(self, name: str, value: float):
         """Redirect __setattr__ magic method."""
         super().set_parameter(name=name, value=value)
-        self.setup()
+        if self._connected:
+            self.setup()
 
     @abstractmethod
     def start(self):
