@@ -146,11 +146,7 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if Category(category) == Category.PLATFORM:
-            setattr(self.platform, parameter, value)
-            return
-        element, _ = self.platform.get_element(category=Category(category), id_=id_)
-        element.set_parameter(name=parameter, value=value)
+        self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
 
     @property
     def parameters(self):

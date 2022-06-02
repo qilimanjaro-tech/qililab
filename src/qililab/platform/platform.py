@@ -86,7 +86,7 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = getattr(self.settings.translation_settings, parameter)
+            attr_type = type(getattr(self.settings.translation_settings, parameter))
             setattr(self.settings.translation_settings, parameter, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)

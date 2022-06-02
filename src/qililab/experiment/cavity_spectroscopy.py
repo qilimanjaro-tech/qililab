@@ -21,7 +21,7 @@ def cavity_spectroscopy(connection: API):
         loop=loop,
         experiment_name="cavity_spectroscopy",
     )
-    experiment.set_parameter(category="platform", id_=0, parameter="translation.readout_pulse.amplitude", value=1)
+    experiment.set_parameter(category="platform", id_=0, parameter="readout_amplitude", value=1)
     experiment.execute(connection=connection)
 
 
