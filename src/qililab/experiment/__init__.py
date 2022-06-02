@@ -1,4 +1,6 @@
 """__init__.py"""
+import copy
+
 from .experiment import Experiment
 
-settings = Experiment.ExperimentSettings()
+settings = copy.deepcopy(Experiment.ExperimentSettings())
