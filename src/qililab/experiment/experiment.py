@@ -52,7 +52,8 @@ class Experiment:
         experiment_name: str = "experiment",
     ):
         if not isinstance(sequences, list):
-            self._initial_sequences = [sequences]
+            sequences = [sequences]
+        self._initial_sequences = sequences
         self.name = experiment_name
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
