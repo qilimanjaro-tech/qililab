@@ -1,6 +1,7 @@
 """BusesExecution class."""
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from threading import Thread
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -8,8 +9,9 @@ import numpy as np
 import yaml
 from tqdm.auto import tqdm
 
+from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
-from qililab.result import Results
+from qililab.result import Result, Results
 from qililab.utils import Plot
 
 
@@ -45,11 +47,30 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
                     results.add(result=result)
-                    with open(file=path / "results.yml", mode="w", encoding="utf8") as data_file:
-                        yaml.safe_dump(data=asdict(results), stream=data_file)
-                    if plot is not None:
-                        plot.send_points(x_value=idx, y_value=result.probabilities()[0])
+                    self._handle_data(result=result, path=path, plot=plot, x_value=idx)
+
         return results
+
+    def _handle_data(self, result: Result, path: Path, plot: Plot | None, x_value: float):
+        """Asynchronously dumps data in file and plots the data.
+
+        Args:
+            path (Path): Filepath.
+            plot (Plot | None): Plot object.
+            x_value (float): Plot's x axis value.
+        """
+
+        def _threaded_function(result: Result, path: Path, plot: Plot | None, x_value: float):
+            """Asynchronous thread."""
+            logger.debug("Thread started")
+            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
+                yaml.safe_dump(data=asdict(result), stream=data_file)
+            if plot is not None:
+                plot.send_points(x_value=x_value, y_value=result.probabilities()[0])
+            logger.debug("Thread finished")
+
+        thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
+        thread.start()
 
     def close(self):
         """Close connection to the instruments."""
