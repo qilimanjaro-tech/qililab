@@ -118,7 +118,7 @@ class Experiment:
 
         if self.loop is None:
             result = self._execute(plot=plot, path=path)
-            results = Results(shape=[len(result)], num_sequences=self.execution.num_sequences, results=result)
+            results = Results(num_sequences=self.execution.num_sequences, results=result)
 
         else:
             results = recursive_loop(

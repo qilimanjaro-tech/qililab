@@ -12,14 +12,14 @@ from qililab.result.result import Result
 class Results:
     """Results class."""
 
-    shape: List[int]
+    shape: List[int] = field(default_factory=list)
     num_sequences: int = 1
     results: List[Result] = field(default_factory=list)
 
     def __post_init__(self):
         """Add num_sequences to shape."""
         if self.num_sequences > 1:
-            self.shape += [self.num_sequences]
+            self.shape.append(self.num_sequences)
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
