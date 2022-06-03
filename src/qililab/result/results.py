@@ -39,7 +39,8 @@ class Results:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
         probs = [result.probabilities() for result in self.results]
-        return np.reshape(a=probs, newshape=self.shape + [2])
+        array = np.reshape(a=probs, newshape=self.shape + [2])
+        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)
 
     def acquisitions(self) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
@@ -52,4 +53,5 @@ class Results:
             if not isinstance(result, QbloxResult):
                 raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
             results.append(result.acquisitions())
-        return np.reshape(a=results, newshape=self.shape + [4])
+        array = np.reshape(a=results, newshape=self.shape + [4])
+        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)

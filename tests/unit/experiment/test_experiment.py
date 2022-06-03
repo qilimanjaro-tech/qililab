@@ -108,7 +108,7 @@ class TestExperiment:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = nested_experiment.execute()  # type: ignore
         assert isinstance(results, Results)
-        assert np.shape(results.acquisitions())[:3] == (2, 2, 2)
+        assert np.shape(results.acquisitions())[1:4] == (2, 2, 2)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
