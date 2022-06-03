@@ -1,9 +1,10 @@
 """Execution class."""
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from qililab.execution.buses_execution import BusesExecution
-from qililab.result import Results
+from qililab.result import Result
 from qililab.utils import Plot
 
 
@@ -35,7 +36,7 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> List[Result]:
         """Run the given pulse sequence."""
         return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot, path=path)
 
@@ -53,3 +54,12 @@ class Execution:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
         return self.buses_execution.draw(resolution=resolution)
+
+    @property
+    def num_sequences(self):
+        """Execution 'num_sequences' property.
+
+        Returns:
+            int: Number of sequences played.
+        """
+        return self.buses_execution.num_sequences

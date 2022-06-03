@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
-from qililab.result import Result, Results
+from qililab.result import Result
 from qililab.utils import Plot
 
 
@@ -37,16 +37,15 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> Results.ExecutionResults:
+    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> List[Result]:
         """Run the given pulse sequence."""
-        results = Results.ExecutionResults()
+        results: List[Result] = []
         disable = self.num_sequences == 1
         for idx in tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable):
-            results.new()
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
-                    results.add(result=result)
+                    results.append(result)
                     self._asynchronous_data_handling(result=result, path=path, plot=plot, x_value=idx)
 
         return results

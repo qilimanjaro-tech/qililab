@@ -16,7 +16,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
-from qililab.result import Results
+from qililab.result import Result, Results
 from qililab.typings import Category
 from qililab.utils import Loop, Plot, nested_dataclass
 
@@ -60,7 +60,7 @@ class Experiment:
         self.loop = loop
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
-    def execute(self, connection: API | None = None) -> Results | Results.ExecutionResults:
+    def execute(self, connection: API | None = None) -> Results:
         """Run execution."""
         folder_path = self._create_folder()
         plot = Plot(connection=connection)
@@ -68,7 +68,7 @@ class Experiment:
             results = self._execute_loop(plot=plot, path=folder_path)
         return results
 
-    def _execute_loop(self, plot: Plot, path: Path) -> Results | Results.ExecutionResults:
+    def _execute_loop(self, plot: Plot, path: Path) -> Results:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -77,7 +77,6 @@ class Experiment:
         Returns:
             List[List[Result]]: List containing the results for each loop execution.
         """
-        results: Results | Results.ExecutionResults  # define type of results variable
 
         def recursive_loop(loop: Loop | None, results: Results, x_value: float = 0, depth: int = 0) -> Results:
             """Loop over all given parameters.
@@ -93,8 +92,8 @@ class Experiment:
 
             if loop is None:
                 result = self._execute(path=path)
-                results.add(execution_results=result)
-                plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
+                results.add(result=result)
+                plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
                 return results
 
             if loop.loop is None:
@@ -118,13 +117,17 @@ class Experiment:
             return results
 
         if self.loop is None:
-            results = self._execute(plot=plot, path=path)
+            result = self._execute(plot=plot, path=path)
+            results = Results(shape=[len(result)], num_sequences=self.execution.num_sequences, results=result)
+
         else:
-            results = recursive_loop(loop=self.loop, results=Results(loop=self.loop))
+            results = recursive_loop(
+                loop=self.loop, results=Results(shape=self.loop.shape, num_sequences=self.execution.num_sequences)
+            )
 
         return results
 
-    def _execute(self, path: Path, plot: Plot = None) -> Results.ExecutionResults:
+    def _execute(self, path: Path, plot: Plot = None) -> List[Result]:
         """Execute pulse sequences.
 
         Args:
@@ -135,6 +138,7 @@ class Experiment:
         """
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
+
         return self.execution.run(
             nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
         )

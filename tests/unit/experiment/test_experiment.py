@@ -1,6 +1,7 @@
 """Tests for the Experiment class."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qiboconnection.api import API
 
@@ -107,7 +108,7 @@ class TestExperiment:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = nested_experiment.execute()  # type: ignore
         assert isinstance(results, Results)
-        assert len(results.results) == 8
+        assert np.shape(results.acquisitions())[:3] == (2, 2, 2)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
@@ -168,8 +169,8 @@ class TestExperiment:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, list)
-        assert isinstance(acquisitions, list)
+        assert isinstance(probabilities, np.ndarray)
+        assert isinstance(acquisitions, np.ndarray)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
