@@ -49,9 +49,8 @@ class Loop:
         Returns:
             list: List containing the number of points of all loops.
         """
-        loop: Loop | None
         shape = []
-        loop = self
+        loop: Loop | None = self
         while loop is not None:
             if loop.num is not None:
                 shape.append(int(loop.num))
@@ -59,3 +58,17 @@ class Loop:
                 shape.append(int(np.ceil((loop.stop - loop.start) / loop.step)))
             loop = loop.loop
         return shape
+
+    @property
+    def num_loops(self) -> int:
+        """Loop 'num_loops' property.
+
+        Returns:
+            int: Number of nested loops.
+        """
+        num_loops = 0
+        loop: Loop | None = self
+        while loop is not None:
+            num_loops += 1
+            loop = loop.loop
+        return num_loops
