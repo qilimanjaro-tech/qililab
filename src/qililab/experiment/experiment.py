@@ -112,7 +112,6 @@ class Experiment:
                     pbar.set_description(f"{loop.parameter}: {value} ")
                     pbar.update()
                     element.set_parameter(name=loop.parameter, value=value)
-                    logger.debug("Setting %s parameter to value %f.", loop.parameter, value)
                     results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
 
