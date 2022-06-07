@@ -17,10 +17,14 @@ class BusExecution:
     def connect(self):
         """Connect to the instruments."""
         self.system_control.connect()
+        if self.attenuator is not None:
+            self.attenuator.connect()
 
     def setup(self):
         """Setup instruments."""
         self.system_control.setup()
+        if self.attenuator is not None:
+            self.attenuator.setup()
 
     def start(self):
         """Start/Turn on the instruments."""
@@ -95,3 +99,12 @@ class BusExecution:
             int: bus.id_
         """
         return self.bus.id_
+
+    @property
+    def attenuator(self):
+        """BusExecution 'attenuator' property.
+
+        Returns:
+            SystemControl: bus.attenuator
+        """
+        return self.bus.attenuator
