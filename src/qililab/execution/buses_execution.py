@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
-from qililab.utils import Plot
+from qililab.utils import LivePlot
 
 
 @dataclass
@@ -37,7 +37,7 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> List[Result]:
+    def run(self, nshots: int, repetition_duration: int, plot: LivePlot | None, path: Path) -> List[Result]:
         """Run the given pulse sequence."""
         results: List[Result] = []
         disable = self.num_sequences == 1
@@ -50,7 +50,7 @@ class BusesExecution:
 
         return results
 
-    def _asynchronous_data_handling(self, result: Result, path: Path, plot: Plot | None, x_value: float):
+    def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None, x_value: float):
         """Asynchronously dumps data in file and plots the data.
 
         Args:
@@ -59,7 +59,7 @@ class BusesExecution:
             x_value (float): Plot's x axis value.
         """
 
-        def _threaded_function(result: Result, path: Path, plot: Plot | None, x_value: float):
+        def _threaded_function(result: Result, path: Path, plot: LivePlot | None, x_value: float):
             """Asynchronous thread."""
             logger.debug("Thread started")
             with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:

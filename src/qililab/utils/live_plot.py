@@ -1,4 +1,4 @@
-"""Plot class."""
+"""LivePlot class."""
 from dataclasses import dataclass, field
 from typing import List
 
@@ -6,7 +6,7 @@ from qiboconnection.api import API
 
 
 @dataclass
-class Plot:
+class LivePlot:
     """Plot class."""
 
     connection: API | None

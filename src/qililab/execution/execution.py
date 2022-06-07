@@ -5,7 +5,7 @@ from typing import List
 
 from qililab.execution.buses_execution import BusesExecution
 from qililab.result import Result
-from qililab.utils import Plot
+from qililab.utils import LivePlot
 
 
 @dataclass
@@ -36,7 +36,7 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: Plot | None, path: Path) -> List[Result]:
+    def run(self, nshots: int, repetition_duration: int, plot: LivePlot | None, path: Path) -> List[Result]:
         """Run the given pulse sequence."""
         return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot, path=path)
 

@@ -18,7 +18,7 @@ from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category
-from qililab.utils import Loop, Plot, nested_dataclass
+from qililab.utils import LivePlot, Loop, nested_dataclass
 
 
 class Experiment:
@@ -63,12 +63,12 @@ class Experiment:
     def execute(self, connection: API | None = None) -> Results:
         """Run execution."""
         folder_path = self._create_folder()
-        plot = Plot(connection=connection)
+        plot = LivePlot(connection=connection)
         with self.execution:
             results = self._execute_loop(plot=plot, path=folder_path)
         return results
 
-    def _execute_loop(self, plot: Plot, path: Path) -> Results:
+    def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -127,7 +127,7 @@ class Experiment:
 
         return results
 
-    def _execute(self, path: Path, plot: Plot = None) -> List[Result]:
+    def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
 
         Args:
