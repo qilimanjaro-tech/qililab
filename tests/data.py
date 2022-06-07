@@ -195,7 +195,6 @@ class Platform0:
                     "signal_generator": rohde_schwarz_0,
                     "mixer_up": mixer_0,
                 },
-                "attenuator": attenuator,
                 "target": qubit_0,
             },
             {
@@ -211,6 +210,7 @@ class Platform0:
                     "mixer_up": mixer_1,
                     "mixer_down": mixer_2,
                 },
+                "attenuator": attenuator,
                 "target": resonator_0,
             },
         ],
