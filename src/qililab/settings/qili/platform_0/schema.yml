@@ -32,6 +32,8 @@ elements:
         delta: 0
         offset_i: 0
         offset_q: 0
+    attenuator:
+      attenuation: 30
     target:
       id_: 0
       name: qubit

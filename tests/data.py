@@ -162,6 +162,8 @@ class Platform0:
         "offset_q": 0,
     }
 
+    attenuator = {"attenuation": 30}
+
     schema = {
         "elements": [
             {
@@ -176,6 +178,7 @@ class Platform0:
                     "signal_generator": rohde_schwarz_0,
                     "mixer_up": mixer_0,
                 },
+                "attenuator": attenuator,
                 "target": qubit_0,
             },
             {

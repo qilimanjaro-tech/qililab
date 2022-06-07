@@ -2,7 +2,7 @@
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
-from qililab.instruments import MixerBasedSystemControl, SystemControl
+from qililab.instruments import MixerBasedSystemControl, SystemControl, StepAttenuator
 from qililab.platform.components.bus_target.bus_target import BusTarget
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
@@ -31,6 +31,7 @@ class Bus:
         subcategory: BusSubcategory
         system_control: SystemControl
         target: BusTarget
+        attenuator: StepAttenuator = None
 
         def __post_init__(self):
             """Cast each bus element to its corresponding class."""
