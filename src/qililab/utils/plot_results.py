@@ -4,6 +4,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 
+from qililab.constants import UNITS
 from qililab.result import Results
 from qililab.utils.loop import Loop
 
@@ -26,11 +27,12 @@ def plot(result: Results, loop: Loop, idx: List[int] | None = None):
 
     if loop.num_loops == 1:
         _, axes = plt.subplots(ncols=1, nrows=len(idx), figsize=(13, 4 * len(idx)))
+        # num_zeros = count_zeros(num=loop.range[0])
         for axis, values, label in zip(axes, result_values[idx], DATA[idx]):
             axis.plot(loop.range, values)
-            axis.set_xlabel(loop.parameter)
+            axis.set_xlabel(f"{loop.parameter} {UNITS.get(loop.parameter, None)}")
             axis.set_ylabel(label)
-            axis.set_xticks(loop.range[::4])
+            axis.set_xticks(np.round(loop.range[::4], 3))
             axis.grid(which="both")
 
     elif loop.loop is not None:
@@ -44,3 +46,19 @@ def plot(result: Results, loop: Loop, idx: List[int] | None = None):
 
     plt.tight_layout()
     plt.show()
+
+
+def count_zeros(num: float) -> int:
+    """Count number of zeros of a given float.
+
+    Args:
+        num (float): Float number.
+
+    Returns:
+        int: Number of zeros.
+    """
+    count = 0
+    while num > 1:
+        count += 1
+        num /= 10
+    return count
