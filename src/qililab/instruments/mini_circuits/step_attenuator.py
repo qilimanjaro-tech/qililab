@@ -1,12 +1,11 @@
 """StepAttenuator class."""
-from dataclasses import dataclass
 from urllib.error import URLError
 from urllib.request import urlopen
 
 from qililab.config import logger
 from qililab.instruments.instrument import Instrument
 from qililab.typings import BusElementName, Device
-from qililab.utils import Factory
+from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
@@ -15,7 +14,7 @@ class StepAttenuator(Instrument):
 
     name = BusElementName.MINI_CIRCUITS
 
-    @dataclass
+    @nested_dataclass
     class StepAttenuatorSettings(Instrument.InstrumentSettings):
         """Step attenuator settings."""
 

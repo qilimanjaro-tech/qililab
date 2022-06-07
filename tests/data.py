@@ -173,7 +173,7 @@ class Platform0:
     }
 
     attenuator = {
-        "id_": 0,
+        "id_": 1,
         "name": "mini_circuits",
         "category": "step_attenuator",
         "attenuation": 30,
