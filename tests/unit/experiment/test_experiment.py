@@ -3,6 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from qibo.core.circuit import Circuit
+from qibo.gates import M
 from qiboconnection.api import API
 
 from qililab.execution import Execution
@@ -54,6 +56,13 @@ class TestExperiment:
     def test_draw_method(self, experiment_all_platforms: Experiment):
         """Test draw method with all platforms."""
         experiment_all_platforms.draw()
+
+    def test_draw_method_with_one_bus(self):
+        """Test draw method with only one measurement gate."""
+        circuit = Circuit(1)
+        circuit.add(M(0))
+        experiment = Experiment(sequences=circuit, platform_name="platform_0")
+        experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method with all platforms."""

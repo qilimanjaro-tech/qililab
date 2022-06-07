@@ -99,16 +99,16 @@ class BusesExecution:
         figure, axes = plt.subplots(nrows=len(self.buses), ncols=1, sharex=True)
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
-        for bus_idx, pulse in self.waveforms(resolution=resolution).items():
+        for axis_idx, (bus_idx, pulse) in enumerate(self.waveforms(resolution=resolution).items()):
             time = np.arange(len(pulse[0])) * resolution
-            axes[bus_idx].set_title(f"Bus {bus_idx}")
-            axes[bus_idx].plot(time, pulse[0], label="I")
-            axes[bus_idx].plot(time, pulse[1], label="Q")
-            axes[bus_idx].legend()
-            axes[bus_idx].minorticks_on()
-            axes[bus_idx].grid(which="both")
-            axes[bus_idx].set_ylabel("Amplitude")
-            axes[bus_idx].set_xlabel("Time (ns)")
+            axes[axis_idx].set_title(f"Bus {bus_idx}")
+            axes[axis_idx].plot(time, pulse[0], label="I")
+            axes[axis_idx].plot(time, pulse[1], label="Q")
+            axes[axis_idx].legend()
+            axes[axis_idx].minorticks_on()
+            axes[axis_idx].grid(which="both")
+            axes[axis_idx].set_ylabel("Amplitude")
+            axes[axis_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
         # plt.savefig("test.png")
