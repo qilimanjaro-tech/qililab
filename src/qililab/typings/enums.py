@@ -28,6 +28,7 @@ class Category(Enum):
     MIXER = "mixer"
     BUS = "bus"
     SYSTEM_CONTROL = "system_control"
+    EXPERIMENT = "experiment"
 
 
 class ReferenceClock(Enum):

@@ -64,6 +64,10 @@ class TestExperiment:
         """Test set_parameter method with all platforms."""
         experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
 
+    def test_set_parameter_method_with_experiment_settings(self, experiment: Experiment):
+        """Test set_parameter method with all platforms."""
+        experiment.set_parameter(category="experiment", id_=0, parameter="repetition_duration", value=3e6)
+
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
     @patch("qililab.execution.buses_execution.open")

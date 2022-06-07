@@ -152,6 +152,12 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        # FIXME: Avoid calling self._build_execution twice
+        if Category(category) == Category.EXPERIMENT:
+            attr_type = type(getattr(self.settings, parameter))
+            setattr(self.settings, parameter, attr_type(value))
+            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
+            return
         self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
         if Category(category) == Category.PLATFORM:
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
