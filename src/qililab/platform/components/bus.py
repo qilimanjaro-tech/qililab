@@ -46,14 +46,14 @@ class Bus:
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SystemControl | BusTarget], None, None]:
+        ) -> Generator[Tuple[str, SystemControl | BusTarget | StepAttenuator], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | BusTarget | dict):
+                if isinstance(value, SystemControl | BusTarget | StepAttenuator | dict):
                     yield name, value
 
     settings: BusSettings
@@ -86,11 +86,20 @@ class Bus:
         return self.settings.target
 
     @property
+    def attenuator(self) -> StepAttenuator:
+        """Bus 'attenuator' property.
+
+        Returns:
+            List[int]: settings.attenuator.
+        """
+        return self.settings.attenuator
+
+    @property
     def qubit_ids(self) -> List[int]:
         """Bus 'qubit_ids' property.
 
         Returns:
-            List[int]: IDs of the qubit connected to the bus.~
+            List[int]: IDs of the qubit connected to the bus.
         """
         return self.target.qubit_ids
 
