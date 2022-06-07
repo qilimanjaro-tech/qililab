@@ -1,7 +1,10 @@
 """Tests for the Experiment class."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from qibo.core.circuit import Circuit
+from qibo.gates import M
 from qiboconnection.api import API
 
 from qililab.execution import Execution
@@ -39,10 +42,6 @@ class TestExperiment:
         """Test repetition_duration property."""
         assert experiment.repetition_duration == experiment.settings.repetition_duration
 
-    def test_circuit_to_pulse_property(self, experiment: Experiment):
-        """Test circuit_to_pulse property."""
-        assert experiment.translation == experiment.settings.translation
-
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method with all platforms."""
         dictionary = experiment_all_platforms.to_dict()
@@ -58,6 +57,13 @@ class TestExperiment:
         """Test draw method with all platforms."""
         experiment_all_platforms.draw()
 
+    def test_draw_method_with_one_bus(self):
+        """Test draw method with only one measurement gate."""
+        circuit = Circuit(1)
+        circuit.add(M(0))
+        experiment = Experiment(sequences=circuit, platform_name="platform_0")
+        experiment.draw()
+
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method with all platforms."""
         str(experiment_all_platforms)
@@ -66,6 +72,10 @@ class TestExperiment:
     def test_set_parameter_method(self, experiment: Experiment):
         """Test set_parameter method with all platforms."""
         experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
+
+    def test_set_parameter_method_with_experiment_settings(self, experiment: Experiment):
+        """Test set_parameter method with all platforms."""
+        experiment.set_parameter(category="experiment", id_=0, parameter="repetition_duration", value=3e6)
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
@@ -111,7 +121,7 @@ class TestExperiment:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = nested_experiment.execute()  # type: ignore
         assert isinstance(results, Results)
-        assert len(results.results) == 8
+        assert np.shape(results.acquisitions())[1:4] == (2, 2, 2)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
@@ -172,8 +182,8 @@ class TestExperiment:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, list)
-        assert isinstance(acquisitions, list)
+        assert isinstance(probabilities, np.ndarray)
+        assert isinstance(acquisitions, np.ndarray)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()

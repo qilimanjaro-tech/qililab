@@ -16,9 +16,9 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_DB, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
-from qililab.result import Results
+from qililab.result import Result, Results
 from qililab.typings import Category
-from qililab.utils import Loop, Plot, nested_dataclass
+from qililab.utils import LivePlot, Loop, nested_dataclass
 
 
 class Experiment:
@@ -31,7 +31,6 @@ class Experiment:
         hardware_average: int = 1024
         software_average: int = 1
         repetition_duration: int = 200000
-        translation: CircuitToPulses.CircuitToPulsesSettings = CircuitToPulses.CircuitToPulsesSettings()
 
         def __str__(self):
             """Returns a string representation of the experiment settings."""
@@ -40,6 +39,7 @@ class Experiment:
     platform: Platform
     execution: Execution
     settings: ExperimentSettings
+    _initial_sequences: List[Circuit | PulseSequences]
     sequences: List[PulseSequences]
     loop: Loop | None
 
@@ -53,21 +53,22 @@ class Experiment:
     ):
         if not isinstance(sequences, list):
             sequences = [sequences]
+        self._initial_sequences = sequences
         self.name = experiment_name
         self.settings = self.ExperimentSettings() if settings is None else settings
         self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
         self.loop = loop
-        self.execution, self.sequences = self._build_execution(sequence_list=sequences)
+        self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
-    def execute(self, connection: API | None = None) -> Results | Results.ExecutionResults:
+    def execute(self, connection: API | None = None) -> Results:
         """Run execution."""
         folder_path = self._create_folder()
-        plot = Plot(connection=connection)
+        plot = LivePlot(connection=connection)
         with self.execution:
             results = self._execute_loop(plot=plot, path=folder_path)
         return results
 
-    def _execute_loop(self, plot: Plot, path: Path) -> Results | Results.ExecutionResults:
+    def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -76,7 +77,6 @@ class Experiment:
         Returns:
             List[List[Result]]: List containing the results for each loop execution.
         """
-        results: Results | Results.ExecutionResults  # define type of results variable
 
         def recursive_loop(loop: Loop | None, results: Results, x_value: float = 0, depth: int = 0) -> Results:
             """Loop over all given parameters.
@@ -92,8 +92,8 @@ class Experiment:
 
             if loop is None:
                 result = self._execute(path=path)
-                results.add(execution_results=result)
-                plot.send_points(x_value=x_value, y_value=np.round(result.probabilities()[-1][0][0], 4))
+                results.add(result=result)
+                plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
                 return results
 
             if loop.loop is None:
@@ -117,13 +117,17 @@ class Experiment:
             return results
 
         if self.loop is None:
-            results = self._execute(plot=plot, path=path)
+            result = self._execute(plot=plot, path=path)
+            results = Results(num_sequences=self.execution.num_sequences, results=result)
+
         else:
-            results = recursive_loop(loop=self.loop, results=Results(loop=self.loop))
+            results = recursive_loop(
+                loop=self.loop, results=Results(shape=self.loop.shape, num_sequences=self.execution.num_sequences)
+            )
 
         return results
 
-    def _execute(self, path: Path, plot: Plot = None) -> Results.ExecutionResults:
+    def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
 
         Args:
@@ -134,7 +138,7 @@ class Experiment:
         """
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
-        self.execution.setup()
+
         return self.execution.run(
             nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
         )
@@ -148,8 +152,15 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        element, _ = self.platform.get_element(category=Category(category), id_=id_)
-        element.set_parameter(name=parameter, value=value)
+        # FIXME: Avoid calling self._build_execution twice
+        if Category(category) == Category.EXPERIMENT:
+            attr_type = type(getattr(self.settings, parameter))
+            setattr(self.settings, parameter, attr_type(value))
+            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
+            return
+        self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
+        if Category(category) == Category.PLATFORM:
+            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
     def parameters(self):
@@ -177,11 +188,12 @@ class Experiment:
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        translator = CircuitToPulses(settings=self.translation)
         sequences = []
         for sequence in sequence_list:
             if isinstance(sequence, Circuit):
-                sequence = translator.translate(circuit=sequence)
+                sequence = CircuitToPulses().translate(
+                    circuit=sequence, translation_settings=self.platform.translation_settings
+                )
             sequences.append(sequence)
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequences)
         return execution, sequences
@@ -229,15 +241,6 @@ class Experiment:
             int: settings.repetition_duration.
         """
         return self.settings.repetition_duration
-
-    @property
-    def translation(self):
-        """Experiment 'translation' property.
-
-        Returns:
-            int: settings.translation.
-        """
-        return self.settings.translation
 
     def to_dict(self):
         """Convert Experiment into a dictionary."""

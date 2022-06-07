@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 
@@ -40,3 +41,34 @@ class Loop:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
         else:
             raise ValueError("Please specify either 'step' or 'num' arguments.")
+
+    @property
+    def shape(self) -> List[int]:
+        """Return number of points of all loops.
+
+        Returns:
+            list: List containing the number of points of all loops.
+        """
+        shape = []
+        loop: Loop | None = self
+        while loop is not None:
+            if loop.num is not None:
+                shape.append(int(loop.num))
+            elif loop.step is not None:
+                shape.append(int(np.ceil((loop.stop - loop.start) / loop.step)))
+            loop = loop.loop
+        return shape
+
+    @property
+    def num_loops(self) -> int:
+        """Loop 'num_loops' property.
+
+        Returns:
+            int: Number of nested loops.
+        """
+        num_loops = 0
+        loop: Loop | None = self
+        while loop is not None:
+            num_loops += 1
+            loop = loop.loop
+        return num_loops

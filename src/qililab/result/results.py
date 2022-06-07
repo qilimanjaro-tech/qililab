@@ -1,108 +1,57 @@
 """Results class."""
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List
+
+import numpy as np
 
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
-from qililab.utils import Loop
 
 
 @dataclass
 class Results:
     """Results class."""
 
-    @dataclass
-    class ExecutionResults:
-        """ExecutionResults class."""
+    shape: List[int] = field(default_factory=list)
+    num_sequences: int = 1
+    results: List[Result] = field(default_factory=list)
 
-        @dataclass
-        class SequenceResults:
-            """SequenceResults class."""
+    def __post_init__(self):
+        """Add num_sequences to shape."""
+        if self.num_sequences > 1:
+            self.shape.append(self.num_sequences)
 
-            results: List[Result] = field(default_factory=list)
-
-            def add(self, result: Result):
-                """Add result.
-
-                Args:
-                    result (Result): Result object.
-                """
-                self.results.append(result)
-
-            def probabilities(self) -> List[Tuple[float, float]]:
-                """Probabilities of being in the ground and excited state of all the nested Results classes.
-
-                Returns:
-                    List[List[Tuple[float, float]]]: Probabilities.
-                """
-                return [result.probabilities() for result in self.results]
-
-            def acquisitions(self) -> List[Tuple[float, float, float, float]]:
-                """QbloxResult acquisitions of all the nested Results classes.
-
-                Returns:
-                    List[List[Tuple[float, float, float, float]]]: Acquisition values.
-                """
-                results = []
-                for result in self.results:
-                    if not isinstance(result, QbloxResult):
-                        raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
-                    results.append(result.acquisitions())
-                return results
-
-        results: List[SequenceResults] = field(default_factory=list)
-
-        def new(self):
-            """Add new SequenceResults to the results list."""
-            self.results.append(self.SequenceResults())
-
-        def add(self, result: Result):
-            """Add result object to the last SequenceResults class in the list.
-
-            Args:
-                result (Result): Result object.
-            """
-            self.results[-1].add(result)
-
-        def probabilities(self) -> List[List[Tuple[float, float]]]:
-            """Probabilities of being in the ground and excited state of all the nested Results classes.
-
-            Returns:
-                List[List[Tuple[float, float]]]: Probabilities.
-            """
-            return [result.probabilities() for result in self.results]
-
-        def acquisitions(self) -> List[List[Tuple[float, float, float, float]]]:
-            """QbloxResult acquisitions of all the nested Results classes.
-
-            Returns:
-                List[List[Tuple[float, float, float, float]]]: Acquisition values.
-            """
-            return [result.acquisitions() for result in self.results]
-
-    loop: Loop
-    results: List[ExecutionResults] = field(default_factory=list)
-
-    def add(self, execution_results: ExecutionResults):
+    def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
 
         Args:
             execution_results (ExecutionResults): ExecutionResults object.
         """
-        self.results.append(execution_results)
+        if isinstance(result, list):
+            self.results += result
+        else:
+            self.results.append(result)
 
-    def probabilities(self) -> List[List[List[Tuple[float, float]]]]:
+    def probabilities(self) -> np.ndarray:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
         Returns:
-            List[List[List[Tuple[float, float]]]]: List of probabilities of each executed loop and sequence.
+            np.ndarray: List of probabilities of each executed loop and sequence.
         """
-        return [result.probabilities() for result in self.results]
+        probs = [result.probabilities() for result in self.results]
+        array = np.reshape(a=probs, newshape=self.shape + [2])
+        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)
 
-    def acquisitions(self) -> List[List[List[Tuple[float, float, float, float]]]]:
+    def acquisitions(self) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
 
         Returns:
-            List[List[Tuple[float, float, float, float]]]: Acquisition values.
+            np.ndarray: Acquisition values.
         """
-        return [result.acquisitions() for result in self.results]
+        results = []
+        for result in self.results:
+            if not isinstance(result, QbloxResult):
+                raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
+            results.append(result.acquisitions())
+        array = np.reshape(a=results, newshape=self.shape + [4])
+        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)

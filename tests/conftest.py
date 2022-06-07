@@ -174,16 +174,10 @@ def fixture_schema(platform: Platform) -> Schema:
     return platform.schema
 
 
-@pytest.fixture(name="circuit_to_pulses")
-def fixture_circuit_to_pulses() -> CircuitToPulses:
-    """Return CircuitToPulses instance."""
-    return CircuitToPulses(settings=CircuitToPulses.CircuitToPulsesSettings())
-
-
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
-def fixture_pulse_sequences(circuit_to_pulses: CircuitToPulses) -> PulseSequences:
+def fixture_pulse_sequences(platform: Platform) -> PulseSequences:
     """Return PulseSequences instance."""
-    return circuit_to_pulses.translate(circuit=circuit)
+    return CircuitToPulses().translate(circuit=circuit, translation_settings=platform.translation_settings)
 
 
 @pytest.fixture(name="pulse_sequence")
@@ -207,7 +201,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop = Loop(category="system_control", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
+    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
     experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment

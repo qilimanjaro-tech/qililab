@@ -5,7 +5,7 @@ from typing import List
 
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
-from qililab.settings import Settings
+from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category
 from qililab.utils import dict_factory, nested_dataclass
 
@@ -30,6 +30,7 @@ class Platform:
         """
 
         name: str
+        translation_settings: TranslationSettings
 
     settings: PlatformSettings
     schema: Schema
@@ -75,6 +76,22 @@ class Platform:
             ([], None),
         )
 
+    def set_parameter(self, category: str, id_: int, parameter: str, value: float):
+        """Set parameter of a platform element.
+
+        Args:
+            category (str): Category of the element.
+            id_ (int): ID of the element.
+            parameter (str): Name of the parameter to change.
+            value (float): New value.
+        """
+        if Category(category) == Category.PLATFORM:
+            attr_type = type(getattr(self.settings.translation_settings, parameter))
+            setattr(self.settings.translation_settings, parameter, attr_type(value))
+            return
+        element, _ = self.get_element(category=Category(category), id_=id_)
+        element.set_parameter(name=parameter, value=value)
+
     @property
     def id_(self):
         """Platform 'id_' property.
@@ -92,6 +109,15 @@ class Platform:
             str: settings.name.
         """
         return self.settings.name
+
+    @property
+    def translation_settings(self):
+        """Platform 'translation_settings' property.
+
+        Returns:
+            str: settings.translation_settings.
+        """
+        return self.settings.translation_settings
 
     @property
     def category(self):
