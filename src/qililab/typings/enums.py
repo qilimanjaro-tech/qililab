@@ -29,6 +29,7 @@ class Category(Enum):
     BUS = "bus"
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
+    STEP_ATTENUATOR = "step_attenuator"
 
 
 class ReferenceClock(Enum):
