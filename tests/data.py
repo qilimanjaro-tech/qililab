@@ -172,7 +172,14 @@ class Platform0:
         "offset_q": 0,
     }
 
-    attenuator = {"attenuation": 30}
+    attenuator = {
+        "id_": 0,
+        "name": "mini_circuits",
+        "category": "step_attenuator",
+        "attenuation": 30,
+        "ip": "192.168.0.222",
+        "firmware": None,
+    }
 
     schema = {
         "elements": [

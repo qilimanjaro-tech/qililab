@@ -142,3 +142,4 @@ class BusElementName(Enum):
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    MINI_CIRCUITS = "mini_circuits"  # step attenuator

@@ -33,6 +33,11 @@ elements:
         offset_i: 0
         offset_q: 0
     attenuator:
+      id_: 0
+      name: mini_circuits
+      category: step_attenuator
+      ip: 192.168.0.222
+      firmware: None
       attenuation: 30
     target:
       id_: 0

@@ -34,6 +34,7 @@ class PlatformSchema:
             subcategory: str
             system_control: dict
             target: dict
+            attenuator: dict | None = None
 
         elements: List[Bus]
 

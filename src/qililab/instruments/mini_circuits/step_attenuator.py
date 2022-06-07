@@ -1,9 +1,11 @@
 """StepAttenuator class."""
+from dataclasses import dataclass
+from urllib.error import URLError
 from urllib.request import urlopen
 
-from qililab.instruments.instrument import Instrument
-from qililab.typings import Device
 from qililab.config import logger
+from qililab.instruments.instrument import Instrument
+from qililab.typings import BusElementName, Device
 from qililab.utils import Factory
 
 
@@ -11,6 +13,9 @@ from qililab.utils import Factory
 class StepAttenuator(Instrument):
     """StepAttenuator class."""
 
+    name = BusElementName.MINI_CIRCUITS
+
+    @dataclass
     class StepAttenuatorSettings(Instrument.InstrumentSettings):
         """Step attenuator settings."""
 
@@ -30,31 +35,30 @@ class StepAttenuator(Instrument):
 
     def setup(self):
         """Set instrument settings."""
-        self.HTTP_request(command=f"SETATT={self.attenuation}")
+        self.http_request(command=f"SETATT={self.attenuation}")
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        model_name = self.HTTP_request(command="MN?")
+        model_name = self.http_request(command="MN?")
         logger.info("Connected to step attenuator with model name %s", model_name)
         self.device = Device()
 
-    def HTTP_request(self, command: str):
+    def http_request(self, command: str):
         """Send an HTTP request with the given command.
 
         Args:
             command (str): Command to send via HTTP.
         """
-        request = "http://" + self.ip + "/:" + command
+        request = f"http://{self.ip}/:{command}"
 
         try:
-            HTTP_Result = urlopen(request, timeout=2)
-            PTE_Return = HTTP_Result.read()
-
-        except:
+            http_result = urlopen(request, timeout=2)
+            pte_return = http_result.read()
+        except URLError:
             logger.error("No response from device. Check IP address and connections.")
-            PTE_Return = "No Response!"
+            pte_return = "No Response!"
 
-        return PTE_Return
+        return pte_return
 
     @property
     def attenuation(self):
