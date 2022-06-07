@@ -138,6 +138,7 @@ class BusElementName(Enum):
     QBLOX_QCM = "qblox_qcm"
     QBLOX_QRM = "qblox_qrm"
     ROHDE_SCHWARZ = "rohde_schwarz"
+    ERASYNTH = "erasynth"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
