@@ -3,5 +3,6 @@ from .dict_factory import dict_factory
 from .factory import Factory
 from .live_plot import LivePlot
 from .loop import Loop
-from .nested_dataclass import nested_dataclass
+from .nested_data_class import nested_dataclass
+from .plot_results import plot
 from .singleton import Singleton, SingletonABC
