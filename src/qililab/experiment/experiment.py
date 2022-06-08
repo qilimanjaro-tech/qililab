@@ -1,5 +1,4 @@
 """HardwareExperiment class."""
-import json
 import os
 from dataclasses import asdict
 from datetime import datetime
@@ -17,7 +16,7 @@ from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_YAML, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
-from qililab.typings import Category
+from qililab.typings import Category, yaml
 from qililab.utils import LivePlot, Loop, nested_dataclass
 
 
@@ -34,7 +33,7 @@ class Experiment:
 
         def __str__(self):
             """Returns a string representation of the experiment settings."""
-            return json.dumps(asdict(self), indent=4)
+            return yaml.dump(asdict(self), sort_keys=False)
 
     platform: Platform
     execution: Execution

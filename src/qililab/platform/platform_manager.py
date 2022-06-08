@@ -1,14 +1,14 @@
 """Platform Manager"""
+import os
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-
-import yaml
 
 from qililab.config import logger
 from qililab.constants import DEFAULT_RUNCARD_FILENAME
 from qililab.platform.platform import Platform
 from qililab.platform.utils import PlatformSchema
+from qililab.typings import yaml
 from qililab.utils import SingletonABC
 
 
@@ -31,9 +31,11 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Args:
             platform (Platform): Platform to dump.
         """
-        file_path = Path(sys.argv[0]).parent / DEFAULT_RUNCARD_FILENAME
+        file_path = os.environ.get("YAML", None)
+        if file_path is None:
+            file_path = str(Path(sys.argv[0]).parent / DEFAULT_RUNCARD_FILENAME)
         with open(file=file_path, mode="w", encoding="utf-8") as file:
-            yaml.safe_dump(data=platform.to_dict(), stream=file, sort_keys=False)
+            yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
     @abstractmethod
     def _load_platform_settings(self, platform_name: str) -> dict:

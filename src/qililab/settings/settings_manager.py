@@ -2,8 +2,7 @@
 import os
 from pathlib import Path
 
-import yaml
-
+from qililab.typings import yaml
 from qililab.utils import Singleton
 
 

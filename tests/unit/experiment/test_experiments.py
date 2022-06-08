@@ -11,7 +11,7 @@ from ...conftest import mock_instruments
 
 @patch("qililab.execution.buses_execution.open")
 @patch("qililab.experiment.experiment.os.makedirs")
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
+@patch("qililab.execution.buses_execution.yaml.dump")
 @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
 @patch("qililab.instruments.qblox.qblox_pulsar.open")
 class TestExperiments:

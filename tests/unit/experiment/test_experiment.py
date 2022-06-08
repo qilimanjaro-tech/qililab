@@ -78,7 +78,7 @@ class TestExperiment:
         experiment.set_parameter(category="experiment", id_=0, parameter="repetition_duration", value=3e6)
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.execution.buses_execution.yaml.dump")
     @patch("qililab.execution.buses_execution.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     def test_execute_method_without_loop(
@@ -101,7 +101,7 @@ class TestExperiment:
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.execution.buses_execution.yaml.dump")
     @patch("qililab.execution.buses_execution.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
@@ -129,7 +129,7 @@ class TestExperiment:
         mock_makedirs.assert_called()
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.execution.buses_execution.yaml.dump")
     @patch("qililab.execution.buses_execution.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     def test_execute_method_with_simulated_qubit(
@@ -158,7 +158,7 @@ class TestExperiment:
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.execution.buses_execution.yaml.dump")
     @patch("qililab.execution.buses_execution.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")

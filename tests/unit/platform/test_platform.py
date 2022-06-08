@@ -107,7 +107,7 @@ class TestPlatform:
         assert isinstance(element, QubitReadout)
         assert bus_idxs[0] == 1
 
-    @patch("qililab.settings.settings_manager.yaml.safe_dump")
+    @patch("qililab.settings.settings_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         PLATFORM_MANAGER_DB.dump(platform=platform)

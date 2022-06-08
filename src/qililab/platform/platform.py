@@ -1,12 +1,11 @@
 """Platform class."""
-import json
 from dataclasses import asdict
 from typing import List
 
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
-from qililab.typings import BusSubcategory, Category
+from qililab.typings import BusSubcategory, Category, yaml
 from qililab.utils import dict_factory, nested_dataclass
 
 
@@ -159,4 +158,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return json.dumps(self.to_dict(), indent=4)
+        return yaml.dump(self.to_dict(), sort_keys=False)

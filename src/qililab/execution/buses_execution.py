@@ -6,12 +6,12 @@ from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 from tqdm.auto import tqdm
 
 from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
+from qililab.typings import yaml
 from qililab.utils import LivePlot
 
 
@@ -62,7 +62,7 @@ class BusesExecution:
         def _threaded_function(result: Result, path: Path, plot: LivePlot | None, x_value: float):
             """Asynchronous thread."""
             with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                yaml.safe_dump(data=asdict(result), stream=data_file)
+                yaml.safe_dump(data=asdict(result), stream=data_file, sort_keys=False)
             if plot is not None:
                 plot.send_points(x_value=x_value, y_value=result.probabilities()[0])
 
