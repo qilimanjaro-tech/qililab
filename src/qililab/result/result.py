@@ -29,4 +29,4 @@ class Result(FactoryElement):
         Returns:
             dict: Dictionary containing all the class information.
         """
-        return {"name": self.name.value} | asdict(self)
+        return asdict(self) | {"name": self.name.value}
