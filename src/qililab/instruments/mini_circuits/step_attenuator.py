@@ -38,7 +38,7 @@ class StepAttenuator(Instrument):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        model_name = self.http_request(command="MN?").decode('ascii')
+        model_name = self.http_request(command="MN?")
         logger.info("Connected to step attenuator with model name %s", model_name)
         self.device = Device()
 
