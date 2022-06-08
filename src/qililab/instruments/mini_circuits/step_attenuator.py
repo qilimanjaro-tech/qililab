@@ -35,7 +35,6 @@ class StepAttenuator(Instrument):
     def setup(self):
         """Set instrument settings."""
         self.http_request(command=f"SETATT={self.attenuation}")
-        logger.debug("Attenuation is set to value %f", self.http_request(command="ATT?"))
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
