@@ -236,7 +236,7 @@ class QbloxPulsar(AWG):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        self.device = Pulsar(name=f"{self.name}_{self.id_}", identifier=self.ip)
+        self.device = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
 
     def _generate_waveforms(self, pulses: List[Pulse]):
         """Generate I and Q waveforms from a PulseSequence object.

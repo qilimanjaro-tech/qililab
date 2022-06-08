@@ -109,5 +109,6 @@ class BusesExecution:
             axes[axis_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
+        plt.show()
         # plt.savefig("test.png")
         return figure

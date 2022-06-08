@@ -49,4 +49,4 @@ class SGS100A(SignalGenerator):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name}_{self.id_}", f"TCPIP0::{self.ip}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.ip}::inst0::INSTR")
