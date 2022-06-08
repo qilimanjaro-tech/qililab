@@ -1,4 +1,5 @@
 """SettingsManager class."""
+import os
 from pathlib import Path
 
 import yaml
@@ -19,7 +20,9 @@ class SettingsManager(metaclass=Singleton):
         Returns:
             dict: Dictionary containing the settings.
         """
-        path = str(Path(__file__).parent / foldername / platform_name / f"{filename}.yml")
+        path = os.environ.get("YAML", None)
+        if path is None:
+            path = str(Path(__file__).parent / foldername / platform_name / f"{filename}.yml")
 
         with open(file=path, mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)
