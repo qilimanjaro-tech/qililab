@@ -9,7 +9,6 @@ qblox-instruments==0.6.0
 pyvisa-py==0.5.2
 qutip==4.7.0
 ipympl==0.9.1
-pytest-random-order==1.0.4
 qiboconnection @ git+https://github.com/qilimanjaro-tech/qiboconnection.git@feat/TII-nshots-and-experiments
 qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git@tii-demo
 qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git@add-files
