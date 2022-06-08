@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import PLATFORM_MANAGER_DB, Platform
+from qililab.platform import PLATFORM_MANAGER_YAML, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category
@@ -56,7 +56,7 @@ class Experiment:
         self._initial_sequences = sequences
         self.name = experiment_name
         self.settings = self.ExperimentSettings() if settings is None else settings
-        self.platform = PLATFORM_MANAGER_DB.build(platform_name=platform_name)
+        self.platform = PLATFORM_MANAGER_YAML.build(platform_name=platform_name)
         self.loop = loop
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 

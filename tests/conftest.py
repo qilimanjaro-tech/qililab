@@ -329,11 +329,8 @@ def platform_db() -> Platform:
 
 def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
-    filepath = (
-        Path(__file__).parent.parent / "src" / "qililab" / "settings" / "qili" / "platform_0" / "all_platform.yml"
-    )
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(filepath=str(filepath))
+        platform = PLATFORM_MANAGER_YAML.build(platform_name="platform_0")
         mock_load.assert_called()
     return platform
 

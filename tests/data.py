@@ -216,7 +216,7 @@ class Platform0:
         ],
     }
 
-    all_platform = {
+    runcard = {
         "settings": platform,
         "schema": schema,
     }
@@ -276,7 +276,7 @@ class FluxQubit:
         ]
     }
 
-    all_platform = {
+    runcard = {
         "settings": platform,
         "schema": schema,
     }
