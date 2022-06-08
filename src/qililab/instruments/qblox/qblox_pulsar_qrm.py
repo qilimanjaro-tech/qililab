@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.instructions import Acquire
+from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar

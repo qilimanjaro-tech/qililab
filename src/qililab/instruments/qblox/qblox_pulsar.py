@@ -8,7 +8,8 @@ from typing import List, Tuple
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.block import Block
-from qpysequence.instructions import Play, Stop, Wait
+from qpysequence.instructions.control import Stop
+from qpysequence.instructions.real_time import Play, Wait
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.loop import Loop
 from qpysequence.program import Program

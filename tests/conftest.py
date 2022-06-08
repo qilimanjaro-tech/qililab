@@ -132,7 +132,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", Parameter.FREQUENCY])
+    mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
     settings = MockedSettingsFactory.get(platform_name="platform_0", filename="rohde_schwarz_0")
     settings.pop("name")
@@ -380,7 +380,7 @@ def mixer_down() -> MixerDown:
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
     """Mock dynamically created attributes."""
     mock_rs_instance = mock_rs.return_value
-    mock_rs_instance.mock_add_spec(["power", Parameter.FREQUENCY])
+    mock_rs_instance.mock_add_spec(["power", "frequency"])
     mock_pulsar_instance = mock_pulsar.return_value
     mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
         {
