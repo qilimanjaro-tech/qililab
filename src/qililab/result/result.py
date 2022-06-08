@@ -2,11 +2,15 @@
 from dataclasses import dataclass
 from typing import Tuple
 
+from qililab.typings import ResultName
+
 
 # FIXME: Cannot use dataclass and ABC at the same time
 @dataclass
 class Result:
     """Result class."""
+
+    name: ResultName
 
     def plot(self):
         """Plot results."""

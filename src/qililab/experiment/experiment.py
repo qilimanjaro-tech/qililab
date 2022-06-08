@@ -224,9 +224,14 @@ class Experiment:
             / "data"
             / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
         )
+        # create folder
         if not os.path.exists(path):
             os.makedirs(path)
-
+        # create results file
+        data = {"software_average": self.software_average, "num_sequences": self.execution.num_sequences,
+        "shape": [] if self.loop is None else self.loop.shape, "results": None}
+        with open(file=path / "results.yml", mode="w", encoding="utf8") as data_file:
+            yaml.dump(data=data, stream=data_file, sort_keys=False)
         return path
 
     @property

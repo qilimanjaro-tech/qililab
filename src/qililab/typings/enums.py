@@ -175,3 +175,14 @@ class Parameter(Enum):
     REPETITION_DURATION = "repetition_duration"
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
+
+class ResultName(Enum):
+    """Result names.
+
+    Args:
+        enum (str): Available bus element names:
+        * qblox
+        * simulator
+    """
+    QBLOX = "qblox"
+    SIMULATOR = "simulator"

@@ -5,9 +5,10 @@ from typing import List, Tuple
 import numpy as np
 
 from qililab.result.result import Result
-from qililab.utils import nested_dataclass
+from qililab.utils import nested_dataclass, Factory
+from qililab.typings import ResultName
 
-
+@Factory.register
 @nested_dataclass
 class QbloxResult(Result):
     """QbloxResult class. Contains the binning acquisition results obtained from the `Pulsar.get_acquisitions` method.
@@ -20,6 +21,8 @@ class QbloxResult(Result):
     - valid: list of valid indications per bin.
     - avg_cnt: list of number of averages per bin.
     """
+
+    name = ResultName.QBLOX
 
     @dataclass
     class QbloxIntegrationData:

@@ -11,6 +11,7 @@ from .enums import (
     PulseShapeName,
     ReferenceClock,
     SchemaDrawOptions,
+    ResultName,
 )
 from .factory_element import FactoryElement
 from .instruments.device import Device

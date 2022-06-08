@@ -23,6 +23,7 @@ class Results:
             self.shape.append(self.num_sequences)
         if self.software_average > 1:
             self.shape.append(self.software_average)
+        self.results = [Result(**result) for result in self.results]
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.

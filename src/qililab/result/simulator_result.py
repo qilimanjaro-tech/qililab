@@ -2,11 +2,15 @@
 from dataclasses import dataclass
 
 from qililab.result.result import Result
+from qililab.utils import Factory
+from qililab.typings import ResultName
 
-
+@Factory.register
 @dataclass
 class SimulatorResult(Result):
     """SimulatorResult class."""
+
+    name = ResultName.SIMULATOR
 
     prob_0: float
     prob_1: float
