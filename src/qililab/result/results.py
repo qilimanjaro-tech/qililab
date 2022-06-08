@@ -45,7 +45,7 @@ class Results:
         array = np.reshape(a=probs, newshape=self.shape + [2])
         return np.moveaxis(a=array, source=array.ndim - 1, destination=0)
 
-    def acquisitions(self) -> np.ndarray:
+    def acquisitions(self, mean: bool = True) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
 
         Returns:
@@ -57,4 +57,7 @@ class Results:
                 raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
             results.append(result.acquisitions())
         array = np.reshape(a=results, newshape=self.shape + [4])
-        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)
+        flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
+        if mean:
+            flipped_array = np.mean(a=flipped_array, axis=-1)
+        return flipped_array
