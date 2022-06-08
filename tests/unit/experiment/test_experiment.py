@@ -80,12 +80,14 @@ class TestExperiment:
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
     @patch("qililab.execution.buses_execution.open")
+    @patch("qililab.experiment.experiment.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     def test_execute_method_without_loop(
         self,
         mock_dump: MagicMock,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
+        mock_open_1: MagicMock,
         mock_qutip: MagicMock,
         simulated_experiment: Experiment,
     ):
@@ -97,12 +99,14 @@ class TestExperiment:
         mock_qutip.mesolve.assert_called()
         mock_dump.assert_called()
         mock_open.assert_called()
+        mock_open.assert_called()
         mock_makedirs.assert_called()
 
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
     @patch("qililab.execution.buses_execution.open")
+    @patch("qililab.experiment.experiment.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
     @patch("qililab.instruments.qblox.qblox_pulsar.open")
@@ -112,6 +116,7 @@ class TestExperiment:
         mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -126,16 +131,19 @@ class TestExperiment:
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
         mock_open_1.assert_called()
+        mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
     @patch("qililab.execution.buses_execution.open")
+    @patch("qililab.experiment.experiment.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     def test_execute_method_with_simulated_qubit(
         self,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
+        mock_open_1: MagicMock,
         mock_dump: MagicMock,
         mock_qutip: MagicMock,
         simulated_experiment: Experiment,
@@ -153,6 +161,7 @@ class TestExperiment:
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
         mock_open.assert_called()
+        mock_open_1.assert_called()
         mock_dump.assert_called()
         mock_makedirs.assert_called()
 
@@ -160,6 +169,7 @@ class TestExperiment:
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
     @patch("qililab.execution.buses_execution.open")
+    @patch("qililab.experiment.experiment.open")
     @patch("qililab.experiment.experiment.os.makedirs")
     @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
     @patch("qililab.instruments.qblox.qblox_pulsar.open")
@@ -169,6 +179,7 @@ class TestExperiment:
         mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -188,4 +199,5 @@ class TestExperiment:
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
         mock_open_1.assert_called()
+        mock_open_2.assert_called()
         mock_makedirs.assert_called()

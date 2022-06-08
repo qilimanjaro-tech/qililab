@@ -31,6 +31,7 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
+from qililab.typings import Category, Parameter
 from qililab.utils import Loop
 
 from .data import MockedSettingsFactory, circuit, experiment_params
@@ -131,7 +132,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
+    mock_instance.mock_add_spec(["power", Parameter.FREQUENCY])
     # connect to instrument
     settings = MockedSettingsFactory.get(platform_name="platform_0", filename="rohde_schwarz_0")
     settings.pop("name")
@@ -201,7 +202,14 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=3544000000, stop=3744000000, num=2)
+    loop = Loop(
+        category=Category.SIGNAL_GENERATOR,
+        id_=0,
+        parameter=Parameter.FREQUENCY,
+        start=3544000000,
+        stop=3744000000,
+        num=2,
+    )
     experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
@@ -212,9 +220,11 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop3 = Loop(category="awg", id_=0, parameter="frequency", start=0, stop=1, num=2)
-    loop2 = Loop(category="awg", id_=0, parameter="gain", start=0, stop=1, step=0.5, loop=loop3)
-    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=0, stop=1, num=2, loop=loop2)
+    loop3 = Loop(category=Category.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
+    loop2 = Loop(category=Category.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
+    loop = Loop(
+        category=Category.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
+    )
     experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
@@ -370,7 +380,7 @@ def mixer_down() -> MixerDown:
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
     """Mock dynamically created attributes."""
     mock_rs_instance = mock_rs.return_value
-    mock_rs_instance.mock_add_spec(["power", "frequency"])
+    mock_rs_instance.mock_add_spec(["power", Parameter.FREQUENCY])
     mock_pulsar_instance = mock_pulsar.return_value
     mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
         {

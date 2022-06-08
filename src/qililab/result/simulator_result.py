@@ -2,8 +2,9 @@
 from dataclasses import dataclass
 
 from qililab.result.result import Result
-from qililab.utils import Factory
 from qililab.typings import ResultName
+from qililab.utils import Factory
+
 
 @Factory.register
 @dataclass

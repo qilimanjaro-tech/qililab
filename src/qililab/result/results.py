@@ -4,8 +4,10 @@ from typing import List
 
 import numpy as np
 
+from qililab.constants import YAML
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
+from qililab.utils import Factory
 
 
 @dataclass
@@ -23,7 +25,8 @@ class Results:
             self.shape.append(self.num_sequences)
         if self.software_average > 1:
             self.shape.append(self.software_average)
-        self.results = [Result(**result) for result in self.results]
+        if self.results and isinstance(self.results[0], dict):
+            self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
@@ -59,6 +62,6 @@ class Results:
             results.append(result.acquisitions())
         array = np.reshape(a=results, newshape=self.shape + [4])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
-        if mean:
+        if mean and self.software_average > 1:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array

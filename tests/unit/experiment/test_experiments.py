@@ -10,6 +10,7 @@ from ...conftest import mock_instruments
 
 
 @patch("qililab.execution.buses_execution.open")
+@patch("qililab.experiment.experiment.open")
 @patch("qililab.experiment.experiment.os.makedirs")
 @patch("qililab.execution.buses_execution.yaml.safe_dump")
 @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
@@ -28,6 +29,7 @@ class TestExperiments:
         mock_dump_1: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
     ):
         """Test execute method with simulated qubit."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
@@ -43,4 +45,5 @@ class TestExperiments:
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
         mock_open_1.assert_called()
+        mock_open_2.assert_called()
         mock_makedirs.assert_called()

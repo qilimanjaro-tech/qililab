@@ -1,16 +1,16 @@
 """Result class."""
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Tuple
 
-from qililab.typings import ResultName
+from qililab.typings import FactoryElement, ResultName
 
 
 # FIXME: Cannot use dataclass and ABC at the same time
 @dataclass
-class Result:
+class Result(FactoryElement):
     """Result class."""
 
-    name: ResultName
+    name: ResultName = field(init=False)
 
     def plot(self):
         """Plot results."""
@@ -23,3 +23,10 @@ class Result:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError
+
+    def to_dict(self) -> dict:
+        """
+        Returns:
+            dict: Dictionary containing all the class information.
+        """
+        return {"name": self.name.value} | asdict(self)

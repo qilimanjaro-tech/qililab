@@ -1,4 +1,6 @@
 """Yaml utils."""
+from types import NoneType
+
 import yaml
 
 
@@ -19,6 +21,7 @@ def yaml_representer(dumper: yaml.Dumper, value: int | float):
             text = text.split("e")[0] + ".e" + "".join(text.split("e")[1:])
     return dumper.represent_scalar(tag=f"tag:yaml.org,2002:{tag}", value=text)
 
-def null_representer(dumper: yaml.Dumper, value: None):
+
+def null_representer(dumper: yaml.Dumper, value: NoneType):
     """Int or float representer used by YAML."""
-    return dumper.represent_scalar(tag=f"tag:yaml.org,2002:null", value="")
+    return dumper.represent_scalar(tag="tag:yaml.org,2002:null", value="")

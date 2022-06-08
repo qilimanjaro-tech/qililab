@@ -5,8 +5,9 @@ from typing import List, Tuple
 import numpy as np
 
 from qililab.result.result import Result
-from qililab.utils import nested_dataclass, Factory
 from qililab.typings import ResultName
+from qililab.utils import Factory, nested_dataclass
+
 
 @Factory.register
 @nested_dataclass
