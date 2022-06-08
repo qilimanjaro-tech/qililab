@@ -1,4 +1,6 @@
 """BusesExecution class."""
+
+import itertools
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from threading import Thread
@@ -37,11 +39,15 @@ class BusesExecution:
         for bus in self.buses:
             bus.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: LivePlot | None, path: Path) -> List[Result]:
+    def run(
+        self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
+    ) -> List[Result]:
         """Run the given pulse sequence."""
         results: List[Result] = []
         disable = self.num_sequences == 1
-        for idx in tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable):
+        for idx, _ in itertools.product(
+            tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable), range(software_average)
+        ):
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:

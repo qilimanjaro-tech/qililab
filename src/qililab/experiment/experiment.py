@@ -28,7 +28,7 @@ class Experiment:
         """Experiment settings."""
 
         hardware_average: int = 1024
-        software_average: int = 1
+        software_average: int = 5
         repetition_duration: int = 200000
 
         def __str__(self):
@@ -116,11 +116,18 @@ class Experiment:
 
         if self.loop is None:
             result = self._execute(plot=plot, path=path)
-            results = Results(num_sequences=self.execution.num_sequences, results=result)
+            results = Results(
+                software_average=self.software_average, num_sequences=self.execution.num_sequences, results=result
+            )
 
         else:
             results = recursive_loop(
-                loop=self.loop, results=Results(shape=self.loop.shape, num_sequences=self.execution.num_sequences)
+                loop=self.loop,
+                results=Results(
+                    software_average=self.software_average,
+                    shape=self.loop.shape,
+                    num_sequences=self.execution.num_sequences,
+                ),
             )
 
         return results
@@ -138,7 +145,11 @@ class Experiment:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
 
         return self.execution.run(
-            nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
+            nshots=self.hardware_average,
+            repetition_duration=self.repetition_duration,
+            software_average=self.software_average,
+            plot=plot,
+            path=path,
         )
 
     def set_parameter(self, category: Category | str, id_: int, parameter: Parameter | str, value: float):

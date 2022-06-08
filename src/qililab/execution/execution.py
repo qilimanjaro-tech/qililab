@@ -36,9 +36,17 @@ class Execution:
         """Start/Turn on the instruments."""
         self.buses_execution.start()
 
-    def run(self, nshots: int, repetition_duration: int, plot: LivePlot | None, path: Path) -> List[Result]:
+    def run(
+        self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
+    ) -> List[Result]:
         """Run the given pulse sequence."""
-        return self.buses_execution.run(nshots=nshots, repetition_duration=repetition_duration, plot=plot, path=path)
+        return self.buses_execution.run(
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            software_average=software_average,
+            plot=plot,
+            path=path,
+        )
 
     def close(self):
         """Close connection to the instruments."""

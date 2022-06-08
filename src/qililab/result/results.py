@@ -12,6 +12,7 @@ from qililab.result.result import Result
 class Results:
     """Results class."""
 
+    software_average: int
     shape: List[int] = field(default_factory=list)
     num_sequences: int = 1
     results: List[Result] = field(default_factory=list)
@@ -20,6 +21,8 @@ class Results:
         """Add num_sequences to shape."""
         if self.num_sequences > 1:
             self.shape.append(self.num_sequences)
+        if self.software_average > 1:
+            self.shape.append(self.software_average)
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
