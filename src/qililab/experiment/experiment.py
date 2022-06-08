@@ -28,7 +28,7 @@ class Experiment:
         """Experiment settings."""
 
         hardware_average: int = 1024
-        software_average: int = 5
+        software_average: int = 1
         repetition_duration: int = 200000
 
         def __str__(self):
