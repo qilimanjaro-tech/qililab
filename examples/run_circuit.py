@@ -13,7 +13,7 @@ from qililab.experiment import Experiment
 def load_experiment(connection: API):
     """Load the platform 'platform_0' from the DB."""
     circuits = []
-    for rotation in np.linspace(0, 3*np.pi):
+    for rotation in np.linspace(0, 3 * np.pi):
         circuit = Circuit(1)
         circuit.add(RX(0, rotation))
         circuit.add(M(0))
@@ -29,5 +29,5 @@ if __name__ == "__main__":
         api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
     )
 
-    connection = API(configuration=configuration)
-    load_experiment(connection=connection)
+    api = API(configuration=configuration)
+    load_experiment(connection=api)

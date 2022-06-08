@@ -6,14 +6,16 @@ from typing import List
 
 import numpy as np
 
+from qililab.typings import Category, Parameter
+
 
 @dataclass
 class Loop:
     """Loop class."""
 
-    category: str
+    category: Category
     id_: int
-    parameter: str
+    parameter: Parameter
     start: float
     stop: float
     num: int | None = None
@@ -27,6 +29,10 @@ class Loop:
             raise ValueError("'step' and 'num' arguments cannot be used together.")
         if self.loop is not None:
             self.loop.previous = self
+        if isinstance(self.category, str):
+            self.category = Category(self.category)
+        if isinstance(self.parameter, str):
+            self.parameter = Parameter(self.parameter)
 
     @property
     def range(self) -> np.ndarray:

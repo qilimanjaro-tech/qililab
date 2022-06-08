@@ -6,6 +6,7 @@ from qiboconnection.connection import ConnectionConfiguration
 
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.experiment import Experiment
+from qililab.typings import Category, Parameter
 from qililab.utils import Loop
 
 
@@ -16,7 +17,9 @@ def qubit_spectroscopy(connection: API):
     # circuit.add(X(0))
     circuit.add(X(0))
     circuit.add(M(0))
-    loop = Loop(category="signal_generator", id_=0, parameter="frequency", start=3.64e9, stop=3.69e9, num=1000)
+    loop = Loop(
+        category=Category.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=3.64e9, stop=3.69e9, num=1000
+    )
     experiment = Experiment(
         platform_name=DEFAULT_PLATFORM_NAME, sequences=[circuit], loop=loop, experiment_name="qubit_spectroscopy"
     )

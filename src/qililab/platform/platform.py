@@ -5,7 +5,7 @@ from typing import List
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
-from qililab.typings import BusSubcategory, Category, yaml
+from qililab.typings import BusSubcategory, Category, Parameter, yaml
 from qililab.utils import dict_factory, nested_dataclass
 
 
@@ -75,7 +75,7 @@ class Platform:
             ([], None),
         )
 
-    def set_parameter(self, category: str, id_: int, parameter: str, value: float):
+    def set_parameter(self, category: Category, id_: int, parameter: Parameter, value: float):
         """Set parameter of a platform element.
 
         Args:
@@ -85,11 +85,11 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.translation_settings, parameter))
-            setattr(self.settings.translation_settings, parameter, attr_type(value))
+            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
+            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
-        element.set_parameter(name=parameter, value=value)
+        element.set_parameter(parameter=parameter, value=value)
 
     @property
     def id_(self):

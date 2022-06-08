@@ -30,7 +30,7 @@ def plot(result: Results, loop: Loop, idx: List[int] | None = None):
         # num_zeros = count_zeros(num=loop.range[0])
         for axis, values, label in zip(axes, result_values[idx], DATA[idx]):
             axis.plot(loop.range, values)
-            axis.set_xlabel(f"{loop.parameter} {UNITS.get(loop.parameter, None)}")
+            axis.set_xlabel(f"{loop.parameter.value} {UNITS.get(loop.parameter.value, None)}")
             axis.set_ylabel(label)
             axis.set_xticks(np.round(loop.range[::4], 3))
             axis.grid(which="both")
@@ -39,8 +39,8 @@ def plot(result: Results, loop: Loop, idx: List[int] | None = None):
         _, axes = plt.subplots(ncols=2, nrows=len(idx) // 2, figsize=(13, 13))
         for axis, values, label in zip(axes, result_values[idx], DATA[idx]):
             axis.pcolormesh(loop.loop.range, loop.range, values, shading="nearest")
-            axis.set_ylabel(loop.parameter)
-            axis.set_xlabel(loop.loop.parameter)
+            axis.set_ylabel(loop.parameter.value)
+            axis.set_xlabel(loop.loop.parameter.value)
             axis.colorbar()
             axis.show()
 

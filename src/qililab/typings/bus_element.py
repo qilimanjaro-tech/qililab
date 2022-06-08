@@ -1,4 +1,5 @@
 """BusElement class"""
+from qililab.typings.enums import Parameter
 from qililab.typings.factory_element import FactoryElement
 from qililab.typings.settings import SettingsType
 
@@ -8,6 +9,8 @@ class BusElement(FactoryElement):
 
     settings: SettingsType
 
-    def set_parameter(self, name: str, value: float | str | bool):
+    def set_parameter(self, parameter: Parameter | str, value: float | str | bool):
         """Redirect __setattr__ magic method."""
-        self.settings.set_parameter(name=name, value=value)
+        if isinstance(parameter, Parameter):
+            parameter = parameter.value
+        self.settings.set_parameter(name=parameter, value=value)

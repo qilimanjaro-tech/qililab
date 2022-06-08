@@ -7,6 +7,7 @@ from .enums import (
     BusSubcategory,
     Category,
     IntegrationMode,
+    Parameter,
     PulseShapeName,
     ReferenceClock,
     SchemaDrawOptions,

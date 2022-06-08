@@ -16,7 +16,7 @@ from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_YAML, Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
-from qililab.typings import Category, yaml
+from qililab.typings import Category, Parameter, yaml
 from qililab.utils import LivePlot, Loop, nested_dataclass
 
 
@@ -110,7 +110,7 @@ class Experiment:
                 for value in loop.range:
                     pbar.set_description(f"{loop.parameter}: {value} ")
                     pbar.update()
-                    element.set_parameter(name=loop.parameter, value=value)
+                    element.set_parameter(parameter=loop.parameter, value=value)
                     results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
             return results
 
@@ -141,7 +141,7 @@ class Experiment:
             nshots=self.hardware_average, repetition_duration=self.repetition_duration, plot=plot, path=path
         )
 
-    def set_parameter(self, category: str, id_: int, parameter: str, value: float):
+    def set_parameter(self, category: Category | str, id_: int, parameter: Parameter | str, value: float):
         """Set parameter of a platform element.
 
         Args:
@@ -150,10 +150,15 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        if isinstance(parameter, str):
+            parameter = Parameter(parameter)
+        if isinstance(category, str):
+            category = Category(category)
+
         # FIXME: Avoid calling self._build_execution twice
         if Category(category) == Category.EXPERIMENT:
-            attr_type = type(getattr(self.settings, parameter))
-            setattr(self.settings, parameter, attr_type(value))
+            attr_type = type(getattr(self.settings, parameter.value))
+            setattr(self.settings, parameter.value, attr_type(value))
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
             return
         self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)

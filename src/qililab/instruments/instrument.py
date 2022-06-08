@@ -6,7 +6,7 @@ from typing import Callable
 
 from qililab.config import logger
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName, Device
+from qililab.typings import BusElement, BusElementName, Device, Parameter
 
 
 class Instrument(BusElement, ABC):
@@ -74,9 +74,9 @@ class Instrument(BusElement, ABC):
             self.device.close()
             self._connected = False
 
-    def set_parameter(self, name: str, value: float | str | bool):
+    def set_parameter(self, parameter: Parameter | str, value: float | str | bool):
         """Redirect __setattr__ magic method."""
-        super().set_parameter(name=name, value=value)
+        super().set_parameter(parameter=parameter, value=value)
         if self._connected:
             self.setup()
 
