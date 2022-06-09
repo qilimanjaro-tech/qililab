@@ -1,5 +1,6 @@
 """Results class."""
 from dataclasses import dataclass, field
+from types import NoneType
 from typing import List
 
 import numpy as np
@@ -46,7 +47,7 @@ class Results:
         Returns:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
-        probs = [result.probabilities() if result is not None else (0, 0) for result in self.results]
+        probs = [result.probabilities() if result is not None else (np.nan, np.nan) for result in self.results]
         array = np.reshape(a=probs, newshape=self.shape + [2])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
@@ -61,9 +62,9 @@ class Results:
         """
         results = []
         for result in self.results:
-            if not isinstance(result, QbloxResult):
+            if not isinstance(result, (QbloxResult, NoneType)):
                 raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
-            results.append(result.acquisitions() if result is not None else (0, 0, 0, 0))
+            results.append(result.acquisitions() if result is not None else (np.nan, np.nan, np.nan, np.nan))
         array = np.reshape(a=results, newshape=self.shape + [4])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
