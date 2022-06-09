@@ -17,7 +17,7 @@ class Results:
     software_average: int
     shape: List[int] = field(default_factory=list)
     num_sequences: int = 1
-    results: List[Result] = field(default_factory=list)
+    results: List[Result | None] = field(default_factory=list)
 
     def __post_init__(self):
         """Add num_sequences to shape."""
@@ -27,6 +27,7 @@ class Results:
             self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
             self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
+            self.results += [None] * (np.prod(self.shape) - len(self.results))
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
@@ -45,7 +46,7 @@ class Results:
         Returns:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
-        probs = [result.probabilities() for result in self.results]
+        probs = [result.probabilities() if result is not None else (0, 0) for result in self.results]
         array = np.reshape(a=probs, newshape=self.shape + [2])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
@@ -62,7 +63,7 @@ class Results:
         for result in self.results:
             if not isinstance(result, QbloxResult):
                 raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
-            results.append(result.acquisitions())
+            results.append(result.acquisitions() if result is not None else (0, 0, 0, 0))
         array = np.reshape(a=results, newshape=self.shape + [4])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
