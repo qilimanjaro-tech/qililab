@@ -39,7 +39,7 @@ class Results:
         else:
             self.results.append(result)
 
-    def probabilities(self) -> np.ndarray:
+    def probabilities(self, mean: bool = True) -> np.ndarray:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
         Returns:
@@ -47,7 +47,10 @@ class Results:
         """
         probs = [result.probabilities() for result in self.results]
         array = np.reshape(a=probs, newshape=self.shape + [2])
-        return np.moveaxis(a=array, source=array.ndim - 1, destination=0)
+        flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
+        if mean and self.software_average > 1:
+            flipped_array = np.mean(a=flipped_array, axis=-1)
+        return flipped_array
 
     def acquisitions(self, mean: bool = True) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
