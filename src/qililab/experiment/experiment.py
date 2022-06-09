@@ -219,9 +219,11 @@ class Experiment:
             Path: Path to folder.
         """
         now = datetime.now()
+        folderpath = os.environ.get("DATA", None)
+        if folderpath is None:
+            folderpath = str(Path(__file__).parent.parent / "data")
         path = (
-            Path(__file__).parent.parent
-            / "data"
+            Path(folderpath)
             / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
         )
         # create folder
