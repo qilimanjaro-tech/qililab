@@ -7,7 +7,7 @@ from qililab.typings import BusElement, BusElementName
 from qililab.utils import nested_dataclass
 
 
-class BusTarget(BusElement, ABC):
+class Target(BusElement, ABC):
     """BusTarget class"""
 
     name: BusElementName
@@ -46,7 +46,7 @@ class BusTarget(BusElement, ABC):
         """
 
     @abstractmethod
-    def get_qubit(self, id_: int) -> Union["BusTarget", None]:
+    def get_qubit(self, id_: int) -> Union["Target", None]:
         """Return specific Qubit class. Return None if qubit is not found.
 
         Args:

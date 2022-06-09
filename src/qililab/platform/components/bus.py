@@ -2,8 +2,8 @@
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
-from qililab.instruments import MixerBasedSystemControl, SystemControl, StepAttenuator
-from qililab.platform.components.bus_target.bus_target import BusTarget
+from qililab.instruments import MixerBasedSystemControl, StepAttenuator, SystemControl
+from qililab.platform.components.targets.target import Target
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
 from qililab.utils import Factory, nested_dataclass
@@ -30,8 +30,8 @@ class Bus:
 
         subcategory: BusSubcategory
         system_control: SystemControl
-        target: BusTarget
-        attenuator: StepAttenuator = None
+        target: Target
+        attenuator: StepAttenuator | None = None
 
         def __post_init__(self):
             """Cast each bus element to its corresponding class."""
@@ -46,14 +46,15 @@ class Bus:
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SystemControl | BusTarget | StepAttenuator], None, None]:
+        ) -> Generator[Tuple[str, SystemControl | Target | StepAttenuator | dict], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
+            # TODO: Figure out why dict is in if statement
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | BusTarget | StepAttenuator | dict):
+                if isinstance(value, SystemControl | Target | StepAttenuator | dict):
                     yield name, value
 
     settings: BusSettings
@@ -86,7 +87,7 @@ class Bus:
         return self.settings.target
 
     @property
-    def attenuator(self) -> StepAttenuator:
+    def attenuator(self) -> StepAttenuator | None:
         """Bus 'attenuator' property.
 
         Returns:

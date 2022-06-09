@@ -1,21 +1,21 @@
 """Resonator class."""
 from typing import List
 
-from qililab.platform.components.bus_target.bus_target import BusTarget
-from qililab.platform.components.bus_target.qubit import Qubit
+from qililab.platform.components.targets.qubit import Qubit
+from qililab.platform.components.targets.target import Target
 from qililab.settings import Settings
 from qililab.typings import BusElementName
 from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
-class Resonator(BusTarget):
+class Resonator(Target):
     """Resonator class"""
 
     name = BusElementName.RESONATOR
 
     @nested_dataclass
-    class ResonatorSettings(Settings):
+    class ResonatorSettings(Target.BusTargetSettings):
         """Contains the settings obtained from calibrating the qubit.
 
         Args:

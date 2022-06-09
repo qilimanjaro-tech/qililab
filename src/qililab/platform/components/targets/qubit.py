@@ -1,20 +1,20 @@
 """Qubit class"""
 from typing import Union
 
-from qililab.platform.components.bus_target.bus_target import BusTarget
+from qililab.platform.components.targets.target import Target
 from qililab.settings import Settings
 from qililab.typings import BusElementName
 from qililab.utils import Factory, nested_dataclass
 
 
 @Factory.register
-class Qubit(BusTarget):
+class Qubit(Target):
     """Qubit class"""
 
     name = BusElementName.QUBIT
 
     @nested_dataclass
-    class QubitCalibrationSettings(Settings):
+    class QubitCalibrationSettings(Target.BusTargetSettings):
         """Contains the settings obtained from calibrating the qubit.
 
         Args:
@@ -97,7 +97,8 @@ class Qubit(BusTarget):
         """Qubit 'max_voltage' property.
 
         Returns:
-            float: settings.max_voltage.
+            float: settings.max_voltage.from .target import Target
+
         """
         return self.settings.max_voltage
 
