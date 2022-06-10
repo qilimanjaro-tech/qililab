@@ -1,0 +1,3 @@
+qiboconnection @ git+https://github.com/qilimanjaro-tech/qiboconnection.git@feat/TII-nshots-and-experiments
+qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git@tii-demo
+qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git@add-files

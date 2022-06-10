@@ -20,9 +20,16 @@ def get_version():
 
 
 # Read in requirements
-with open("requirements.txt", encoding="utf-8") as requirements_file:
-    requirements = requirements_file.readlines()
-requirements = [r.strip() for r in requirements]
+with open("requirements.txt", encoding="utf-8") as reqs_file:
+    reqs = reqs_file.readlines()
+requirements = [r.strip() for r in reqs]
+
+install_github_requirements = os.environ.get("GITHUB", "true")
+
+if install_github_requirements == "true":
+    with open("github-requirements.txt", encoding="utf-8") as github_reqs_file:
+        reqs = github_reqs_file.readlines()
+    requirements += [r.strip() for r in reqs]
 
 
 # load long description from README
