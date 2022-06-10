@@ -1,7 +1,0 @@
-qibo==0.1.7
-pyyaml==6.0
-typeguard==2.13.3
-qblox-instruments==0.6.0
-pyvisa-py==0.5.2
-qutip==4.7.0
-ipympl==0.9.1
