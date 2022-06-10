@@ -1,9 +1,7 @@
 """Tests for the PlatformManagerDB class."""
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from qililab import PLATFORM_MANAGER_DB
+from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.platform import Platform
 
@@ -16,6 +14,6 @@ class TestPlatformManagerDB:
 
     def test_build_method(self, mock_load: MagicMock):
         """Test build method."""
-        platform = PLATFORM_MANAGER_DB.build(platform_name=DEFAULT_PLATFORM_NAME)
+        platform = build_platform(name=DEFAULT_PLATFORM_NAME, database=True)
         assert isinstance(platform, Platform)
         mock_load.assert_called()

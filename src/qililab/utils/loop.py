@@ -28,6 +28,8 @@ class Loop:
         if self.step is not None and self.num is not None:
             raise ValueError("'step' and 'num' arguments cannot be used together.")
         if self.loop is not None:
+            if isinstance(self.loop, dict):
+                self.loop = Loop(**self.loop)
             self.loop.previous = self
         if isinstance(self.category, str):
             self.category = Category(self.category)
@@ -78,3 +80,20 @@ class Loop:
             num_loops += 1
             loop = loop.loop
         return num_loops
+
+    def to_dict(self) -> dict:
+        """Convert class to a dictionary.
+
+        Returns:
+            dict: Dictionary representation of the class.
+        """
+        return {
+            "category": self.category,
+            "id_": self.id_,
+            "parameter": self.parameter,
+            "start": self.start,
+            "stop": self.stop,
+            "num": self.num,
+            "step": self.step,
+            "loop": self.loop.to_dict() if self.loop is not None else None,
+        }

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import PLATFORM_MANAGER_DB
+from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
@@ -110,5 +110,5 @@ class TestPlatform:
     @patch("qililab.settings.settings_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
-        PLATFORM_MANAGER_DB.dump(platform=platform)
+        save_platform(platform=platform)
         mock_dump.assert_called()

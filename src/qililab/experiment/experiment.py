@@ -12,7 +12,7 @@ from qiboconnection.api import API
 from tqdm.auto import tqdm
 
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform
+from qililab.platform import Platform, PlatformSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Parameter, yaml
@@ -40,10 +40,10 @@ class Experiment:
         platform: Platform,
         loop: Loop | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
-        experiment_name: str = "experiment",
+        name: str = "experiment",
     ):
         self.platform = copy.deepcopy(platform)
-        self.name = experiment_name
+        self.name = name
         self.loop = loop
         self.settings = settings
         if not isinstance(sequences, list):
@@ -53,10 +53,12 @@ class Experiment:
 
     def execute(self, connection: API | None = None) -> Results:
         """Run execution."""
-        folder_path = self._create_folder()
+        path = self._create_folder()
+        self._create_results_file(path=path)
+        self._dump_experiment_data(path=path)
         plot = LivePlot(connection=connection)
         with self.execution:
-            results = self._execute_loop(plot=plot, path=folder_path)
+            results = self._execute_loop(plot=plot, path=path)
         return results
 
     def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
@@ -109,7 +111,9 @@ class Experiment:
         if self.loop is None:
             result = self._execute(plot=plot, path=path)
             results = Results(
-                software_average=self.software_average, num_sequences=self.execution.num_sequences, results=result
+                software_average=self.software_average,
+                num_sequences=self.execution.num_sequences,
+                results=result,  # type: ignore
             )
 
         else:
@@ -211,26 +215,51 @@ class Experiment:
             Path: Path to folder.
         """
         now = datetime.now()
-        folderpath = os.environ.get("DATA", None)
-        if folderpath is None:
-            folderpath = str(Path(__file__).parent.parent / "data")
+        # create folder
         path = (
-            Path(folderpath)
+            Path(self.folderpath)
             / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
         )
-        # create folder
         if not os.path.exists(path):
             os.makedirs(path)
-        # create results file
+
+        return path
+
+    def _create_results_file(self, path: Path):
+        """Create 'results.yml' file.
+
+        Args:
+            path (Path): Path to data folder.
+        """
         data = {
             "software_average": self.software_average,
             "num_sequences": self.execution.num_sequences,
             "shape": [] if self.loop is None else self.loop.shape,
             "results": None,
         }
-        with open(file=path / "results.yml", mode="w", encoding="utf8") as data_file:
-            yaml.dump(data=data, stream=data_file, sort_keys=False)
-        return path
+        with open(file=path / "results.yml", mode="w", encoding="utf8") as results_file:
+            yaml.dump(data=data, stream=results_file, sort_keys=False)
+
+    def _dump_experiment_data(self, path: Path):
+        """Dump experiment data.
+
+        Args:
+            path (Path): Path to data folder.
+        """
+        with open(file=path / "experiment.yml", mode="w", encoding="utf-8") as experiment_file:
+            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+
+    @property
+    def folderpath(self):
+        """Experiment 'path' property.
+
+        Returns:
+            Path: Path to the data folder.
+        """
+        folderpath = os.environ.get("DATA", None)
+        if folderpath is None:
+            folderpath = str(Path(__file__).parent.parent / "data")
+        return folderpath
 
     @property
     def software_average(self):
@@ -260,11 +289,17 @@ class Experiment:
         return self.settings.repetition_duration
 
     def to_dict(self):
-        """Convert Experiment into a dictionary."""
+        """Convert Experiment into a dictionary.
+
+        Returns:
+            dict: Dictionary representation of the Experiment class.
+        """
         return {
+            "platform": self.platform.to_dict(),
             "settings": asdict(self.settings),
-            "platform_name": self.platform.name,
-            "sequence": [sequence.to_dict() for sequence in self.sequences],
+            "sequences": [sequence.to_dict() for sequence in self.sequences],
+            "loop": self.loop.to_dict() if self.loop is not None else None,
+            "name": self.name,
         }
 
     @classmethod
@@ -275,6 +310,15 @@ class Experiment:
             dictionary (dict): Dictionary description of an experiment.
         """
         settings = cls.ExperimentSettings(**dictionary["settings"])
-        platform = Platform(**dictionary["platform_name"])
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequence"]]
-        return Experiment(sequences=sequences, platform=platform, settings=settings)
+        platform = Platform(platform_schema=PlatformSchema(**dictionary["platform"]))
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequences"]]
+        loop = dictionary["loop"]
+        loop = Loop(**loop) if loop is not None else None
+        name = dictionary["name"]
+        return Experiment(
+            sequences=sequences,
+            loop=loop,
+            platform=platform,
+            settings=settings,
+            name=name,
+        )

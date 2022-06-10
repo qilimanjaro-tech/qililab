@@ -176,6 +176,7 @@ class Parameter(Enum):
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
 
+
 class ResultName(Enum):
     """Result names.
 
@@ -184,5 +185,6 @@ class ResultName(Enum):
         * qblox
         * simulator
     """
+
     QBLOX = "qblox"
     SIMULATOR = "simulator"

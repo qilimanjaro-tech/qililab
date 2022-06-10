@@ -28,6 +28,9 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r dev-requirements.txt
           python -m pip install -r requirements.txt
+          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qiboconnection.git@feat/TII-nshots-and-experiments
+          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qpysequence.git@tii-demo
+          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qilisimulator.git@add-files
 
       - name: Code Quality
         run: |
@@ -47,7 +50,7 @@ jobs:
 
       - name: Install library
         run: |
-          python -m pip install .
+          GITHUB="false" python -m pip install .
 
       - name: Test with pytest core
         run: |

@@ -102,7 +102,7 @@ class TestQbloxPulsarQRM:
         """Test close method"""
         qrm.close()
         qrm.device.stop_sequencer.assert_called_once()
-        qrm.device.close.assert_called_once()
+        qrm.device.close.assert_called_once()  # type: ignore
 
     def test_not_connected_attribute_error(self, qrm: QbloxPulsarQRM):
         """Test that calling a method when the device is not connected raises an AttributeError."""

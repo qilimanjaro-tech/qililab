@@ -63,7 +63,10 @@ class PulseSequences:
         delay_between_pulses = dictionary["delay_between_pulses"]
         delay_before_readout = dictionary["delay_before_readout"]
         time = dictionary["time"]
-        pulses = [Pulse(**settings) for settings in dictionary["pulses"]]
+        pulses = [
+            Pulse(**settings) if Pulse.name == settings.pop("name") else ReadoutPulse(**settings)
+            for settings in dictionary["pulses"]
+        ]
         return PulseSequences(
             pulses=pulses,
             delay_between_pulses=delay_between_pulses,
