@@ -1,4 +1,5 @@
 """HardwareExperiment class."""
+import copy
 import os
 from dataclasses import asdict
 from datetime import datetime
@@ -10,10 +11,8 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
-from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import PLATFORM_MANAGER_YAML, Platform
+from qililab.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Parameter, yaml
@@ -35,28 +34,21 @@ class Experiment:
             """Returns a string representation of the experiment settings."""
             return yaml.dump(asdict(self), sort_keys=False)
 
-    platform: Platform
-    execution: Execution
-    settings: ExperimentSettings
-    _initial_sequences: List[Circuit | PulseSequences]
-    sequences: List[PulseSequences]
-    loop: Loop | None
-
     def __init__(
         self,
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
-        platform_name: str = DEFAULT_PLATFORM_NAME,
+        platform: Platform,
         loop: Loop | None = None,
-        settings: ExperimentSettings = None,
+        settings: ExperimentSettings = ExperimentSettings(),
         experiment_name: str = "experiment",
     ):
+        self.platform = copy.deepcopy(platform)
+        self.name = experiment_name
+        self.loop = loop
+        self.settings = settings
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
-        self.name = experiment_name
-        self.settings = self.ExperimentSettings() if settings is None else settings
-        self.platform = PLATFORM_MANAGER_YAML.build(platform_name=platform_name)
-        self.loop = loop
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     def execute(self, connection: API | None = None) -> Results:
@@ -283,6 +275,6 @@ class Experiment:
             dictionary (dict): Dictionary description of an experiment.
         """
         settings = cls.ExperimentSettings(**dictionary["settings"])
-        platform_name = dictionary["platform_name"]
+        platform = Platform(**dictionary["platform_name"])
         sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequence"]]
-        return Experiment(sequences=sequences, platform_name=platform_name, settings=settings)
+        return Experiment(sequences=sequences, platform=platform, settings=settings)
