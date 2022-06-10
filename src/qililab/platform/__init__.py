@@ -21,7 +21,7 @@ def build_platform(name: str, database: bool = False) -> Platform:
         database (bool, optional): If True, build platform from database. Defaults to False.
 
     Returns:
-        _type_: _description_
+        Platform: Platform object.
     """
     if database:
         return PLATFORM_MANAGER_DB.build(platform_name=name)
@@ -34,9 +34,6 @@ def save_platform(platform: Platform, database: bool = False):
     Args:
         platform_name (str): Platform name.
         database (bool, optional): If True, save platform to database. Defaults to False.
-
-    Returns:
-        _type_: _description_
     """
     if database:
         return PLATFORM_MANAGER_DB.dump(platform=platform)
