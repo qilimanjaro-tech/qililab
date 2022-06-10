@@ -106,9 +106,10 @@ class TestExperiment:
         mock_qutip.mesolve.assert_called()
         mock_dump.assert_called()
         mock_open.assert_called()
-        mock_open.assert_called()
+        mock_open_1.assert_called()
         mock_makedirs.assert_called()
 
+    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
@@ -127,11 +128,14 @@ class TestExperiment:
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
         nested_experiment: Experiment,
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = nested_experiment.execute()  # type: ignore
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
         assert isinstance(results, Results)
         assert np.shape(results.acquisitions())[1:4] == (2, 2, 2)
         mock_dump_0.assert_called()
@@ -172,6 +176,7 @@ class TestExperiment:
         mock_dump.assert_called()
         mock_makedirs.assert_called()
 
+    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
@@ -190,11 +195,14 @@ class TestExperiment:
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
         experiment: Experiment,
     ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = experiment.execute()
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)
@@ -209,6 +217,7 @@ class TestExperiment:
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
+    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
@@ -229,6 +238,7 @@ class TestExperiment:
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
         nested_experiment: Experiment,
     ):
         """Test run method."""
@@ -237,6 +247,8 @@ class TestExperiment:
         mock_load.assert_called()
         results = experiment.execute()
         results_2 = nested_experiment.execute()
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
         assert results == results_2
         mock_rs.assert_called()
         mock_pulsar.assert_called()
