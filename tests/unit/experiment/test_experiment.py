@@ -13,6 +13,7 @@ from qililab.platform import Platform
 from qililab.result import Results
 
 from ...conftest import mock_instruments
+from ...utils import yaml_safe_load_side_effect
 
 
 class TestExperiment:
@@ -50,6 +51,12 @@ class TestExperiment:
     def test_from_dict_method(self, experiment_all_platforms: Experiment):
         """Test from_dict method with all platforms."""
         dictionary = experiment_all_platforms.to_dict()
+        experiment_2 = Experiment.from_dict(dictionary)
+        assert isinstance(experiment_2, Experiment)
+
+    def test_from_dict_method_loop(self, nested_experiment: Experiment):
+        """Test from_dict method with an experiment with a nested loop."""
+        dictionary = nested_experiment.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
 
@@ -188,6 +195,49 @@ class TestExperiment:
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         results = experiment.execute()
+        mock_rs.assert_called()
+        mock_pulsar.assert_called()
+        assert isinstance(results, Results)
+        probabilities = results.probabilities()
+        acquisitions = results.acquisitions()
+        assert isinstance(probabilities, np.ndarray)
+        assert isinstance(acquisitions, np.ndarray)
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()
+        mock_open_0.assert_called()
+        mock_open_1.assert_called()
+        mock_open_2.assert_called()
+        mock_makedirs.assert_called()
+
+    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
+    @patch("qililab.execution.buses_execution.yaml.safe_dump")
+    @patch("qililab.execution.buses_execution.open")
+    @patch("qililab.experiment.experiment.open")
+    @patch("qililab.experiment.experiment.os.makedirs")
+    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
+    @patch("qililab.instruments.qblox.qblox_pulsar.open")
+    @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+    def test_execute_method_with_from_dict_experiment(
+        self,
+        mock_load: MagicMock,
+        mock_open_0: MagicMock,
+        mock_dump_0: MagicMock,
+        mock_makedirs: MagicMock,
+        mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
+        mock_dump_1: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        nested_experiment: Experiment,
+    ):
+        """Test run method."""
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
+        experiment = Experiment.from_dict(nested_experiment.to_dict())
+        mock_load.assert_called()
+        results = experiment.execute()
+        results_2 = nested_experiment.execute()
+        assert results == results_2
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)
