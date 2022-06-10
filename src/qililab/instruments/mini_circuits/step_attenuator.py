@@ -1,6 +1,6 @@
 """StepAttenuator class."""
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from qililab.config import logger
 from qililab.instruments.instrument import Instrument
@@ -48,11 +48,10 @@ class StepAttenuator(Instrument):
         Args:
             command (str): Command to send via HTTP.
         """
-        request = f"http://{self.ip}/:{command}"
-
         try:
-            http_result = urlopen(request, timeout=2)
-            pte_return = http_result.read()
+            request = Request(f"http://{self.ip}/:{command}")
+            with urlopen(request) as response:  # nosec
+                pte_return = response.read()
         except URLError:
             logger.error("No response from device. Check IP address and connections.")
             pte_return = "No Response!"
