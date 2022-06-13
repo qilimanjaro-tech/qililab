@@ -17,6 +17,7 @@ from qililab.instruments import (
     QbloxPulsarQCM,
     QbloxPulsarQRM,
     SimulatedSystemControl,
+    StepAttenuator,
 )
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
 from qililab.pulse import (
@@ -172,6 +173,18 @@ def fixture_schema(platform: Platform) -> Schema:
         Schema: Instance of the Schema class.
     """
     return platform.schema
+
+
+@pytest.fixture(name="step_attenuator")
+def fixture_step_attenuator() -> StepAttenuator:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="attenuator")
+    settings.pop("name")
+    return StepAttenuator(settings=settings)
 
 
 @pytest.fixture(name="pulse_sequences", params=experiment_params)

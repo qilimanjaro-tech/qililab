@@ -42,3 +42,7 @@ class TestMixerBasedSystemControl:
     def test_name_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test name property."""
         assert mixer_based_system_control.name == mixer_based_system_control.settings.subcategory
+
+    def test_id_property(self, mixer_based_system_control: MixerBasedSystemControl):
+        """Test id property."""
+        assert mixer_based_system_control.id_ == mixer_based_system_control.settings.id_

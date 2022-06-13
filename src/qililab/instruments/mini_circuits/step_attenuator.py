@@ -51,9 +51,8 @@ class StepAttenuator(Instrument):
             request = urllib.request.Request(f"http://{self.ip}/:{command}")  # type: ignore
             with urllib.request.urlopen(request, timeout=2) as response:  # type: ignore # nosec
                 pte_return = response.read()
-        except urllib.error.URLError:  # type: ignore
-            logger.error("No response from device. Check IP address and connections.")
-            pte_return = "No Response!"
+        except urllib.error.URLError as error:  # type: ignore
+            raise ValueError("No response from device. Check IP address and connections.") from error
 
         return pte_return
 

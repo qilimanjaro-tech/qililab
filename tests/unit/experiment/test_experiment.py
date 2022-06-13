@@ -12,6 +12,7 @@ from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import Results
+from qililab.typings import Category, Parameter
 
 from ...conftest import mock_instruments
 from ...utils import yaml_safe_load_side_effect
@@ -45,12 +46,12 @@ class TestExperiment:
         assert experiment.repetition_duration == experiment.settings.repetition_duration
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
-        """Test to_dict method with all platforms."""
+        """Test to_dict method."""
         dictionary = experiment_all_platforms.to_dict()
         assert isinstance(dictionary, dict)
 
     def test_from_dict_method(self, experiment_all_platforms: Experiment):
-        """Test from_dict method with all platforms."""
+        """Test from_dict method."""
         dictionary = experiment_all_platforms.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
@@ -62,8 +63,13 @@ class TestExperiment:
         assert isinstance(experiment_2, Experiment)
 
     def test_draw_method(self, experiment_all_platforms: Experiment):
-        """Test draw method with all platforms."""
+        """Test draw metho."""
         experiment_all_platforms.draw()
+
+    def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
+        """Test loop's num_loops property."""
+        if experiment_all_platforms.loop is not None:
+            print(experiment_all_platforms.loop.num_loops)
 
     @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
     def test_draw_method_with_one_bus(self, mock_load: MagicMock):
@@ -76,17 +82,22 @@ class TestExperiment:
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
-        """Test __str__ method with all platforms."""
+        """Test __str__ method."""
         str(experiment_all_platforms)
         str(experiment_all_platforms.settings)
 
     def test_set_parameter_method(self, experiment: Experiment):
-        """Test set_parameter method with all platforms."""
-        experiment.set_parameter(category="awg", id_=0, parameter="frequency", value=1e9)
+        """Test set_parameter method."""
+        experiment.set_parameter(category="awg", id_=0, parameter=Parameter.FREQUENCY, value=1e9)
 
     def test_set_parameter_method_with_experiment_settings(self, experiment: Experiment):
-        """Test set_parameter method with all platforms."""
-        experiment.set_parameter(category="experiment", id_=0, parameter="repetition_duration", value=3e6)
+        """Test set_parameter method with experiment settings."""
+        experiment.set_parameter(category=Category.EXPERIMENT, id_=0, parameter="repetition_duration", value=3e6)
+
+    def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
+        """Test set_parameter method with platform settings."""
+        experiment.set_parameter(category=Category.PLATFORM, id_=0, parameter=Parameter.READOUT_AMPLITUDE, value=0.3)
+        assert experiment.platform.settings.translation_settings.readout_amplitude == 0.3
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")
@@ -104,7 +115,7 @@ class TestExperiment:
     ):
         """Test execute method with simulated qubit."""
         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        simulated_experiment.execute()  # type: ignore
+        results = simulated_experiment.execute()  # type: ignore
         mock_qutip.Options.assert_called()
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
@@ -112,6 +123,8 @@ class TestExperiment:
         mock_open.assert_called()
         mock_open_1.assert_called()
         mock_makedirs.assert_called()
+        with pytest.raises(ValueError):
+            print(results.ranges)
 
     @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
@@ -137,11 +150,13 @@ class TestExperiment:
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
+        nested_experiment.settings.software_average = 5
         results = nested_experiment.execute()  # type: ignore
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
         assert isinstance(results, Results)
-        assert np.shape(results.acquisitions())[1:4] == (2, 2, 2)
+        assert np.shape(results.acquisitions(mean=True))[1:4] == (2, 2, 2)
+        assert np.shape(results.probabilities(mean=True))[1:4] == (2, 2, 2)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
