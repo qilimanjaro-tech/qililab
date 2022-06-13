@@ -88,9 +88,9 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            "category": self.category,
+            "category": self.category.value,
             "id_": self.id_,
-            "parameter": self.parameter,
+            "parameter": self.parameter.value,
             "start": self.start,
             "stop": self.stop,
             "num": self.num,

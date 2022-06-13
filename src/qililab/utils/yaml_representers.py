@@ -19,6 +19,9 @@ def yaml_representer(dumper: yaml.Dumper, value: int | float):
             # Add a decimal point if value is integer
             tag = "float"
             text = text.split("e")[0] + ".e" + "".join(text.split("e")[1:])
+        if "." not in text and tag == "float":
+            # Change tag to int if there is no decimal point.
+            tag = "int"
     return dumper.represent_scalar(tag=f"tag:yaml.org,2002:{tag}", value=text)
 
 
