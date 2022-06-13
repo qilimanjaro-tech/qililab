@@ -67,8 +67,8 @@ class Experiment:
         with self.execution:
             try:
                 self._execute_loop(results=results, plot=plot, path=path)
-            except Exception as error:  # pylint: disable=broad-except
-                logger.error("Catched the following error during execution: %s", str(error))
+            except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                logger.error("%s: %s", type(error).__name__, str(error))
         return results
 
     def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
