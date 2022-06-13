@@ -5,6 +5,7 @@ from typing import Generator, Optional, Tuple
 from qililab.constants import YAML
 from qililab.instruments.awg import AWG
 from qililab.instruments.mixer import Mixer, MixerDown, MixerUp
+from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
@@ -118,6 +119,11 @@ class MixerBasedSystemControl(SystemControl):
             (QubitControl | None): settings.qubit_control.
         """
         return self.settings.awg
+
+    @property
+    def delay_time(self) -> int | None:
+        """SystemControl 'delay_time' property.  Delay (in ns) between the readout pulse and the acquisition."""
+        return self.awg.delay_time if isinstance(self.awg, QubitReadout) else None
 
     def get_element(self, category: Category, id_: int):
         """Get system control element. Return None if element is not found.

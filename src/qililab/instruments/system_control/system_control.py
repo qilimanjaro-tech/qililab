@@ -62,3 +62,8 @@ class SystemControl(BusElement, ABC):
     @abstractmethod
     def frequency(self) -> float:
         """SystemControl 'frequency' property."""
+
+    @property
+    @abstractmethod
+    def delay_time(self) -> int | None:
+        """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""

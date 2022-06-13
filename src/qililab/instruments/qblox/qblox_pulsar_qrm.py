@@ -35,7 +35,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Args:
             acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
             scope_acquisition_averaging (bool): Enable/disable hardware averaging of the data.
-            start_integrate (int): Time (in ns) to start integrating the signal.
             integration_length (int): Duration (in ns) of the integration.
             integration_mode (str): Integration mode. Options are 'ssb'.
             sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
@@ -47,7 +46,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
         acquire_trigger_mode: AcquireTriggerMode
         scope_acquisition_averaging: bool
-        start_integrate: int
         sampling_rate: int
         integration_length: int
         integration_mode: IntegrationMode
@@ -154,15 +152,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             bool: settings.scope_acquisition_averaging.
         """
         return self.settings.scope_acquisition_averaging
-
-    @property
-    def start_integrate(self):
-        """QbloxPulsarQRM 'start_integrate' property.
-
-        Returns:
-            int: settings.start_integrate.
-        """
-        return self.settings.start_integrate
 
     @property
     def sampling_rate(self):

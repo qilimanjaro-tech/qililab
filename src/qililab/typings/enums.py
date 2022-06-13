@@ -167,7 +167,6 @@ class Parameter(Enum):
     DELTA = "delta"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
-    START_INTEGRATE = "start_integrate"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION_LENGTH = "integration_length"
     DELAY_TIME = "delay_time"

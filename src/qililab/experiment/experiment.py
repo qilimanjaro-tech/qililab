@@ -182,7 +182,7 @@ class Experiment:
         """
         return str(self.platform)
 
-    def draw(self, resolution: float = 1.0):
+    def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
 
         Args:
@@ -191,7 +191,7 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(resolution=resolution)
+        return self.execution.draw(resolution=resolution, idx=idx)
 
     def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
         """Build Execution class.

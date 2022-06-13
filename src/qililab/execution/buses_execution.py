@@ -79,7 +79,7 @@ class BusesExecution:
         for bus in self.buses:
             bus.close()
 
-    def waveforms(self, resolution: float = 1.0):
+    def waveforms(self, resolution: float = 1.0, idx: int = 0):
         """Get pulses of each bus.
 
         Args:
@@ -88,9 +88,9 @@ class BusesExecution:
         Returns:
             Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        return {bus.id_: np.array(bus.waveforms(resolution=resolution)) for bus in self.buses}
+        return {bus.id_: np.array(bus.waveforms(resolution=resolution, idx=idx)) for bus in self.buses}
 
-    def draw(self, resolution: float):
+    def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -102,11 +102,14 @@ class BusesExecution:
         figure, axes = plt.subplots(nrows=len(self.buses), ncols=1, sharex=True)
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
-        for axis_idx, (bus_idx, pulse) in enumerate(self.waveforms(resolution=resolution).items()):
+        for axis_idx, (bus_idx, pulse) in enumerate(self.waveforms(resolution=resolution, idx=idx).items()):
             time = np.arange(len(pulse[0])) * resolution
             axes[axis_idx].set_title(f"Bus {bus_idx}")
             axes[axis_idx].plot(time, pulse[0], label="I")
             axes[axis_idx].plot(time, pulse[1], label="Q")
+            acquire_time = self.buses[axis_idx].acquire_time(idx=idx)
+            if acquire_time is not None:
+                plt.axvline(x=acquire_time, color="red", label="Acquire time")
             axes[axis_idx].legend()
             axes[axis_idx].minorticks_on()
             axes[axis_idx].grid(which="both")

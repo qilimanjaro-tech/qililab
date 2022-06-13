@@ -21,7 +21,9 @@ def run_circuit(connection: API):
         circuit.add(M(0))
         circuits.append(circuit)
     experiment = Experiment(platform=platform, sequences=circuits)
-    experiment.execute(connection=connection)
+    experiment.draw(idx=3)
+    plt.show()
+    # experiment.execute(connection=connection)
 
 
 if __name__ == "__main__":

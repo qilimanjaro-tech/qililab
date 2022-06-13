@@ -52,7 +52,7 @@ class Execution:
         """Close connection to the instruments."""
         self.buses_execution.close()
 
-    def draw(self, resolution: float):
+    def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -61,7 +61,7 @@ class Execution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.draw(resolution=resolution)
+        return self.buses_execution.draw(resolution=resolution, idx=idx)
 
     @property
     def num_sequences(self):

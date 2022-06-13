@@ -134,10 +134,6 @@ class TestQbloxPulsarQRM:
         """Test scope_acquisition_averaging property."""
         assert qrm.scope_acquisition_averaging == qrm.settings.scope_acquisition_averaging
 
-    def test_start_integrate_property(self, qrm: QbloxPulsarQRM):
-        """Test start_integrate property."""
-        assert qrm.start_integrate == qrm.settings.start_integrate
-
     def test_sampling_rate_property(self, qrm: QbloxPulsarQRM):
         """Test sampling_rate property."""
         assert qrm.sampling_rate == qrm.settings.sampling_rate

@@ -5,6 +5,7 @@ from typing import List
 
 from qililab.platform import Bus
 from qililab.pulse import Pulse, PulseSequence
+from qililab.typings import BusSubcategory
 
 
 @dataclass
@@ -54,7 +55,7 @@ class BusExecution:
         else:
             self.pulse_sequences[idx].add(pulse)
 
-    def waveforms(self, resolution: float = 1.0):
+    def waveforms(self, resolution: float = 1.0, idx: int = 0):
         """Return pulses applied on this bus.
 
         Args:
@@ -64,14 +65,7 @@ class BusExecution:
             Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
             of the pulses applied on this bus.
         """
-        waveforms_i, waveforms_q = [], []
-        for pulse_sequence in self.pulse_sequences:
-            waveform_i, waveform_q = pulse_sequence.waveforms(
-                frequency=self.system_control.frequency, resolution=resolution
-            )
-            waveforms_i += waveform_i
-            waveforms_q += waveform_q
-        return waveforms_i, waveforms_q
+        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
 
     @property
     def qubit_ids(self):
@@ -108,3 +102,14 @@ class BusExecution:
             SystemControl: bus.attenuator
         """
         return self.bus.attenuator
+
+    def acquire_time(self, idx: int = 0) -> int | None:
+        """BusExecution 'acquire_time' property.
+
+        Returns:
+            int: Acquire time (in ns).
+        """
+        if self.bus.subcategory == BusSubcategory.READOUT:
+            readout_pulse = self.pulse_sequences[idx]
+            return readout_pulse.pulses[-1].start + self.system_control.delay_time
+        return None

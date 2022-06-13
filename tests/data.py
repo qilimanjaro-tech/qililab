@@ -78,7 +78,6 @@ class Platform0:
         "gain": 0.5,
         "acquire_trigger_mode": "sequencer",
         "scope_acquisition_averaging": False,
-        "start_integrate": 130,
         "sampling_rate": 1000000000,
         "integration_length": 2000,
         "integration_mode": "ssb",
