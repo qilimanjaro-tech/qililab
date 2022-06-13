@@ -70,9 +70,9 @@ class Instrument(BusElement, ABC):
         """Close connection with the instrument."""
         if self._connected:
             logger.info("Closing instrument %s.", self.name.value)
+            self._connected = False
             self.stop()
             self.device.close()
-            self._connected = False
 
     def set_parameter(self, parameter: Parameter | str, value: float | str | bool):
         """Redirect __setattr__ magic method."""
