@@ -93,11 +93,11 @@ class Experiment:
                 return
 
             if loop.loop is None:
-                x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
+                x_label = f"{loop.category.value} {loop.id_}: {loop.parameter.value} "
                 if loop.previous is not None:
                     x_label += (
-                        f"({loop.previous.category} {loop.previous.id_}:"
-                        + f"{loop.previous.parameter}={np.round(x_value, 4)})"
+                        f"({loop.previous.category.value} {loop.previous.id_}:"
+                        + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
                     )
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
