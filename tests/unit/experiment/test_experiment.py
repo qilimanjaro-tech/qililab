@@ -152,9 +152,9 @@ class TestExperiment:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.loop.range,
-                    nested_experiment.loop.loop.range,
-                    nested_experiment.loop.loop.loop.range,
+                    nested_experiment.loop.range,  # type: ignore
+                    nested_experiment.loop.loop.range,  # type: ignore
+                    nested_experiment.loop.loop.loop.range,  # type: ignore
                 ]
             )
         ).all()
