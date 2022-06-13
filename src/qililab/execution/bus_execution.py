@@ -40,6 +40,8 @@ class BusExecution:
     def close(self):
         """Close connection to the instruments."""
         self.system_control.close()
+        if self.attenuator is not None:
+            self.attenuator.close()
 
     def add_pulse(self, pulse: Pulse, idx: int):
         """Add pulse to the BusPulseSequence given by idx.
