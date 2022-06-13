@@ -2,8 +2,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Union
 
+from qililab.platform import BusElement
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName
+from qililab.typings import BusElementName
 from qililab.utils import nested_dataclass
 
 

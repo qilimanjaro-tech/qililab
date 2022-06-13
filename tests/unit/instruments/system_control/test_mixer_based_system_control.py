@@ -1,6 +1,7 @@
 """Tests for the MixerBasedSystemControl class."""
 from qililab.instruments import AWG, MixerBasedSystemControl, SignalGenerator
-from qililab.typings import BusElement, Category
+from qililab.platform import BusElement
+from qililab.typings import Category
 
 
 class TestMixerBasedSystemControl:

@@ -5,8 +5,9 @@ from functools import partial
 from typing import Callable
 
 from qililab.config import logger
+from qililab.platform import BusElement
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName, Device, Parameter
+from qililab.typings import BusElementName, Device, Parameter
 
 
 class Instrument(BusElement, ABC):

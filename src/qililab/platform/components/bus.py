@@ -4,10 +4,11 @@ from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments import MixerBasedSystemControl, StepAttenuator, SystemControl
+from qililab.platform import BusElement
 from qililab.platform.components.targets.target import Target
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
-from qililab.utils import Factory, dict_factory, nested_dataclass
+from qililab.utils import Factory, nested_dataclass
 
 
 class Bus:
@@ -47,7 +48,7 @@ class Bus:
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SystemControl | Target | StepAttenuator | dict], None, None]:
+        ) -> Generator[Tuple[str, BusElement | dict], None, None]:
             """Iterate over Bus elements.
 
             Yields:
@@ -55,7 +56,7 @@ class Bus:
             """
             # TODO: Figure out why dict is in if statement
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | Target | StepAttenuator | dict):
+                if isinstance(value, BusElement | dict):
                     yield name, value
 
     settings: BusSettings
@@ -139,4 +140,8 @@ class Bus:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return asdict(self.settings, dict_factory=dict_factory)
+        return {
+            YAML.ID: self.id_,
+            YAML.CATEGORY: self.settings.category.value,
+            YAML.SUBCATEGORY: self.subcategory.value,
+        } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}

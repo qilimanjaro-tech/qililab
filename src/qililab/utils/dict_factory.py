@@ -1,9 +1,7 @@
 """Dict factory."""
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict
 from enum import Enum
 from typing import Dict, List
-
-from qililab.typings import BusElement
 
 
 def dict_factory(data):
@@ -13,12 +11,11 @@ def dict_factory(data):
     for key, value in data:
         if isinstance(value, list):
             value = [
-                asdict(element.settings, dict_factory=dict_factory) if isinstance(element, BusElement) else element
+                element if isinstance(element, dict) else asdict(element.settings, dict_factory=dict_factory)
                 for element in value
             ]
+
         elif isinstance(value, Enum):
             value = str(value.value)
-        elif isinstance(value, BusElement):
-            value = {"name": value.name.value} | asdict(value.settings, dict_factory=dict_factory)
         result = result | {key: value}
     return result
