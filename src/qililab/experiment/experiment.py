@@ -14,6 +14,7 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
+from qililab.config import logger
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import Platform, PlatformSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
@@ -64,8 +65,10 @@ class Experiment:
             software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
         )
         with self.execution:
-            with contextlib.suppress(KeyboardInterrupt):
+            try:
                 self._execute_loop(results=results, plot=plot, path=path)
+            except Exception as error:  # pylint: disable=broad-except
+                logger.error("Catched the following error during execution: %s", str(error))
         return results
 
     def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
