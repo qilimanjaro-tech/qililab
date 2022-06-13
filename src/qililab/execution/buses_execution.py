@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
 from qililab.typings import yaml
