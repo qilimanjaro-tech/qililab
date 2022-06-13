@@ -123,4 +123,9 @@ class MixerBasedSystemControl(SystemControl):
         return {
             YAML.ID: self.id_,
             YAML.CATEGORY: self.settings.category.value,
-        } | {key: asdict(value.settings) for key, value in self if not isinstance(value, dict)}
+            YAML.SUBCATEGORY: self.settings.subcategory.value,
+        } | {
+            key: {YAML.NAME: value.name.value} | asdict(value.settings)
+            for key, value in self
+            if not isinstance(value, dict)
+        }
