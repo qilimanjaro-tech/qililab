@@ -1,4 +1,6 @@
 """HardwareExperiment class."""
+
+import contextlib
 import copy
 import os
 from dataclasses import asdict
@@ -58,7 +60,8 @@ class Experiment:
         self._dump_experiment_data(path=path)
         plot = LivePlot(connection=connection)
         with self.execution:
-            results = self._execute_loop(plot=plot, path=path)
+            with contextlib.suppress(KeyboardInterrupt):
+                results = self._execute_loop(plot=plot, path=path)
         return results
 
     def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
