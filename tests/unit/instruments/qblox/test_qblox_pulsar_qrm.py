@@ -7,7 +7,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.instruments import Mixer, QbloxPulsarQRM
+from qililab.instruments import QbloxPulsarQRM
 from qililab.result import QbloxResult
 from qililab.typings import BusElementName
 
@@ -32,9 +32,8 @@ class TestQbloxPulsarQRM:
         qrm.device.arm_sequencer.assert_called()
         qrm.device.start_sequencer.assert_called()
 
-    def test_setup_method(self, qrm: QbloxPulsarQRM, mixer: Mixer):
+    def test_setup_method(self, qrm: QbloxPulsarQRM):
         """Test setup method"""
-        qrm.setup_mixer_settings(mixer=mixer)
         qrm.setup()
         qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
         qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
@@ -44,13 +43,6 @@ class TestQbloxPulsarQRM:
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.sequencer0.offset_awg_path0.assert_called_once_with(qrm.offset_i)
         qrm.device.sequencer0.offset_awg_path1.assert_called_once_with(qrm.offset_q)
-
-    def test_setup_method_raises_attribute_error(self, qrm: QbloxPulsarQRM):
-        """Test setup method"""
-        with pytest.raises(AttributeError):
-            qrm.setup()
-        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
-        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""
@@ -170,12 +162,18 @@ class TestQbloxPulsarQRM:
         """Test frequency property."""
         assert qrm.frequency == qrm.settings.frequency
 
-    def tests_epsilon_property_raises_error(self, qrm: QbloxPulsarQRM):
+    def tests_epsilon_property(self, qrm: QbloxPulsarQRM):
         """Test epsilon property."""
-        with pytest.raises(AttributeError):
-            print(qrm.epsilon)
+        assert qrm.epsilon == qrm.settings.epsilon
 
-    def tests_delta_property_raises_error(self, qrm: QbloxPulsarQRM):
+    def tests_delta_property(self, qrm: QbloxPulsarQRM):
         """Test delta property."""
-        with pytest.raises(AttributeError):
-            print(qrm.delta)
+        assert qrm.delta == qrm.settings.delta
+
+    def tests_offset_i_property(self, qrm: QbloxPulsarQRM):
+        """Test offset_i property."""
+        assert qrm.offset_i == qrm.settings.offset_i
+
+    def tests_offset_q_property(self, qrm: QbloxPulsarQRM):
+        """Test offset_q property."""
+        assert qrm.offset_q == qrm.settings.offset_q

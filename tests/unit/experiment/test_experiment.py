@@ -50,9 +50,9 @@ class TestExperiment:
         dictionary = experiment_all_platforms.to_dict()
         assert isinstance(dictionary, dict)
 
-    def test_from_dict_method(self, experiment_all_platforms: Experiment):
+    def test_from_dict_method(self, experiment: Experiment):
         """Test from_dict method."""
-        dictionary = experiment_all_platforms.to_dict()
+        dictionary = experiment.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
 

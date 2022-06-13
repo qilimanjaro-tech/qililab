@@ -1,6 +1,0 @@
-id_: 1
-category: signal_generator  # general name
-ip: 192.168.0.7
-firmware: 4.30.046.295
-frequency: 7307720000.0
-power: 15

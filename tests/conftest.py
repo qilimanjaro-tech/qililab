@@ -10,10 +10,7 @@ from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
-    Mixer,
     MixerBasedSystemControl,
-    MixerDown,
-    MixerUp,
     QbloxPulsarQCM,
     QbloxPulsarQRM,
     SimulatedSystemControl,
@@ -333,12 +330,6 @@ def fixture_platform() -> Platform:
     return platform_db()
 
 
-@pytest.fixture(name="mixer")
-def fixture_mixer() -> Mixer:
-    """Return Platform object."""
-    return mixer_up()
-
-
 @pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -371,26 +362,6 @@ def buses() -> Buses:
         platform = build_platform(name="platform_0", database=True)
         mock_load.assert_called()
     return platform.buses
-
-
-def mixer_up() -> MixerUp:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="mixer_0")
-    return MixerUp(settings=settings)
-
-
-def mixer_down() -> MixerDown:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="mixer_0")
-    return MixerDown(settings=settings)
 
 
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):

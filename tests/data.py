@@ -64,6 +64,10 @@ class Platform0:
         "sync_enabled": True,
         "gain": 1,
         "frequency": 100000000,
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
     }
 
     qblox_qrm_0 = {
@@ -86,6 +90,10 @@ class Platform0:
         "acquisition_name": "single",
         "delay_time": 100,
         "frequency": 20000000,
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
     }
 
     resonator_0 = {
@@ -144,33 +152,6 @@ class Platform0:
         "power": 15,
     }
 
-    mixer_0 = {
-        "id_": 0,
-        "category": "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
-    mixer_1 = {
-        "id_": 1,
-        "category": "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
-    mixer_2 = {
-        "id_": 2,
-        "category": "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
     attenuator = {
         "id_": 1,
         "name": "mini_circuits",
@@ -192,7 +173,6 @@ class Platform0:
                     "subcategory": "mixer_based_system_control",
                     "awg": qblox_qcm_0,
                     "signal_generator": rohde_schwarz_0,
-                    "mixer_up": mixer_0,
                 },
                 "target": qubit_0,
             },
@@ -206,8 +186,6 @@ class Platform0:
                     "subcategory": "mixer_based_system_control",
                     "awg": qblox_qrm_0,
                     "signal_generator": rohde_schwarz_1,
-                    "mixer_up": mixer_1,
-                    "mixer_down": mixer_2,
                 },
                 "attenuator": attenuator,
                 "target": resonator_0,

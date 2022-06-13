@@ -13,7 +13,6 @@ class Category(Enum):
         * signal_generator
         * buses
         * bus
-        * mixer
         * schema
         * resonator
     """
@@ -25,7 +24,6 @@ class Category(Enum):
     SCHEMA = "schema"
     RESONATOR = "resonator"
     BUSES = "buses"
-    MIXER = "mixer"
     BUS = "bus"
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
@@ -125,16 +123,12 @@ class BusElementName(Enum):
 
     Args:
         enum (str): Available bus element names:
-        * mixer_up
-        * mixer_down
         * qubit
         * qblox_qcm
         * qblox_qrm
         * rohde_schwarz
     """
 
-    MIXER_UP = "mixer_up"
-    MIXER_DOWN = "mixer_down"
     QUBIT = "qubit"
     RESONATOR = "resonator"
     QBLOX_QCM = "qblox_qcm"

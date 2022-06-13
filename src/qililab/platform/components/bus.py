@@ -1,4 +1,5 @@
 """Bus class."""
+from dataclasses import asdict
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML
@@ -6,7 +7,7 @@ from qililab.instruments import MixerBasedSystemControl, StepAttenuator, SystemC
 from qililab.platform.components.targets.target import Target
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
-from qililab.utils import Factory, nested_dataclass
+from qililab.utils import Factory, dict_factory, nested_dataclass
 
 
 class Bus:
@@ -121,7 +122,7 @@ class Bus:
             id_ (int): ID of element.
 
         Returns:
-            (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
+            (QubitControl | QubitReadout | SignalGenerator | Resonator | None): Element class.
         """
         if category == Category.QUBIT:
             return self.target.get_qubit(id_=id_)
@@ -135,3 +136,7 @@ class Bus:
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
+
+    def to_dict(self):
+        """Return a dict representation of the SchemaSettings class."""
+        return asdict(self.settings, dict_factory=dict_factory)

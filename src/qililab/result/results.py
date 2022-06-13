@@ -17,9 +17,9 @@ class Results:
 
     software_average: int
     num_sequences: int
+    loop: Loop | None = None
     shape: List[int] = field(default_factory=list)
     results: List[Result | None] = field(default_factory=list)
-    loop: Loop | None = None
 
     def __post_init__(self):
         """Add num_sequences to shape."""

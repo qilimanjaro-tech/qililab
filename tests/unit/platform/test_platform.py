@@ -6,7 +6,7 @@ import pytest
 
 from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
 from qililab.typings import Category
 
@@ -69,12 +69,6 @@ class TestPlatform:
         """Test bus 0 signal generator instance."""
         element, bus_idxs = platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
         assert isinstance(element, SignalGenerator)
-        assert bus_idxs[0] == 0
-
-    def test_bus_0_mixer_instance(self, platform: Platform):
-        """Test bus 0 mixer instance."""
-        element, bus_idxs = platform.get_element(category=Category.MIXER, id_=0)
-        assert isinstance(element, Mixer)
         assert bus_idxs[0] == 0
 
     def test_bus_1_resonator_instance(self, platform: Platform):

@@ -2,7 +2,6 @@
 from typing import Union
 
 from qililab.platform.components.targets.target import Target
-from qililab.settings import Settings
 from qililab.typings import BusElementName
 from qililab.utils import Factory, nested_dataclass
 

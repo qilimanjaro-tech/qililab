@@ -33,3 +33,7 @@ class Buses:
     def __len__(self):
         """Redirect __len__ magic method."""
         return len(self.buses)
+
+    def to_dict(self) -> List[dict]:
+        """Return a dict representation of the Buses class."""
+        return [bus.to_dict() for bus in self.buses]

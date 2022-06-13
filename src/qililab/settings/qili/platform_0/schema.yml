@@ -17,6 +17,10 @@ elements:
         sync_enabled: true
         gain: 1
         frequency: 100000000
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
       signal_generator:
         id_: 0
         name: rohde_schwarz  # unique name
@@ -25,13 +29,6 @@ elements:
         firmware: 4.30.046.295
         frequency: 3451759000
         power: 15
-      mixer_up:
-        id_: 0
-        category: mixer  # general name
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
     target:
       id_: 0
       name: qubit
@@ -69,6 +66,10 @@ elements:
         acquisition_name: "single"
         delay_time: 100
         frequency: 20000000
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
       signal_generator:
         id_: 1
         name: rohde_schwarz  # unique name
@@ -77,20 +78,6 @@ elements:
         firmware: 4.30.046.295
         frequency: 7347367000
         power: 15
-      mixer_up:
-        id_: 1
-        category: mixer  # general name
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
-      mixer_down:
-        id_: 2
-        category: mixer  # general name
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
     attenuator:
       id_: 1
       name: mini_circuits

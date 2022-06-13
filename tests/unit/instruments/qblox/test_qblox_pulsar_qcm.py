@@ -7,7 +7,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.instruments import Mixer, QbloxPulsarQCM
+from qililab.instruments import QbloxPulsarQCM
 from qililab.typings import BusElementName
 
 
@@ -31,21 +31,13 @@ class TestQbloxPulsarQCM:
         qcm.device.arm_sequencer.assert_called()
         qcm.device.start_sequencer.assert_called()
 
-    def test_setup_method(self, qcm: QbloxPulsarQCM, mixer: Mixer):
+    def test_setup_method(self, qcm: QbloxPulsarQCM):
         """Test setup method"""
-        qcm.setup_mixer_settings(mixer=mixer)
         qcm.setup()
         qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
         qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
         qcm.device.sequencer0.offset_awg_path0.assert_called_once_with(qcm.offset_i)
         qcm.device.sequencer0.offset_awg_path1.assert_called_once_with(qcm.offset_q)
-
-    def test_setup_method_raises_attribute_error(self, qcm: QbloxPulsarQCM):
-        """Test setup method"""
-        with pytest.raises(AttributeError):
-            qcm.setup()
-        qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
 
     def test_stop_method(self, qcm: QbloxPulsarQCM):
         """Test stop method"""
@@ -102,13 +94,3 @@ class TestQbloxPulsarQCM:
     def test_frequency_property(self, qcm: QbloxPulsarQCM):
         """Test frequency property."""
         assert qcm.frequency == qcm.settings.frequency
-
-    def tests_epsilon_property_raises_error(self, qcm: QbloxPulsarQCM):
-        """Test epsilon property."""
-        with pytest.raises(AttributeError):
-            print(qcm.epsilon)
-
-    def tests_delta_property_raises_error(self, qcm: QbloxPulsarQCM):
-        """Test delta property."""
-        with pytest.raises(AttributeError):
-            print(qcm.delta)
