@@ -1,5 +1,6 @@
 """HardwareExperiment class."""
 
+
 import contextlib
 import copy
 import os
@@ -53,18 +54,21 @@ class Experiment:
         self._initial_sequences = sequences
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
-    def execute(self, connection: API | None = None) -> Results:
+    def execute(self, connection: API | None = None) -> Results | None:
         """Run execution."""
         path = self._create_folder()
         self._create_results_file(path=path)
         self._dump_experiment_data(path=path)
         plot = LivePlot(connection=connection)
+        results = Results(
+            software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
+        )
         with self.execution:
             with contextlib.suppress(KeyboardInterrupt):
-                results = self._execute_loop(plot=plot, path=path)
+                self._execute_loop(results=results, plot=plot, path=path)
         return results
 
-    def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
+    def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -74,23 +78,19 @@ class Experiment:
             List[List[Result]]: List containing the results for each loop execution.
         """
 
-        def recursive_loop(loop: Loop | None, results: Results, x_value: float = 0, depth: int = 0) -> Results:
+        def recursive_loop(loop: Loop | None, x_value: float = 0, depth: int = 0):
             """Loop over all given parameters.
 
             Args:
                 depth (int): Depth of the recursive loop.
-                results (Results): Results class.
                 x_value (float): X value.
-
-            Returns:
-                Results: Results class.
             """
 
             if loop is None:
                 result = self._execute(path=path)
                 results.add(result=result)
                 plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
-                return results
+                return
 
             if loop.loop is None:
                 x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
@@ -108,38 +108,24 @@ class Experiment:
                     pbar.set_description(f"{loop.parameter}: {value} ")
                     pbar.update()
                     element.set_parameter(parameter=loop.parameter, value=value)
-                    results = recursive_loop(loop=loop.loop, results=results, x_value=value, depth=depth + 1)
-            return results
+                    recursive_loop(loop=loop.loop, x_value=value, depth=depth + 1)
+            return
 
         if self.loop is None:
             result = self._execute(plot=plot, path=path)
-            results = Results(
-                software_average=self.software_average,
-                num_sequences=self.execution.num_sequences,
-                results=result,  # type: ignore
-            )
-
+            results.add(result=result)
         else:
-            results = recursive_loop(
-                loop=self.loop,
-                results=Results(
-                    software_average=self.software_average,
-                    shape=self.loop.shape,
-                    num_sequences=self.execution.num_sequences,
-                    loop=self.loop,
-                ),
-            )
-
-        return results
+            recursive_loop(loop=self.loop)
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
 
         Args:
-            results (Results): Results class.
+            path (Path): Path to data folder.
+            plot (LivePlot | None): Live plot
 
         Returns:
-            Results.ExecutionResults: ExecutionResults class.
+            List[Result]: List of Result object for each pulse sequence.
         """
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")

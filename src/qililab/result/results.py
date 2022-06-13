@@ -16,20 +16,21 @@ class Results:
     """Results class."""
 
     software_average: int
+    num_sequences: int
     shape: List[int] = field(default_factory=list)
-    num_sequences: int = 1
     results: List[Result | None] = field(default_factory=list)
     loop: Loop | None = None
 
     def __post_init__(self):
         """Add num_sequences to shape."""
-        if self.num_sequences > 1:
-            self.shape.append(self.num_sequences)
-        if self.software_average > 1:
-            self.shape.append(self.software_average)
+        if not self.shape:
+            self.shape = self.loop.shape if self.loop is not None else []
+            if self.num_sequences > 1:
+                self.shape.append(self.num_sequences)
+            if self.software_average > 1:
+                self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
             self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
-            self.results += [None] * (np.prod(self.shape) - len(self.results))
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
@@ -48,6 +49,7 @@ class Results:
         Returns:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
+        self._fill_missing_values()
         probs = [result.probabilities() if result is not None else (np.nan, np.nan) for result in self.results]
         array = np.reshape(a=probs, newshape=self.shape + [2])
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
@@ -61,6 +63,7 @@ class Results:
         Returns:
             np.ndarray: Acquisition values.
         """
+        self._fill_missing_values()
         results = []
         for result in self.results:
             if not isinstance(result, (QbloxResult, NoneType)):
@@ -71,6 +74,10 @@ class Results:
         if mean and self.software_average > 1:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array
+
+    def _fill_missing_values(self):
+        """Fill with None the missing values."""
+        self.results += [None] * (np.prod(self.shape) - len(self.results))
 
     @property
     def ranges(self) -> np.ndarray:
