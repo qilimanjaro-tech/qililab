@@ -1,7 +1,7 @@
 """Loop class."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
@@ -21,7 +21,7 @@ class Loop:
     num: int | None = None
     step: float | None = None
     loop: Loop | None = None
-    previous: Loop | None = None
+    previous: Loop | None = field(compare=False, default=None)
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""

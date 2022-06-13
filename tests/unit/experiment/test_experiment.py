@@ -148,6 +148,16 @@ class TestExperiment:
         mock_open_1.assert_called()
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
+        assert (
+            results.ranges
+            == np.array(
+                [
+                    nested_experiment.loop.range,
+                    nested_experiment.loop.loop.range,
+                    nested_experiment.loop.loop.loop.range,
+                ]
+            )
+        ).all()
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
     @patch("qililab.execution.buses_execution.yaml.safe_dump")

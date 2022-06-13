@@ -123,6 +123,7 @@ class Experiment:
                     software_average=self.software_average,
                     shape=self.loop.shape,
                     num_sequences=self.execution.num_sequences,
+                    loop=self.loop,
                 ),
             )
 

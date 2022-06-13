@@ -8,7 +8,7 @@ import numpy as np
 from qililab.constants import YAML
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
-from qililab.utils import Factory
+from qililab.utils import Factory, Loop
 
 
 @dataclass
@@ -19,6 +19,7 @@ class Results:
     shape: List[int] = field(default_factory=list)
     num_sequences: int = 1
     results: List[Result | None] = field(default_factory=list)
+    loop: Loop | None = None
 
     def __post_init__(self):
         """Add num_sequences to shape."""
@@ -70,3 +71,19 @@ class Results:
         if mean and self.software_average > 1:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array
+
+    @property
+    def ranges(self) -> np.ndarray:
+        """Results 'ranges' property.
+
+        Returns:
+            list: Values of the loops.
+        """
+        if self.loop is None:
+            raise ValueError("Loop must not be None.")
+        ranges = []
+        loop: Loop | None = self.loop
+        while loop is not None:
+            ranges.append(loop.range)
+            loop = loop.loop
+        return np.array(ranges)
