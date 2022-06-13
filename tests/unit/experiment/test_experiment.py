@@ -152,6 +152,7 @@ class TestExperiment:
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
         nested_experiment.settings.software_average = 5
         results = nested_experiment.execute()  # type: ignore
+        nested_experiment.to_dict()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
         assert isinstance(results, Results)

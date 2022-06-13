@@ -1,4 +1,5 @@
 """MixerBasedSystemControl class."""
+from dataclasses import asdict
 from pathlib import Path
 from typing import Generator, Tuple
 
@@ -116,3 +117,10 @@ class MixerBasedSystemControl(SystemControl):
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
+
+    def to_dict(self):
+        """Return a dict representation of the BusElement class."""
+        return {
+            YAML.ID: self.id_,
+            YAML.CATEGORY: self.settings.category.value,
+        } | {key: asdict(value.settings) for key, value in self if not isinstance(value, dict)}

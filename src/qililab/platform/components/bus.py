@@ -1,5 +1,4 @@
 """Bus class."""
-from dataclasses import asdict
 from typing import Generator, List, Tuple
 
 from qililab.constants import YAML

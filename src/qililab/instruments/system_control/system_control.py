@@ -1,7 +1,9 @@
 """SystemControl class."""
 from abc import ABC, abstractmethod
+from dataclasses import asdict
 from pathlib import Path
 
+from qililab.constants import YAML
 from qililab.platform import BusElement
 from qililab.pulse import PulseSequence
 from qililab.result import Result
