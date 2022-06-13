@@ -1,7 +1,4 @@
 """HardwareExperiment class."""
-
-
-import contextlib
 import copy
 import os
 from dataclasses import asdict

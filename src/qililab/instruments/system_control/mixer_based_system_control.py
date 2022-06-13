@@ -8,6 +8,7 @@ from qililab.instruments.awg import AWG
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
+from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
 from qililab.utils import Factory, nested_dataclass
@@ -125,7 +126,7 @@ class MixerBasedSystemControl(SystemControl):
             YAML.CATEGORY: self.settings.category.value,
             YAML.SUBCATEGORY: self.settings.subcategory.value,
         } | {
-            key: {YAML.NAME: value.name.value} | asdict(value.settings)
+            key: {YAML.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
             for key, value in self
             if not isinstance(value, dict)
         }

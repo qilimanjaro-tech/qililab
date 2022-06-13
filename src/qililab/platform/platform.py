@@ -3,6 +3,7 @@ from dataclasses import asdict
 from typing import List
 
 from qililab.constants import YAML
+from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
@@ -151,7 +152,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.SETTINGS: asdict(self.settings)}
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 
