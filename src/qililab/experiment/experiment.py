@@ -54,7 +54,7 @@ class Experiment:
         self._initial_sequences = sequences
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
-    def execute(self, connection: API | None = None) -> Results | None:
+    def execute(self, connection: API | None = None) -> Results:
         """Run execution."""
         path = self._create_folder()
         self._create_results_file(path=path)
