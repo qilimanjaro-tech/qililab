@@ -62,8 +62,8 @@ class CircuitToPulses:
             raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")
 
         return Pulse(
-            amplitude=amplitude,
-            phase=phase,
+            amplitude=float(amplitude),
+            phase=float(phase),
             duration=translation_settings.gate_duration,
             qubit_ids=list(gate.target_qubits),
             pulse_shape=Drag(num_sigmas=translation_settings.num_sigmas, beta=translation_settings.drag_coefficient),
