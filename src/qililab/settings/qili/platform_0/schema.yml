@@ -12,7 +12,7 @@ elements:
         category: awg  # general name
         ip: 192.168.0.3
         firmware: 0.7.0
-        reference_clock: external
+        reference_clock: internal
         sequencer: 0
         sync_enabled: true
         gain: 1
@@ -52,7 +52,7 @@ elements:
         category: awg  # general name
         ip: 192.168.0.4
         firmware: 0.7.0
-        reference_clock: internal
+        reference_clock: external
         sequencer: 0
         sync_enabled: true
         gain: 1
