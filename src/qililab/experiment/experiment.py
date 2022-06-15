@@ -16,7 +16,7 @@ from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import Platform, PlatformSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
-from qililab.typings import Category, Parameter, yaml
+from qililab.typings import Category, Instrument, Parameter, yaml
 from qililab.utils import LivePlot, Loop, nested_dataclass
 
 
@@ -93,15 +93,15 @@ class Experiment:
                 return
 
             if loop.loop is None:
-                x_label = f"{loop.category.value} {loop.id_}: {loop.parameter.value} "
+                x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
                 if loop.previous is not None:
                     x_label += (
-                        f"({loop.previous.category.value} {loop.previous.id_}:"
+                        f"({loop.previous.instrument.value} {loop.previous.id_}:"
                         + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
                     )
                 plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
 
-            element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
+            element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
             leave = loop.previous is False
             with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
                 for value in loop.range:
@@ -138,7 +138,7 @@ class Experiment:
             path=path,
         )
 
-    def set_parameter(self, category: Category | str, id_: int, parameter: Parameter | str, value: float):
+    def set_parameter(self, instrument: Instrument, id_: int, parameter: Parameter, value: float):
         """Set parameter of a platform element.
 
         Args:
@@ -147,19 +147,11 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if isinstance(parameter, str):
-            parameter = Parameter(parameter)
-        if isinstance(category, str):
-            category = Category(category)
 
-        # FIXME: Avoid calling self._build_execution twice
-        if Category(category) == Category.EXPERIMENT:
-            attr_type = type(getattr(self.settings, parameter.value))
-            setattr(self.settings, parameter.value, attr_type(value))
-            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
-            return
-        self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
-        if Category(category) == Category.PLATFORM:
+        self.platform.set_parameter(
+            category=Category(instrument.value), id_=id_, parameter=Parameter(parameter), value=value
+        )
+        if Instrument(instrument) == Instrument.PLATFORM:
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
@@ -225,6 +217,7 @@ class Experiment:
             "software_average": self.software_average,
             "num_sequences": self.execution.num_sequences,
             "shape": [] if self.loop is None else self.loop.shape,
+            "loop": self.loop.to_dict() if self.loop is not None else None,
             "results": None,
         }
         with open(file=path / "results.yml", mode="w", encoding="utf8") as results_file:

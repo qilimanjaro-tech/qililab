@@ -77,7 +77,7 @@ class Results:
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""
-        self.results += [None] * (np.prod(self.shape) - len(self.results))
+        self.results += [None] * int(np.prod(self.shape) - len(self.results))
 
     @property
     def ranges(self) -> np.ndarray:

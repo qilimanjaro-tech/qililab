@@ -30,6 +30,25 @@ class Category(Enum):
     STEP_ATTENUATOR = "step_attenuator"
 
 
+class Instrument(Enum):
+    """Instrument.
+
+    Args:
+        enum (str): Available types of instruments:
+        * platform
+        * awg
+        * signal_generator
+        * system_control
+        * step_attenuator
+    """
+
+    PLATFORM = "platform"
+    AWG = "awg"
+    SIGNAL_GENERATOR = "signal_generator"
+    SYSTEM_CONTROL = "system_control"
+    STEP_ATTENUATOR = "step_attenuator"
+
+
 class ReferenceClock(Enum):
     """Qblox reference clock.
 

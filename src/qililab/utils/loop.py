@@ -6,14 +6,14 @@ from typing import List
 
 import numpy as np
 
-from qililab.typings import Category, Parameter
+from qililab.typings import Instrument, Parameter
 
 
 @dataclass
 class Loop:
     """Loop class."""
 
-    category: Category
+    instrument: Instrument
     id_: int
     parameter: Parameter
     start: float
@@ -31,8 +31,8 @@ class Loop:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
             self.loop.previous = self
-        if isinstance(self.category, str):
-            self.category = Category(self.category)
+        if isinstance(self.instrument, str):
+            self.instrument = Instrument(self.instrument)
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
 
@@ -88,7 +88,7 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            "category": self.category.value,
+            "instrument": self.instrument.value,
             "id_": self.id_,
             "parameter": self.parameter.value,
             "start": self.start,

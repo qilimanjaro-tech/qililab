@@ -28,7 +28,7 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
-from qililab.typings import Category, Parameter
+from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
 from .data import MockedSettingsFactory, circuit, experiment_params
@@ -214,7 +214,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     platform_name, sequences = request.param  # type: ignore
     platform = build_platform(name=platform_name)
     loop = Loop(
-        category=Category.SIGNAL_GENERATOR,
+        instrument=Instrument.SIGNAL_GENERATOR,
         id_=0,
         parameter=Parameter.FREQUENCY,
         start=3544000000,
@@ -232,10 +232,10 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
     platform = build_platform(name=platform_name)
-    loop3 = Loop(category=Category.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(category=Category.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
+    loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
+    loop2 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
     loop = Loop(
-        category=Category.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
+        instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )
     experiment = Experiment(platform=platform, sequences=sequences, loop=loop)
     mock_load.assert_called()

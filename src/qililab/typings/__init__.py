@@ -5,6 +5,7 @@ from .enums import (
     BusElementName,
     BusSubcategory,
     Category,
+    Instrument,
     IntegrationMode,
     Parameter,
     PulseShapeName,

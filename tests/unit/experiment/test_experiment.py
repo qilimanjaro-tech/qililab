@@ -12,7 +12,7 @@ from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result import Results
-from qililab.typings import Category, Parameter
+from qililab.typings import Instrument, Parameter
 
 from ...conftest import mock_instruments
 from ...utils import yaml_safe_load_side_effect
@@ -88,15 +88,13 @@ class TestExperiment:
 
     def test_set_parameter_method(self, experiment: Experiment):
         """Test set_parameter method."""
-        experiment.set_parameter(category="awg", id_=0, parameter=Parameter.FREQUENCY, value=1e9)
-
-    def test_set_parameter_method_with_experiment_settings(self, experiment: Experiment):
-        """Test set_parameter method with experiment settings."""
-        experiment.set_parameter(category=Category.EXPERIMENT, id_=0, parameter="repetition_duration", value=3e6)
+        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
-        experiment.set_parameter(category=Category.PLATFORM, id_=0, parameter=Parameter.READOUT_AMPLITUDE, value=0.3)
+        experiment.set_parameter(
+            instrument=Instrument.PLATFORM, id_=0, parameter=Parameter.READOUT_AMPLITUDE, value=0.3
+        )
         assert experiment.platform.settings.translation_settings.readout_amplitude == 0.3
 
     @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
