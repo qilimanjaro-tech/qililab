@@ -29,11 +29,10 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
-from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import MockedSettingsFactory, circuit, experiment_params, results
+from .data import MockedSettingsFactory, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
 
 
@@ -342,19 +341,6 @@ def fixture_loop() -> Loop:
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
     return request.param  # type: ignore
-
-
-@pytest.fixture(name="loaded_results")
-@patch("qililab.utils.load_data.os.path.exists", side_effect=lambda path: path == Path("results.yml"))
-@patch("qililab.utils.load_data.open")
-@patch("qililab.utils.load_data.yaml.safe_load", return_value=results)
-def fixture_loaded_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock) -> Results | None:
-    """Return Platform object."""
-    _, result = load(path="")
-    mock_load.assert_called_once()
-    mock_open.assert_called_once()
-    mock_os.assert_called()
-    return result
 
 
 def platform_db() -> Platform:
