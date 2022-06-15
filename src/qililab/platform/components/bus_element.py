@@ -38,7 +38,5 @@ def dict_factory(data):
 
         elif isinstance(value, Enum):
             value = str(value.value)
-        elif isinstance(value, BusElement):
-            value = {YAML.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
         result = result | {key: value}
     return result

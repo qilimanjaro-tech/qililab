@@ -15,7 +15,7 @@ from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 
 from ...conftest import mock_instruments
-from ...utils import yaml_safe_load_side_effect
+from ...side_effect import yaml_safe_load_side_effect
 
 
 class TestExperiment:
@@ -97,17 +97,21 @@ class TestExperiment:
         )
         assert experiment.platform.settings.translation_settings.readout_amplitude == 0.3
 
-    @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
-    @patch("qililab.execution.buses_execution.open")
-    @patch("qililab.experiment.experiment.open")
-    @patch("qililab.experiment.experiment.os.makedirs")
+
+@patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
+@patch("qililab.execution.buses_execution.yaml.safe_dump")
+@patch("qililab.execution.buses_execution.open")
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
+class TestSimulatedExexution:
+    """Unit tests checking the the execution of a simulated platform."""
+
     def test_execute_method_without_loop(
         self,
-        mock_dump: MagicMock,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
         mock_open_1: MagicMock,
+        mock_dump: MagicMock,
         mock_qutip: MagicMock,
         simulated_experiment: Experiment,
     ):
@@ -124,15 +128,45 @@ class TestExperiment:
         with pytest.raises(ValueError):
             print(results.ranges)
 
-    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
-    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
-    @patch("qililab.execution.buses_execution.open")
-    @patch("qililab.experiment.experiment.open")
-    @patch("qililab.experiment.experiment.os.makedirs")
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
-    @patch("qililab.instruments.qblox.qblox_pulsar.open")
+    def test_execute_method_with_simulated_qubit(
+        self,
+        mock_makedirs: MagicMock,
+        mock_open: MagicMock,
+        mock_open_1: MagicMock,
+        mock_dump: MagicMock,
+        mock_qutip: MagicMock,
+        simulated_experiment: Experiment,
+    ):
+        """Test execute method with simulated qubit."""
+        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
+        connection = MagicMock(name="API", spec=API, autospec=True)
+        connection.create_liveplot.return_value = 0
+        results = simulated_experiment.execute(connection=connection)  # type: ignore
+        with pytest.raises(ValueError):
+            results.acquisitions()
+        connection.create_liveplot.assert_called_once()
+        connection.send_plot_points.assert_called()
+        mock_qutip.Options.assert_called()
+        mock_qutip.ket2dm.assert_called()
+        mock_qutip.mesolve.assert_called()
+        mock_open.assert_called()
+        mock_open_1.assert_called()
+        mock_dump.assert_called()
+        mock_makedirs.assert_called()
+
+
+@patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
+@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
+@patch("qililab.execution.buses_execution.yaml.safe_dump")
+@patch("qililab.execution.buses_execution.open")
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
+@patch("qililab.instruments.qblox.qblox_pulsar.open")
+class TestExexution:
+    """Unit tests checking the the execution of a platform with instruments."""
+
     def test_execute_method_with_nested_loop(
         self,
         mock_open_0: MagicMock,
@@ -173,46 +207,6 @@ class TestExperiment:
             )
         ).all()
 
-    @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
-    @patch("qililab.execution.buses_execution.open")
-    @patch("qililab.experiment.experiment.open")
-    @patch("qililab.experiment.experiment.os.makedirs")
-    def test_execute_method_with_simulated_qubit(
-        self,
-        mock_makedirs: MagicMock,
-        mock_open: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump: MagicMock,
-        mock_qutip: MagicMock,
-        simulated_experiment: Experiment,
-    ):
-        """Test execute method with simulated qubit."""
-        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        connection = MagicMock(name="API", spec=API, autospec=True)
-        connection.create_liveplot.return_value = 0
-        results = simulated_experiment.execute(connection=connection)  # type: ignore
-        with pytest.raises(ValueError):
-            results.acquisitions()
-        connection.create_liveplot.assert_called_once()
-        connection.send_plot_points.assert_called()
-        mock_qutip.Options.assert_called()
-        mock_qutip.ket2dm.assert_called()
-        mock_qutip.mesolve.assert_called()
-        mock_open.assert_called()
-        mock_open_1.assert_called()
-        mock_dump.assert_called()
-        mock_makedirs.assert_called()
-
-    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
-    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
-    @patch("qililab.execution.buses_execution.open")
-    @patch("qililab.experiment.experiment.open")
-    @patch("qililab.experiment.experiment.os.makedirs")
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
-    @patch("qililab.instruments.qblox.qblox_pulsar.open")
     def test_execute_method_with_instruments(
         self,
         mock_open_0: MagicMock,
@@ -245,15 +239,6 @@ class TestExperiment:
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
-    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
-    @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-    @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-    @patch("qililab.execution.buses_execution.yaml.safe_dump")
-    @patch("qililab.execution.buses_execution.open")
-    @patch("qililab.experiment.experiment.open")
-    @patch("qililab.experiment.experiment.os.makedirs")
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
-    @patch("qililab.instruments.qblox.qblox_pulsar.open")
     def test_execute_method_with_from_dict_experiment(
         self,
         mock_open_0: MagicMock,
@@ -287,4 +272,37 @@ class TestExperiment:
         mock_open_0.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
+        mock_makedirs.assert_called()
+
+    def test_execute_method_with_keyboard_interrupt(
+        self,
+        mock_open_0: MagicMock,
+        mock_dump_0: MagicMock,
+        mock_makedirs: MagicMock,
+        mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
+        mock_dump_1: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
+        experiment: Experiment,
+    ):
+        """Test run method."""
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
+        mock_pulsar.return_value.get_acquisitions.side_effect = KeyboardInterrupt()
+        results = experiment.execute()
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
+        mock_rs.assert_called()
+        mock_pulsar.assert_called()
+        assert isinstance(results, Results)
+        probabilities = results.probabilities()
+        acquisitions = results.acquisitions()
+        assert isinstance(probabilities, np.ndarray)
+        assert isinstance(acquisitions, np.ndarray)
+        mock_open_0.assert_called()
+        mock_dump_0.assert_called()
+        mock_open_1.assert_called()
+        mock_dump_1.assert_not_called()
+        mock_open_2.assert_not_called()
         mock_makedirs.assert_called()

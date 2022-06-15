@@ -175,7 +175,7 @@ class QbloxPulsar(AWG):
         self._cache = None
         try:
             super().close()
-        except (UnicodeDecodeError, ValueError):
+        except ValueError:
             self._connected = False
             self.device.close()
 

@@ -34,16 +34,13 @@ class Results:
         if isinstance(self.loop, dict):
             self.loop = Loop(**self.loop)
 
-    def add(self, result: Result | List[Result]):
+    def add(self, result: List[Result]):
         """Append an ExecutionResults object.
 
         Args:
             execution_results (ExecutionResults): ExecutionResults object.
         """
-        if isinstance(result, list):
-            self.results += result
-        else:
-            self.results.append(result)
+        self.results += result
 
     def probabilities(self, mean: bool = True) -> np.ndarray:
         """Probabilities of being in the ground and excited state of all the nested Results classes.

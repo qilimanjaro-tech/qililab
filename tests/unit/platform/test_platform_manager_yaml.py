@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from qililab import build_platform
 from qililab.platform import Platform
 
-from ...utils import yaml_safe_load_side_effect
+from ...side_effect import yaml_safe_load_side_effect
 
 
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)

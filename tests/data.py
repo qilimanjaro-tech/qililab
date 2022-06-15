@@ -273,6 +273,55 @@ for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
     experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])
 
 
+results = {
+    "software_average": 1,
+    "num_sequences": 1,
+    "shape": [3, 75, 100],
+    "loop": {
+        "instrument": "awg",
+        "id_": 1,
+        "parameter": "gain",
+        "start": 0.1,
+        "stop": 1,
+        "num": None,
+        "step": 0.3,
+        "loop": {
+            "instrument": "step_attenuator",
+            "id_": 1,
+            "parameter": "attenuation",
+            "start": 15,
+            "stop": 90,
+            "num": None,
+            "step": 1,
+            "loop": {
+                "instrument": "signal_generator",
+                "id_": 1,
+                "parameter": "frequency",
+                "start": 7342000000,
+                "stop": 7352000000,
+                "num": None,
+                "step": 100000,
+                "loop": None,
+            },
+        },
+    },
+    "results": [
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+            "threshold": [0.48046875],
+            "avg_cnt": [1024],
+        },
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+            "threshold": [0.4599609375],
+            "avg_cnt": [1024],
+        },
+    ],
+}
+
+
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 

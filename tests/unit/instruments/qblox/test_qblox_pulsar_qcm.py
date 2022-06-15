@@ -65,6 +65,13 @@ class TestQbloxPulsarQCM:
         qcm.device.stop_sequencer.assert_called_once()
         qcm.device.close.assert_called_once()  # type: ignore
 
+    def test_close_method_with_value_error(self, qcm: QbloxPulsarQCM):
+        """Test close method"""
+        qcm.device.stop_sequencer.side_effect = ValueError()
+        qcm.close()
+        qcm.device.stop_sequencer.assert_called_once()
+        qcm.device.close.assert_called_once()  # type: ignore
+
     def test_not_connected_attribute_error(self, qcm: QbloxPulsarQCM):
         """Test that calling a method when the device is not connected raises an AttributeError."""
         qcm.close()

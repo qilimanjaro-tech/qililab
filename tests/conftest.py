@@ -1,10 +1,11 @@
 """Pytest configuration fixtures."""
 import copy
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import build_platform
+from qililab import build_platform, load
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
@@ -28,11 +29,12 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
+from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import MockedSettingsFactory, circuit, experiment_params
-from .utils.side_effect import yaml_safe_load_side_effect
+from .data import MockedSettingsFactory, circuit, experiment_params, results
+from .side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="qcm")
@@ -330,10 +332,29 @@ def fixture_platform() -> Platform:
     return platform_db()
 
 
+@pytest.fixture(name="loop")
+def fixture_loop() -> Loop:
+    """Return Platform object."""
+    return Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1)
+
+
 @pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
     return request.param  # type: ignore
+
+
+@pytest.fixture(name="loaded_results")
+@patch("qililab.utils.load_data.os.path.exists", side_effect=lambda path: path == Path("results.yml"))
+@patch("qililab.utils.load_data.open")
+@patch("qililab.utils.load_data.yaml.safe_load", return_value=results)
+def fixture_loaded_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock) -> Results:
+    """Return Platform object."""
+    _, result = load(path="")
+    mock_load.assert_called_once()
+    mock_open.assert_called_once()
+    mock_os.assert_called()
+    return result
 
 
 def platform_db() -> Platform:
