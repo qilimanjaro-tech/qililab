@@ -31,6 +31,8 @@ class Results:
                 self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
             self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
+        if isinstance(self.loop, dict):
+            self.loop = Loop(**self.loop)
 
     def add(self, result: Result | List[Result]):
         """Append an ExecutionResults object.
