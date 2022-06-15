@@ -348,7 +348,7 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
 @patch("qililab.utils.load_data.os.path.exists", side_effect=lambda path: path == Path("results.yml"))
 @patch("qililab.utils.load_data.open")
 @patch("qililab.utils.load_data.yaml.safe_load", return_value=results)
-def fixture_loaded_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock) -> Results:
+def fixture_loaded_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock) -> Results | None:
     """Return Platform object."""
     _, result = load(path="")
     mock_load.assert_called_once()
