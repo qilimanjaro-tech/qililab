@@ -95,4 +95,4 @@ class Results:
         while loop is not None:
             ranges.append(loop.range)
             loop = loop.loop
-        return np.array(ranges)
+        return np.array(ranges, dtype=object)
