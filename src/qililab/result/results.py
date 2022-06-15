@@ -57,7 +57,7 @@ class Results:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array
 
-    def acquisitions(self, mean: bool = True) -> np.ndarray:
+    def acquisitions(self, mean: bool = False) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
 
         Returns:
