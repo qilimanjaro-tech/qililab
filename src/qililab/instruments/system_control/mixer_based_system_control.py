@@ -10,15 +10,15 @@ from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
-from qililab.typings import Category, InstrumentName
+from qililab.typings import BusElementName, Category
 from qililab.utils import Factory
 
 
-@InstrumentFactory.register
+@Factory.register
 class MixerBasedSystemControl(SystemControl):
     """MixerBasedSystemControl class."""
 
-    name = InstrumentName.MIXER_BASED_SYSTEM_CONTROL
+    name = BusElementName.MIXER_BASED_SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):
@@ -37,7 +37,7 @@ class MixerBasedSystemControl(SystemControl):
                 elif name == MixerDown.name.value:
                     setattr(self, name, MixerDown(value))
                 elif isinstance(value, dict):
-                    elem_obj = Factory.get(value.pop(YAML.NAME))(value)
+                    elem_obj = InstrumentFactory.get(value.pop(YAML.NAME))(value)
                     setattr(self, name, elem_obj)
 
         def __iter__(

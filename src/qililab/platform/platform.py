@@ -2,8 +2,7 @@
 from dataclasses import asdict
 from typing import List
 
-from qililab.constants import YAML
-from qililab.instruments import Instrument, InstrumentFactory
+from qililab.instruments import Instrument
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
@@ -35,14 +34,11 @@ class Platform:
 
     settings: PlatformSettings
     schema: Schema
-    instruments: List[Instrument]
-    _schema: PlatformSchema
 
     def __init__(self, platform_schema: PlatformSchema):
         self.settings = self.PlatformSettings(**platform_schema.settings)
+        self._schema = platform_schema  # TODO: Remove this line
         self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
-        self._schema = platform_schema
-        self.instruments = self._load_instruments(instruments_dict=platform_schema.instruments)
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -94,24 +90,6 @@ class Platform:
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
-
-    def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
-        """Instantiate all instrument classes from their respective dictionaries.
-
-        Args:
-            instruments_dict (List[dict]): List of dictionaries containing the settings of each instrument.
-
-        Returns:
-            List[Instrument]: List of instantiated instrument classes.
-        """
-        instruments: List[Instrument] = []
-        for instrument in instruments_dict:
-            try:
-                dict_name = instrument.pop(YAML.NAME)
-            except KeyError:
-                dict_name = instrument.get(YAML.SUBCATEGORY)
-            instruments.append(InstrumentFactory.get(dict_name)(settings=instrument))
-        return instruments
 
     @property
     def id_(self):

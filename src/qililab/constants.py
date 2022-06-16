@@ -1,5 +1,4 @@
 """Constants"""
-
 DEFAULT_PLATFORM_FILENAME = "platform"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_SCHEMA_FILENAME = "schema"
@@ -10,7 +9,9 @@ DEFAULT_PLATFORM_NAME = "platform_0"
 class YAML:
     """YAML constants."""
 
+    ID = "id_"
     NAME = "name"
+    CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     ELEMENTS = "elements"
     READOUT = "readout"

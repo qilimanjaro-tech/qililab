@@ -1,24 +1,30 @@
 """SystemControl class."""
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Type, get_type_hints
 
-from qililab.instruments.instrument import Instrument
+from qililab.platform.components import BusElement
 from qililab.pulse import PulseSequence
 from qililab.result import Result
+from qililab.settings import Settings
 from qililab.typings import BusElementName
 
 
-class SystemControl(Instrument):
+class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
     @dataclass
-    class SystemControlSettings(Instrument.InstrumentSettings):
+    class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
         subcategory: BusElementName
 
     settings: SystemControlSettings
+
+    def __init__(self, settings: dict):
+        settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
+        self.settings = settings_class(**settings)
 
     @abstractmethod
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> Result:

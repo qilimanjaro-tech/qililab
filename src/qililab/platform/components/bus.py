@@ -1,12 +1,16 @@
 """Bus class."""
-from typing import Generator, List, Tuple
+from dataclasses import dataclass
+from typing import List
 
 from qililab.constants import YAML
-from qililab.instruments import MixerBasedSystemControl, StepAttenuator, SystemControl
-from qililab.platform.components.targets.target import Target
+from qililab.instruments import (
+    Attenuator,
+    Instruments,
+    MixerBasedSystemControl,
+    SystemControl,
+)
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
-from qililab.utils import Factory, nested_dataclass
 
 
 class Bus:
@@ -18,7 +22,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    @nested_dataclass
+    @dataclass
     class BusSettings(Settings):
         """Bus settings.
 
@@ -30,37 +34,24 @@ class Bus:
 
         subcategory: BusSubcategory
         system_control: SystemControl
-        target: Target
-        attenuator: StepAttenuator | None = None
+        port: int
+        attenuator: Attenuator | None = None
 
-        def __post_init__(self):
-            """Cast each bus element to its corresponding class."""
-            for name, value in self:
-                if isinstance(value, dict):
-                    try:
-                        dict_name = value.pop(YAML.NAME)
-                    except KeyError:
-                        dict_name = value.get(YAML.SUBCATEGORY)
-                    elem_obj = Factory.get(dict_name)(value)
-                    setattr(self, name, elem_obj)
-
-        def __iter__(
-            self,
-        ) -> Generator[Tuple[str, SystemControl | Target | StepAttenuator | dict], None, None]:
+        def __iter__(self):
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
-            # TODO: Figure out why dict is in if statement
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | Target | StepAttenuator | dict):
+                if isinstance(value, SystemControl | Attenuator | dict):
                     yield name, value
 
     settings: BusSettings
 
-    def __init__(self, settings: dict):
+    def __init__(self, settings: dict, instruments: Instruments):
         self.settings = self.BusSettings(**settings)
+        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     @property
     def id_(self):
@@ -79,15 +70,15 @@ class Bus:
         return self.settings.system_control
 
     @property
-    def target(self):
+    def port(self):
         """Bus 'resonator' property.
         Returns:
             Resonator: settings.resonator.
         """
-        return self.settings.target
+        return self.settings.port
 
     @property
-    def attenuator(self) -> StepAttenuator | None:
+    def attenuator(self) -> Attenuator | None:
         """Bus 'attenuator' property.
 
         Returns:
@@ -102,7 +93,7 @@ class Bus:
         Returns:
             List[int]: IDs of the qubit connected to the bus.
         """
-        return self.target.qubit_ids
+        return [0]  # TODO: Obtain from ChipPlaceHolder
 
     @property
     def subcategory(self) -> BusSubcategory:
@@ -112,6 +103,16 @@ class Bus:
             BusSubcategory: Subcategory of the bus. Options are "control" or "readout".
         """
         return self.settings.subcategory
+
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+        """Replace dictionaries from settings into its respective instrument classes."""
+        for name, value in self.settings:
+            if isinstance(value, dict):
+                id_ = value.get(YAML.ID)
+                if not isinstance(id_, int):
+                    raise ValueError("Invalid value for id.")
+                instrument_object = instruments.get(id_=id_, category=Category(name))
+                setattr(self.settings, name, instrument_object)
 
     def get_element(self, category: Category, id_: int):
         """Get bus element. Return None if element is not found.
@@ -123,8 +124,6 @@ class Bus:
         Returns:
             (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
         """
-        if category == Category.QUBIT:
-            return self.target.get_qubit(id_=id_)
         return next(
             (element for _, element in self if element.category == category and element.id_ == id_),
             self.system_control.get_element(category=category, id_=id_)

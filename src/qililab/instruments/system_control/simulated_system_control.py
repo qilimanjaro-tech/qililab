@@ -13,17 +13,17 @@ from qilisimulator.qubits.csfq4jj import (
 from qilisimulator.utils import Factory as SimulatorFactory
 
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult
-from qililab.typings import InstrumentName
+from qililab.typings import BusElementName
+from qililab.utils import Factory
 
 
-@InstrumentFactory.register
+@Factory.register
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
 
-    name = InstrumentName.SIMULATED_SYSTEM_CONTROL
+    name = BusElementName.SIMULATED_SYSTEM_CONTROL
     energy_norm: float = HBAR * 2 * np.pi
 
     @dataclass

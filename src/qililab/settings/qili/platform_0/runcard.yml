@@ -12,33 +12,6 @@ settings:
     num_sigmas: 4
     drag_coefficient: 0
 
-instruments:
-  - id_: 0
-    category: awg  # general name
-    name: qblox_qcm  # unique name
-    ip: 192.168.0.3
-    firmware: 0.7.0
-  - id_: 1
-    category: awg  # general name
-    name: qblox_qrm  # unique name
-    ip: 192.168.0.4
-    firmware: 0.7.0
-  - id_: 0
-    category: signal_generator  # general name
-    name: rohde_schwarz  # unique name
-    ip: 192.168.0.10
-    firmware: 4.30.046.295
-  - id_: 1
-    category: signal_generator  # general name
-    name: rohde_schwarz  # unique name
-    ip: 192.168.0.7
-    firmware: 4.30.046.295
-  - id_: 0
-    category: step_attenuator
-    name: mini_circuits
-    ip: 192.168.0.222
-    firmware: None
-
 buses:
   - id_: 0
     category: bus

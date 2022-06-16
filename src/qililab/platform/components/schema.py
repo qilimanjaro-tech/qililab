@@ -1,13 +1,13 @@
 """Schema class"""
-from dataclasses import InitVar, dataclass
 from typing import List
 
+from qililab.constants import YAML
+from qililab.instruments import Instrument, InstrumentFactory, Instruments
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 from qililab.typings import Category, SchemaDrawOptions
 
 
-@dataclass
 class Schema:
     """Class representing the schema of the platform.
 
@@ -15,12 +15,10 @@ class Schema:
         settings (SchemaSettings): Settings that define the schema of the platform.
     """
 
-    elements: InitVar[List[dict]]
-
-    def __post_init__(self, elements: List[dict]):
+    def __init__(self, buses: List[dict], instruments: List[dict]):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
-        buses: List[Bus] = [Bus(settings=bus) for bus in elements]
-        self.buses = Buses(buses=buses)
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
+        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments) for bus in buses])
 
     def get_element(self, category: Category, id_: int):
         """Get buses element. Return None if element is not found.
@@ -54,6 +52,21 @@ class Schema:
                 print(f"Bus {idx}:\t", end="------")
                 for _, element in bus:
                     print(f"|{element.name}", end="|------")
-                print()
-        elif options == SchemaDrawOptions.FILE:
-            raise NotImplementedError("This function is not implemented yet.")
+
+    def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
+        """Instantiate all instrument classes from their respective dictionaries.
+
+        Args:
+            instruments_dict (List[dict]): List of dictionaries containing the settings of each instrument.
+
+        Returns:
+            List[Instrument]: List of instantiated instrument classes.
+        """
+        instruments: List[Instrument] = []
+        for instrument in instruments_dict:
+            try:
+                dict_name = instrument.pop(YAML.NAME)
+            except KeyError:
+                dict_name = instrument.get(YAML.SUBCATEGORY)
+            instruments.append(InstrumentFactory.get(dict_name)(settings=instrument))
+        return instruments

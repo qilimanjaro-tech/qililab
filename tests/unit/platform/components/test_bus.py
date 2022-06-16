@@ -10,7 +10,7 @@ from qililab.typings import BusSubcategory
 from ....conftest import buses as load_buses
 
 
-@pytest.mark.parametrize("bus", [load_buses().buses[0], load_buses().buses[1]])
+@pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])
 class TestBus:
     """Unit tests checking the Bus attributes and methods."""
 
@@ -21,12 +21,12 @@ class TestBus:
     def test_target_instance(self, bus: Bus):
         """Test resonator instance."""
         if bus.subcategory == BusSubcategory.READOUT:
-            assert isinstance(bus.target, Resonator)
+            assert isinstance(bus.port, Resonator)
 
     def test_qubit_instance(self, bus: Bus):
         """Test qubit instance."""
         if bus.subcategory == BusSubcategory.CONTROL:
-            assert isinstance(bus.target, Qubit)
+            assert isinstance(bus.port, Qubit)
 
     def test_iter_and_getitem_methods(self, bus: Bus):
         """Test __iter__ magic method."""

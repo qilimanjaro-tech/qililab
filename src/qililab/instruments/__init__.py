@@ -1,7 +1,8 @@
 """__init__.py"""
 from .awg import AWG
 from .instrument import Instrument
-from .mini_circuits import StepAttenuator
+from .instruments import Instruments
+from .mini_circuits import Attenuator
 from .mixer import Mixer, MixerDown, MixerUp
 from .qblox.qblox_pulsar_qcm import QbloxPulsarQCM
 from .qblox.qblox_pulsar_qrm import QbloxPulsarQRM

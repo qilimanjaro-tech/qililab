@@ -12,7 +12,6 @@ from qililab.utils import Loop
 
 def qubit_spectroscopy(connection: API):
     """Load the platform 'platform_0' from the DB."""
-    # Using PLATFORM_MANAGER_DB
     circuit = Circuit(1)
     # circuit.add(X(0))
     circuit.add(X(0))

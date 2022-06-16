@@ -10,7 +10,7 @@ from qililab.typings import Device, InstrumentName
 
 
 @InstrumentFactory.register
-class StepAttenuator(Instrument):
+class Attenuator(Instrument):
     """StepAttenuator class."""
 
     name = InstrumentName.MINI_CIRCUITS
