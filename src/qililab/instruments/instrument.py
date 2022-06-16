@@ -5,6 +5,7 @@ from functools import partial
 from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
+from qililab.platform import BusElement
 from qililab.settings import Settings
 from qililab.typings import Device, InstrumentName, Parameter
 

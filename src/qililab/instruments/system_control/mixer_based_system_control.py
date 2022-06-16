@@ -1,14 +1,15 @@
 """MixerBasedSystemControl class."""
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Generator, Optional, Tuple
+from typing import Generator, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments.awg import AWG
-from qililab.instruments.mixer import Mixer, MixerDown, MixerUp
+from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.instruments.utils import InstrumentFactory
+from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
 from qililab.utils import Factory
@@ -24,32 +25,26 @@ class MixerBasedSystemControl(SystemControl):
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):
         """MixerBasedSystemControlSettings class."""
 
-        mixer_up: MixerUp
         awg: AWG
         signal_generator: SignalGenerator
-        mixer_down: Optional[MixerDown] = None
 
         def __post_init__(self):
             """Cast each bus element to its corresponding class."""
             for name, value in self:
-                if name == MixerUp.name.value:
-                    setattr(self, name, MixerUp(value))
-                elif name == MixerDown.name.value:
-                    setattr(self, name, MixerDown(value))
-                elif isinstance(value, dict):
+                if isinstance(value, dict):
                     elem_obj = InstrumentFactory.get(value.pop(YAML.NAME))(value)
                     setattr(self, name, elem_obj)
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SignalGenerator | Mixer | AWG | dict], None, None]:
+        ) -> Generator[Tuple[str, SignalGenerator | AWG | dict], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SignalGenerator | Mixer | AWG | dict):
+                if isinstance(value, SignalGenerator | AWG | dict):
                     yield name, value
 
     settings: MixerBasedSystemControlSettings
@@ -61,7 +56,6 @@ class MixerBasedSystemControl(SystemControl):
 
     def setup(self):
         """Setup instruments."""
-        self.awg.setup_mixer_settings(mixer=self.mixer_up)
         self.awg.setup()
         self.signal_generator.setup()
 
@@ -100,28 +94,17 @@ class MixerBasedSystemControl(SystemControl):
         return self.settings.signal_generator
 
     @property
-    def mixer_up(self):
-        """Bus 'mixer_up' property.
-        Returns:
-            Mixer: settings.mixer_up.
-        """
-        return self.settings.mixer_up
-
-    @property
-    def mixer_down(self):
-        """Bus 'mixer_down' property.
-        Returns:
-            Mixer: settings.mixer_down.
-        """
-        return self.settings.mixer_down
-
-    @property
     def awg(self):
         """Bus 'awg' property.
         Returns:
             (QubitControl | None): settings.qubit_control.
         """
         return self.settings.awg
+
+    @property
+    def delay_time(self) -> int | None:
+        """SystemControl 'delay_time' property.  Delay (in ns) between the readout pulse and the acquisition."""
+        return self.awg.delay_time if isinstance(self.awg, QubitReadout) else None
 
     def get_element(self, category: Category, id_: int):
         """Get system control element. Return None if element is not found.
@@ -131,10 +114,22 @@ class MixerBasedSystemControl(SystemControl):
             id_ (int): ID of element.
 
         Returns:
-            (AWG | SignalGenerator | Mixer | None): Element class.
+            (AWG | SignalGenerator | None): Element class.
         """
         return next((element for _, element in self if element.category == category and element.id_ == id_), None)
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
+
+    def to_dict(self):
+        """Return a dict representation of the BusElement class."""
+        return {
+            YAML.ID: self.id_,
+            YAML.CATEGORY: self.settings.category.value,
+            YAML.SUBCATEGORY: self.settings.subcategory.value,
+        } | {
+            key: {YAML.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
+            for key, value in self
+            if not isinstance(value, dict)
+        }

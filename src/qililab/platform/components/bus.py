@@ -122,7 +122,7 @@ class Bus:
             id_ (int): ID of element.
 
         Returns:
-            (QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None): Element class.
+            (QubitControl | QubitReadout | SignalGenerator | Resonator | None): Element class.
         """
         return next(
             (element for _, element in self if element.category == category and element.id_ == id_),
@@ -134,3 +134,11 @@ class Bus:
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
+
+    def to_dict(self):
+        """Return a dict representation of the SchemaSettings class."""
+        return {
+            YAML.ID: self.id_,
+            YAML.CATEGORY: self.settings.category.value,
+            YAML.SUBCATEGORY: self.subcategory.value,
+        } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}

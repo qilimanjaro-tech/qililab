@@ -28,7 +28,7 @@ class Schema:
             id_ (int): ID of element.
 
         Returns:
-            Tuple[(Qubit | QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator | None), List]: Tuple
+            Tuple[(Qubit | QubitControl | QubitReadout | SignalGenerator | Resonator | None), List]: Tuple
             containing the element object and a list of the bus indeces where the element is located.
         """
         element = None
@@ -52,6 +52,9 @@ class Schema:
                 print(f"Bus {idx}:\t", end="------")
                 for _, element in bus:
                     print(f"|{element.name}", end="|------")
+                print()
+        elif options == SchemaDrawOptions.FILE:
+            raise NotImplementedError("This function is not implemented yet.")
 
     def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
         """Instantiate all instrument classes from their respective dictionaries.
@@ -70,3 +73,7 @@ class Schema:
                 dict_name = instrument.get(YAML.SUBCATEGORY)
             instruments.append(InstrumentFactory.get(dict_name)(settings=instrument))
         return instruments
+
+    def to_dict(self):
+        """Return a dict representation of the SchemaSettings class."""
+        return {"elements": self.buses.to_dict()}

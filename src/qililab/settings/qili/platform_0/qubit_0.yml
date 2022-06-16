@@ -1,8 +1,0 @@
-id_: 0
-category: qubit  # general name
-pi_pulse_amplitude: 1
-pi_pulse_duration: 100
-pi_pulse_frequency: 100000000.0
-qubit_frequency: 3544000000.0
-min_voltage: 950
-max_voltage: 1775

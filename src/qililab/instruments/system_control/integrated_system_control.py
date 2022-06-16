@@ -39,3 +39,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
     @property
     def frequency(self) -> float:
         """SystemControl 'frequency' property."""
+
+    @property
+    def delay_time(self) -> int | None:
+        """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""

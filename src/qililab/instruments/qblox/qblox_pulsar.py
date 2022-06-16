@@ -171,7 +171,11 @@ class QbloxPulsar(AWG):
     def close(self):
         """Empty cache and close connection with the instrument."""
         self._cache = None
-        super().close()
+        try:
+            super().close()
+        except ValueError:
+            self._connected = False
+            self.device.close()
 
     @AWG.CheckConnected
     def reset(self):

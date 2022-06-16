@@ -76,6 +76,7 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
+            "name": self.name,
             "amplitude": self.amplitude,
             "phase": self.phase,
             "duration": self.duration,

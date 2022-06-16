@@ -2,7 +2,7 @@
 import ntpath
 from io import TextIOWrapper
 
-from ..data import MockedSettingsFactory
+from .data import MockedSettingsFactory
 
 
 def yaml_safe_load_side_effect(stream: TextIOWrapper):

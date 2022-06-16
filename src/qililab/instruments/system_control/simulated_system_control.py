@@ -160,3 +160,8 @@ class SimulatedSystemControl(SystemControl):
             float: Resolution of the pulse in ns.
         """
         return self.settings.resolution
+
+    @property
+    def delay_time(self) -> int | None:
+        """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
+        return None

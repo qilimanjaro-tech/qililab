@@ -19,6 +19,7 @@ class YAML:
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
+    SCHEMA = "schema"
 
 
 UNITS = {"frequency": "Hz"}

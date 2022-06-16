@@ -27,27 +27,15 @@ buses:
         sync_enabled: true
         gain: 1
         frequency: 100000000
-      signal_generator:
-        id_: 0
-        frequency: 3451759000
-        power: 15
-      mixer_up:
-        id_: 0
-        category: mixer  # general name
         epsilon: 0
         delta: 0
         offset_i: 0
         offset_q: 0
-    target:
-      id_: 0
-      name: qubit
-      category: qubit
-      pi_pulse_amplitude: 1
-      pi_pulse_duration: 100
-      pi_pulse_frequency: 100000000.0
-      qubit_frequency: 3544000000.0
-      min_voltage: 950
-      max_voltage: 1775
+      signal_generator:
+        id_: 0
+        frequency: 3451759000
+        power: 15
+    port: 0
   - id_: 1
     category: bus
     subcategory: readout
@@ -63,7 +51,6 @@ buses:
         gain: 1
         acquire_trigger_mode: sequencer
         scope_acquisition_averaging: false
-        start_integrate: 130
         sampling_rate: 1000000000
         integration_length: 2000
         integration_mode: ssb
@@ -72,37 +59,15 @@ buses:
         acquisition_name: "single"
         delay_time: 100
         frequency: 20000000
+        epsilon: 0
+        delta: 0
+        offset_i: 0
+        offset_q: 0
       signal_generator:
         id_: 1
         frequency: 7347367000
         power: 15
-      mixer_up:
-        id_: 1
-        category: mixer  # general name
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
-      mixer_down:
-        id_: 2
-        category: mixer  # general name
-        epsilon: 0
-        delta: 0
-        offset_i: 0
-        offset_q: 0
     attenuator:
       id_: 0
       attenuation: 30
-    target:
-      id_: 0
-      name: resonator
-      category: resonator
-      qubits:  # list of qubit settings
-        - id_: 0
-          category: qubit
-          pi_pulse_amplitude: 1
-          pi_pulse_duration: 100
-          pi_pulse_frequency: 100000000.0
-          qubit_frequency: 3544000000.0
-          min_voltage: 950
-          max_voltage: 1775
+    port: 1

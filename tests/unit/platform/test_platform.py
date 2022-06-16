@@ -4,8 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import (
     PLATFORM_MANAGER_YAML,
     Buses,
@@ -77,12 +78,6 @@ class TestPlatform:
         assert isinstance(element, SignalGenerator)
         assert bus_idxs[0] == 0
 
-    def test_bus_0_mixer_instance(self, platform: Platform):
-        """Test bus 0 mixer instance."""
-        element, bus_idxs = platform.get_element(category=Category.MIXER, id_=0)
-        assert isinstance(element, Mixer)
-        assert bus_idxs[0] == 0
-
     def test_bus_1_resonator_instance(self, platform: Platform):
         """Test bus 1 resonator instance."""
         element, bus_idxs = platform.get_element(category=Category.RESONATOR, id_=0)
@@ -116,5 +111,6 @@ class TestPlatform:
     @patch("qililab.settings.settings_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
-        PLATFORM_MANAGER_YAML.dump(platform=platform)
+        save_platform(platform=platform)
+        save_platform(platform=platform, database=True)
         mock_dump.assert_called()

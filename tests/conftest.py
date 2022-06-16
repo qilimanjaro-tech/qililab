@@ -5,16 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import PLATFORM_MANAGER_YAML
+from qililab import PLATFORM_MANAGER_YAML, build_platform, load
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
-    Mixer,
+    Attenuator,
     MixerBasedSystemControl,
-    MixerDown,
-    MixerUp,
     QbloxPulsarQCM,
     QbloxPulsarQRM,
     SimulatedSystemControl,
@@ -31,11 +29,11 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
-from qililab.typings import Category, Parameter
+from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
 from .data import MockedSettingsFactory, circuit, experiment_params
-from .utils.side_effect import yaml_safe_load_side_effect
+from .side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="qcm")
@@ -175,6 +173,18 @@ def fixture_schema(platform: Platform) -> Schema:
     return platform.schema
 
 
+@pytest.fixture(name="step_attenuator")
+def fixture_step_attenuator() -> Attenuator:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="attenuator")
+    settings.pop("name")
+    return Attenuator(settings=settings)
+
+
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
 def fixture_pulse_sequences(platform: Platform) -> PulseSequences:
     """Return PulseSequences instance."""
@@ -192,7 +202,8 @@ def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    experiment = Experiment(platform_name=platform_name, sequences=sequences)
+    platform = build_platform(name=platform_name)
+    experiment = Experiment(platform=platform, sequences=sequences)
     mock_load.assert_called()
     return experiment
 
@@ -202,15 +213,16 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
+    platform = build_platform(name=platform_name)
     loop = Loop(
-        category=Category.SIGNAL_GENERATOR,
+        instrument=Instrument.SIGNAL_GENERATOR,
         id_=0,
         parameter=Parameter.FREQUENCY,
         start=3544000000,
         stop=3744000000,
         num=2,
     )
-    experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
+    experiment = Experiment(platform=platform, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
 
@@ -220,12 +232,13 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    loop3 = Loop(category=Category.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(category=Category.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
+    platform = build_platform(name=platform_name)
+    loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
+    loop2 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
     loop = Loop(
-        category=Category.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
+        instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )
-    experiment = Experiment(platform_name=platform_name, sequences=sequences, loop=loop)
+    experiment = Experiment(platform=platform, sequences=sequences, loop=loop)
     mock_load.assert_called()
     return experiment
 
@@ -235,7 +248,8 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
 def fixture_simulated_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
     platform_name, sequences = request.param  # type: ignore
-    experiment = Experiment(platform_name=platform_name, sequences=sequences)
+    platform = build_platform(name=platform_name)
+    experiment = Experiment(platform=platform, sequences=sequences)
     mock_load.assert_called()
     return experiment
 
@@ -306,7 +320,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 def fixture_simulated_platform() -> Platform:
     """Return Platform object."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(platform_name="flux_qubit")
+        platform = build_platform(name="flux_qubit", database=True)
         mock_load.assert_called()
     return platform
 
@@ -317,10 +331,10 @@ def fixture_platform() -> Platform:
     return platform_db()
 
 
-@pytest.fixture(name="mixer")
-def fixture_mixer() -> Mixer:
+@pytest.fixture(name="loop")
+def fixture_loop() -> Loop:
     """Return Platform object."""
-    return mixer_up()
+    return Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1)
 
 
 @pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
@@ -332,7 +346,7 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
 def platform_db() -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(platform_name=DEFAULT_PLATFORM_NAME)
+        platform = build_platform(name=DEFAULT_PLATFORM_NAME, database=True)
         mock_load.assert_called()
     return platform
 
@@ -340,7 +354,7 @@ def platform_db() -> Platform:
 def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(platform_name="platform_0")
+        platform = build_platform(name="platform_0", database=True)
         mock_load.assert_called()
     return platform
 
@@ -352,29 +366,9 @@ def buses() -> Buses:
         Buses: Instance of the Buses class.
     """
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = PLATFORM_MANAGER_YAML.build(platform_name="platform_0")
+        platform = build_platform(name="platform_0", database=True)
         mock_load.assert_called()
     return platform.buses
-
-
-def mixer_up() -> MixerUp:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="mixer_0")
-    return MixerUp(settings=settings)
-
-
-def mixer_down() -> MixerDown:
-    """Load Mixer.
-
-    Returns:
-        Mixer: Instance of the Mixer class.
-    """
-    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="mixer_0")
-    return MixerDown(settings=settings)
 
 
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):

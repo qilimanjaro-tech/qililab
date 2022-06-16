@@ -2,12 +2,12 @@
 from dataclasses import asdict, dataclass
 from typing import List
 
-from qililab.instruments import Instrument
+from qililab.constants import YAML
+from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
-from qililab.utils import dict_factory
 
 
 class Platform:
@@ -37,8 +37,7 @@ class Platform:
 
     def __init__(self, platform_schema: PlatformSchema):
         self.settings = self.PlatformSettings(**platform_schema.settings)
-        self._schema = platform_schema  # TODO: Remove this line
-        self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
+        self.schema = Schema(**asdict(platform_schema.schema))
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -150,7 +149,9 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        return asdict(self._schema, dict_factory=dict_factory)
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
+        schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
+        return platform_dict | schema_dict
 
     def __str__(self) -> str:
         """String representation of the platform

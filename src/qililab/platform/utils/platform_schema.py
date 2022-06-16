@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from typing import List, Optional
+from typing import List
 
 from qililab.utils import nested_dataclass
 
@@ -16,9 +16,7 @@ class PlatformSchema:
                 - name: "readout" or "control"
                 - awg: settings dictionary.
                 - signal_generator: settings dictionary.
-                - mixer_up: settings dictionary.
                 - qubit / resonator: settings dictionary.
-                - mixer_down (optional): settings dictionary.
     """
 
     @nested_dataclass
