@@ -1,4 +1,5 @@
 """MixerBasedSystemControl class."""
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Optional, Tuple
 
@@ -7,18 +8,19 @@ from qililab.instruments.awg import AWG
 from qililab.instruments.mixer import Mixer, MixerDown, MixerUp
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
+from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
-from qililab.typings import BusElementName, Category
-from qililab.utils import Factory, nested_dataclass
+from qililab.typings import Category, InstrumentName
+from qililab.utils import Factory
 
 
-@Factory.register
+@InstrumentFactory.register
 class MixerBasedSystemControl(SystemControl):
     """MixerBasedSystemControl class."""
 
-    name = BusElementName.MIXER_BASED_SYSTEM_CONTROL
+    name = InstrumentName.MIXER_BASED_SYSTEM_CONTROL
 
-    @nested_dataclass(kw_only=True)
+    @dataclass(kw_only=True)
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):
         """MixerBasedSystemControlSettings class."""
 
@@ -52,10 +54,6 @@ class MixerBasedSystemControl(SystemControl):
 
     settings: MixerBasedSystemControlSettings
 
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.MixerBasedSystemControlSettings(**settings)
-
     def connect(self):
         """Connect to the instruments."""
         self.awg.connect()
@@ -81,6 +79,12 @@ class MixerBasedSystemControl(SystemControl):
         """Close connection to the instruments."""
         self.awg.close()
         self.signal_generator.close()
+
+    def stop(self):
+        """Stop instrument."""
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
 
     @property
     def frequency(self):

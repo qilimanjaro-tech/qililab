@@ -1,11 +1,13 @@
 """Qblox pulsar QCM class"""
+from dataclasses import dataclass
+
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_control import QubitControl
-from qililab.typings import BusElementName
-from qililab.utils import Factory, nested_dataclass
+from qililab.instruments.utils import InstrumentFactory
+from qililab.typings import InstrumentName
 
 
-@Factory.register
+@InstrumentFactory.register
 class QbloxPulsarQCM(QbloxPulsar, QubitControl):
     """Qblox pulsar QCM class.
 
@@ -13,14 +15,10 @@ class QbloxPulsarQCM(QbloxPulsar, QubitControl):
         settings (QBloxPulsarQCMSettings): Settings of the instrument.
     """
 
-    name = BusElementName.QBLOX_QCM
+    name = InstrumentName.QBLOX_QCM
 
-    @nested_dataclass
+    @dataclass
     class QbloxPulsarQCMSettings(QbloxPulsar.QbloxPulsarSettings, QubitControl.QubitControlSettings):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxPulsarQCMSettings
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.QbloxPulsarQCMSettings(**settings)

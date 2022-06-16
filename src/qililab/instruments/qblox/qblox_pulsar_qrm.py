@@ -1,4 +1,5 @@
 """Qblox pulsar QRM class"""
+from dataclasses import dataclass
 from pathlib import Path
 
 from qpysequence.acquisitions import Acquisitions
@@ -7,18 +8,18 @@ from qpysequence.loop import Loop
 
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
+from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
 from qililab.typings import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusElementName,
+    InstrumentName,
     IntegrationMode,
 )
-from qililab.utils import Factory, nested_dataclass
 
 
-@Factory.register
+@InstrumentFactory.register
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     """Qblox pulsar QRM class.
 
@@ -26,9 +27,9 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         settings (QBloxPulsarQRMSettings): Settings of the instrument.
     """
 
-    name = BusElementName.QBLOX_QRM
+    name = InstrumentName.QBLOX_QRM
 
-    @nested_dataclass
+    @dataclass
     class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
         """Contains the settings of a specific pulsar.
 
@@ -55,12 +56,8 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         acquisition_timeout: int  # minutes
         acquisition_name: AcquisitionName
 
-    acquisition_idx: int
     settings: QbloxPulsarQRMSettings
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.QbloxPulsarQRMSettings(**settings)
+    acquisition_idx: int
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence. Return acquisition results.

@@ -146,6 +146,29 @@ class BusElementName(Enum):
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
 
 
+class InstrumentName(Enum):
+    """Bus element names.
+
+    Args:
+        enum (str): Available bus element names:
+        * qblox_qcm
+        * qblox_qrm
+        * rohde_schwarz
+        * mini_circuits
+        * mixer_based_system_control
+        * integrated_system_control
+        * simulated_system_control
+    """
+
+    QBLOX_QCM = "qblox_qcm"
+    QBLOX_QRM = "qblox_qrm"
+    ROHDE_SCHWARZ = "rohde_schwarz"
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
+    INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+
+
 class Parameter(Enum):
     """Parameter names."""
 
@@ -176,6 +199,7 @@ class Parameter(Enum):
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
 
+
 class ResultName(Enum):
     """Result names.
 
@@ -184,5 +208,6 @@ class ResultName(Enum):
         * qblox
         * simulator
     """
+
     QBLOX = "qblox"
     SIMULATOR = "simulator"

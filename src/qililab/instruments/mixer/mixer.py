@@ -1,6 +1,7 @@
 """QubitReadout class."""
+from qililab.platform.components import BusElement
 from qililab.settings import Settings
-from qililab.typings import BusElement, Category
+from qililab.typings import Category
 from qililab.utils import nested_dataclass
 
 

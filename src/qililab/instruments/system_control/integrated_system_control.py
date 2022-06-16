@@ -1,15 +1,40 @@
 """IntegratedSystemControl class."""
-from qililab.instruments.instrument import Instrument
+from dataclasses import dataclass
+from pathlib import Path
+
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.typings import BusElementName
+from qililab.instruments.utils import InstrumentFactory
+from qililab.pulse import PulseSequence
+from qililab.typings import InstrumentName
 
 
-class IntegratedSystemControl(SystemControl, Instrument):
+@InstrumentFactory.register
+class IntegratedSystemControl(SystemControl):
     """IntegratedSystemControl class."""
 
-    class IntegratedSystemControlSettings(SystemControl.SystemControlSettings, Instrument.InstrumentSettings):
+    name = InstrumentName.INTEGRATED_SYSTEM_CONTROL
+
+    @dataclass
+    class IntegratedSystemControlSettings(SystemControl.SystemControlSettings):
         """IntegratedSystemControlSettings class."""
 
     settings: IntegratedSystemControlSettings
 
-    name = BusElementName.INTEGRATED_SYSTEM_CONTROL
+    def start(self):
+        """Start/Turn on the instruments."""
+
+    def setup(self):
+        """Setup instruments."""
+
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+        """Run the given pulse sequence."""
+
+    def stop(self):
+        """Stop instrument."""
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+
+    @property
+    def frequency(self) -> float:
+        """SystemControl 'frequency' property."""

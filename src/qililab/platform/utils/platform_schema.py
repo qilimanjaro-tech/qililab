@@ -43,3 +43,4 @@ class PlatformSchema:
 
     settings: dict
     schema: Schema
+    instruments: List[dict]

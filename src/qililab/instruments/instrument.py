@@ -2,14 +2,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable
+from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName, Device, Parameter
+from qililab.typings import Device, InstrumentName, Parameter
 
 
-class Instrument(BusElement, ABC):
+class Instrument(ABC):
     """Abstract base class declaring the necessary attributes
     and methods for the instruments connected via TCP/IP.
 
@@ -17,6 +17,8 @@ class Instrument(BusElement, ABC):
         device (Device): Class used for connecting to the instrument.
         settings (Settings): Class containing the settings of the instrument.
     """
+
+    name: InstrumentName
 
     @dataclass
     class InstrumentSettings(Settings):
@@ -51,11 +53,13 @@ class Instrument(BusElement, ABC):
                 raise AttributeError("Instrument is not connected")
             return self._method(ref, *args, **kwargs)
 
-    device: Device  # a subtype of device must be specified by the subclass
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
-    name: BusElementName
+    device: Device  # a subtype of device must be specified by the subclass
 
-    def __init__(self):
+    def __init__(self, settings: dict):
+        """Cast the settings to its corresponding class."""
+        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
+        self.settings = settings_class(**settings)
         self._connected = False
 
     def connect(self):
@@ -76,7 +80,9 @@ class Instrument(BusElement, ABC):
 
     def set_parameter(self, parameter: Parameter | str, value: float | str | bool):
         """Redirect __setattr__ magic method."""
-        super().set_parameter(parameter=parameter, value=value)
+        if isinstance(parameter, Parameter):
+            parameter = parameter.value
+        self.settings.set_parameter(name=parameter, value=value)
         if self._connected:
             self.setup()
 

@@ -1,12 +1,14 @@
 """
 Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
+from dataclasses import dataclass
+
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.typings import BusElementName, RohdeSchwarzSGS100A
-from qililab.utils import Factory, nested_dataclass
+from qililab.instruments.utils import InstrumentFactory
+from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
 
 
-@Factory.register
+@InstrumentFactory.register
 class SGS100A(SignalGenerator):
     """Rohde & Schwarz SGS100A class
 
@@ -15,18 +17,14 @@ class SGS100A(SignalGenerator):
         settings (SGS100ASettings): Settings of the instrument.
     """
 
-    name = BusElementName.ROHDE_SCHWARZ
+    name = InstrumentName.ROHDE_SCHWARZ
 
-    @nested_dataclass
+    @dataclass
     class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):
         """Contains the settings of a specific pulsar."""
 
-    device: RohdeSchwarzSGS100A
     settings: SGS100ASettings
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.SGS100ASettings(**settings)
+    device: RohdeSchwarzSGS100A
 
     @SignalGenerator.CheckConnected
     def setup(self):

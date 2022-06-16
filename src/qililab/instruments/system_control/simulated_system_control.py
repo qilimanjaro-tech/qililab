@@ -1,4 +1,5 @@
 """SimulatedSystemControl class."""
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Type
 
@@ -6,25 +7,30 @@ import numpy as np
 import qutip
 from qilisimulator.constants import HBAR
 from qilisimulator.driving_hamiltonian import DrivingHamiltonian
-from qilisimulator.qubits import Qubit
+from qilisimulator.qubits.csfq4jj import (
+    CSFQ4JJ,  # TODO: Change the CSFQ4JJ import to the general Qubit class
+)
 from qilisimulator.utils import Factory as SimulatorFactory
 
 from qililab.instruments.system_control.system_control import SystemControl
+from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult
-from qililab.typings import BusElementName
-from qililab.utils import Factory, nested_dataclass
+from qililab.typings import InstrumentName
 
 
-@Factory.register
+@InstrumentFactory.register
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
 
-    @nested_dataclass
+    name = InstrumentName.SIMULATED_SYSTEM_CONTROL
+    energy_norm: float = HBAR * 2 * np.pi
+
+    @dataclass
     class SimulatedSystemControlSettings(SystemControl.SystemControlSettings):
         """SimulatedSystemControlSettings class."""
 
-        qubit: Qubit
+        qubit: CSFQ4JJ
         driving_hamiltonian: Type[DrivingHamiltonian]
         resolution: float
         frequency: float
@@ -39,23 +45,26 @@ class SimulatedSystemControl(SystemControl):
 
     settings: SimulatedSystemControlSettings
     options: qutip.Options
-    energy_norm = HBAR * 2 * np.pi
-
-    name = BusElementName.SIMULATED_SYSTEM_CONTROL
 
     def __init__(self, settings: dict):
-        self.settings = self.SimulatedSystemControlSettings(**settings)
+        super().__init__(settings=settings)
         self.options = qutip.Options()
 
     def connect(self):
         """Connect to the instruments."""
 
+    def start(self):
+        """Start instrument."""
+
     def setup(self):
         """Setup instruments."""
         self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
 
-    def start(self):
-        """Start/Turn on the instruments."""
+    def stop(self):
+        """Stop instrument."""
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""

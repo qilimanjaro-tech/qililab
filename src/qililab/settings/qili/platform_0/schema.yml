@@ -1,4 +1,4 @@
-elements:
+buses:
   - id_: 0
     category: bus
     subcategory: control
@@ -8,10 +8,6 @@ elements:
       subcategory: mixer_based_system_control  # unique name
       awg:
         id_: 0
-        name: qblox_qcm  # unique name
-        category: awg  # general name
-        ip: 192.168.0.3
-        firmware: 0.7.0
         reference_clock: internal
         sequencer: 0
         sync_enabled: true
@@ -19,10 +15,6 @@ elements:
         frequency: 100000000
       signal_generator:
         id_: 0
-        name: rohde_schwarz  # unique name
-        category: signal_generator  # general name
-        ip: 192.168.0.10
-        firmware: 4.30.046.295
         frequency: 3451759000
         power: 15
       mixer_up:
@@ -51,10 +43,6 @@ elements:
       subcategory: mixer_based_system_control  # unique name
       awg:
         id_: 1
-        name: qblox_qrm  # unique name
-        category: awg  # general name
-        ip: 192.168.0.4
-        firmware: 0.7.0
         reference_clock: external
         sequencer: 0
         sync_enabled: true
@@ -72,10 +60,6 @@ elements:
         frequency: 20000000
       signal_generator:
         id_: 1
-        name: rohde_schwarz  # unique name
-        category: signal_generator  # general name
-        ip: 192.168.0.7
-        firmware: 4.30.046.295
         frequency: 7347367000
         power: 15
       mixer_up:
@@ -93,11 +77,7 @@ elements:
         offset_i: 0
         offset_q: 0
     attenuator:
-      id_: 1
-      name: mini_circuits
-      category: step_attenuator
-      ip: 192.168.0.222
-      firmware: None
+      id_: 0
       attenuation: 30
     target:
       id_: 0
