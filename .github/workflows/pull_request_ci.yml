@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/dump-load-experiment-settings
   workflow_dispatch:
 
 jobs:
@@ -29,9 +30,7 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r dev-requirements.txt
           python -m pip install -r requirements.txt
-          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qiboconnection.git@TII
-          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qpysequence.git@tii-demo
-          python -m pip install git+https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com/qilimanjaro-tech/qilisimulator.git@add-files
+          git config --global url."https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com".insteadOf "https://github.com"
 
       - name: Code Quality
         run: |
@@ -51,7 +50,7 @@ jobs:
 
       - name: Install library
         run: |
-          GITHUB="false" python -m pip install .
+          python -m pip install .
 
       - name: Test with pytest core
         run: |
