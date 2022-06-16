@@ -1,5 +1,5 @@
 """Platform class."""
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import List
 
 from qililab.instruments import Instrument
@@ -7,7 +7,7 @@ from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
-from qililab.utils import dict_factory, nested_dataclass
+from qililab.utils import dict_factory
 
 
 class Platform:
@@ -19,7 +19,7 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    @nested_dataclass
+    @dataclass
     class PlatformSettings(Settings):
         """Contains the settings of the platform.
 

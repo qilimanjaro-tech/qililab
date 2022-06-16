@@ -18,7 +18,7 @@ class Results:
     software_average: int
     shape: List[int] = field(default_factory=list)
     num_sequences: int = 1
-    results: List[Result | None] = field(default_factory=list)
+    results: List[Result] = field(default_factory=list)
 
     def __post_init__(self):
         """Add num_sequences to shape."""

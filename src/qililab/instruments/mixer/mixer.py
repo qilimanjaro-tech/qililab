@@ -1,8 +1,9 @@
 """QubitReadout class."""
+from dataclasses import dataclass
+
 from qililab.platform.components import BusElement
 from qililab.settings import Settings
 from qililab.typings import Category
-from qililab.utils import nested_dataclass
 
 
 class Mixer(BusElement):
@@ -19,7 +20,7 @@ class Mixer(BusElement):
 
     category = Category.MIXER
 
-    @nested_dataclass
+    @dataclass
     class MixerSettings(Settings):
         """Contains the settings of a mixer.
 
