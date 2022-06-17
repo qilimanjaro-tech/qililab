@@ -9,7 +9,6 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
@@ -47,36 +46,20 @@ class MixerBasedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def connect(self):
-        """Connect to the instruments."""
-        self.awg.connect()
-        self.signal_generator.connect()
-
     def setup(self):
         """Setup instruments."""
         self.awg.setup()
         self.signal_generator.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.signal_generator.start_sequencer()
+        self.signal_generator.turn_on()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
         return self.awg.run(
             pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
-
-    def close(self):
-        """Close connection to the instruments."""
-        self.awg.close()
-        self.signal_generator.close()
-
-    def stop(self):
-        """Stop instrument."""
-
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
 
     @property
     def frequency(self):

@@ -27,8 +27,8 @@ class TestQbloxPulsarQRM:
         qrm.device.reference_source.assert_called_with(qrm.reference_clock.value)
         qrm.device.sequencer0.sync_en.assert_called_with(qrm.sync_enabled)
 
-    def test_start_method(self, qrm: QbloxPulsarQRM):
-        """Test start method"""
+    def test_start_sequencer_method(self, qrm: QbloxPulsarQRM):
+        """Test start_sequencer method"""
         qrm.start_sequencer()
         qrm.device.arm_sequencer.assert_called()
         qrm.device.start_sequencer.assert_called()

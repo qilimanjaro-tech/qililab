@@ -52,18 +52,12 @@ class SimulatedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self.options = qutip.Options()
 
-    def connect(self):
-        """Connect to the instruments."""
-
-    def start(self):
+    def turn_on(self):
         """Start instrument."""
 
     def setup(self):
         """Setup instruments."""
         self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
-
-    def stop(self):
-        """Stop instrument."""
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
@@ -86,9 +80,6 @@ class SimulatedSystemControl(SystemControl):
         eops = [init0, init1]
         results = qutip.mesolve(hami, init0, tlist, options=self.options, e_ops=eops)
         return SimulatorResult(prob_0=results.expect[0][-1], prob_1=results.expect[1][-1])
-
-    def close(self):
-        """Close connection to the instruments."""
 
     @property
     def amplitude_norm_factor(self) -> float:

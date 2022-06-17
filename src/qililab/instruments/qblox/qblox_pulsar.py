@@ -152,7 +152,7 @@ class QbloxPulsar(AWG):
 
     @AWG.CheckConnected
     def start_sequencer(self):
-        """Execute the uploaded instructions."""
+        """Start sequencer and execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 

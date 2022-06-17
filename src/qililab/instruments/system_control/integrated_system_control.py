@@ -21,17 +21,14 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     settings: IntegratedSystemControlSettings
 
-    def start_sequencer(self):
-        """Start/Turn on the instruments."""
+    def turn_on(self):
+        """Start instrument."""
 
     def setup(self):
         """Setup instruments."""
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-
-    def stop(self):
-        """Stop instrument."""
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""

@@ -15,33 +15,21 @@ class BusExecution:
     bus: Bus
     pulse_sequences: List[PulseSequence] = field(default_factory=list)
 
-    def connect(self):
-        """Connect to the instruments."""
-        self.system_control.connect()
-        if self.attenuator is not None:
-            self.attenuator.connect()
-
     def setup(self):
         """Setup instruments."""
         self.system_control.setup()
         if self.attenuator is not None:
             self.attenuator.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.system_control.start()
+        self.system_control.turn_on()
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
-
-    def close(self):
-        """Close connection to the instruments."""
-        self.system_control.close()
-        if self.attenuator is not None:
-            self.attenuator.close()
 
     def add_pulse(self, pulse: Pulse, idx: int):
         """Add pulse to the BusPulseSequence given by idx.

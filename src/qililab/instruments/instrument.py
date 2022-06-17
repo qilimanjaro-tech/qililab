@@ -88,16 +88,8 @@ class Instrument(BusElement, ABC):
             self.setup()
 
     @abstractmethod
-    def start_sequencer(self):
-        """Start instrument."""
-
-    @abstractmethod
     def setup(self):
         """Set instrument settings."""
-
-    @abstractmethod
-    def stop(self):
-        """Stop instrument."""
 
     @abstractmethod
     def _initialize_device(self):

@@ -36,7 +36,7 @@ class SGS100A(SignalGenerator):
         self.device.frequency(self.frequency)
 
     @SignalGenerator.CheckConnected
-    def start_sequencer(self):
+    def turn_on(self):
         """Start generating microwaves."""
         self.device.on()
 

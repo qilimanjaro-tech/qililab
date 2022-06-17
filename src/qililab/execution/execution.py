@@ -20,7 +20,7 @@ class Execution:
         """Code executed when starting a with statement."""
         self.connect()
         self.setup()
-        self.start()
+        self.turn_on()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
@@ -34,9 +34,9 @@ class Execution:
         """Setup instruments with experiment settings."""
         self.buses_execution.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.buses_execution.start()
+        self.buses_execution.turn_on()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path

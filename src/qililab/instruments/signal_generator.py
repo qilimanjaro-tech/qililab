@@ -1,4 +1,5 @@
 """SignalGenerator class."""
+from abc import abstractmethod
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument
@@ -38,3 +39,7 @@ class SignalGenerator(Instrument):
             float: settings.frequency.
         """
         return self.settings.frequency
+
+    @abstractmethod
+    def turn_on(self):
+        """Turn instrument on."""

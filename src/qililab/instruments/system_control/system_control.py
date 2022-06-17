@@ -27,6 +27,14 @@ class SystemControl(BusElement, ABC):
         self.settings = settings_class(**settings)
 
     @abstractmethod
+    def turn_on(self):
+        """Start instrument."""
+
+    @abstractmethod
+    def setup(self):
+        """Set instrument settings."""
+
+    @abstractmethod
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> Result:
         """Run the given pulse sequence."""
 
