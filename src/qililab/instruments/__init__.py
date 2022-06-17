@@ -1,5 +1,6 @@
 """__init__.py"""
 from .awg import AWG
+from .keithley import Keithley2600
 from .mini_circuits import StepAttenuator
 from .qblox.qblox_pulsar_qcm import QbloxPulsarQCM
 from .qblox.qblox_pulsar_qrm import QbloxPulsarQRM

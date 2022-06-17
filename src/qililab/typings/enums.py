@@ -28,6 +28,7 @@ class Category(Enum):
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
     STEP_ATTENUATOR = "step_attenuator"
+    DC_SOURCE = "dc_source"
 
 
 class Instrument(Enum):
@@ -157,6 +158,7 @@ class BusElementName(Enum):
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY = "keithley"
 
 
 class Parameter(Enum):
