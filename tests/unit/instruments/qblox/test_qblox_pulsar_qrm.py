@@ -29,7 +29,7 @@ class TestQbloxPulsarQRM:
 
     def test_start_method(self, qrm: QbloxPulsarQRM):
         """Test start method"""
-        qrm.start()
+        qrm.start_sequencer()
         qrm.device.arm_sequencer.assert_called()
         qrm.device.start_sequencer.assert_called()
 
@@ -101,7 +101,7 @@ class TestQbloxPulsarQRM:
         """Test that calling a method when the device is not connected raises an AttributeError."""
         qrm.close()
         with pytest.raises(AttributeError):
-            qrm.start()
+            qrm.start_sequencer()
 
     def test_ip_property(self, qrm: QbloxPulsarQRM):
         """Test ip property."""

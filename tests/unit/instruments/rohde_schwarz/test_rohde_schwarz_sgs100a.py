@@ -14,7 +14,7 @@ class TestSGS100A:
 
     def test_start_method(self, rohde_schwarz: SGS100A):
         """Test start method"""
-        rohde_schwarz.start()
+        rohde_schwarz.start_sequencer()
         rohde_schwarz.device.on.assert_called_once()  # type: ignore
 
     def test_setup_method(self, rohde_schwarz: SGS100A):
@@ -38,4 +38,4 @@ class TestSGS100A:
         """Test that calling a method when the device is not connected raises an AttributeError."""
         rohde_schwarz.close()
         with pytest.raises(AttributeError):
-            rohde_schwarz.start()
+            rohde_schwarz.start_sequencer()

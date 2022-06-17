@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - refactor/load-platform-before-experiment
   workflow_dispatch:
 
 jobs:

@@ -145,6 +145,15 @@ class Platform:
         """
         return 1  # TODO: Compute num_qubits with Chip class.
 
+    @property
+    def instruments(self):
+        """Platform 'instruments' property.
+
+        Returns:
+            Instruments: List of all instruments.
+        """
+        return self.schema.instruments
+
     def to_dict(self):
         """Return all platform information as a dictionary."""
         platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}

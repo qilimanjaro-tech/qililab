@@ -155,7 +155,7 @@ class TestSimulatedExexution:
         mock_makedirs.assert_called()
 
 
-@patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
+@patch("qililab.instruments.mini_circuits.attenuator.urllib", autospec=True)
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
 @patch("qililab.execution.buses_execution.yaml.safe_dump")

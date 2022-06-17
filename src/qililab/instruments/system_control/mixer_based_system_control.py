@@ -59,7 +59,7 @@ class MixerBasedSystemControl(SystemControl):
 
     def start(self):
         """Start/Turn on the instruments."""
-        self.signal_generator.start()
+        self.signal_generator.start_sequencer()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""

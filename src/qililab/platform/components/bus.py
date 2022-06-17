@@ -145,4 +145,5 @@ class Bus:
             YAML.ID: self.id_,
             YAML.CATEGORY: self.settings.category.value,
             YAML.SUBCATEGORY: self.subcategory.value,
+            YAML.PORT: self.port,
         } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}

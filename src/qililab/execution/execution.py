@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.execution.buses_execution import BusesExecution
+from qililab.instruments import Instruments
 from qililab.result import Result
 from qililab.utils import LivePlot
 
@@ -13,6 +14,7 @@ class Execution:
     """Execution class."""
 
     buses_execution: BusesExecution
+    instruments: Instruments
 
     def __enter__(self):
         """Code executed when starting a with statement."""
@@ -26,7 +28,7 @@ class Execution:
 
     def connect(self):
         """Connect to the instruments."""
-        self.buses_execution.connect()
+        self.instruments.connect()
 
     def setup(self):
         """Setup instruments with experiment settings."""
@@ -50,7 +52,7 @@ class Execution:
 
     def close(self):
         """Close connection to the instruments."""
-        self.buses_execution.close()
+        self.instruments.close()
 
     def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.

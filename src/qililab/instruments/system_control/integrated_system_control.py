@@ -21,7 +21,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     settings: IntegratedSystemControlSettings
 
-    def start(self):
+    def start_sequencer(self):
         """Start/Turn on the instruments."""
 
     def setup(self):

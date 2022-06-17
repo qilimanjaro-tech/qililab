@@ -74,7 +74,7 @@ class QbloxPulsar(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-        self.start()
+        self.start_sequencer()
 
     def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -151,7 +151,7 @@ class QbloxPulsar(AWG):
         """Append an acquire instruction to the loop."""
 
     @AWG.CheckConnected
-    def start(self):
+    def start_sequencer(self):
         """Execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()

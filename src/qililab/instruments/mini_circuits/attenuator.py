@@ -21,7 +21,7 @@ class Attenuator(Instrument):
 
     settings: StepAttenuatorSettings
 
-    def start(self):
+    def start_sequencer(self):
         """Start instrument."""
 
     def stop(self):

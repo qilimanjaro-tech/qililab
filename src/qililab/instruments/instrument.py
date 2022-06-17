@@ -10,7 +10,7 @@ from qililab.settings import Settings
 from qililab.typings import Device, InstrumentName, Parameter
 
 
-class Instrument(ABC):
+class Instrument(BusElement, ABC):
     """Abstract base class declaring the necessary attributes
     and methods for the instruments connected via TCP/IP.
 
@@ -88,7 +88,7 @@ class Instrument(ABC):
             self.setup()
 
     @abstractmethod
-    def start(self):
+    def start_sequencer(self):
         """Start instrument."""
 
     @abstractmethod

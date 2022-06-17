@@ -27,7 +27,7 @@ class TestQbloxPulsarQCM:
 
     def test_start_method(self, qcm: QbloxPulsarQCM):
         """Test start method"""
-        qcm.start()
+        qcm.start_sequencer()
         qcm.device.arm_sequencer.assert_called()
         qcm.device.start_sequencer.assert_called()
 
@@ -76,7 +76,7 @@ class TestQbloxPulsarQCM:
         """Test that calling a method when the device is not connected raises an AttributeError."""
         qcm.close()
         with pytest.raises(AttributeError):
-            qcm.start()
+            qcm.start_sequencer()
 
     def test_ip_property(self, qcm: QbloxPulsarQCM):
         """Test ip property."""

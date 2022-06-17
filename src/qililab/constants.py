@@ -20,6 +20,7 @@ class YAML:
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
     SCHEMA = "schema"
+    PORT = "port"
 
 
 UNITS = {"frequency": "Hz"}
