@@ -30,6 +30,7 @@ class Category(Enum):
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
     STEP_ATTENUATOR = "step_attenuator"
+    DC_SOURCE = "dc_source"
 
 
 class ReferenceClock(Enum):
