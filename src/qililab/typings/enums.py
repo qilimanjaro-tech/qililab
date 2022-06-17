@@ -28,6 +28,7 @@ class Category(Enum):
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
+    DC_SOURCE = "dc_source"
 
 
 class Instrument(Enum):
@@ -173,6 +174,7 @@ class InstrumentName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY = "keithley"
 
 
 class Parameter(Enum):

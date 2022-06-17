@@ -3,6 +3,7 @@ from .awg import AWG
 from .instrument import Instrument
 from .instruments import Instruments
 from .mini_circuits import Attenuator
+from .keithley import Keithley2600
 from .qblox.qblox_pulsar_qcm import QbloxPulsarQCM
 from .qblox.qblox_pulsar_qrm import QbloxPulsarQRM
 from .qubit_control import QubitControl
