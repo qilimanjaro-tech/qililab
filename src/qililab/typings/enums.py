@@ -174,7 +174,7 @@ class InstrumentName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
-    KEITHLEY = "keithley"
+    KEITHLEY2600 = "keithley_2600"
 
 
 class Parameter(Enum):

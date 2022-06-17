@@ -21,3 +21,11 @@ class Testresonator:
     def test_qubits_property(self, resonator: Resonator):
         """Test qubits property."""
         assert resonator.qubits == resonator.settings.qubits
+
+    def test_qubit_ids_property(self, resonator: Resonator):
+        """Test qubit_ids property."""
+        assert resonator.qubit_ids == [qubit.id_ for qubit in resonator.qubits]
+
+    def test_get_qubit_method(self, resonator: Resonator):
+        """Test get_qubit property."""
+        assert resonator.get_qubit(id_=resonator.qubits[0].id_) == resonator.qubits[0]

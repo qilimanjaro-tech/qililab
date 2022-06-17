@@ -1,9 +1,10 @@
 """Pytest configuration fixtures."""
 import copy
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
 from qililab import PLATFORM_MANAGER_YAML, build_platform, load
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -12,6 +13,7 @@ from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
     Attenuator,
+    Keithley2600,
     MixerBasedSystemControl,
     QbloxPulsarQCM,
     QbloxPulsarQRM,
@@ -137,6 +139,22 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     rohde_schwarz = SGS100A(settings=settings)
     rohde_schwarz.connect()
     return rohde_schwarz
+
+
+@pytest.fixture(name="keithley_2600")
+@patch("qililab.instruments.keithley.keithley_2600.Keithley2600Driver", autospec=True)
+def fixture_keithley_2600(mock_driver: MagicMock):
+    """Return connected instance of Keithley2600 class"""
+    # add dynamically created attributes
+    mock_instance = mock_driver.return_value
+    mock_instance.smua = Mock(KeithleyChannel)
+    # connect to instrument
+    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="keithley_2600")
+    settings.pop("name")
+    keithley_2600 = Keithley2600(settings=settings)
+    keithley_2600.connect()
+    mock_driver.assert_called()
+    return keithley_2600
 
 
 @pytest.fixture(name="qubit")

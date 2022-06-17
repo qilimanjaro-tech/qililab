@@ -67,10 +67,7 @@ class Schema:
         """
         instruments: List[Instrument] = []
         for instrument in instruments_dict:
-            try:
-                dict_name = instrument.pop(YAML.NAME)
-            except KeyError:
-                dict_name = instrument.get(YAML.SUBCATEGORY)
+            dict_name = instrument.pop(YAML.NAME)
             instruments.append(InstrumentFactory.get(dict_name)(settings=instrument))
         return instruments
 

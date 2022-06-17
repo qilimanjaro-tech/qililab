@@ -23,11 +23,6 @@ class BusesExecution:
     num_sequences: int
     buses: List[BusExecution] = field(default_factory=list)
 
-    def connect(self):
-        """Connect to the instruments."""
-        for bus in self.buses:
-            bus.connect()
-
     def setup(self):
         """Setup instruments with experiment settings."""
         for bus in self.buses:
@@ -73,11 +68,6 @@ class BusesExecution:
 
         thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
         thread.start()
-
-    def close(self):
-        """Close connection to the instruments."""
-        for bus in self.buses:
-            bus.close()
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0):
         """Get pulses of each bus.

@@ -93,12 +93,20 @@ class Platform0:
     }
 
     attenuator = {
-        "id_": 1,
+        "id_": 0,
         "name": "mini_circuits",
         "category": "attenuator",
         "firmware": None,
         "attenuation": 30,
         "ip": "192.168.0.222",
+    }
+
+    keithley_2600 = {
+        "id_": 0,
+        "name": "keithley_2600",
+        "category": "dc_source",
+        "firmware": None,
+        "ip": "192.168.1.111",
     }
 
     instruments = [

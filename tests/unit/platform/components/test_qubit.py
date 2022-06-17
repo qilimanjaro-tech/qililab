@@ -41,3 +41,11 @@ class Testqubit:
     def test_max_voltage_property(self, qubit: Qubit):
         """Test max_voltage property."""
         assert qubit.max_voltage == qubit.settings.max_voltage
+
+    def test_qubit_ids_property(self, qubit: Qubit):
+        """Test qubit_ids property."""
+        assert qubit.qubit_ids == [qubit.id_]
+
+    def test_get_qubit_method(self, qubit: Qubit):
+        """Test get_qubit property."""
+        assert qubit.get_qubit(id_=qubit.id_) == qubit

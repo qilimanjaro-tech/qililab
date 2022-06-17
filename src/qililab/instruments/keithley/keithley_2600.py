@@ -9,7 +9,7 @@ from qililab.utils import nested_dataclass
 class Keithley2600(Instrument):
     """Keithley2600 class."""
 
-    name = InstrumentName.KEITHLEY
+    name = InstrumentName.KEITHLEY2600
 
     @nested_dataclass
     class Keithley2600Settings(Instrument.InstrumentSettings):

@@ -7,7 +7,7 @@ import pytest
 from qililab.instruments import Attenuator
 
 
-class TestStepAttenuator:
+class TestAttenuator:
     """Unit tests checking the Attenuator attributes and methods."""
 
     def test_id_property(self, step_attenuator: Attenuator):

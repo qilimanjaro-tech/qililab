@@ -93,5 +93,6 @@ class TestPlatform:
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(platform=platform)
-        # save_platform(platform=platform, database=True)
+        with pytest.raises(NotImplementedError):
+            save_platform(platform=platform, database=True)
         mock_dump.assert_called()
