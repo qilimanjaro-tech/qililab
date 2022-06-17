@@ -5,6 +5,7 @@ from functools import partial
 from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
+from qililab.constants import YAML
 from qililab.platform import BusElement
 from qililab.settings import Settings
 from qililab.typings import Device, InstrumentName, Parameter
@@ -59,7 +60,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
+        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(YAML.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
         self._connected = False
 
