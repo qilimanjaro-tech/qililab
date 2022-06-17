@@ -144,6 +144,7 @@ class BusElementName(Enum):
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY = "keithley"
 
 
 class Parameter(Enum):
@@ -176,6 +177,7 @@ class Parameter(Enum):
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
 
+
 class ResultName(Enum):
     """Result names.
 
@@ -184,5 +186,6 @@ class ResultName(Enum):
         * qblox
         * simulator
     """
+
     QBLOX = "qblox"
     SIMULATOR = "simulator"
