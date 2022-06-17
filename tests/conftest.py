@@ -1,12 +1,11 @@
 """Pytest configuration fixtures."""
 import copy
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
-from qililab import PLATFORM_MANAGER_YAML, build_platform, load
+from qililab import build_platform, load
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
