@@ -9,6 +9,10 @@ instruments:
     sync_enabled: true
     gain: 1
     frequency: 100000000
+    epsilon: 0
+    delta: 0
+    offset_i: 0
+    offset_q: 0
   - id_: 1
     category: awg  # general name
     name: qblox_qrm  # unique name
@@ -20,7 +24,6 @@ instruments:
     gain: 1
     acquire_trigger_mode: sequencer
     scope_acquisition_averaging: false
-    start_integrate: 130
     sampling_rate: 1000000000
     integration_length: 2000
     integration_mode: ssb
@@ -29,6 +32,10 @@ instruments:
     acquisition_name: "single"
     delay_time: 100
     frequency: 20000000
+    epsilon: 0
+    delta: 0
+    offset_i: 0
+    offset_q: 0
   - id_: 0
     category: signal_generator  # general name
     name: rohde_schwarz  # unique name
@@ -60,8 +67,10 @@ buses:
       subcategory: mixer_based_system_control  # unique name
       awg:
         id_: 0
+        category: awg
       signal_generator:
         id_: 0
+        category: signal_generator
     port: 0
   - id_: 1
     category: bus
@@ -72,8 +81,11 @@ buses:
       subcategory: mixer_based_system_control  # unique name
       awg:
         id_: 1
+        category: awg
       signal_generator:
         id_: 1
+        category: signal_generator
     attenuator:
       id_: 0
+      category: attenuator
     port: 1

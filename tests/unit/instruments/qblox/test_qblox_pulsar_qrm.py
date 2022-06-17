@@ -3,13 +3,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qcodes import Instrument
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments import QbloxPulsarQRM
 from qililab.result import QbloxResult
-from qililab.typings import BusElementName
+from qililab.typings import InstrumentName
 
 
 class TestQbloxPulsarQRM:
@@ -112,7 +113,7 @@ class TestQbloxPulsarQRM:
 
     def test_name_property(self, qrm: QbloxPulsarQRM):
         """Test name property."""
-        assert qrm.name == BusElementName.QBLOX_QRM
+        assert qrm.name == InstrumentName.QBLOX_QRM
 
     def test_category_property(self, qrm: QbloxPulsarQRM):
         """Test category property."""

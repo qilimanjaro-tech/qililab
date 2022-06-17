@@ -21,7 +21,7 @@ class Settings:
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
         for field in fields(self):
-            if isinstance(field.type, Enum):
+            if isinstance(field.type, type) and issubclass(field.type, Enum):
                 setattr(self, field.name, field.type(getattr(self, field.name)))
 
     def set_parameter(self, name: str, value: float | str | bool):

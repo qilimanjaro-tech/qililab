@@ -11,6 +11,7 @@ from qililab.instruments import (
 )
 from qililab.settings import Settings
 from qililab.typings import BusSubcategory, Category
+from qililab.utils import Factory
 
 
 class Bus:
@@ -108,10 +109,13 @@ class Bus:
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in self.settings:
             if isinstance(value, dict):
-                id_ = value.get(YAML.ID)
-                if not isinstance(id_, int):
-                    raise ValueError("Invalid value for id.")
-                instrument_object = instruments.get(id_=id_, category=Category(name))
+                if Category(name) == Category.SYSTEM_CONTROL:
+                    subcategory = value.get(YAML.SUBCATEGORY)
+                    if not isinstance(subcategory, str):
+                        raise ValueError("Invalid value for subcategory.")
+                    instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
+                elif Category(name) == Category.ATTENUATOR:
+                    instrument_object = instruments.get(settings=value)
                 setattr(self.settings, name, instrument_object)
 
     def get_element(self, category: Category, id_: int):

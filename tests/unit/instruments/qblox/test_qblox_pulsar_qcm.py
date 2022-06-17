@@ -8,7 +8,7 @@ from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments import QbloxPulsarQCM
-from qililab.typings import BusElementName
+from qililab.typings import InstrumentName
 
 
 class TestQbloxPulsarQCM:
@@ -88,7 +88,7 @@ class TestQbloxPulsarQCM:
 
     def test_name_property(self, qcm: QbloxPulsarQCM):
         """Test name property."""
-        assert qcm.name == BusElementName.QBLOX_QCM
+        assert qcm.name == InstrumentName.QBLOX_QCM
 
     def test_category_property(self, qcm: QbloxPulsarQCM):
         """Test category property."""

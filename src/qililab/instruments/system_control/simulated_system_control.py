@@ -12,6 +12,7 @@ from qilisimulator.qubits.csfq4jj import (
 )
 from qilisimulator.utils import Factory as SimulatorFactory
 
+from qililab.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult
@@ -40,13 +41,14 @@ class SimulatedSystemControl(SystemControl):
 
         def __post_init__(self):
             """Cast qubit to its corresponding class."""
+            super().__post_init__()
             self.qubit = SimulatorFactory.get(self.qubit)()
             self.driving_hamiltonian = SimulatorFactory.get(self.driving_hamiltonian)
 
     settings: SimulatedSystemControlSettings
     options: qutip.Options
 
-    def __init__(self, settings: dict):
+    def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
         self.options = qutip.Options()
 

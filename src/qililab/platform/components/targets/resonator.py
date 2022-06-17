@@ -26,6 +26,7 @@ class Resonator(Target):
 
         def __post_init__(self):
             """Cast list of qubits settings to Qubit objects."""
+            super().__post_init__()
             self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]
 
     settings: ResonatorSettings

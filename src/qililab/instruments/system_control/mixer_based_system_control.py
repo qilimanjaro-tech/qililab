@@ -5,6 +5,7 @@ from typing import Generator, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments.awg import AWG
+from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
@@ -28,13 +29,6 @@ class MixerBasedSystemControl(SystemControl):
         awg: AWG
         signal_generator: SignalGenerator
 
-        def __post_init__(self):
-            """Cast each bus element to its corresponding class."""
-            for name, value in self:
-                if isinstance(value, dict):
-                    elem_obj = InstrumentFactory.get(value.pop(YAML.NAME))(value)
-                    setattr(self, name, elem_obj)
-
         def __iter__(
             self,
         ) -> Generator[Tuple[str, SignalGenerator | AWG | dict], None, None]:
@@ -48,6 +42,10 @@ class MixerBasedSystemControl(SystemControl):
                     yield name, value
 
     settings: MixerBasedSystemControlSettings
+
+    def __init__(self, settings: dict, instruments: Instruments):
+        super().__init__(settings=settings)
+        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     def connect(self):
         """Connect to the instruments."""
@@ -133,3 +131,10 @@ class MixerBasedSystemControl(SystemControl):
             for key, value in self
             if not isinstance(value, dict)
         }
+
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+        """Replace dictionaries from settings into its respective instrument classes."""
+        for name, value in self.settings:
+            if isinstance(value, dict):
+                instrument_object = instruments.get(settings=value)
+                setattr(self.settings, name, instrument_object)

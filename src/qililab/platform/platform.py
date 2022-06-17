@@ -1,5 +1,5 @@
 """Platform class."""
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import List
 
 from qililab.constants import YAML
@@ -8,6 +8,7 @@ from qililab.platform.components.schema import Schema
 from qililab.platform.utils import PlatformSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
+from qililab.utils import nested_dataclass
 
 
 class Platform:
@@ -19,7 +20,7 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    @dataclass
+    @nested_dataclass
     class PlatformSettings(Settings):
         """Contains the settings of the platform.
 
@@ -142,10 +143,7 @@ class Platform:
         Returns:
             int: Number of different qubits that the platform contains.
         """
-        qubit_sum = 0
-        while self.get_element(category=Category.QUBIT, id_=qubit_sum)[0] is not None:
-            qubit_sum += 1
-        return qubit_sum
+        return 1  # TODO: Compute num_qubits with Chip class.
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

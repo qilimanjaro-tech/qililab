@@ -29,67 +29,84 @@ class Platform0:
         },
     }
 
+    qblox_qcm_0 = {
+        "id_": 0,
+        "name": "qblox_qcm",
+        "category": "awg",
+        "ip": "192.168.0.3",
+        "firmware": "0.7.0",
+        "reference_clock": "internal",
+        "sequencer": 0,
+        "sync_enabled": True,
+        "gain": 1,
+        "frequency": 100000000,
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
+    }
+
+    qblox_qrm_0 = {
+        "id_": 1,
+        "name": "qblox_qrm",
+        "category": "awg",
+        "ip": "192.168.0.4",
+        "firmware": "0.7.0",
+        "reference_clock": "external",
+        "sequencer": 0,
+        "sync_enabled": True,
+        "gain": 0.5,
+        "acquire_trigger_mode": "sequencer",
+        "scope_acquisition_averaging": False,
+        "sampling_rate": 1000000000,
+        "integration_length": 2000,
+        "integration_mode": "ssb",
+        "sequence_timeout": 1,
+        "acquisition_timeout": 1,
+        "acquisition_name": "single",
+        "delay_time": 100,
+        "frequency": 20000000,
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
+    }
+
+    rohde_schwarz_0 = {
+        "id_": 0,
+        "name": "rohde_schwarz",
+        "category": "signal_generator",
+        "ip": "192.168.0.10",
+        "firmware": "4.30.046.295",
+        "frequency": 3644000000.0,
+        "power": 15,
+    }
+
+    rohde_schwarz_1 = {
+        "id_": 1,
+        "name": "rohde_schwarz",
+        "category": "signal_generator",
+        "ip": "192.168.0.7",
+        "firmware": "4.30.046.295",
+        "frequency": 7307720000.0,
+        "power": 15,
+    }
+
+    attenuator = {
+        "id_": 1,
+        "name": "mini_circuits",
+        "category": "attenuator",
+        "firmware": None,
+        "attenuation": 30,
+        "ip": "192.168.0.222",
+    }
+
     instruments = [
-        {
-            "id_": 0,
-            "name": "qblox_qcm",
-            "category": "awg",
-            "ip": "192.168.0.3",
-            "firmware": "0.7.0",
-            "reference_clock": "internal",
-            "sequencer": 0,
-            "sync_enabled": True,
-            "gain": 1,
-            "frequency": 100000000,
-        },
-        {
-            "id_": 1,
-            "name": "qblox_qrm",
-            "category": "awg",
-            "ip": "192.168.0.4",
-            "firmware": "0.7.0",
-            "reference_clock": "external",
-            "sequencer": 0,
-            "sync_enabled": True,
-            "gain": 0.5,
-            "acquire_trigger_mode": "sequencer",
-            "scope_acquisition_averaging": False,
-            "start_integrate": 130,
-            "sampling_rate": 1000000000,
-            "integration_length": 2000,
-            "integration_mode": "ssb",
-            "sequence_timeout": 1,
-            "acquisition_timeout": 1,
-            "acquisition_name": "single",
-            "delay_time": 100,
-            "frequency": 20000000,
-        },
-        {
-            "id_": 0,
-            "name": "rohde_schwarz",
-            "category": "signal_generator",
-            "ip": "192.168.0.10",
-            "firmware": "4.30.046.295",
-            "frequency": 3644000000.0,
-            "power": 15,
-        },
-        {
-            "id_": 1,
-            "name": "rohde_schwarz",
-            "category": "signal_generator",
-            "ip": "192.168.0.7",
-            "firmware": "4.30.046.295",
-            "frequency": 7307720000.0,
-            "power": 15,
-        },
-        {
-            "id_": 1,
-            "name": "mini_circuits",
-            "category": "attenuator",
-            "firmware": None,
-            "attenuation": 30,
-            "ip": "192.168.0.222",
-        },
+        qblox_qcm_0,
+        qblox_qrm_0,
+        rohde_schwarz_0,
+        rohde_schwarz_1,
+        attenuator,
     ]
 
     schema = {
@@ -103,8 +120,8 @@ class Platform0:
                     "id_": 0,
                     "category": "system_control",
                     "subcategory": "mixer_based_system_control",
-                    "awg": {"id_": 0},
-                    "signal_generator": {"id_": 0},
+                    "awg": {"id_": 0, "category": "awg"},
+                    "signal_generator": {"id_": 0, "category": "signal_generator"},
                 },
                 "port": 0,
             },
@@ -116,10 +133,10 @@ class Platform0:
                     "id_": 1,
                     "category": "system_control",
                     "subcategory": "mixer_based_system_control",
-                    "awg": {"id_": 1},
-                    "signal_generator": {"id_": 1},
+                    "awg": {"id_": 1, "category": "awg"},
+                    "signal_generator": {"id_": 1, "category": "signal_generator"},
                 },
-                "attenuator": {"id_": 0},
+                "attenuator": {"id_": 0, "category": "attenuator"},
                 "port": 1,
             },
         ],
@@ -128,6 +145,66 @@ class Platform0:
     runcard = {
         "settings": platform,
         "schema": schema,
+    }
+
+    qubit_0 = {
+        "id_": 0,
+        "name": "qubit",
+        "category": "qubit",
+        "pi_pulse_amplitude": 1,
+        "pi_pulse_duration": 100,
+        "pi_pulse_frequency": 100000000.0,
+        "qubit_frequency": 3544000000.0,
+        "min_voltage": 950,
+        "max_voltage": 1775,
+    }
+
+    qubit_1 = {
+        "id_": 1,
+        "name": "qubit",
+        "category": "qubit",
+        "pi_pulse_amplitude": 1,
+        "pi_pulse_duration": 100,
+        "pi_pulse_frequency": 100000000.0,
+        "qubit_frequency": 3544000000.0,
+        "min_voltage": 950,
+        "max_voltage": 1775,
+    }
+
+    resonator_0 = {
+        "id_": 0,
+        "name": "resonator",
+        "category": "resonator",
+        "qubits": [
+            {
+                "id_": 0,
+                "category": "qubit",
+                "pi_pulse_amplitude": 1,
+                "pi_pulse_duration": 100,
+                "pi_pulse_frequency": 100000000.0,
+                "qubit_frequency": 3544000000.0,
+                "min_voltage": 950,
+                "max_voltage": 1775,
+            }
+        ],
+    }
+
+    resonator_1 = {
+        "id_": 1,
+        "name": "resonator",
+        "category": "resonator",
+        "qubits": [
+            {
+                "id_": 1,
+                "category": "qubit",
+                "pi_pulse_amplitude": 1,
+                "pi_pulse_duration": 100,
+                "pi_pulse_frequency": 100000000.0,
+                "qubit_frequency": 3544000000.0,
+                "min_voltage": 950,
+                "max_voltage": 1775,
+            }
+        ],
     }
 
 
@@ -266,142 +343,7 @@ results_one_loops = {
 }
 
 experiment = {
-    "platform": {
-        "settings": {
-            "id_": 0,
-            "category": "platform",
-            "name": "platform_0",
-            "translation_settings": {
-                "readout_duration": 2000,
-                "readout_amplitude": 1,
-                "readout_phase": 0,
-                "delay_between_pulses": 0,
-                "delay_before_readout": 40,
-                "gate_duration": 100,
-                "num_sigmas": 4,
-                "drag_coefficient": 0,
-            },
-        },
-        "schema": {
-            "elements": [
-                {
-                    "id_": 0,
-                    "category": "bus",
-                    "subcategory": "control",
-                    "system_control": {
-                        "id_": 0,
-                        "category": "system_control",
-                        "subcategory": "mixer_based_system_control",
-                        "awg": {
-                            "name": "qblox_qcm",
-                            "id_": 0,
-                            "category": "awg",
-                            "ip": "192.168.0.3",
-                            "firmware": "0.7.0",
-                            "frequency": 100000000,
-                            "epsilon": 0,
-                            "delta": 0,
-                            "offset_i": 0,
-                            "offset_q": 0,
-                            "reference_clock": "internal",
-                            "sequencer": 0,
-                            "sync_enabled": True,
-                            "gain": 1,
-                        },
-                        "signal_generator": {
-                            "name": "rohde_schwarz",
-                            "id_": 0,
-                            "category": "signal_generator",
-                            "ip": "192.168.0.10",
-                            "firmware": "4.30.046.295",
-                            "power": 15,
-                            "frequency": 3451000000,
-                        },
-                    },
-                    "target": {
-                        "name": "qubit",
-                        "id_": 0,
-                        "category": "qubit",
-                        "pi_pulse_amplitude": 1,
-                        "pi_pulse_duration": 100,
-                        "pi_pulse_frequency": 100000000,
-                        "qubit_frequency": 3544000000,
-                        "min_voltage": 950,
-                        "max_voltage": 1775,
-                    },
-                },
-                {
-                    "id_": 1,
-                    "category": "bus",
-                    "subcategory": "readout",
-                    "system_control": {
-                        "id_": 1,
-                        "category": "system_control",
-                        "subcategory": "mixer_based_system_control",
-                        "awg": {
-                            "name": "qblox_qrm",
-                            "id_": 1,
-                            "category": "awg",
-                            "ip": "192.168.0.4",
-                            "firmware": "0.7.0",
-                            "frequency": 20000000,
-                            "epsilon": 0,
-                            "delta": 0,
-                            "offset_i": 0,
-                            "offset_q": 0,
-                            "delay_time": 100,
-                            "reference_clock": "external",
-                            "sequencer": 0,
-                            "sync_enabled": False,
-                            "gain": 1,
-                            "acquire_trigger_mode": "sequencer",
-                            "scope_acquisition_averaging": False,
-                            "sampling_rate": 1000000000,
-                            "integration_length": 2000,
-                            "integration_mode": "ssb",
-                            "sequence_timeout": 1,
-                            "acquisition_timeout": 1,
-                            "acquisition_name": "single",
-                        },
-                        "signal_generator": {
-                            "name": "rohde_schwarz",
-                            "id_": 1,
-                            "category": "signal_generator",
-                            "ip": "192.168.0.7",
-                            "firmware": "4.30.046.295",
-                            "power": 15,
-                            "frequency": 7347400000,
-                        },
-                    },
-                    "target": {
-                        "name": "resonator",
-                        "id_": 0,
-                        "category": "resonator",
-                        "qubits": [
-                            {
-                                "id_": 0,
-                                "category": "qubit",
-                                "pi_pulse_amplitude": 1,
-                                "pi_pulse_duration": 100,
-                                "pi_pulse_frequency": 100000000,
-                                "qubit_frequency": 3544000000,
-                                "min_voltage": 950,
-                                "max_voltage": 1775,
-                            }
-                        ],
-                    },
-                    "attenuator": {
-                        "name": "mini_circuits",
-                        "id_": 1,
-                        "category": "step_attenuator",
-                        "ip": "192.168.0.222",
-                        "firmware": "None",
-                        "attenuation": 30,
-                    },
-                },
-            ]
-        },
-    },
+    "platform": Platform0.runcard,
     "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
     "sequences": [
         {

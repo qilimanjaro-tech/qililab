@@ -22,7 +22,7 @@ class TestStepAttenuator:
         """Test attenuation property."""
         assert step_attenuator.attenuation == step_attenuator.settings.attenuation
 
-    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
+    @patch("qililab.instruments.mini_circuits.attenuator.urllib", autospec=True)
     def test_setup_method(self, mock_urllib: MagicMock, step_attenuator: Attenuator):
         """Test setup method."""
         step_attenuator.connect()
@@ -30,7 +30,7 @@ class TestStepAttenuator:
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
 
-    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
+    @patch("qililab.instruments.mini_circuits.attenuator.urllib", autospec=True)
     def test_http_request_raises_error(self, mock_urllib: MagicMock, step_attenuator: Attenuator):
         """Test delta property."""
         mock_urllib.error.URLError = urllib.error.URLError  # type: ignore

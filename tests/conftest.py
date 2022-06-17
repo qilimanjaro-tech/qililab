@@ -320,7 +320,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 def fixture_simulated_platform() -> Platform:
     """Return Platform object."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="flux_qubit", database=True)
+        platform = build_platform(name="flux_qubit")
         mock_load.assert_called()
     return platform
 
@@ -346,7 +346,7 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
 def platform_db() -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name=DEFAULT_PLATFORM_NAME, database=True)
+        platform = build_platform(name=DEFAULT_PLATFORM_NAME)
         mock_load.assert_called()
     return platform
 
@@ -354,7 +354,7 @@ def platform_db() -> Platform:
 def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="platform_0", database=True)
+        platform = build_platform(name="platform_0")
         mock_load.assert_called()
     return platform
 
@@ -366,7 +366,7 @@ def buses() -> Buses:
         Buses: Instance of the Buses class.
     """
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="platform_0", database=True)
+        platform = build_platform(name="platform_0")
         mock_load.assert_called()
     return platform.buses
 

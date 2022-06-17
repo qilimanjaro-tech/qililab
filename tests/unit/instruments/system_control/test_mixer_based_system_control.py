@@ -1,6 +1,10 @@
 """Tests for the MixerBasedSystemControl class."""
-from qililab.instruments import AWG, MixerBasedSystemControl, SignalGenerator
-from qililab.platform import BusElement
+from qililab.instruments import (
+    AWG,
+    Instrument,
+    MixerBasedSystemControl,
+    SignalGenerator,
+)
 from qililab.typings import Category
 
 
@@ -17,7 +21,7 @@ class TestMixerBasedSystemControl:
         """Test __iter__ method."""
         for name, value in mixer_based_system_control:
             assert isinstance(name, str)
-            assert isinstance(value, BusElement)
+            assert isinstance(value, Instrument)
 
     def test_frequency_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test frequency property."""
