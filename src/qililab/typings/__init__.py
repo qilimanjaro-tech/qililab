@@ -14,8 +14,6 @@ from .enums import (
     SchemaDrawOptions,
 )
 from .factory_element import FactoryElement
-from .instruments.device import Device
-from .instruments.pulsar import Pulsar
-from .instruments.rohde_schwarz import RohdeSchwarzSGS100A
+from .instruments import Device, Keithley2600Driver, Pulsar, RohdeSchwarzSGS100A
 from .settings import SettingsType
 from .yaml_type import yaml
