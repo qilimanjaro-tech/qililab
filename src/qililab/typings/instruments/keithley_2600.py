@@ -4,7 +4,7 @@ from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import (
     KeithleyChannel,
 )
 
-from qililab.typings import Device
+from qililab.typings.instruments.device import Device
 
 
 class Keithley2600Driver(Keithley_2600, Device):
