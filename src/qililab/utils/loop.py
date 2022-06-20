@@ -6,6 +6,7 @@ from typing import List
 
 import numpy as np
 
+from qililab.constants import LOOP, YAML
 from qililab.typings import Category, Parameter
 
 
@@ -88,12 +89,12 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            "category": self.category,
-            "id_": self.id_,
-            "parameter": self.parameter,
-            "start": self.start,
-            "stop": self.stop,
-            "num": self.num,
-            "step": self.step,
-            "loop": self.loop.to_dict() if self.loop is not None else None,
+            YAML.CATEGORY: self.category,
+            YAML.ID: self.id_,
+            LOOP.PARAMETER: self.parameter,
+            LOOP.START: self.start,
+            LOOP.STOP: self.stop,
+            LOOP.NUM: self.num,
+            LOOP.STEP: self.step,
+            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
         }

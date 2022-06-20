@@ -10,9 +10,17 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
-from qililab.constants import DATA, DEFAULT_PLATFORM_NAME
+from qililab.constants import (
+    DATA,
+    DATA_FOLDERNAME,
+    DEFAULT_PLATFORM_NAME,
+    EXPERIMENT_FILENAME,
+    LOOP,
+    RESULTS_FILENAME,
+    YAML,
+)
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import PLATFORM_MANAGER_YAML, Platform, PlatformSchema
+from qililab.platform import PLATFORM_MANAGER_YAML, Platform, RuncardSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Parameter, yaml
@@ -284,12 +292,12 @@ class Experiment:
             path (Path): Path to data folder.
         """
         data = {
-            "software_average": self.software_average,
-            "num_sequences": self.execution.num_sequences,
-            "shape": [] if self.loop is None else self.loop.shape,
-            "results": None,
+            YAML.SOFTWARE_AVERAGE: self.software_average,
+            YAML.NUM_SEQUENCES: self.execution.num_sequences,
+            YAML.SHAPE: [] if self.loop is None else self.loop.shape,
+            YAML.RESULTS: None,
         }
-        with open(file=path / "results.yml", mode="w", encoding="utf8") as results_file:
+        with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
             yaml.dump(data=data, stream=results_file, sort_keys=False)
 
     def _dump_experiment_data(self, path: Path):
@@ -298,7 +306,7 @@ class Experiment:
         Args:
             path (Path): Path to data folder.
         """
-        with open(file=path / "experiment.yml", mode="w", encoding="utf-8") as experiment_file:
+        with open(file=path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
             yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
 
     @property
@@ -310,7 +318,7 @@ class Experiment:
         """
         folderpath = os.environ.get(DATA, None)
         if folderpath is None:
-            folderpath = str(Path(__file__).parent.parent / "data")
+            folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
         return folderpath
 
     @property
@@ -347,11 +355,11 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
-            "platform": self.platform.to_dict(),
-            "settings": asdict(self.settings),
-            "sequences": [sequence.to_dict() for sequence in self.sequences],
-            "loop": self.loop.to_dict() if self.loop is not None else None,
-            "experiment_name": self.name,
+            YAML.PLATFORM: self.platform.to_dict(),
+            YAML.SETTINGS: asdict(self.settings),
+            YAML.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
+            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            YAML.NAME: self.name,
         }
 
     @classmethod
@@ -361,12 +369,12 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        settings = cls.ExperimentSettings(**dictionary["settings"])
-        platform = Platform(platform_schema=PlatformSchema(**dictionary["platform"]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequences"]]
-        loop = dictionary["loop"]
+        settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
+        platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[YAML.SEQUENCES]]
+        loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
-        experiment_name = dictionary["experiment_name"]
+        experiment_name = dictionary[YAML.NAME]
         return Experiment(
             sequences=sequences,
             loop=loop,

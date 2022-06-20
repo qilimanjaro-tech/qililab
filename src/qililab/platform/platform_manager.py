@@ -7,7 +7,7 @@ from pathlib import Path
 from qililab.config import logger
 from qililab.constants import DEFAULT_RUNCARD_FILENAME, RUNCARD
 from qililab.platform.platform import Platform
-from qililab.platform.utils import PlatformSchema
+from qililab.platform.utils import RuncardSchema
 from qililab.typings import yaml
 from qililab.utils import SingletonABC
 
@@ -22,8 +22,8 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
-        platform_schema = PlatformSchema(**self._load_platform_settings(platform_name=platform_name))
-        return Platform(platform_schema=platform_schema)
+        platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
+        return Platform(runcard_schema=platform_schema)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.

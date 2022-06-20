@@ -1,11 +1,11 @@
 """PlatformSchema class."""
-from typing import List, Optional
+from typing import List
 
 from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class PlatformSchema:
+class RuncardSchema:
     """PlatformSchema class. Casts the platform dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
@@ -41,5 +41,5 @@ class PlatformSchema:
         def __post_init__(self):
             self.elements = [self.Bus(**bus) for bus in self.elements]
 
-    settings: dict
+    platform: dict
     schema: Schema

@@ -5,7 +5,7 @@ from typing import Dict, List
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.constants import DEFAULT_PLATFORM_NAME, YAML
 
 
 class Platform0:
@@ -14,10 +14,10 @@ class Platform0:
     name = "platform_0"
 
     platform = {
-        "id_": 0,
-        "name": "platform_0",
-        "category": "platform",
-        "translation_settings": {
+        YAML.ID: 0,
+        YAML.NAME: "platform_0",
+        YAML.CATEGORY: "platform",
+        YAML.SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
             "readout_phase": 0,
@@ -30,9 +30,9 @@ class Platform0:
     }
 
     qubit_0: dict = {
-        "id_": 0,
-        "name": "qubit",
-        "category": "qubit",
+        YAML.ID: 0,
+        YAML.NAME: "qubit",
+        YAML.CATEGORY: "qubit",
         "pi_pulse_amplitude": 1,
         "pi_pulse_duration": 100,
         "pi_pulse_frequency": 100000000.0,
@@ -42,9 +42,9 @@ class Platform0:
     }
 
     qubit_1 = {
-        "id_": 1,
-        "name": "qubit",
-        "category": "qubit",
+        YAML.ID: 1,
+        YAML.NAME: "qubit",
+        YAML.CATEGORY: "qubit",
         "pi_pulse_amplitude": 1,
         "pi_pulse_duration": 100,
         "pi_pulse_frequency": 100000000.0,
@@ -54,9 +54,9 @@ class Platform0:
     }
 
     qblox_qcm_0 = {
-        "id_": 0,
-        "name": "qblox_qcm",
-        "category": "awg",
+        YAML.ID: 0,
+        YAML.NAME: "qblox_qcm",
+        YAML.CATEGORY: "awg",
         "ip": "192.168.0.3",
         "firmware": "0.7.0",
         "reference_clock": "internal",
@@ -67,9 +67,9 @@ class Platform0:
     }
 
     qblox_qrm_0 = {
-        "id_": 1,
-        "name": "qblox_qrm",
-        "category": "awg",
+        YAML.ID: 1,
+        YAML.NAME: "qblox_qrm",
+        YAML.CATEGORY: "awg",
         "ip": "192.168.0.4",
         "firmware": "0.7.0",
         "reference_clock": "external",
@@ -90,13 +90,13 @@ class Platform0:
     }
 
     resonator_0 = {
-        "id_": 0,
-        "name": "resonator",
-        "category": "resonator",
+        YAML.ID: 0,
+        YAML.NAME: "resonator",
+        YAML.CATEGORY: "resonator",
         "qubits": [
             {
-                "id_": 0,
-                "category": "qubit",
+                YAML.ID: 0,
+                YAML.CATEGORY: "qubit",
                 "pi_pulse_amplitude": 1,
                 "pi_pulse_duration": 100,
                 "pi_pulse_frequency": 100000000.0,
@@ -108,13 +108,13 @@ class Platform0:
     }
 
     resonator_1 = {
-        "id_": 1,
-        "name": "resonator",
-        "category": "resonator",
+        YAML.ID: 1,
+        YAML.NAME: "resonator",
+        YAML.CATEGORY: "resonator",
         "qubits": [
             {
-                "id_": 1,
-                "category": "qubit",
+                YAML.ID: 1,
+                YAML.CATEGORY: "qubit",
                 "pi_pulse_amplitude": 1,
                 "pi_pulse_duration": 100,
                 "pi_pulse_frequency": 100000000.0,
@@ -126,9 +126,9 @@ class Platform0:
     }
 
     rohde_schwarz_0 = {
-        "id_": 0,
-        "name": "rohde_schwarz",
-        "category": "signal_generator",
+        YAML.ID: 0,
+        YAML.NAME: "rohde_schwarz",
+        YAML.CATEGORY: "signal_generator",
         "ip": "192.168.0.10",
         "firmware": "4.30.046.295",
         "frequency": 3644000000.0,
@@ -136,9 +136,9 @@ class Platform0:
     }
 
     rohde_schwarz_1 = {
-        "id_": 1,
-        "name": "rohde_schwarz",  # unique name
-        "category": "signal_generator",  # general name
+        YAML.ID: 1,
+        YAML.NAME: "rohde_schwarz",  # unique name
+        YAML.CATEGORY: "signal_generator",  # general name
         "ip": "192.168.0.7",
         "firmware": "4.30.046.295",
         "frequency": 7307720000.0,
@@ -146,8 +146,8 @@ class Platform0:
     }
 
     mixer_0 = {
-        "id_": 0,
-        "category": "mixer",  # general name
+        YAML.ID: 0,
+        YAML.CATEGORY: "mixer",  # general name
         "epsilon": 0,
         "delta": 0,
         "offset_i": 0,
@@ -155,8 +155,8 @@ class Platform0:
     }
 
     mixer_1 = {
-        "id_": 1,
-        "category": "mixer",  # general name
+        YAML.ID: 1,
+        YAML.CATEGORY: "mixer",  # general name
         "epsilon": 0,
         "delta": 0,
         "offset_i": 0,
@@ -164,8 +164,8 @@ class Platform0:
     }
 
     mixer_2 = {
-        "id_": 2,
-        "category": "mixer",  # general name
+        YAML.ID: 2,
+        YAML.CATEGORY: "mixer",  # general name
         "epsilon": 0,
         "delta": 0,
         "offset_i": 0,
@@ -173,24 +173,24 @@ class Platform0:
     }
 
     attenuator = {
-        "id_": 1,
-        "name": "mini_circuits",
-        "category": "step_attenuator",
+        YAML.ID: 1,
+        YAML.NAME: "mini_circuits",
+        YAML.CATEGORY: "step_attenuator",
         "attenuation": 30,
         "ip": "192.168.0.222",
         "firmware": None,
     }
 
     schema = {
-        "elements": [
+        YAML.ELEMENTS: [
             {
-                "id_": 0,
-                "category": "bus",
-                "subcategory": "control",
+                YAML.ID: 0,
+                YAML.CATEGORY: "bus",
+                YAML.SUBCATEGORY: "control",
                 "system_control": {
-                    "id_": 0,
-                    "category": "system_control",
-                    "subcategory": "mixer_based_system_control",
+                    YAML.ID: 0,
+                    YAML.CATEGORY: "system_control",
+                    YAML.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qcm_0,
                     "signal_generator": rohde_schwarz_0,
                     "mixer_up": mixer_0,
@@ -198,13 +198,13 @@ class Platform0:
                 "target": qubit_0,
             },
             {
-                "id_": 0,
-                "category": "bus",
-                "subcategory": "readout",
+                YAML.ID: 0,
+                YAML.CATEGORY: "bus",
+                YAML.SUBCATEGORY: "readout",
                 "system_control": {
-                    "id_": 1,
-                    "category": "system_control",
-                    "subcategory": "mixer_based_system_control",
+                    YAML.ID: 1,
+                    YAML.CATEGORY: "system_control",
+                    YAML.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qrm_0,
                     "signal_generator": rohde_schwarz_1,
                     "mixer_up": mixer_1,
@@ -217,8 +217,8 @@ class Platform0:
     }
 
     runcard = {
-        "settings": platform,
-        "schema": schema,
+        YAML.PLATFORM: platform,
+        YAML.SCHEMA: schema,
     }
 
 
@@ -228,10 +228,10 @@ class FluxQubit:
     name = "flux_qubit"
 
     platform = {
-        "id_": 0,
-        "name": "flux_qubit",
-        "category": "platform",
-        "translation_settings": {
+        YAML.ID: 0,
+        YAML.NAME: "flux_qubit",
+        YAML.CATEGORY: "platform",
+        YAML.SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
             "readout_phase": 0,
@@ -244,15 +244,15 @@ class FluxQubit:
     }
 
     schema = {
-        "elements": [
+        YAML.ELEMENTS: [
             {
-                "id_": 0,
-                "category": "bus",
-                "subcategory": "control",
+                YAML.ID: 0,
+                YAML.CATEGORY: "bus",
+                YAML.SUBCATEGORY: "control",
                 "system_control": {
-                    "id_": 0,
-                    "category": "system_control",
-                    "subcategory": "simulated_system_control",
+                    YAML.ID: 0,
+                    YAML.CATEGORY: "system_control",
+                    YAML.SUBCATEGORY: "simulated_system_control",
                     "qubit": "csfq4jj",
                     "frequency": 2085540698,
                     "driving_hamiltonian": "zport",
@@ -262,9 +262,9 @@ class FluxQubit:
                     "dimension": 10,
                 },
                 "target": {
-                    "id_": 0,
-                    "name": "qubit",
-                    "category": "qubit",
+                    YAML.ID: 0,
+                    YAML.NAME: "qubit",
+                    YAML.CATEGORY: "qubit",
                     "pi_pulse_amplitude": 1,
                     "pi_pulse_duration": 100,
                     "pi_pulse_frequency": 100000000.0,
@@ -277,8 +277,8 @@ class FluxQubit:
     }
 
     runcard = {
-        "settings": platform,
-        "schema": schema,
+        YAML.PLATFORM: platform,
+        YAML.SCHEMA: schema,
     }
 
 

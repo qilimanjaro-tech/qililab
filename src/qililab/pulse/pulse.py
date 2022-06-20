@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from qililab.constants import YAML
+from qililab.constants import PULSE, YAML
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.utils import Factory
 
@@ -76,13 +76,13 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            "name": self.name,
-            "amplitude": self.amplitude,
-            "phase": self.phase,
-            "duration": self.duration,
-            "qubit_ids": self.qubit_ids,
-            "pulse_shape": self.pulse_shape.to_dict(),
-            "start_time": self.start_time,
+            PULSE.NAME: self.name,
+            PULSE.AMPLITUDE: self.amplitude,
+            PULSE.PHASE: self.phase,
+            PULSE.DURATION: self.duration,
+            PULSE.QUBIT_IDS: self.qubit_ids,
+            PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
+            PULSE.START_TIME: self.start_time,
         }
 
     def __repr__(self):

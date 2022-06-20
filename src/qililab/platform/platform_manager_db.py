@@ -25,10 +25,10 @@ class PlatformManagerDB(PlatformManager):
             dict: Dictionary with platform and schema settings.
         """
         return {
-            YAML.SETTINGS: SETTINGS_MANAGER.load(
+            YAML.PLATFORM: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME
             ),
-            Category.SCHEMA.value: SETTINGS_MANAGER.load(
+            YAML.SCHEMA: SETTINGS_MANAGER.load(
                 foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_SCHEMA_FILENAME
             ),
         }
