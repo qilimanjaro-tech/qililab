@@ -39,7 +39,9 @@ class Keithley2600(Instrument):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = Keithley2600Driver(name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR")
+        self.device = Keithley2600Driver(
+            name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR", visalib="@py"
+        )
 
     def reset(self):
         """Reset instrument."""
