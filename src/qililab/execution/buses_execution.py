@@ -1,7 +1,7 @@
 """BusesExecution class."""
 
 import itertools
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
 from typing import List
@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
-from qililab.typings import yaml
+from qililab.typings import BusSubcategory, yaml
 from qililab.utils import LivePlot
 
 
@@ -107,8 +107,9 @@ class BusesExecution:
             axes[axis_idx].set_title(f"Bus {bus_idx}")
             axes[axis_idx].plot(time, pulse[0], label="I")
             axes[axis_idx].plot(time, pulse[1], label="Q")
-            acquire_time = self.buses[axis_idx].acquire_time(idx=idx)
-            if acquire_time is not None:
+            bus = self.buses[axis_idx]
+            if bus.subcategory == BusSubcategory.READOUT:
+                acquire_time = self.buses[axis_idx].acquire_time(idx=idx)
                 plt.axvline(x=acquire_time, color="red", label="Acquire time")
             axes[axis_idx].legend()
             axes[axis_idx].minorticks_on()
@@ -119,3 +120,11 @@ class BusesExecution:
         plt.tight_layout()
         # plt.savefig("test.png")
         return figure
+
+    def __iter__(self):
+        """Redirect __iter__ magic method to buses."""
+        return self.buses.__iter__()
+
+    def __getitem__(self, key):
+        """Redirect __get_item__ magic method."""
+        return self.buses.__getitem__(key)

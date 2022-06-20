@@ -109,13 +109,22 @@ class BusExecution:
         """
         return self.bus.attenuator
 
-    def acquire_time(self, idx: int = 0) -> int | None:
+    @property
+    def subcategory(self) -> BusSubcategory:
+        """BusExecution 'subcategory' property.
+
+        Returns:
+            BusSubcategory: Bus subcategory.
+        """
+        return self.bus.subcategory
+
+    def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
 
         Returns:
             int: Acquire time (in ns).
         """
-        if self.bus.subcategory == BusSubcategory.READOUT:
-            readout_pulse = self.pulse_sequences[idx]
-            return readout_pulse.pulses[-1].start + self.system_control.delay_time
-        return None
+        if self.subcategory == BusSubcategory.CONTROL:
+            raise ValueError("Control bus doesn't have an acquire time property.")
+        readout_pulse = self.pulse_sequences[idx]
+        return readout_pulse.pulses[-1].start + self.system_control.delay_time
