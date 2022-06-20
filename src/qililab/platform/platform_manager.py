@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from qililab.config import logger
-from qililab.constants import DEFAULT_RUNCARD_FILENAME
+from qililab.constants import DEFAULT_RUNCARD_FILENAME, RUNCARD
 from qililab.platform.platform import Platform
 from qililab.platform.utils import PlatformSchema
 from qililab.typings import yaml
@@ -31,7 +31,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Args:
             platform (Platform): Platform to dump.
         """
-        file_path = os.environ.get("YAML", None)
+        file_path = os.environ.get(RUNCARD, None)
         if file_path is None:
             file_path = str(Path(sys.argv[0]).parent / DEFAULT_RUNCARD_FILENAME)
         with open(file=file_path, mode="w", encoding="utf-8") as file:

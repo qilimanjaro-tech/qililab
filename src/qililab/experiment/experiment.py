@@ -10,8 +10,7 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
-from qililab.config import logger
-from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.constants import DATA, DEFAULT_PLATFORM_NAME
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import PLATFORM_MANAGER_YAML, Platform, PlatformSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
@@ -264,7 +263,7 @@ class Experiment:
         Returns:
             Path: Path to the data folder.
         """
-        folderpath = os.environ.get("DATA", None)
+        folderpath = os.environ.get(DATA, None)
         if folderpath is None:
             folderpath = str(Path(__file__).parent.parent / "data")
         return folderpath

@@ -1,5 +1,9 @@
 """Constants"""
 
+# Environment variables
+DATA = "DATA"  # variable containing the path where data is saved
+RUNCARD = "RUNCARD"  # variable containing the runcard's path
+
 DEFAULT_PLATFORM_FILENAME = "platform"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_SCHEMA_FILENAME = "schema"
