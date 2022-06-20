@@ -1,5 +1,6 @@
 """BusExecution class."""
 from dataclasses import dataclass, field
+from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from typing import List
 
@@ -67,6 +68,9 @@ class BusExecution:
             Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
             of the pulses applied on this bus.
         """
+        num_sequences = len(self.pulse_sequences)
+        if idx >= num_sequences:
+            raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
         return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
 
     @property
