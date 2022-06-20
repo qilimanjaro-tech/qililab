@@ -3,7 +3,7 @@ from dataclasses import asdict
 from typing import List
 
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import PlatformSchema
+from qililab.platform.utils import RuncardSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
 from qililab.utils import dict_factory, nested_dataclass
@@ -29,16 +29,16 @@ class Platform:
         """
 
         name: str
-        translation_settings: TranslationSettings
+        settings: TranslationSettings
 
     settings: PlatformSettings
     schema: Schema
-    _schema: PlatformSchema
+    _schema: RuncardSchema
 
-    def __init__(self, platform_schema: PlatformSchema):
-        self.settings = self.PlatformSettings(**platform_schema.settings)
-        self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
-        self._schema = platform_schema
+    def __init__(self, runcard_schema: RuncardSchema):
+        self.settings = self.PlatformSettings(**runcard_schema.platform)
+        self.schema = Schema(**asdict(runcard_schema.schema, dict_factory=dict_factory))
+        self._schema = runcard_schema
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -85,8 +85,8 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
-            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
+            attr_type = type(getattr(self.settings.settings, parameter.value))
+            setattr(self.settings.settings, parameter.value, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
@@ -116,7 +116,7 @@ class Platform:
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.translation_settings
+        return self.settings.settings
 
     @property
     def category(self):

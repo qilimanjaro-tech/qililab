@@ -18,12 +18,14 @@ from ...conftest import mock_instruments
 class TestExperiments:
     """Unit tests checking the defined experiments."""
 
+    @patch("qililab.instruments.mini_circuits.step_attenuator.urllib", autospec=True)
     @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
     @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
     def test_cavity_and_qubit_spectroscopy(
         self,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
         mock_open_0: MagicMock,
         mock_dump_0: MagicMock,
         mock_dump_1: MagicMock,
@@ -37,6 +39,8 @@ class TestExperiments:
         connection.create_liveplot.return_value = 0
         cavity_spectroscopy(connection=connection)
         qubit_spectroscopy(connection=connection)
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
         connection.create_liveplot.assert_called()
         connection.send_plot_points.assert_called()
         mock_rs.assert_called()

@@ -6,6 +6,7 @@ from typing import List
 
 import numpy as np
 
+from qililab.constants import LOOP, YAML
 from qililab.typings import Category, Parameter
 
 
@@ -28,6 +29,8 @@ class Loop:
         if self.step is not None and self.num is not None:
             raise ValueError("'step' and 'num' arguments cannot be used together.")
         if self.loop is not None:
+            if isinstance(self.loop, dict):
+                self.loop = Loop(**self.loop)
             self.loop.previous = self
         if isinstance(self.category, str):
             self.category = Category(self.category)
@@ -78,3 +81,20 @@ class Loop:
             num_loops += 1
             loop = loop.loop
         return num_loops
+
+    def to_dict(self) -> dict:
+        """Convert class to a dictionary.
+
+        Returns:
+            dict: Dictionary representation of the class.
+        """
+        return {
+            YAML.CATEGORY: self.category,
+            YAML.ID: self.id_,
+            LOOP.PARAMETER: self.parameter,
+            LOOP.START: self.start,
+            LOOP.STOP: self.stop,
+            LOOP.NUM: self.num,
+            LOOP.STEP: self.step,
+            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+        }
