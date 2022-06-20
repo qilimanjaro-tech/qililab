@@ -40,6 +40,14 @@ class Platform:
         self.settings = self.PlatformSettings(**platform_schema.settings)
         self.schema = Schema(**asdict(platform_schema.schema))
 
+    def connect(self):
+        """Connect to the instruments."""
+        self.instruments.connect()
+
+    def close(self):
+        """Close connection to the instruments."""
+        self.instruments.close()
+
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
 
