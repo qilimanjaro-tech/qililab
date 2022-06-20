@@ -65,11 +65,9 @@ class Schema:
         Returns:
             List[Instrument]: List of instantiated instrument classes.
         """
-        instruments: List[Instrument] = []
-        for instrument in instruments_dict:
-            dict_name = instrument.pop(YAML.NAME)
-            instruments.append(InstrumentFactory.get(dict_name)(settings=instrument))
-        return instruments
+        return [
+            InstrumentFactory.get(instrument.pop(YAML.NAME))(settings=instrument) for instrument in instruments_dict
+        ]
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
