@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - feat/dump-load-experiment-settings
+      - tii
   workflow_dispatch:
 
 jobs:
