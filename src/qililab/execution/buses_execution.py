@@ -108,9 +108,7 @@ class BusesExecution:
             axes[axis_idx].plot(time, pulse[0], label="I")
             axes[axis_idx].plot(time, pulse[1], label="Q")
             bus = self.buses[axis_idx]
-            if bus.subcategory == BusSubcategory.READOUT:
-                acquire_time = self.buses[axis_idx].acquire_time(idx=idx)
-                plt.axvline(x=acquire_time, color="red", label="Acquire time")
+            self._plot_acquire_time(bus=bus, sequence_idx=idx)
             axes[axis_idx].legend()
             axes[axis_idx].minorticks_on()
             axes[axis_idx].grid(which="both")
@@ -120,6 +118,19 @@ class BusesExecution:
         plt.tight_layout()
         # plt.savefig("test.png")
         return figure
+
+    def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):
+        """Return acquire time of bus. Return None if bus is of subcategory control.
+
+        Args:
+            bus (BusExecution): Bus execution object.
+            sequence_idx (int): Pulse sequence index.
+
+        Returns:
+            int | None: Acquire time. None if bus is of subcategory control.
+        """
+        if bus.subcategory == BusSubcategory.READOUT:
+            plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
         """Redirect __iter__ magic method to buses."""
