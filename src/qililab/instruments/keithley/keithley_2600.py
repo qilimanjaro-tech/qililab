@@ -64,4 +64,4 @@ class Keithley2600(Instrument):
         """
         data = self.device.smua.doFastSweep(start=start, stop=stop, steps=steps, mode=mode)
         x_values = np.linspace(start=start, stop=stop, num=steps)
-        return x_values, data.to_array().values.squeeze()
+        return x_values, data.to_xarray().to_array().values.squeeze()
