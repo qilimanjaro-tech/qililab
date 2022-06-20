@@ -106,7 +106,6 @@ class BusesExecution:
             axes[axis_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
-        # plt.savefig("test.png")
         return figure
 
     def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):

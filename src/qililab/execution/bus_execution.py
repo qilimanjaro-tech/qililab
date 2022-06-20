@@ -1,12 +1,12 @@
 """BusExecution class."""
 from dataclasses import dataclass, field
-from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
 from qililab.pulse import Pulse, PulseSequence
 from qililab.typings import BusSubcategory
+from qililab.utils import Waveforms
 
 
 @dataclass
@@ -46,14 +46,14 @@ class BusExecution:
             return
         self.pulse_sequences[idx].add(pulse)
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0):
+    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
+            Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
         num_sequences = len(self.pulse_sequences)

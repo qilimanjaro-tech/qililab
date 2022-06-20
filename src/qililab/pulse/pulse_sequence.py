@@ -43,7 +43,7 @@ class PulseSequence:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Tuple[List[float], List[float]]: Tuple containing the I, Q waveforms for a specific qubit.
+            Waveforms: Class containing the I, Q waveforms for a specific qubit.
         """
         waveforms = Waveforms()
         time = 0
