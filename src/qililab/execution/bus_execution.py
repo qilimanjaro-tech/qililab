@@ -54,8 +54,8 @@ class BusExecution:
             raise ValueError("Bad index value.")
         if idx == len(self.pulse_sequences):
             self.pulse_sequences.append(PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
-        else:
-            self.pulse_sequences[idx].add(pulse)
+            return
+        self.pulse_sequences[idx].add(pulse)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0):
         """Return pulses applied on this bus.
