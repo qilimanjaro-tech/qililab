@@ -155,4 +155,4 @@ class SimulatedSystemControl(SystemControl):
     @property
     def delay_time(self) -> int | None:
         """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
-        return None
+        raise AttributeError("SimulatedSystemControl class doesn't have a 'delay_time' property.")
