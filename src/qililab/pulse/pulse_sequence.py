@@ -2,7 +2,10 @@
 from dataclasses import dataclass, field
 from typing import List
 
+import numpy as np
+
 from qililab.pulse.pulse import Pulse
+from qililab.utils import Waveforms
 
 
 @dataclass
@@ -33,7 +36,7 @@ class PulseSequence:
         """Redirect __iter__ magic method."""
         return self.pulses.__iter__()
 
-    def waveforms(self, frequency: float, resolution: float = 1.0):
+    def waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
         """PulseSequence 'waveforms' property.
 
         Args:
@@ -42,20 +45,18 @@ class PulseSequence:
         Returns:
             Tuple[List[float], List[float]]: Tuple containing the I, Q waveforms for a specific qubit.
         """
-        waveforms_i: List[float] = []
-        waveforms_q: List[float] = []
+        waveforms = Waveforms()
         time = 0
         for pulse in self.pulses:
             wait_time = round((pulse.start - time) / resolution)
-            waveforms_i += [0] * wait_time
-            waveforms_q += [0] * wait_time
+            if wait_time > 0:
+                waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
             time += pulse.start
-            waveform_i, waveform_q = pulse.modulated_waveforms(frequency=frequency, resolution=resolution)
-            waveforms_i += waveform_i.tolist()
-            waveforms_q += waveform_q.tolist()
+            pulse_waveforms = pulse.modulated_waveforms(frequency=frequency, resolution=resolution)
+            waveforms += pulse_waveforms
             time += pulse.duration
 
-        return waveforms_i, waveforms_q
+        return waveforms
 
     @property
     def name(self):

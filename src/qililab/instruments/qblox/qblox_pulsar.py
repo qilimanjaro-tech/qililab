@@ -16,7 +16,6 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.pulse import Pulse, PulseSequence, PulseShape
 from qililab.typings import Pulsar, ReferenceClock
