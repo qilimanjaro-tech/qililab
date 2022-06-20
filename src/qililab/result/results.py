@@ -30,6 +30,7 @@ class Results:
             if self.software_average > 1:
                 self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
+            # Pop the result name (qblox, simulator) from the dictionary and instantiate its corresponding Result class.
             self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
         if isinstance(self.loop, dict):
             self.loop = Loop(**self.loop)

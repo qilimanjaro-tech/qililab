@@ -1,4 +1,5 @@
 """Tests for the PulseSequence class."""
+import numpy as np
 import pytest
 
 from qililab.pulse import Pulse, PulseSequence
@@ -28,8 +29,8 @@ class TestPulseSequence:
 
     def test_waveforms_method(self, pulse_sequence: PulseSequence):
         """Test waveforms method."""
-        waveforms_i, waveforms_q = pulse_sequence.waveforms(frequency=1e9, resolution=0.1)
-        assert isinstance(waveforms_i, list) and isinstance(waveforms_q, list)
+        waveforms = pulse_sequence.waveforms(frequency=1e9, resolution=0.1)
+        assert isinstance(waveforms.i, np.ndarray) and isinstance(waveforms.q, np.ndarray)
 
     def test_iter_method(self, pulse_sequence: PulseSequence):
         """Test __iter__ method."""

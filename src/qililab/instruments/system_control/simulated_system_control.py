@@ -64,11 +64,11 @@ class SimulatedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-        waveforms_i, _ = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
-        waveforms = np.array(waveforms_i) * self.amplitude_norm_factor
+        waveforms = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
+        i_waveform = np.array(waveforms.i) * self.amplitude_norm_factor
         hamiltonian = self.hamiltonian(
             qubit=self.qubit,
-            waveforms=waveforms,
+            waveforms=i_waveform,
             dimension=self.dimension,
             energy_norm=self.energy_norm,
             resolution=self.resolution,
@@ -155,6 +155,6 @@ class SimulatedSystemControl(SystemControl):
         return self.settings.resolution
 
     @property
-    def delay_time(self) -> int | None:
+    def delay_time(self):
         """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
-        return None
+        raise AttributeError("SimulatedSystemControl class doesn't have a 'delay_time' property.")

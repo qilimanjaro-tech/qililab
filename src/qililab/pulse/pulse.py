@@ -6,7 +6,7 @@ import numpy as np
 
 from qililab.constants import YAML
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.utils import Factory
+from qililab.utils import Factory, Waveforms
 
 
 @dataclass
@@ -28,7 +28,7 @@ class Pulse:
                 **self.pulse_shape  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> np.ndarray:
+    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
@@ -43,7 +43,8 @@ class Pulse:
         cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
         sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
         mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
-        return np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
+        imod, qmod = np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
+        return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Pulse 'envelope' property.

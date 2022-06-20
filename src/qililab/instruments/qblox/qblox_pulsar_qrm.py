@@ -113,7 +113,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.scope_acq_sequencer_select(self.sequencer)
         self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
         self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
-        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(self.integration_length)
+        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
 
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1

@@ -1,5 +1,6 @@
 """BusExecution class."""
 from dataclasses import dataclass, field
+from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from typing import List
 
@@ -42,8 +43,8 @@ class BusExecution:
             raise ValueError("Bad index value.")
         if idx == len(self.pulse_sequences):
             self.pulse_sequences.append(PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
-        else:
-            self.pulse_sequences[idx].add(pulse)
+            return
+        self.pulse_sequences[idx].add(pulse)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0):
         """Return pulses applied on this bus.
@@ -55,6 +56,9 @@ class BusExecution:
             Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
             of the pulses applied on this bus.
         """
+        num_sequences = len(self.pulse_sequences)
+        if idx >= num_sequences:
+            raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
         return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
 
     @property
@@ -93,13 +97,22 @@ class BusExecution:
         """
         return self.bus.attenuator
 
-    def acquire_time(self, idx: int = 0) -> int | None:
+    @property
+    def subcategory(self) -> BusSubcategory:
+        """BusExecution 'subcategory' property.
+
+        Returns:
+            BusSubcategory: Bus subcategory.
+        """
+        return self.bus.subcategory
+
+    def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
 
         Returns:
             int: Acquire time (in ns).
         """
-        if self.bus.subcategory == BusSubcategory.READOUT:
-            readout_pulse = self.pulse_sequences[idx]
-            return readout_pulse.pulses[-1].start + self.system_control.delay_time
-        return None
+        if self.subcategory == BusSubcategory.CONTROL:
+            raise ValueError("Control bus doesn't have an acquire time property.")
+        readout_pulse = self.pulse_sequences[idx]
+        return readout_pulse.pulses[-1].start + self.system_control.delay_time

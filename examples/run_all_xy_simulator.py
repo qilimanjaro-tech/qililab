@@ -42,14 +42,6 @@ def run_allxy():
         circuits.append(circuit)
 
     experiment = Experiment(platform=platform, sequences=circuits)
-    # experiment.add_parameter_to_loop(
-    #     category="system_control",
-    #     id_=0,
-    #     parameter="frequency",
-    #     start=2085540698 - 1e6,
-    #     stop=2085540698 + 1e6,
-    #     num=10,
-    # )
     results = experiment.execute()
 
     x_ticks = np.linspace(-1, 1, 10)
