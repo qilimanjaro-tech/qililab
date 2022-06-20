@@ -30,7 +30,7 @@ class Bus:
         Args:
             subcategory (BusSubcategory): Bus subcategory. Options are "readout" and "control".
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
-            target (BusTarget): Bus target (qubit, resonator, coupler).
+            port (int): Chip's port where bus is connected.
         """
 
         subcategory: BusSubcategory
