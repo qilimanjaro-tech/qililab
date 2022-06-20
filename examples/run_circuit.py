@@ -1,8 +1,7 @@
 """Run circuit experiment"""
-import matplotlib.pyplot as plt
 import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, I, M, X, Y
+from qibo.gates import RX, M
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -21,9 +20,7 @@ def run_circuit(connection: API):
         circuit.add(M(0))
         circuits.append(circuit)
     experiment = Experiment(platform=platform, sequences=circuits)
-    experiment.draw(idx=3)
-    plt.show()
-    # experiment.execute(connection=connection)
+    experiment.execute(connection=connection)
 
 
 if __name__ == "__main__":
