@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from qililab.constants import YAML
 from qililab.settings import Settings
-from qililab.typings.enums import Parameter
 from qililab.typings.factory_element import FactoryElement
 
 
