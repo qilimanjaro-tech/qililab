@@ -91,7 +91,7 @@ class Loop:
         return {
             YAML.INSTRUMENT: self.instrument.value,
             YAML.ID: self.id_,
-            LOOP.PARAMETER: self.parameter,
+            LOOP.PARAMETER: self.parameter.value,
             LOOP.START: self.start,
             LOOP.STOP: self.stop,
             LOOP.NUM: self.num,

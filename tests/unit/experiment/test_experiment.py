@@ -95,7 +95,7 @@ class TestExperiment:
         experiment.set_parameter(
             instrument=Instrument.PLATFORM, id_=0, parameter=Parameter.READOUT_AMPLITUDE, value=0.3
         )
-        assert experiment.platform.settings.settings.readout_amplitude == 0.3
+        assert experiment.platform.settings.translation_settings.readout_amplitude == 0.3
 
 
 @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)

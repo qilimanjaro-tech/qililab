@@ -31,13 +31,13 @@ class Platform:
         """
 
         name: str
-        settings: TranslationSettings
+        translation_settings: TranslationSettings
 
     settings: PlatformSettings
     schema: Schema
 
     def __init__(self, runcard_schema: RuncardSchema):
-        self.settings = self.PlatformSettings(**runcard_schema.platform)
+        self.settings = self.PlatformSettings(**runcard_schema.settings)
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
@@ -93,8 +93,8 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.settings, parameter.value))
-            setattr(self.settings.settings, parameter.value, attr_type(value))
+            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
+            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
@@ -124,7 +124,7 @@ class Platform:
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.settings
+        return self.settings.translation_settings
 
     @property
     def category(self):
@@ -164,7 +164,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.PLATFORM: asdict(self.settings, dict_factory=dict_factory)}
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 
