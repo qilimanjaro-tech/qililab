@@ -145,7 +145,7 @@ class Platform0:
     }
 
     runcard = {
-        YAML.PLATFORM: platform,
+        YAML.SETTINGS: platform,
         YAML.SCHEMA: schema,
     }
 
@@ -226,7 +226,7 @@ class FluxQubit:
     }
 
     runcard = {
-        YAML.PLATFORM: platform,
+        YAML.SETTINGS: platform,
         YAML.SCHEMA: schema,
     }
 

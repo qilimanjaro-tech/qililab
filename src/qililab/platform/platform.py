@@ -37,7 +37,7 @@ class Platform:
     schema: Schema
 
     def __init__(self, runcard_schema: RuncardSchema):
-        self.settings = self.PlatformSettings(**runcard_schema.platform)
+        self.settings = self.PlatformSettings(**runcard_schema.settings)
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
@@ -164,7 +164,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.PLATFORM: asdict(self.settings, dict_factory=dict_factory)}
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 

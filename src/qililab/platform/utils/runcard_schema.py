@@ -40,5 +40,5 @@ class RuncardSchema:
         def __post_init__(self):
             self.buses = [self.Bus(**bus) for bus in self.buses]
 
-    platform: dict
+    settings: dict
     schema: Schema
