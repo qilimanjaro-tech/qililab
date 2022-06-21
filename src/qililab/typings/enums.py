@@ -47,7 +47,7 @@ class Instrument(Enum):
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
     SYSTEM_CONTROL = "system_control"
-    STEP_ATTENUATOR = "step_attenuator"
+    ATTENUATOR = "attenuator"
 
 
 class ReferenceClock(Enum):
