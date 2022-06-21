@@ -1,5 +1,7 @@
 """Keithley2600 instrument."""
-import xarray
+from typing import Tuple
+
+import numpy as np
 
 from qililab.instruments.instrument import Instrument
 from qililab.typings import InstrumentName, Keithley2600Driver
@@ -35,13 +37,15 @@ class Keithley2600(Instrument):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = Keithley2600Driver(name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR")
+        self.device = Keithley2600Driver(
+            name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR", visalib="@py"
+        )
 
     def reset(self):
         """Reset instrument."""
         self.device.reset()
 
-    def fast_sweep(self, start: float, stop: float, steps: int, mode: str) -> xarray.Dataset:
+    def fast_sweep(self, start: float, stop: float, steps: int, mode: str) -> Tuple[np.ndarray, np.ndarray]:
         """Perform a fast sweep using a deployed lua script and return an xarray dataset.
 
         Args:
@@ -52,7 +56,8 @@ class Keithley2600(Instrument):
             (current sweep four probe setup)
 
         Returns:
-            xarray.Dataset: Measured data.
+            np.ndarray: Measured data.
         """
         data = self.device.smua.doFastSweep(start=start, stop=stop, steps=steps, mode=mode)
-        return data.to_xarray()
+        x_values = np.linspace(start=start, stop=stop, num=steps)
+        return x_values, data.to_xarray().to_array().values.squeeze()
