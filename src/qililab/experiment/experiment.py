@@ -1,6 +1,7 @@
 """HardwareExperiment class."""
+import copy
 import os
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
@@ -10,27 +11,28 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
+from qililab.config import logger
 from qililab.constants import (
     DATA,
     DATA_FOLDERNAME,
-    DEFAULT_PLATFORM_NAME,
+    EXPERIMENT,
     EXPERIMENT_FILENAME,
     LOOP,
     RESULTS_FILENAME,
     YAML,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import PLATFORM_MANAGER_YAML, Platform, RuncardSchema
+from qililab.platform import Platform, RuncardSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
-from qililab.typings import Category, Parameter, yaml
-from qililab.utils import LivePlot, Loop, nested_dataclass
+from qililab.typings import Category, Instrument, Parameter, yaml
+from qililab.utils import LivePlot, Loop
 
 
 class Experiment:
     """HardwareExperiment class"""
 
-    @nested_dataclass
+    @dataclass
     class ExperimentSettings:
         """Experiment settings."""
 
@@ -42,28 +44,21 @@ class Experiment:
             """Returns a string representation of the experiment settings."""
             return yaml.dump(asdict(self), sort_keys=False)
 
-    platform: Platform
-    execution: Execution
-    settings: ExperimentSettings
-    _initial_sequences: List[Circuit | PulseSequences]
-    sequences: List[PulseSequences]
-    loop: Loop | None
-
     def __init__(
         self,
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
-        platform_name: str = DEFAULT_PLATFORM_NAME,
+        platform: Platform,
         loop: Loop | None = None,
-        settings: ExperimentSettings = None,
-        experiment_name: str = "experiment",
+        settings: ExperimentSettings = ExperimentSettings(),
+        name: str = "experiment",
     ):
+        self.platform = copy.deepcopy(platform)
+        self.name = name
+        self.loop = loop
+        self.settings = settings
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
-        self.name = experiment_name
-        self.settings = self.ExperimentSettings() if settings is None else settings
-        self.platform = PLATFORM_MANAGER_YAML.build(platform_name=platform_name)
-        self.loop = loop
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     def execute(self, connection: API | None = None) -> Results:
@@ -72,11 +67,17 @@ class Experiment:
         self._create_results_file(path=path)
         self._dump_experiment_data(path=path)
         plot = LivePlot(connection=connection)
+        results = Results(
+            software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
+        )
         with self.execution:
-            results = self._execute_loop(plot=plot, path=path)
+            try:
+                self._execute_loop(results=results, plot=plot, path=path)
+            except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                logger.error("%s: %s", type(error).__name__, str(error))
         return results
 
-    def _execute_loop(self, plot: LivePlot, path: Path) -> Results:
+    def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
         """Loop and execute sequence over given Platform parameters.
 
         Args:
@@ -88,11 +89,8 @@ class Experiment:
         """
 
         if self.loop is None:
-            return Results(
-                software_average=self.software_average,
-                num_sequences=self.execution.num_sequences,
-                results=self._execute(plot=plot, path=path),  # type: ignore
-            )
+            return results.add(self._execute(plot=plot, path=path))
+
         return self.recursive_loop(
             loop=self.loop,
             results=Results(
@@ -159,10 +157,11 @@ class Experiment:
         Returns:
             str: X label.
         """
-        x_label = f"{loop.category} {loop.id_}: {loop.parameter} "
+        x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
         if loop.previous is not None:
             x_label += (
-                f"({loop.previous.category} {loop.previous.id_}:" + f"{loop.previous.parameter}={np.round(x_value, 4)})"
+                f"({loop.previous.instrument.value} {loop.previous.id_}:"
+                + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
             )
         return x_label
 
@@ -177,7 +176,7 @@ class Experiment:
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
         """
-        element, _ = self.platform.get_element(category=Category(loop.category), id_=loop.id_)
+        element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
         leave = loop.previous is False
         with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
             for value in loop.range:
@@ -192,10 +191,11 @@ class Experiment:
         """Execute pulse sequences.
 
         Args:
-            results (Results): Results class.
+            path (Path): Path to data folder.
+            plot (LivePlot | None): Live plot
 
         Returns:
-            Results.ExecutionResults: ExecutionResults class.
+            List[Result]: List of Result object for each pulse sequence.
         """
         if plot is not None:
             plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
@@ -208,7 +208,7 @@ class Experiment:
             path=path,
         )
 
-    def set_parameter(self, category: Category | str, id_: int, parameter: Parameter | str, value: float):
+    def set_parameter(self, instrument: Instrument, id_: int, parameter: Parameter, value: float):
         """Set parameter of a platform element.
 
         Args:
@@ -217,19 +217,11 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if isinstance(parameter, str):
-            parameter = Parameter(parameter)
-        if isinstance(category, str):
-            category = Category(category)
 
-        # FIXME: Avoid calling self._build_execution twice
-        if Category(category) == Category.EXPERIMENT:
-            attr_type = type(getattr(self.settings, parameter.value))
-            setattr(self.settings, parameter.value, attr_type(value))
-            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
-            return
-        self.platform.set_parameter(category=category, id_=id_, parameter=parameter, value=value)
-        if Category(category) == Category.PLATFORM:
+        self.platform.set_parameter(
+            category=Category(instrument.value), id_=id_, parameter=Parameter(parameter), value=value
+        )
+        if Instrument(instrument) == Instrument.PLATFORM:
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
@@ -241,7 +233,7 @@ class Experiment:
         """
         return str(self.platform)
 
-    def draw(self, resolution: float = 1.0):
+    def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
 
         Args:
@@ -250,7 +242,7 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(resolution=resolution)
+        return self.execution.draw(resolution=resolution, idx=idx)
 
     def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
         """Build Execution class.
@@ -292,10 +284,10 @@ class Experiment:
             path (Path): Path to data folder.
         """
         data = {
-            YAML.SOFTWARE_AVERAGE: self.software_average,
-            YAML.NUM_SEQUENCES: self.execution.num_sequences,
-            YAML.SHAPE: [] if self.loop is None else self.loop.shape,
-            YAML.RESULTS: None,
+            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
+            EXPERIMENT.NUM_SEQUENCES: self.execution.num_sequences,
+            EXPERIMENT.SHAPE: [] if self.loop is None else self.loop.shape,
+            EXPERIMENT.RESULTS: None,
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
             yaml.dump(data=data, stream=results_file, sort_keys=False)
@@ -357,7 +349,7 @@ class Experiment:
         return {
             YAML.PLATFORM: self.platform.to_dict(),
             YAML.SETTINGS: asdict(self.settings),
-            YAML.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
+            EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             YAML.NAME: self.name,
         }
@@ -371,14 +363,14 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[YAML.SEQUENCES]]
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
         experiment_name = dictionary[YAML.NAME]
         return Experiment(
             sequences=sequences,
             loop=loop,
-            platform_name=platform.name,
+            platform=platform,
             settings=settings,
-            experiment_name=experiment_name,
+            name=experiment_name,
         )

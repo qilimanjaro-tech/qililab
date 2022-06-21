@@ -16,8 +16,6 @@ def nested_dataclass(*args, **kwargs):
             for name, value in kwargs.items():
                 field_type = get_type_hints(cls).get(name, None)
                 if is_dataclass(field_type):
-                    if not isinstance(value, dict):
-                        raise ValueError("Using a non-dictionary object for dataclass data.")
                     new_obj = field_type(**value)
                     kwargs[name] = new_obj
                 if isinstance(field_type, type) and issubclass(field_type, Enum):

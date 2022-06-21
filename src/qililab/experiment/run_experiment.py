@@ -5,9 +5,9 @@ from qibo.gates import RX, RY, I, M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
-from qililab import Experiment
+from qililab import Experiment, build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.typings import Category, Parameter
+from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
 configuration = ConnectionConfiguration(
@@ -19,7 +19,7 @@ configuration = ConnectionConfiguration(
 connection = API(configuration=configuration)
 
 
-def run_experiment(gate: str, category: str, id_: int, parameter: str, start: float, stop: float, num: int):
+def run_experiment(gate: str, instrument: str, id_: int, parameter: str, start: float, stop: float, num: int):
     """Run experiment."""
     circuit = Circuit(1)
     if gate == "I":
@@ -32,6 +32,9 @@ def run_experiment(gate: str, category: str, id_: int, parameter: str, start: fl
         gate = RY(0, np.pi / 2)
     circuit.add(gate)
     circuit.add(M(0))
-    loop = Loop(category=Category(category), id_=id_, parameter=Parameter(parameter), start=start, stop=stop, num=num)
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuit, loop=loop)
+    platform = build_platform(name=DEFAULT_PLATFORM_NAME)
+    loop = Loop(
+        instrument=Instrument(instrument), id_=id_, parameter=Parameter(parameter), start=start, stop=stop, num=num
+    )
+    experiment = Experiment(platform=platform, sequences=circuit, loop=loop)
     experiment.execute(connection=connection)

@@ -7,7 +7,7 @@ from qililab.constants import (
     DEFAULT_PLATFORM_NAME,
     DEFAULT_SETTINGS_FOLDERNAME,
 )
-from qililab.platform import Platform, Qubit
+from qililab.platform import Platform
 from qililab.settings import SETTINGS_MANAGER, SettingsManager
 
 from ..data import Platform0
@@ -33,17 +33,6 @@ class TestSettingsManager:
             filename=DEFAULT_PLATFORM_FILENAME,
         )
         Platform.PlatformSettings(**settings)
-
-    def test_load_default_qubit_settings(self, mock_load: MagicMock):
-        """Test the load method of the SettingsManager class with the default qubit settings.
-        Assert that errors are raised correctly."""
-        mock_load.return_value = Platform0.qubit_0
-        qubit_settings = SETTINGS_MANAGER.load(
-            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="qubit_0"
-        )
-        settings = qubit_settings.copy()
-        settings.pop("name")
-        Qubit.QubitCalibrationSettings(**settings)
 
     def test_load_unknown_file(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with an unknown file."""

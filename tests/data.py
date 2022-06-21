@@ -5,7 +5,7 @@ from typing import Dict, List
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import DEFAULT_PLATFORM_NAME, YAML
+from qililab.constants import DEFAULT_PLATFORM_NAME, SCHEMA, YAML
 
 
 class Platform0:
@@ -29,30 +29,6 @@ class Platform0:
         },
     }
 
-    qubit_0: dict = {
-        YAML.ID: 0,
-        YAML.NAME: "qubit",
-        YAML.CATEGORY: "qubit",
-        "pi_pulse_amplitude": 1,
-        "pi_pulse_duration": 100,
-        "pi_pulse_frequency": 100000000.0,
-        "qubit_frequency": 3544000000.0,
-        "min_voltage": 950,
-        "max_voltage": 1775,
-    }
-
-    qubit_1 = {
-        YAML.ID: 1,
-        YAML.NAME: "qubit",
-        YAML.CATEGORY: "qubit",
-        "pi_pulse_amplitude": 1,
-        "pi_pulse_duration": 100,
-        "pi_pulse_frequency": 100000000.0,
-        "qubit_frequency": 3544000000.0,
-        "min_voltage": 950,
-        "max_voltage": 1775,
-    }
-
     qblox_qcm_0 = {
         YAML.ID: 0,
         YAML.NAME: "qblox_qcm",
@@ -64,6 +40,10 @@ class Platform0:
         "sync_enabled": True,
         "gain": 1,
         "frequency": 100000000,
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
     }
 
     qblox_qrm_0 = {
@@ -78,7 +58,6 @@ class Platform0:
         "gain": 0.5,
         "acquire_trigger_mode": "sequencer",
         "scope_acquisition_averaging": False,
-        "start_integrate": 130,
         "sampling_rate": 1000000000,
         "integration_length": 2000,
         "integration_mode": "ssb",
@@ -87,42 +66,10 @@ class Platform0:
         "acquisition_name": "single",
         "delay_time": 100,
         "frequency": 20000000,
-    }
-
-    resonator_0 = {
-        YAML.ID: 0,
-        YAML.NAME: "resonator",
-        YAML.CATEGORY: "resonator",
-        "qubits": [
-            {
-                YAML.ID: 0,
-                YAML.CATEGORY: "qubit",
-                "pi_pulse_amplitude": 1,
-                "pi_pulse_duration": 100,
-                "pi_pulse_frequency": 100000000.0,
-                "qubit_frequency": 3544000000.0,
-                "min_voltage": 950,
-                "max_voltage": 1775,
-            }
-        ],
-    }
-
-    resonator_1 = {
-        YAML.ID: 1,
-        YAML.NAME: "resonator",
-        YAML.CATEGORY: "resonator",
-        "qubits": [
-            {
-                YAML.ID: 1,
-                YAML.CATEGORY: "qubit",
-                "pi_pulse_amplitude": 1,
-                "pi_pulse_duration": 100,
-                "pi_pulse_frequency": 100000000.0,
-                "qubit_frequency": 3544000000.0,
-                "min_voltage": 950,
-                "max_voltage": 1775,
-            }
-        ],
+        "epsilon": 0,
+        "delta": 0,
+        "offset_i": 0,
+        "offset_q": 0,
     }
 
     rohde_schwarz_0 = {
@@ -145,44 +92,28 @@ class Platform0:
         "power": 15,
     }
 
-    mixer_0 = {
-        YAML.ID: 0,
-        YAML.CATEGORY: "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
-    mixer_1 = {
-        YAML.ID: 1,
-        YAML.CATEGORY: "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
-    mixer_2 = {
-        YAML.ID: 2,
-        YAML.CATEGORY: "mixer",  # general name
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
-    }
-
     attenuator = {
         YAML.ID: 1,
         YAML.NAME: "mini_circuits",
-        YAML.CATEGORY: "step_attenuator",
+        YAML.CATEGORY: "attenuator",
         "attenuation": 30,
         "ip": "192.168.0.222",
         "firmware": None,
     }
 
+    keithley_2600 = {
+        YAML.ID: 1,
+        YAML.NAME: "keithley_2600",
+        YAML.CATEGORY: "dc_source",
+        "ip": "192.168.1.112",
+        "firmware": None,
+    }
+
+    instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator]
+
     schema = {
-        YAML.ELEMENTS: [
+        SCHEMA.INSTRUMENTS: instruments,
+        SCHEMA.BUSES: [
             {
                 YAML.ID: 0,
                 YAML.CATEGORY: "bus",
@@ -193,9 +124,8 @@ class Platform0:
                     YAML.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qcm_0,
                     "signal_generator": rohde_schwarz_0,
-                    "mixer_up": mixer_0,
                 },
-                "target": qubit_0,
+                "port": 0,
             },
             {
                 YAML.ID: 0,
@@ -207,11 +137,9 @@ class Platform0:
                     YAML.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qrm_0,
                     "signal_generator": rohde_schwarz_1,
-                    "mixer_up": mixer_1,
-                    "mixer_down": mixer_2,
                 },
                 "attenuator": attenuator,
-                "target": resonator_0,
+                "port": 1,
             },
         ],
     }
@@ -219,6 +147,36 @@ class Platform0:
     runcard = {
         YAML.PLATFORM: platform,
         YAML.SCHEMA: schema,
+    }
+
+    qubit_0: dict = {
+        YAML.ID: 0,
+        YAML.NAME: "qubit",
+        YAML.CATEGORY: "qubit",
+        "pi_pulse_amplitude": 1,
+        "pi_pulse_duration": 100,
+        "pi_pulse_frequency": 100000000.0,
+        "qubit_frequency": 3544000000.0,
+        "min_voltage": 950,
+        "max_voltage": 1775,
+    }
+
+    resonator_0 = {
+        YAML.ID: 0,
+        YAML.NAME: "resonator",
+        YAML.CATEGORY: "resonator",
+        "qubits": [
+            {
+                YAML.ID: 0,
+                YAML.CATEGORY: "qubit",
+                "pi_pulse_amplitude": 1,
+                "pi_pulse_duration": 100,
+                "pi_pulse_frequency": 100000000.0,
+                "qubit_frequency": 3544000000.0,
+                "min_voltage": 950,
+                "max_voltage": 1775,
+            }
+        ],
     }
 
 
@@ -244,7 +202,8 @@ class FluxQubit:
     }
 
     schema = {
-        YAML.ELEMENTS: [
+        SCHEMA.INSTRUMENTS: [],
+        SCHEMA.BUSES: [
             {
                 YAML.ID: 0,
                 YAML.CATEGORY: "bus",
@@ -261,19 +220,9 @@ class FluxQubit:
                     "store_states": False,
                     "dimension": 10,
                 },
-                "target": {
-                    YAML.ID: 0,
-                    YAML.NAME: "qubit",
-                    YAML.CATEGORY: "qubit",
-                    "pi_pulse_amplitude": 1,
-                    "pi_pulse_duration": 100,
-                    "pi_pulse_frequency": 100000000.0,
-                    "qubit_frequency": 3544000000.0,
-                    "min_voltage": 950,
-                    "max_voltage": 1775,
-                },
+                "port": 0,
             }
-        ]
+        ],
     }
 
     runcard = {
@@ -294,6 +243,128 @@ for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
     if p_name == DEFAULT_PLATFORM_NAME:
         circuit.add(M(0))
     experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])
+
+
+results_two_loops = {
+    "software_average": 1,
+    "num_sequences": 1,
+    "shape": [75, 100],
+    "loop": {
+        "instrument": "attenuator",
+        "id_": 1,
+        "parameter": "attenuation",
+        "start": 15,
+        "stop": 90,
+        "num": None,
+        "step": 1,
+        "loop": {
+            "instrument": "signal_generator",
+            "id_": 1,
+            "parameter": "frequency",
+            "start": 7342000000,
+            "stop": 7352000000,
+            "num": None,
+            "step": 100000,
+            "loop": None,
+        },
+    },
+    "results": [
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+            "threshold": [0.48046875],
+            "avg_cnt": [1024],
+        },
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+            "threshold": [0.4599609375],
+            "avg_cnt": [1024],
+        },
+    ],
+}
+
+results_one_loops = {
+    "software_average": 1,
+    "num_sequences": 1,
+    "shape": [100],
+    "loop": {
+        "instrument": "signal_generator",
+        "id_": 1,
+        "parameter": "frequency",
+        "start": 7342000000,
+        "stop": 7352000000,
+        "num": None,
+        "step": 100000,
+        "loop": None,
+    },
+    "results": [
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+            "threshold": [0.48046875],
+            "avg_cnt": [1024],
+        },
+        {
+            "name": "qblox",
+            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+            "threshold": [0.4599609375],
+            "avg_cnt": [1024],
+        },
+    ],
+}
+
+experiment = {
+    "platform": Platform0.runcard,
+    "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
+    "sequences": [
+        {
+            "pulses": [
+                {
+                    "name": "ReadoutPulse",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 2000,
+                    "qubit_ids": [0],
+                    "pulse_shape": {"name": "rectangular"},
+                    "start_time": 40,
+                }
+            ],
+            "time": {"[0]": 2040},
+            "delay_between_pulses": 0,
+            "delay_before_readout": 40,
+        }
+    ],
+    "loop": {
+        "instrument": "awg",
+        "id_": 1,
+        "parameter": "gain",
+        "start": 0.1,
+        "stop": 1,
+        "num": None,
+        "step": 0.3,
+        "loop": {
+            "instrument": "attenuator",
+            "id_": 1,
+            "parameter": "attenuation",
+            "start": 15,
+            "stop": 90,
+            "num": None,
+            "step": 1,
+            "loop": {
+                "instrument": "signal_generator",
+                "id_": 1,
+                "parameter": "frequency",
+                "start": 7342000000,
+                "stop": 7352000000,
+                "num": None,
+                "step": 100000,
+                "loop": None,
+            },
+        },
+    },
+    "name": "punchout",
+}
 
 
 class MockedSettingsFactory:

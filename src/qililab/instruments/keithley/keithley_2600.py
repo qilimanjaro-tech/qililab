@@ -4,14 +4,14 @@ from typing import Tuple
 import numpy as np
 
 from qililab.instruments.instrument import Instrument
-from qililab.typings import BusElementName, Keithley2600Driver
+from qililab.typings import InstrumentName, Keithley2600Driver
 from qililab.utils import nested_dataclass
 
 
 class Keithley2600(Instrument):
     """Keithley2600 class."""
 
-    name = BusElementName.KEITHLEY
+    name = InstrumentName.KEITHLEY2600
 
     @nested_dataclass
     class Keithley2600Settings(Instrument.InstrumentSettings):
@@ -22,10 +22,6 @@ class Keithley2600(Instrument):
 
     settings: Keithley2600Settings
     device: Keithley2600Driver
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.Keithley2600Settings(**settings)
 
     @Instrument.CheckConnected
     def setup(self):

@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from qililab.pulse import Pulse
+from qililab.utils import Waveforms
 
 
 class TestPulse:
@@ -11,7 +12,7 @@ class TestPulse:
     def test_modulated_waveforms_method(self, pulse: Pulse):
         """Test modulated_waveforms method."""
         waveforms = pulse.modulated_waveforms(frequency=1e9)
-        assert isinstance(waveforms, np.ndarray)
+        assert isinstance(waveforms, Waveforms)
 
     def test_start_property_raises_error(self, pulse: Pulse):
         """Test that start property raises error when star_time is None"""

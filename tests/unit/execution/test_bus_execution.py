@@ -22,6 +22,20 @@ class TestBusExecution:
         for resolution in [0.01, 0.1, 1, 10]:
             bus_execution.waveforms(resolution=resolution)
 
+    def test_waveforms_method_raises_error(self, bus_execution: BusExecution):
+        """Test waveforms method raises error."""
+        with pytest.raises(IndexError):
+            bus_execution.waveforms(idx=10)
+
     def test_qubit_ids_property(self, bus_execution: BusExecution):
         """Test qubit_ids property."""
         assert bus_execution.qubit_ids == bus_execution.bus.qubit_ids
+
+    def test_acquire_time_method(self, buses_execution: BusExecution):
+        """Test acquire_time method."""
+        assert isinstance(buses_execution[1].acquire_time(), int)  # type: ignore
+
+    def test_acquire_time_method_raises_error(self, buses_execution: BusExecution):
+        """Test acquire_time method."""
+        with pytest.raises(ValueError):
+            buses_execution[0].acquire_time()  # type: ignore

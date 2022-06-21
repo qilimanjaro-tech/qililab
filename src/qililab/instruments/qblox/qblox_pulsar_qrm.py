@@ -1,4 +1,5 @@
 """Qblox pulsar QRM class"""
+from dataclasses import dataclass
 from pathlib import Path
 
 from qpysequence.acquisitions import Acquisitions
@@ -7,18 +8,18 @@ from qpysequence.loop import Loop
 
 from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
 from qililab.instruments.qubit_readout import QubitReadout
+from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
 from qililab.typings import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusElementName,
+    InstrumentName,
     IntegrationMode,
 )
-from qililab.utils import Factory, nested_dataclass
 
 
-@Factory.register
+@InstrumentFactory.register
 class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     """Qblox pulsar QRM class.
 
@@ -26,16 +27,15 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         settings (QBloxPulsarQRMSettings): Settings of the instrument.
     """
 
-    name = BusElementName.QBLOX_QRM
+    name = InstrumentName.QBLOX_QRM
 
-    @nested_dataclass
+    @dataclass
     class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
             acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
             scope_acquisition_averaging (bool): Enable/disable hardware averaging of the data.
-            start_integrate (int): Time (in ns) to start integrating the signal.
             integration_length (int): Duration (in ns) of the integration.
             integration_mode (str): Integration mode. Options are 'ssb'.
             sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
@@ -47,7 +47,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
         acquire_trigger_mode: AcquireTriggerMode
         scope_acquisition_averaging: bool
-        start_integrate: int
         sampling_rate: int
         integration_length: int
         integration_mode: IntegrationMode
@@ -55,12 +54,8 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         acquisition_timeout: int  # minutes
         acquisition_name: AcquisitionName
 
-    acquisition_idx: int
     settings: QbloxPulsarQRMSettings
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.QbloxPulsarQRMSettings(**settings)
+    acquisition_idx: int
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence. Return acquisition results.
@@ -118,7 +113,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.scope_acq_sequencer_select(self.sequencer)
         self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
         self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
-        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(self.integration_length)
+        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
 
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
@@ -154,15 +149,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             bool: settings.scope_acquisition_averaging.
         """
         return self.settings.scope_acquisition_averaging
-
-    @property
-    def start_integrate(self):
-        """QbloxPulsarQRM 'start_integrate' property.
-
-        Returns:
-            int: settings.start_integrate.
-        """
-        return self.settings.start_integrate
 
     @property
     def sampling_rate(self):

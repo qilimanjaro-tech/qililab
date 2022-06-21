@@ -1,12 +1,14 @@
 """SignalGenerator class."""
+from abc import abstractmethod
+from dataclasses import dataclass
+
 from qililab.instruments.instrument import Instrument
-from qililab.utils import nested_dataclass
 
 
 class SignalGenerator(Instrument):
     """Abstract base class defining all instruments used to generate signals."""
 
-    @nested_dataclass()
+    @dataclass
     class SignalGeneratorSettings(Instrument.InstrumentSettings):
         """Contains the settings of a specific signal generator.
 
@@ -37,3 +39,7 @@ class SignalGenerator(Instrument):
             float: settings.frequency.
         """
         return self.settings.frequency
+
+    @abstractmethod
+    def turn_on(self):
+        """Turn instrument on."""

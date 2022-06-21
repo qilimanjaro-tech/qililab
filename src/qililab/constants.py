@@ -8,13 +8,13 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 DATA_FOLDERNAME = "data"
 
-DEFAULT_PLATFORM_FILENAME = "platform"
+DEFAULT_PLATFORM_FILENAME = "platform.yml"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
-DEFAULT_SCHEMA_FILENAME = "schema"
-DEFAULT_RUNCARD_FILENAME = "runcard"
+DEFAULT_RUNCARD_FILENAME = "runcard.yml"
 DEFAULT_PLATFORM_NAME = "platform_0"
 
 
+# TODO: Distribute constants over different classes
 class YAML:
     """YAML constants."""
 
@@ -22,14 +22,40 @@ class YAML:
     NAME = "name"
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
+    INSTRUMENT = "instrument"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"
     PLATFORM = "platform"
     SCHEMA = "schema"
+    SCHEMA = "schema"
+
+
+class EXPERIMENT:
+    """Experiment constants."""
+
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
+    SHAPE = "shape"
+    RESULTS = "results"
+    NUM_SEQUENCES = "num_sequences"
+    SEQUENCES = "sequences"
+
+
+class SCHEMA:
+    """Schema constants."""
+
+    INSTRUMENTS = "instruments"
+    BUSES = "buses"
+
+
+class BUS:
+    """Bus constants."""
+
+    PORT = "port"
+    SYSTEM_CONTROL = "system_control"
+    ATTENUATOR = "attenuator"
     SEQUENCES = "sequences"
     NUM_SEQUENCES = "num_sequences"
     SHAPE = "shape"  # shape of the results

@@ -1,10 +1,9 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from qililab.instruments.instrument import Instrument
-from qililab.instruments.mixer import Mixer
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
 
@@ -25,43 +24,10 @@ class AWG(Instrument):
         """
 
         frequency: float
-        mixer_settings: Mixer.MixerSettings = field(init=False)
-
-        @property
-        def epsilon(self):
-            """MixerSettings 'epsilon' property.
-
-            Returns:
-                float: mixer.epsilon.
-            """
-            return self.mixer_settings.epsilon
-
-        @property
-        def delta(self):
-            """MixerSettings 'delta' property.
-
-            Returns:
-                float: mixer.delta.
-            """
-            return self.mixer_settings.delta
-
-        @property
-        def offset_i(self):
-            """MixerSettings 'offset_i' property.
-
-            Returns:
-                float: mixer.offset_i.
-            """
-            return self.mixer_settings.offset_i
-
-        @property
-        def offset_q(self):
-            """MixerSettings 'offset_q' property.
-
-            Returns:
-                float: mixer.offset_q.
-            """
-            return self.mixer_settings.offset_q
+        epsilon: float
+        delta: float
+        offset_i: float
+        offset_q: float
 
     settings: AWGSettings
 
@@ -81,7 +47,3 @@ class AWG(Instrument):
             float: settings.frequency.
         """
         return self.settings.frequency
-
-    def setup_mixer_settings(self, mixer: Mixer):
-        """Setup mixer settings."""
-        self.settings.mixer_settings = mixer.settings

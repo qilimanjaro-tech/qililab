@@ -8,7 +8,7 @@ class TestBusesExecution:
     def test_waveforms_method(self, buses_execution: BusesExecution):
         """Test waveforms method."""
         for resolution in [0.01, 0.1, 1.0, 10.0]:
-            buses_execution.waveforms(resolution=resolution)
+            buses_execution.waveforms_dict(resolution=resolution)
 
     def test_draw_method(self, buses_execution: BusesExecution):
         """Test draw method."""

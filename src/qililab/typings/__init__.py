@@ -1,11 +1,12 @@
 """__init__.py"""
-from .bus_element import BusElement
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
     BusElementName,
     BusSubcategory,
     Category,
+    Instrument,
+    InstrumentName,
     IntegrationMode,
     Parameter,
     PulseShapeName,
@@ -15,5 +16,4 @@ from .enums import (
 )
 from .factory_element import FactoryElement
 from .instruments import Device, Keithley2600Driver, Pulsar, RohdeSchwarzSGS100A
-from .settings import SettingsType
 from .yaml_type import yaml

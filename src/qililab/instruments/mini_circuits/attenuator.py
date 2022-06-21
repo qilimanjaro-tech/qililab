@@ -1,32 +1,25 @@
-"""StepAttenuator class."""
+"""Attenuator class."""
 import urllib
+from dataclasses import dataclass
 
-from qililab.config import logger
 from qililab.instruments.instrument import Instrument
-from qililab.typings import BusElementName, Device
-from qililab.utils import Factory, nested_dataclass
+from qililab.instruments.utils import InstrumentFactory
+from qililab.typings import Device, InstrumentName
 
 
-@Factory.register
-class StepAttenuator(Instrument):
-    """StepAttenuator class."""
+@InstrumentFactory.register
+class Attenuator(Instrument):
+    """Attenuator class."""
 
-    name = BusElementName.MINI_CIRCUITS
+    name = InstrumentName.MINI_CIRCUITS
 
-    @nested_dataclass
+    @dataclass
     class StepAttenuatorSettings(Instrument.InstrumentSettings):
         """Step attenuator settings."""
 
         attenuation: float
 
     settings: StepAttenuatorSettings
-
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.StepAttenuatorSettings(**settings)
-
-    def start(self):
-        """Start instrument."""
 
     def stop(self):
         """Stop instrument."""
@@ -37,8 +30,7 @@ class StepAttenuator(Instrument):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        model_name = self.http_request(command="MN?")
-        logger.info("Connected to step attenuator with model name %s", model_name)
+        self.http_request(command="MN?")
         self.device = Device()
 
     def http_request(self, command: str):
@@ -51,15 +43,14 @@ class StepAttenuator(Instrument):
             request = urllib.request.Request(f"http://{self.ip}/:{command}")  # type: ignore
             with urllib.request.urlopen(request, timeout=2) as response:  # type: ignore # nosec
                 pte_return = response.read()
-        except urllib.error.URLError:  # type: ignore
-            logger.error("No response from device. Check IP address and connections.")
-            pte_return = "No Response!"
+        except urllib.error.URLError as error:  # type: ignore
+            raise ValueError("No response from device. Check IP address and connections.") from error
 
         return pte_return
 
     @property
     def attenuation(self):
-        """StepAttenuator 'attenuation' property.
+        """Attenuator 'attenuation' property.
 
         Returns:
             float: Attenuation.

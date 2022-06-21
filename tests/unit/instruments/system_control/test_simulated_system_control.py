@@ -1,6 +1,7 @@
 """Tests for the SimulatedSystemControl class."""
 from pathlib import Path
 
+import pytest
 import qutip
 
 from qililab.instruments import SimulatedSystemControl
@@ -58,3 +59,8 @@ class TestSimulatedSystemControl:
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""
         assert simulated_system_control.name == simulated_system_control.settings.subcategory
+
+    def test_delay_time_property_raises_error(self, simulated_system_control: SimulatedSystemControl):
+        """Test delay_time property."""
+        with pytest.raises(AttributeError):
+            _ = simulated_system_control.delay_time

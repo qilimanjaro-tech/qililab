@@ -1,10 +1,11 @@
 """BusTarget class."""
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import List, Union
 
+from qililab.platform.components.bus_element import BusElement
 from qililab.settings import Settings
-from qililab.typings import BusElement, BusElementName
-from qililab.utils import nested_dataclass
+from qililab.typings import BusElementName
 
 
 class Target(BusElement, ABC):
@@ -12,7 +13,7 @@ class Target(BusElement, ABC):
 
     name: BusElementName
 
-    @nested_dataclass
+    @dataclass
     class BusTargetSettings(Settings):
         """BusTargetSettings class."""
 

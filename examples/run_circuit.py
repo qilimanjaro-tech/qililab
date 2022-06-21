@@ -1,24 +1,25 @@
 """Run circuit experiment"""
-import matplotlib.pyplot as plt
 import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, I, M, X, Y
+from qibo.gates import RX, M
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
+from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.experiment import Experiment
 
 
-def load_experiment(connection: API):
+def run_circuit(connection: API):
     """Load the platform 'platform_0' from the DB."""
+    platform = build_platform(name=DEFAULT_PLATFORM_NAME)
     circuits = []
     for rotation in np.linspace(0, 3 * np.pi):
         circuit = Circuit(1)
         circuit.add(RX(0, rotation))
         circuit.add(M(0))
         circuits.append(circuit)
-    experiment = Experiment(platform_name=DEFAULT_PLATFORM_NAME, sequences=circuits)
+    experiment = Experiment(platform=platform, sequences=circuits)
     experiment.execute(connection=connection)
 
 
@@ -30,4 +31,4 @@ if __name__ == "__main__":
     )
 
     api = API(configuration=configuration)
-    load_experiment(connection=api)
+    run_circuit(connection=api)

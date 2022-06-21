@@ -1,8 +1,8 @@
 """TranslationSettings class."""
-from qililab.utils import nested_dataclass
+from dataclasses import dataclass
 
 
-@nested_dataclass
+@dataclass
 class TranslationSettings:
     """Settings used for the translation of a circuit into pulses."""
 
