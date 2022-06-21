@@ -93,11 +93,7 @@ class Experiment:
 
         return self.recursive_loop(
             loop=self.loop,
-            results=Results(
-                software_average=self.software_average,
-                shape=self.loop.shape,
-                num_sequences=self.execution.num_sequences,
-            ),
+            results=results,
             path=path,
             plot=plot,
         )
