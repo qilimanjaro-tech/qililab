@@ -1,7 +1,7 @@
 """HardwareExperiment class."""
 import copy
 import os
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
@@ -17,13 +17,13 @@ from qililab.platform import Platform, PlatformSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Instrument, Parameter, yaml
-from qililab.utils import LivePlot, Loop, nested_dataclass
+from qililab.utils import LivePlot, Loop
 
 
 class Experiment:
     """HardwareExperiment class"""
 
-    @nested_dataclass
+    @dataclass
     class ExperimentSettings:
         """Experiment settings."""
 

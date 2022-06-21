@@ -1,17 +1,18 @@
 """MixerBasedSystemControl class."""
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Generator, Tuple
 
 from qililab.constants import YAML
 from qililab.instruments.awg import AWG
+from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import BusElementName, Category
-from qililab.utils import Factory, nested_dataclass
+from qililab.utils import Factory
 
 
 @Factory.register
@@ -20,19 +21,12 @@ class MixerBasedSystemControl(SystemControl):
 
     name = BusElementName.MIXER_BASED_SYSTEM_CONTROL
 
-    @nested_dataclass(kw_only=True)
+    @dataclass(kw_only=True)
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):
         """MixerBasedSystemControlSettings class."""
 
         awg: AWG
         signal_generator: SignalGenerator
-
-        def __post_init__(self):
-            """Cast each bus element to its corresponding class."""
-            for name, value in self:
-                if isinstance(value, dict):
-                    elem_obj = Factory.get(value.pop(YAML.NAME))(value)
-                    setattr(self, name, elem_obj)
 
         def __iter__(
             self,
@@ -48,34 +42,24 @@ class MixerBasedSystemControl(SystemControl):
 
     settings: MixerBasedSystemControlSettings
 
-    def __init__(self, settings: dict):
-        super().__init__()
-        self.settings = self.MixerBasedSystemControlSettings(**settings)
-
-    def connect(self):
-        """Connect to the instruments."""
-        self.awg.connect()
-        self.signal_generator.connect()
+    def __init__(self, settings: dict, instruments: Instruments):
+        super().__init__(settings=settings)
+        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     def setup(self):
         """Setup instruments."""
         self.awg.setup()
         self.signal_generator.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.signal_generator.start()
+        self.signal_generator.turn_on()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
         return self.awg.run(
             pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
-
-    def close(self):
-        """Close connection to the instruments."""
-        self.awg.close()
-        self.signal_generator.close()
 
     @property
     def frequency(self):
@@ -132,3 +116,10 @@ class MixerBasedSystemControl(SystemControl):
             for key, value in self
             if not isinstance(value, dict)
         }
+
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+        """Replace dictionaries from settings into its respective instrument classes."""
+        for name, value in self.settings:
+            if isinstance(value, dict):
+                instrument_object = instruments.get(settings=value)
+                setattr(self.settings, name, instrument_object)

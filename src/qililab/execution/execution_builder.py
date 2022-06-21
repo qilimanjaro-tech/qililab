@@ -22,7 +22,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
         buses_execution = self._build_buses_execution(platform=platform, pulse_sequences=pulse_sequences)
 
-        return Execution(buses_execution=buses_execution)
+        return Execution(buses_execution=buses_execution, platform=platform)
 
     def _build_buses_execution(self, platform: Platform, pulse_sequences: List[PulseSequences]):
         """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.

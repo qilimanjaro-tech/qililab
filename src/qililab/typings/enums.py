@@ -27,7 +27,7 @@ class Category(Enum):
     BUS = "bus"
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
-    STEP_ATTENUATOR = "step_attenuator"
+    ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
 
 
@@ -139,7 +139,7 @@ class BusSubcategory(Enum):
 
 
 class BusElementName(Enum):
-    """Bus element names.
+    """Bus element names. Contains names of bus elements that are not instruments.
 
     Args:
         enum (str): Available bus element names:
@@ -151,14 +151,30 @@ class BusElementName(Enum):
 
     QUBIT = "qubit"
     RESONATOR = "resonator"
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class InstrumentName(Enum):
+    """Instrument names.
+
+    Args:
+        enum (str): Available bus element names:
+        * qblox_qcm
+        * qblox_qrm
+        * rohde_schwarz
+        * mini_circuits
+        * mixer_based_system_control
+        * integrated_system_control
+        * simulated_system_control
+    """
+
     QBLOX_QCM = "qblox_qcm"
     QBLOX_QRM = "qblox_qrm"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
-    KEITHLEY = "keithley"
+    KEITHLEY2600 = "keithley_2600"
 
 
 class Parameter(Enum):

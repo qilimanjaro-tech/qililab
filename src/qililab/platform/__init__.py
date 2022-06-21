@@ -25,7 +25,7 @@ def build_platform(name: str, database: bool = False) -> Platform:
         Platform: Platform object.
     """
     if database:
-        return PLATFORM_MANAGER_DB.build(platform_name=name)
+        raise NotImplementedError
     return PLATFORM_MANAGER_YAML.build(platform_name=name)
 
 
@@ -37,5 +37,5 @@ def save_platform(platform: Platform, database: bool = False):
         database (bool, optional): If True, save platform to database. Defaults to False.
     """
     if database:
-        return PLATFORM_MANAGER_DB.dump(platform=platform)
+        raise NotImplementedError
     return PLATFORM_MANAGER_YAML.dump(platform=platform)

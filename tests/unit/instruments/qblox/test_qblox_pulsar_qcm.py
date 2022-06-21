@@ -8,7 +8,7 @@ from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments import QbloxPulsarQCM
-from qililab.typings import BusElementName
+from qililab.typings import InstrumentName
 
 
 class TestQbloxPulsarQCM:
@@ -25,9 +25,9 @@ class TestQbloxPulsarQCM:
         qcm.device.reference_source.assert_called_with(qcm.reference_clock.value)
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.sync_enabled)
 
-    def test_start_method(self, qcm: QbloxPulsarQCM):
-        """Test start method"""
-        qcm.start()
+    def test_start_sequencer_method(self, qcm: QbloxPulsarQCM):
+        """Test start_sequencer method"""
+        qcm.start_sequencer()
         qcm.device.arm_sequencer.assert_called()
         qcm.device.start_sequencer.assert_called()
 
@@ -76,7 +76,7 @@ class TestQbloxPulsarQCM:
         """Test that calling a method when the device is not connected raises an AttributeError."""
         qcm.close()
         with pytest.raises(AttributeError):
-            qcm.start()
+            qcm.start_sequencer()
 
     def test_ip_property(self, qcm: QbloxPulsarQCM):
         """Test ip property."""
@@ -88,7 +88,7 @@ class TestQbloxPulsarQCM:
 
     def test_name_property(self, qcm: QbloxPulsarQCM):
         """Test name property."""
-        assert qcm.name == BusElementName.QBLOX_QCM
+        assert qcm.name == InstrumentName.QBLOX_QCM
 
     def test_category_property(self, qcm: QbloxPulsarQCM):
         """Test category property."""

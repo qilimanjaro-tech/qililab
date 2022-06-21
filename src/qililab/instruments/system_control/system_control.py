@@ -1,21 +1,20 @@
 """SystemControl class."""
 from abc import ABC, abstractmethod
-from dataclasses import asdict
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Type, get_type_hints
 
-from qililab.constants import YAML
-from qililab.platform import BusElement
+from qililab.platform.components import BusElement
 from qililab.pulse import PulseSequence
 from qililab.result import Result
 from qililab.settings import Settings
 from qililab.typings import BusElementName
-from qililab.utils import nested_dataclass
 
 
 class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
-    @nested_dataclass
+    @dataclass
     class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
@@ -23,25 +22,21 @@ class SystemControl(BusElement, ABC):
 
     settings: SystemControlSettings
 
+    def __init__(self, settings: dict):
+        settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
+        self.settings = settings_class(**settings)
+
     @abstractmethod
-    def connect(self):
-        """Connect to the instruments."""
+    def turn_on(self):
+        """Start instrument."""
 
     @abstractmethod
     def setup(self):
-        """Setup instruments."""
-
-    @abstractmethod
-    def start(self):
-        """Start/Turn on the instruments."""
+        """Set instrument settings."""
 
     @abstractmethod
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> Result:
         """Run the given pulse sequence."""
-
-    @abstractmethod
-    def close(self):
-        """Close connection to the instruments."""
 
     @property
     def id_(self):

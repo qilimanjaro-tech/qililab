@@ -1,5 +1,4 @@
 """Constants"""
-
 DEFAULT_PLATFORM_FILENAME = "platform"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_SCHEMA_FILENAME = "schema"
@@ -21,6 +20,7 @@ class YAML:
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
     SCHEMA = "schema"
+    PORT = "port"
 
 
 UNITS = {"frequency": "Hz"}

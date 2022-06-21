@@ -1,12 +1,13 @@
 """QubitControl class."""
+from dataclasses import dataclass
+
 from qililab.instruments.awg import AWG
-from qililab.utils import nested_dataclass
 
 
 class QubitControl(AWG):
     """Abstract base class defining all instruments used to control the qubits."""
 
-    @nested_dataclass
+    @dataclass
     class QubitControlSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar."""
 

@@ -1,12 +1,12 @@
 """BusExecution class."""
 from dataclasses import dataclass, field
-from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
 from qililab.pulse import Pulse, PulseSequence
 from qililab.typings import BusSubcategory
+from qililab.utils import Waveforms
 
 
 @dataclass
@@ -16,33 +16,21 @@ class BusExecution:
     bus: Bus
     pulse_sequences: List[PulseSequence] = field(default_factory=list)
 
-    def connect(self):
-        """Connect to the instruments."""
-        self.system_control.connect()
-        if self.attenuator is not None:
-            self.attenuator.connect()
-
     def setup(self):
         """Setup instruments."""
         self.system_control.setup()
         if self.attenuator is not None:
             self.attenuator.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.system_control.start()
+        self.system_control.turn_on()
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
-
-    def close(self):
-        """Close connection to the instruments."""
-        self.system_control.close()
-        if self.attenuator is not None:
-            self.attenuator.close()
 
     def add_pulse(self, pulse: Pulse, idx: int):
         """Add pulse to the BusPulseSequence given by idx.
@@ -58,14 +46,14 @@ class BusExecution:
             return
         self.pulse_sequences[idx].add(pulse)
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0):
+    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Tuple[List[float], List[float]]: Dictionary containing a list of the I/Q amplitudes
+            Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
         num_sequences = len(self.pulse_sequences)
@@ -126,5 +114,8 @@ class BusExecution:
         """
         if self.subcategory == BusSubcategory.CONTROL:
             raise ValueError("Control bus doesn't have an acquire time property.")
+        num_sequences = len(self.pulse_sequences)
+        if idx >= num_sequences:
+            raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
         readout_pulse = self.pulse_sequences[idx]
         return readout_pulse.pulses[-1].start + self.system_control.delay_time

@@ -1,11 +1,11 @@
 """Resonator class."""
+from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.targets.qubit import Qubit
 from qililab.platform.components.targets.target import Target
-from qililab.settings import Settings
 from qililab.typings import BusElementName
-from qililab.utils import Factory, nested_dataclass
+from qililab.utils import Factory
 
 
 @Factory.register
@@ -14,7 +14,7 @@ class Resonator(Target):
 
     name = BusElementName.RESONATOR
 
-    @nested_dataclass
+    @dataclass
     class ResonatorSettings(Target.BusTargetSettings):
         """Contains the settings obtained from calibrating the qubit.
 
@@ -26,6 +26,7 @@ class Resonator(Target):
 
         def __post_init__(self):
             """Cast list of qubits settings to Qubit objects."""
+            super().__post_init__()
             self.qubits = [Qubit(qubit_settings) for qubit_settings in self.qubits]
 
     settings: ResonatorSettings

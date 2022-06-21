@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - tii
+      - refactor/load-platform-before-experiment
   workflow_dispatch:
 
 jobs:

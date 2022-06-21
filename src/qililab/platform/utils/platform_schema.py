@@ -31,13 +31,14 @@ class PlatformSchema:
             category: str
             subcategory: str
             system_control: dict
-            target: dict
+            port: int
             attenuator: dict | None = None
 
-        elements: List[Bus]
+        buses: List[Bus]
+        instruments: List[dict]
 
         def __post_init__(self):
-            self.elements = [self.Bus(**bus) for bus in self.elements]
+            self.buses = [self.Bus(**bus) for bus in self.buses]
 
     settings: dict
     schema: Schema

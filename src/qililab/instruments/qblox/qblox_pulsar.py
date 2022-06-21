@@ -1,7 +1,7 @@
 """Qblox pulsar class"""
-
 import itertools
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
@@ -19,7 +19,6 @@ from qpysequence.waveforms import Waveforms
 from qililab.instruments.awg import AWG
 from qililab.pulse import Pulse, PulseSequence, PulseShape
 from qililab.typings import Pulsar, ReferenceClock
-from qililab.utils import nested_dataclass
 
 
 class QbloxPulsar(AWG):
@@ -30,9 +29,9 @@ class QbloxPulsar(AWG):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
-    MAX_BINS = 131072
+    MAX_BINS: int = 131072
 
-    @nested_dataclass
+    @dataclass
     class QbloxPulsarSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar.
 
@@ -48,13 +47,13 @@ class QbloxPulsar(AWG):
         sync_enabled: bool
         gain: float
 
-    device: Pulsar
     settings: QbloxPulsarSettings
+    device: Pulsar
     # Cache containing the last PulseSequence, nshots and repetition_duration used.
     _cache: Tuple[PulseSequence, int, int] | None
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, settings: dict):
+        super().__init__(settings=settings)
         self._cache = None
 
     def connect(self):
@@ -75,7 +74,7 @@ class QbloxPulsar(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-        self.start()
+        self.start_sequencer()
 
     def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -152,8 +151,8 @@ class QbloxPulsar(AWG):
         """Append an acquire instruction to the loop."""
 
     @AWG.CheckConnected
-    def start(self):
-        """Execute the uploaded instructions."""
+    def start_sequencer(self):
+        """Start sequencer and execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 

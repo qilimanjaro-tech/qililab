@@ -23,20 +23,15 @@ class BusesExecution:
     num_sequences: int
     buses: List[BusExecution] = field(default_factory=list)
 
-    def connect(self):
-        """Connect to the instruments."""
-        for bus in self.buses:
-            bus.connect()
-
     def setup(self):
         """Setup instruments with experiment settings."""
         for bus in self.buses:
             bus.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
         for bus in self.buses:
-            bus.start()
+            bus.turn_on()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
@@ -73,11 +68,6 @@ class BusesExecution:
 
         thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
         thread.start()
-
-    def close(self):
-        """Close connection to the instruments."""
-        for bus in self.buses:
-            bus.close()
 
     def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
         """Get pulses of each bus.
@@ -116,7 +106,6 @@ class BusesExecution:
             axes[axis_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
-        # plt.savefig("test.png")
         return figure
 
     def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):

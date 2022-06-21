@@ -1,9 +1,9 @@
 """Pytest configuration fixtures."""
 import copy
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
 from qililab import build_platform, load
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -11,11 +11,12 @@ from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instruments import (
     SGS100A,
+    Attenuator,
+    Keithley2600,
     MixerBasedSystemControl,
     QbloxPulsarQCM,
     QbloxPulsarQRM,
     SimulatedSystemControl,
-    StepAttenuator,
 )
 from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
 from qililab.pulse import (
@@ -139,6 +140,22 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     return rohde_schwarz
 
 
+@pytest.fixture(name="keithley_2600")
+@patch("qililab.instruments.keithley.keithley_2600.Keithley2600Driver", autospec=True)
+def fixture_keithley_2600(mock_driver: MagicMock):
+    """Return connected instance of Keithley2600 class"""
+    # add dynamically created attributes
+    mock_instance = mock_driver.return_value
+    mock_instance.smua = Mock(KeithleyChannel)
+    # connect to instrument
+    settings = MockedSettingsFactory.get(platform_name="platform_0", filename="keithley_2600")
+    settings.pop("name")
+    keithley_2600 = Keithley2600(settings=settings)
+    keithley_2600.connect()
+    mock_driver.assert_called()
+    return keithley_2600
+
+
 @pytest.fixture(name="qubit")
 def fixture_qubit() -> Qubit:
     """Load Qubit.
@@ -174,7 +191,7 @@ def fixture_schema(platform: Platform) -> Schema:
 
 
 @pytest.fixture(name="step_attenuator")
-def fixture_step_attenuator() -> StepAttenuator:
+def fixture_step_attenuator() -> Attenuator:
     """Load Schema.
 
     Returns:
@@ -182,7 +199,7 @@ def fixture_step_attenuator() -> StepAttenuator:
     """
     settings = MockedSettingsFactory.get(platform_name="platform_0", filename="attenuator")
     settings.pop("name")
-    return StepAttenuator(settings=settings)
+    return Attenuator(settings=settings)
 
 
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
@@ -320,7 +337,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 def fixture_simulated_platform() -> Platform:
     """Return Platform object."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="flux_qubit", database=True)
+        platform = build_platform(name="flux_qubit")
         mock_load.assert_called()
     return platform
 
@@ -346,7 +363,7 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
 def platform_db() -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name=DEFAULT_PLATFORM_NAME, database=True)
+        platform = build_platform(name=DEFAULT_PLATFORM_NAME)
         mock_load.assert_called()
     return platform
 
@@ -354,7 +371,7 @@ def platform_db() -> Platform:
 def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="platform_0", database=True)
+        platform = build_platform(name="platform_0")
         mock_load.assert_called()
     return platform
 
@@ -366,7 +383,7 @@ def buses() -> Buses:
         Buses: Instance of the Buses class.
     """
     with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="platform_0", database=True)
+        platform = build_platform(name="platform_0")
         mock_load.assert_called()
     return platform.buses
 

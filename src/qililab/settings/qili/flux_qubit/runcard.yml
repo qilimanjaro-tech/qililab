@@ -13,7 +13,7 @@ settings:
     drag_coefficient: 0
 
 schema:
-  elements:
+  buses:
   - id_: 0
     category: bus
     subcategory: control

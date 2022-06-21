@@ -1,6 +1,8 @@
 """Tests for PlatformManagerYAML class."""
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from qililab import build_platform
 from qililab.platform import Platform
 
@@ -16,3 +18,5 @@ class TestPlatformManagerYAML:
         platform = build_platform(name="platform_0", database=False)
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
+        with pytest.raises(NotImplementedError):
+            build_platform(name="platform_0", database=True)

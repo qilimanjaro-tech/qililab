@@ -1,9 +1,10 @@
 """Qubit class"""
+from dataclasses import dataclass
 from typing import Union
 
 from qililab.platform.components.targets.target import Target
 from qililab.typings import BusElementName
-from qililab.utils import Factory, nested_dataclass
+from qililab.utils import Factory
 
 
 @Factory.register
@@ -12,7 +13,7 @@ class Qubit(Target):
 
     name = BusElementName.QUBIT
 
-    @nested_dataclass
+    @dataclass
     class QubitCalibrationSettings(Target.BusTargetSettings):
         """Contains the settings obtained from calibrating the qubit.
 

@@ -19,7 +19,7 @@ class Results:
     num_sequences: int
     loop: Loop | None = None
     shape: List[int] = field(default_factory=list)
-    results: List[Result | None] = field(default_factory=list)
+    results: List[Result] = field(default_factory=list)
 
     def __post_init__(self):
         """Add num_sequences to shape."""

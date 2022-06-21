@@ -35,12 +35,18 @@ class Platform:
 
     settings: PlatformSettings
     schema: Schema
-    _schema: PlatformSchema
 
     def __init__(self, platform_schema: PlatformSchema):
         self.settings = self.PlatformSettings(**platform_schema.settings)
         self.schema = Schema(**asdict(platform_schema.schema))
-        self._schema = platform_schema
+
+    def connect(self):
+        """Connect to the instruments."""
+        self.instruments.connect()
+
+    def close(self):
+        """Close connection to the instruments."""
+        self.instruments.close()
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -145,10 +151,16 @@ class Platform:
         Returns:
             int: Number of different qubits that the platform contains.
         """
-        qubit_sum = 0
-        while self.get_element(category=Category.QUBIT, id_=qubit_sum)[0] is not None:
-            qubit_sum += 1
-        return qubit_sum
+        return 1  # TODO: Compute num_qubits with Chip class.
+
+    @property
+    def instruments(self):
+        """Platform 'instruments' property.
+
+        Returns:
+            Instruments: List of all instruments.
+        """
+        return self.schema.instruments
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
