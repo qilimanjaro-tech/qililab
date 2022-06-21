@@ -5,7 +5,7 @@ from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class PlatformSchema:
+class RuncardSchema:
     """PlatformSchema class. Casts the platform dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
@@ -40,5 +40,5 @@ class PlatformSchema:
         def __post_init__(self):
             self.buses = [self.Bus(**bus) for bus in self.buses]
 
-    settings: dict
+    platform: dict
     schema: Schema

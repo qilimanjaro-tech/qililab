@@ -12,8 +12,17 @@ from qiboconnection.api import API
 from tqdm.auto import tqdm
 
 from qililab.config import logger
+from qililab.constants import (
+    DATA,
+    DATA_FOLDERNAME,
+    EXPERIMENT,
+    EXPERIMENT_FILENAME,
+    LOOP,
+    RESULTS_FILENAME,
+    YAML,
+)
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform, PlatformSchema
+from qililab.platform import Platform, RuncardSchema
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Instrument, Parameter, yaml
@@ -72,50 +81,111 @@ class Experiment:
         """Loop and execute sequence over given Platform parameters.
 
         Args:
-            plot_id (str): Plot ID.
+            plot (LivePlot): LivePlot class used for live plotting.
+            path (Path): Path where the data is stored.
 
         Returns:
             List[List[Result]]: List containing the results for each loop execution.
         """
 
-        def recursive_loop(loop: Loop | None, x_value: float = 0, depth: int = 0):
-            """Loop over all given parameters.
-
-            Args:
-                depth (int): Depth of the recursive loop.
-                x_value (float): X value.
-            """
-
-            if loop is None:
-                result = self._execute(path=path)
-                results.add(result=result)
-                plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
-                return
-
-            if loop.loop is None:
-                x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
-                if loop.previous is not None:
-                    x_label += (
-                        f"({loop.previous.instrument.value} {loop.previous.id_}:"
-                        + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
-                    )
-                plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
-
-            element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
-            leave = loop.previous is False
-            with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
-                for value in loop.range:
-                    pbar.set_description(f"{loop.parameter}: {value} ")
-                    pbar.update()
-                    element.set_parameter(parameter=loop.parameter, value=value)
-                    recursive_loop(loop=loop.loop, x_value=value, depth=depth + 1)
-            return
-
         if self.loop is None:
-            result = self._execute(plot=plot, path=path)
-            results.add(result=result)
-        else:
-            recursive_loop(loop=self.loop)
+            return results.add(self._execute(plot=plot, path=path))
+
+        return self.recursive_loop(
+            loop=self.loop,
+            results=Results(
+                software_average=self.software_average,
+                shape=self.loop.shape,
+                num_sequences=self.execution.num_sequences,
+            ),
+            path=path,
+            plot=plot,
+        )
+
+    def recursive_loop(
+        self, loop: Loop | None, results: Results, path: Path, plot: LivePlot, x_value: float = 0, depth: int = 0
+    ) -> Results:
+        """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
+
+        Args:
+            loop (Loop | None): Loop class containing the the info of a Platform element and one of its parameters and
+            the parameter values to loop over.
+            results (Results): Results class containing all the execution results.
+            path (Path): Path where the data is stored.
+            plot (LivePlot): LivePlot class used for live plotting.
+            x_value (float): X value used in live plotting. Defaults to 0.
+            depth (int): Depth of the recursive loop. Defaults to 0.
+
+        Returns:
+            Results: _description_
+        """
+        if loop is None:
+            return self._execute_and_process_results(results=results, path=path, plot=plot, x_value=x_value)
+
+        if loop.loop is None:
+            x_label = self._set_x_label(loop=loop, x_value=x_value)
+            plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
+        self._process_loop(results=results, loop=loop, depth=depth, path=path, plot=plot)
+        return results
+
+    def _execute_and_process_results(self, results: Results, path: Path, plot: LivePlot, x_value: float) -> Results:
+        """Execute pulse sequence, add results to Results class and plot the probability of being in the ground state.
+
+        Args:
+            results (Results): Results class containing all the execution results.
+            path (Path): Path where the data is stored.
+            plot (LivePlot): LivePlot class used for live plotting.
+            x_value (float): X value used in live plotting.
+
+        Returns:
+            Results: Results class containing all the execution results.
+        """
+        result = self._execute(path=path)
+        results.add(result=result)
+        # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
+        # in the ground state for the last sequence. Find a way to plot all the sequences.
+        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
+        return results
+
+    def _set_x_label(self, loop: Loop, x_value: float) -> str:
+        """Create x label for live plotting.
+
+        Args:
+            loop (Loop): Loop class.
+            x_value (float): X value used in live plotting.
+
+        Returns:
+            str: X label.
+        """
+        x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
+        if loop.previous is not None:
+            x_label += (
+                f"({loop.previous.instrument.value} {loop.previous.id_}:"
+                + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
+            )
+        return x_label
+
+    def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
+        """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
+
+        Args:
+            results (Results): Results class containing all the execution results.
+            loop (Loop): Loop class containing the the info of a Platform element and one of its parameters and the
+            parameter values to loop over.
+            depth (int): Depth of the recursive loop.
+            path (Path): Path where the data is stored.
+            plot (LivePlot): LivePlot class used for live plotting.
+        """
+        element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
+        leave = loop.previous is False
+        with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
+            for value in loop.range:
+                pbar.set_description(f"{loop.parameter}: {value} ")
+                pbar.update()
+                element.set_parameter(parameter=loop.parameter, value=value)
+                results = self.recursive_loop(
+                    loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
+                )
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
@@ -214,13 +284,12 @@ class Experiment:
             path (Path): Path to data folder.
         """
         data = {
-            "software_average": self.software_average,
-            "num_sequences": self.execution.num_sequences,
-            "shape": [] if self.loop is None else self.loop.shape,
-            "loop": self.loop.to_dict() if self.loop is not None else None,
-            "results": None,
+            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
+            EXPERIMENT.NUM_SEQUENCES: self.execution.num_sequences,
+            EXPERIMENT.SHAPE: [] if self.loop is None else self.loop.shape,
+            EXPERIMENT.RESULTS: None,
         }
-        with open(file=path / "results.yml", mode="w", encoding="utf8") as results_file:
+        with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
             yaml.dump(data=data, stream=results_file, sort_keys=False)
 
     def _dump_experiment_data(self, path: Path):
@@ -229,7 +298,7 @@ class Experiment:
         Args:
             path (Path): Path to data folder.
         """
-        with open(file=path / "experiment.yml", mode="w", encoding="utf-8") as experiment_file:
+        with open(file=path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
             yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
 
     @property
@@ -239,9 +308,9 @@ class Experiment:
         Returns:
             Path: Path to the data folder.
         """
-        folderpath = os.environ.get("DATA", None)
+        folderpath = os.environ.get(DATA, None)
         if folderpath is None:
-            folderpath = str(Path(__file__).parent.parent / "data")
+            folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
         return folderpath
 
     @property
@@ -278,11 +347,11 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
-            "platform": self.platform.to_dict(),
-            "settings": asdict(self.settings),
-            "sequences": [sequence.to_dict() for sequence in self.sequences],
-            "loop": self.loop.to_dict() if self.loop is not None else None,
-            "name": self.name,
+            YAML.PLATFORM: self.platform.to_dict(),
+            YAML.SETTINGS: asdict(self.settings),
+            EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
+            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            YAML.NAME: self.name,
         }
 
     @classmethod
@@ -292,16 +361,16 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        settings = cls.ExperimentSettings(**dictionary["settings"])
-        platform = Platform(platform_schema=PlatformSchema(**dictionary["platform"]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary["sequences"]]
-        loop = dictionary["loop"]
+        settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
+        platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+        loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
-        name = dictionary["name"]
+        experiment_name = dictionary[YAML.NAME]
         return Experiment(
             sequences=sequences,
             loop=loop,
             platform=platform,
             settings=settings,
-            name=name,
+            name=experiment_name,
         )

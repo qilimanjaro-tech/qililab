@@ -8,7 +8,7 @@ from .components.targets.resonator import Resonator
 from .platform import Platform
 from .platform_manager_db import PlatformManagerDB
 from .platform_manager_yaml import PlatformManagerYAML
-from .utils import PlatformSchema
+from .utils import RuncardSchema
 
 PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()

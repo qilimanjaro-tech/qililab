@@ -1,2 +1,2 @@
 """__init__.py"""
-from .platform_schema import PlatformSchema
+from .runcard_schema import RuncardSchema

@@ -5,7 +5,7 @@ from typing import List
 from qililab.constants import YAML
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import PlatformSchema
+from qililab.platform.utils import RuncardSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
 from qililab.utils import nested_dataclass
@@ -31,14 +31,14 @@ class Platform:
         """
 
         name: str
-        translation_settings: TranslationSettings
+        settings: TranslationSettings
 
     settings: PlatformSettings
     schema: Schema
 
-    def __init__(self, platform_schema: PlatformSchema):
-        self.settings = self.PlatformSettings(**platform_schema.settings)
-        self.schema = Schema(**asdict(platform_schema.schema))
+    def __init__(self, runcard_schema: RuncardSchema):
+        self.settings = self.PlatformSettings(**runcard_schema.platform)
+        self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
         """Connect to the instruments."""
@@ -93,8 +93,8 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
-            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
+            attr_type = type(getattr(self.settings.settings, parameter.value))
+            setattr(self.settings.settings, parameter.value, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
@@ -124,7 +124,7 @@ class Platform:
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.translation_settings
+        return self.settings.settings
 
     @property
     def category(self):
@@ -164,7 +164,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
+        platform_dict = {YAML.PLATFORM: asdict(self.settings, dict_factory=dict_factory)}
         schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 

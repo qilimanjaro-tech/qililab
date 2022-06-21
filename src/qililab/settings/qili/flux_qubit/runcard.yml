@@ -1,8 +1,8 @@
-settings:
+platform:
   id_: 1
   name: flux_qubit
   category: platform
-  translation_settings:
+  settings:
     readout_duration: 2000
     readout_amplitude: 0.4
     readout_phase: 0
@@ -28,13 +28,4 @@ schema:
       nsteps: 100000000
       store_states: false
       dimension: 10
-    target:
-      id_: 0
-      name: qubit
-      category: qubit
-      pi_pulse_amplitude: 1
-      pi_pulse_duration: 100
-      pi_pulse_frequency: 100000000.0
-      qubit_frequency: 3544000000.0
-      min_voltage: 950
-      max_voltage: 1775
+    port: 0
