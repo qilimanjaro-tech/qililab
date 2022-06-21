@@ -5,7 +5,7 @@ from typing import Dict, List
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import DEFAULT_PLATFORM_NAME, SCHEMA, YAML
+from qililab.constants import DEFAULT_PLATFORM_NAME, PLATFORM, SCHEMA, YAML
 
 
 class Platform0:
@@ -17,7 +17,7 @@ class Platform0:
         YAML.ID: 0,
         YAML.NAME: "platform_0",
         YAML.CATEGORY: "platform",
-        YAML.SETTINGS: {
+        PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
             "readout_phase": 0,
@@ -189,7 +189,7 @@ class FluxQubit:
         YAML.ID: 0,
         YAML.NAME: "flux_qubit",
         YAML.CATEGORY: "platform",
-        YAML.SETTINGS: {
+        PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
             "readout_phase": 0,

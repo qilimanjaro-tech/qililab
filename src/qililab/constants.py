@@ -31,6 +31,12 @@ class YAML:
     SCHEMA = "schema"
 
 
+class PLATFORM:
+    """Platform constants."""
+
+    TRANSLATION_SETTINGS = "translation_settings"
+
+
 class EXPERIMENT:
     """Experiment constants."""
 

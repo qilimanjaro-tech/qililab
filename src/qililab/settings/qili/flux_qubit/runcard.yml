@@ -1,8 +1,8 @@
-platform:
+settings:
   id_: 1
   name: flux_qubit
   category: platform
-  settings:
+  translation_settings:
     readout_duration: 2000
     readout_amplitude: 0.4
     readout_phase: 0

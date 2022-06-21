@@ -31,7 +31,7 @@ class Platform:
         """
 
         name: str
-        settings: TranslationSettings
+        translation_settings: TranslationSettings
 
     settings: PlatformSettings
     schema: Schema
@@ -93,8 +93,8 @@ class Platform:
             value (float): New value.
         """
         if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.settings, parameter.value))
-            setattr(self.settings.settings, parameter.value, attr_type(value))
+            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
+            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
             return
         element, _ = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
@@ -124,7 +124,7 @@ class Platform:
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.settings
+        return self.settings.translation_settings
 
     @property
     def category(self):
