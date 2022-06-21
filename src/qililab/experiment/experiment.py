@@ -283,8 +283,8 @@ class Experiment:
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
             EXPERIMENT.NUM_SEQUENCES: self.execution.num_sequences,
             EXPERIMENT.SHAPE: [] if self.loop is None else self.loop.shape,
-            EXPERIMENT.RESULTS: None,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            EXPERIMENT.RESULTS: None,
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
             yaml.dump(data=data, stream=results_file, sort_keys=False)
