@@ -57,6 +57,15 @@ class SystemControl(BusElement, ABC):
         return self.settings.category
 
     @property
+    def subcategory(self):
+        """SystemControl 'subcategory' property.
+
+        Returns:
+            str: settings.subcategory.
+        """
+        return self.settings.subcategory
+
+    @property
     @abstractmethod
     def frequency(self) -> float:
         """SystemControl 'frequency' property."""

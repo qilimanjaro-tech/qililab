@@ -40,7 +40,7 @@ class Instrument(Enum):
         * awg
         * signal_generator
         * system_control
-        * step_attenuator
+        * attenuator
     """
 
     PLATFORM = "platform"

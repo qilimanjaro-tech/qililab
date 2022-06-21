@@ -286,7 +286,7 @@ results_two_loops = {
     "num_sequences": 1,
     "shape": [75, 100],
     "loop": {
-        "instrument": "step_attenuator",
+        "instrument": "attenuator",
         "id_": 1,
         "parameter": "attenuation",
         "start": 15,
@@ -380,7 +380,7 @@ experiment = {
         "num": None,
         "step": 0.3,
         "loop": {
-            "instrument": "step_attenuator",
+            "instrument": "attenuator",
             "id_": 1,
             "parameter": "attenuation",
             "start": 15,

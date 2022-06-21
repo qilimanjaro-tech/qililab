@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.constants import YAML
+from qililab.constants import BUS, YAML
 from qililab.instruments import (
     Attenuator,
     Instruments,
@@ -145,9 +145,5 @@ class Bus:
             YAML.ID: self.id_,
             YAML.CATEGORY: self.settings.category.value,
             YAML.SUBCATEGORY: self.subcategory.value,
-            YAML.PORT: self.port,
-        } | {
-            key: {YAML.ID: value.id_, YAML.CATEGORY: value.category.value}
-            for key, value in self
-            if not isinstance(value, dict)
-        }
+            BUS.PORT: self.port,
+        } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}

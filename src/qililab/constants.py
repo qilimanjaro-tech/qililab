@@ -19,7 +19,14 @@ class YAML:
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
     SCHEMA = "schema"
+
+
+class BUS:
+    """Bus constants."""
+
     PORT = "port"
+    SYSTEM_CONTROL = "system_control"
+    ATTENUATOR = "attenuator"
 
 
 UNITS = {"frequency": "Hz"}

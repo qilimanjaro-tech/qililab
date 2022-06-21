@@ -190,8 +190,8 @@ def fixture_schema(platform: Platform) -> Schema:
     return platform.schema
 
 
-@pytest.fixture(name="step_attenuator")
-def fixture_step_attenuator() -> Attenuator:
+@pytest.fixture(name="attenuator")
+def fixture_attenuator() -> Attenuator:
     """Load Schema.
 
     Returns:
