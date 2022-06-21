@@ -71,4 +71,4 @@ class Schema:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return {"buses": self.buses.to_dict(), "instruments": self.instruments.to_dict()}
+        return {"instruments": self.instruments.to_dict(), "buses": self.buses.to_dict()}

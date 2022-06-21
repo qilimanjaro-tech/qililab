@@ -8,10 +8,11 @@ def yaml_representer(dumper: yaml.Dumper, value: int | float):
     """Int or float representer used by YAML."""
     tag = "int" if isinstance(value, int) else "float"
     text = f"{value:g}"
-    if "e" in text and "." not in text.split("e")[0]:
-        # Add a decimal point if value is integer
+    if "e" in text:
         tag = "float"
-        text = text.split("e")[0] + ".e" + "".join(text.split("e")[1:])
+        if "." not in text.split("e")[0]:
+            # Add a decimal point if value is integer
+            text = text.split("e")[0] + ".e" + "".join(text.split("e")[1:])
     if "." not in text and tag == "float":
         # Change tag to int if there is no decimal point.
         tag = "int"

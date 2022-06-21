@@ -21,7 +21,7 @@ class SettingsManager(metaclass=Singleton):
         """
         path = os.environ.get("YAML", None)
         if path is None:
-            path = str(Path(__file__).parent / foldername / platform_name / f"{filename}.yml")
+            path = str(Path(__file__).parent / foldername / platform_name / filename)
 
         with open(file=path, mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)
