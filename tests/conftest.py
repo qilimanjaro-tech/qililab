@@ -147,7 +147,7 @@ def fixture_keithley_2600(mock_driver: MagicMock):
     # add dynamically created attributes
     mock_instance = mock_driver.return_value
     mock_instance.smua = MagicMock(KeithleyChannel)
-    mock_instance.smua.mock_add_spec(["limiti", "limitv"])
+    mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
     # connect to instrument
     settings = MockedSettingsFactory.get(platform_name="platform_0", filename="keithley_2600")
     settings.pop("name")
