@@ -1,5 +1,5 @@
 """QbloxResult class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
@@ -65,12 +65,15 @@ class QbloxResult(Result):
 
     scope: ScopeData | None = None
     bins: BinData | None = None
+    shape: List[int] = field(init=False)
 
     def __post_init__(self):
         """Cast dictionaries to their corresponding class."""
         if self.scope is not None:
+            self.shape = [2, 16384]
             self.scope = self.ScopeData(**self.scope)
         if self.bins is not None:
+            self.shape = [4]
             self.bins = self.BinData(**self.bins)
 
     def acquisitions(self) -> Tuple[float, float, float, float] | Tuple[List[float], List[float]]:
