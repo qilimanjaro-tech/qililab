@@ -1,15 +1,17 @@
 """Load method used to load experiment and results data."""
+import glob
 import os
 from pathlib import Path
 from typing import Tuple
 
 import yaml
 
+from qililab.constants import DATA, DATA_FOLDERNAME
 from qililab.experiment import Experiment
 from qililab.result import Results
 
 
-def load(path: str) -> Tuple[Experiment | None, Results | None]:
+def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     """Load Experiment and Results from yaml data.
 
     Args:
@@ -18,6 +20,12 @@ def load(path: str) -> Tuple[Experiment | None, Results | None]:
     Returns:
         Tuple(Experiment | None, Results | None): Return Experiment and Results objects, or None.
     """
+    if path is None:
+        folderpath = os.environ.get(DATA, None)
+        if folderpath is None:
+            folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
+        files_list = glob.glob(os.path.join(folderpath, "*"))
+        path = max(files_list, key=os.path.getctime)
     experiment = None
     results = None
     if os.path.exists(Path(path) / "experiment.yml"):
