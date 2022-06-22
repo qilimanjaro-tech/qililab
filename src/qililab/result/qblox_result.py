@@ -40,7 +40,7 @@ class QbloxResult(Result):
         threshold: list
         avg_cnt: list
 
-    @nested_dataclass
+    @dataclass
     class ScopeData:
         """Scope data."""
 
@@ -50,9 +50,18 @@ class QbloxResult(Result):
 
             data: List[float]
             avg_cnt: int
+            out_of_range: bool
 
         path0: PathData
         path1: PathData
+
+        def __post_init__(self):
+            """Change invalid name and cast to PathData class."""
+            if isinstance(self.path0, dict) and isinstance(self.path1, dict):
+                self.path0["out_of_range"] = self.path0.pop("out-of-range")
+                self.path0 = self.PathData(**self.path0)
+                self.path1["out_of_range"] = self.path1.pop("out-of-range")
+                self.path1 = self.PathData(**self.path1)
 
     scope: ScopeData | None = None
     bins: BinData | None = None
