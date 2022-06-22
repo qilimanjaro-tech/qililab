@@ -74,7 +74,7 @@ class TestExperiment:
     @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
     def test_draw_method_with_one_bus(self, mock_load: MagicMock):
         """Test draw method with only one measurement gate."""
-        platform = build_platform(name="platform_0")
+        platform = build_platform(name="galadriel")
         mock_load.assert_called()
         circuit = Circuit(1)
         circuit.add(M(0))

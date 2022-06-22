@@ -8,14 +8,14 @@ from qibo.gates import RX, RY, U2, I, M, X, Y
 from qililab.constants import DEFAULT_PLATFORM_NAME, PLATFORM, SCHEMA, YAML
 
 
-class Platform0:
-    """Test data of the platform_0 platform."""
+class Galadriel:
+    """Test data of the galadriel platform."""
 
-    name = "platform_0"
+    name = "galadriel"
 
     platform = {
         YAML.ID: 0,
-        YAML.NAME: "platform_0",
+        YAML.NAME: "galadriel",
         YAML.CATEGORY: "platform",
         PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
@@ -317,7 +317,7 @@ results_one_loops = {
 }
 
 experiment = {
-    "platform": Platform0.runcard,
+    "platform": Galadriel.runcard,
     "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
     "sequences": [
         {
@@ -372,7 +372,7 @@ experiment = {
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, type] = {"platform_0": Platform0, "flux_qubit": FluxQubit}
+    handlers: Dict[str, type] = {"galadriel": Galadriel, "flux_qubit": FluxQubit}
 
     @classmethod
     def register(cls, handler_cls: type):

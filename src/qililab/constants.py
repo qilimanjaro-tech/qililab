@@ -11,7 +11,7 @@ DATA_FOLDERNAME = "data"
 DEFAULT_PLATFORM_FILENAME = "platform.yml"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_RUNCARD_FILENAME = "runcard.yml"
-DEFAULT_PLATFORM_NAME = "platform_0"
+DEFAULT_PLATFORM_NAME = "galadriel"
 
 
 # TODO: Distribute constants over different classes

@@ -61,10 +61,10 @@ class BusesExecution:
 
         def _threaded_function(result: Result, path: Path, plot: LivePlot | None, x_value: float):
             """Asynchronous thread."""
-            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
             if plot is not None:
                 plot.send_points(x_value=x_value, y_value=result.probabilities()[0])
+            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
+                yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
         thread.start()

@@ -15,8 +15,8 @@ class TestPlatformManagerYAML:
 
     def test_build_method(self, mock_load: MagicMock):
         """Test build method."""
-        platform = build_platform(name="platform_0", database=False)
+        platform = build_platform(name="galadriel", database=False)
         assert isinstance(platform, Platform)
         mock_load.assert_called_once()
         with pytest.raises(NotImplementedError):
-            build_platform(name="platform_0", database=True)
+            build_platform(name="galadriel", database=True)

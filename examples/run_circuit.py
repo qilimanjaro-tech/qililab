@@ -11,7 +11,7 @@ from qililab.experiment import Experiment
 
 
 def run_circuit(connection: API):
-    """Load the platform 'platform_0' from the DB."""
+    """Load the platform 'galadriel' from the DB."""
     platform = build_platform(name=DEFAULT_PLATFORM_NAME)
     circuits = []
     for rotation in np.linspace(0, 3 * np.pi):
