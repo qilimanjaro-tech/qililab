@@ -35,7 +35,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
         Args:
             acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
-            scope_acquisition_averaging (bool): Enable/disable hardware averaging of the data.
+            hardware_averaging (bool): Enable/disable hardware averaging of the data.
             integration_length (int): Duration (in ns) of the integration.
             integration_mode (str): Integration mode. Options are 'ssb'.
             sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
@@ -46,8 +46,9 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
 
         acquire_trigger_mode: AcquireTriggerMode
-        scope_acquisition_averaging: bool
+        hardware_averaging: bool
         sampling_rate: int
+        integration: bool  # integration flag
         integration_length: int
         integration_mode: IntegrationMode
         sequence_timeout: int  # minutes
@@ -93,10 +94,11 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
         self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name.value)
+        data = "bins" if self.integration else "scope"
         result = self.device.get_acquisitions(sequencer=self.sequencer)[self.acquisition_name.value]["acquisition"][
-            "bins"
+            data
         ]
-        return QbloxResult(**result)
+        return QbloxResult(**{data: result})  # pylint: disable=unexpected-keyword-arg
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
@@ -105,15 +107,16 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
     def _set_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.scope_acquisition_averaging)
-        self.device.scope_acq_avg_mode_en_path1(self.scope_acquisition_averaging)
+        self.device.scope_acq_avg_mode_en_path0(self.hardware_averaging)
+        self.device.scope_acq_avg_mode_en_path1(self.hardware_averaging)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
         self.device.scope_acq_sequencer_select(self.sequencer)
         self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
         self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
-        getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
+        if self.integration:
+            getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
 
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
@@ -142,13 +145,13 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         return self.settings.acquire_trigger_mode
 
     @property
-    def scope_acquisition_averaging(self):
-        """QbloxPulsarQRM 'scope_acquisition_averaging' property.
+    def hardware_averaging(self):
+        """QbloxPulsarQRM 'hardware_averaging' property.
 
         Returns:
-            bool: settings.scope_acquisition_averaging.
+            bool: settings.hardware_averaging.
         """
-        return self.settings.scope_acquisition_averaging
+        return self.settings.hardware_averaging
 
     @property
     def sampling_rate(self):
@@ -212,3 +215,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             int: Final wait time.
         """
         return self.acquisition_delay_time
+
+    @property
+    def integration(self) -> bool:
+        """QbloxPulsarQRM 'integration' property.
+
+        Returns:
+            bool: Integration flag.
+        """
+        return self.settings.integration

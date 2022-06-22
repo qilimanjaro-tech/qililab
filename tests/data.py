@@ -57,8 +57,9 @@ class Galadriel:
         "sync_enabled": True,
         "gain": 0.5,
         "acquire_trigger_mode": "sequencer",
-        "scope_acquisition_averaging": False,
+        "hardware_averaging": False,
         "sampling_rate": 1000000000,
+        "integration": True,
         "integration_length": 2000,
         "integration_mode": "ssb",
         "sequence_timeout": 1,
@@ -273,15 +274,19 @@ results_two_loops = {
     "results": [
         {
             "name": "qblox",
-            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-            "threshold": [0.48046875],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                "threshold": [0.48046875],
+                "avg_cnt": [1024],
+            },
         },
         {
             "name": "qblox",
-            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-            "threshold": [0.4599609375],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                "threshold": [0.4599609375],
+                "avg_cnt": [1024],
+            },
         },
     ],
 }
@@ -303,15 +308,19 @@ results_one_loops = {
     "results": [
         {
             "name": "qblox",
-            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-            "threshold": [0.48046875],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                "threshold": [0.48046875],
+                "avg_cnt": [1024],
+            },
         },
         {
             "name": "qblox",
-            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-            "threshold": [0.4599609375],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                "threshold": [0.4599609375],
+                "avg_cnt": [1024],
+            },
         },
     ],
 }
