@@ -83,8 +83,8 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum current allowed in voltage mode.
         """
+        self.device.smua.limiti(value)
         self.settings.max_current = value
-        self.setup()
 
     @property
     def max_voltage(self):
@@ -102,5 +102,5 @@ class Keithley2600(Instrument):
         Args:
             float: Maximum voltage allowed in current mode.
         """
+        self.device.smua.limitv(value)
         self.settings.max_voltage = value
-        self.setup()
