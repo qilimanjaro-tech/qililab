@@ -1,11 +1,11 @@
 """Keithley2600 instrument."""
+from dataclasses import dataclass
 from typing import Tuple
 
 import numpy as np
 
 from qililab.instruments.instrument import Instrument
 from qililab.typings import InstrumentName, Keithley2600Driver
-from qililab.utils import nested_dataclass
 
 
 class Keithley2600(Instrument):
@@ -13,7 +13,7 @@ class Keithley2600(Instrument):
 
     name = InstrumentName.KEITHLEY2600
 
-    @nested_dataclass
+    @dataclass
     class Keithley2600Settings(Instrument.InstrumentSettings):
         """Settings for Keithley2600 instrument."""
 
