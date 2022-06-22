@@ -76,7 +76,7 @@ class QbloxResult(Result):
             self.shape = [4]
             self.bins = self.BinData(**self.bins)
 
-    def acquisitions(self) -> Tuple[float, float, float, float] | np.ndarray:
+    def acquisitions(self) -> Tuple[float, float, float, float] | Tuple[List[float], List[float]]:
         """Return acquisition values.
 
         Args:
@@ -96,7 +96,7 @@ class QbloxResult(Result):
                 np.arctan2(q_data, i_data),
             )
         if self.scope is not None:
-            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
+            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose().tolist()
 
         raise ValueError("There is no data stored.")
 
