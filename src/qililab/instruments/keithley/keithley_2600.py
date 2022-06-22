@@ -46,6 +46,7 @@ class Keithley2600(Instrument):
             name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR", visalib="@py"
         )
 
+    @Instrument.CheckConnected
     def reset(self):
         """Reset instrument."""
         self.device.reset()
