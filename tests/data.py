@@ -64,7 +64,7 @@ class Platform0:
         "sequence_timeout": 1,
         "acquisition_timeout": 1,
         "acquisition_name": "single",
-        "delay_time": 100,
+        "acquisition_delay_time": 100,
         "frequency": 20000000,
         "epsilon": 0,
         "delta": 0,

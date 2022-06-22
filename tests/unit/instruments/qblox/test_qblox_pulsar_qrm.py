@@ -152,8 +152,8 @@ class TestQbloxPulsarQRM:
         assert qrm.acquisition_name == qrm.settings.acquisition_name
 
     def tests_delay_time_property(self, qrm: QbloxPulsarQRM):
-        """Test delay_time property."""
-        assert qrm.delay_time == qrm.settings.delay_time
+        """Test acquisition_delay_time property."""
+        assert qrm.acquisition_delay_time == qrm.settings.acquisition_delay_time
 
     def tests_firmware_property(self, qrm: QbloxPulsarQRM):
         """Test firmware property."""

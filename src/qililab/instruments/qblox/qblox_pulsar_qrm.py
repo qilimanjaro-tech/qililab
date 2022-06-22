@@ -211,4 +211,4 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Returns:
             int: Final wait time.
         """
-        return self.delay_time
+        return self.acquisition_delay_time
