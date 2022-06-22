@@ -25,6 +25,8 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
         if folderpath is None:
             folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
         files_list = glob.glob(os.path.join(folderpath, "*"))
+        if not files_list:
+            return None, None
         path = max(files_list, key=os.path.getctime)
     experiment = None
     results = None
