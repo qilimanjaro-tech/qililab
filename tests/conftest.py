@@ -1,11 +1,11 @@
 """Pytest configuration fixtures."""
 import copy
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
-from qililab import build_platform, load
+from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
@@ -146,7 +146,8 @@ def fixture_keithley_2600(mock_driver: MagicMock):
     """Return connected instance of Keithley2600 class"""
     # add dynamically created attributes
     mock_instance = mock_driver.return_value
-    mock_instance.smua = Mock(KeithleyChannel)
+    mock_instance.smua = MagicMock(KeithleyChannel)
+    mock_instance.smua.mock_add_spec(["limiti", "limitv"])
     # connect to instrument
     settings = MockedSettingsFactory.get(platform_name="platform_0", filename="keithley_2600")
     settings.pop("name")

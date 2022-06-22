@@ -107,6 +107,8 @@ class Platform0:
         YAML.CATEGORY: "dc_source",
         "ip": "192.168.1.112",
         "firmware": None,
+        "max_current": 0.1,
+        "max_voltage": 20.0,
     }
 
     instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator]
