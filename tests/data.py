@@ -1,6 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
-from typing import Dict, List
+from typing import Dict, List, Type
 
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
@@ -372,10 +372,10 @@ experiment = {
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, type] = {"galadriel": Galadriel, "flux_qubit": FluxQubit}
+    handlers: Dict[str, Type[Galadriel] | Type[FluxQubit]] = {"galadriel": Galadriel, "flux_qubit": FluxQubit}
 
     @classmethod
-    def register(cls, handler_cls: type):
+    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubit]):
         """Register handler in the factory.
 
         Args:
@@ -385,7 +385,7 @@ class MockedSettingsFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, platform_name: str, filename: str):
+    def get(cls, platform_name: str):
         """Return class attribute."""
         platform = cls.handlers[platform_name]
-        return copy.deepcopy(getattr(platform, filename))
+        return copy.deepcopy(platform.runcard)

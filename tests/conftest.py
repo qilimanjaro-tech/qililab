@@ -33,7 +33,7 @@ from qililab.pulse import (
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import MockedSettingsFactory, circuit, experiment_params
+from .data import Galadriel, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
 
 
@@ -74,7 +74,7 @@ def fixture_qcm(mock_pulsar: MagicMock):
         ]
     )
     # connect to instrument
-    settings = MockedSettingsFactory.get(platform_name="galadriel", filename="qblox_qcm_0")
+    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
     settings.pop("name")
     qcm = QbloxPulsarQCM(settings=settings)
     qcm.connect()
@@ -118,7 +118,7 @@ def fixture_qrm(mock_pulsar: MagicMock):
         ]
     )
     # connect to instrument
-    settings = MockedSettingsFactory.get(platform_name="galadriel", filename="qblox_qrm_0")
+    settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     settings.pop("name")
     qrm = QbloxPulsarQRM(settings=settings)
     qrm.connect()
@@ -133,7 +133,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
     # connect to instrument
-    settings = MockedSettingsFactory.get(platform_name="galadriel", filename="rohde_schwarz_0")
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
     settings.pop("name")
     rohde_schwarz = SGS100A(settings=settings)
     rohde_schwarz.connect()
@@ -149,7 +149,7 @@ def fixture_keithley_2600(mock_driver: MagicMock):
     mock_instance.smua = MagicMock(KeithleyChannel)
     mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
     # connect to instrument
-    settings = MockedSettingsFactory.get(platform_name="galadriel", filename="keithley_2600")
+    settings = copy.deepcopy(Galadriel.keithley_2600)
     settings.pop("name")
     keithley_2600 = Keithley2600(settings=settings)
     keithley_2600.connect()
@@ -164,7 +164,8 @@ def fixture_qubit() -> Qubit:
     Returns:
         Qubit: Instance of the Qubit class.
     """
-    qubit_settings = MockedSettingsFactory.get(platform_name="galadriel", filename="resonator_0")["qubits"][0]
+    qubit_settings = copy.deepcopy(Galadriel.qubit_0)
+    qubit_settings.pop("name")
 
     return Qubit(settings=qubit_settings)
 
@@ -176,7 +177,7 @@ def fixture_resonator() -> Resonator:
     Returns:
         Resonator: Instance of the Resonator class.
     """
-    resonator_settings = MockedSettingsFactory.get(platform_name="galadriel", filename="resonator_0")
+    resonator_settings = copy.deepcopy(Galadriel.resonator_0)
     resonator_settings.pop("name")
     return Resonator(settings=resonator_settings)
 
@@ -198,7 +199,7 @@ def fixture_attenuator() -> Attenuator:
     Returns:
         Schema: Instance of the Schema class.
     """
-    settings = MockedSettingsFactory.get(platform_name="galadriel", filename="attenuator")
+    settings = copy.deepcopy(Galadriel.attenuator)
     settings.pop("name")
     return Attenuator(settings=settings)
 

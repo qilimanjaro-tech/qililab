@@ -2,11 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab.constants import (
-    DEFAULT_PLATFORM_FILENAME,
-    DEFAULT_PLATFORM_NAME,
-    DEFAULT_SETTINGS_FOLDERNAME,
-)
+from qililab.constants import DEFAULT_PLATFORM_NAME, DEFAULT_SETTINGS_FOLDERNAME
 from qililab.platform import Platform
 from qililab.settings import SETTINGS_MANAGER, SettingsManager
 
@@ -30,14 +26,11 @@ class TestSettingsManager:
         settings = SETTINGS_MANAGER.load(
             foldername=DEFAULT_SETTINGS_FOLDERNAME,
             platform_name=DEFAULT_PLATFORM_NAME,
-            filename=DEFAULT_PLATFORM_FILENAME,
         )
         Platform.PlatformSettings(**settings)
 
     def test_load_unknown_file(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with an unknown file."""
         with pytest.raises(FileNotFoundError):
-            SETTINGS_MANAGER.load(
-                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=DEFAULT_PLATFORM_NAME, filename="unknown_file"
-            )
+            SETTINGS_MANAGER.load(foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name="unknown_platform")
         mock_load.assert_not_called()
