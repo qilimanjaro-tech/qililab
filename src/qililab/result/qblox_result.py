@@ -70,13 +70,13 @@ class QbloxResult(Result):
     def __post_init__(self):
         """Cast dictionaries to their corresponding class."""
         if self.scope is not None:
-            self.shape = [2, 16384]
+            self.shape = [16384, 2]
             self.scope = self.ScopeData(**self.scope)
         if self.bins is not None:
             self.shape = [4]
             self.bins = self.BinData(**self.bins)
 
-    def acquisitions(self) -> Tuple[float, float, float, float] | Tuple[List[float], List[float]]:
+    def acquisitions(self) -> Tuple[float, float, float, float] | np.ndarray:
         """Return acquisition values.
 
         Args:
@@ -96,7 +96,7 @@ class QbloxResult(Result):
                 np.arctan2(q_data, i_data),
             )
         if self.scope is not None:
-            return self.scope.path0.data, self.scope.path1.data
+            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
 
         raise ValueError("There is no data stored.")
 
