@@ -107,7 +107,10 @@ class QbloxResult(Result):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         # TODO:: Measure real probabilities from calibrated max and min amplitude values.
-        return self.acquisitions()[2], self.acquisitions()[2]
+        if self.bins is not None:
+            return self.acquisitions()[2], self.acquisitions()[2]
+        if self.scope is not None:  # TODO: Integrate data when scope is not None.
+            return self.acquisitions()[0][-1], self.acquisitions()[-1]
 
     def plot(self):
         """Plot data."""
