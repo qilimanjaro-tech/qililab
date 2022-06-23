@@ -108,10 +108,12 @@ class QbloxPulsar(AWG):
         program = Program()
         bin_loop = Loop(name="binning", iterations=self.num_bins)
         avg_loop = Loop(name="average", iterations=nshots)
-        bin_loop.append_component(component=avg_loop)
         stop = Block(name="stop")
         program.append_block(block=bin_loop)
         program.append_block(block=stop)
+        # FIXME: Qpysequence: Reallocate registers of inner loops
+        program._reallocate_registers(block=avg_loop)  # pylint: disable=protected-access
+        bin_loop.append_block(block=avg_loop, bot_position=1)
         # Fill blocks with instructions
         stop.append_component(Stop())
         if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
@@ -130,7 +132,9 @@ class QbloxPulsar(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
-        avg_loop.append_component(long_wait(wait_time=repetition_duration - avg_loop.duration_iter))
+        long_wait_block = long_wait(wait_time=repetition_duration - avg_loop.duration_iter)
+        program._reallocate_registers(block=long_wait_block)  # pylint: disable=protected-access
+        avg_loop.append_component(long_wait_block)
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
