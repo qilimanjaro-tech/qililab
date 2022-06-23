@@ -98,14 +98,11 @@ class QbloxResult(Result):
             i_data = np.array(self.bins.integration.path0)
             q_data = np.array(self.bins.integration.path1)
 
-            return np.array(
-                [
-                    i_data,
-                    q_data,
-                    np.sqrt(i_data**2 + q_data**2),
-                    np.arctan2(q_data, i_data),
-                ]
-            ).transpose()
+            return (
+                np.array([i_data, q_data, np.sqrt(i_data**2 + q_data**2), np.arctan2(q_data, i_data)])
+                .transpose()
+                .squeeze()
+            )
         if self.scope is not None:
             return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
 
