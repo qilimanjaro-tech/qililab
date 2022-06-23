@@ -104,18 +104,15 @@ class QbloxPulsar(AWG):
         Returns:
             Program: Q1ASM program.
         """
-        # Define block structure of the program first (to get all the registers)
+        # Define program's blocks
         program = Program()
-        bin_loop = Loop(name="binning", iterations=self.num_bins)
+        bin_loop = Loop(name="binning", iterations=int(self.num_bins))
         avg_loop = Loop(name="average", iterations=nshots)
+        bin_loop.append_block(block=avg_loop, bot_position=1)
         stop = Block(name="stop")
+        stop.append_component(Stop())
         program.append_block(block=bin_loop)
         program.append_block(block=stop)
-        # FIXME: Qpysequence: Reallocate registers of inner loops
-        program._reallocate_registers(block=avg_loop)  # pylint: disable=protected-access
-        bin_loop.append_block(block=avg_loop, bot_position=1)
-        # Fill blocks with instructions
-        stop.append_component(Stop())
         if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
             avg_loop.append_component(Wait(wait_time=pulses[0].start))
 
@@ -131,10 +128,10 @@ class QbloxPulsar(AWG):
                     wait_time=wait_time,
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
-        long_wait_block = long_wait(wait_time=repetition_duration - avg_loop.duration_iter)
-        program._reallocate_registers(block=long_wait_block)  # pylint: disable=protected-access
-        avg_loop.append_component(long_wait_block)
+        self._append_acquire_instruction(loop=avg_loop, register="TR10")
+        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+        avg_loop.replace_register(old="TR10", new=bin_loop.counter_register)
+        avg_loop.replace_register(old="TR0", new="R2")  # FIXME: Qpysequence: Automatic reallocation doesn't work
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
@@ -149,7 +146,7 @@ class QbloxPulsar(AWG):
         """
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="hw_shots", num_bins=self.num_bins, index=1)  # binned acquisition
+        acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
         return acquisitions
 
     def _generate_weights(self) -> dict:

@@ -74,7 +74,7 @@ class Results:
             results.append(
                 result.acquisitions() if result is not None else np.full(shape=result_shape, fill_value=np.nan)
             )
-        array = np.reshape(a=results, newshape=self.shape + result_shape)
+        array = np.reshape(a=np.array(results), newshape=self.shape + result_shape)
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
             flipped_array = np.mean(a=flipped_array, axis=-1)

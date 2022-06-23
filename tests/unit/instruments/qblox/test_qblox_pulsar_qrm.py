@@ -88,7 +88,6 @@ class TestQbloxPulsarQRM:
         # Assert device calls
         qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
         qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
-        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name.value)
         qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
 
     def test_close_method(self, qrm: QbloxPulsarQRM):
@@ -149,7 +148,7 @@ class TestQbloxPulsarQRM:
 
     def test_acquisition_name_property(self, qrm: QbloxPulsarQRM):
         """Test acquisition_name property."""
-        assert qrm.acquisition_name == qrm.settings.acquisition_name
+        assert isinstance(qrm.acquisition_name, str)
 
     def tests_delay_time_property(self, qrm: QbloxPulsarQRM):
         """Test acquisition_delay_time property."""

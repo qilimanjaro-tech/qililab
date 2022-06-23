@@ -206,6 +206,7 @@ class Parameter(Enum):
     REPETITION_DURATION = "repetition_duration"
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
+    NUM_BINS = "num_bins"
 
 
 class ResultName(Enum):

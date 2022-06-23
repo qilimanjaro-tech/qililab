@@ -36,9 +36,21 @@ class QbloxResult(Result):
             path0: List[float]
             path1: List[float]
 
+            def __post_init__(self):
+                """Remove nan values."""  # FIXME: Since we cannot do ascending loops in Qpysequence, we need to
+                # use always a number of bins = num_loops + 1. Thus the first bin is always a nan.
+                self.path0 = [value for value in self.path0 if not np.isnan(value)]
+                self.path1 = [value for value in self.path1 if not np.isnan(value)]
+
         integration: QbloxIntegrationData
         threshold: list
         avg_cnt: list
+
+        def __post_init__(self):
+            """Remove nan values."""  # FIXME: Since we cannot do ascending loops in Qpysequence, we need to
+            # use always a number of bins = num_loops + 1. Thus the first bin is always a nan.
+            self.threshold = [value for value in self.threshold if not np.isnan(value)]
+            self.avg_cnt = [value for value in self.avg_cnt if not np.isnan(value)]
 
     @dataclass
     class ScopeData:
@@ -65,18 +77,15 @@ class QbloxResult(Result):
 
     scope: ScopeData | None = None
     bins: BinData | None = None
-    shape: List[int] = field(init=False)
 
     def __post_init__(self):
         """Cast dictionaries to their corresponding class."""
         if self.scope is not None:
-            self.shape = [16384, 2]
             self.scope = self.ScopeData(**self.scope)
         if self.bins is not None:
-            self.shape = [4]
             self.bins = self.BinData(**self.bins)
 
-    def acquisitions(self) -> Tuple[float, float, float, float] | Tuple[List[float], List[float]]:
+    def acquisitions(self) -> np.ndarray:
         """Return acquisition values.
 
         Args:
@@ -86,17 +95,19 @@ class QbloxResult(Result):
             Tuple[float]: I, Q, amplitude and phase.
         """
         if self.bins is not None:
-            i_data = self.bins.integration.path0[0]
-            q_data = self.bins.integration.path1[0]
+            i_data = np.array(self.bins.integration.path0)
+            q_data = np.array(self.bins.integration.path1)
 
-            return (
-                i_data,
-                q_data,
-                np.sqrt(i_data**2 + q_data**2),
-                np.arctan2(q_data, i_data),
-            )
+            return np.array(
+                [
+                    i_data,
+                    q_data,
+                    np.sqrt(i_data**2 + q_data**2),
+                    np.arctan2(q_data, i_data),
+                ]
+            ).transpose()
         if self.scope is not None:
-            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose().tolist()
+            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
 
         raise ValueError("There is no data stored.")
 
@@ -108,10 +119,22 @@ class QbloxResult(Result):
         """
         # TODO:: Measure real probabilities from calibrated max and min amplitude values.
         if self.bins is not None:
-            return self.acquisitions()[2], self.acquisitions()[2]
+            return (
+                self.acquisitions()[-1][2],
+                self.acquisitions()[-1][2],
+            )  # FIXME: Here we use -1 to get the last bin. Do we really want this?
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
             return self.acquisitions()[0][-1], self.acquisitions()[-1]
 
     def plot(self):
         """Plot data."""
         raise NotImplementedError
+
+    @property
+    def shape(self) -> List[int]:
+        """QbloxResult 'shape' property.
+
+        Returns:
+            List[int]: Shape of the acquisitions.
+        """
+        return list(self.acquisitions().shape)

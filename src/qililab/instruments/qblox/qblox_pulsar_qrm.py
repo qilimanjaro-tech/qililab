@@ -53,7 +53,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         integration_mode: IntegrationMode
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
-        acquisition_name: AcquisitionName
 
     settings: QbloxPulsarQRMSettings
 
@@ -68,7 +67,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
         if (pulse_sequence, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            self.device._delete_acquisition(sequencer=self.sequencer, name=self.acquisition_name.value)
+            self.device._delete_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
             acquisition = self._generate_acquisitions()
             self.device._add_acquisitions(sequencer=self.sequencer, acquisitions=acquisition.to_dict())
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
@@ -92,12 +91,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
         self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
-        self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name.value)
-        data = "bins" if self.integration else "scope"
-        result = self.device.get_acquisitions(sequencer=self.sequencer)[self.acquisition_name.value]["acquisition"][
-            data
+        if not self.integration:
+            self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
+        result = self.device.get_acquisitions(sequencer=self.sequencer)[self.acquisition_name]["acquisition"][
+            self.data_name
         ]
-        return QbloxResult(**{data: result})  # pylint: disable=unexpected-keyword-arg
+        return QbloxResult(**{self.data_name: result})  # pylint: disable=unexpected-keyword-arg
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
@@ -120,7 +119,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
         acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=4), bot_position=1)
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=4))
 
     @property
     def acquire_trigger_mode(self):
@@ -186,15 +185,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         return self.settings.acquisition_timeout
 
     @property
-    def acquisition_name(self):
-        """QbloxPulsarQRM 'acquisition_name' property.
-
-        Returns:
-            str: settings.acquisition_name.
-        """
-        return self.settings.acquisition_name
-
-    @property
     def final_wait_time(self) -> int:
         """QbloxPulsarQRM 'final_wait_time' property.
 
@@ -211,3 +201,21 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             bool: Integration flag.
         """
         return self.settings.integration
+
+    @property
+    def data_name(self) -> str:
+        """QbloxPulsarQRM 'data_name' property:
+
+        Returns:
+            str: Name of the data. Options are "bins" or "scope".
+        """
+        return "bins" if self.integration else "scope"
+
+    @property
+    def acquisition_name(self) -> str:
+        """QbloxPulsarQRM 'acquisition_name' property:
+
+        Returns:
+            str: Name of the acquisition. Options are "single" or "binning".
+        """
+        return "single" if self.hardware_averaging else "binning"
