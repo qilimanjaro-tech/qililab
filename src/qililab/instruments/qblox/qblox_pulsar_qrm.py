@@ -56,7 +56,6 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         acquisition_name: AcquisitionName
 
     settings: QbloxPulsarQRMSettings
-    acquisition_idx: int
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence. Return acquisition results.
@@ -118,22 +117,10 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         if self.integration:
             getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
 
-    def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-        and index = 0.
-
-        Returns:
-            Acquisitions: Acquisitions object.
-        """
-        acquisitions = super()._generate_acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="large", num_bins=self.MAX_BINS, index=1)
-        self.acquisition_idx = acquisitions.find_by_name(name=self.acquisition_name.value).index
-        return acquisitions
-
-    def _append_acquire_instruction(self, loop: Loop):
+    def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
-        loop.append_component(Acquire(acq_index=self.acquisition_idx, bin_index=0, wait_time=4))
+        acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=4), bot_position=1)
 
     @property
     def acquire_trigger_mode(self):

@@ -46,6 +46,7 @@ class QbloxPulsar(AWG):
         sequencer: int
         sync_enabled: bool
         gain: float
+        num_bins: int
 
     settings: QbloxPulsarSettings
     device: Pulsar
@@ -103,41 +104,49 @@ class QbloxPulsar(AWG):
         Returns:
             Program: Q1ASM program.
         """
+        # Define block structure of the program first (to get all the registers)
         program = Program()
-        loop = Loop(name="loop", iterations=nshots)
+        bin_loop = Loop(name="binning", iterations=self.num_bins)
+        avg_loop = Loop(name="average", iterations=nshots)
+        bin_loop.append_component(component=avg_loop)
         stop = Block(name="stop")
+        program.append_block(block=bin_loop)
+        program.append_block(block=stop)
+        # Fill blocks with instructions
         stop.append_component(Stop())
-        # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-        if pulses[0].start != 0:
-            loop.append_component(Wait(wait_time=pulses[0].start))
+        if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=pulses[0].start))
 
         for i, pulse in enumerate(pulses):
             waveform_pair = waveforms.find_pair_by_name(str(pulse))
             wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
-            loop.append_component(set_phase_rad(rads=pulse.phase))
-            loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
-            loop.append_component(
+            avg_loop.append_component(set_phase_rad(rads=pulse.phase))
+            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
+            avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
                     wait_time=wait_time,
                 )
             )
-
-        self._append_acquire_instruction(loop=loop)
-
-        loop.append_component(long_wait(wait_time=repetition_duration - loop.duration_iter))
-        program.append_block(block=loop)
-        program.append_block(block=stop)
+        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
+        avg_loop.append_component(long_wait(wait_time=repetition_duration - avg_loop.duration_iter))
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object.
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
+
+        Args:
+            nshots (int): Number of hardware shots.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
-        return Acquisitions()
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="hw_shots", num_bins=self.num_bins, index=1)  # binned acquisition
+        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -147,7 +156,7 @@ class QbloxPulsar(AWG):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop):
+    def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
 
     @AWG.CheckConnected
@@ -344,3 +353,12 @@ class QbloxPulsar(AWG):
             int: Final wait time.
         """
         return 4
+
+    @property
+    def num_bins(self) -> int:
+        """QbloxPulsar 'num_bins' property.
+
+        Returns:
+            int: Number of bins used.
+        """
+        return self.settings.num_bins

@@ -24,6 +24,7 @@ schema:
       sync_enabled: true
       gain: 1
       frequency: 100000000
+      num_bins: 1
       epsilon: 0
       delta: 0
       offset_i: 0
@@ -45,7 +46,8 @@ schema:
       integration_mode: ssb
       sequence_timeout: 1
       acquisition_timeout: 1
-      acquisition_name: "single"
+      num_bins: 1
+      acquisition_name: single  # not used
       acquisition_delay_time: 100
       frequency: 20000000
       epsilon: 0
