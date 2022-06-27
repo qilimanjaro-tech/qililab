@@ -116,10 +116,10 @@ class QbloxResult(Result):
         """
         # TODO:: Measure real probabilities from calibrated max and min amplitude values.
         if self.bins is not None:
-            return (
-                self.acquisitions()[-1][2],
-                self.acquisitions()[-1][2],
-            )  # FIXME: Here we use -1 to get the last bin. Do we really want this?
+            acq = self.acquisitions()
+            if acq.ndim > 1:
+                acq = acq[-1]  # FIXME: Here we use -1 to get the last bin. Do we really want this?
+            return (acq[2], acq[2])
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
             return self.acquisitions()[0][-1], self.acquisitions()[-1]
 
