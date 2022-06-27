@@ -17,7 +17,7 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
-    qubit_ids: List[int]
+    qubit_ids: List[int]  # TODO: A Pulse should not know about qubit ids.
     pulse_shape: PulseShape
     start_time: Optional[int] = None
 
