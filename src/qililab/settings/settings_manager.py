@@ -22,7 +22,7 @@ class SettingsManager(metaclass=Singleton):
         """
         runcards_path = os.environ.get(RUNCARDS, None)
         if runcards_path is None:
-            runcards_path = str(Path(__file__).parent / foldername)
+            raise ValueError("Environment variable RUNCARDS is not set.")
 
         with open(file=f"{runcards_path}/{platform_name}.yml", mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)
