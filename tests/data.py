@@ -236,7 +236,7 @@ class FluxQubit:
 
 
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
-for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
+for platform in (Galadriel, FluxQubit):
     circuit = Circuit(1)
     circuit.add(I(0))
     circuit.add(X(0))
@@ -244,9 +244,9 @@ for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
     circuit.add(RX(0, 23))
     circuit.add(RY(0, 15))
     circuit.add(U2(0, 14, 25))
-    if p_name == DEFAULT_PLATFORM_NAME:
+    if platform == Galadriel:
         circuit.add(M(0))
-    experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])
+    experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
 
 results_two_loops = {

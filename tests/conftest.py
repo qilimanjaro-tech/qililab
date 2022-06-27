@@ -33,7 +33,7 @@ from qililab.pulse import (
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import Galadriel, circuit, experiment_params
+from .data import FluxQubit, Galadriel, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
 
 
@@ -220,8 +220,12 @@ def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    platform_name, sequences = request.param  # type: ignore
-    platform = build_platform(name=platform_name)
+    runcard, sequences = request.param  # type: ignore
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="flux_qubit")
+            mock_load.assert_called()
+            mock_open.assert_called()
     experiment = Experiment(platform=platform, sequences=sequences)
     mock_load.assert_called()
     return experiment
@@ -231,8 +235,12 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    platform_name, sequences = request.param  # type: ignore
-    platform = build_platform(name=platform_name)
+    runcard, sequences = request.param  # type: ignore
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="galadriel")
+            mock_load.assert_called()
+            mock_open.assert_called()
     loop = Loop(
         instrument=Instrument.SIGNAL_GENERATOR,
         id_=0,
@@ -250,8 +258,12 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    platform_name, sequences = request.param  # type: ignore
-    platform = build_platform(name=platform_name)
+    runcard, sequences = request.param  # type: ignore
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="galadriel")
+            mock_load.assert_called()
+            mock_open.assert_called()
     loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
     loop2 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
     loop = Loop(
@@ -266,8 +278,12 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
 @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_simulated_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    platform_name, sequences = request.param  # type: ignore
-    platform = build_platform(name=platform_name)
+    runcard, sequences = request.param  # type: ignore
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="flux_qubit")
+            mock_load.assert_called()
+            mock_open.assert_called()
     experiment = Experiment(platform=platform, sequences=sequences)
     mock_load.assert_called()
     return experiment
@@ -338,9 +354,11 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 @pytest.fixture(name="simulated_platform")
 def fixture_simulated_platform() -> Platform:
     """Return Platform object."""
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="flux_qubit")
-        mock_load.assert_called()
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=FluxQubit.runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="flux_qubit")
+            mock_load.assert_called()
+            mock_open.assert_called()
     return platform
 
 
@@ -364,17 +382,21 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
 
 def platform_db() -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name=DEFAULT_PLATFORM_NAME)
-        mock_load.assert_called()
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name=DEFAULT_PLATFORM_NAME)
+            mock_load.assert_called()
+            mock_open.assert_called()
     return platform
 
 
 def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="galadriel")
-        mock_load.assert_called()
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="galadriel")
+            mock_load.assert_called()
+            mock_open.assert_called()
     return platform
 
 
@@ -384,9 +406,11 @@ def buses() -> Buses:
     Returns:
         Buses: Instance of the Buses class.
     """
-    with patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect) as mock_load:
-        platform = build_platform(name="galadriel")
-        mock_load.assert_called()
+    with patch("qililab.settings.settings_manager.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+        with patch("qililab.settings.settings_manager.open") as mock_open:
+            platform = build_platform(name="galadriel")
+            mock_load.assert_called()
+            mock_open.assert_called()
     return platform.buses
 
 

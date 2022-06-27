@@ -19,7 +19,8 @@ class TestSettingsManager:
         mock_load.assert_not_called()
         assert id(settings_manager) == id(SETTINGS_MANAGER)
 
-    def test_load_default_platform_settings(self, mock_load: MagicMock):
+    @patch("qililab.settings.settings_manager.open")
+    def test_load_default_platform_settings(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with the default platform settings.
         Assert that errors are raised correctly."""
         mock_load.return_value = Galadriel.platform
@@ -28,6 +29,8 @@ class TestSettingsManager:
             platform_name=DEFAULT_PLATFORM_NAME,
         )
         Platform.PlatformSettings(**settings)
+        mock_load.assert_called()
+        mock_open.assert_called()
 
     def test_load_unknown_file(self, mock_load: MagicMock):
         """Test the load method of the SettingsManager class with an unknown file."""
