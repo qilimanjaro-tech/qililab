@@ -26,8 +26,7 @@ def run_circuit(connection: API):
 
 if __name__ == "__main__":
     configuration = ConnectionConfiguration(  # pylint: disable=no-value-for-parameter
-        username="amitjans", api_key="df187271-81e3-45d4-b420-f9c8b79b3b41"
+        username="qili-admin-test", api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f"
     )
-
     api = API(configuration=configuration)
     run_circuit(connection=api)
