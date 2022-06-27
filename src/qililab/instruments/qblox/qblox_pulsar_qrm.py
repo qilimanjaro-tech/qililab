@@ -119,7 +119,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
         acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=4))
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     @property
     def acquire_trigger_mode(self):

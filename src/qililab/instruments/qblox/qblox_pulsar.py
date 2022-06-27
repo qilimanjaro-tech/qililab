@@ -29,7 +29,9 @@ class QbloxPulsar(AWG):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
-    MAX_BINS: int = 131072
+    _MAX_BINS: int = 131072
+    _NUM_SEQUENCERS: int = 4
+    _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
     class QbloxPulsarSettings(AWG.AWGSettings):
@@ -240,7 +242,7 @@ class QbloxPulsar(AWG):
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer, out in itertools.product(self.device.sequencers, range(4)):
+        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
@@ -353,7 +355,7 @@ class QbloxPulsar(AWG):
         Returns:
             int: Final wait time.
         """
-        return 4
+        return self._MIN_WAIT_TIME
 
     @property
     def num_bins(self) -> int:
