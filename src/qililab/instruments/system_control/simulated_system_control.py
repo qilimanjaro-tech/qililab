@@ -155,6 +155,6 @@ class SimulatedSystemControl(SystemControl):
         return self.settings.resolution
 
     @property
-    def delay_time(self):
-        """SystemControl 'delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
-        raise AttributeError("SimulatedSystemControl class doesn't have a 'delay_time' property.")
+    def acquisition_delay_time(self):
+        """SystemControl 'acquisition_delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
+        raise AttributeError("SimulatedSystemControl class doesn't have a 'acquisition_delay_time' property.")

@@ -15,15 +15,15 @@ class QubitReadout(AWG):
             delay_before_readout (int): Delay (ns) between the readout pulse and the acquisition.
         """
 
-        delay_time: int  # ns
+        acquisition_delay_time: int  # ns
 
     settings: QubitReadoutSettings
 
     @property
-    def delay_time(self):
+    def acquisition_delay_time(self):
         """QbloxPulsar 'delay_before_readout' property.
 
         Returns:
             int: settings.delay_before_readout.
         """
-        return self.settings.delay_time
+        return self.settings.acquisition_delay_time

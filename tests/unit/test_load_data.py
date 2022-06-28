@@ -52,3 +52,10 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
     assert exp is not None
     assert exp.loop is not None
     assert isinstance(exp.loop, Loop)
+
+
+def test_load_without_path():
+    """Test load without path."""
+    exp, results = load()
+    assert exp is None
+    assert results is None

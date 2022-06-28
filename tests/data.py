@@ -1,6 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
-from typing import Dict, List
+from typing import Dict, List, Type
 
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
@@ -8,14 +8,14 @@ from qibo.gates import RX, RY, U2, I, M, X, Y
 from qililab.constants import DEFAULT_PLATFORM_NAME, PLATFORM, SCHEMA, YAML
 
 
-class Platform0:
-    """Test data of the platform_0 platform."""
+class Galadriel:
+    """Test data of the galadriel platform."""
 
-    name = "platform_0"
+    name = "galadriel"
 
     platform = {
         YAML.ID: 0,
-        YAML.NAME: "platform_0",
+        YAML.NAME: "galadriel",
         YAML.CATEGORY: "platform",
         PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
@@ -40,6 +40,7 @@ class Platform0:
         "sync_enabled": True,
         "gain": 1,
         "frequency": 100000000,
+        "num_bins": 100,
         "epsilon": 0,
         "delta": 0,
         "offset_i": 0,
@@ -57,14 +58,15 @@ class Platform0:
         "sync_enabled": True,
         "gain": 0.5,
         "acquire_trigger_mode": "sequencer",
-        "scope_acquisition_averaging": False,
+        "hardware_averaging": True,
         "sampling_rate": 1000000000,
+        "integration": True,
         "integration_length": 2000,
         "integration_mode": "ssb",
         "sequence_timeout": 1,
+        "num_bins": 100,
         "acquisition_timeout": 1,
-        "acquisition_name": "single",
-        "delay_time": 100,
+        "acquisition_delay_time": 100,
         "frequency": 20000000,
         "epsilon": 0,
         "delta": 0,
@@ -107,6 +109,8 @@ class Platform0:
         YAML.CATEGORY: "dc_source",
         "ip": "192.168.1.112",
         "firmware": None,
+        "max_current": 0.1,
+        "max_voltage": 20.0,
     }
 
     instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator]
@@ -232,7 +236,7 @@ class FluxQubit:
 
 
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
-for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
+for platform in (Galadriel, FluxQubit):
     circuit = Circuit(1)
     circuit.add(I(0))
     circuit.add(X(0))
@@ -240,9 +244,9 @@ for p_name in [DEFAULT_PLATFORM_NAME, "flux_qubit"]:
     circuit.add(RX(0, 23))
     circuit.add(RY(0, 15))
     circuit.add(U2(0, 14, 25))
-    if p_name == DEFAULT_PLATFORM_NAME:
+    if platform == Galadriel:
         circuit.add(M(0))
-    experiment_params.extend([[p_name, circuit], [p_name, [circuit, circuit]]])
+    experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
 
 results_two_loops = {
@@ -271,15 +275,19 @@ results_two_loops = {
     "results": [
         {
             "name": "qblox",
-            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-            "threshold": [0.48046875],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                "threshold": [0.48046875],
+                "avg_cnt": [1024],
+            },
         },
         {
             "name": "qblox",
-            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-            "threshold": [0.4599609375],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                "threshold": [0.4599609375],
+                "avg_cnt": [1024],
+            },
         },
     ],
 }
@@ -301,21 +309,25 @@ results_one_loops = {
     "results": [
         {
             "name": "qblox",
-            "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-            "threshold": [0.48046875],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                "threshold": [0.48046875],
+                "avg_cnt": [1024],
+            },
         },
         {
             "name": "qblox",
-            "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-            "threshold": [0.4599609375],
-            "avg_cnt": [1024],
+            "bins": {
+                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                "threshold": [0.4599609375],
+                "avg_cnt": [1024],
+            },
         },
     ],
 }
 
 experiment = {
-    "platform": Platform0.runcard,
+    "platform": Galadriel.runcard,
     "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
     "sequences": [
         {
@@ -370,10 +382,10 @@ experiment = {
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, type] = {"platform_0": Platform0, "flux_qubit": FluxQubit}
+    handlers: Dict[str, Type[Galadriel] | Type[FluxQubit]] = {"galadriel": Galadriel, "flux_qubit": FluxQubit}
 
     @classmethod
-    def register(cls, handler_cls: type):
+    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubit]):
         """Register handler in the factory.
 
         Args:
@@ -383,7 +395,7 @@ class MockedSettingsFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, platform_name: str, filename: str):
+    def get(cls, platform_name: str):
         """Return class attribute."""
         platform = cls.handlers[platform_name]
-        return copy.deepcopy(getattr(platform, filename))
+        return copy.deepcopy(platform.runcard)

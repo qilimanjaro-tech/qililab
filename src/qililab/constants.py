@@ -2,16 +2,14 @@
 
 # Environment variables
 DATA = "DATA"  # variable containing the path where data is saved
-RUNCARD = "RUNCARD"  # variable containing the runcard's path
+RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
 
 RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 DATA_FOLDERNAME = "data"
 
-DEFAULT_PLATFORM_FILENAME = "platform.yml"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
-DEFAULT_RUNCARD_FILENAME = "runcard.yml"
-DEFAULT_PLATFORM_NAME = "platform_0"
+DEFAULT_PLATFORM_NAME = "galadriel"
 
 
 # TODO: Distribute constants over different classes

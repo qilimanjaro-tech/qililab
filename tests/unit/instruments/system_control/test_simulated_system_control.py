@@ -61,6 +61,6 @@ class TestSimulatedSystemControl:
         assert simulated_system_control.name == simulated_system_control.settings.subcategory
 
     def test_delay_time_property_raises_error(self, simulated_system_control: SimulatedSystemControl):
-        """Test delay_time property."""
+        """Test acquisition_delay_time property."""
         with pytest.raises(AttributeError):
-            _ = simulated_system_control.delay_time
+            _ = simulated_system_control.acquisition_delay_time

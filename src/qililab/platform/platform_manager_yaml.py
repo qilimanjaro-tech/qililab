@@ -1,5 +1,5 @@
 """PlatformManagerYAML class."""
-from qililab.constants import DEFAULT_RUNCARD_FILENAME, DEFAULT_SETTINGS_FOLDERNAME
+from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
 from qililab.platform.platform_manager import PlatformManager
 from qililab.settings import SETTINGS_MANAGER
 
@@ -17,6 +17,4 @@ class PlatformManagerYAML(PlatformManager):
             dict: Dictionary with platform and schema settings.
         """
 
-        return SETTINGS_MANAGER.load(
-            foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_RUNCARD_FILENAME
-        )
+        return SETTINGS_MANAGER.load(foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name)
