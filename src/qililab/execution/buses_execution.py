@@ -1,6 +1,5 @@
 """BusesExecution class."""
 
-import itertools
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
@@ -39,14 +38,13 @@ class BusesExecution:
         """Run the given pulse sequence."""
         results: List[Result] = []
         disable = self.num_sequences == 1
-        for idx, _ in itertools.product(
-            tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable), range(software_average)
-        ):
-            for bus in self.buses:
-                result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
-                if result is not None:
-                    results.append(result)
-                    self._asynchronous_data_handling(result=result, path=path, plot=plot, x_value=idx)
+        for idx in tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable):
+            for _ in range(software_average):
+                for bus in self.buses:
+                    result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
+                    if result is not None:
+                        results.append(result)
+                        self._asynchronous_data_handling(result=result, path=path, plot=plot, x_value=idx)
 
         return results
 
@@ -61,10 +59,10 @@ class BusesExecution:
 
         def _threaded_function(result: Result, path: Path, plot: LivePlot | None, x_value: float):
             """Asynchronous thread."""
-            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
             if plot is not None:
                 plot.send_points(x_value=x_value, y_value=result.probabilities()[0])
+            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
+                yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
         thread.start()

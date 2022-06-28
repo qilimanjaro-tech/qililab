@@ -20,3 +20,7 @@ class TestKeithley2600:
     def test_fast_sweep_method(self, keithley_2600: Keithley2600):
         """Test fast_sweep method."""
         keithley_2600.fast_sweep(start=0, stop=1, steps=10, mode="VI")
+
+    def test_setup_method(self, keithley_2600: Keithley2600):
+        """Test setup method."""
+        keithley_2600.setup()

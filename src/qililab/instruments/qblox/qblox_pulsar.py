@@ -29,7 +29,9 @@ class QbloxPulsar(AWG):
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 
-    MAX_BINS: int = 131072
+    _MAX_BINS: int = 131072
+    _NUM_SEQUENCERS: int = 4
+    _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
     class QbloxPulsarSettings(AWG.AWGSettings):
@@ -46,6 +48,7 @@ class QbloxPulsar(AWG):
         sequencer: int
         sync_enabled: bool
         gain: float
+        num_bins: int
 
     settings: QbloxPulsarSettings
     device: Pulsar
@@ -103,41 +106,50 @@ class QbloxPulsar(AWG):
         Returns:
             Program: Q1ASM program.
         """
+        # Define program's blocks
         program = Program()
-        loop = Loop(name="loop", iterations=nshots)
+        bin_loop = Loop(name="binning", iterations=int(self.num_bins))
+        avg_loop = Loop(name="average", iterations=nshots)
+        bin_loop.append_block(block=avg_loop, bot_position=1)
         stop = Block(name="stop")
         stop.append_component(Stop())
-        # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-        if pulses[0].start != 0:
-            loop.append_component(Wait(wait_time=pulses[0].start))
+        program.append_block(block=bin_loop)
+        program.append_block(block=stop)
+        if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=pulses[0].start))
 
         for i, pulse in enumerate(pulses):
             waveform_pair = waveforms.find_pair_by_name(str(pulse))
             wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
-            loop.append_component(set_phase_rad(rads=pulse.phase))
-            loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
-            loop.append_component(
+            avg_loop.append_component(set_phase_rad(rads=pulse.phase))
+            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
+            avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
                     wait_time=wait_time,
                 )
             )
-
-        self._append_acquire_instruction(loop=loop)
-
-        loop.append_component(long_wait(wait_time=repetition_duration - loop.duration_iter))
-        program.append_block(block=loop)
-        program.append_block(block=stop)
+        self._append_acquire_instruction(loop=avg_loop, register="TR10")
+        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+        avg_loop.replace_register(old="TR10", new=bin_loop.counter_register)
+        avg_loop.replace_register(old="TR0", new="R2")  # FIXME: Qpysequence: Automatic reallocation doesn't work
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object.
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
+
+        Args:
+            nshots (int): Number of hardware shots.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
-        return Acquisitions()
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
+        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -147,7 +159,7 @@ class QbloxPulsar(AWG):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop):
+    def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
 
     @AWG.CheckConnected
@@ -230,7 +242,7 @@ class QbloxPulsar(AWG):
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer, out in itertools.product(self.device.sequencers, range(4)):
+        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
@@ -343,4 +355,13 @@ class QbloxPulsar(AWG):
         Returns:
             int: Final wait time.
         """
-        return 4
+        return self._MIN_WAIT_TIME
+
+    @property
+    def num_bins(self) -> int:
+        """QbloxPulsar 'num_bins' property.
+
+        Returns:
+            int: Number of bins used.
+        """
+        return self.settings.num_bins

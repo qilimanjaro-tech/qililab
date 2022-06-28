@@ -118,4 +118,4 @@ class BusExecution:
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
         readout_pulse = self.pulse_sequences[idx]
-        return readout_pulse.pulses[-1].start + self.system_control.delay_time
+        return readout_pulse.pulses[-1].start + self.system_control.acquisition_delay_time

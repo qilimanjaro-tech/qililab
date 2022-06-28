@@ -71,11 +71,8 @@ class TestExperiment:
         if experiment_all_platforms.loop is not None:
             print(experiment_all_platforms.loop.num_loops)
 
-    @patch("qililab.settings.settings_manager.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-    def test_draw_method_with_one_bus(self, mock_load: MagicMock):
+    def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""
-        platform = build_platform(name="platform_0")
-        mock_load.assert_called()
         circuit = Circuit(1)
         circuit.add(M(0))
         experiment = Experiment(sequences=circuit, platform=platform)
@@ -296,10 +293,6 @@ class TestExexution:
         mock_rs.assert_called()
         mock_pulsar.assert_called()
         assert isinstance(results, Results)
-        probabilities = results.probabilities()
-        acquisitions = results.acquisitions()
-        assert isinstance(probabilities, np.ndarray)
-        assert isinstance(acquisitions, np.ndarray)
         mock_open_0.assert_called()
         mock_dump_0.assert_called()
         mock_open_1.assert_called()

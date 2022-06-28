@@ -38,8 +38,8 @@ class TestQbloxPulsarQRM:
         qrm.setup()
         qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
         qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
-        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.scope_acquisition_averaging)
-        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.scope_acquisition_averaging)
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_averaging)
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_averaging)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
         qrm.device.sequencer0.offset_awg_path0.assert_called_once_with(qrm.offset_i)
@@ -88,7 +88,6 @@ class TestQbloxPulsarQRM:
         # Assert device calls
         qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
         qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
-        qrm.device.store_scope_acquisition.assert_called_once_with(qrm.sequencer, qrm.acquisition_name.value)
         qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
 
     def test_close_method(self, qrm: QbloxPulsarQRM):
@@ -123,9 +122,9 @@ class TestQbloxPulsarQRM:
         """Test acquire_trigger_mode property."""
         assert qrm.acquire_trigger_mode == qrm.settings.acquire_trigger_mode
 
-    def test_scope_acquisition_averaging_property(self, qrm: QbloxPulsarQRM):
-        """Test scope_acquisition_averaging property."""
-        assert qrm.scope_acquisition_averaging == qrm.settings.scope_acquisition_averaging
+    def test_hardware_averaging_property(self, qrm: QbloxPulsarQRM):
+        """Test hardware_averaging property."""
+        assert qrm.hardware_averaging == qrm.settings.hardware_averaging
 
     def test_sampling_rate_property(self, qrm: QbloxPulsarQRM):
         """Test sampling_rate property."""
@@ -149,11 +148,11 @@ class TestQbloxPulsarQRM:
 
     def test_acquisition_name_property(self, qrm: QbloxPulsarQRM):
         """Test acquisition_name property."""
-        assert qrm.acquisition_name == qrm.settings.acquisition_name
+        assert isinstance(qrm.acquisition_name, str)
 
     def tests_delay_time_property(self, qrm: QbloxPulsarQRM):
-        """Test delay_time property."""
-        assert qrm.delay_time == qrm.settings.delay_time
+        """Test acquisition_delay_time property."""
+        assert qrm.acquisition_delay_time == qrm.settings.acquisition_delay_time
 
     def tests_firmware_property(self, qrm: QbloxPulsarQRM):
         """Test firmware property."""

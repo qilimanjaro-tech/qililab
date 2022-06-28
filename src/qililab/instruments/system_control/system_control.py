@@ -72,8 +72,8 @@ class SystemControl(BusElement, ABC):
 
     @property
     @abstractmethod
-    def delay_time(self) -> int:
-        """SystemControl 'delay_time' property.
+    def acquisition_delay_time(self) -> int:
+        """SystemControl 'acquisition_delay_time' property.
 
         Returns:
             int: Delay (in ns) between the readout pulse and the acquisition.

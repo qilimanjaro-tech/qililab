@@ -307,7 +307,7 @@ class Experiment:
         """
         folderpath = os.environ.get(DATA, None)
         if folderpath is None:
-            folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
+            raise ValueError("Environment variable DATA is not set.")
         return folderpath
 
     @property

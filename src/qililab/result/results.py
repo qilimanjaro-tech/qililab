@@ -63,13 +63,18 @@ class Results:
         Returns:
             np.ndarray: Acquisition values.
         """
+        if not isinstance(self.results[0], QbloxResult):
+            raise ValueError(f"{type(self.results[0]).__name__} class doesn't have an acquisitions method.")
+        result_shape = self.results[0].shape
         self._fill_missing_values()
         results = []
         for result in self.results:
             if not isinstance(result, (QbloxResult, NoneType)):
                 raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
-            results.append(result.acquisitions() if result is not None else (np.nan, np.nan, np.nan, np.nan))
-        array = np.reshape(a=results, newshape=self.shape + [4])
+            results.append(
+                result.acquisitions() if result is not None else np.full(shape=result_shape, fill_value=np.nan)
+            )
+        array = np.reshape(a=np.array(results), newshape=self.shape + result_shape)
         flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
         if mean and self.software_average > 1:
             flipped_array = np.mean(a=flipped_array, axis=-1)
