@@ -23,7 +23,7 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     if path is None:
         folderpath = os.environ.get(DATA, None)
         if folderpath is None:
-            folderpath = str(Path(__file__).parent.parent / DATA_FOLDERNAME)
+            raise ValueError("Environment variable DATA is not set.")
         files_list = glob.glob(os.path.join(folderpath, "*"))
         if not files_list:
             return None, None

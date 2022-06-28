@@ -31,10 +31,10 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         Args:
             platform (Platform): Platform to dump.
         """
-        file_path = os.environ.get(RUNCARDS, None)
-        if file_path is None:
-            file_path = str(Path(sys.argv[0]).parent)
-        file_path = f"{file_path}/{platform.name}.yml"
+        runcards_path = os.environ.get(RUNCARDS, None)
+        if runcards_path is None:
+            raise ValueError("Environment variable RUNCARDS is not set.")
+        file_path = f"{runcards_path}/{platform.name}.yml"
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
