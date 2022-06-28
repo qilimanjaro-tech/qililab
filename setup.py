@@ -20,10 +20,9 @@ def get_version():
 
 
 # Read in requirements
-with open("requirements.txt", encoding="utf-8") as requirements_file:
-    requirements = requirements_file.readlines()
-requirements = [r.strip() for r in requirements]
-
+with open("requirements.txt", encoding="utf-8") as reqs_file:
+    reqs = reqs_file.readlines()
+requirements = [r.strip() for r in reqs]
 
 # load long description from README
 this_directory = os.path.abspath(os.path.dirname(__file__))

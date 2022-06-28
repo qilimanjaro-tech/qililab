@@ -1,23 +1,103 @@
 """Constants"""
 
-DEFAULT_PLATFORM_FILENAME = "platform"
+# Environment variables
+DATA = "DATA"  # variable containing the path where data is saved
+RUNCARD = "RUNCARD"  # variable containing the runcard's path
+
+RESULTS_FILENAME = "results.yml"
+EXPERIMENT_FILENAME = "experiment.yml"
+DATA_FOLDERNAME = "data"
+
+DEFAULT_PLATFORM_FILENAME = "platform.yml"
 DEFAULT_SETTINGS_FOLDERNAME = "qili"
-DEFAULT_SCHEMA_FILENAME = "schema"
-DEFAULT_RUNCARD_FILENAME = "runcard"
+DEFAULT_RUNCARD_FILENAME = "runcard.yml"
 DEFAULT_PLATFORM_NAME = "platform_0"
 
 
+# TODO: Distribute constants over different classes
 class YAML:
     """YAML constants."""
 
+    ID = "id_"
     NAME = "name"
+    CATEGORY = "category"
     SUBCATEGORY = "subcategory"
+    INSTRUMENT = "instrument"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"
+    PLATFORM = "platform"
+    SCHEMA = "schema"
+    SCHEMA = "schema"
+
+
+class PLATFORM:
+    """Platform constants."""
+
+    TRANSLATION_SETTINGS = "translation_settings"
+
+
+class EXPERIMENT:
+    """Experiment constants."""
+
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
     REPETITION_DURATION = "repetition_duration"
+    SHAPE = "shape"
+    RESULTS = "results"
+    NUM_SEQUENCES = "num_sequences"
+    SEQUENCES = "sequences"
+
+
+class SCHEMA:
+    """Schema constants."""
+
+    INSTRUMENTS = "instruments"
+    BUSES = "buses"
+
+
+class BUS:
+    """Bus constants."""
+
+    PORT = "port"
+    SYSTEM_CONTROL = "system_control"
+    ATTENUATOR = "attenuator"
+    SEQUENCES = "sequences"
+    NUM_SEQUENCES = "num_sequences"
+    SHAPE = "shape"  # shape of the results
+    RESULTS = "results"
+
+
+class LOOP:
+    """Loop class and attribute names."""
+
+    LOOP = "loop"
+    PARAMETER = "parameter"
+    START = "start"
+    STOP = "stop"
+    NUM = "num"
+    STEP = "step"
+
+
+class PULSESEQUENCES:
+    """PulseSequenes attribute names."""
+
+    PULSES = "pulses"
+    TIME = "time"
+    DELAY_BETWEEN_PULSES = "delay_between_pulses"
+    DELAY_BEFORE_READOUT = "delay_before_readout"
+
+
+class PULSE:
+    """Pulse attribute names."""
+
+    NAME = "name"
+    AMPLITUDE = "amplitude"
+    PHASE = "phase"
+    DURATION = "duration"
+    QUBIT_IDS = "qubit_ids"
+    PULSE_SHAPE = "pulse_shape"
+    START_TIME = "start_time"
 
 
 UNITS = {"frequency": "Hz"}

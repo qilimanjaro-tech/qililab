@@ -1,20 +1,19 @@
 """BusesExecution class."""
 
 import itertools
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
-from typing import List
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
-from qililab.config import logger
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
-from qililab.typings import yaml
-from qililab.utils import LivePlot
+from qililab.typings import BusSubcategory, yaml
+from qililab.utils import LivePlot, Waveforms
 
 
 @dataclass
@@ -24,20 +23,15 @@ class BusesExecution:
     num_sequences: int
     buses: List[BusExecution] = field(default_factory=list)
 
-    def connect(self):
-        """Connect to the instruments."""
-        for bus in self.buses:
-            bus.connect()
-
     def setup(self):
         """Setup instruments with experiment settings."""
         for bus in self.buses:
             bus.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
         for bus in self.buses:
-            bus.start()
+            bus.turn_on()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
@@ -75,23 +69,18 @@ class BusesExecution:
         thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
         thread.start()
 
-    def close(self):
-        """Close connection to the instruments."""
-        for bus in self.buses:
-            bus.close()
-
-    def waveforms(self, resolution: float = 1.0):
+    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
         """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Dict[int, np.ndarray]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+            Dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        return {bus.id_: np.array(bus.waveforms(resolution=resolution)) for bus in self.buses}
+        return {bus.id_: bus.waveforms(resolution=resolution, idx=idx) for bus in self.buses}
 
-    def draw(self, resolution: float):
+    def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -103,11 +92,13 @@ class BusesExecution:
         figure, axes = plt.subplots(nrows=len(self.buses), ncols=1, sharex=True)
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
-        for axis_idx, (bus_idx, pulse) in enumerate(self.waveforms(resolution=resolution).items()):
-            time = np.arange(len(pulse[0])) * resolution
+        for axis_idx, (bus_idx, waveforms) in enumerate(self.waveforms_dict(resolution=resolution, idx=idx).items()):
+            time = np.arange(len(waveforms)) * resolution
             axes[axis_idx].set_title(f"Bus {bus_idx}")
-            axes[axis_idx].plot(time, pulse[0], label="I")
-            axes[axis_idx].plot(time, pulse[1], label="Q")
+            axes[axis_idx].plot(time, waveforms.i, label="I")
+            axes[axis_idx].plot(time, waveforms.q, label="Q")
+            bus = self.buses[axis_idx]
+            self._plot_acquire_time(bus=bus, sequence_idx=idx)
             axes[axis_idx].legend()
             axes[axis_idx].minorticks_on()
             axes[axis_idx].grid(which="both")
@@ -115,5 +106,25 @@ class BusesExecution:
             axes[axis_idx].set_xlabel("Time (ns)")
 
         plt.tight_layout()
-        # plt.savefig("test.png")
         return figure
+
+    def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):
+        """Return acquire time of bus. Return None if bus is of subcategory control.
+
+        Args:
+            bus (BusExecution): Bus execution object.
+            sequence_idx (int): Pulse sequence index.
+
+        Returns:
+            int | None: Acquire time. None if bus is of subcategory control.
+        """
+        if bus.subcategory == BusSubcategory.READOUT:
+            plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
+
+    def __iter__(self):
+        """Redirect __iter__ magic method to buses."""
+        return self.buses.__iter__()
+
+    def __getitem__(self, key):
+        """Redirect __get_item__ magic method."""
+        return self.buses.__getitem__(key)

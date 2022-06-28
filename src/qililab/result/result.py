@@ -2,6 +2,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import Tuple
 
+from qililab.constants import YAML
 from qililab.typings import FactoryElement, ResultName
 
 
@@ -29,4 +30,4 @@ class Result(FactoryElement):
         Returns:
             dict: Dictionary containing all the class information.
         """
-        return asdict(self) | {"name": self.name.value}
+        return asdict(self) | {YAML.NAME: self.name.value}

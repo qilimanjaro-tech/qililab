@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab import PLATFORM_MANAGER_DB
+from qililab import save_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
-from qililab.platform import Buses, Platform, Qubit, Resonator, Schema
+from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
+from qililab.platform import Buses, Platform, Schema
 from qililab.typings import Category
 
 from ...conftest import platform_db, platform_yaml
@@ -71,24 +71,6 @@ class TestPlatform:
         assert isinstance(element, SignalGenerator)
         assert bus_idxs[0] == 0
 
-    def test_bus_0_mixer_instance(self, platform: Platform):
-        """Test bus 0 mixer instance."""
-        element, bus_idxs = platform.get_element(category=Category.MIXER, id_=0)
-        assert isinstance(element, Mixer)
-        assert bus_idxs[0] == 0
-
-    def test_bus_1_resonator_instance(self, platform: Platform):
-        """Test bus 1 resonator instance."""
-        element, bus_idxs = platform.get_element(category=Category.RESONATOR, id_=0)
-        assert isinstance(element, Resonator)
-        assert bus_idxs[0] == 1
-
-    def test_qubit_0_instance(self, platform: Platform):
-        """Test qubit 0 instance."""
-        element, bus_idxs = platform.get_element(category=Category.QUBIT, id_=0)
-        assert isinstance(element, Qubit)
-        assert bus_idxs[0] == 0
-
     def test_qubit_1_instance(self, platform: Platform):
         """Test qubit 1 instance."""
         element, bus_idxs = platform.get_element(category=Category.QUBIT, id_=1)
@@ -110,5 +92,7 @@ class TestPlatform:
     @patch("qililab.settings.settings_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
-        PLATFORM_MANAGER_DB.dump(platform=platform)
+        save_platform(platform=platform)
+        with pytest.raises(NotImplementedError):
+            save_platform(platform=platform, database=True)
         mock_dump.assert_called()

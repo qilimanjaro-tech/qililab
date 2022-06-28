@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 
+from qililab.constants import RUNCARD
 from qililab.typings import yaml
 from qililab.utils import Singleton
 
@@ -19,9 +20,9 @@ class SettingsManager(metaclass=Singleton):
         Returns:
             dict: Dictionary containing the settings.
         """
-        path = os.environ.get("YAML", None)
+        path = os.environ.get(RUNCARD, None)
         if path is None:
-            path = str(Path(__file__).parent / foldername / platform_name / f"{filename}.yml")
+            path = str(Path(__file__).parent / foldername / platform_name / filename)
 
         with open(file=path, mode="r", encoding="utf8") as file:
             settings = yaml.safe_load(stream=file)

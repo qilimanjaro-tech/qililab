@@ -1,11 +1,11 @@
 """PlatformSchema class."""
-from typing import List, Optional
+from typing import List
 
 from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class PlatformSchema:
+class RuncardSchema:
     """PlatformSchema class. Casts the platform dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
@@ -16,9 +16,7 @@ class PlatformSchema:
                 - name: "readout" or "control"
                 - awg: settings dictionary.
                 - signal_generator: settings dictionary.
-                - mixer_up: settings dictionary.
                 - qubit / resonator: settings dictionary.
-                - mixer_down (optional): settings dictionary.
     """
 
     @nested_dataclass
@@ -33,13 +31,14 @@ class PlatformSchema:
             category: str
             subcategory: str
             system_control: dict
-            target: dict
+            port: int
             attenuator: dict | None = None
 
-        elements: List[Bus]
+        buses: List[Bus]
+        instruments: List[dict]
 
         def __post_init__(self):
-            self.elements = [self.Bus(**bus) for bus in self.elements]
+            self.buses = [self.Bus(**bus) for bus in self.buses]
 
     settings: dict
     schema: Schema

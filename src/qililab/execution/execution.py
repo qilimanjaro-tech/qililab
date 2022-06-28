@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.execution.buses_execution import BusesExecution
+from qililab.platform import Platform
 from qililab.result import Result
 from qililab.utils import LivePlot
 
@@ -13,12 +14,13 @@ class Execution:
     """Execution class."""
 
     buses_execution: BusesExecution
+    platform: Platform
 
     def __enter__(self):
         """Code executed when starting a with statement."""
         self.connect()
         self.setup()
-        self.start()
+        self.turn_on()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
@@ -26,15 +28,15 @@ class Execution:
 
     def connect(self):
         """Connect to the instruments."""
-        self.buses_execution.connect()
+        self.platform.connect()
 
     def setup(self):
         """Setup instruments with experiment settings."""
         self.buses_execution.setup()
 
-    def start(self):
+    def turn_on(self):
         """Start/Turn on the instruments."""
-        self.buses_execution.start()
+        self.buses_execution.turn_on()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
@@ -50,9 +52,9 @@ class Execution:
 
     def close(self):
         """Close connection to the instruments."""
-        self.buses_execution.close()
+        self.platform.close()
 
-    def draw(self, resolution: float):
+    def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
 
         Args:
@@ -61,7 +63,7 @@ class Execution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.draw(resolution=resolution)
+        return self.buses_execution.draw(resolution=resolution, idx=idx)
 
     @property
     def num_sequences(self):

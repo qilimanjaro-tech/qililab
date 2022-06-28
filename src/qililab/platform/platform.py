@@ -2,11 +2,13 @@
 from dataclasses import asdict
 from typing import List
 
+from qililab.constants import YAML
+from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import PlatformSchema
+from qililab.platform.utils import RuncardSchema
 from qililab.settings import Settings, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
-from qililab.utils import dict_factory, nested_dataclass
+from qililab.utils import nested_dataclass
 
 
 class Platform:
@@ -33,12 +35,18 @@ class Platform:
 
     settings: PlatformSettings
     schema: Schema
-    _schema: PlatformSchema
 
-    def __init__(self, platform_schema: PlatformSchema):
-        self.settings = self.PlatformSettings(**platform_schema.settings)
-        self.schema = Schema(**asdict(platform_schema.schema, dict_factory=dict_factory))
-        self._schema = platform_schema
+    def __init__(self, runcard_schema: RuncardSchema):
+        self.settings = self.PlatformSettings(**runcard_schema.settings)
+        self.schema = Schema(**asdict(runcard_schema.schema))
+
+    def connect(self):
+        """Connect to the instruments."""
+        self.instruments.connect()
+
+    def close(self):
+        """Close connection to the instruments."""
+        self.instruments.close()
 
     def get_element(self, category: Category, id_: int = 0):
         """Get platform element.
@@ -143,14 +151,22 @@ class Platform:
         Returns:
             int: Number of different qubits that the platform contains.
         """
-        qubit_sum = 0
-        while self.get_element(category=Category.QUBIT, id_=qubit_sum)[0] is not None:
-            qubit_sum += 1
-        return qubit_sum
+        return 1  # TODO: Compute num_qubits with Chip class.
+
+    @property
+    def instruments(self):
+        """Platform 'instruments' property.
+
+        Returns:
+            Instruments: List of all instruments.
+        """
+        return self.schema.instruments
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        return asdict(self._schema, dict_factory=dict_factory)
+        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
+        schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
+        return platform_dict | schema_dict
 
     def __str__(self) -> str:
         """String representation of the platform

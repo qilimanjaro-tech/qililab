@@ -13,7 +13,6 @@ class Category(Enum):
         * signal_generator
         * buses
         * bus
-        * mixer
         * schema
         * resonator
     """
@@ -25,11 +24,30 @@ class Category(Enum):
     SCHEMA = "schema"
     RESONATOR = "resonator"
     BUSES = "buses"
-    MIXER = "mixer"
     BUS = "bus"
     SYSTEM_CONTROL = "system_control"
     EXPERIMENT = "experiment"
-    STEP_ATTENUATOR = "step_attenuator"
+    ATTENUATOR = "attenuator"
+    DC_SOURCE = "dc_source"
+
+
+class Instrument(Enum):
+    """Instrument.
+
+    Args:
+        enum (str): Available types of instruments:
+        * platform
+        * awg
+        * signal_generator
+        * system_control
+        * attenuator
+    """
+
+    PLATFORM = "platform"
+    AWG = "awg"
+    SIGNAL_GENERATOR = "signal_generator"
+    SYSTEM_CONTROL = "system_control"
+    ATTENUATOR = "attenuator"
 
 
 class ReferenceClock(Enum):
@@ -121,29 +139,42 @@ class BusSubcategory(Enum):
 
 
 class BusElementName(Enum):
-    """Bus element names.
+    """Bus element names. Contains names of bus elements that are not instruments.
 
     Args:
         enum (str): Available bus element names:
-        * mixer_up
-        * mixer_down
         * qubit
         * qblox_qcm
         * qblox_qrm
         * rohde_schwarz
     """
 
-    MIXER_UP = "mixer_up"
-    MIXER_DOWN = "mixer_down"
     QUBIT = "qubit"
     RESONATOR = "resonator"
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class InstrumentName(Enum):
+    """Instrument names.
+
+    Args:
+        enum (str): Available bus element names:
+        * qblox_qcm
+        * qblox_qrm
+        * rohde_schwarz
+        * mini_circuits
+        * mixer_based_system_control
+        * integrated_system_control
+        * simulated_system_control
+    """
+
     QBLOX_QCM = "qblox_qcm"
     QBLOX_QRM = "qblox_qrm"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY2600 = "keithley_2600"
 
 
 class Parameter(Enum):
@@ -167,7 +198,6 @@ class Parameter(Enum):
     DELTA = "delta"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
-    START_INTEGRATE = "start_integrate"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION_LENGTH = "integration_length"
     DELAY_TIME = "delay_time"
@@ -175,6 +205,7 @@ class Parameter(Enum):
     REPETITION_DURATION = "repetition_duration"
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
+
 
 class ResultName(Enum):
     """Result names.
@@ -184,5 +215,6 @@ class ResultName(Enum):
         * qblox
         * simulator
     """
+
     QBLOX = "qblox"
     SIMULATOR = "simulator"

@@ -4,11 +4,13 @@ import numpy as np
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, I
 
-from qililab import Experiment
+from qililab import Experiment, build_platform
 
 
 def run_allxy():
     """Run AllXY"""
+    platform = build_platform(name="flux_qubit")
+
     circuits = []
     allxy_table = [
         [I(0), I(0)],
@@ -39,15 +41,7 @@ def run_allxy():
         circuit.add(gate_pair[1])
         circuits.append(circuit)
 
-    experiment = Experiment(platform_name="flux_qubit", sequences=circuits)
-    # experiment.add_parameter_to_loop(
-    #     category="system_control",
-    #     id_=0,
-    #     parameter="frequency",
-    #     start=2085540698 - 1e6,
-    #     stop=2085540698 + 1e6,
-    #     num=10,
-    # )
+    experiment = Experiment(platform=platform, sequences=circuits)
     results = experiment.execute()
 
     x_ticks = np.linspace(-1, 1, 10)

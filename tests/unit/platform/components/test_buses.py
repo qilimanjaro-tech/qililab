@@ -7,7 +7,7 @@ from ....conftest import buses as load_buses
 
 
 @pytest.mark.parametrize("buses", [load_buses()])
-@pytest.mark.parametrize("bus", [load_buses().buses[0]])
+@pytest.mark.parametrize("bus", [load_buses().elements[0]])
 class TestBuses:
     """Unit tests checking the Buses attributes and methods."""
 
@@ -23,4 +23,4 @@ class TestBuses:
 
     def test_len_method(self, buses: Buses, bus: Bus):
         """Test __len__ method."""
-        assert len(buses) == len(buses.buses)
+        assert len(buses) == len(buses.elements)

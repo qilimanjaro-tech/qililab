@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
+from qililab.constants import PULSESEQUENCES, YAML
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.readout_pulse import ReadoutPulse
 
@@ -44,10 +45,10 @@ class PulseSequences:
             dict: Dictionary representation of the class.
         """
         return {
-            "pulses": [pulse.to_dict() for pulse in self.pulses],
-            "time": self.time,
-            "delay_between_pulses": self.delay_between_pulses,
-            "delay_before_readout": self.delay_before_readout,
+            PULSESEQUENCES.PULSES: [pulse.to_dict() for pulse in self.pulses],
+            PULSESEQUENCES.TIME: self.time,
+            PULSESEQUENCES.DELAY_BETWEEN_PULSES: self.delay_between_pulses,
+            PULSESEQUENCES.DELAY_BEFORE_READOUT: self.delay_before_readout,
         }
 
     @classmethod
@@ -60,10 +61,13 @@ class PulseSequences:
         Returns:
             PulseSequence: Class instance.
         """
-        delay_between_pulses = dictionary["delay_between_pulses"]
-        delay_before_readout = dictionary["delay_before_readout"]
-        time = dictionary["time"]
-        pulses = [Pulse(**settings) for settings in dictionary["pulses"]]
+        delay_between_pulses = dictionary[PULSESEQUENCES.DELAY_BETWEEN_PULSES]
+        delay_before_readout = dictionary[PULSESEQUENCES.DELAY_BEFORE_READOUT]
+        time = dictionary[PULSESEQUENCES.TIME]
+        pulses = [
+            Pulse(**settings) if Pulse.name == settings.pop(YAML.NAME) else ReadoutPulse(**settings)
+            for settings in dictionary[PULSESEQUENCES.PULSES]
+        ]
         return PulseSequences(
             pulses=pulses,
             delay_between_pulses=delay_between_pulses,
