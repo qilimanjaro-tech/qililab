@@ -124,7 +124,7 @@ class MixerBasedSystemControl(SystemControl):
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
         } | {
-            key: {RUNCARD.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
+            key: {RUNCARD.ID: value.id_, RUNCARD.CATEGORY: value.category.value}
             for key, value in self
             if not isinstance(value, dict)
         }

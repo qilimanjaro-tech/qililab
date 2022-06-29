@@ -26,6 +26,8 @@ class RUNCARD:
     SCHEMA = "schema"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
+    ATTENUATOR = "attenuator"
+    SYSTEM_CONTROL = "system_control"
 
 
 class SIGNAL_GENERATOR:

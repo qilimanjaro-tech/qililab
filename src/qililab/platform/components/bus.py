@@ -136,7 +136,17 @@ class Bus:
                 RUNCARD.ID: self.id_,
                 RUNCARD.CATEGORY: self.settings.category.value,
                 RUNCARD.SUBCATEGORY: self.subcategory.value,
+                RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             }
-            | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}
+            | (
+                {
+                    RUNCARD.ATTENUATOR: {
+                        RUNCARD.ID: self.attenuator.id_,
+                        RUNCARD.CATEGORY: self.attenuator.category.value,
+                    }
+                }
+                if self.attenuator is not None
+                else {}
+            )
             | {BUS.PORT: self.port}
         )
