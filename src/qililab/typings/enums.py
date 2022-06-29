@@ -138,7 +138,7 @@ class BusSubcategory(Enum):
     READOUT = "readout"
 
 
-class BusElementName(Enum):
+class SystemControlSubcategory(Enum):
     """Bus element names. Contains names of bus elements that are not instruments.
 
     Args:
@@ -149,10 +149,23 @@ class BusElementName(Enum):
         * rohde_schwarz
     """
 
-    QUBIT = "qubit"
-    RESONATOR = "resonator"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class NodeName(Enum):
+    """Node names.
+
+    Args:
+        enum (str): Available node names:
+        * qubit
+        * resonator
+        * coupler
+    """
+
+    QUBIT = "qubit"
+    RESONATOR = "resonator"
+    COUPLER = "coupler"
 
 
 class InstrumentName(Enum):

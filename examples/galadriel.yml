@@ -1,0 +1,140 @@
+settings:
+    id_: 0
+    category: platform
+    name: old_fridge
+    translation_settings:
+        readout_duration: 2000
+        readout_amplitude: 1
+        readout_phase: 0
+        delay_between_pulses: 0
+        delay_before_readout: 40
+        gate_duration: 100
+        num_sigmas: 4
+        drag_coefficient: 0
+schema:
+  chip:
+    id_: 0
+    category: chip
+    ports: [0, 1, 2, 3]   # ports used for control/readout
+    nodes:
+      - name: resonator
+        port: 0
+        frequency: 7.34730e+09
+        nodes: [2]
+      - name: resonator
+        port: 0
+        frequency: 7.34730e+09
+        nodes: [3]
+      - name: qubit
+        idx: 0
+        port: 1
+        frequency: 3.451e+09
+        nodes: [0, 4]
+      - name: qubit
+        idx: 1
+        port: 2
+        frequency: 3.451e+09
+        nodes: [1, 4]
+      - name: coupler
+        port: 3
+        frequency: 3.451e+09
+        nodes: [2, 3]
+
+  instruments:
+    - name: qblox_qcm
+      id_: 0
+      category: awg
+      ip: 192.168.0.3
+      firmware: 0.7.0
+      frequency: 1.e+08
+      num_bins: 1
+      epsilon: 0
+      delta: 0
+      offset_i: 0
+      offset_q: 0
+      reference_clock: internal
+      sequencer: 0
+      sync_enabled: true
+      gain: 1
+
+    - name: qblox_qrm
+      id_: 1
+      category: awg
+      ip: 192.168.0.4
+      firmware: 0.7.0
+      frequency: 2.e+07
+      epsilon: 0
+      delta: 0
+      offset_i: 0
+      offset_q: 0
+      acquisition_delay_time: 100
+      reference_clock: external
+      sequencer: 0
+      sync_enabled: true
+      gain: 1
+      acquire_trigger_mode: sequencer
+      hardware_averaging: false
+      sampling_rate: 1.e+09
+      num_bins: 1
+      integration: true
+      integration_length: 2000
+      integration_mode: ssb
+      sequence_timeout: 1
+      acquisition_timeout: 1
+
+    - name: rohde_schwarz
+      id_: 0
+      category: signal_generator
+      ip: 192.168.0.10
+      firmware: 4.30.046.295
+      power: 15
+      frequency: 3.451e+09
+
+    - name: rohde_schwarz
+      id_: 1
+      category: signal_generator
+      ip: 192.168.0.7
+      firmware: 4.30.046.295
+      power: 15
+      frequency: 7.34730e+09
+
+    - name: mini_circuits
+      id_: 1
+      category: attenuator
+      ip: 192.168.0.222
+      firmware: None
+      attenuation: 36
+
+  buses:
+    - id_: 0
+      category: bus
+      subcategory: control
+      port: 0
+      system_control:
+        id_: 0
+        category: system_control
+        subcategory: mixer_based_system_control
+        awg:
+          id_: 0
+          category: awg
+        signal_generator:
+          id_: 0
+          category: signal_generator
+
+    - id_: 1
+      category: bus
+      subcategory: readout
+      port: 1
+      system_control:
+        id_: 1
+        category: system_control
+        subcategory: mixer_based_system_control
+        awg:
+          id_: 1
+          category: awg
+        signal_generator:
+          id_: 1
+          category: signal_generator
+      attenuator:
+        id_: 1
+        category: attenuator

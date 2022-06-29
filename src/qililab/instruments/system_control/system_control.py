@@ -7,18 +7,18 @@ from typing import Type, get_type_hints
 from qililab.platform.components import BusElement
 from qililab.pulse import PulseSequence
 from qililab.result import Result
-from qililab.settings import Settings
-from qililab.typings import BusElementName
+from qililab.settings import DDBBElement
+from qililab.typings import SystemControlSubcategory
 
 
 class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
     @dataclass
-    class SystemControlSettings(Settings):
+    class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
-        subcategory: BusElementName
+        subcategory: SystemControlSubcategory
 
     settings: SystemControlSettings
 

@@ -1,7 +1,10 @@
 """PlatformManagerYAML class."""
-from qililab.constants import DEFAULT_SETTINGS_FOLDERNAME
+import os
+
+import yaml
+
+from qililab.constants import RUNCARDS
 from qililab.platform.platform_manager import PlatformManager
-from qililab.settings import SETTINGS_MANAGER
 
 
 class PlatformManagerYAML(PlatformManager):
@@ -16,5 +19,11 @@ class PlatformManagerYAML(PlatformManager):
         Returns:
             dict: Dictionary with platform and schema settings.
         """
+        runcards_path = os.environ.get(RUNCARDS, None)
+        if runcards_path is None:
+            raise ValueError("Environment variable RUNCARDS is not set.")
 
-        return SETTINGS_MANAGER.load(foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name)
+        with open(file=f"{runcards_path}/{platform_name}.yml", mode="r", encoding="utf8") as file:
+            settings = yaml.safe_load(stream=file)
+
+        return settings

@@ -4,14 +4,14 @@ from enum import Enum
 from typing import Dict, List
 
 from qililab.constants import YAML
-from qililab.settings import Settings
+from qililab.settings import DDBBElement
 from qililab.typings.factory_element import FactoryElement
 
 
 class BusElement(FactoryElement):
     """Class BusElement. All bus element classes must inherit from this class."""
 
-    settings: Settings
+    settings: DDBBElement
 
     def to_dict(self):
         """Return a dict representation of the BusElement class."""

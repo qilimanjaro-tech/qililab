@@ -9,7 +9,7 @@ from qililab.instruments import (
     MixerBasedSystemControl,
     SystemControl,
 )
-from qililab.settings import Settings
+from qililab.settings import DDBBElement
 from qililab.typings import BusSubcategory, Category
 from qililab.utils import Factory
 
@@ -24,7 +24,7 @@ class Bus:
     """
 
     @dataclass
-    class BusSettings(Settings):
+    class BusSettings(DDBBElement):
         """Bus settings.
 
         Args:

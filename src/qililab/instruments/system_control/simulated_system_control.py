@@ -16,7 +16,7 @@ from qililab.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult
-from qililab.typings import BusElementName
+from qililab.typings import SystemControlSubcategory
 from qililab.utils import Factory
 
 
@@ -24,7 +24,7 @@ from qililab.utils import Factory
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
 
-    name = BusElementName.SIMULATED_SYSTEM_CONTROL
+    name = SystemControlSubcategory.SIMULATED_SYSTEM_CONTROL
     energy_norm: float = HBAR * 2 * np.pi
 
     @dataclass

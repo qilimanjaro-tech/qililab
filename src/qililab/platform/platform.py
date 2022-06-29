@@ -6,7 +6,7 @@ from qililab.constants import YAML
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.platform.utils import RuncardSchema
-from qililab.settings import Settings, TranslationSettings
+from qililab.settings import DDBBElement, TranslationSettings
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
 from qililab.utils import nested_dataclass
 
@@ -21,7 +21,7 @@ class Platform:
     """
 
     @nested_dataclass
-    class PlatformSettings(Settings):
+    class PlatformSettings(DDBBElement):
         """Contains the settings of the platform.
 
         Args:

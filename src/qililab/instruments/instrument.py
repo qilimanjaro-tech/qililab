@@ -7,7 +7,7 @@ from typing import Callable, Type, get_type_hints
 from qililab.config import logger
 from qililab.constants import YAML
 from qililab.platform import BusElement
-from qililab.settings import Settings
+from qililab.settings import DDBBElement
 from qililab.typings import Device, InstrumentName, Parameter
 
 
@@ -23,7 +23,7 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(Settings):
+    class InstrumentSettings(DDBBElement):
         """Contains the settings of an instrument.
 
         Args:

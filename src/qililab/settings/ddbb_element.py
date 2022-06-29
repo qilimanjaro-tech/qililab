@@ -6,7 +6,7 @@ from qililab.typings import Category
 
 
 @dataclass
-class Settings:
+class DDBBElement:
     """Settings class.
 
     Args:

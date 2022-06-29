@@ -11,7 +11,7 @@ from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
-from qililab.typings import BusElementName, Category
+from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
 
 
@@ -19,7 +19,7 @@ from qililab.utils import Factory
 class MixerBasedSystemControl(SystemControl):
     """MixerBasedSystemControl class."""
 
-    name = BusElementName.MIXER_BASED_SYSTEM_CONTROL
+    name = SystemControlSubcategory.MIXER_BASED_SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
     class MixerBasedSystemControlSettings(SystemControl.SystemControlSettings):

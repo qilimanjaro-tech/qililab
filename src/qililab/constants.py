@@ -8,7 +8,6 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 DATA_FOLDERNAME = "data"
 
-DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_PLATFORM_NAME = "galadriel"
 
 
