@@ -10,11 +10,18 @@ from qililab.utils import Waveforms
 
 @dataclass
 class PulseSequence:
-    """Container of Pulse objects addressed to the same bus."""
+    """Container of Pulse objects addressed to the same bus. All pulses should be addressed to the same port and
+    have the same frequency."""
 
-    port: int
-    pulses: List[Pulse] = field(default_factory=list)
+    pulses: List[Pulse]
+    port: int = field(init=False)
+    frequency: float = field(init=False)
     _name: str | None = field(init=False, default=None)
+
+    def __post_init__(self):
+        """Get port and frequency values from pulse."""
+        self.port = self.pulses[0].port
+        self.frequency = self.pulses[0].frequency
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -30,6 +37,8 @@ class PulseSequence:
             raise ValueError(
                 "All Pulse objects inside a BusPulses class should have the same type (Pulse or ReadoutPulse)."
             )
+        if pulse.frequency != self.frequency:
+            raise ValueError("All Pulse objects inside a BusPulses class should have the same frequency.")
         self.pulses.append(pulse)
 
     def __iter__(self):

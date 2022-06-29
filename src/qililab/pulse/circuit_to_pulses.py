@@ -38,12 +38,14 @@ class CircuitToPulses:
 
         if readout_gates is not None:
             for qubit_id in circuit.measurement_gate.target_qubits:
+                port, frequency = chip.get_port_and_frequency_from_qubit_idx(idx=qubit_id, readout=True)
                 sequence.add(
                     ReadoutPulse(
                         amplitude=translation_settings.readout_amplitude,
+                        frequency=frequency,
                         phase=translation_settings.readout_phase,
                         duration=translation_settings.readout_duration,
-                        port=chip.get_port_from_qubit_idx(idx=qubit_id, readout=True),
+                        port=port,
                     )
                 )
         return sequence
@@ -60,13 +62,12 @@ class CircuitToPulses:
         amplitude, phase = HardwareGateFactory.get(gate)
         if amplitude is None or phase is None:
             raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")
-
+        port, frequency = chip.get_port_and_frequency_from_qubit_idx(idx=gate.target_qubits[0], readout=False)
         return Pulse(
             amplitude=float(amplitude),
+            frequency=frequency,
             phase=float(phase),
             duration=translation_settings.gate_duration,
-            port=chip.get_port_from_qubit_idx(
-                idx=gate.target_qubits[0], readout=False
-            ),  # FIXME: Create pulses for 2-qubit gates
+            port=port,
             pulse_shape=Drag(num_sigmas=translation_settings.num_sigmas, beta=translation_settings.drag_coefficient),
         )

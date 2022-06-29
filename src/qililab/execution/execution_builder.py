@@ -38,8 +38,7 @@ class ExecutionBuilder(metaclass=Singleton):
                 if bus is None:
                     raise ValueError(f"There is no bus of type {bus_subcategory.value} connected to port {pulse.port}.")
                 if bus_idx not in buses:
-                    pulse_sequence_tmp = PulseSequence(port=pulse.port)
-                    pulse_sequence_tmp.add(pulse=pulse)
+                    pulse_sequence_tmp = PulseSequence(pulses=[pulse])
                     buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[pulse_sequence_tmp])
                     continue
                 buses[bus_idx].add_pulse(pulse=pulse, idx=idx)

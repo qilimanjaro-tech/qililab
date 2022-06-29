@@ -42,7 +42,7 @@ class BusExecution:
         if idx > len(self.pulse_sequences):
             raise ValueError("Bad index value.")
         if idx == len(self.pulse_sequences):
-            self.pulse_sequences.append(PulseSequence(port=pulse.port, pulses=[pulse]))
+            self.pulse_sequences.append(PulseSequence(pulses=[pulse]))
             return
         self.pulse_sequences[idx].add(pulse)
 

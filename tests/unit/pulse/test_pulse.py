@@ -33,5 +33,5 @@ class TestPulse:
     def test_instantiate_pulse_with_dict(self, pulse: Pulse):
         """Test instantiation of pulse with a dictionary."""
         pulse_shape = pulse.pulse_shape.to_dict()
-        pulse = Pulse(amplitude=1.0, phase=0, duration=10, port=2, pulse_shape=pulse_shape)
+        pulse = Pulse(amplitude=1.0, frequency=1e9, phase=0, duration=10, port=2, pulse_shape=pulse_shape)
         assert pulse.pulse_shape.to_dict() == {"name": "gaussian"} | pulse_shape

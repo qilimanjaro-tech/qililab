@@ -1,6 +1,6 @@
 """Chip class."""
 from dataclasses import asdict, dataclass
-from typing import List
+from typing import List, Tuple
 
 from qililab.chip.node import Node
 from qililab.chip.qubit import Qubit
@@ -52,12 +52,13 @@ class Chip:
         """
         return [self.nodes[node_idx] for node_idx in node.nodes]
 
-    def get_port_from_qubit_idx(self, idx: int, readout: bool) -> int:
+    def get_port_and_frequency_from_qubit_idx(self, idx: int, readout: bool) -> Tuple[int, float]:
         """Get control/readout port number from qubit index.
 
         Args:
             idx (int): Qubit index.
-            readout (bool): Readout (True) or control (False) port.
+            readout (bool): If True, return readout port and resonator frequency,
+            if False return control port and qubit frequency.
 
         Raises:
             ValueError: If qubit doesn't have a control/readout port.
@@ -69,11 +70,11 @@ class Chip:
         if not readout:
             if qubit.port is None:
                 raise ValueError(f"Qubit with index {idx} doesn't have a control line.")
-            return qubit.port
+            return qubit.port, qubit.frequency
         adj_nodes = self._get_adjacent_nodes(node=qubit)
         for node in adj_nodes:
             if isinstance(node, Resonator):
-                return node.port
+                return node.port, node.frequency
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
 
     def to_dict(self):

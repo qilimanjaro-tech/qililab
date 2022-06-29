@@ -356,6 +356,7 @@ experiment = {
                 {
                     "name": "ReadoutPulse",
                     "amplitude": 1,
+                    "frequency": 1e9,
                     "phase": 0,
                     "duration": 2000,
                     "port": 1,

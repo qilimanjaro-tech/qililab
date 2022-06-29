@@ -1,6 +1,6 @@
 """Pulse class."""
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -15,6 +15,7 @@ class Pulse:
 
     name = "Pulse"
     amplitude: float
+    frequency: float
     phase: float
     duration: int
     port: int  # TODO: A Pulse should not know about port.
@@ -79,6 +80,7 @@ class Pulse:
         return {
             PULSE.NAME: self.name,
             PULSE.AMPLITUDE: self.amplitude,
+            PULSE.FREQUENCY: self.frequency,
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
             PULSE.PORT: self.port,

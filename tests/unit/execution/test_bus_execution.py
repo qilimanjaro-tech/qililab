@@ -10,6 +10,7 @@ class TestBusExecution:
 
     def test_add_pulse_method(self, bus_execution: BusExecution, pulse: Pulse):
         """Test add_pulse method."""
+        pulse.frequency = bus_execution.pulse_sequences[0].frequency
         bus_execution.add_pulse(pulse=pulse, idx=0)
 
     def test_add_pulse_method_wrong_idx(self, bus_execution: BusExecution, pulse: Pulse):

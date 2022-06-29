@@ -91,6 +91,7 @@ class PULSE:
 
     NAME = "name"
     AMPLITUDE = "amplitude"
+    FREQUENCY = "frequency"
     PHASE = "phase"
     DURATION = "duration"
     PORT = "port"
