@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from qililab.constants import PULSES, YAML
+from qililab.constants import PULSES, RUNCARD
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.readout_pulse import ReadoutPulse
 
@@ -47,7 +47,7 @@ class Pulses:
             PulseSequence: Class instance.
         """
         pulses = [
-            Pulse(**settings) if Pulse.name == settings.pop(YAML.NAME) else ReadoutPulse(**settings)
+            Pulse(**settings) if Pulse.name == settings.pop(RUNCARD.NAME) else ReadoutPulse(**settings)
             for settings in dictionary[PULSES.PULSES]
         ]
 

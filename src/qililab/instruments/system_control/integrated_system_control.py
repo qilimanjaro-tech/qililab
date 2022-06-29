@@ -34,7 +34,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
         """Initialize device attribute to the corresponding device class."""
 
     @property
-    def frequency(self) -> float:
+    def awg_frequency(self) -> float:
         """SystemControl 'frequency' property."""
 
     @property

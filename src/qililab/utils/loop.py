@@ -6,7 +6,7 @@ from typing import List
 
 import numpy as np
 
-from qililab.constants import LOOP, YAML
+from qililab.constants import LOOP, RUNCARD
 from qililab.typings import Instrument, Parameter
 
 
@@ -89,8 +89,8 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            YAML.INSTRUMENT: self.instrument.value,
-            YAML.ID: self.id_,
+            RUNCARD.INSTRUMENT: self.instrument.value,
+            RUNCARD.ID: self.id_,
             LOOP.PARAMETER: self.parameter.value,
             LOOP.START: self.start,
             LOOP.STOP: self.stop,

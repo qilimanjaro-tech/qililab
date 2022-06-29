@@ -5,7 +5,7 @@ from typing import Dict, List, Type
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import DEFAULT_PLATFORM_NAME, PLATFORM, SCHEMA, YAML
+from qililab.constants import PLATFORM, RUNCARD, SCHEMA
 
 
 class Galadriel:
@@ -14,9 +14,9 @@ class Galadriel:
     name = "galadriel"
 
     platform = {
-        YAML.ID: 0,
-        YAML.NAME: "galadriel",
-        YAML.CATEGORY: "platform",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "galadriel",
+        RUNCARD.CATEGORY: "platform",
         PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
@@ -30,9 +30,9 @@ class Galadriel:
     }
 
     qblox_qcm_0 = {
-        YAML.ID: 0,
-        YAML.NAME: "qblox_qcm",
-        YAML.CATEGORY: "awg",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "qblox_qcm",
+        RUNCARD.CATEGORY: "awg",
         "ip": "192.168.0.3",
         "firmware": "0.7.0",
         "reference_clock": "internal",
@@ -48,9 +48,9 @@ class Galadriel:
     }
 
     qblox_qrm_0 = {
-        YAML.ID: 1,
-        YAML.NAME: "qblox_qrm",
-        YAML.CATEGORY: "awg",
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: "qblox_qrm",
+        RUNCARD.CATEGORY: "awg",
         "ip": "192.168.0.4",
         "firmware": "0.7.0",
         "reference_clock": "external",
@@ -75,38 +75,36 @@ class Galadriel:
     }
 
     rohde_schwarz_0 = {
-        YAML.ID: 0,
-        YAML.NAME: "rohde_schwarz",
-        YAML.CATEGORY: "signal_generator",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "rohde_schwarz",
+        RUNCARD.CATEGORY: "signal_generator",
         "ip": "192.168.0.10",
         "firmware": "4.30.046.295",
-        "frequency": 3644000000.0,
         "power": 15,
     }
 
     rohde_schwarz_1 = {
-        YAML.ID: 1,
-        YAML.NAME: "rohde_schwarz",  # unique name
-        YAML.CATEGORY: "signal_generator",  # general name
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: "rohde_schwarz",  # unique name
+        RUNCARD.CATEGORY: "signal_generator",  # general name
         "ip": "192.168.0.7",
         "firmware": "4.30.046.295",
-        "frequency": 7307720000.0,
         "power": 15,
     }
 
     attenuator = {
-        YAML.ID: 1,
-        YAML.NAME: "mini_circuits",
-        YAML.CATEGORY: "attenuator",
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: "mini_circuits",
+        RUNCARD.CATEGORY: "attenuator",
         "attenuation": 30,
         "ip": "192.168.0.222",
         "firmware": None,
     }
 
     keithley_2600 = {
-        YAML.ID: 1,
-        YAML.NAME: "keithley_2600",
-        YAML.CATEGORY: "dc_source",
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: "keithley_2600",
+        RUNCARD.CATEGORY: "dc_source",
         "ip": "192.168.1.112",
         "firmware": None,
         "max_current": 0.1,
@@ -130,26 +128,26 @@ class Galadriel:
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: [
             {
-                YAML.ID: 0,
-                YAML.CATEGORY: "bus",
-                YAML.SUBCATEGORY: "control",
+                RUNCARD.ID: 0,
+                RUNCARD.CATEGORY: "bus",
+                RUNCARD.SUBCATEGORY: "control",
                 "system_control": {
-                    YAML.ID: 0,
-                    YAML.CATEGORY: "system_control",
-                    YAML.SUBCATEGORY: "mixer_based_system_control",
+                    RUNCARD.ID: 0,
+                    RUNCARD.CATEGORY: "system_control",
+                    RUNCARD.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qcm_0,
                     "signal_generator": rohde_schwarz_0,
                 },
                 "port": 0,
             },
             {
-                YAML.ID: 0,
-                YAML.CATEGORY: "bus",
-                YAML.SUBCATEGORY: "readout",
+                RUNCARD.ID: 0,
+                RUNCARD.CATEGORY: "bus",
+                RUNCARD.SUBCATEGORY: "readout",
                 "system_control": {
-                    YAML.ID: 1,
-                    YAML.CATEGORY: "system_control",
-                    YAML.SUBCATEGORY: "mixer_based_system_control",
+                    RUNCARD.ID: 1,
+                    RUNCARD.CATEGORY: "system_control",
+                    RUNCARD.SUBCATEGORY: "mixer_based_system_control",
                     "awg": qblox_qrm_0,
                     "signal_generator": rohde_schwarz_1,
                 },
@@ -160,14 +158,14 @@ class Galadriel:
     }
 
     runcard = {
-        YAML.SETTINGS: platform,
-        YAML.SCHEMA: schema,
+        RUNCARD.SETTINGS: platform,
+        RUNCARD.SCHEMA: schema,
     }
 
     qubit_0: dict = {
-        YAML.ID: 0,
-        YAML.NAME: "qubit",
-        YAML.CATEGORY: "qubit",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "qubit",
+        RUNCARD.CATEGORY: "qubit",
         "pi_pulse_amplitude": 1,
         "pi_pulse_duration": 100,
         "pi_pulse_frequency": 100000000.0,
@@ -177,13 +175,13 @@ class Galadriel:
     }
 
     resonator_0 = {
-        YAML.ID: 0,
-        YAML.NAME: "resonator",
-        YAML.CATEGORY: "resonator",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "resonator",
+        RUNCARD.CATEGORY: "resonator",
         "qubits": [
             {
-                YAML.ID: 0,
-                YAML.CATEGORY: "qubit",
+                RUNCARD.ID: 0,
+                RUNCARD.CATEGORY: "qubit",
                 "pi_pulse_amplitude": 1,
                 "pi_pulse_duration": 100,
                 "pi_pulse_frequency": 100000000.0,
@@ -201,9 +199,9 @@ class FluxQubit:
     name = "flux_qubit"
 
     platform = {
-        YAML.ID: 0,
-        YAML.NAME: "flux_qubit",
-        YAML.CATEGORY: "platform",
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "flux_qubit",
+        RUNCARD.CATEGORY: "platform",
         PLATFORM.TRANSLATION_SETTINGS: {
             "readout_duration": 2000,
             "readout_amplitude": 0.4,
@@ -230,13 +228,13 @@ class FluxQubit:
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: [
             {
-                YAML.ID: 0,
-                YAML.CATEGORY: "bus",
-                YAML.SUBCATEGORY: "control",
+                RUNCARD.ID: 0,
+                RUNCARD.CATEGORY: "bus",
+                RUNCARD.SUBCATEGORY: "control",
                 "system_control": {
-                    YAML.ID: 0,
-                    YAML.CATEGORY: "system_control",
-                    YAML.SUBCATEGORY: "simulated_system_control",
+                    RUNCARD.ID: 0,
+                    RUNCARD.CATEGORY: "system_control",
+                    RUNCARD.SUBCATEGORY: "simulated_system_control",
                     "qubit": "csfq4jj",
                     "frequency": 2085540698,
                     "driving_hamiltonian": "zport",
@@ -251,8 +249,8 @@ class FluxQubit:
     }
 
     runcard = {
-        YAML.SETTINGS: platform,
-        YAML.SCHEMA: schema,
+        RUNCARD.SETTINGS: platform,
+        RUNCARD.SCHEMA: schema,
     }
 
 

@@ -18,7 +18,7 @@ from qililab.constants import (
     EXPERIMENT_FILENAME,
     LOOP,
     RESULTS_FILENAME,
-    YAML,
+    RUNCARD,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import Platform, RuncardSchema
@@ -339,11 +339,11 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
-            YAML.PLATFORM: self.platform.to_dict(),
-            YAML.SETTINGS: asdict(self.settings),
+            RUNCARD.PLATFORM: self.platform.to_dict(),
+            RUNCARD.SETTINGS: asdict(self.settings),
             EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
-            YAML.NAME: self.name,
+            RUNCARD.NAME: self.name,
         }
 
     @classmethod
@@ -353,12 +353,12 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
-        platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
+        settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
+        platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
         sequences = [Pulses.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
-        experiment_name = dictionary[YAML.NAME]
+        experiment_name = dictionary[RUNCARD.NAME]
         return Experiment(
             sequences=sequences,
             loop=loop,

@@ -21,7 +21,6 @@ class TestSGS100A:
         """Test setup method"""
         rohde_schwarz.setup()
         rohde_schwarz.device.power.assert_called_once_with(rohde_schwarz.power)
-        rohde_schwarz.device.frequency.assert_called_once_with(rohde_schwarz.frequency)
 
     def test_stop_method(self, rohde_schwarz: SGS100A):
         """Test stop method"""

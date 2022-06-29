@@ -11,7 +11,7 @@ DEFAULT_PLATFORM_NAME = "galadriel"
 
 
 # TODO: Distribute constants over different classes
-class YAML:
+class RUNCARD:
     """YAML constants."""
 
     ID = "id_"
@@ -24,7 +24,14 @@ class YAML:
     SETTINGS = "settings"
     PLATFORM = "platform"
     SCHEMA = "schema"
-    SCHEMA = "schema"
+    AWG = "awg"
+    SIGNAL_GENERATOR = "signal_generator"
+
+
+class SIGNAL_GENERATOR:
+    """SignalGenerator attribute names."""
+
+    FREQUENCY = "frequency"
 
 
 class PLATFORM:

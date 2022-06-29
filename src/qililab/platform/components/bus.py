@@ -1,8 +1,7 @@
 """Bus class."""
 from dataclasses import dataclass
-from typing import List
 
-from qililab.constants import BUS, YAML
+from qililab.constants import BUS, RUNCARD
 from qililab.instruments import (
     Attenuator,
     Instruments,
@@ -101,7 +100,7 @@ class Bus:
         for name, value in self.settings:
             if isinstance(value, dict):
                 if Category(name) == Category.SYSTEM_CONTROL:
-                    subcategory = value.get(YAML.SUBCATEGORY)
+                    subcategory = value.get(RUNCARD.SUBCATEGORY)
                     if not isinstance(subcategory, str):
                         raise ValueError("Invalid value for subcategory.")
                     instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
@@ -133,7 +132,11 @@ class Bus:
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
         return (
-            {YAML.ID: self.id_, YAML.CATEGORY: self.settings.category.value, YAML.SUBCATEGORY: self.subcategory.value}
+            {
+                RUNCARD.ID: self.id_,
+                RUNCARD.CATEGORY: self.settings.category.value,
+                RUNCARD.SUBCATEGORY: self.subcategory.value,
+            }
             | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}
             | {BUS.PORT: self.port}
         )

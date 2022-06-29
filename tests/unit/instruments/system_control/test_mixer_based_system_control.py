@@ -25,7 +25,7 @@ class TestMixerBasedSystemControl:
 
     def test_frequency_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test frequency property."""
-        assert mixer_based_system_control.frequency == mixer_based_system_control.awg.frequency
+        assert mixer_based_system_control.awg_frequency == mixer_based_system_control.awg.frequency
 
     def test_signal_generator_property(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test signal_generator property."""

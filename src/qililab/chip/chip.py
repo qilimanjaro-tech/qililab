@@ -5,7 +5,7 @@ from typing import List, Tuple
 from qililab.chip.node import Node
 from qililab.chip.qubit import Qubit
 from qililab.chip.resonator import Resonator
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.typings import Category
 from qililab.utils import Factory
 
@@ -21,7 +21,7 @@ class Chip:
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
-        self.nodes = [Factory.get(name=node.pop(YAML.NAME))(**node) for node in self.nodes]
+        self.nodes = [Factory.get(name=node.pop(RUNCARD.NAME))(**node) for node in self.nodes]
         self.category = Category(self.category)
 
     def _find_qubit(self, idx: int) -> Qubit:
@@ -83,5 +83,5 @@ class Chip:
             "id_": self.id_,
             "category": self.category.value,
             "ports": self.ports,
-            "nodes": [{YAML.NAME: node.name.value} | asdict(node) for node in self.nodes],
+            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
         }

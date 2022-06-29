@@ -2,7 +2,7 @@
 from typing import List
 
 from qililab.chip import Chip
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, InstrumentFactory, Instruments
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
@@ -68,7 +68,7 @@ class Schema:
             List[Instrument]: List of instantiated instrument classes.
         """
         return [
-            InstrumentFactory.get(instrument.pop(YAML.NAME))(settings=instrument) for instrument in instruments_dict
+            InstrumentFactory.get(instrument.pop(RUNCARD.NAME))(settings=instrument) for instrument in instruments_dict
         ]
 
     def to_dict(self):

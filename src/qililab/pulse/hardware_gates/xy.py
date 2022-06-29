@@ -24,5 +24,5 @@ class XY(HardwareGate):
         theta, phi = gate.parameters
         theta = cls.normalize_angle(angle=theta)
         amplitude = np.abs(theta) / np.pi
-        phase = (phi + 0 if theta >= 0 else np.pi) % (2 * np.pi)
+        phase = (phi if theta >= 0 else phi + np.pi) % (2 * np.pi)
         return amplitude, phase

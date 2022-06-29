@@ -1,6 +1,7 @@
 """Settings class."""
 from dataclasses import dataclass, fields
 from enum import Enum
+from types import NoneType
 
 from qililab.typings import Category
 
@@ -29,4 +30,6 @@ class DDBBElement:
         attr_type = type(getattr(self, name))
         if attr_type == int:  # FIXME: Depending on how we define de value, python thinks it is an int
             attr_type = float
-        setattr(self, name, attr_type(value))
+        if attr_type != NoneType:
+            value = attr_type(value)
+        setattr(self, name, value)

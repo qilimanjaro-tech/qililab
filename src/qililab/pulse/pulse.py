@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from qililab.constants import PULSE, YAML
+from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.utils import Factory, Waveforms
 
@@ -25,7 +25,7 @@ class Pulse:
     def __post_init__(self):
         """Cast qubit_ids to list."""
         if isinstance(self.pulse_shape, dict):
-            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(YAML.NAME))(
+            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
                 **self.pulse_shape  # pylint: disable=not-a-mapping
             )
 

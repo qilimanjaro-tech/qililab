@@ -59,7 +59,7 @@ class BusExecution:
         num_sequences = len(self.pulse_sequences)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
+        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.awg_frequency, resolution=resolution)
 
     @property
     def port(self):

@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Generator, Tuple
 
-from qililab.constants import YAML
+from qililab.constants import RUNCARD, SIGNAL_GENERATOR
 from qililab.instruments.awg import AWG
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
@@ -56,15 +56,27 @@ class MixerBasedSystemControl(SystemControl):
         self.signal_generator.turn_on()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
-        """Run the given pulse sequence."""
+        """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
+        if pulse_sequence.frequency != self.frequency:
+            self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
+            self.signal_generator.setup()
         return self.awg.run(
             pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
 
     @property
+    def awg_frequency(self):
+        """SystemControl 'awg_frequency' property."""
+        return self.awg.frequency
+
+    @property
     def frequency(self):
         """SystemControl 'frequency' property."""
-        return self.awg.frequency
+        return (
+            self.signal_generator.frequency - self.awg.frequency
+            if self.signal_generator.frequency is not None
+            else None
+        )
 
     @property
     def signal_generator(self):
@@ -108,11 +120,11 @@ class MixerBasedSystemControl(SystemControl):
     def to_dict(self):
         """Return a dict representation of the BusElement class."""
         return {
-            YAML.ID: self.id_,
-            YAML.CATEGORY: self.settings.category.value,
-            YAML.SUBCATEGORY: self.settings.subcategory.value,
+            RUNCARD.ID: self.id_,
+            RUNCARD.CATEGORY: self.settings.category.value,
+            RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
         } | {
-            key: {YAML.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
+            key: {RUNCARD.NAME: value.name.value} | asdict(value.settings, dict_factory=dict_factory)
             for key, value in self
             if not isinstance(value, dict)
         }

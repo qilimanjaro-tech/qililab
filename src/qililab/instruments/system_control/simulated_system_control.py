@@ -64,7 +64,7 @@ class SimulatedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-        waveforms = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
+        waveforms = pulse_sequence.waveforms(frequency=self.awg_frequency, resolution=self.resolution)
         i_waveform = np.array(waveforms.i) * self.amplitude_norm_factor
         hamiltonian = self.hamiltonian(
             qubit=self.qubit,
@@ -137,7 +137,7 @@ class SimulatedSystemControl(SystemControl):
         return self.settings.store_states
 
     @property
-    def frequency(self):
+    def awg_frequency(self):
         """SimulatedSystemControl 'frequency' property.
 
         Returns:
