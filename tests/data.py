@@ -120,11 +120,8 @@ class Galadriel:
         "category": "chip",
         "ports": [0, 1, 2, 3],  # ports used for control/readout
         "nodes": [
-            {"name": "resonator", "port": 0, "frequency": 7.34730e09, "nodes": [2]},
-            {"name": "resonator", "port": 0, "frequency": 7.34730e09, "nodes": [3]},
-            {"name": "qubit", "idx": 0, "port": 1, "frequency": 3.451e09, "nodes": [0, 4]},
-            {"name": "qubit", "idx": 1, "port": 2, "frequency": 3.451e09, "nodes": [1, 4]},
-            {"name": "coupler", "port": 3, "frequency": 3.451e09, "nodes": [2, 3]},
+            {"name": "resonator", "port": 1, "frequency": 7.34730e09, "nodes": [1]},
+            {"name": "qubit", "idx": 0, "port": 0, "frequency": 3.451e09, "nodes": [0]},
         ],
     }
 
@@ -222,8 +219,10 @@ class FluxQubit:
     chip = {
         "id_": 0,
         "category": "chip",
-        "ports": [0],  # ports used for control/readout
-        "nodes": [{"name": "qubit", "idx": 0, "port": 0, "frequency": 3.451e09, "nodes": []}],
+        "ports": [0, 1],  # ports used for control/readout
+        "nodes": [
+            {"name": "qubit", "idx": 0, "port": 0, "frequency": 3.451e09, "nodes": [0]},
+        ],
     }
 
     schema = {
@@ -359,7 +358,7 @@ experiment = {
                     "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
-                    "qubit_ids": [0],
+                    "port": 1,
                     "pulse_shape": {"name": "rectangular"},
                     "start_time": 40,
                 }

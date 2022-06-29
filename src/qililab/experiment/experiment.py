@@ -250,7 +250,7 @@ class Experiment:
         for sequence in sequence_list:
             if isinstance(sequence, Circuit):
                 sequence = CircuitToPulses().translate(
-                    circuit=sequence, translation_settings=self.platform.translation_settings
+                    circuit=sequence, translation_settings=self.platform.translation_settings, chip=self.platform.chip
                 )
             sequences.append(sequence)
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequences)

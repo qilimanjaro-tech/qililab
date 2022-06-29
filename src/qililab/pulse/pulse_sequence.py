@@ -12,7 +12,7 @@ from qililab.utils import Waveforms
 class PulseSequence:
     """Container of Pulse objects addressed to the same bus."""
 
-    qubit_ids: List[int]
+    port: int
     pulses: List[Pulse] = field(default_factory=list)
     _name: str | None = field(init=False, default=None)
 
@@ -24,7 +24,7 @@ class PulseSequence:
         """
         if self._name is None:
             self._name = pulse.name
-        if pulse.qubit_ids != self.qubit_ids:
+        if pulse.port != self.port:
             raise ValueError("All Pulse objects inside a BusPulses class should contain the same qubit_ids.")
         if pulse.name != self.name:
             raise ValueError(

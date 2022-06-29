@@ -88,15 +88,6 @@ class Bus:
         return self.settings.attenuator
 
     @property
-    def qubit_ids(self) -> List[int]:
-        """Bus 'qubit_ids' property.
-
-        Returns:
-            List[int]: IDs of the qubit connected to the bus.
-        """
-        return [0]  # TODO: Obtain from ChipPlaceHolder
-
-    @property
     def subcategory(self) -> BusSubcategory:
         """Bus 'subcategory' property.
 
@@ -141,9 +132,8 @@ class Bus:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return {
-            YAML.ID: self.id_,
-            YAML.CATEGORY: self.settings.category.value,
-            YAML.SUBCATEGORY: self.subcategory.value,
-            BUS.PORT: self.port,
-        } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}
+        return (
+            {YAML.ID: self.id_, YAML.CATEGORY: self.settings.category.value, YAML.SUBCATEGORY: self.subcategory.value}
+            | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}
+            | {BUS.PORT: self.port}
+        )

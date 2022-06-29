@@ -182,13 +182,15 @@ def fixture_attenuator() -> Attenuator:
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
 def fixture_pulse_sequences(platform: Platform) -> PulseSequences:
     """Return PulseSequences instance."""
-    return CircuitToPulses().translate(circuit=circuit, translation_settings=platform.translation_settings)
+    return CircuitToPulses().translate(
+        circuit=circuit, translation_settings=platform.translation_settings, chip=platform.chip
+    )
 
 
 @pytest.fixture(name="pulse_sequence")
 def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
     """Return PulseSequences instance."""
-    return PulseSequence(qubit_ids=[2], pulses=[pulse])
+    return PulseSequence(port=1, pulses=[pulse])
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
@@ -292,7 +294,7 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, qubit_ids=[0], pulse_shape=pulse_shape, start_time=0)
+    return Pulse(amplitude=1, phase=0, duration=50, port=0, pulse_shape=pulse_shape, start_time=0)
 
 
 @pytest.fixture(name="readout_pulse")
@@ -303,7 +305,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, qubit_ids=[0], pulse_shape=pulse_shape, start_time=0)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, port=1, pulse_shape=pulse_shape, start_time=0)
 
 
 @pytest.fixture(name="mixer_based_system_control")

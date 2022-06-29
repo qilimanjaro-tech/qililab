@@ -17,7 +17,7 @@ class TestExecutionBuilder:
         self, platform: Platform, pulse_sequences: PulseSequences, pulse: Pulse
     ):
         """Test build method with wrong pulse sequence."""
-        pulse.qubit_ids = [3, 4, 9, 12]  # mess up qubit_ids
+        pulse.port = 1234  # mess up port
         pulse_sequences.add(pulse=pulse)
         with pytest.raises(ValueError):
             EXECUTION_BUILDER.build(platform=platform, pulse_sequences=[pulse_sequences])

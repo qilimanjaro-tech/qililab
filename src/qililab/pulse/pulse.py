@@ -17,7 +17,7 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
-    qubit_ids: List[int]  # TODO: A Pulse should not know about qubit ids.
+    port: int  # TODO: A Pulse should not know about port.
     pulse_shape: PulseShape
     start_time: Optional[int] = None
 
@@ -81,7 +81,7 @@ class Pulse:
             PULSE.AMPLITUDE: self.amplitude,
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
-            PULSE.QUBIT_IDS: self.qubit_ids,
+            PULSE.PORT: self.port,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
             PULSE.START_TIME: self.start_time,
         }

@@ -7,7 +7,6 @@ from qibo.core.circuit import Circuit
 from qibo.gates import M
 from qiboconnection.api import API
 
-from qililab import build_platform
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
@@ -15,7 +14,6 @@ from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 
 from ...conftest import mock_instruments
-from ...side_effect import yaml_safe_load_side_effect
 
 
 class TestExperiment:

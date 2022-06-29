@@ -93,7 +93,7 @@ class PULSE:
     AMPLITUDE = "amplitude"
     PHASE = "phase"
     DURATION = "duration"
-    QUBIT_IDS = "qubit_ids"
+    PORT = "port"
     PULSE_SHAPE = "pulse_shape"
     START_TIME = "start_time"
 

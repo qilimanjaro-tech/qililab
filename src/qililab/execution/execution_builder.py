@@ -34,13 +34,11 @@ class ExecutionBuilder(metaclass=Singleton):
         for idx, pulse_sequence in enumerate(pulse_sequences):
             for pulse in pulse_sequence.pulses:
                 bus_subcategory = BusSubcategory.READOUT if isinstance(pulse, ReadoutPulse) else BusSubcategory.CONTROL
-                bus_idx, bus = platform.get_bus(qubit_ids=pulse.qubit_ids, bus_subcategory=bus_subcategory)
+                bus_idx, bus = platform.get_bus(port=pulse.port, bus_subcategory=bus_subcategory)
                 if bus is None:
-                    raise ValueError(
-                        f"There is no bus of type {bus_subcategory.value} connected to qubits {pulse.qubit_ids}."
-                    )
+                    raise ValueError(f"There is no bus of type {bus_subcategory.value} connected to port {pulse.port}.")
                 if bus_idx not in buses:
-                    pulse_sequence_tmp = PulseSequence(qubit_ids=pulse.qubit_ids)
+                    pulse_sequence_tmp = PulseSequence(port=pulse.port)
                     pulse_sequence_tmp.add(pulse=pulse)
                     buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[pulse_sequence_tmp])
                     continue

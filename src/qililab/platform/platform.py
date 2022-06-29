@@ -64,7 +64,7 @@ class Platform:
             return self.buses, None
         return self.schema.get_element(category=category, id_=id_)
 
-    def get_bus(self, qubit_ids: List[int], bus_subcategory: BusSubcategory):
+    def get_bus(self, port: int, bus_subcategory: BusSubcategory):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
 
         Args:
@@ -78,7 +78,7 @@ class Platform:
             (
                 (bus_idx, bus)
                 for bus_idx, bus in enumerate(self.buses)
-                if bus.qubit_ids == qubit_ids and bus.subcategory == bus_subcategory
+                if bus.port == port and bus.subcategory == bus_subcategory
             ),
             ([], None),
         )

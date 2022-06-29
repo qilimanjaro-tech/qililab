@@ -26,7 +26,7 @@ class PulseSequences:
         Args:
             pulse (Pulse): Pulse object.
         """
-        key = str(pulse.qubit_ids)
+        key = str(pulse.port)
         if key not in self.time:
             self.time[key] = 0
         if pulse.start_time is None:

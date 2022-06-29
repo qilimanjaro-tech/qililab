@@ -42,7 +42,7 @@ class BusExecution:
         if idx > len(self.pulse_sequences):
             raise ValueError("Bad index value.")
         if idx == len(self.pulse_sequences):
-            self.pulse_sequences.append(PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
+            self.pulse_sequences.append(PulseSequence(port=pulse.port, pulses=[pulse]))
             return
         self.pulse_sequences[idx].add(pulse)
 
@@ -62,13 +62,13 @@ class BusExecution:
         return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
 
     @property
-    def qubit_ids(self):
-        """BusExecution 'qubit_ids' property
+    def port(self):
+        """BusExecution 'port' property
 
         Returns:
-            int: ID of the qubit connected to the bus.
+            int: Port where the bus is connected.
         """
-        return self.bus.qubit_ids
+        return self.bus.port
 
     @property
     def system_control(self):

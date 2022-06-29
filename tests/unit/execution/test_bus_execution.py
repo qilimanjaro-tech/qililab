@@ -29,7 +29,7 @@ class TestBusExecution:
 
     def test_qubit_ids_property(self, bus_execution: BusExecution):
         """Test qubit_ids property."""
-        assert bus_execution.qubit_ids == bus_execution.bus.qubit_ids
+        assert bus_execution.port == bus_execution.bus.port
 
     def test_acquire_time_method(self, buses_execution: BusExecution):
         """Test acquire_time method."""
