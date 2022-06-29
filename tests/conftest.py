@@ -24,8 +24,8 @@ from qililab.pulse import (
     Drag,
     Gaussian,
     Pulse,
+    Pulses,
     PulseSequence,
-    PulseSequences,
     PulseShape,
     ReadoutPulse,
     Rectangular,
@@ -179,12 +179,10 @@ def fixture_attenuator() -> Attenuator:
     return Attenuator(settings=settings)
 
 
-@pytest.fixture(name="pulse_sequences", params=experiment_params)
-def fixture_pulse_sequences(platform: Platform) -> PulseSequences:
-    """Return PulseSequences instance."""
-    return CircuitToPulses().translate(
-        circuit=circuit, translation_settings=platform.translation_settings, chip=platform.chip
-    )
+@pytest.fixture(name="pulses", params=experiment_params)
+def fixture_pulses(platform: Platform) -> Pulses:
+    """Return Pulses instance."""
+    return CircuitToPulses(settings=platform.translation_settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 @pytest.fixture(name="pulse_sequence")

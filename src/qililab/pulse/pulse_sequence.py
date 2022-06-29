@@ -4,6 +4,7 @@ from typing import List
 
 import numpy as np
 
+from qililab.constants import PULSESEQUENCE
 from qililab.pulse.pulse import Pulse
 from qililab.utils import Waveforms
 
@@ -22,6 +23,7 @@ class PulseSequence:
         """Get port and frequency values from pulse."""
         self.port = self.pulses[0].port
         self.frequency = self.pulses[0].frequency
+        self._name = self.pulses[0].name
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -29,8 +31,6 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
-        if self._name is None:
-            self._name = pulse.name
         if pulse.port != self.port:
             raise ValueError("All Pulse objects inside a BusPulses class should contain the same qubit_ids.")
         if pulse.name != self.name:
@@ -74,3 +74,26 @@ class PulseSequence:
         Returns:
             str: Name of the pulses. Options are "Pulse" or "ReadoutPulse"""
         return self._name
+
+    def to_dict(self):
+        """Return dictionary representation of the class.
+
+        Returns:
+            dict: Dictionary representation of the class.
+        """
+        return {
+            PULSESEQUENCE.PULSES: [pulse.to_dict() for pulse in self.pulses],
+        }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Load PulseSequence object from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the PulseSequence object.
+
+        Returns:
+            PulseSequence: Loaded class.
+        """
+        pulses = [Pulse(**pulse_dict) for pulse_dict in dictionary[PULSESEQUENCE.PULSES]]
+        return PulseSequence(pulses=pulses)

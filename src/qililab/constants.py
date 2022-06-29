@@ -6,7 +6,6 @@ RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
 
 RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
-DATA_FOLDERNAME = "data"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
 
@@ -77,13 +76,16 @@ class LOOP:
     STEP = "step"
 
 
-class PULSESEQUENCES:
+class PULSES:
     """PulseSequenes attribute names."""
 
     PULSES = "pulses"
-    TIME = "time"
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
+
+
+class PULSESEQUENCE:
+    """PulseSequence attribute names."""
+
+    PULSES = "pulses"
 
 
 class PULSE:

@@ -14,7 +14,6 @@ from tqdm.auto import tqdm
 from qililab.config import logger
 from qililab.constants import (
     DATA,
-    DATA_FOLDERNAME,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
     LOOP,
@@ -23,7 +22,7 @@ from qililab.constants import (
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import Platform, RuncardSchema
-from qililab.pulse import CircuitToPulses, PulseSequences
+from qililab.pulse import CircuitToPulses, Pulses
 from qililab.result import Result, Results
 from qililab.typings import Category, Instrument, Parameter, yaml
 from qililab.utils import LivePlot, Loop
@@ -46,7 +45,7 @@ class Experiment:
 
     def __init__(
         self,
-        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
+        sequences: List[Circuit | Pulses] | Circuit | Pulses,
         platform: Platform,
         loop: Loop | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
@@ -240,21 +239,17 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
+    def _build_execution(self, sequence_list: List[Circuit | Pulses]) -> Tuple[Execution, List[Pulses]]:
         """Build Execution class.
 
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        sequences = []
-        for sequence in sequence_list:
-            if isinstance(sequence, Circuit):
-                sequence = CircuitToPulses().translate(
-                    circuit=sequence, translation_settings=self.platform.translation_settings, chip=self.platform.chip
-                )
-            sequences.append(sequence)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequences)
-        return execution, sequences
+        if isinstance(sequence_list[0], Circuit):
+            translator = CircuitToPulses(settings=self.platform.translation_settings)
+            sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulses_list=sequence_list)
+        return execution, sequence_list
 
     def _create_folder(self) -> Path:
         """Create folder where the data will be saved.
@@ -360,7 +355,7 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+        sequences = [Pulses.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
         experiment_name = dictionary[YAML.NAME]

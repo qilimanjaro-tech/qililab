@@ -3,21 +3,19 @@ import pytest
 
 from qililab.execution import EXECUTION_BUILDER
 from qililab.platform import Platform
-from qililab.pulse import Pulse, PulseSequences
+from qililab.pulse import Pulse, Pulses
 
 
 class TestExecutionBuilder:
     """Unit tests checking the ExecutoinBuilder attributes and methods."""
 
-    def test_build_method(self, platform: Platform, pulse_sequences: PulseSequences):
+    def test_build_method(self, platform: Platform, pulses: Pulses):
         """Test build method."""
-        EXECUTION_BUILDER.build(platform=platform, pulse_sequences=[pulse_sequences])
+        EXECUTION_BUILDER.build(platform=platform, pulses_list=[pulses])
 
-    def test_build_method_with_wrong_pulse_sequence(
-        self, platform: Platform, pulse_sequences: PulseSequences, pulse: Pulse
-    ):
+    def test_build_method_with_wrong_pulse_sequence(self, platform: Platform, pulses: Pulses, pulse: Pulse):
         """Test build method with wrong pulse sequence."""
         pulse.port = 1234  # mess up port
-        pulse_sequences.add(pulse=pulse)
+        pulses.add(pulse=pulse)
         with pytest.raises(ValueError):
-            EXECUTION_BUILDER.build(platform=platform, pulse_sequences=[pulse_sequences])
+            EXECUTION_BUILDER.build(platform=platform, pulses_list=[pulses])
