@@ -183,4 +183,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return yaml.dump(self.to_dict(), sort_keys=False)
+        return str(yaml.dump(self.to_dict(), sort_keys=False))
