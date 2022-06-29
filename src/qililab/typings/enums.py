@@ -29,6 +29,7 @@ class Category(Enum):
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
+    CHIP = "chip"
 
 
 class Instrument(Enum):

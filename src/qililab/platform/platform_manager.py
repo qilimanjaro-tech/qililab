@@ -1,8 +1,6 @@
 """Platform Manager"""
 import os
-import sys
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from qililab.config import logger
 from qililab.constants import RUNCARDS

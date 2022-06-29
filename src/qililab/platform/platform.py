@@ -162,6 +162,15 @@ class Platform:
         """
         return self.schema.instruments
 
+    @property
+    def chip(self):
+        """Platform 'chip' property.
+
+        Returns:
+            Chip: Class descibing the chip properties.
+        """
+        return self.schema.chip
+
     def to_dict(self):
         """Return all platform information as a dictionary."""
         platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}

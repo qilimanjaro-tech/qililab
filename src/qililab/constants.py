@@ -51,6 +51,7 @@ class SCHEMA:
 
     INSTRUMENTS = "instruments"
     BUSES = "buses"
+    CHIP = "chip"
 
 
 class BUS:

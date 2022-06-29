@@ -13,4 +13,3 @@ class Coupler(Node):
 
     name = NodeName.COUPLER
     frequency: float
-    idx: int

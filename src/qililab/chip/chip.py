@@ -1,5 +1,5 @@
 """Chip class."""
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import List
 
 from qililab.chip.node import Node
@@ -20,7 +20,9 @@ class Chip:
     nodes: List[Node]
 
     def __post_init__(self):
+        """Cast nodes and category to their corresponding classes."""
         self.nodes = [Factory.get(name=node.pop(YAML.NAME))(**node) for node in self.nodes]
+        self.category = Category(self.category)
 
     def _find_qubit(self, idx: int) -> Qubit:
         """Find qubit from given idx value.
@@ -73,3 +75,12 @@ class Chip:
             if isinstance(node, Resonator):
                 return node.port
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
+
+    def to_dict(self):
+        """Return a dict representation of the Chip class."""
+        return {
+            "id_": self.id_,
+            "category": self.category.value,
+            "ports": self.ports,
+            "nodes": [{YAML.NAME: node.name.value} | asdict(node) for node in self.nodes],
+        }

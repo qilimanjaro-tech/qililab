@@ -24,8 +24,8 @@ class RuncardSchema:
         """SchemaDict class."""
 
         @nested_dataclass
-        class Bus:
-            """BusDict class."""
+        class BusSchema:
+            """Bus schema class."""
 
             id_: int
             category: str
@@ -34,11 +34,21 @@ class RuncardSchema:
             port: int
             attenuator: dict | None = None
 
-        buses: List[Bus]
+        @nested_dataclass
+        class ChipSchema:
+            """Chip schema class."""
+
+            id_: int
+            category: str
+            ports: List[int]
+            nodes: List[dict]
+
+        chip: ChipSchema
+        buses: List[BusSchema]
         instruments: List[dict]
 
         def __post_init__(self):
-            self.buses = [self.Bus(**bus) for bus in self.buses]
+            self.buses = [self.BusSchema(**bus) for bus in self.buses]
 
     settings: dict
     schema: Schema

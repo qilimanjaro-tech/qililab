@@ -1,6 +1,7 @@
 """Schema class"""
 from typing import List
 
+from qililab.chip import Chip
 from qililab.constants import YAML
 from qililab.instruments import Instrument, InstrumentFactory, Instruments
 from qililab.platform.components.bus import Bus
@@ -15,10 +16,11 @@ class Schema:
         settings (SchemaSettings): Settings that define the schema of the platform.
     """
 
-    def __init__(self, buses: List[dict], instruments: List[dict]):
+    def __init__(self, buses: List[dict], instruments: List[dict], chip: dict):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
         self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments) for bus in buses])
+        self.chip = Chip(**chip)
 
     def get_element(self, category: Category, id_: int):
         """Get buses element. Return None if element is not found.
@@ -71,4 +73,4 @@ class Schema:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return {"instruments": self.instruments.to_dict(), "buses": self.buses.to_dict()}
+        return {"chip": self.chip.to_dict(), "instruments": self.instruments.to_dict(), "buses": self.buses.to_dict()}
