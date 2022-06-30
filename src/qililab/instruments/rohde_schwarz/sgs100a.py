@@ -3,6 +3,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from dataclasses import dataclass
 
+from qililab.config import logger
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
@@ -35,16 +36,7 @@ class SGS100A(SignalGenerator):
         self.device.power(self.power)
         if self.frequency is not None:
             self.device.frequency(self.frequency)
-
-    @SignalGenerator.frequency.setter  # type: ignore
-    def frequency(self, value: float):
-        """Set R&A frequency.
-
-        Args:
-            value (float): Frequency in Hz.
-        """
-        self.settings.frequency = value
-        self.device.frequency(value)
+            logger.debug(f"Frequency set to {self.frequency}.")
 
     @SignalGenerator.CheckConnected
     def turn_on(self):
