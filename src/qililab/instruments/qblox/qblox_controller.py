@@ -1,14 +1,15 @@
 """Qblox controller class"""
 from abc import abstractclassmethod
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
+from qililab.connections.tcpip_connection import TCPIPConnection
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.typings import Cluster, Pulsar
 
 
-class QbloxController(object):
-    """Qblox pulsar class.
+class QbloxController(TCPIPConnection):
+    """Qblox controller class.
 
     Args:
         device (Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
@@ -16,8 +17,8 @@ class QbloxController(object):
     """
 
     @dataclass
-    class QbloxControllerSettings(object):
-        """Contains the settings of a specific pulsar.
+    class QbloxControllerSettings(TCPIPConnection.TCPIPConnectionSettings):
+        """Contains the settings of a specific Qblox controller.
 
         Args:
             reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
@@ -32,12 +33,11 @@ class QbloxController(object):
     controller: Pulsar | Cluster
 
     def __init__(self, settings: dict):
-        # super().__init__(settings=settings)
-        pass
+        super().__init__(settings=settings)
 
     def connect(self):
         """Establish connection with the instrument. Initialize self.device variable."""
-        # super().connect()
+        super().connect()
         self.initial_setup()
 
     def reset(self):
@@ -47,7 +47,6 @@ class QbloxController(object):
     def initial_setup(self):
         """Initial setup of the instrument."""
         self.reset()
-        # Fill modules list
         self.create_modules()
         self.initialize_modules()
 
@@ -62,7 +61,3 @@ class QbloxController(object):
     def initialize_modules(self):
         for module in self.modules:
             module.initial_setup()
-            # module._set_reference_source()
-            # module._set_sync_enabled()
-            # module._map_outputs()
-            # module._set_nco()

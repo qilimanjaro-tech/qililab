@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.qblox.qblox_controller import QbloxController
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.typings import Cluster
 
 
@@ -23,6 +24,7 @@ class QbloxCluster(QbloxController):
     settings: QbloxClusterSettings
     controller: Cluster
     n_modules: int = 20
+    modules_connected: List[int]
 
     def __init__(self, settings: dict):
         super().__init__(settings=settings)
@@ -34,4 +36,6 @@ class QbloxCluster(QbloxController):
         pass
 
     def create_modules(self):
-        self.modules = [self.controller]
+        for slot_id in self.modules_connected:
+            cluster_module = QbloxModule(self.controller[slot_id], slot_id=slot_id, settings=self.settings)
+            self.modules.append(cluster_module)

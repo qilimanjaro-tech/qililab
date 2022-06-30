@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_controller import QbloxController
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.typings import Pulsar
 
 
@@ -31,4 +32,5 @@ class QbloxPulsar(QbloxController):
         pass
 
     def create_modules(self):
-        self.modules = [self.controller]
+        pulsar_module = QbloxModule(self.controller, slot_id=0, settings=self.settings)
+        self.modules = [pulsar_module]

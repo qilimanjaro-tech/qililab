@@ -56,10 +56,17 @@ class QbloxModule(AWG):
     _cache: Tuple[PulseSequence, int, int] | None
     slot_id: int
 
-    def __init__(self, device: Pulsar | QcmQrm, settings: dict):
+    def __init__(self, device: Pulsar | QcmQrm, slot_id: int, settings: dict):
         super().__init__(settings=settings)
         self.device = device
+        self.slot_id = slot_id
         self._cache = None
+
+    def initial_setup(self):
+        self._set_reference_source()
+        self._set_sync_enabled()
+        self._map_outputs()
+        self._set_nco()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
@@ -176,29 +183,9 @@ class QbloxModule(AWG):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
 
-    @AWG.CheckConnected
-    def close(self):
-        """Empty cache and close connection with the instrument."""
+    def clear_cache(self):
+        """Empty cache."""
         self._cache = None
-        try:
-            super().close()
-        except ValueError:
-            self._connected = False
-            self.device.close()
-
-    @AWG.CheckConnected
-    def reset(self):
-        """Reset instrument."""
-        self.device.reset()
-
-    @AWG.CheckConnected
-    def initial_setup(self):
-        """Initial setup of the instrument."""
-        self.reset()
-        self._set_reference_source()
-        self._set_sync_enabled()
-        self._map_outputs()
-        self._set_nco()
 
     @AWG.CheckConnected
     def upload(self, sequence: Sequence, path: Path):
