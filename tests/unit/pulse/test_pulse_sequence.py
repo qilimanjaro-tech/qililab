@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse import Pulse, PulseSequence, ReadoutPulse
 
 
 class TestPulseSequence:
@@ -19,13 +19,12 @@ class TestPulseSequence:
         with pytest.raises(ValueError):
             pulse_sequence.add(pulse=pulse)
 
-    def test_add_method_with_wrong_name(self, pulse_sequence: PulseSequence, pulse: Pulse):
+    def test_add_method_with_wrong_name(self, pulse_sequence: PulseSequence, pulse: Pulse, readout_pulse: ReadoutPulse):
         """Test add method with wrong name"""
         pulse.port = pulse_sequence.port
         pulse_sequence.add(pulse=pulse)
-        pulse.name = "wrong name"
         with pytest.raises(ValueError):
-            pulse_sequence.add(pulse=pulse)
+            pulse_sequence.add(pulse=readout_pulse)
 
     def test_waveforms_method(self, pulse_sequence: PulseSequence):
         """Test waveforms method."""

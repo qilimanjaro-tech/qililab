@@ -14,12 +14,6 @@ class TestPulse:
         waveforms = pulse.modulated_waveforms(frequency=1e9)
         assert isinstance(waveforms, Waveforms)
 
-    def test_start_property_raises_error(self, pulse: Pulse):
-        """Test that start property raises error when star_time is None"""
-        pulse.start_time = None
-        with pytest.raises(ValueError):
-            pulse.start  # pylint: disable=pointless-statement
-
     def test_envelope_method(self, pulse: Pulse):
         """Test envelope method"""
         envelope = pulse.envelope(amplitude=2.0, resolution=0.1)

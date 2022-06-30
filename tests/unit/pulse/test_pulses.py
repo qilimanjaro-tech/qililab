@@ -9,8 +9,6 @@ class TestPulseSequence:
         """Test add method."""
         pulses.add(pulse=pulse)
         pulses.add(pulse=readout_pulse)
-        pulse.start_time = None
-        pulses.add(pulse=pulse)
 
     def test_to_dict_method(self, pulses: Pulses):
         """Test to_dict method"""

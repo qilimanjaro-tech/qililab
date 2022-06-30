@@ -68,8 +68,6 @@ class Pulse:
         Returns:
             int: Start time of the pulse.
         """
-        if self.start_time is None:
-            raise ValueError("Start time is not specified.")
         return self.start_time
 
     def to_dict(self):
