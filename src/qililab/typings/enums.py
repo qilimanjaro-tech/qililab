@@ -157,10 +157,8 @@ class SystemControlSubcategory(Enum):
 
     Args:
         enum (str): Available bus element names:
-        * qubit
-        * qblox_qcm
-        * qblox_qrm
-        * rohde_schwarz
+        * mixer_based_system_control
+        * simulated_system_control
     """
 
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
@@ -180,6 +178,7 @@ class NodeName(Enum):
     QUBIT = "qubit"
     RESONATOR = "resonator"
     COUPLER = "coupler"
+    PORT = "port"
 
 
 class InstrumentName(Enum):

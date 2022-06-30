@@ -1,4 +1,4 @@
-"""Resonator class."""
+"""Port class."""
 from dataclasses import dataclass
 
 from qililab.chip.node import Node
@@ -7,9 +7,8 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(kw_only=True)
-class Resonator(Node):
-    """Resonator class"""
+@dataclass
+class Port(Node):
+    """Port class."""
 
-    name = NodeName.RESONATOR
-    frequency: float
+    name = NodeName.PORT

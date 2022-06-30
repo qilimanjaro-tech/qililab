@@ -16,12 +16,12 @@ class Pulse:
 
     name: ClassVar[PulseName] = PulseName.PULSE
     amplitude: float
-    frequency: float
     phase: float
     duration: int
     port: int  # TODO: A Pulse should not know about port.
-    pulse_shape: PulseShape
     start_time: int
+    pulse_shape: PulseShape
+    frequency: float | None = None
 
     def __post_init__(self):
         """Cast qubit_ids to list."""

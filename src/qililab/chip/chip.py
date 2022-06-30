@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from typing import List, Tuple
 
 from qililab.chip.node import Node
+from qililab.chip.port import Port
 from qililab.chip.qubit import Qubit
 from qililab.chip.resonator import Resonator
 from qililab.constants import RUNCARD
@@ -16,7 +17,6 @@ class Chip:
 
     id_: int
     category: Category
-    ports: List[int]
     nodes: List[Node]
 
     def __post_init__(self):
@@ -37,7 +37,7 @@ class Chip:
             Qubit: Qubit node object.
         """
         for node in self.nodes:
-            if isinstance(node, Qubit) and node.idx == idx:
+            if isinstance(node, Qubit) and node.qubit_idx == idx:
                 return node
         raise ValueError(f"Could not find qubit with idx {idx}.")
 
@@ -52,7 +52,7 @@ class Chip:
         """
         return [self.nodes[node_idx] for node_idx in node.nodes]
 
-    def get_port_and_frequency_from_qubit_idx(self, idx: int, readout: bool) -> Tuple[int, float]:
+    def get_port_from_qubit_idx(self, idx: int, readout: bool) -> Port:
         """Get control/readout port number from qubit index.
 
         Args:
@@ -68,20 +68,46 @@ class Chip:
         """
         qubit = self._find_qubit(idx=idx)
         if not readout:
-            if qubit.port is None:
-                raise ValueError(f"Qubit with index {idx} doesn't have a control line.")
-            return qubit.port, qubit.frequency
+            return self._get_adjacent_port(node=qubit)
         adj_nodes = self._get_adjacent_nodes(node=qubit)
         for node in adj_nodes:
             if isinstance(node, Resonator):
-                return node.port, node.frequency
+                return self._get_adjacent_port(node=node)
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
+
+    def _get_adjacent_port(self, node: Node) -> Port:
+        """Find node's port (if exists).
+
+        Args:
+            node (Node): Node class.
+
+        Raises:
+            ValueError: If no node is found.
+
+        Returns:
+            Port: Port class.
+        """
+        adj_nodes = self._get_adjacent_nodes(node)
+        for node in adj_nodes:
+            if isinstance(node, Port):
+                return node
+        raise ValueError(f"Node with id {node.id_} is not connected to a port.")
+
+    def get_port_nodes(self, port: Port) -> List[Node]:
+        """Get nodes connected to a given port.
+
+        Args:
+            port (Port): Port class.
+
+        Returns:
+            List[Node]: List of nodes connected to the given port.
+        """
+        return self._get_adjacent_nodes(node=port)
 
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {
             "id_": self.id_,
             "category": self.category.value,
-            "ports": self.ports,
             "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
         }

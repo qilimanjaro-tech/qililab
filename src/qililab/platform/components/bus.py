@@ -1,6 +1,7 @@
 """Bus class."""
 from dataclasses import dataclass
 
+from qililab.chip import Node
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments import (
     Attenuator,
@@ -21,6 +22,8 @@ class Bus:
     Args:
         settings (BusSettings): Bus settings.
     """
+
+    target: Node
 
     @dataclass
     class BusSettings(DDBBElement):

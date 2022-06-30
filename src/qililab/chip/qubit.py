@@ -13,4 +13,4 @@ class Qubit(Node):
 
     name = NodeName.QUBIT
     frequency: float
-    idx: int
+    qubit_idx: int

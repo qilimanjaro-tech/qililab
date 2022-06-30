@@ -116,10 +116,11 @@ class Galadriel:
     chip = {
         "id_": 0,
         "category": "chip",
-        "ports": [0, 1, 2, 3],  # ports used for control/readout
         "nodes": [
-            {"name": "resonator", "port": 1, "frequency": 7.34730e09, "nodes": [1]},
-            {"name": "qubit", "idx": 0, "port": 0, "frequency": 3.451e09, "nodes": [0]},
+            {"name": "port", "id_": 0, "nodes": [3]},
+            {"name": "port", "id_": 1, "nodes": [2]},
+            {"name": "resonator", "id_": 2, "frequency": 7.34730e09, "nodes": [1]},
+            {"name": "qubit", "id_": 3, "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0, 2]},
         ],
     }
 
@@ -217,9 +218,9 @@ class FluxQubit:
     chip = {
         "id_": 0,
         "category": "chip",
-        "ports": [0, 1],  # ports used for control/readout
         "nodes": [
-            {"name": "qubit", "idx": 0, "port": 0, "frequency": 3.451e09, "nodes": [0]},
+            {"name": "port", "id_": 0, "nodes": [1]},
+            {"name": "qubit", "id_": 1, "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0]},
         ],
     }
 

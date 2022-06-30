@@ -5,9 +5,9 @@ from typing import List
 from qililab.typings import FactoryElement
 
 
-@dataclass(kw_only=True)
+@dataclass
 class Node(FactoryElement):
     """Class representing a node of the chip's graph."""
 
+    id_: int
     nodes: List[int]
-    port: int | None = None

@@ -40,7 +40,6 @@ class RuncardSchema:
 
             id_: int
             category: str
-            ports: List[int]
             nodes: List[dict]
 
         chip: ChipSchema
