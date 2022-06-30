@@ -19,7 +19,6 @@ class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     settings: TranslationSettings
-    time: Dict[int, int] = field(init=False, default_factory=dict)
 
     def translate(self, circuits: List[Circuit], chip: Chip) -> List[Pulses]:
         """Translate a circuit into a pulse sequence.
@@ -32,13 +31,14 @@ class CircuitToPulses:
         """
         pulses_list = []
         for circuit in circuits:
+            time: Dict[int, int] = {}  # restart time
             control_gates = list(circuit.queue)
             readout_gate = circuit.measurement_gate
-            pulses = [self._control_gate_to_pulse(control_gate=gate, chip=chip) for gate in control_gates]
+            pulses = [self._control_gate_to_pulse(time=time, control_gate=gate, chip=chip) for gate in control_gates]
 
             if readout_gate is not None:
                 pulses.extend(
-                    self._readout_gate_to_pulse(qubit_idx=qubit_idx, chip=chip)
+                    self._readout_gate_to_pulse(time=time, qubit_idx=qubit_idx, chip=chip)
                     for qubit_idx in readout_gate.target_qubits
                 )
 
@@ -46,7 +46,7 @@ class CircuitToPulses:
 
         return pulses_list
 
-    def _control_gate_to_pulse(self, control_gate: Gate, chip: Chip) -> Pulse:
+    def _control_gate_to_pulse(self, time: Dict[int, int], control_gate: Gate, chip: Chip) -> Pulse:
         """Translate a gate into a pulse.
 
         Args:
@@ -60,7 +60,7 @@ class CircuitToPulses:
             raise NotImplementedError(f"Qililab has not defined a gate {control_gate.__class__.__name__}")
         port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
         old_time = self._update_time(
-            port=port.id_, pulse_time=self.settings.gate_duration + self.settings.delay_between_pulses
+            time=time, port=port.id_, pulse_time=self.settings.gate_duration + self.settings.delay_between_pulses
         )
         return Pulse(
             amplitude=float(amplitude),
@@ -71,7 +71,7 @@ class CircuitToPulses:
             start_time=old_time,
         )
 
-    def _readout_gate_to_pulse(self, qubit_idx: int, chip: Chip) -> ReadoutPulse:
+    def _readout_gate_to_pulse(self, time: Dict[int, int], qubit_idx: int, chip: Chip) -> ReadoutPulse:
         """Translate a gate into a pulse.
 
         Args:
@@ -82,7 +82,7 @@ class CircuitToPulses:
         """
         port = chip.get_port_from_qubit_idx(idx=qubit_idx, readout=True)
         old_time = self._update_time(
-            port=port.id_, pulse_time=self.settings.readout_duration + self.settings.delay_before_readout
+            time=time, port=port.id_, pulse_time=self.settings.readout_duration + self.settings.delay_before_readout
         )
         return ReadoutPulse(
             amplitude=self.settings.readout_amplitude,
@@ -92,15 +92,15 @@ class CircuitToPulses:
             start_time=old_time,
         )
 
-    def _update_time(self, port: int, pulse_time: int):
+    def _update_time(self, time: Dict[int, int], port: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
             port (int): Index of the chip port.
             pulse_time (int): Duration of the puls + wait time.
         """
-        if port not in self.time:
-            self.time[port] = 0
-        old_time = self.time[port]
-        self.time[port] += pulse_time
+        if port not in time:
+            time[port] = 0
+        old_time = time[port]
+        time[port] += pulse_time
         return old_time
