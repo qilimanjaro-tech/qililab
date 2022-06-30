@@ -60,9 +60,11 @@ class Platform:
         """
         element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
         if element is None:
-            element = (
-                self.chip.get_node_from_id(node_id=id_) if alias is None else self.chip.get_node_from_alias(alias=alias)
-            )
+            if category is not None and id_ is not None:
+                element = self.chip.get_node_from_id(node_id=id_)
+            if alias is not None:
+                element = self.chip.get_node_from_alias(alias=alias)
+
         if element is None:
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element

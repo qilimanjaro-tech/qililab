@@ -121,7 +121,7 @@ class Chip:
         for node in self.nodes:
             if node.id_ == node_id:
                 return node
-        raise ValueError(f"Could not find node with id {node.id_}.")
+        raise ValueError(f"Could not find node with id {node_id}.")
 
     def get_node_from_alias(self, alias: str):
         """Get node from given alias.
