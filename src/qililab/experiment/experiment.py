@@ -237,7 +237,7 @@ class Experiment:
         self.platform.set_parameter(
             alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
         )
-        if Instrument(instrument) == Instrument.PLATFORM:
+        if category == Category.PLATFORM:
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
