@@ -1,15 +1,14 @@
 """MixerBasedSystemControl class."""
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, Tuple
+from typing import Generator, List, Tuple
 
-from qililab.constants import RUNCARD, SIGNAL_GENERATOR
+from qililab.constants import RUNCARD
 from qililab.instruments.awg import AWG
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.platform.components.bus_element import dict_factory
 from qililab.pulse import PulseSequence
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
@@ -46,8 +45,11 @@ class MixerBasedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self):
+    def setup(self, target_freqs: List[float]):
         """Setup instruments."""
+        self.signal_generator.frequency = (
+            target_freqs[0] + self.awg.frequency
+        )  # FIXME: Now we only take the first frequency. Fix for multiple readout frequencies.
         self.awg.setup()
         self.signal_generator.setup()
 

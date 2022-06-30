@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Type, get_type_hints
+from typing import List, Type, get_type_hints
 
 from qililab.platform.components import BusElement
 from qililab.pulse import PulseSequence
@@ -31,7 +31,7 @@ class SystemControl(BusElement, ABC):
         """Start instrument."""
 
     @abstractmethod
-    def setup(self):
+    def setup(self, target_freqs: List[float]):
         """Set instrument settings."""
 
     @abstractmethod

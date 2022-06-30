@@ -1,7 +1,8 @@
 """Chip class."""
 from dataclasses import asdict, dataclass
-from typing import List, Tuple
+from typing import List
 
+from qililab.chip.coupler import Coupler
 from qililab.chip.node import Node
 from qililab.chip.port import Port
 from qililab.chip.qubit import Qubit
@@ -93,7 +94,7 @@ class Chip:
                 return node
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
-    def get_port_nodes(self, port: Port) -> List[Node]:
+    def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler]:
         """Get nodes connected to a given port.
 
         Args:
@@ -102,7 +103,25 @@ class Chip:
         Returns:
             List[Node]: List of nodes connected to the given port.
         """
-        return self._get_adjacent_nodes(node=port)
+        port = self.get_node_from_id(node_id=port_id)
+        return self._get_adjacent_nodes(node=port)  # type: ignore
+
+    def get_node_from_id(self, node_id: int) -> Node:
+        """Get node from given id.
+
+        Args:
+            node_id (int): Id of the node.
+
+        Raises:
+            ValueError: If no node is found.
+
+        Returns:
+            Node: Node class.
+        """
+        for node in self.nodes:
+            if node.id_ == node_id:
+                return node
+        raise ValueError(f"Could not find node with id {node.id_}.")
 
     def to_dict(self):
         """Return a dict representation of the Chip class."""

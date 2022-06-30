@@ -1,7 +1,7 @@
 """SimulatedSystemControl class."""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Type
+from typing import List, Type
 
 import numpy as np
 import qutip
@@ -55,7 +55,7 @@ class SimulatedSystemControl(SystemControl):
     def turn_on(self):
         """Start instrument."""
 
-    def setup(self):
+    def setup(self, target_freqs: List[float]):
         """Setup instruments."""
         self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
 

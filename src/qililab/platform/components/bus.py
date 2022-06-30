@@ -1,7 +1,8 @@
 """Bus class."""
 from dataclasses import dataclass
+from typing import List
 
-from qililab.chip import Node
+from qililab.chip import Chip, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments import (
     Attenuator,
@@ -23,7 +24,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    target: Node
+    targets: List[Qubit | Resonator | Coupler]  # port target (or targets in case of multiple resonators)
 
     @dataclass
     class BusSettings(DDBBElement):
@@ -52,9 +53,10 @@ class Bus:
 
     settings: BusSettings
 
-    def __init__(self, settings: dict, instruments: Instruments):
+    def __init__(self, settings: dict, instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self.targets = chip.get_port_nodes(port_id=self.port)
 
     @property
     def id_(self):
@@ -127,6 +129,15 @@ class Bus:
             if isinstance(self.system_control, MixerBasedSystemControl)
             else None,
         )
+
+    @property
+    def target_freqs(self):
+        """Bus 'target_freqs' property.
+
+        Returns:
+            List[float]: Frequencies of the nodes targetted by the bus.
+        """
+        return [target.frequency for target in self.targets]
 
     def __iter__(self):
         """Redirect __iter__ magic method."""

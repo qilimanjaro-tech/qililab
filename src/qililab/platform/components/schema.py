@@ -19,8 +19,8 @@ class Schema:
     def __init__(self, buses: List[dict], instruments: List[dict], chip: dict):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
-        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments) for bus in buses])
         self.chip = Chip(**chip)
+        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
 
     def get_element(self, category: Category, id_: int):
         """Get buses element. Return None if element is not found.
