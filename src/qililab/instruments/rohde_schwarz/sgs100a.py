@@ -38,6 +38,15 @@ class SGS100A(SignalGenerator):
             self.device.frequency(self.frequency)
             logger.debug(f"Frequency set to {self.frequency}.")
 
+    @SignalGenerator.frequency.setter  # type: ignore
+    def frequency(self, value: float):
+        """Set R&A frequency.
+
+        Args:
+            value (float): Frequency in Hz.
+        """
+        self.settings.frequency = value
+
     @SignalGenerator.CheckConnected
     def turn_on(self):
         """Start generating microwaves."""
