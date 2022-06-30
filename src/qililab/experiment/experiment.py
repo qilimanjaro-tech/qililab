@@ -187,7 +187,7 @@ class Experiment:
         leave = loop.previous is False
         with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
             for value in loop.range:
-                pbar.set_description(f"{loop.parameter}: {value} ")
+                pbar.set_description(f"{loop.parameter.value}: {value} ")
                 pbar.update()
                 element.set_parameter(parameter=loop.parameter, value=value)
                 results = self.recursive_loop(
