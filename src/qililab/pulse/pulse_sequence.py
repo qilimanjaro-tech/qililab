@@ -4,8 +4,10 @@ from typing import List
 
 import numpy as np
 
-from qililab.constants import PULSESEQUENCE
+from qililab.constants import PULSES, PULSESEQUENCE, RUNCARD
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.readout_pulse import ReadoutPulse
+from qililab.typings import PulseName
 from qililab.utils import Waveforms
 
 
@@ -95,5 +97,8 @@ class PulseSequence:
         Returns:
             PulseSequence: Loaded class.
         """
-        pulses = [Pulse(**pulse_dict) for pulse_dict in dictionary[PULSESEQUENCE.PULSES]]
+        pulses = [
+            Pulse(**settings) if Pulse.name == PulseName(settings.pop(RUNCARD.NAME)) else ReadoutPulse(**settings)
+            for settings in dictionary[PULSES.PULSES]
+        ]
         return PulseSequence(pulses=pulses)

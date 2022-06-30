@@ -5,6 +5,7 @@ from typing import List
 from qililab.constants import PULSES, RUNCARD
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.readout_pulse import ReadoutPulse
+from qililab.typings import PulseName
 
 
 @dataclass
@@ -47,7 +48,7 @@ class Pulses:
             PulseSequence: Class instance.
         """
         pulses = [
-            Pulse(**settings) if Pulse.name == settings.pop(RUNCARD.NAME) else ReadoutPulse(**settings)
+            Pulse(**settings) if Pulse.name == PulseName(settings.pop(RUNCARD.NAME)) else ReadoutPulse(**settings)
             for settings in dictionary[PULSES.PULSES]
         ]
 

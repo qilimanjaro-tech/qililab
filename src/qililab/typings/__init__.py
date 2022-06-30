@@ -9,6 +9,7 @@ from .enums import (
     IntegrationMode,
     NodeName,
     Parameter,
+    PulseName,
     PulseShapeName,
     ReferenceClock,
     ResultName,

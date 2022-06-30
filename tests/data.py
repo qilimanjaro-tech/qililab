@@ -352,7 +352,7 @@ experiment = {
         {
             "pulses": [
                 {
-                    "name": "ReadoutPulse",
+                    "name": "readout_pulse",
                     "amplitude": 1,
                     "frequency": 1e9,
                     "phase": 0,
