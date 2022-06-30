@@ -189,7 +189,7 @@ class Experiment:
             for value in loop.range:
                 pbar.set_description(f"{loop.parameter.value}: {value} ")
                 pbar.update()
-                element.set_parameter(parameter=loop.parameter, value=value)
+                element.set_parameter(parameter=loop.parameter.value, value=value)
                 results = self.recursive_loop(
                     loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
                 )
