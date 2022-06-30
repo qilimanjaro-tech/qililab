@@ -152,12 +152,20 @@ class Experiment:
         Returns:
             str: X label.
         """
-        x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
+        instrument_name = (
+            loop.alias
+            if loop.alias is not None
+            else f"{loop.instrument.value if loop.instrument is not None else None} {loop.id_}"
+        )
+        x_label = f"{instrument_name}: {loop.parameter.value} "
         if loop.previous is not None:
-            x_label += (
-                f"({loop.previous.instrument.value} {loop.previous.id_}:"
-                + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
+            instrument_name = (
+                loop.previous.alias
+                if loop.previous.alias is not None
+                else f"{loop.previous.instrument.value if loop.previous.instrument is not None else None}"
+                + f"{loop.previous.id_}"
             )
+            x_label += f"({instrument_name}:" + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
         return x_label
 
     def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
@@ -177,7 +185,11 @@ class Experiment:
                 pbar.set_description(f"{loop.parameter}: {value} ")
                 pbar.update()
                 self.platform.set_parameter(
-                    category=Category(loop.instrument.value), id_=loop.id_, parameter=loop.parameter, value=value
+                    alias=loop.alias,
+                    category=Category(loop.instrument.value) if loop.instrument is not None else None,
+                    id_=loop.id_,
+                    parameter=loop.parameter,
+                    value=value,
                 )
                 results = self.recursive_loop(
                     loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
@@ -204,7 +216,14 @@ class Experiment:
             path=path,
         )
 
-    def set_parameter(self, instrument: Instrument, id_: int, parameter: Parameter, value: float):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float,
+        alias: str | None = None,
+        instrument: Instrument | None = None,
+        id_: int | None = None,
+    ):
         """Set parameter of a platform element.
 
         Args:
@@ -213,9 +232,10 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        category = Category(instrument.value) if instrument is not None else None
 
         self.platform.set_parameter(
-            category=Category(instrument.value), id_=id_, parameter=Parameter(parameter), value=value
+            alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
         )
         if Instrument(instrument) == Instrument.PLATFORM:
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)

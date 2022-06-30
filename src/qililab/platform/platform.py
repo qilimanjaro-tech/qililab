@@ -48,7 +48,7 @@ class Platform:
         """Close connection to the instruments."""
         self.instruments.close()
 
-    def get_element(self, category: Category, id_: int = 0):
+    def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get platform element.
 
         Args:
@@ -58,12 +58,13 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if category == Category.NODE:
-            element = self.chip.get_node_from_id(node_id=id_)
-        else:
-            element = self.instruments.get_instrument(category=category, id_=id_)
+        element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
         if element is None:
-            raise ValueError(f"Could not find element with category {category.value} and id {id_}.")
+            element = (
+                self.chip.get_node_from_id(node_id=id_) if alias is None else self.chip.get_node_from_alias(alias=alias)
+            )
+        if element is None:
+            raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
 
     def get_bus(self, port: int, bus_subcategory: BusSubcategory):
@@ -85,7 +86,14 @@ class Platform:
             ([], None),
         )
 
-    def set_parameter(self, category: Category, id_: int, parameter: Parameter, value: float):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float,
+        alias: str | None = None,
+        category: Category | None = None,
+        id_: int | None = None,
+    ):
         """Set parameter of a platform element.
 
         Args:
@@ -94,11 +102,13 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if Category(category) == Category.PLATFORM:
+        if (alias is not None and alias == Category.PLATFORM.value) or (
+            category is not None and Category(category) == Category.PLATFORM
+        ):
             attr_type = type(getattr(self.settings.translation_settings, parameter.value))
             setattr(self.settings.translation_settings, parameter.value, attr_type(value))
             return
-        element = self.get_element(category=Category(category), id_=id_)
+        element = self.get_element(alias=alias, category=category, id_=id_)
         element.set_parameter(parameter=parameter, value=value)
 
     @property

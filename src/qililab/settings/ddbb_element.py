@@ -6,7 +6,7 @@ from types import NoneType
 from qililab.typings import Category
 
 
-@dataclass
+@dataclass(kw_only=True)
 class DDBBElement:
     """Settings class.
 
@@ -18,6 +18,7 @@ class DDBBElement:
 
     id_: int
     category: Category
+    alias: str | None = None
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""

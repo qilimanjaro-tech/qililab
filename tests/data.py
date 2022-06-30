@@ -32,6 +32,7 @@ class Galadriel:
     qblox_qcm_0 = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "qblox_qcm",
+        RUNCARD.ALIAS: "qblox_qcm",
         RUNCARD.CATEGORY: "awg",
         "ip": "192.168.0.3",
         "firmware": "0.7.0",
@@ -50,6 +51,7 @@ class Galadriel:
     qblox_qrm_0 = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: "qblox_qrm",
+        RUNCARD.ALIAS: "qblox_qrm",
         RUNCARD.CATEGORY: "awg",
         "ip": "192.168.0.4",
         "firmware": "0.7.0",
@@ -77,6 +79,7 @@ class Galadriel:
     rohde_schwarz_0 = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "rohde_schwarz",
+        RUNCARD.ALIAS: "rs_0",
         RUNCARD.CATEGORY: "signal_generator",
         "ip": "192.168.0.10",
         "firmware": "4.30.046.295",
@@ -86,6 +89,7 @@ class Galadriel:
     rohde_schwarz_1 = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: "rohde_schwarz",  # unique name
+        RUNCARD.ALIAS: "rs_1",
         RUNCARD.CATEGORY: "signal_generator",  # general name
         "ip": "192.168.0.7",
         "firmware": "4.30.046.295",
@@ -95,6 +99,7 @@ class Galadriel:
     attenuator = {
         RUNCARD.ID: 1,
         RUNCARD.NAME: "mini_circuits",
+        RUNCARD.ALIAS: "attenuator",
         RUNCARD.CATEGORY: "attenuator",
         "attenuation": 30,
         "ip": "192.168.0.222",
@@ -119,8 +124,8 @@ class Galadriel:
         "nodes": [
             {"name": "port", "id_": 0, "nodes": [3]},
             {"name": "port", "id_": 1, "nodes": [2]},
-            {"name": "resonator", "id_": 2, "frequency": 7.34730e09, "nodes": [1]},
-            {"name": "qubit", "id_": 3, "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0, 2]},
+            {"name": "resonator", "id_": 2, "alias": "resonator", "frequency": 7.34730e09, "nodes": [1]},
+            {"name": "qubit", "id_": 3, "alias": "qubit", "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0, 2]},
         ],
     }
 

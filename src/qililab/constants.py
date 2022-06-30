@@ -16,6 +16,7 @@ class RUNCARD:
 
     ID = "id_"
     NAME = "name"
+    ALIAS = "alias"
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"

@@ -123,6 +123,23 @@ class Chip:
                 return node
         raise ValueError(f"Could not find node with id {node.id_}.")
 
+    def get_node_from_alias(self, alias: str):
+        """Get node from given alias.
+
+        Args:
+            alias (str): Unique alias of the node.
+
+        Raises:
+            ValueError: If no node is found.
+
+        Returns:
+            Node: Node class.
+        """
+        for node in self.nodes:
+            if node.alias == alias:
+                return node
+        raise ValueError(f"Could not find node with alias {alias}")
+
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {

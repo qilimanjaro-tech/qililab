@@ -108,7 +108,7 @@ class MixerBasedSystemControl(SystemControl):
         return self.settings.__iter__()
 
     def to_dict(self):
-        """Return a dict representation of the BusElement class."""
+        """Return a dict representation of the MixerBasedSystemControl class."""
         return {
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.settings.category.value,

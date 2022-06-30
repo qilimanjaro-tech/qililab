@@ -14,11 +14,12 @@ from qililab.typings import Instrument, Parameter
 class Loop:
     """Loop class."""
 
-    instrument: Instrument
-    id_: int
     parameter: Parameter
     start: float
     stop: float
+    alias: str | None = None
+    instrument: Instrument | None = None
+    id_: int | None = None
     num: int | None = None
     step: float | None = None
     loop: Loop | None = None
@@ -89,7 +90,8 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            RUNCARD.INSTRUMENT: self.instrument.value,
+            RUNCARD.ALIAS: self.alias,
+            RUNCARD.INSTRUMENT: self.instrument.value if self.instrument is not None else None,
             RUNCARD.ID: self.id_,
             LOOP.PARAMETER: self.parameter.value,
             LOOP.START: self.start,

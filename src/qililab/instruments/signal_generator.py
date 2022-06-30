@@ -46,5 +46,5 @@ class SignalGenerator(Instrument):
         """Turn instrument on."""
 
     def to_dict(self):
-        """Return a dict representation of the BusElement class."""
+        """Return a dict representation of the SignalGenerator class."""
         return {key: value for key, value in super().to_dict().items() if key != SIGNAL_GENERATOR.FREQUENCY}
