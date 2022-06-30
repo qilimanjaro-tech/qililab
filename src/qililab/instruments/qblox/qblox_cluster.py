@@ -1,11 +1,14 @@
 """Qblox pulsar class"""
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Tuple
 
+from qililab.instruments.awg import AWG
 from qililab.instruments.qblox.qblox_controller import QbloxController
-from qililab.typings import Pulsar
+from qililab.typings import Cluster
 
 
-class QbloxPulsar(QbloxController):
+class QbloxCluster(QbloxController):
     """Qblox pulsar class.
 
     Args:
@@ -14,12 +17,12 @@ class QbloxPulsar(QbloxController):
     """
 
     @dataclass
-    class QbloxPulsarSettings(QbloxController.QbloxControllerSettings):
+    class QbloxClusterSettings(QbloxController.QbloxControllerSettings):
         """Contains the settings of a specific pulsar."""
 
-    settings: QbloxPulsarSettings
-    controller: Pulsar
-    n_modules: int = 1
+    settings: QbloxClusterSettings
+    controller: Cluster
+    n_modules: int = 20
 
     def __init__(self, settings: dict):
         super().__init__(settings=settings)
@@ -27,7 +30,7 @@ class QbloxPulsar(QbloxController):
     def _initialize_controller(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        # self.controller = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
+        # self.controller = Cluster(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
         pass
 
     def create_modules(self):

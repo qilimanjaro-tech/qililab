@@ -6,7 +6,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
-from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
@@ -20,17 +20,17 @@ from qililab.typings import (
 
 
 @InstrumentFactory.register
-class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
-    """Qblox pulsar QRM class.
+class QbloxQRM(QbloxModule, QubitReadout):
+    """Qblox QRM class.
 
     Args:
-        settings (QBloxPulsarQRMSettings): Settings of the instrument.
+        settings (QBloxQRMSettings): Settings of the instrument.
     """
 
     name = InstrumentName.QBLOX_QRM
 
     @dataclass
-    class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
+    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, QubitReadout.QubitReadoutSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
@@ -54,7 +54,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
 
-    settings: QbloxPulsarQRMSettings
+    settings: QbloxQRMSettings
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence. Return acquisition results.
@@ -73,14 +73,12 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 
-    @QbloxPulsar.CheckConnected
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""
         super().setup()
         self._set_hardware_averaging()
         self._set_acquisition_mode()
 
-    @QbloxPulsar.CheckConnected
     def get_acquisitions(self):
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
