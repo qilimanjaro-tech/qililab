@@ -36,7 +36,6 @@ class SGS100A(SignalGenerator):
         self.device.power(self.power)
         if self.frequency is not None:
             self.device.frequency(self.frequency)
-            logger.debug(f"Frequency set to {self.frequency}.")
 
     @SignalGenerator.frequency.setter  # type: ignore
     def frequency(self, value: float):
