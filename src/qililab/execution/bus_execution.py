@@ -18,8 +18,7 @@ class BusExecution:
 
     def setup(self):
         """Setup instruments."""
-        target_freqs = self.bus.target_freqs
-        self.system_control.setup(target_freqs=target_freqs)
+        self.system_control.setup(target_freqs=self.bus.target_freqs)
         if self.attenuator is not None:
             self.attenuator.setup()
 
