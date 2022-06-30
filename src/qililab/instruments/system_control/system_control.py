@@ -68,6 +68,11 @@ class SystemControl(BusElement, ABC):
     @property
     @abstractmethod
     def awg_frequency(self) -> float:
+        """SystemControl 'awg_frequency' property."""
+
+    @property
+    @abstractmethod
+    def frequency(self) -> float:
         """SystemControl 'frequency' property."""
 
     @property

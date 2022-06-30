@@ -36,6 +36,10 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     @property
     def awg_frequency(self) -> float:
+        """SystemControl 'awg_frequency' property."""
+
+    @property
+    def frequency(self) -> float:
         """SystemControl 'frequency' property."""
 
     @property

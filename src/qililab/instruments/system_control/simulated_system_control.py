@@ -138,6 +138,15 @@ class SimulatedSystemControl(SystemControl):
 
     @property
     def awg_frequency(self):
+        """SimulatedSystemControl 'awg_frequency' property.
+
+        Returns:
+            float: Normalized frequency of the applied pulses.
+        """
+        return 2e6  # simulator doesn't have an AWG frequency, but this is needed for the plotting of the pulses
+
+    @property
+    def frequency(self):
         """SimulatedSystemControl 'frequency' property.
 
         Returns:

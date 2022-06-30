@@ -50,7 +50,7 @@ class TestSimulatedSystemControl:
 
     def test_frequency_property(self, simulated_system_control: SimulatedSystemControl):
         """Test frequency property."""
-        assert simulated_system_control.awg_frequency == simulated_system_control.settings.frequency
+        assert simulated_system_control.frequency == simulated_system_control.settings.frequency
 
     def test_resolution_property(self, simulated_system_control: SimulatedSystemControl):
         """Test resolution property."""
