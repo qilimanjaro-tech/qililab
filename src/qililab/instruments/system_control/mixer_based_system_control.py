@@ -113,11 +113,11 @@ class MixerBasedSystemControl(SystemControl):
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
-        } | {key: value.id_ for key, value in self}
+        } | {key: value.alias for key, value in self}
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in self.settings:
-            if isinstance(value, int):
-                instrument_object = instruments.get_instrument(category=Category(name), id_=value)
+            if isinstance(value, str):
+                instrument_object = instruments.get_instrument(alias=value)
                 setattr(self.settings, name, instrument_object)

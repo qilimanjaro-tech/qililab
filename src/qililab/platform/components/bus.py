@@ -105,8 +105,8 @@ class Bus:
                 if not isinstance(subcategory, str):
                     raise ValueError("Invalid value for subcategory.")
                 instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
-            if category == Category.ATTENUATOR and isinstance(value, int):
-                instrument_object = instruments.get_instrument(category=category, id_=value)
+            if category == Category.ATTENUATOR and isinstance(value, str):
+                instrument_object = instruments.get_instrument(alias=value)
             if instrument_object is None:
                 raise ValueError(f"No instrument object found for category {category} and value {value}.")
             setattr(self.settings, name, instrument_object)
@@ -133,6 +133,6 @@ class Bus:
                 RUNCARD.SUBCATEGORY: self.subcategory.value,
                 RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             }
-            | ({RUNCARD.ATTENUATOR: self.attenuator.id_} if self.attenuator is not None else {})
+            | ({RUNCARD.ATTENUATOR: self.attenuator.alias} if self.attenuator is not None else {})
             | {BUS.PORT: self.port}
         )
