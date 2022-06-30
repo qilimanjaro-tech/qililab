@@ -68,6 +68,10 @@ class QbloxModule(AWG):
         self._map_outputs()
         self._set_nco()
 
+    @property
+    def module_type(self) -> None:
+        return None
+
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
