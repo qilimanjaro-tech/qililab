@@ -154,6 +154,15 @@ class SimulatedSystemControl(SystemControl):
         """
         return self.settings.frequency
 
+    @frequency.setter
+    def frequency(self, target_freqs: List[float]):
+        """SimulatedSystemControl 'frequency' property.
+
+        Returns:
+            float: Normalized frequency of the applied pulses.
+        """
+        self.settings.frequency = target_freqs[0]
+
     @property
     def resolution(self):
         """SimulatedSystemControl 'resolution' property.

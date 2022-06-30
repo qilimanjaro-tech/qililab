@@ -29,7 +29,7 @@ class BusExecution:
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
         if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
-            self.system_control.setup(target_freqs=self.bus.target_freqs)
+            self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
