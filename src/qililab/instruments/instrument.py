@@ -84,7 +84,7 @@ class Instrument(BusElement, ABC):
         """Redirect __setattr__ magic method."""
         if isinstance(parameter, Parameter):
             parameter = parameter.value
-        self.settings.set_parameter(name=parameter, value=value)
+        self.settings.set_parameter(parameter=parameter, value=value)
         if self._connected:
             self.setup()
 
