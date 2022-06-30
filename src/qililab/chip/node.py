@@ -2,13 +2,13 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.typings import FactoryElement
+from qililab.settings import DDBBElement
+from qililab.typings import Category, FactoryElement
 
 
 @dataclass(kw_only=True)
-class Node(FactoryElement):
+class Node(DDBBElement, FactoryElement):
     """Class representing a node of the chip's graph."""
 
-    id_: int
+    category: Category = Category.NODE
     nodes: List[int]
-    alias: str | None = None
