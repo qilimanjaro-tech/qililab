@@ -29,14 +29,14 @@ class MixerBasedSystemControl(SystemControl):
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SignalGenerator | AWG | dict], None, None]:
+        ) -> Generator[Tuple[str, SignalGenerator | AWG | int], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SignalGenerator | AWG | dict):
+                if name in [Category.AWG.value, Category.SIGNAL_GENERATOR.value]:
                     yield name, value
 
     settings: MixerBasedSystemControlSettings
@@ -103,18 +103,6 @@ class MixerBasedSystemControl(SystemControl):
             return self.awg.acquisition_delay_time
         raise ValueError("AWG is not a QubitReadout instance.")
 
-    def get_element(self, category: Category, id_: int):
-        """Get system control element. Return None if element is not found.
-
-        Args:
-            category (str): Category of element.
-            id_ (int): ID of element.
-
-        Returns:
-            (AWG | SignalGenerator | None): Element class.
-        """
-        return next((element for _, element in self if element.category == category and element.id_ == id_), None)
-
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
@@ -125,15 +113,11 @@ class MixerBasedSystemControl(SystemControl):
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
-        } | {
-            key: {RUNCARD.ID: value.id_, RUNCARD.CATEGORY: value.category.value}
-            for key, value in self
-            if not isinstance(value, dict)
-        }
+        } | {key: value.id_ for key, value in self}
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in self.settings:
-            if isinstance(value, dict):
-                instrument_object = instruments.get(settings=value)
+            if isinstance(value, int):
+                instrument_object = instruments.get_instrument(category=Category(name), id_=value)
                 setattr(self.settings, name, instrument_object)

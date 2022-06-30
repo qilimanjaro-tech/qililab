@@ -15,6 +15,7 @@ class Category(Enum):
         * bus
         * schema
         * resonator
+        * node
     """
 
     PLATFORM = "platform"
@@ -30,6 +31,7 @@ class Category(Enum):
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
     CHIP = "chip"
+    NODE = "node"
 
 
 class Instrument(Enum):

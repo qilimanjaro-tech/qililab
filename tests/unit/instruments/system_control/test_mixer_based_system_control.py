@@ -11,12 +11,6 @@ from qililab.typings import Category
 class TestMixerBasedSystemControl:
     """Unit tests checking the MixerBasedSystemControl attributes and methods"""
 
-    def test_get_element_method(self, mixer_based_system_control: MixerBasedSystemControl):
-        """Test get_element method."""
-        awg = mixer_based_system_control.get_element(category=Category.AWG, id_=0)
-        signal_generator = mixer_based_system_control.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
-        assert isinstance(awg, AWG) and isinstance(signal_generator, SignalGenerator)
-
     def test_iter_method(self, mixer_based_system_control: MixerBasedSystemControl):
         """Test __iter__ method."""
         for name, value in mixer_based_system_control:

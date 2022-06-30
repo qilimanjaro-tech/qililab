@@ -6,7 +6,7 @@ from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, InstrumentFactory, Instruments
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
-from qililab.typings import Category, SchemaDrawOptions
+from qililab.typings import SchemaDrawOptions
 
 
 class Schema:
@@ -21,27 +21,6 @@ class Schema:
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
         self.chip = Chip(**chip)
         self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
-
-    def get_element(self, category: Category, id_: int):
-        """Get buses element. Return None if element is not found.
-
-        Args:
-            category (str): Category of element.
-            id_ (int): ID of element.
-
-        Returns:
-            Tuple[(Qubit | QubitControl | QubitReadout | SignalGenerator | Resonator | None), List]: Tuple
-            containing the element object and a list of the bus indeces where the element is located.
-        """
-        element = None
-        bus_idxs: List[int] = []
-        for bus_idx, bus in enumerate(self.buses):
-            element_tmp = bus.get_element(category=category, id_=id_)
-            if element_tmp is not None:
-                # assert element == element_tmp
-                element = element_tmp
-                bus_idxs.append(bus_idx)
-        return element, bus_idxs
 
     def draw(self, options: SchemaDrawOptions) -> None:
         """Draw schema.

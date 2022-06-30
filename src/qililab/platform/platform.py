@@ -58,11 +58,13 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if category == Category.SCHEMA:
-            return self.schema, None
-        if category == Category.BUSES:
-            return self.buses, None
-        return self.schema.get_element(category=category, id_=id_)
+        if category == Category.NODE:
+            element = self.chip.get_node_from_id(node_id=id_)
+        else:
+            element = self.instruments.get_instrument(category=category, id_=id_)
+        if element is None:
+            raise ValueError(f"Could not find element with category {category.value} and id {id_}.")
+        return element
 
     def get_bus(self, port: int, bus_subcategory: BusSubcategory):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
@@ -96,7 +98,7 @@ class Platform:
             attr_type = type(getattr(self.settings.translation_settings, parameter.value))
             setattr(self.settings.translation_settings, parameter.value, attr_type(value))
             return
-        element, _ = self.get_element(category=Category(category), id_=id_)
+        element = self.get_element(category=Category(category), id_=id_)
         element.set_parameter(parameter=parameter, value=value)
 
     @property

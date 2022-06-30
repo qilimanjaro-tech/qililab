@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import save_platform
+from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Schema
@@ -37,17 +38,10 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
-    def test_get_element_method_schema(self, platform: Platform):
-        """Test get_element method with schema."""
-        assert isinstance(platform.get_element(category=Category.SCHEMA)[0], Schema)
-
-    def test_get_element_method_buses(self, platform: Platform):
-        """Test get_element method with buses."""
-        assert isinstance(platform.get_element(category=Category.BUSES)[0], Buses)
-
-    def test_get_element_method_unknown(self, platform: Platform):
+    def test_get_element_method_unknown_raises_error(self, platform: Platform):
         """Test get_element method with unknown element."""
-        assert isinstance(platform.get_element(category=Category.AWG, id_=6)[0], NoneType)
+        with pytest.raises(ValueError):
+            platform.get_element(category=Category.AWG, id_=6)
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -67,27 +61,23 @@ class TestPlatform:
 
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
-        element, bus_idxs = platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
+        element = platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
         assert isinstance(element, SignalGenerator)
-        assert bus_idxs[0] == 0
 
-    def test_qubit_1_instance(self, platform: Platform):
+    def test_qubit_0_instance(self, platform: Platform):
         """Test qubit 1 instance."""
-        element, bus_idxs = platform.get_element(category=Category.QUBIT, id_=1)
-        assert isinstance(element, NoneType)
-        assert bus_idxs == []
+        element = platform.get_element(category=Category.NODE, id_=3)
+        assert isinstance(element, Qubit)
 
     def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        element, bus_idxs = platform.get_element(category=Category.AWG, id_=0)
+        element = platform.get_element(category=Category.AWG, id_=0)
         assert isinstance(element, QubitControl)
-        assert bus_idxs[0] == 0
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element, bus_idxs = platform.get_element(category=Category.AWG, id_=1)
+        element = platform.get_element(category=Category.AWG, id_=1)
         assert isinstance(element, QubitReadout)
-        assert bus_idxs[0] == 1
 
     @patch("qililab.platform.platform_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

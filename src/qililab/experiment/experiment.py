@@ -171,13 +171,14 @@ class Experiment:
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
         """
-        element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
         leave = loop.previous is False
         with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
             for value in loop.range:
                 pbar.set_description(f"{loop.parameter}: {value} ")
                 pbar.update()
-                element.set_parameter(parameter=loop.parameter, value=value)
+                self.platform.set_parameter(
+                    category=Category(loop.instrument.value), id_=loop.id_, parameter=loop.parameter, value=value
+                )
                 results = self.recursive_loop(
                     loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
                 )
