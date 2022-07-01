@@ -10,18 +10,12 @@ class TestPulseSequence:
 
     def test_add_method(self, pulse_sequence: PulseSequence, pulse: Pulse):
         """Test add method."""
-        pulse.port = pulse_sequence.port
         pulse_sequence.add(pulse=pulse)
 
-    def test_add_method_with_wrong_port(self, pulse_sequence: PulseSequence, pulse: Pulse):
-        """Test add method with wrong port"""
-        pulse.port = 123
-        with pytest.raises(ValueError):
-            pulse_sequence.add(pulse=pulse)
-
-    def test_add_method_with_wrong_name(self, pulse_sequence: PulseSequence, pulse: Pulse, readout_pulse: ReadoutPulse):
+    def test_add_method_with_wrong_pulse(
+        self, pulse_sequence: PulseSequence, pulse: Pulse, readout_pulse: ReadoutPulse
+    ):
         """Test add method with wrong name"""
-        pulse.port = pulse_sequence.port
         pulse_sequence.add(pulse=pulse)
         with pytest.raises(ValueError):
             pulse_sequence.add(pulse=readout_pulse)

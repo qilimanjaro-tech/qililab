@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
-from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse import PulseSequence
 from qililab.typings import BusSubcategory
 from qililab.utils import Waveforms
 
@@ -34,19 +34,15 @@ class BusExecution:
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
 
-    def add_pulse(self, pulse: Pulse, idx: int):
+    def add_pulse_sequence(self, pulse_sequence: PulseSequence):
         """Add pulse to the BusPulseSequence given by idx.
 
         Args:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-        if idx > len(self.pulse_sequences):
-            raise ValueError("Bad index value.")
-        if idx == len(self.pulse_sequences):
-            self.pulse_sequences.append(PulseSequence(pulses=[pulse]))
-            return
-        self.pulse_sequences[idx].add(pulse)
+
+        self.pulse_sequences.append(pulse_sequence)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.

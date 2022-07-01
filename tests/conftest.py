@@ -24,8 +24,8 @@ from qililab.pulse import (
     Drag,
     Gaussian,
     Pulse,
-    Pulses,
     PulseSequence,
+    PulseSequences,
     PulseShape,
     ReadoutPulse,
     Rectangular,
@@ -179,8 +179,8 @@ def fixture_attenuator() -> Attenuator:
     return Attenuator(settings=settings)
 
 
-@pytest.fixture(name="pulses", params=experiment_params)
-def fixture_pulses(platform: Platform) -> Pulses:
+@pytest.fixture(name="pulse_sequences", params=experiment_params)
+def fixture_pulses(platform: Platform) -> PulseSequences:
     """Return Pulses instance."""
     return CircuitToPulses(settings=platform.translation_settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
@@ -188,7 +188,7 @@ def fixture_pulses(platform: Platform) -> Pulses:
 @pytest.fixture(name="pulse_sequence")
 def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
     """Return PulseSequences instance."""
-    return PulseSequence(pulses=[pulse])
+    return PulseSequence(pulses=[pulse], port=0)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
@@ -291,7 +291,7 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, frequency=1e9, phase=0, duration=50, port=0, pulse_shape=pulse_shape, start_time=0)
+    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
 
 
 @pytest.fixture(name="readout_pulse")
@@ -302,7 +302,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, frequency=1e9, phase=0, duration=50, port=1, pulse_shape=pulse_shape, start_time=0)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
 
 
 @pytest.fixture(name="mixer_based_system_control")

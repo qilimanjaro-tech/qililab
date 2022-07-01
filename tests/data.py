@@ -353,16 +353,20 @@ experiment = {
     "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
     "sequences": [
         {
-            "pulses": [
+            "elements": [
                 {
-                    "name": "readout_pulse",
-                    "amplitude": 1,
-                    "frequency": 1e9,
-                    "phase": 0,
-                    "duration": 2000,
+                    "pulses": [
+                        {
+                            "name": "readout_pulse",
+                            "amplitude": 1,
+                            "frequency": 1e9,
+                            "phase": 0,
+                            "duration": 2000,
+                            "pulse_shape": {"name": "rectangular"},
+                            "start_time": 40,
+                        }
+                    ],
                     "port": 1,
-                    "pulse_shape": {"name": "rectangular"},
-                    "start_time": 40,
                 }
             ],
             "time": {"[0]": 2040},

@@ -4,7 +4,7 @@ from typing import List
 
 import numpy as np
 
-from qililab.constants import PULSES, PULSESEQUENCE, RUNCARD
+from qililab.constants import PULSESEQUENCE, RUNCARD
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.typings import PulseName
@@ -17,13 +17,12 @@ class PulseSequence:
     have the same frequency."""
 
     pulses: List[Pulse]
-    port: int = field(init=False)
+    port: int
     frequency: float = field(init=False)
-    _name: str | None = field(init=False, default=None)
+    _name: PulseName = field(init=False)
 
     def __post_init__(self):
         """Get port and frequency values from pulse."""
-        self.port = self.pulses[0].port
         self.frequency = self.pulses[0].frequency
         self._name = self.pulses[0].name
 
@@ -33,8 +32,6 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
-        if pulse.port != self.port:
-            raise ValueError("All Pulse objects inside a BusPulses class should contain the same qubit_ids.")
         if pulse.name != self.name:
             raise ValueError(
                 "All Pulse objects inside a BusPulses class should have the same type (Pulse or ReadoutPulse)."
@@ -85,6 +82,7 @@ class PulseSequence:
         """
         return {
             PULSESEQUENCE.PULSES: [pulse.to_dict() for pulse in self.pulses],
+            PULSESEQUENCE.PORT: self.port,
         }
 
     @classmethod
@@ -99,6 +97,7 @@ class PulseSequence:
         """
         pulses = [
             Pulse(**settings) if Pulse.name == PulseName(settings.pop(RUNCARD.NAME)) else ReadoutPulse(**settings)
-            for settings in dictionary[PULSES.PULSES]
+            for settings in dictionary[PULSESEQUENCE.PULSES]
         ]
-        return PulseSequence(pulses=pulses)
+        port = dictionary[PULSESEQUENCE.PORT]
+        return PulseSequence(pulses=pulses, port=port)

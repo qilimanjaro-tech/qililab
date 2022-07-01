@@ -18,7 +18,6 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
-    port: int  # TODO: A Pulse should not know about port.
     start_time: int
     pulse_shape: PulseShape
     frequency: float | None = None
@@ -82,7 +81,6 @@ class Pulse:
             PULSE.FREQUENCY: self.frequency,
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
-            PULSE.PORT: self.port,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
             PULSE.START_TIME: self.start_time,
         }

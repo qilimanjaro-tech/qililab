@@ -4,7 +4,7 @@ import os
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from qibo.core.circuit import Circuit
@@ -22,7 +22,7 @@ from qililab.constants import (
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform import Platform, RuncardSchema
-from qililab.pulse import CircuitToPulses, Pulses
+from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.typings import Category, Instrument, Parameter, yaml
 from qililab.utils import LivePlot, Loop
@@ -45,7 +45,7 @@ class Experiment:
 
     def __init__(
         self,
-        sequences: List[Circuit | Pulses] | Circuit | Pulses,
+        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
         platform: Platform,
         loop: Loop | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
@@ -259,7 +259,7 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(self, sequence_list: List[Circuit | Pulses]) -> Tuple[Execution, List[Pulses]]:
+    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
         """Build Execution class.
 
         Args:
@@ -268,7 +268,7 @@ class Experiment:
         if isinstance(sequence_list[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.translation_settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulses_list=sequence_list)
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
         return execution, sequence_list
 
     def _create_folder(self) -> Path:
@@ -375,7 +375,7 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        sequences = [Pulses.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
         experiment_name = dictionary[RUNCARD.NAME]

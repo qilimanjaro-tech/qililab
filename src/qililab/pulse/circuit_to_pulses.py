@@ -1,6 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
-from dataclasses import dataclass, field
-from typing import Dict, List
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
@@ -8,8 +8,8 @@ from qibo.core.circuit import Circuit
 from qililab.chip import Chip
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.pulse_shape import Drag
-from qililab.pulse.pulses import Pulses
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import TranslationSettings
 
@@ -20,7 +20,7 @@ class CircuitToPulses:
 
     settings: TranslationSettings
 
-    def translate(self, circuits: List[Circuit], chip: Chip) -> List[Pulses]:
+    def translate(self, circuits: List[Circuit], chip: Chip) -> List[PulseSequences]:
         """Translate a circuit into a pulse sequence.
 
         Args:
@@ -29,24 +29,25 @@ class CircuitToPulses:
         Returns:
             PulseSequences: Object containing the translated pulses.
         """
-        pulses_list = []
+        pulse_sequences_list: List[PulseSequences] = []
         for circuit in circuits:
+            pulse_sequences = PulseSequences()
             time: Dict[int, int] = {}  # restart time
             control_gates = list(circuit.queue)
             readout_gate = circuit.measurement_gate
-            pulses = [self._control_gate_to_pulse(time=time, control_gate=gate, chip=chip) for gate in control_gates]
-
+            for gate in control_gates:
+                pulse, port = self._control_gate_to_pulse(time=time, control_gate=gate, chip=chip)
+                pulse_sequences.add(pulse=pulse, port=port)
             if readout_gate is not None:
-                pulses.extend(
-                    self._readout_gate_to_pulse(time=time, qubit_idx=qubit_idx, chip=chip)
-                    for qubit_idx in readout_gate.target_qubits
-                )
+                for qubit_idx in readout_gate.target_qubits:
+                    readout_pulse, port = self._readout_gate_to_pulse(time=time, qubit_idx=qubit_idx, chip=chip)
+                    pulse_sequences.add(pulse=readout_pulse, port=port)
 
-            pulses_list.append(Pulses(elements=pulses))
+            pulse_sequences_list.append(pulse_sequences)
 
-        return pulses_list
+        return pulse_sequences_list
 
-    def _control_gate_to_pulse(self, time: Dict[int, int], control_gate: Gate, chip: Chip) -> Pulse:
+    def _control_gate_to_pulse(self, time: Dict[int, int], control_gate: Gate, chip: Chip) -> Tuple[Pulse, int]:
         """Translate a gate into a pulse.
 
         Args:
@@ -62,16 +63,18 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time, port=port.id_, pulse_time=self.settings.gate_duration + self.settings.delay_between_pulses
         )
-        return Pulse(
-            amplitude=float(amplitude),
-            phase=float(phase),
-            duration=self.settings.gate_duration,
-            port=port.id_,
-            pulse_shape=Drag(num_sigmas=self.settings.num_sigmas, beta=self.settings.drag_coefficient),
-            start_time=old_time,
+        return (
+            Pulse(
+                amplitude=float(amplitude),
+                phase=float(phase),
+                duration=self.settings.gate_duration,
+                pulse_shape=Drag(num_sigmas=self.settings.num_sigmas, beta=self.settings.drag_coefficient),
+                start_time=old_time,
+            ),
+            port.id_,
         )
 
-    def _readout_gate_to_pulse(self, time: Dict[int, int], qubit_idx: int, chip: Chip) -> ReadoutPulse:
+    def _readout_gate_to_pulse(self, time: Dict[int, int], qubit_idx: int, chip: Chip) -> Tuple[ReadoutPulse, int]:
         """Translate a gate into a pulse.
 
         Args:
@@ -84,12 +87,14 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time, port=port.id_, pulse_time=self.settings.readout_duration + self.settings.delay_before_readout
         )
-        return ReadoutPulse(
-            amplitude=self.settings.readout_amplitude,
-            phase=self.settings.readout_phase,
-            duration=self.settings.readout_duration,
-            port=port.id_,
-            start_time=old_time,
+        return (
+            ReadoutPulse(
+                amplitude=self.settings.readout_amplitude,
+                phase=self.settings.readout_phase,
+                duration=self.settings.readout_duration,
+                start_time=old_time,
+            ),
+            port.id_,
         )
 
     def _update_time(self, time: Dict[int, int], port: int, pulse_time: int):

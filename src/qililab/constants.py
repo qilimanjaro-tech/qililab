@@ -88,16 +88,17 @@ class LOOP:
     STEP = "step"
 
 
-class PULSES:
+class PULSESEQUENCES:
     """PulseSequenes attribute names."""
 
-    PULSES = "pulses"
+    ELEMENTS = "elements"
 
 
 class PULSESEQUENCE:
     """PulseSequence attribute names."""
 
     PULSES = "pulses"
+    PORT = "port"
 
 
 class PULSE:
