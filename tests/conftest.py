@@ -345,7 +345,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="loop")
 def fixture_loop() -> Loop:
     """Return Platform object."""
-    return Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.GAIN, start=0, stop=1)
+    return Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1)
 
 
 @pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
