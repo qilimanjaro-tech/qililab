@@ -2,19 +2,20 @@
 import urllib
 from dataclasses import dataclass
 
+from qililab.connections import TCPIPConnection
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import Device, InstrumentName
 
 
 @InstrumentFactory.register
-class Attenuator(Instrument):
+class Attenuator(Instrument, TCPIPConnection):
     """Attenuator class."""
 
     name = InstrumentName.MINI_CIRCUITS
 
     @dataclass
-    class StepAttenuatorSettings(Instrument.InstrumentSettings):
+    class StepAttenuatorSettings(Instrument.InstrumentSettings, TCPIPConnection.TCPIPConnectionSettings):
         """Step attenuator settings."""
 
         attenuation: float
@@ -24,6 +25,7 @@ class Attenuator(Instrument):
     def stop(self):
         """Stop instrument."""
 
+    @TCPIPConnection.CheckConnected
     def setup(self):
         """Set instrument settings."""
         self.http_request(command=f"SETATT={self.attenuation}")
@@ -33,6 +35,10 @@ class Attenuator(Instrument):
         self.http_request(command="MN?")
         self.device = Device()
 
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+        return self.name.value
+
     def http_request(self, command: str):
         """Send an HTTP request with the given command.
 
@@ -40,7 +46,7 @@ class Attenuator(Instrument):
             command (str): Command to send via HTTP.
         """
         try:
-            request = urllib.request.Request(f"http://{self.ip}/:{command}")  # type: ignore
+            request = urllib.request.Request(f"http://{self.address}/:{command}")  # type: ignore
             with urllib.request.urlopen(request, timeout=2) as response:  # type: ignore # nosec
                 pte_return = response.read()
         except urllib.error.URLError as error:  # type: ignore
