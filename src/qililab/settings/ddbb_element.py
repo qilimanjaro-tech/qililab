@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields
 from enum import Enum
 from types import NoneType
 
-from qililab.typings import Category, Parameter
+from qililab.typings import Category
 
 
 @dataclass(kw_only=True)

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from qililab.config import logger
 from qililab.constants import RUNCARDS
 from qililab.platform.platform import Platform
-from qililab.platform.utils import RuncardSchema
+from qililab.settings import RuncardSchema
 from qililab.typings import yaml
 from qililab.utils import SingletonABC
 

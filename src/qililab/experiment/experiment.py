@@ -4,7 +4,7 @@ import os
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from qibo.core.circuit import Circuit
@@ -21,9 +21,10 @@ from qililab.constants import (
     RUNCARD,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform, RuncardSchema
+from qililab.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
+from qililab.settings import RuncardSchema
 from qililab.typings import Category, Instrument, Parameter, yaml
 from qililab.utils import LivePlot, Loop
 
@@ -236,7 +237,7 @@ class Experiment:
         self.platform.set_parameter(
             alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
         )
-        if category == Category.PLATFORM:
+        if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
@@ -266,7 +267,7 @@ class Experiment:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
         if isinstance(sequence_list[0], Circuit):
-            translator = CircuitToPulses(settings=self.platform.translation_settings)
+            translator = CircuitToPulses(settings=self.platform.pulses_settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
         return execution, sequence_list

@@ -17,15 +17,27 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.TRANSLATION_SETTINGS: {
-            "readout_duration": 2000,
-            "readout_amplitude": 0.4,
-            "readout_phase": 0,
+        PLATFORM.PULSES: {
             "delay_between_pulses": 0,
             "delay_before_readout": 40,
-            "gate_duration": 100,
-            "num_sigmas": 4,
-            "drag_coefficient": 0,
+            "gates": [
+                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+                {
+                    "name": "X",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 100,
+                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                },
+                {
+                    "name": "Y",
+                    "amplitude": 1,
+                    "phase": 1.5707963267948966,
+                    "duration": 100,
+                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                },
+            ],
         },
     }
 
@@ -208,15 +220,27 @@ class FluxQubit:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.TRANSLATION_SETTINGS: {
-            "readout_duration": 2000,
-            "readout_amplitude": 0.4,
-            "readout_phase": 0,
+        PLATFORM.PULSES: {
             "delay_between_pulses": 0,
             "delay_before_readout": 40,
-            "gate_duration": 100,
-            "num_sigmas": 4,
-            "drag_coefficient": 0,
+            "gates": [
+                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+                {
+                    "name": "X",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 100,
+                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                },
+                {
+                    "name": "Y",
+                    "amplitude": 1,
+                    "phase": 1.5707963267948966,
+                    "duration": 100,
+                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                },
+            ],
         },
     }
 

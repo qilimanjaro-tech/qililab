@@ -182,7 +182,7 @@ def fixture_attenuator() -> Attenuator:
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
 def fixture_pulses(platform: Platform) -> PulseSequences:
     """Return Pulses instance."""
-    return CircuitToPulses(settings=platform.translation_settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(settings=platform.pulses_settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 @pytest.fixture(name="pulse_sequence")

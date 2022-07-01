@@ -1,5 +1,4 @@
 """Tests for the Platform class."""
-from types import NoneType
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,6 +8,7 @@ from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
 from qililab.platform import Buses, Platform, Schema
+from qililab.settings import RuncardSchema
 from qililab.typings import Category
 
 from ...conftest import platform_db, platform_yaml
@@ -49,7 +49,7 @@ class TestPlatform:
 
     def test_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.settings, Platform.PlatformSettings)
+        assert isinstance(platform.settings, RuncardSchema.PlatformSettings)
 
     def test_schema_instance(self, platform: Platform):
         """Test schema instance."""

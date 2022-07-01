@@ -4,6 +4,7 @@ from .enums import (
     AcquisitionName,
     BusSubcategory,
     Category,
+    GateName,
     Instrument,
     InstrumentName,
     IntegrationMode,

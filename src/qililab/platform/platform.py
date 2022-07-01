@@ -1,14 +1,11 @@
 """Platform class."""
 from dataclasses import asdict
-from typing import List
 
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import RuncardSchema
-from qililab.settings import DDBBElement, TranslationSettings
+from qililab.settings import RuncardSchema
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
-from qililab.utils import nested_dataclass
 
 
 class Platform:
@@ -20,24 +17,11 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    @nested_dataclass
-    class PlatformSettings(DDBBElement):
-        """Contains the settings of the platform.
-
-        Args:
-            number_qubits (int): Number of qubits used in the platform.
-            drag_coefficient (float): Coefficient used for the drag pulse.
-            num_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / num_sigmas.
-        """
-
-        name: str
-        translation_settings: TranslationSettings
-
-    settings: PlatformSettings
+    settings: RuncardSchema.PlatformSettings
     schema: Schema
 
     def __init__(self, runcard_schema: RuncardSchema):
-        self.settings = self.PlatformSettings(**runcard_schema.settings)
+        self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
@@ -104,11 +88,13 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if (alias is not None and alias == Category.PLATFORM.value) or (
+        if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
             category is not None and Category(category) == Category.PLATFORM
         ):
-            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
-            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
+            if alias == Category.PLATFORM.value:
+                self.settings.set_parameter(parameter=parameter.value, value=value)
+            else:
+                self.settings.set_parameter(gate_name=alias, parameter=parameter.value, value=value)
             return
         element = self.get_element(alias=alias, category=category, id_=id_)
         element.set_parameter(parameter=parameter, value=value)
@@ -132,13 +118,13 @@ class Platform:
         return self.settings.name
 
     @property
-    def translation_settings(self):
+    def pulses_settings(self):
         """Platform 'translation_settings' property.
 
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.translation_settings
+        return self.settings.pulses
 
     @property
     def category(self):
@@ -166,6 +152,15 @@ class Platform:
             int: Number of different qubits that the platform contains.
         """
         return self.chip.num_qubits
+
+    @property
+    def gate_names(self):
+        """Platform 'gate_names' property.
+
+        Returns:
+            List[str]: List of the names of all the defined gates.
+        """
+        return self.settings.gate_names
 
     @property
     def instruments(self):

@@ -42,7 +42,7 @@ class SIGNALGENERATOR:
 class PLATFORM:
     """Platform constants."""
 
-    TRANSLATION_SETTINGS = "translation_settings"
+    PULSES = "pulses"
 
 
 class EXPERIMENT:

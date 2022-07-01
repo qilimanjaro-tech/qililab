@@ -3,7 +3,6 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from dataclasses import dataclass
 
-from qililab.config import logger
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
