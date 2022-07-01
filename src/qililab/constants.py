@@ -29,9 +29,11 @@ class RUNCARD:
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"
     SYSTEM_CONTROL = "system_control"
+    IP = "ip"
+    FIRMWARE = "firmware"
 
 
-class SIGNAL_GENERATOR:
+class SIGNALGENERATOR:
     """SignalGenerator attribute names."""
 
     FREQUENCY = "frequency"

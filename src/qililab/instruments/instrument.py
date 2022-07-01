@@ -140,3 +140,7 @@ class Instrument(BusElement, ABC):
             str: settings.firmware.
         """
         return self.settings.firmware
+
+    def __str__(self):
+        """String representation of an instrument."""
+        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"

@@ -22,20 +22,9 @@ class Schema:
         self.chip = Chip(**chip)
         self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
 
-    def draw(self, options: SchemaDrawOptions) -> None:
-        """Draw schema.
-
-        Args:
-            options (SchemaDrawOptions): Method to generate the drawing.
-        """
-        if options == SchemaDrawOptions.PRINT:
-            for idx, bus in enumerate(self.buses):
-                print(f"Bus {idx}:\t", end="------")
-                for _, element in bus:
-                    print(f"|{element.name}", end="|------")
-                print()
-        elif options == SchemaDrawOptions.FILE:
-            raise NotImplementedError("This function is not implemented yet.")
+    def __str__(self):
+        """String representation of the schema."""
+        return "\n".join(str(bus) for bus in self.buses)
 
     def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
         """Instantiate all instrument classes from their respective dictionaries.

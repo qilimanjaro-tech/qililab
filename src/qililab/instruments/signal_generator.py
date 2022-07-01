@@ -2,7 +2,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
-from qililab.constants import SIGNAL_GENERATOR
+from qililab.constants import SIGNALGENERATOR
 from qililab.instruments.instrument import Instrument
 
 
@@ -47,4 +47,4 @@ class SignalGenerator(Instrument):
 
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
-        return {key: value for key, value in super().to_dict().items() if key != SIGNAL_GENERATOR.FREQUENCY}
+        return {key: value for key, value in super().to_dict().items() if key != SIGNALGENERATOR.FREQUENCY}

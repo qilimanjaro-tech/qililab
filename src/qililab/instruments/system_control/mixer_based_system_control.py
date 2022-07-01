@@ -126,3 +126,7 @@ class MixerBasedSystemControl(SystemControl):
             if isinstance(value, str):
                 instrument_object = instruments.get_instrument(alias=value)
                 setattr(self.settings, name, instrument_object)
+
+    def __str__(self):
+        """String representation of the MixerBasedSystemControl class."""
+        return f"{self.awg}|----|{self.signal_generator}"

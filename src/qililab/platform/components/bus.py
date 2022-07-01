@@ -108,8 +108,17 @@ class Bus:
             if category == Category.ATTENUATOR and isinstance(value, str):
                 instrument_object = instruments.get_instrument(alias=value)
             if instrument_object is None:
-                raise ValueError(f"No instrument object found for category {category} and value {value}.")
+                raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
             setattr(self.settings, name, instrument_object)
+
+    def __str__(self):
+        """String representation of a bus. Prints a drawing of the bus elements."""
+        return (
+            f"Bus {self.id_} ({self.subcategory.value}):"
+            + f"----|{self.system_control}|--"
+            + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
+            + f"--|port {self.port}|----"
+        )
 
     @property
     def target_freqs(self):

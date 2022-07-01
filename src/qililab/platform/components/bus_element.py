@@ -17,6 +17,14 @@ class BusElement(FactoryElement):
         """Return a dict representation of the BusElement class."""
         return {RUNCARD.NAME: self.name.value} | asdict(self.settings, dict_factory=dict_factory)
 
+    def short_dict(self):
+        """Return a dict representation of the BusElement class discarding all static elements."""
+        return {
+            key: value
+            for key, value in self.to_dict().items()
+            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.IP, RUNCARD.FIRMWARE]
+        }
+
 
 def dict_factory(data):
     """Dict factory used in the asdict() dataclass function. Replace all Enum classes by its corresponding values
