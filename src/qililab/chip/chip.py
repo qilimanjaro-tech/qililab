@@ -146,6 +146,15 @@ class Chip:
             "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
         }
 
+    @property
+    def num_qubits(self) -> int:
+        """Chip 'num_qubit' property
+
+        Returns:
+            int: Number of qubits.
+        """
+        return sum(isinstance(node, Qubit) for node in self.nodes)
+
     def __str__(self):
         """String representation of the Chip class."""
         string = ""

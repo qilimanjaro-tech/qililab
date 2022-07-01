@@ -165,7 +165,7 @@ class Platform:
         Returns:
             int: Number of different qubits that the platform contains.
         """
-        return 1  # TODO: Compute num_qubits with Chip class.
+        return self.chip.num_qubits
 
     @property
     def instruments(self):

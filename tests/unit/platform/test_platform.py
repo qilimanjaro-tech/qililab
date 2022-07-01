@@ -32,7 +32,7 @@ class TestPlatform:
 
     def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""
-        assert platform.num_qubits == 1
+        assert platform.num_qubits == platform.chip.num_qubits
 
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
