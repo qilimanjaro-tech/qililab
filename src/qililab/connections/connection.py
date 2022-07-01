@@ -25,9 +25,7 @@ class Connection(ABC):
     @abstractmethod
     def connect(self):
         """Establish connection."""
-        pass
 
     @abstractmethod
     def close(self):
         """Close connection."""
-        pass

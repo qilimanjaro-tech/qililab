@@ -15,8 +15,6 @@ class TCPIPConnection(Connection):
 
     def connect(self):
         """Establish connection."""
-        pass
 
     def close(self):
         """Close connection."""
-        pass
