@@ -1,4 +1,5 @@
 """Qblox pulsar class"""
+from abc import abstractmethod
 from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_controller import QbloxController
@@ -28,9 +29,22 @@ class QbloxPulsar(QbloxController):
     def _initialize_controller(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        # self.controller = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
-        pass
+        self.controller = Pulsar(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+        self._initialize_controller()
+        self.device = self.controller
 
     def create_modules(self):
+        """Create the associated modules."""
         pulsar_module = QbloxModule(self.controller, slot_id=0, settings=self.settings)
         self.modules = [pulsar_module]
+
+    @abstractmethod
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+
+    @abstractmethod
+    def _device_identifier(self) -> str:
+        """Gets the device identifier."""

@@ -22,3 +22,7 @@ class QbloxQCM(QbloxModule, QubitControl):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxQCMSettings
+
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+        return self.name.value

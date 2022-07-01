@@ -4,17 +4,18 @@ from typing import Tuple
 
 import numpy as np
 
+from qililab.connections import TCPIPConnection
 from qililab.instruments.instrument import Instrument
 from qililab.typings import InstrumentName, Keithley2600Driver
 
 
-class Keithley2600(Instrument):
+class Keithley2600(Instrument, TCPIPConnection):
     """Keithley2600 class."""
 
     name = InstrumentName.KEITHLEY2600
 
     @dataclass
-    class Keithley2600Settings(Instrument.InstrumentSettings):
+    class Keithley2600Settings(TCPIPConnection.TCPIPConnectionSettings, Instrument.InstrumentSettings):
         """Settings for Keithley2600 instrument."""
 
         max_current: float
@@ -26,27 +27,31 @@ class Keithley2600(Instrument):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @Instrument.CheckConnected
+    @TCPIPConnection.CheckConnected
     def setup(self):
         """Setup instrument."""
         self.device.smua.limiti(self.max_current)
         self.device.smua.limitv(self.max_voltage)
 
-    @Instrument.CheckConnected
+    @TCPIPConnection.CheckConnected
     def start(self):
         """Start generating microwaves."""
 
-    @Instrument.CheckConnected
+    @TCPIPConnection.CheckConnected
     def stop(self):
         """Stop generating microwaves."""
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         self.device = Keithley2600Driver(
-            name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.ip}::INSTR", visalib="@py"
+            name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
         )
 
-    @Instrument.CheckConnected
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+        return self.name.value
+
+    @TCPIPConnection.CheckConnected
     def reset(self):
         """Reset instrument."""
         self.device.reset()

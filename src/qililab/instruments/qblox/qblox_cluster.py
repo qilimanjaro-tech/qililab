@@ -1,9 +1,8 @@
 """Qblox pulsar class"""
+from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
-from qililab.instruments.awg import AWG
 from qililab.instruments.qblox.qblox_controller import QbloxController
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.typings import Cluster
@@ -30,12 +29,25 @@ class QbloxCluster(QbloxController):
         super().__init__(settings=settings)
 
     def _initialize_controller(self):
-        """Initialize device attribute to the corresponding device class."""
+        """Initialize controller attribute to the corresponding Qblox device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
-        # self.controller = Cluster(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
-        pass
+        self.controller = Cluster(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
+
+    def _initialize_device(self):
+        """Initialize device attribute to the corresponding device class."""
+        self._initialize_controller()
+        self.device = self.controller
 
     def create_modules(self):
+        """Create the associated modules."""
         for slot_id in self.modules_connected:
             cluster_module = QbloxModule(self.controller[slot_id], slot_id=slot_id, settings=self.settings)
             self.modules.append(cluster_module)
+
+    @abstractmethod
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+
+    @abstractmethod
+    def _device_identifier(self) -> str:
+        """Gets the device identifier."""

@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from qpysequence.acquisitions import Acquisitions
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
@@ -11,12 +10,7 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings import (
-    AcquireTriggerMode,
-    AcquisitionName,
-    InstrumentName,
-    IntegrationMode,
-)
+from qililab.typings import AcquireTriggerMode, InstrumentName, IntegrationMode
 
 
 @InstrumentFactory.register
@@ -118,6 +112,10 @@ class QbloxQRM(QbloxModule, QubitReadout):
         """Append an acquire instruction to the loop."""
         acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+        return self.name.value
 
     @property
     def acquire_trigger_mode(self):

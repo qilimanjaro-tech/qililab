@@ -170,19 +170,20 @@ class QbloxModule(AWG):
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
 
-    @AWG.CheckConnected
+    def _device_identifier(self) -> str:
+        """Gets the device identifier."""
+        return self.id_
+
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
-    @AWG.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
         self._set_offsets()
 
-    @AWG.CheckConnected
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()
@@ -191,7 +192,6 @@ class QbloxModule(AWG):
         """Empty cache."""
         self._cache = None
 
-    @AWG.CheckConnected
     def upload(self, sequence: Sequence, path: Path):
         """Upload sequence to sequencer.
 
@@ -235,11 +235,6 @@ class QbloxModule(AWG):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
         getattr(self.device, f"sequencer{self.sequencer}").channel_map_path1_out1_en(True)
-
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
-        # TODO: We need to update the firmware of the instruments to be able to connect
-        self.device = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
 
     def _generate_waveforms(self, pulses: List[Pulse]):
         """Generate I and Q waveforms from a PulseSequence object.

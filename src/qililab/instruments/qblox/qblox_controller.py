@@ -1,5 +1,5 @@
 """Qblox controller class"""
-from abc import abstractclassmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import List
 
@@ -18,14 +18,7 @@ class QbloxController(TCPIPConnection):
 
     @dataclass
     class QbloxControllerSettings(TCPIPConnection.TCPIPConnectionSettings):
-        """Contains the settings of a specific Qblox controller.
-
-        Args:
-            reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
-            sequencer (int): Index of the sequencer to use.
-            sync_enabled (bool): Enable synchronization over multiple instruments.
-            gain (float): Gain step used by the sequencer.
-        """
+        """Contains the settings of a specific Qblox controller."""
 
     settings: QbloxControllerSettings
     modules: List[QbloxModule]
@@ -40,24 +33,36 @@ class QbloxController(TCPIPConnection):
         super().connect()
         self.initial_setup()
 
+    @TCPIPConnection.CheckConnected
+    @abstractmethod
     def reset(self):
         """Reset instrument."""
-        self.controller.reset()
 
+    @TCPIPConnection.CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         self.reset()
         self.create_modules()
         self.initialize_modules()
 
-    @abstractclassmethod
+    @abstractmethod
     def create_modules(self):
+        """Create the associated modules."""
         raise NotImplementedError()
 
-    def _initialize_controller(self):
+    @abstractmethod
+    def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self._initialize_controller()
+
+    @abstractmethod
+    def _initialize_controller(self):
+        """Initialize controller attribute to the corresponding Qblox device class."""
 
     def initialize_modules(self):
+        """Initialize all modules with their setup."""
         for module in self.modules:
             module.initial_setup()
+
+    @abstractmethod
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
