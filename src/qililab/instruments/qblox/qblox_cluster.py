@@ -21,27 +21,21 @@ class QbloxCluster(QbloxController):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxClusterSettings
-    controller: Cluster
+    device: Cluster
     n_modules: int = 20
     modules_connected: List[int]
 
     def __init__(self, settings: dict):
         super().__init__(settings=settings)
 
-    def _initialize_controller(self):
-        """Initialize controller attribute to the corresponding Qblox device class."""
-        # TODO: We need to update the firmware of the instruments to be able to connect
-        self.controller = Cluster(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
-
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self._initialize_controller()
-        self.device = self.controller
+        self.device = Cluster(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
 
     def create_modules(self):
         """Create the associated modules."""
         for slot_id in self.modules_connected:
-            cluster_module = QbloxModule(self.controller[slot_id], slot_id=slot_id, settings=self.settings)
+            cluster_module = QbloxModule(self.device.modules[slot_id], slot_id=slot_id, settings=self.settings)
             self.modules.append(cluster_module)
 
     @abstractmethod

@@ -20,25 +20,19 @@ class QbloxPulsar(QbloxController):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxPulsarSettings
-    controller: Pulsar
+    device: Pulsar
     n_modules: int = 1
 
     def __init__(self, settings: dict):
         super().__init__(settings=settings)
 
-    def _initialize_controller(self):
-        """Initialize device attribute to the corresponding device class."""
-        # TODO: We need to update the firmware of the instruments to be able to connect
-        self.controller = Pulsar(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
-
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self._initialize_controller()
-        self.device = self.controller
+        self.device = Pulsar(name=f"{self._device_name()}_{self._device_identifier()}", identifier=self.address)
 
     def create_modules(self):
         """Create the associated modules."""
-        pulsar_module = QbloxModule(self.controller, slot_id=0, settings=self.settings)
+        pulsar_module = QbloxModule(self.device, slot_id=0, settings=self.settings)
         self.modules = [pulsar_module]
 
     @abstractmethod

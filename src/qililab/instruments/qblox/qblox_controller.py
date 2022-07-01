@@ -23,7 +23,7 @@ class QbloxController(TCPIPConnection):
     settings: QbloxControllerSettings
     modules: List[QbloxModule]
     n_modules: int
-    controller: Pulsar | Cluster
+    device: Pulsar | Cluster
 
     def __init__(self, settings: dict):
         super().__init__(settings=settings)
@@ -53,10 +53,6 @@ class QbloxController(TCPIPConnection):
     @abstractmethod
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-
-    @abstractmethod
-    def _initialize_controller(self):
-        """Initialize controller attribute to the corresponding Qblox device class."""
 
     def initialize_modules(self):
         """Initialize all modules with their setup."""
