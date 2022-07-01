@@ -12,3 +12,7 @@ class Node(DDBBElement, FactoryElement):
 
     category: Category = Category.NODE
     nodes: List[int]
+
+    def __str__(self):
+        """String representation of a node."""
+        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"

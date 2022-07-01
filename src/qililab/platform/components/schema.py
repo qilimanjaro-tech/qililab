@@ -6,7 +6,6 @@ from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, InstrumentFactory, Instruments
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
-from qililab.typings import SchemaDrawOptions
 
 
 class Schema:

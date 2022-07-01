@@ -12,3 +12,7 @@ class Testschema:
     def test_print_instruments(self, schema: Schema):
         """Test print instruments."""
         print(schema.instruments)
+
+    def test_print_chip(self, schema: Schema):
+        """Test print chip."""
+        print(schema.chip)

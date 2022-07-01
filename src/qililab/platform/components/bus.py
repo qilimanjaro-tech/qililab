@@ -117,7 +117,7 @@ class Bus:
             f"Bus {self.id_} ({self.subcategory.value}):"
             + f"----|{self.system_control}|--"
             + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
-            + f"--|port {self.port}|----"
+            + "".join(f"--|{target}|----" for target in self.targets)
         )
 
     @property

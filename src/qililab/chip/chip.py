@@ -126,10 +126,8 @@ class Chip:
     def get_node_from_alias(self, alias: str):
         """Get node from given alias.
 
-        Args:
-            alias (str): Unique alias of the node.
+        Args:-
 
-        Raises:
             ValueError: If no node is found.
 
         Returns:
@@ -147,3 +145,15 @@ class Chip:
             "category": self.category.value,
             "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
         }
+
+    def __str__(self):
+        """String representation of the Chip class."""
+        string = ""
+        for node in self.nodes:
+            if isinstance(node, Port):
+                adj_nodes = self._get_adjacent_nodes(node=node)
+                string += f"Port {node.id_}: ----"
+                for adj_node in adj_nodes:
+                    string += f"|{adj_node}|--"
+                string += "--\n"
+        return string
