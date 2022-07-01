@@ -114,7 +114,7 @@ class Bus:
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
         return (
-            f"Bus {self.id_} ({self.subcategory.value}):"
+            f"Bus {self.id_} ({self.subcategory.value}):  "
             + f"----|{self.system_control}|--"
             + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
             + "".join(f"--|{target}|----" for target in self.targets)
