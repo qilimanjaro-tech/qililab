@@ -21,13 +21,14 @@ class CircuitToPulses:
     settings: TranslationSettings
 
     def translate(self, circuits: List[Circuit], chip: Chip) -> List[PulseSequences]:
-        """Translate a circuit into a pulse sequence.
+        """Translate each circuit inot a PulseSequence class, which is a list of PulseSequence classes for
+        each different port and pulse name (control/readout).
 
         Args:
-            circuit (Circuit): Qibo Circuit class.
+            circuits (List[Circuit]): List of Qibo Circuit classes.
 
         Returns:
-            PulseSequences: Object containing the translated pulses.
+            List[PulseSequences]: List of PulseSequences classes.
         """
         pulse_sequences_list: List[PulseSequences] = []
         for circuit in circuits:
