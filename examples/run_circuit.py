@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, M
+from qibo.gates import RX, M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -21,14 +21,11 @@ os.environ["DATA"] = str(Path(__file__).parent / "data")
 def run_circuit(connection: API | None = None):
     """Load the platform 'galadriel' from the DB."""
     platform = build_platform(name=DEFAULT_PLATFORM_NAME)
-    circuits = []
-    for rotation in np.linspace(0, 3 * np.pi, 2):
-        circuit = Circuit(1)
-        circuit.add(RX(0, rotation))
-        circuit.add(M(0))
-        circuits.append(circuit)
-    loop = Loop(alias="resonator", parameter=Parameter.FREQUENCY, start=7.314e9, stop=7.332e9, step=0.1e6)
-    experiment = Experiment(platform=platform, sequences=circuits, loop=loop)
+    circuit = Circuit(1)
+    circuit.add(X(0))
+    circuit.add(M(0))
+    loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1, step=0.1)
+    experiment = Experiment(platform=platform, sequences=circuit, loop=loop)
     results = experiment.execute(connection=connection)
     print(results.acquisitions())
 

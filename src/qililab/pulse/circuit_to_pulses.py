@@ -8,6 +8,7 @@ from qibo.core.circuit import Circuit
 from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
+from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.readout_pulse import ReadoutPulse
@@ -134,4 +135,5 @@ class CircuitToPulses:
         """Instantiate all gates defined in settings and add them to the factory."""
         for gate_settings in self.settings.gates:
             settings_dict = asdict(gate_settings)
-            HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))(settings=settings_dict)
+            gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
+            gate_class.settings = gate_class.HardwareGateSettings(**settings_dict)

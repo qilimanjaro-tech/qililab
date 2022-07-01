@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.settings.ddbb_element import DDBBElement
+from qililab.typings.enums import Parameter
 from qililab.utils import nested_dataclass
 
 
@@ -105,18 +106,19 @@ class RuncardSchema:
             """
             return [gate.name for gate in self.pulses.gates]
 
-        def set_parameter(self, parameter: str, value: float | str | bool, gate_name: str | None = None):
+        def set_parameter(self, parameter: Parameter, value: float | str | bool, alias: str | None = None):
             """Cast the new value to its corresponding type and set the new attribute."""
-            if gate_name is None:
+            if alias is None:
                 super().set_parameter(parameter=parameter, value=value)
                 return
-            settings = self.pulses.get_gate(name=gate_name)
-            if not hasattr(settings, parameter):
+            param = parameter.value
+            settings = self.pulses.get_gate(name=alias)
+            if not hasattr(settings, param):
                 settings = settings.shape
-            attr_type = type(getattr(settings, parameter))
+            attr_type = type(getattr(settings, param))
             if attr_type == int:
                 attr_type = float
-            setattr(settings, parameter, value)
+            setattr(settings, param, value)
 
     settings: PlatformSettings
     schema: Schema

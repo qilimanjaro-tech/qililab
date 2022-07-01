@@ -11,6 +11,7 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
+from qililab.chip import Node
 from qililab.config import logger
 from qililab.constants import (
     DATA,
@@ -190,10 +191,14 @@ class Experiment:
             for value in loop.range:
                 pbar.set_description(f"{loop.parameter.value}: {value} ")
                 pbar.update()
-                if loop.alias in self.platform.gate_names:
-                    element.set_parameter(alias=loop.alias, parameter=loop.parameter.value, value=value)
-                else:
-                    element.set_parameter(parameter=loop.parameter.value, value=value)
+                self.set_parameter(
+                    element=element,
+                    alias=loop.alias,
+                    instrument=loop.instrument,
+                    id_=loop.id_,
+                    parameter=loop.parameter,
+                    value=value,
+                )
                 results = self.recursive_loop(
                     loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
                 )
@@ -226,6 +231,7 @@ class Experiment:
         alias: str | None = None,
         instrument: Instrument | None = None,
         id_: int | None = None,
+        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -236,10 +242,16 @@ class Experiment:
             value (float): New value.
         """
         category = Category(instrument.value) if instrument is not None else None
+        if element is not None:
+            if isinstance(element, RuncardSchema.PlatformSettings):
+                element.set_parameter(alias=alias, parameter=parameter, value=value)
+            else:
+                element.set_parameter(parameter=parameter, value=value)  # type: ignore
 
-        self.platform.set_parameter(
-            alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
-        )
+        else:
+            self.platform.set_parameter(
+                alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
+            )
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 

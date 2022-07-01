@@ -97,9 +97,9 @@ class Platform:
             category is not None and Category(category) == Category.PLATFORM
         ):
             if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter.value, value=value)
+                self.settings.set_parameter(parameter=parameter, value=value)
             else:
-                self.settings.set_parameter(gate_name=alias, parameter=parameter.value, value=value)
+                self.settings.set_parameter(alias=alias, parameter=parameter, value=value)
             return
         element = self.get_element(alias=alias, category=category, id_=id_)
         element.set_parameter(parameter=parameter, value=value)

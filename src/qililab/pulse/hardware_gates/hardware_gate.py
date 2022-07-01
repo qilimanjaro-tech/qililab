@@ -26,10 +26,6 @@ class HardwareGate(ABC, metaclass=SingletonABC):
     class_type: Type[Gate]
     settings: HardwareGateSettings | None = None
 
-    def __init__(self, settings: dict):
-        class_type = type(self)
-        class_type.settings = self.HardwareGateSettings(**settings)
-
     @classmethod
     def normalize_angle(cls, angle: float):
         """Normalize angle in range [-pi, pi].
