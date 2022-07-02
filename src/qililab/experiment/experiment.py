@@ -22,12 +22,14 @@ from qililab.constants import (
     RUNCARD,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform
+from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
-from qililab.typings import Category, Instrument, Parameter, yaml
-from qililab.utils import LivePlot, Loop
+from qililab.typings.enums import Category, Instrument, Parameter
+from qililab.typings.yaml_type import yaml
+from qililab.utils.live_plot import LivePlot
+from qililab.utils.loop import Loop
 
 
 class Experiment:

@@ -18,7 +18,8 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.awg import AWG
 from qililab.pulse import Pulse, PulseSequence, PulseShape
-from qililab.typings import Pulsar, QcmQrm, ReferenceClock
+from qililab.typings.enums import ReferenceClock
+from qililab.typings.instruments import Pulsar, QcmQrm
 
 
 class QbloxModule(AWG):
@@ -63,6 +64,7 @@ class QbloxModule(AWG):
         self._cache = None
 
     def initial_setup(self):
+        """Initial setup"""
         self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()
@@ -70,6 +72,7 @@ class QbloxModule(AWG):
 
     @property
     def module_type(self) -> None:
+        """returns the qblox module type. Options: Qblox QCM or Qblox QRM"""
         return None
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):

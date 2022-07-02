@@ -103,7 +103,8 @@ class MixerBasedSystemControl(SystemControl):
 
     @property
     def acquisition_delay_time(self) -> int:
-        """SystemControl 'acquisition_delay_time' property.  Delay (in ns) between the readout pulse and the acquisition."""
+        """SystemControl 'acquisition_delay_time' property.
+        Delay (in ns) between the readout pulse and the acquisition."""
         if isinstance(self.awg, QubitReadout):
             return self.awg.acquisition_delay_time
         raise ValueError("AWG is not a QubitReadout instance.")

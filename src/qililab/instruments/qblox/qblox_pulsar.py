@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_controller import QbloxController
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.typings import Pulsar
+from qililab.typings.instruments import Pulsar
 
 
 class QbloxPulsar(QbloxController):

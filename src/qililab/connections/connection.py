@@ -7,7 +7,7 @@ from typing import Callable, Type, get_type_hints
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.settings import DDBBElement
-from qililab.typings import Device
+from qililab.typings.instruments.device import Device
 
 
 class Connection(ABC):

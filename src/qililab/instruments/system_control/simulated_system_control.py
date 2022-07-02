@@ -12,12 +12,12 @@ from qilisimulator.qubits.csfq4jj import (
 )
 from qilisimulator.utils import Factory as SimulatorFactory
 
-from qililab.instruments import Instruments
+from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
-from qililab.result import SimulatorResult
-from qililab.typings import SystemControlSubcategory
-from qililab.utils import Factory
+from qililab.result.simulator_result import SimulatorResult
+from qililab.typings.enums import SystemControlSubcategory
+from qililab.utils.factory import Factory
 
 
 @Factory.register
@@ -174,5 +174,6 @@ class SimulatedSystemControl(SystemControl):
 
     @property
     def acquisition_delay_time(self):
-        """SystemControl 'acquisition_delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
+        """SystemControl 'acquisition_delay_time' property.
+        Delay (in ns) between the readout pulse and the acquisition."""
         raise AttributeError("SimulatedSystemControl class doesn't have a 'acquisition_delay_time' property.")

@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 
 from qililab.constants import LOOP, RUNCARD
-from qililab.typings import Instrument, Parameter
+from qililab.typings.enums import Instrument, Parameter
 
 
 @dataclass
@@ -47,10 +47,9 @@ class Loop:
         """
         if self.num is not None:
             return np.linspace(start=self.start, stop=self.stop, num=self.num)
-        elif self.step is not None:
+        if self.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
-        else:
-            raise ValueError("Please specify either 'step' or 'num' arguments.")
+        raise ValueError("Please specify either 'step' or 'num' arguments.")
 
     @property
     def shape(self) -> List[int]:

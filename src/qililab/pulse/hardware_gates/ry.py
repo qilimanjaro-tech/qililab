@@ -1,6 +1,4 @@
 """RX gate"""
-from typing import Tuple
-
 import numpy as np
 from qibo import gates
 

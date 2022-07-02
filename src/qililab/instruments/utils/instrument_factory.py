@@ -1,7 +1,7 @@
 """InstrumentFactory class."""
 from typing import Dict, Type, TypeVar
 
-from qililab.instruments import Instrument
+from qililab.instruments.instrument import Instrument
 
 Element = TypeVar("Element", bound=Instrument)
 

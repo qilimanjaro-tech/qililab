@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_control import QubitControl
-from qililab.instruments.utils import InstrumentFactory
-from qililab.typings import InstrumentName
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.typings.enums import InstrumentName
 
 
 @InstrumentFactory.register

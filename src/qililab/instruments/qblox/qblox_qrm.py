@@ -10,7 +10,7 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings import AcquireTriggerMode, InstrumentName, IntegrationMode
+from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
 
 
 @InstrumentFactory.register

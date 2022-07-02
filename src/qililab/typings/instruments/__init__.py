@@ -1,3 +1,4 @@
+""" Instruments module """
 from .cluster import Cluster
 from .device import Device
 from .keithley_2600 import Keithley2600Driver

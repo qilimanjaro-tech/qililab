@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from typing import Type, get_type_hints
 
 from qililab.constants import RUNCARD
-from qililab.platform import BusElement
+from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
-from qililab.typings import InstrumentName, Parameter
+from qililab.typings.enums import InstrumentName, Parameter
 
 
 class Instrument(BusElement, ABC):

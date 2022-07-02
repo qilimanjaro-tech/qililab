@@ -5,7 +5,8 @@ from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
-from qililab.typings import BusSubcategory, Category, Parameter, yaml
+from qililab.typings.enums import BusSubcategory, Category, Parameter
+from qililab.typings.yaml_type import yaml
 
 
 class Platform:

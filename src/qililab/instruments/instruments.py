@@ -4,8 +4,8 @@ from typing import List
 
 import yaml
 
-from qililab.instruments import Instrument
-from qililab.typings import Category
+from qililab.instruments.instrument import Instrument
+from qililab.typings.enums import Category
 
 
 @dataclass

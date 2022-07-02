@@ -5,7 +5,7 @@ from typing import List
 
 from qililab.connections.tcpip_connection import TCPIPConnection
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.typings import Cluster, Pulsar
+from qililab.typings.instruments import Cluster, Pulsar
 
 
 class QbloxController(TCPIPConnection):

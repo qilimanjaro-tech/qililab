@@ -44,4 +44,5 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     @property
     def acquisition_delay_time(self) -> int:
-        """SystemControl 'acquisition_delay_time' property. Delay (in ns) between the readout pulse and the acquisition."""
+        """SystemControl 'acquisition_delay_time' property.
+        Delay (in ns) between the readout pulse and the acquisition."""

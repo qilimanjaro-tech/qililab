@@ -5,7 +5,7 @@ from pathlib import Path
 
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseSequence
-from qililab.result import QbloxResult
+from qililab.result.qblox_result import QbloxResult
 
 
 class AWG(Instrument):

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.constants import UNITS
-from qililab.result import Results
+from qililab.result.results import Results
 from qililab.utils.loop import Loop
 
 DATA = np.array(["I", "Q", "amplitude", "phase"])

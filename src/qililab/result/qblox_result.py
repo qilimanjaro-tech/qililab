@@ -5,8 +5,9 @@ from typing import List
 import numpy as np
 
 from qililab.result.result import Result
-from qililab.typings import ResultName
-from qililab.utils import Factory, nested_dataclass
+from qililab.typings.enums import ResultName
+from qililab.utils.factory import Factory
+from qililab.utils.nested_data_class import nested_dataclass
 
 
 @Factory.register
@@ -122,6 +123,7 @@ class QbloxResult(Result):
             return (acq[2], acq[2])
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
             return self.acquisitions()[0][-1], self.acquisitions()[-1]
+        raise ValueError("There is no data stored.")
 
     def plot(self):
         """Plot data."""

@@ -3,7 +3,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Tuple
 
 from qililab.constants import RUNCARD
-from qililab.typings import FactoryElement, ResultName
+from qililab.typings.enums import ResultName
+from qililab.typings.factory_element import FactoryElement
 
 
 # FIXME: Cannot use dataclass and ABC at the same time

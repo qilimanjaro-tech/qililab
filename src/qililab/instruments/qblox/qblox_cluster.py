@@ -5,7 +5,7 @@ from typing import List
 
 from qililab.instruments.qblox.qblox_controller import QbloxController
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.typings import Cluster
+from qililab.typings.instruments import Cluster
 
 
 class QbloxCluster(QbloxController):
