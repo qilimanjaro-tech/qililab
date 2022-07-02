@@ -2,23 +2,23 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Type, get_type_hints
+from typing import List, Type, get_type_hints
 
 from qililab.platform.components import BusElement
 from qililab.pulse import PulseSequence
 from qililab.result import Result
-from qililab.settings import Settings
-from qililab.typings import BusElementName
+from qililab.settings import DDBBElement
+from qililab.typings import SystemControlSubcategory
 
 
 class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
     @dataclass
-    class SystemControlSettings(Settings):
+    class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
-        subcategory: BusElementName
+        subcategory: SystemControlSubcategory
 
     settings: SystemControlSettings
 
@@ -31,7 +31,7 @@ class SystemControl(BusElement, ABC):
         """Start instrument."""
 
     @abstractmethod
-    def setup(self):
+    def setup(self, target_freqs: List[float]):
         """Set instrument settings."""
 
     @abstractmethod
@@ -64,6 +64,11 @@ class SystemControl(BusElement, ABC):
             str: settings.subcategory.
         """
         return self.settings.subcategory
+
+    @property
+    @abstractmethod
+    def awg_frequency(self) -> float:
+        """SystemControl 'awg_frequency' property."""
 
     @property
     @abstractmethod

@@ -1,11 +1,12 @@
 """Pulse class."""
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import ClassVar
 
 import numpy as np
 
-from qililab.constants import PULSE, YAML
+from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
+from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 
 
@@ -13,18 +14,18 @@ from qililab.utils import Factory, Waveforms
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    name = "Pulse"
+    name: ClassVar[PulseName] = PulseName.PULSE
     amplitude: float
     phase: float
     duration: int
-    qubit_ids: List[int]  # TODO: A Pulse should not know about qubit ids.
+    start_time: int
     pulse_shape: PulseShape
-    start_time: Optional[int] = None
+    frequency: float | None = None
 
     def __post_init__(self):
         """Cast qubit_ids to list."""
         if isinstance(self.pulse_shape, dict):
-            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(YAML.NAME))(
+            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
                 **self.pulse_shape  # pylint: disable=not-a-mapping
             )
 
@@ -66,8 +67,6 @@ class Pulse:
         Returns:
             int: Start time of the pulse.
         """
-        if self.start_time is None:
-            raise ValueError("Start time is not specified.")
         return self.start_time
 
     def to_dict(self):
@@ -77,11 +76,11 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSE.NAME: self.name,
+            PULSE.NAME: self.name.value,
             PULSE.AMPLITUDE: self.amplitude,
+            PULSE.FREQUENCY: self.frequency,
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
-            PULSE.QUBIT_IDS: self.qubit_ids,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
             PULSE.START_TIME: self.start_time,
         }

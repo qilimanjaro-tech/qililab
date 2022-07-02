@@ -34,7 +34,17 @@ class SGS100A(SignalGenerator, TCPIPConnection):
         - frequency (1e6, 20e9).
         """
         self.device.power(self.power)
-        self.device.frequency(self.frequency)
+        if self.frequency is not None:
+            self.device.frequency(self.frequency)
+
+    @SignalGenerator.frequency.setter  # type: ignore
+    def frequency(self, value: float):
+        """Set R&A frequency.
+
+        Args:
+            value (float): Frequency in Hz.
+        """
+        self.settings.frequency = value
 
     @TCPIPConnection.CheckConnected
     def turn_on(self):

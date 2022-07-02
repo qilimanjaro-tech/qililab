@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseShapeName
 
 
@@ -31,4 +31,4 @@ class PulseShape(FactoryElement):
         Returns:
             dict: Dictionary.
         """
-        return {YAML.NAME: self.name.value} | self.__dict__
+        return {RUNCARD.NAME: self.name.value} | self.__dict__

@@ -21,3 +21,7 @@ class TestBus:
         """Test __iter__ magic method."""
         for element in bus:
             assert not isinstance(element, (NoneType, str))
+
+    def test_print_bus(self, bus: Bus):
+        """Test print bus."""
+        print(bus)

@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from typing import List
 
+import yaml
+
 from qililab.instruments import Instrument
 from qililab.typings import Category
 
@@ -22,14 +24,13 @@ class Instruments:
         for instrument in self.elements:
             instrument.close()
 
-    def get(self, settings: dict):
+    def get_instrument(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get element given an id_ and category"""
-        id_ = settings.get("id_")
-        category = settings.get("category")
-        if not isinstance(id_, int):
-            raise ValueError("Invalid value for id.")
-        if not isinstance(category, str):
-            raise ValueError("Invalid value for category.")
+        if alias is not None:
+            return next(
+                (element for element in self.elements if element.settings.alias == alias),
+                None,
+            )
         return next(
             (element for element in self.elements if element.id_ == id_ and element.category == Category(category)),
             None,
@@ -38,3 +39,14 @@ class Instruments:
     def to_dict(self):
         """Return a dict representation of the Instruments class."""
         return [instrument.to_dict() for instrument in self.elements]
+
+    def __str__(self) -> str:
+        """
+        Returns:
+            str: String representation of the Instruments class.
+        """
+        return str(yaml.dump(self._short_dict(), sort_keys=False))
+
+    def _short_dict(self):
+        """Return a dict representation of the Instruments class discarding all static elements."""
+        return [instrument.short_dict() for instrument in self.elements]

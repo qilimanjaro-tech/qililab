@@ -1,4 +1,4 @@
-"""Y gate"""
+"""M gate"""
 from qibo import gates
 
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -7,14 +7,14 @@ from qililab.typings import GateName
 
 
 @HardwareGateFactory.register
-class Y(HardwareGate):  # pylint: disable=invalid-name
-    """Y gate."""
+class M(HardwareGate):  # pylint: disable=invalid-name
+    """X gate."""
 
-    name = GateName.Y
-    class_type = gates.Y
+    name = GateName.M
+    class_type = gates.M
 
     @classmethod
-    def translate(cls, gate: gates.X) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.M) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:

@@ -15,6 +15,7 @@ class Category(Enum):
         * bus
         * schema
         * resonator
+        * node
     """
 
     PLATFORM = "platform"
@@ -29,6 +30,8 @@ class Category(Enum):
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
+    CHIP = "chip"
+    NODE = "node"
 
 
 class Instrument(Enum):
@@ -87,6 +90,29 @@ class IntegrationMode(Enum):
     SSB = "ssb"
 
 
+class GateName(Enum):
+    """Gate names.
+
+    Args:
+        enum (str): Available types of gate names:
+        * I
+        * X
+        * Y
+        * M
+        * RX
+        * RY
+        * XY
+    """
+
+    I = "I"  # noqa: E741
+    X = "X"
+    RX = "RX"
+    Y = "Y"
+    RY = "RY"
+    XY = "XY"
+    M = "M"
+
+
 class AcquisitionName(Enum):
     """Acquisition names.
 
@@ -110,6 +136,19 @@ class SchemaDrawOptions(Enum):
 
     PRINT = "print"
     FILE = "file"
+
+
+class PulseName(Enum):
+    """Pulse names.
+
+    Args:
+        Enum (str): Available types of Pulse names:
+        * pulse
+        * readout_pulse
+    """
+
+    PULSE = "pulse"
+    READOUT_PULSE = "readout_pulse"
 
 
 class PulseShapeName(Enum):
@@ -138,21 +177,33 @@ class BusSubcategory(Enum):
     READOUT = "readout"
 
 
-class BusElementName(Enum):
+class SystemControlSubcategory(Enum):
     """Bus element names. Contains names of bus elements that are not instruments.
 
     Args:
         enum (str): Available bus element names:
+        * mixer_based_system_control
+        * simulated_system_control
+    """
+
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class NodeName(Enum):
+    """Node names.
+
+    Args:
+        enum (str): Available node names:
         * qubit
-        * qblox_qcm
-        * qblox_qrm
-        * rohde_schwarz
+        * resonator
+        * coupler
     """
 
     QUBIT = "qubit"
     RESONATOR = "resonator"
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    COUPLER = "coupler"
+    PORT = "port"
 
 
 class InstrumentName(Enum):
@@ -182,9 +233,9 @@ class Parameter(Enum):
 
     FREQUENCY = "frequency"
     GAIN = "gain"
-    READOUT_DURATION = "readout_duration"
-    READOUT_AMPLITUDE = "readout_amplitude"
-    READOUT_PHASE = "readout_phase"
+    DURATION = "duration"
+    AMPLITUDE = "amplitude"
+    PHASE = "phase"
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"

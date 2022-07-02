@@ -5,8 +5,8 @@ from functools import partial
 from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
-from qililab.constants import YAML
-from qililab.settings import Settings
+from qililab.constants import RUNCARD
+from qililab.settings import DDBBElement
 from qililab.typings import Device
 
 
@@ -14,7 +14,7 @@ class Connection(ABC):
     """Abstract base class declaring the necessary attributes and methods for a connection."""
 
     @dataclass
-    class ConnectionSettings(Settings):
+    class ConnectionSettings(DDBBElement):
         """Contains the settings of a connection.
 
         Args:
@@ -49,7 +49,7 @@ class Connection(ABC):
             return self._method(ref, *args, **kwargs)
 
     def __init__(self, settings: dict):
-        settings_class: Type[self.ConnectionSettings] = get_type_hints(YAML.SETTINGS)  # type: ignore
+        settings_class: Type[self.ConnectionSettings] = get_type_hints(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
         self._connected = False
 

@@ -1,7 +1,8 @@
 """SignalGenerator class."""
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from qililab.constants import SIGNALGENERATOR
 from qililab.instruments.instrument import Instrument
 
 
@@ -18,13 +19,13 @@ class SignalGenerator(Instrument):
         """
 
         power: float
-        frequency: float
+        frequency: float | None = field(init=False, default=None)
 
     settings: SignalGeneratorSettings
 
     @property
     def power(self):
-        """SGS100A 'power' property.
+        """SignalGenerator 'power' property.
 
         Returns:
             float: settings.power.
@@ -33,7 +34,7 @@ class SignalGenerator(Instrument):
 
     @property
     def frequency(self):
-        """SGS100A 'frequency' property.
+        """SignalGenerator 'frequency' property.
 
         Returns:
             float: settings.frequency.
@@ -43,3 +44,7 @@ class SignalGenerator(Instrument):
     @abstractmethod
     def turn_on(self):
         """Turn instrument on."""
+
+    def to_dict(self):
+        """Return a dict representation of the SignalGenerator class."""
+        return {key: value for key, value in super().to_dict().items() if key != SIGNALGENERATOR.FREQUENCY}

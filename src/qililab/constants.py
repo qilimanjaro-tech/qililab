@@ -6,18 +6,17 @@ RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
 
 RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
-DATA_FOLDERNAME = "data"
 
-DEFAULT_SETTINGS_FOLDERNAME = "qili"
 DEFAULT_PLATFORM_NAME = "galadriel"
 
 
 # TODO: Distribute constants over different classes
-class YAML:
+class RUNCARD:
     """YAML constants."""
 
     ID = "id_"
     NAME = "name"
+    ALIAS = "alias"
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
@@ -26,13 +25,24 @@ class YAML:
     SETTINGS = "settings"
     PLATFORM = "platform"
     SCHEMA = "schema"
-    SCHEMA = "schema"
+    AWG = "awg"
+    SIGNAL_GENERATOR = "signal_generator"
+    ATTENUATOR = "attenuator"
+    SYSTEM_CONTROL = "system_control"
+    IP = "ip"
+    FIRMWARE = "firmware"
+
+
+class SIGNALGENERATOR:
+    """SignalGenerator attribute names."""
+
+    FREQUENCY = "frequency"
 
 
 class PLATFORM:
     """Platform constants."""
 
-    TRANSLATION_SETTINGS = "translation_settings"
+    PULSES = "pulses"
 
 
 class EXPERIMENT:
@@ -52,6 +62,7 @@ class SCHEMA:
 
     INSTRUMENTS = "instruments"
     BUSES = "buses"
+    CHIP = "chip"
 
 
 class BUS:
@@ -80,10 +91,14 @@ class LOOP:
 class PULSESEQUENCES:
     """PulseSequenes attribute names."""
 
+    ELEMENTS = "elements"
+
+
+class PULSESEQUENCE:
+    """PulseSequence attribute names."""
+
     PULSES = "pulses"
-    TIME = "time"
-    DELAY_BETWEEN_PULSES = "delay_between_pulses"
-    DELAY_BEFORE_READOUT = "delay_before_readout"
+    PORT = "port"
 
 
 class PULSE:
@@ -91,9 +106,10 @@ class PULSE:
 
     NAME = "name"
     AMPLITUDE = "amplitude"
+    FREQUENCY = "frequency"
     PHASE = "phase"
     DURATION = "duration"
-    QUBIT_IDS = "qubit_ids"
+    PORT = "port"
     PULSE_SHAPE = "pulse_shape"
     START_TIME = "start_time"
 

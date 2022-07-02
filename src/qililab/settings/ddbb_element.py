@@ -1,12 +1,13 @@
 """Settings class."""
 from dataclasses import dataclass, fields
 from enum import Enum
+from types import NoneType
 
-from qililab.typings import Category
+from qililab.typings import Category, Parameter
 
 
-@dataclass
-class Settings:
+@dataclass(kw_only=True)
+class DDBBElement:
     """Settings class.
 
     Args:
@@ -17,6 +18,7 @@ class Settings:
 
     id_: int
     category: Category
+    alias: str | None = None
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
@@ -24,9 +26,12 @@ class Settings:
             if isinstance(field.type, type) and issubclass(field.type, Enum):
                 setattr(self, field.name, field.type(getattr(self, field.name)))
 
-    def set_parameter(self, name: str, value: float | str | bool):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Cast the new value to its corresponding type and set the new attribute."""
-        attr_type = type(getattr(self, name))
+        param = parameter.value
+        attr_type = type(getattr(self, param))
         if attr_type == int:  # FIXME: Depending on how we define de value, python thinks it is an int
             attr_type = float
-        setattr(self, name, attr_type(value))
+        if attr_type != NoneType:
+            value = attr_type(value)
+        setattr(self, param, value)

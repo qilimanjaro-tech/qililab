@@ -3,19 +3,27 @@ from dataclasses import asdict
 from enum import Enum
 from typing import Dict, List
 
-from qililab.constants import YAML
-from qililab.settings import Settings
+from qililab.constants import RUNCARD
+from qililab.settings import DDBBElement
 from qililab.typings.factory_element import FactoryElement
 
 
 class BusElement(FactoryElement):
     """Class BusElement. All bus element classes must inherit from this class."""
 
-    settings: Settings
+    settings: DDBBElement
 
     def to_dict(self):
         """Return a dict representation of the BusElement class."""
-        return {YAML.NAME: self.name.value} | asdict(self.settings, dict_factory=dict_factory)
+        return {RUNCARD.NAME: self.name.value} | asdict(self.settings, dict_factory=dict_factory)
+
+    def short_dict(self):
+        """Return a dict representation of the BusElement class discarding all static elements."""
+        return {
+            key: value
+            for key, value in self.to_dict().items()
+            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.IP, RUNCARD.FIRMWARE]
+        }
 
 
 def dict_factory(data):
