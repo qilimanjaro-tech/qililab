@@ -114,7 +114,6 @@ At last, execute `pre-commit install` this will install git hooks in .git/ direc
 pre-commit install
 ```
 
-
 ## Install the project library
 
 On the project base directory, where you can see that there is a `setup.py` file, install the library as a development environment. Run the following command:
