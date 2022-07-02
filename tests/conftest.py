@@ -14,8 +14,8 @@ from qililab.instruments import (
     Attenuator,
     Keithley2600,
     MixerBasedSystemControl,
-    QbloxPulsarQCM,
-    QbloxPulsarQRM,
+    QbloxQCM,
+    QbloxQRM,
     SimulatedSystemControl,
 )
 from qililab.platform import Buses, Platform, Schema
@@ -40,7 +40,7 @@ from .side_effect import yaml_safe_load_side_effect
 @pytest.fixture(name="qcm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
 def fixture_qcm(mock_pulsar: MagicMock):
-    """Return connected instance of QbloxPulsarQCM class"""
+    """Return connected instance of QbloxQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(
@@ -76,15 +76,13 @@ def fixture_qcm(mock_pulsar: MagicMock):
     # connect to instrument
     settings = copy.deepcopy(Galadriel.qblox_qcm_0)
     settings.pop("name")
-    qcm = QbloxPulsarQCM(settings=settings)
-    qcm.connect()
-    return qcm
+    return QbloxQCM(device=mock_pulsar, slot_id=0, settings=settings)
 
 
 @pytest.fixture(name="qrm")
 @patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
 def fixture_qrm(mock_pulsar: MagicMock):
-    """Return connected instance of QbloxPulsarQRM class"""
+    """Return connected instance of QbloxQRM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
     mock_instance.mock_add_spec(
@@ -120,9 +118,7 @@ def fixture_qrm(mock_pulsar: MagicMock):
     # connect to instrument
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     settings.pop("name")
-    qrm = QbloxPulsarQRM(settings=settings)
-    qrm.connect()
-    return qrm
+    return QbloxQRM(device=mock_pulsar, slot_id=0, settings=settings)
 
 
 @pytest.fixture(name="rohde_schwarz")
