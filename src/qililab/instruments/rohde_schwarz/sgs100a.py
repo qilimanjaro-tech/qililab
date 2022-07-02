@@ -59,7 +59,3 @@ class SGS100A(SignalGenerator, TCPIPConnection):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.address}::inst0::INSTR")
-
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-        return self.name.value

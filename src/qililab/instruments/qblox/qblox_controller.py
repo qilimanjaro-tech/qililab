@@ -58,7 +58,3 @@ class QbloxController(TCPIPConnection):
         """Initialize all modules with their setup."""
         for module in self.modules:
             module.initial_setup()
-
-    @abstractmethod
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""

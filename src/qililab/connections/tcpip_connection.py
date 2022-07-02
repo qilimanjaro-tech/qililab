@@ -1,5 +1,4 @@
 """TCPIPConnection class"""
-from abc import abstractmethod
 from dataclasses import dataclass
 
 from qililab.connections.connection import Connection
@@ -13,11 +12,3 @@ class TCPIPConnection(Connection):
         """Contains the settings of a connection."""
 
     settings: TCPIPConnectionSettings  # a subtype of settings must be specified by the subclass
-
-    @abstractmethod
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-
-    @abstractmethod
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""

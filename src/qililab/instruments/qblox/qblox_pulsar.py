@@ -36,9 +36,5 @@ class QbloxPulsar(QbloxController):
         self.modules = [pulsar_module]
 
     @abstractmethod
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-
-    @abstractmethod
     def _device_identifier(self) -> str:
         """Gets the device identifier."""

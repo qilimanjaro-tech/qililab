@@ -35,10 +35,6 @@ class Attenuator(Instrument, TCPIPConnection):
         self.http_request(command="MN?")
         self.device = Device()
 
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-        return self.name.value
-
     def http_request(self, command: str):
         """Send an HTTP request with the given command.
 

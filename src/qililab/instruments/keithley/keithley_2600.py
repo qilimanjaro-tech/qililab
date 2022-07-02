@@ -47,10 +47,6 @@ class Keithley2600(Instrument, TCPIPConnection):
             name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
         )
 
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-        return self.name.value
-
     @TCPIPConnection.CheckConnected
     def reset(self):
         """Reset instrument."""

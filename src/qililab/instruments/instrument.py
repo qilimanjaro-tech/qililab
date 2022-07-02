@@ -85,3 +85,7 @@ class Instrument(BusElement, ABC):
     def __str__(self):
         """String representation of an instrument."""
         return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+
+    def _device_name(self) -> str:
+        """Gets the device Instrument name."""
+        return self.name.value

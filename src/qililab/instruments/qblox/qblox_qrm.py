@@ -113,10 +113,6 @@ class QbloxQRM(QbloxModule, QubitReadout):
         acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
-    def _device_name(self) -> str:
-        """Gets the device Instrument name."""
-        return self.name.value
-
     @property
     def acquire_trigger_mode(self):
         """QbloxPulsarQRM 'acquire_trigger_mode' property.
