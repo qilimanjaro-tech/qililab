@@ -26,7 +26,7 @@ class CircuitToPulses:
         self._instantiate_gates_from_settings()
 
     def translate(self, circuits: List[Circuit], chip: Chip) -> List[PulseSequences]:
-        """Translate each circuit inot a PulseSequence class, which is a list of PulseSequence classes for
+        """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
         Args:
