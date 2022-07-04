@@ -136,7 +136,7 @@ class Galadriel:
         "nodes": [
             {"name": "port", "id_": 0, "nodes": [3]},
             {"name": "port", "id_": 1, "nodes": [2]},
-            {"name": "resonator", "id_": 2, "alias": "resonator", "frequency": 7.34730e09, "nodes": [1]},
+            {"name": "resonator", "id_": 2, "alias": "resonator", "frequency": 7.34730e09, "nodes": [1, 3]},
             {"name": "qubit", "id_": 3, "alias": "qubit", "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0, 2]},
         ],
     }
