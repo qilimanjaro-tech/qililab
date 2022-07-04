@@ -148,12 +148,21 @@ class Chip:
 
     @property
     def num_qubits(self) -> int:
-        """Chip 'num_qubit' property
+        """Chip 'num_qubits' property
 
         Returns:
             int: Number of qubits.
         """
         return sum(isinstance(node, Qubit) for node in self.nodes)
+
+    @property
+    def num_ports(self) -> int:
+        """Chip 'num_ports' property
+
+        Returns:
+            int: Number of ports.
+        """
+        return sum(isinstance(node, Port) for node in self.nodes)
 
     def __str__(self):
         """String representation of the Chip class."""
