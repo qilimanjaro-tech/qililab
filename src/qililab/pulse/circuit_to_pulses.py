@@ -8,7 +8,6 @@ from qibo.core.circuit import Circuit
 from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
-from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.readout_pulse import ReadoutPulse
