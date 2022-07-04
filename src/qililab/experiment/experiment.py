@@ -11,20 +11,21 @@ from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
 
+from qililab.chip import Node
 from qililab.config import logger
 from qililab.constants import (
     DATA,
-    DATA_FOLDERNAME,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
     LOOP,
     RESULTS_FILENAME,
-    YAML,
+    RUNCARD,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform, RuncardSchema
+from qililab.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
 from qililab.result import Result, Results
+from qililab.settings import RuncardSchema
 from qililab.typings import Category, Instrument, Parameter, yaml
 from qililab.utils import LivePlot, Loop
 
@@ -153,12 +154,20 @@ class Experiment:
         Returns:
             str: X label.
         """
-        x_label = f"{loop.instrument.value} {loop.id_}: {loop.parameter.value} "
+        instrument_name = (
+            loop.alias
+            if loop.alias is not None
+            else f"{loop.instrument.value if loop.instrument is not None else None} {loop.id_}"
+        )
+        x_label = f"{instrument_name}: {loop.parameter.value} "
         if loop.previous is not None:
-            x_label += (
-                f"({loop.previous.instrument.value} {loop.previous.id_}:"
-                + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
+            instrument_name = (
+                loop.previous.alias
+                if loop.previous.alias is not None
+                else f"{loop.previous.instrument.value if loop.previous.instrument is not None else None}"
+                + f"{loop.previous.id_}"
             )
+            x_label += f"({instrument_name}:" + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
         return x_label
 
     def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
@@ -172,13 +181,24 @@ class Experiment:
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
         """
-        element, _ = self.platform.get_element(category=Category(loop.instrument.value), id_=loop.id_)
+        element = self.platform.get_element(
+            alias=loop.alias,
+            category=Category(loop.instrument.value) if loop.instrument is not None else None,
+            id_=loop.id_,
+        )
         leave = loop.previous is False
         with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
             for value in loop.range:
-                pbar.set_description(f"{loop.parameter}: {value} ")
+                pbar.set_description(f"{loop.parameter.value}: {value} ")
                 pbar.update()
-                element.set_parameter(parameter=loop.parameter, value=value)
+                self.set_parameter(
+                    element=element,
+                    alias=loop.alias,
+                    instrument=loop.instrument,
+                    id_=loop.id_,
+                    parameter=loop.parameter,
+                    value=value,
+                )
                 results = self.recursive_loop(
                     loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
                 )
@@ -204,7 +224,15 @@ class Experiment:
             path=path,
         )
 
-    def set_parameter(self, instrument: Instrument, id_: int, parameter: Parameter, value: float):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float,
+        alias: str | None = None,
+        instrument: Instrument | None = None,
+        id_: int | None = None,
+        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+    ):
         """Set parameter of a platform element.
 
         Args:
@@ -213,11 +241,18 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        category = Category(instrument.value) if instrument is not None else None
+        if element is not None:
+            if isinstance(element, RuncardSchema.PlatformSettings):
+                element.set_parameter(alias=alias, parameter=parameter, value=value)
+            else:
+                element.set_parameter(parameter=parameter, value=value)  # type: ignore
 
-        self.platform.set_parameter(
-            category=Category(instrument.value), id_=id_, parameter=Parameter(parameter), value=value
-        )
-        if Instrument(instrument) == Instrument.PLATFORM:
+        else:
+            self.platform.set_parameter(
+                alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
+            )
+        if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
@@ -246,15 +281,11 @@ class Experiment:
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
-        sequences = []
-        for sequence in sequence_list:
-            if isinstance(sequence, Circuit):
-                sequence = CircuitToPulses().translate(
-                    circuit=sequence, translation_settings=self.platform.translation_settings
-                )
-            sequences.append(sequence)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequences)
-        return execution, sequences
+        if isinstance(sequence_list[0], Circuit):
+            translator = CircuitToPulses(settings=self.platform.pulses_settings)
+            sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
+        return execution, sequence_list
 
     def _create_folder(self) -> Path:
         """Create folder where the data will be saved.
@@ -344,11 +375,11 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
-            YAML.PLATFORM: self.platform.to_dict(),
-            YAML.SETTINGS: asdict(self.settings),
+            RUNCARD.PLATFORM: self.platform.to_dict(),
+            RUNCARD.SETTINGS: asdict(self.settings),
             EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
-            YAML.NAME: self.name,
+            RUNCARD.NAME: self.name,
         }
 
     @classmethod
@@ -358,12 +389,12 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        settings = cls.ExperimentSettings(**dictionary[YAML.SETTINGS])
-        platform = Platform(runcard_schema=RuncardSchema(**dictionary[YAML.PLATFORM]))
+        settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
+        platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
         sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         loop = dictionary[LOOP.LOOP]
         loop = Loop(**loop) if loop is not None else None
-        experiment_name = dictionary[YAML.NAME]
+        experiment_name = dictionary[RUNCARD.NAME]
         return Experiment(
             sequences=sequences,
             loop=loop,

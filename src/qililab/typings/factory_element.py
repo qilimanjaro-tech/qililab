@@ -1,13 +1,14 @@
 """BusElement class"""
 from qililab.typings.enums import (
-    BusElementName,
     InstrumentName,
+    NodeName,
     PulseShapeName,
     ResultName,
+    SystemControlSubcategory,
 )
 
 
 class FactoryElement:
     """Class BusElement. All bus element classes must inherit from this class."""
 
-    name: BusElementName | PulseShapeName | ResultName | InstrumentName
+    name: SystemControlSubcategory | PulseShapeName | ResultName | InstrumentName | NodeName

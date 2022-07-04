@@ -1,14 +1,11 @@
 """Platform class."""
 from dataclasses import asdict
-from typing import List
 
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.platform.utils import RuncardSchema
-from qililab.settings import Settings, TranslationSettings
+from qililab.settings import RuncardSchema
 from qililab.typings import BusSubcategory, Category, Parameter, yaml
-from qililab.utils import nested_dataclass
 
 
 class Platform:
@@ -20,24 +17,11 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    @nested_dataclass
-    class PlatformSettings(Settings):
-        """Contains the settings of the platform.
-
-        Args:
-            number_qubits (int): Number of qubits used in the platform.
-            drag_coefficient (float): Coefficient used for the drag pulse.
-            num_sigmas (float): Number of sigmas that the pulse contains. sigma = pulse_duration / num_sigmas.
-        """
-
-        name: str
-        translation_settings: TranslationSettings
-
-    settings: PlatformSettings
+    settings: RuncardSchema.PlatformSettings
     schema: Schema
 
     def __init__(self, runcard_schema: RuncardSchema):
-        self.settings = self.PlatformSettings(**runcard_schema.settings)
+        self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
@@ -48,7 +32,7 @@ class Platform:
         """Close connection to the instruments."""
         self.instruments.close()
 
-    def get_element(self, category: Category, id_: int = 0):
+    def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get platform element.
 
         Args:
@@ -58,13 +42,23 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if category == Category.SCHEMA:
-            return self.schema, None
-        if category == Category.BUSES:
-            return self.buses, None
-        return self.schema.get_element(category=category, id_=id_)
+        if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
+            category is not None and Category(category) == Category.PLATFORM
+        ):
+            return self.settings
 
-    def get_bus(self, qubit_ids: List[int], bus_subcategory: BusSubcategory):
+        element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
+        if element is None:
+            if category is not None and id_ is not None:
+                element = self.chip.get_node_from_id(node_id=id_)
+            if alias is not None:
+                element = self.chip.get_node_from_alias(alias=alias)
+
+        if element is None:
+            raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
+        return element
+
+    def get_bus(self, port: int, bus_subcategory: BusSubcategory):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
 
         Args:
@@ -78,12 +72,19 @@ class Platform:
             (
                 (bus_idx, bus)
                 for bus_idx, bus in enumerate(self.buses)
-                if bus.qubit_ids == qubit_ids and bus.subcategory == bus_subcategory
+                if bus.port == port and bus.subcategory == bus_subcategory
             ),
             ([], None),
         )
 
-    def set_parameter(self, category: Category, id_: int, parameter: Parameter, value: float):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float,
+        alias: str | None = None,
+        category: Category | None = None,
+        id_: int | None = None,
+    ):
         """Set parameter of a platform element.
 
         Args:
@@ -92,11 +93,15 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if Category(category) == Category.PLATFORM:
-            attr_type = type(getattr(self.settings.translation_settings, parameter.value))
-            setattr(self.settings.translation_settings, parameter.value, attr_type(value))
+        if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
+            category is not None and Category(category) == Category.PLATFORM
+        ):
+            if alias == Category.PLATFORM.value:
+                self.settings.set_parameter(parameter=parameter, value=value)
+            else:
+                self.settings.set_parameter(alias=alias, parameter=parameter, value=value)
             return
-        element, _ = self.get_element(category=Category(category), id_=id_)
+        element = self.get_element(alias=alias, category=category, id_=id_)
         element.set_parameter(parameter=parameter, value=value)
 
     @property
@@ -118,13 +123,13 @@ class Platform:
         return self.settings.name
 
     @property
-    def translation_settings(self):
+    def pulses_settings(self):
         """Platform 'translation_settings' property.
 
         Returns:
             str: settings.translation_settings.
         """
-        return self.settings.translation_settings
+        return self.settings.pulses
 
     @property
     def category(self):
@@ -151,7 +156,16 @@ class Platform:
         Returns:
             int: Number of different qubits that the platform contains.
         """
-        return 1  # TODO: Compute num_qubits with Chip class.
+        return self.chip.num_qubits
+
+    @property
+    def gate_names(self):
+        """Platform 'gate_names' property.
+
+        Returns:
+            List[str]: List of the names of all the defined gates.
+        """
+        return self.settings.gate_names
 
     @property
     def instruments(self):
@@ -162,10 +176,19 @@ class Platform:
         """
         return self.schema.instruments
 
+    @property
+    def chip(self):
+        """Platform 'chip' property.
+
+        Returns:
+            Chip: Class descibing the chip properties.
+        """
+        return self.schema.chip
+
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {YAML.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {YAML.SCHEMA: self.schema.to_dict()}
+        platform_dict = {RUNCARD.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
+        schema_dict = {RUNCARD.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 
     def __str__(self) -> str:
@@ -174,4 +197,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return yaml.dump(self.to_dict(), sort_keys=False)
+        return str(yaml.dump(self.to_dict(), sort_keys=False))

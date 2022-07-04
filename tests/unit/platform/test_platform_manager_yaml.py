@@ -9,8 +9,8 @@ from qililab.platform import Platform
 from ...data import Galadriel
 
 
-@patch("qililab.settings.settings_manager.yaml.safe_load", return_value=Galadriel.runcard)
-@patch("qililab.settings.settings_manager.open")
+@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard)
+@patch("qililab.platform.platform_manager_yaml.open")
 class TestPlatformManagerYAML:
     """Unit tests checking the Platform attributes and methods."""
 

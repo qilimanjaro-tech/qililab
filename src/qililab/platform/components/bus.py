@@ -2,14 +2,10 @@
 from dataclasses import dataclass
 from typing import List
 
-from qililab.constants import BUS, YAML
-from qililab.instruments import (
-    Attenuator,
-    Instruments,
-    MixerBasedSystemControl,
-    SystemControl,
-)
-from qililab.settings import Settings
+from qililab.chip import Chip, Coupler, Qubit, Resonator
+from qililab.constants import BUS, RUNCARD
+from qililab.instruments import Attenuator, Instruments, SystemControl
+from qililab.settings import DDBBElement
 from qililab.typings import BusSubcategory, Category
 from qililab.utils import Factory
 
@@ -23,8 +19,10 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
+    targets: List[Qubit | Resonator | Coupler]  # port target (or targets in case of multiple resonators)
+
     @dataclass
-    class BusSettings(Settings):
+    class BusSettings(DDBBElement):
         """Bus settings.
 
         Args:
@@ -45,14 +43,15 @@ class Bus:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if isinstance(value, SystemControl | Attenuator | dict):
+                if name in [Category.SYSTEM_CONTROL.value, Category.ATTENUATOR.value] and value is not None:
                     yield name, value
 
     settings: BusSettings
 
-    def __init__(self, settings: dict, instruments: Instruments):
+    def __init__(self, settings: dict, instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self.targets = chip.get_port_nodes(port_id=self.port)
 
     @property
     def id_(self):
@@ -88,15 +87,6 @@ class Bus:
         return self.settings.attenuator
 
     @property
-    def qubit_ids(self) -> List[int]:
-        """Bus 'qubit_ids' property.
-
-        Returns:
-            List[int]: IDs of the qubit connected to the bus.
-        """
-        return [0]  # TODO: Obtain from ChipPlaceHolder
-
-    @property
     def subcategory(self) -> BusSubcategory:
         """Bus 'subcategory' property.
 
@@ -108,32 +98,36 @@ class Bus:
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in self.settings:
-            if isinstance(value, dict):
-                if Category(name) == Category.SYSTEM_CONTROL:
-                    subcategory = value.get(YAML.SUBCATEGORY)
-                    if not isinstance(subcategory, str):
-                        raise ValueError("Invalid value for subcategory.")
-                    instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
-                elif Category(name) == Category.ATTENUATOR:
-                    instrument_object = instruments.get(settings=value)
-                setattr(self.settings, name, instrument_object)
+            instrument_object = None
+            category = Category(name)
+            if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
+                subcategory = value.get(RUNCARD.SUBCATEGORY)
+                if not isinstance(subcategory, str):
+                    raise ValueError("Invalid value for subcategory.")
+                instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
+            if category == Category.ATTENUATOR and isinstance(value, str):
+                instrument_object = instruments.get_instrument(alias=value)
+            if instrument_object is None:
+                raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
+            setattr(self.settings, name, instrument_object)
 
-    def get_element(self, category: Category, id_: int):
-        """Get bus element. Return None if element is not found.
+    def __str__(self):
+        """String representation of a bus. Prints a drawing of the bus elements."""
+        return (
+            f"Bus {self.id_} ({self.subcategory.value}):  "
+            + f"----|{self.system_control}|--"
+            + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
+            + "".join(f"--|{target}|----" for target in self.targets)
+        )
 
-        Args:
-            category (str): Category of element.
-            id_ (int): ID of element.
+    @property
+    def target_freqs(self):
+        """Bus 'target_freqs' property.
 
         Returns:
-            (QubitControl | QubitReadout | SignalGenerator | Resonator | None): Element class.
+            List[float]: Frequencies of the nodes targetted by the bus.
         """
-        return next(
-            (element for _, element in self if element.category == category and element.id_ == id_),
-            self.system_control.get_element(category=category, id_=id_)
-            if isinstance(self.system_control, MixerBasedSystemControl)
-            else None,
-        )
+        return [target.frequency for target in self.targets]
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
@@ -141,9 +135,13 @@ class Bus:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return {
-            YAML.ID: self.id_,
-            YAML.CATEGORY: self.settings.category.value,
-            YAML.SUBCATEGORY: self.subcategory.value,
-            BUS.PORT: self.port,
-        } | {key: value.to_dict() for key, value in self if not isinstance(value, dict)}
+        return (
+            {
+                RUNCARD.ID: self.id_,
+                RUNCARD.CATEGORY: self.settings.category.value,
+                RUNCARD.SUBCATEGORY: self.subcategory.value,
+                RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
+            }
+            | ({RUNCARD.ATTENUATOR: self.attenuator.alias} if self.attenuator is not None else {})
+            | {BUS.PORT: self.port}
+        )

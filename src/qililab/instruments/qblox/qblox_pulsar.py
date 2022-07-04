@@ -127,7 +127,7 @@ class QbloxPulsar(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=wait_time,
+                    wait_time=int(wait_time),
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register="TR10")

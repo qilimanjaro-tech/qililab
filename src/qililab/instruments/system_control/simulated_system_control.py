@@ -1,7 +1,7 @@
 """SimulatedSystemControl class."""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Type
+from typing import List, Type
 
 import numpy as np
 import qutip
@@ -16,7 +16,7 @@ from qililab.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.result import SimulatorResult
-from qililab.typings import BusElementName
+from qililab.typings import SystemControlSubcategory
 from qililab.utils import Factory
 
 
@@ -24,7 +24,7 @@ from qililab.utils import Factory
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
 
-    name = BusElementName.SIMULATED_SYSTEM_CONTROL
+    name = SystemControlSubcategory.SIMULATED_SYSTEM_CONTROL
     energy_norm: float = HBAR * 2 * np.pi
 
     @dataclass
@@ -55,7 +55,7 @@ class SimulatedSystemControl(SystemControl):
     def turn_on(self):
         """Start instrument."""
 
-    def setup(self):
+    def setup(self, target_freqs: List[float]):
         """Setup instruments."""
         self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
 
@@ -64,7 +64,7 @@ class SimulatedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-        waveforms = pulse_sequence.waveforms(frequency=self.frequency, resolution=self.resolution)
+        waveforms = pulse_sequence.waveforms(frequency=self.awg_frequency, resolution=self.resolution)
         i_waveform = np.array(waveforms.i) * self.amplitude_norm_factor
         hamiltonian = self.hamiltonian(
             qubit=self.qubit,
@@ -137,6 +137,15 @@ class SimulatedSystemControl(SystemControl):
         return self.settings.store_states
 
     @property
+    def awg_frequency(self):
+        """SimulatedSystemControl 'awg_frequency' property.
+
+        Returns:
+            float: Normalized frequency of the applied pulses.
+        """
+        return 2e6  # simulator doesn't have an AWG frequency, but this is needed for the plotting of the pulses
+
+    @property
     def frequency(self):
         """SimulatedSystemControl 'frequency' property.
 
@@ -144,6 +153,15 @@ class SimulatedSystemControl(SystemControl):
             float: Normalized frequency of the applied pulses.
         """
         return self.settings.frequency
+
+    @frequency.setter
+    def frequency(self, target_freqs: List[float]):
+        """SimulatedSystemControl 'frequency' property.
+
+        Returns:
+            float: Normalized frequency of the applied pulses.
+        """
+        self.settings.frequency = target_freqs[0]
 
     @property
     def resolution(self):

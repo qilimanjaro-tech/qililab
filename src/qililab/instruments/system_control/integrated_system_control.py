@@ -1,6 +1,7 @@
 """IntegratedSystemControl class."""
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.system_control.system_control import SystemControl
@@ -24,7 +25,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
     def turn_on(self):
         """Start instrument."""
 
-    def setup(self):
+    def setup(self, target_freqs: List[float]):  # type: ignore
         """Setup instruments."""
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
@@ -32,6 +33,10 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
+
+    @property
+    def awg_frequency(self) -> float:
+        """SystemControl 'awg_frequency' property."""
 
     @property
     def frequency(self) -> float:

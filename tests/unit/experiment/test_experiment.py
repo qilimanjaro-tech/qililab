@@ -7,7 +7,6 @@ from qibo.core.circuit import Circuit
 from qibo.gates import M
 from qiboconnection.api import API
 
-from qililab import build_platform
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
@@ -15,7 +14,6 @@ from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 
 from ...conftest import mock_instruments
-from ...side_effect import yaml_safe_load_side_effect
 
 
 class TestExperiment:
@@ -89,10 +87,8 @@ class TestExperiment:
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
-        experiment.set_parameter(
-            instrument=Instrument.PLATFORM, id_=0, parameter=Parameter.READOUT_AMPLITUDE, value=0.3
-        )
-        assert experiment.platform.settings.translation_settings.readout_amplitude == 0.3
+        experiment.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=0.3)
+        assert experiment.platform.settings.pulses.get_gate(name="M").amplitude == 0.3
 
 
 @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)

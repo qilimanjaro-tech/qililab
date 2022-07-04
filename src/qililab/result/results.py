@@ -5,7 +5,7 @@ from typing import List
 
 import numpy as np
 
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.result.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import Factory, Loop
@@ -31,7 +31,7 @@ class Results:
                 self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
             # Pop the result name (qblox, simulator) from the dictionary and instantiate its corresponding Result class.
-            self.results = [Factory.get(result.pop(YAML.NAME))(**result) for result in self.results]
+            self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in self.results]
         if isinstance(self.loop, dict):
             self.loop = Loop(**self.loop)
 
@@ -98,4 +98,4 @@ class Results:
         while loop is not None:
             ranges.append(loop.range)
             loop = loop.loop
-        return np.array(ranges, dtype=object)
+        return np.array(ranges, dtype=object).squeeze()

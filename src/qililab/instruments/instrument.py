@@ -5,9 +5,9 @@ from functools import partial
 from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
-from qililab.constants import YAML
+from qililab.constants import RUNCARD
 from qililab.platform import BusElement
-from qililab.settings import Settings
+from qililab.settings import DDBBElement
 from qililab.typings import Device, InstrumentName, Parameter
 
 
@@ -23,7 +23,7 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(Settings):
+    class InstrumentSettings(DDBBElement):
         """Contains the settings of an instrument.
 
         Args:
@@ -60,7 +60,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(YAML.SETTINGS)  # type: ignore
+        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
         self._connected = False
 
@@ -80,11 +80,9 @@ class Instrument(BusElement, ABC):
             self.device.close()
             self._connected = False
 
-    def set_parameter(self, parameter: Parameter | str, value: float | str | bool):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Redirect __setattr__ magic method."""
-        if isinstance(parameter, Parameter):
-            parameter = parameter.value
-        self.settings.set_parameter(name=parameter, value=value)
+        self.settings.set_parameter(parameter=parameter, value=value)
         if self._connected:
             self.setup()
 
@@ -104,6 +102,15 @@ class Instrument(BusElement, ABC):
             int: settings.id_.
         """
         return self.settings.id_
+
+    @property
+    def alias(self):
+        """Instrument 'alias' property.
+
+        Returns:
+            int: settings.alias.
+        """
+        return self.settings.alias
 
     @property
     def category(self):
@@ -131,3 +138,7 @@ class Instrument(BusElement, ABC):
             str: settings.firmware.
         """
         return self.settings.firmware
+
+    def __str__(self):
+        """String representation of an instrument."""
+        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"

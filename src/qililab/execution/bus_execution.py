@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
-from qililab.pulse import Pulse, PulseSequence
+from qililab.pulse import PulseSequence
 from qililab.typings import BusSubcategory
 from qililab.utils import Waveforms
 
@@ -18,7 +18,7 @@ class BusExecution:
 
     def setup(self):
         """Setup instruments."""
-        self.system_control.setup()
+        self.system_control.setup(target_freqs=self.bus.target_freqs)
         if self.attenuator is not None:
             self.attenuator.setup()
 
@@ -28,23 +28,21 @@ class BusExecution:
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
+        if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
+            self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
 
-    def add_pulse(self, pulse: Pulse, idx: int):
+    def add_pulse_sequence(self, pulse_sequence: PulseSequence):
         """Add pulse to the BusPulseSequence given by idx.
 
         Args:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-        if idx > len(self.pulse_sequences):
-            raise ValueError("Bad index value.")
-        if idx == len(self.pulse_sequences):
-            self.pulse_sequences.append(PulseSequence(qubit_ids=pulse.qubit_ids, pulses=[pulse]))
-            return
-        self.pulse_sequences[idx].add(pulse)
+
+        self.pulse_sequences.append(pulse_sequence)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
@@ -59,16 +57,16 @@ class BusExecution:
         num_sequences = len(self.pulse_sequences)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.frequency, resolution=resolution)
+        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.awg_frequency, resolution=resolution)
 
     @property
-    def qubit_ids(self):
-        """BusExecution 'qubit_ids' property
+    def port(self):
+        """BusExecution 'port' property
 
         Returns:
-            int: ID of the qubit connected to the bus.
+            int: Port where the bus is connected.
         """
-        return self.bus.qubit_ids
+        return self.bus.port
 
     @property
     def system_control(self):

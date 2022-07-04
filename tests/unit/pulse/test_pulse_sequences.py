@@ -1,16 +1,14 @@
 """Tests for the PulseSequences class."""
-from qililab.pulse import Pulse, PulseSequences, ReadoutPulse
+from qililab.pulse import Pulse, PulseSequence, PulseSequences, ReadoutPulse
 
 
-class TestPulseSequence:
+class TestPulseSequences:
     """Unit tests checking the PulseSequences attributes and methods"""
 
     def test_add_method(self, pulse_sequences: PulseSequences, pulse: Pulse, readout_pulse: ReadoutPulse):
         """Test add method."""
-        pulse_sequences.add(pulse=pulse)
-        pulse_sequences.add(pulse=readout_pulse)
-        pulse.start_time = None
-        pulse_sequences.add(pulse=pulse)
+        pulse_sequences.add(pulse=pulse, port=0)
+        pulse_sequences.add(pulse=readout_pulse, port=1)
 
     def test_to_dict_method(self, pulse_sequences: PulseSequences):
         """Test to_dict method"""
@@ -25,5 +23,5 @@ class TestPulseSequence:
 
     def test_iter_method(self, pulse_sequences: PulseSequences):
         """Test __iter__ method."""
-        for pulse in pulse_sequences:
-            assert isinstance(pulse, Pulse)
+        for pulse_sequence in pulse_sequences:
+            assert isinstance(pulse_sequence, PulseSequence)

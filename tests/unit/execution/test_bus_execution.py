@@ -2,20 +2,16 @@
 import pytest
 
 from qililab.execution import BusExecution
-from qililab.pulse import Pulse
+from qililab.pulse import PulseSequence
 
 
 class TestBusExecution:
     """Unit tests checking the Bus attributes and methods."""
 
-    def test_add_pulse_method(self, bus_execution: BusExecution, pulse: Pulse):
+    def test_add_pulse_method(self, bus_execution: BusExecution, pulse_sequence: PulseSequence):
         """Test add_pulse method."""
-        bus_execution.add_pulse(pulse=pulse, idx=0)
-
-    def test_add_pulse_method_wrong_idx(self, bus_execution: BusExecution, pulse: Pulse):
-        """Test add_pulse method."""
-        with pytest.raises(ValueError):
-            bus_execution.add_pulse(pulse=pulse, idx=10)
+        pulse_sequence.pulses[0].frequency = bus_execution.pulse_sequences[0].frequency
+        bus_execution.add_pulse_sequence(pulse_sequence=pulse_sequence)
 
     def test_waveforms_method(self, bus_execution: BusExecution):
         """Test waveforms method."""
@@ -29,7 +25,7 @@ class TestBusExecution:
 
     def test_qubit_ids_property(self, bus_execution: BusExecution):
         """Test qubit_ids property."""
-        assert bus_execution.qubit_ids == bus_execution.bus.qubit_ids
+        assert bus_execution.port == bus_execution.bus.port
 
     def test_acquire_time_method(self, buses_execution: BusExecution):
         """Test acquire_time method."""

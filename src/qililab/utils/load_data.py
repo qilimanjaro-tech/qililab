@@ -6,7 +6,7 @@ from typing import Tuple
 
 import yaml
 
-from qililab.constants import DATA, DATA_FOLDERNAME
+from qililab.constants import DATA
 from qililab.experiment import Experiment
 from qililab.result import Results
 
