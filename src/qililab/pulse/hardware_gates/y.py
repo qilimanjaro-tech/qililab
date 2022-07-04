@@ -14,7 +14,7 @@ class Y(HardwareGate):  # pylint: disable=invalid-name
     class_type = gates.Y
 
     @classmethod
-    def translate(cls, gate: gates.X) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.Y) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:
