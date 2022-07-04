@@ -69,6 +69,7 @@ class CircuitToPulses:
         gate_settings = HardwareGateFactory.gate_settings(control_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        # TODO: Adapt this code to translate two-qubit gates.
         port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
         old_time = self._update_time(
             time=time, port=port.id_, pulse_time=gate_settings.duration + self.settings.delay_between_pulses
