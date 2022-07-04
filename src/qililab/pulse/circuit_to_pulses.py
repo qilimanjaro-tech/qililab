@@ -111,7 +111,7 @@ class CircuitToPulses:
                 phase=gate_settings.phase,
                 duration=gate_settings.duration,
                 pulse_shape=pulse_shape,
-                start_time=old_time,
+                start_time=old_time + self.settings.delay_before_readout,
             )
             if gate_settings.duration > 0
             else None,
