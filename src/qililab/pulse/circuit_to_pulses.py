@@ -19,7 +19,7 @@ from qililab.utils import Factory
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
-    settings: RuncardSchema.PlatformSettings.PulsesSettings
+    settings: RuncardSchema.PlatformSettings
 
     def __post_init__(self):
         """Post init."""

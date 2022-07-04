@@ -5,7 +5,7 @@ from typing import Dict, List, Type
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import PLATFORM, RUNCARD, SCHEMA
+from qililab.constants import RUNCARD, SCHEMA
 
 
 class Galadriel:
@@ -17,28 +17,26 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.PULSES: {
-            "delay_between_pulses": 0,
-            "delay_before_readout": 40,
-            "gates": [
-                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-            ],
-        },
+        "delay_between_pulses": 0,
+        "delay_before_readout": 40,
+        "gates": [
+            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "X",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+            {
+                "name": "Y",
+                "amplitude": 1,
+                "phase": 1.5707963267948966,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+        ],
     }
 
     qblox_qcm_0 = {
@@ -220,28 +218,26 @@ class FluxQubit:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.PULSES: {
-            "delay_between_pulses": 0,
-            "delay_before_readout": 40,
-            "gates": [
-                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-            ],
-        },
+        "delay_between_pulses": 0,
+        "delay_before_readout": 40,
+        "gates": [
+            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "X",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+            {
+                "name": "Y",
+                "amplitude": 1,
+                "phase": 1.5707963267948966,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+        ],
     }
 
     chip = {

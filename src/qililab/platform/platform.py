@@ -123,15 +123,6 @@ class Platform:
         return self.settings.name
 
     @property
-    def pulses_settings(self):
-        """Platform 'translation_settings' property.
-
-        Returns:
-            str: settings.translation_settings.
-        """
-        return self.settings.pulses
-
-    @property
     def category(self):
         """Platform 'category' property.
 

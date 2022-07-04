@@ -39,12 +39,6 @@ class SIGNALGENERATOR:
     FREQUENCY = "frequency"
 
 
-class PLATFORM:
-    """Platform constants."""
-
-    PULSES = "pulses"
-
-
 class EXPERIMENT:
     """Experiment constants."""
 
