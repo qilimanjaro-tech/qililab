@@ -116,7 +116,7 @@ class QbloxPulsar(AWG):
         program.append_block(block=bin_loop)
         program.append_block(block=stop)
         if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=pulses[0].start))
+            avg_loop.append_component(Wait(wait_time=int(pulses[0].start)))
 
         for i, pulse in enumerate(pulses):
             waveform_pair = waveforms.find_pair_by_name(str(pulse))
