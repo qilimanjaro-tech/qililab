@@ -239,7 +239,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
             mock_load.assert_called()
             mock_open.assert_called()
     loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(alias="qblox_qcm", parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
+    loop2 = Loop(alias="platform", parameter=Parameter.DELAY_BEFORE_READOUT, start=40, stop=100, step=40, loop=loop3)
     loop = Loop(
         instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )

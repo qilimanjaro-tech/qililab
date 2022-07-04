@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Parameter
+from qililab.typings import Category, Parameter
 from qililab.utils import nested_dataclass
 
 
@@ -112,9 +112,12 @@ class RuncardSchema:
                 super().set_parameter(parameter=parameter, value=value)
                 return
             param = parameter.value
-            settings = self.pulses.get_gate(name=alias)
-            if not hasattr(settings, param):
-                settings = settings.shape
+            if alias == Category.PLATFORM.value:
+                settings = self.pulses
+            else:
+                settings = self.pulses.get_gate(name=alias)
+                if not hasattr(settings, param):
+                    settings = settings.shape  # type: ignore
             attr_type = type(getattr(settings, param))
             if attr_type == int:
                 attr_type = float
