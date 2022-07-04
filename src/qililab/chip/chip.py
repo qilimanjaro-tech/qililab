@@ -51,7 +51,7 @@ class Chip:
         Returns:
             List[Node]: List containing all adjacent nodes.
         """
-        return [self.nodes[node_idx] for node_idx in node.nodes]
+        return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
     def get_port_from_qubit_idx(self, idx: int, readout: bool) -> Port:
         """Get control/readout port number from qubit index.
@@ -89,9 +89,9 @@ class Chip:
             Port: Port class.
         """
         adj_nodes = self._get_adjacent_nodes(node)
-        for node in adj_nodes:
-            if isinstance(node, Port):
-                return node
+        for adj_node in adj_nodes:
+            if isinstance(adj_node, Port):
+                return adj_node
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
     def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler]:
