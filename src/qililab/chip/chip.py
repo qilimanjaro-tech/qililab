@@ -9,7 +9,7 @@ from qililab.chip.qubit import Qubit
 from qililab.chip.resonator import Resonator
 from qililab.constants import RUNCARD
 from qililab.typings import Category
-from qililab.utils import Factory
+from qililab.utils import Factory, dict_factory
 
 
 @dataclass
@@ -143,7 +143,7 @@ class Chip:
         return {
             "id_": self.id_,
             "category": self.category.value,
-            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
+            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node, dict_factory=dict_factory) for node in self.nodes],
         }
 
     @property
