@@ -22,6 +22,7 @@ class XY(HardwareGate):
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
+        # TODO: Scale X and Y rotations independently!
         x_settings = X.parameters()
         if x_settings is None:
             raise ValueError("Please specify the specifications of the X gate.")
