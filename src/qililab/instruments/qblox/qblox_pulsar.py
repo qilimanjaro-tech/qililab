@@ -41,13 +41,10 @@ class QbloxPulsar(AWG):
             reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
             sequencer (int): Index of the sequencer to use.
             sync_enabled (bool): Enable synchronization over multiple instruments.
-            gain (float): Gain step used by the sequencer.
         """
 
         reference_clock: ReferenceClock
-        sequencer: int
         sync_enabled: bool
-        gain: float
         num_bins: int
 
     settings: QbloxPulsarSettings
@@ -73,13 +70,13 @@ class QbloxPulsar(AWG):
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_sequence, nshots, repetition_duration)
             sequence = self._translate_pulse_sequence(
-                pulses=pulse_sequence.pulses, nshots=nshots, repetition_duration=repetition_duration
+                pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration
             )
             self.upload(sequence=sequence, path=path)
 
         self.start_sequencer()
 
-    def _translate_pulse_sequence(self, pulses: List[Pulse], nshots: int, repetition_duration: int):
+    def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -88,15 +85,17 @@ class QbloxPulsar(AWG):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulses=pulses)
+        waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulses=pulses, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
+            pulse_sequence=pulse_sequence, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
         )
         weights = self._generate_weights()
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_program(self, pulses: List[Pulse], waveforms: Waveforms, nshots: int, repetition_duration: int):
+    def _generate_program(
+        self, pulse_sequence: PulseSequence, waveforms: Waveforms, nshots: int, repetition_duration: int
+    ):
         """Generate Q1ASM program
 
         Args:
@@ -115,6 +114,7 @@ class QbloxPulsar(AWG):
         stop.append_component(Stop())
         program.append_block(block=bin_loop)
         program.append_block(block=stop)
+        pulses = pulse_sequence.pulses
         if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
             avg_loop.append_component(Wait(wait_time=int(pulses[0].start)))
 
@@ -171,7 +171,8 @@ class QbloxPulsar(AWG):
     @AWG.CheckConnected
     def setup(self):
         """Set Qblox instrument calibration settings."""
-        self._set_gain()
+        self._set_nco()
+        self._set_gains()
         self._set_offsets()
 
     @AWG.CheckConnected
@@ -201,7 +202,6 @@ class QbloxPulsar(AWG):
         self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()
-        self._set_nco()
 
     @AWG.CheckConnected
     def upload(self, sequence: Sequence, path: Path):
@@ -214,22 +214,26 @@ class QbloxPulsar(AWG):
         file_path = str(path / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
-        getattr(self.device, f"sequencer{self.sequencer}").sequence(file_path)
+        for seq_idx in range(self.num_sequencers):
+            self.device.sequencers[seq_idx].sequence(file_path)
 
-    def _set_gain(self):
+    def _set_gains(self):
         """Set gain of sequencer for all paths."""
-        getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path0(self.gain)
-        getattr(self.device, f"sequencer{self.sequencer}").gain_awg_path1(self.gain)
+        for seq_idx, gain in enumerate(self.gain):
+            self.device.sequencers[seq_idx].gain_awg_path0(gain)
+            self.device.sequencers[seq_idx].gain_awg_path1(gain)
 
     def _set_offsets(self):
         """Set I and Q offsets of sequencer."""
-        getattr(self.device, f"sequencer{self.sequencer}").offset_awg_path0(self.offset_i)
-        getattr(self.device, f"sequencer{self.sequencer}").offset_awg_path1(self.offset_q)
+        for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
+            self.device.sequencers[seq_idx].offset_awg_path0(offset_i)
+            self.device.sequencers[seq_idx].offset_awg_path1(offset_q)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
-        getattr(self.device, f"sequencer{self.sequencer}").mod_en_awg(True)
-        getattr(self.device, f"sequencer{self.sequencer}").nco_freq(self.frequency)
+        for seq_idx, frequency in enumerate(self.multiplexing_frequencies):
+            self.device.sequencers[seq_idx].mod_en_awg(True)
+            self.device.sequencers[seq_idx].nco_freq(frequency)
 
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
@@ -237,7 +241,8 @@ class QbloxPulsar(AWG):
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
-        getattr(self.device, f"sequencer{self.sequencer}").sync_en(self.sync_enabled)
+        for seq_idx in range(self.num_sequencers):
+            self.device.sequencers[seq_idx].sync_en(self.sync_enabled)
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
@@ -245,15 +250,17 @@ class QbloxPulsar(AWG):
         for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
-        getattr(self.device, f"sequencer{self.sequencer}").channel_map_path0_out0_en(True)
-        getattr(self.device, f"sequencer{self.sequencer}").channel_map_path1_out1_en(True)
+
+        for seq_idx in range(self.num_sequencers):
+            self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
+            self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
         # TODO: We need to update the firmware of the instruments to be able to connect
         self.device = Pulsar(name=f"{self.name.value}_{self.id_}", identifier=self.ip)
 
-    def _generate_waveforms(self, pulses: List[Pulse]):
+    def _generate_waveforms(self, pulse_sequence: PulseSequence):
         """Generate I and Q waveforms from a PulseSequence object.
 
         Args:
@@ -266,12 +273,12 @@ class QbloxPulsar(AWG):
 
         unique_pulses: List[Tuple[int, PulseShape]] = []
 
-        for pulse in pulses:
+        for pulse in pulse_sequence.pulses:
             if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse.duration, pulse.pulse_shape))
                 envelope = pulse.envelope(amplitude=1)
-                real = np.real(envelope) + self.offset_i
-                imag = np.imag(envelope) + self.offset_q
+                real = np.real(envelope)
+                imag = np.imag(envelope)
                 waveforms.add_pair((real, imag), name=str(pulse))
 
         return waveforms
@@ -286,15 +293,6 @@ class QbloxPulsar(AWG):
         return self.settings.reference_clock
 
     @property
-    def sequencer(self):
-        """QbloxPulsar 'sequencer' property.
-
-        Returns:
-            int: settings.sequencer.
-        """
-        return self.settings.sequencer
-
-    @property
     def sync_enabled(self):
         """QbloxPulsar 'sync_enabled' property.
 
@@ -302,51 +300,6 @@ class QbloxPulsar(AWG):
             bool: settings.sync_enabled.
         """
         return self.settings.sync_enabled
-
-    @property
-    def gain(self):
-        """QbloxPulsar 'gain' property.
-
-        Returns:
-            float: settings.gain.
-        """
-        return self.settings.gain
-
-    @property
-    def offset_i(self):
-        """QbloxPulsar 'offset_i' property.
-
-        Returns:
-            float: settings.offset_i
-        """
-        return self.settings.offset_i
-
-    @property
-    def offset_q(self):
-        """QbloxPulsar 'offset_q' property.
-
-        Returns:
-            float: settings.offset_q.
-        """
-        return self.settings.offset_q
-
-    @property
-    def epsilon(self):
-        """QbloxPulsar 'epsilon' property.
-
-        Returns:
-            float: settings.epsilon.
-        """
-        return self.settings.epsilon
-
-    @property
-    def delta(self):
-        """QbloxPulsar 'delta' property.
-
-        Returns:
-            float: settings.delta.
-        """
-        return self.settings.delta
 
     @property
     def final_wait_time(self) -> int:

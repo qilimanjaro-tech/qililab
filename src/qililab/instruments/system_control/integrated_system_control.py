@@ -25,7 +25,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
     def turn_on(self):
         """Start instrument."""
 
-    def setup(self, target_freqs: List[float]):  # type: ignore
+    def setup(self, frequencies: List[float]):  # type: ignore
         """Setup instruments."""
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):

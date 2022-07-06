@@ -47,15 +47,15 @@ class Galadriel:
         "ip": "192.168.0.3",
         "firmware": "0.7.0",
         "reference_clock": "internal",
-        "sequencer": 0,
         "sync_enabled": True,
-        "gain": 1,
         "frequency": 100000000,
         "num_bins": 100,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
+        "num_sequencers": 1,
+        "gain": [1],
+        "epsilon": [0],
+        "delta": [0],
+        "offset_i": [0],
+        "offset_q": [0],
     }
 
     qblox_qrm_0 = {
@@ -66,11 +66,9 @@ class Galadriel:
         "ip": "192.168.0.4",
         "firmware": "0.7.0",
         "reference_clock": "external",
-        "sequencer": 0,
         "sync_enabled": True,
-        "gain": 0.5,
-        "acquire_trigger_mode": "sequencer",
-        "hardware_averaging": True,
+        "scope_acquire_trigger_mode": "sequencer",
+        "scope_hardware_averaging": True,
         "sampling_rate": 1000000000,
         "integration": True,
         "integration_length": 2000,
@@ -80,10 +78,12 @@ class Galadriel:
         "acquisition_timeout": 1,
         "acquisition_delay_time": 100,
         "frequency": 20000000,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
+        "num_sequencers": 2,
+        "gain": [0.5, 0.5],
+        "epsilon": [0, 0],
+        "delta": [0, 0],
+        "offset_i": [0, 0],
+        "offset_q": [0, 0],
     }
 
     rohde_schwarz_0 = {
@@ -318,19 +318,23 @@ results_two_loops = {
     "results": [
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                "threshold": [0.48046875],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                    "threshold": [0.48046875],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                "threshold": [0.4599609375],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                    "threshold": [0.4599609375],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
     ],
 }
@@ -351,19 +355,23 @@ results_one_loops = {
     "results": [
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                "threshold": [0.48046875],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                    "threshold": [0.48046875],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                "threshold": [0.4599609375],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                    "threshold": [0.4599609375],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
     ],
 }

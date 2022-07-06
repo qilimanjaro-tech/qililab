@@ -1,6 +1,6 @@
 """QbloxResult class."""
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -76,14 +76,14 @@ class QbloxResult(Result):
                 self.path1 = self.PathData(**self.path1)
 
     scope: ScopeData | None = None
-    bins: BinData | None = None
+    bins: List[BinData] | None = None
 
     def __post_init__(self):
         """Cast dictionaries to their corresponding class."""
         if self.scope is not None:
             self.scope = self.ScopeData(**self.scope)
         if self.bins is not None:
-            self.bins = self.BinData(**self.bins)
+            self.bins = [self.BinData(**bin) for bin in self.bins]
 
     def acquisitions(self) -> np.ndarray:
         """Return acquisition values.
@@ -95,20 +95,23 @@ class QbloxResult(Result):
             Tuple[float]: I, Q, amplitude and phase.
         """
         if self.bins is not None:
-            i_data = np.array(self.bins.integration.path0)
-            q_data = np.array(self.bins.integration.path1)
+            acquisitions = []
+            for bin_data in self.bins:
+                i_data = np.array(bin_data.integration.path0)
+                q_data = np.array(bin_data.integration.path1)
+                acquisitions.append(
+                    np.array([i_data, q_data, np.sqrt(i_data**2 + q_data**2), np.arctan2(q_data, i_data)])
+                    .transpose()
+                    .squeeze()
+                )
+            return np.array(acquisitions)
 
-            return (
-                np.array([i_data, q_data, np.sqrt(i_data**2 + q_data**2), np.arctan2(q_data, i_data)])
-                .transpose()
-                .squeeze()
-            )
         if self.scope is not None:
             return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
 
         raise ValueError("There is no data stored.")
 
-    def probabilities(self):
+    def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
@@ -116,12 +119,16 @@ class QbloxResult(Result):
         """
         # TODO:: Measure real probabilities from calibrated max and min amplitude values.
         if self.bins is not None:
-            acq = self.acquisitions()
-            if acq.ndim > 1:
-                acq = acq[-1]  # FIXME: Here we use -1 to get the last bin. Do we really want this?
-            return (acq[2], acq[2])
+            acquisitions = self.acquisitions()
+            probs: List[Tuple[float, float]] = []
+            for acq in acquisitions:
+                if acq.ndim > 1:
+                    acq = acq[-1]  # FIXME: Here we use -1 to get the last bin. Do we really want this?
+                probs.append((acq[2], acq[2]))
+            return probs
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
-            return self.acquisitions()[0][-1], self.acquisitions()[-1]
+            return [(self.acquisitions()[0][-1], self.acquisitions()[-1])]
+        raise ValueError("No binning or scope data available.")
 
     def plot(self):
         """Plot data."""
