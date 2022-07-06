@@ -68,9 +68,10 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
         if (pulse_sequence, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            self.device._delete_acquisition(sequencer=self.num_sequencers, name=self.acquisition_name)
-            acquisition = self._generate_acquisitions()
-            self.device._add_acquisitions(sequencer=self.num_sequencers, acquisitions=acquisition.to_dict())
+            for seq_idx in range(self.num_sequencers):
+                self.device._delete_acquisition(sequencer=seq_idx, name=self.acquisition_name)
+                acquisition = self._generate_acquisitions()
+                self.device._add_acquisitions(sequencer=seq_idx, acquisitions=acquisition.to_dict())
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 
@@ -112,9 +113,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
 
     def _set_scope_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
-            self.device.sequencers[seq_idx].scope_acq_avg_mode_en_path1(self.scope_hardware_averaging)
+        self.device.scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
@@ -123,8 +122,8 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         self.device.scope_acq_trigger_mode_path1(self.scope_acquire_trigger_mode.value)
         if self.integration:
             for seq_idx in range(self.num_sequencers):
-                self.device.sequencers[seq_idx].integration_length_acq(self.integration_length)
-                self.device.sequencers[seq_idx].integration_length_acq(self.integration_length)
+                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
+                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
 
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
