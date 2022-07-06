@@ -94,6 +94,8 @@ def fixture_qrm(mock_pulsar: MagicMock):
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
@@ -113,8 +115,6 @@ def fixture_qrm(mock_pulsar: MagicMock):
             "set",
             "offset_awg_path0",
             "offset_awg_path1",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
         ]
     )
     # connect to instrument

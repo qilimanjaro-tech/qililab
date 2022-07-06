@@ -114,6 +114,7 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
     def _set_scope_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
         self.device.scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
+        self.device.scope_acq_avg_mode_en_path1(self.scope_hardware_averaging)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
