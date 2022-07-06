@@ -107,7 +107,7 @@ class QbloxResult(Result):
             return np.array(acquisitions)
 
         if self.scope is not None:
-            return np.array([self.scope.path0.data, self.scope.path1.data]).transpose()
+            return np.array([np.array([self.scope.path0.data, self.scope.path1.data]).transpose()])
 
         raise ValueError("There is no data stored.")
 
@@ -118,17 +118,17 @@ class QbloxResult(Result):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         # TODO:: Measure real probabilities from calibrated max and min amplitude values.
+        probs: List[Tuple[float, float]] = []
+        acquisitions = self.acquisitions()
         if self.bins is not None:
-            acquisitions = self.acquisitions()
-            probs: List[Tuple[float, float]] = []
             for acq in acquisitions:
                 if acq.ndim > 1:
                     acq = acq[-1]  # FIXME: Here we use -1 to get the last bin. Do we really want this?
                 probs.append((acq[2], acq[2]))
-            return probs
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
-            return [(self.acquisitions()[0][-1], self.acquisitions()[-1])]
-        raise ValueError("No binning or scope data available.")
+            for acq in acquisitions:
+                probs.append((acq[0][-1], acq[0][-1]))
+        return probs
 
     def plot(self):
         """Plot data."""
