@@ -60,7 +60,7 @@ class Loop:
             list: Range of values of all loops.
         """
         ranges = [loop.range for loop in self.loops]
-        return np.array(ranges, dtype=object).squeeze()
+        return np.array(ranges, dtype=object)
 
     @property
     def shape(self) -> List[int]:

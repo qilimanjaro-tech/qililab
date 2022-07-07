@@ -100,4 +100,4 @@ class Results:
         """
         if self.loop is None:
             raise ValueError("Results doesn't contain a loop.")
-        return self.loop.ranges
+        return self.loop.ranges.squeeze()

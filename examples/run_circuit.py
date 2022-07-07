@@ -24,15 +24,15 @@ def run_circuit(connection: API | None = None):
     circuit = Circuit(1)
     circuit.add(X(0))
     circuit.add(M(0))
-    loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1, step=0.1)
+    loop = Loop(alias="resonator", parameter=Parameter.FREQUENCY, start=7.314e9, stop=7.332e9, step=0.1e6)
     experiment = Experiment(platform=platform, sequences=circuit, loop=loop)
     results = experiment.execute(connection=connection)
     print(results.acquisitions())
 
 
 if __name__ == "__main__":
-    # configuration = ConnectionConfiguration(  # pylint: disable=no-value-for-parameter
-    #     username="test-username", api_key="test-api-key"
-    # )
-    # api = API(configuration=configuration)
-    run_circuit()
+    configuration = ConnectionConfiguration(  # pylint: disable=no-value-for-parameter
+        username="amitjans", api_key="df187271-81e3-45d4-b420-f9c8b79b3b41"
+    )
+    api = API(configuration=configuration)
+    run_circuit(connection=api)

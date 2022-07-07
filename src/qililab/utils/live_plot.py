@@ -16,6 +16,17 @@ class LivePlot:
     connection: API | None
     loop: Loop | None
     plot_ids: List[int] = field(default_factory=list)
+    ranges: List[Iterator] = field(init=False)
+
+    def __post_init__(self):
+        """Generate iterators that iterate over loop ranges."""
+        if self.loop is not None:
+            x_loop = self.loop.loops[-1].range
+            y_loop = self.loop.loops[-2].range if self.loop.num_loops > 1 else None
+            ranges_meshgrid = np.meshgrid(x_loop, y_loop)  # type: ignore
+            self.ranges = [iter(range[0]) for range in ranges_meshgrid]
+        else:
+            self.ranges = [count()]
 
     def create_live_plot(self, title: str):
         """Create live plot
@@ -59,20 +70,6 @@ class LivePlot:
                     y=float(next(self.ranges[1])),
                     z=float(value),
                 )
-
-    @property
-    def ranges(self) -> List[Iterator]:
-        """LivePlot 'ranges' property.
-
-        Returns:
-            Iterator: Iterator of all the loops ranges.
-        """
-        if self.loop is not None:
-            x_loop = self.loop.loops[-1].range
-            y_loop = self.loop.loops[-2].range if self.loop.num_loops > 1 else None
-            ranges_meshgrid = np.meshgrid(x_loop, y_loop)  # type: ignore
-            return [iter(range) for range in ranges_meshgrid]
-        return [count()]
 
     @property
     def plot_type(self) -> str:
