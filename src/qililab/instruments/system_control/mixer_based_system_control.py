@@ -49,8 +49,8 @@ class MixerBasedSystemControl(SystemControl):
 
     def setup(self, frequencies: List[float]):
         """Setup instruments."""
-        mean_freq = np.mean(frequencies)
-        self.signal_generator.frequency = mean_freq + self.awg.frequency
+        min_freq = np.min(frequencies)
+        self.signal_generator.frequency = min_freq + self.awg.frequency
         self.awg.multiplexing_frequencies = list(self.signal_generator.frequency - np.array(frequencies))
         self.awg.setup()
         self.signal_generator.setup()

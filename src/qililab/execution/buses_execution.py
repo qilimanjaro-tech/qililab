@@ -44,11 +44,11 @@ class BusesExecution:
                     result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                     if result is not None:
                         results.append(result)
-                        self._asynchronous_data_handling(result=result, path=path, plot=plot, x_value=idx)
+                        self._asynchronous_data_handling(result=result, path=path, plot=plot)
 
         return results
 
-    def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None, x_value: float):
+    def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None):
         """Asynchronously dumps data in file and plots the data.
 
         Args:
@@ -57,14 +57,14 @@ class BusesExecution:
             x_value (float): Plot's x axis value.
         """
 
-        def _threaded_function(result: Result, path: Path, plot: LivePlot | None, x_value: float):
+        def _threaded_function(result: Result, path: Path, plot: LivePlot | None):
             """Asynchronous thread."""
             if plot is not None:
-                plot.send_points(x_value=x_value, y_value=result.probabilities()[0][0])
+                plot.send_points(value=result.probabilities()[0][0])
             with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
                 yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
 
-        thread = Thread(target=_threaded_function, args=(result, path, plot, x_value))
+        thread = Thread(target=_threaded_function, args=(result, path, plot))
         thread.start()
 
     def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:

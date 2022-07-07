@@ -33,7 +33,7 @@ from qililab.pulse import (
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import FluxQubit, Galadriel, circuit, experiment_params
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
 
 
@@ -328,7 +328,9 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 @pytest.fixture(name="simulated_platform")
 def fixture_simulated_platform() -> Platform:
     """Return Platform object."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=FluxQubit.runcard) as mock_load:
+    with patch(
+        "qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=FluxQubitSimulator.runcard
+    ) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()

@@ -209,7 +209,7 @@ class Galadriel:
     }
 
 
-class FluxQubit:
+class FluxQubitSimulator:
     """Test data of the flux_qubit platform."""
 
     name = "flux_qubit"
@@ -281,7 +281,7 @@ class FluxQubit:
 
 
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
-for platform in (Galadriel, FluxQubit):
+for platform in (Galadriel, FluxQubitSimulator):
     circuit = Circuit(1)
     circuit.add(I(0))
     circuit.add(X(0))
@@ -434,10 +434,13 @@ experiment = {
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, Type[Galadriel] | Type[FluxQubit]] = {"galadriel": Galadriel, "flux_qubit": FluxQubit}
+    handlers: Dict[str, Type[Galadriel] | Type[FluxQubitSimulator]] = {
+        "galadriel": Galadriel,
+        "flux_qubit": FluxQubitSimulator,
+    }
 
     @classmethod
-    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubit]):
+    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubitSimulator]):
         """Register handler in the factory.
 
         Args:
