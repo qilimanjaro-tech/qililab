@@ -17,6 +17,7 @@ from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.awg import AWG
+from qililab.instruments.instrument import Instrument
 from qililab.pulse import Pulse, PulseSequence, PulseShape
 from qililab.typings.enums import ReferenceClock
 from qililab.typings.instruments import Pulsar, QcmQrm
@@ -54,15 +55,9 @@ class QbloxModule(AWG):
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
     # Cache containing the last PulseSequence, nshots and repetition_duration used.
-    _cache: Tuple[PulseSequence, int, int] | None
-    slot_id: int
+    _cache: Tuple[PulseSequence, int, int] | None = None
 
-    def __init__(self, device: Pulsar | QcmQrm, slot_id: int, settings: dict):
-        super().__init__(settings=settings)
-        self.device = device
-        self.slot_id = slot_id
-        self._cache = None
-
+    @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         self._set_reference_source()
@@ -71,9 +66,9 @@ class QbloxModule(AWG):
         self._set_nco()
 
     @property
-    def module_type(self) -> None:
-        """returns the qblox module type. Options: Qblox QCM or Qblox QRM"""
-        return None
+    def module_type(self):
+        """returns the qblox module type. Options: QCM or QRM"""
+        return self.device.module_type()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
@@ -173,20 +168,18 @@ class QbloxModule(AWG):
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
 
-    def _device_identifier(self) -> str:
-        """Gets the device identifier."""
-        return self.id_
-
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
         self.device.arm_sequencer()
         self.device.start_sequencer()
 
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set Qblox instrument calibration settings."""
         self._set_gain()
         self._set_offsets()
 
+    @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
         self.device.stop_sequencer()

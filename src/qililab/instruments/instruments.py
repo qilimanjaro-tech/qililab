@@ -14,16 +14,6 @@ class Instruments:
 
     elements: List[Instrument]
 
-    def connect(self):
-        """Connect to all instruments."""
-        for instrument in self.elements:
-            instrument.connect()
-
-    def close(self):
-        """Close all instruments."""
-        for instrument in self.elements:
-            instrument.close()
-
     def get_instrument(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get element given an id_ and category"""
         if alias is not None:

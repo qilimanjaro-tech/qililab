@@ -2,13 +2,13 @@
 from dataclasses import dataclass
 
 from qililab.connections.connection import Connection
+from qililab.typings import ConnectionName
+from qililab.utils import Factory
 
 
+@Factory.register
+@dataclass
 class USBConnection(Connection):
-    """Abstract base class declaring the necessary attributes and methods for a USB connection."""
+    """Class declaring the necessary attributes and methods for an USB connection."""
 
-    @dataclass
-    class USBConnectionSettings(Connection.ConnectionSettings):
-        """Contains the settings of a connection."""
-
-    settings: USBConnectionSettings
+    name = ConnectionName.USB

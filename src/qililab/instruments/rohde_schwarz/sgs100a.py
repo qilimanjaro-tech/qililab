@@ -3,17 +3,18 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from dataclasses import dataclass
 
-from qililab.connections import TCPIPConnection
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
 
 
 @InstrumentFactory.register
-class SGS100A(SignalGenerator, TCPIPConnection):
+class SGS100A(SignalGenerator):
     """Rohde & Schwarz SGS100A class
 
     Args:
+        name (InstrumentName): name of the instrument
         device (RohdeSchwarz_SGS100A): Instance of the qcodes SGS100A class.
         settings (SGS100ASettings): Settings of the instrument.
     """
@@ -21,13 +22,13 @@ class SGS100A(SignalGenerator, TCPIPConnection):
     name = InstrumentName.ROHDE_SCHWARZ
 
     @dataclass
-    class SGS100ASettings(TCPIPConnection.TCPIPConnectionSettings, SignalGenerator.SignalGeneratorSettings):
-        """Contains the settings of a specific pulsar."""
+    class SGS100ASettings(SignalGenerator.SignalGeneratorSettings):
+        """Contains the settings of a specific signal generator."""
 
     settings: SGS100ASettings
     device: RohdeSchwarzSGS100A
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
@@ -36,6 +37,12 @@ class SGS100A(SignalGenerator, TCPIPConnection):
         self.device.power(self.power)
         if self.frequency is not None:
             self.device.frequency(self.frequency)
+
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """performs an initial setup.
+        For this instrument it is the same as a regular setup"""
+        self.setup()
 
     @SignalGenerator.frequency.setter  # type: ignore
     def frequency(self, value: float):
@@ -46,16 +53,16 @@ class SGS100A(SignalGenerator, TCPIPConnection):
         """
         self.settings.frequency = value
 
-    @TCPIPConnection.CheckConnected
-    def turn_on(self):
+    @Instrument.CheckDeviceInitialized
+    def start(self):
         """Start generating microwaves."""
         self.device.on()
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop generating microwaves."""
         self.device.off()
 
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.address}::inst0::INSTR")
+    @Instrument.CheckDeviceInitialized
+    def reset(self):
+        """Reset instrument."""

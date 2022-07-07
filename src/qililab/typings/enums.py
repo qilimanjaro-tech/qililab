@@ -6,7 +6,7 @@ class Category(Enum):
     """Category of settings.
 
     Args:
-        enum (str): Available types of settings cattegories:
+        enum (str): Available types of settings categories:
         * platform
         * qubit
         * awg
@@ -16,6 +16,7 @@ class Category(Enum):
         * schema
         * resonator
         * node
+        * instrument_controller
     """
 
     PLATFORM = "platform"
@@ -32,6 +33,7 @@ class Category(Enum):
     DC_SOURCE = "dc_source"
     CHIP = "chip"
     NODE = "node"
+    INSTRUMENT_CONTROLLER = "instrument_controller"
 
 
 class Instrument(Enum):
@@ -51,6 +53,19 @@ class Instrument(Enum):
     SIGNAL_GENERATOR = "signal_generator"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
+
+
+class InstrumentControllerSubCategory(Enum):
+    """Instrument Controller subcategory types.
+
+    Args:
+        enum (str): Available types of instrument controllers:
+        * single_instrument
+        * multiple_instruments
+    """
+
+    SINGLE = "single_instrument"
+    MULTI = "multiple_instruments"
 
 
 class ReferenceClock(Enum):
@@ -210,20 +225,42 @@ class InstrumentName(Enum):
     """Instrument names.
 
     Args:
-        enum (str): Available bus element names:
-        * qblox_qcm
-        * qblox_qrm
+        enum (str): Available instrument element names:
+        * QCM -> Exactly as Qblox InstrumentType
+        * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
         * mini_circuits
         * mixer_based_system_control
         * integrated_system_control
         * simulated_system_control
+        * keithley_2600
     """
 
-    QBLOX_QCM = "qblox_qcm"
-    QBLOX_QRM = "qblox_qrm"
+    QBLOX_QCM = "QCM"
+    QBLOX_QRM = "QRM"
     ROHDE_SCHWARZ = "rohde_schwarz"
+    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    MINI_CIRCUITS = "mini_circuits"  # step attenuator
+    KEITHLEY2600 = "keithley_2600"
+
+
+class InstrumentControllerName(Enum):
+    """Instrument Controller names.
+
+    Args:
+        enum (str): Available instrument controller element names:
+        * qblox_pulsar
+        * qblox_cluster
+        * rohde_schwarz
+        * mini_circuits
+        * keithley_2600
+    """
+
+    QBLOX_PULSAR = "qblox_pulsar"
+    QBLOX_CLUSTER = "qblox_cluster"
+    ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
 
@@ -264,10 +301,23 @@ class ResultName(Enum):
     """Result names.
 
     Args:
-        enum (str): Available bus element names:
+        enum (str): Available result element names:
         * qblox
         * simulator
     """
 
     QBLOX = "qblox"
     SIMULATOR = "simulator"
+
+
+class ConnectionName(Enum):
+    """Connection names.
+
+    Args:
+        enum (str): Available connection element names:
+        * tcp_ip
+        * usb
+    """
+
+    TCP_IP = "tcp_ip"
+    USB = "usb"

@@ -4,18 +4,24 @@ from typing import Tuple
 
 import numpy as np
 
-from qililab.connections import TCPIPConnection
 from qililab.instruments.instrument import Instrument
+from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Keithley2600Driver
 
 
-class Keithley2600(Instrument, TCPIPConnection):
-    """Keithley2600 class."""
+@InstrumentFactory.register
+class Keithley2600(Instrument):
+    """Keithley2600 class.
+    Args:
+        name (InstrumentName): name of the instrument
+        device (Keithley2600Driver): Instance of the Instrument device driver.
+        settings (Keithley2600Settings): Settings of the instrument.
+    """
 
     name = InstrumentName.KEITHLEY2600
 
     @dataclass
-    class Keithley2600Settings(TCPIPConnection.TCPIPConnectionSettings, Instrument.InstrumentSettings):
+    class Keithley2600Settings(Instrument.InstrumentSettings):
         """Settings for Keithley2600 instrument."""
 
         max_current: float
@@ -27,27 +33,27 @@ class Keithley2600(Instrument, TCPIPConnection):
     settings: Keithley2600Settings
     device: Keithley2600Driver
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Setup instrument."""
         self.device.smua.limiti(self.max_current)
         self.device.smua.limitv(self.max_voltage)
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """performs an initial setup.
+        For this instrument it is the same as a regular setup"""
+        self.setup()
+
+    @Instrument.CheckDeviceInitialized
     def start(self):
         """Start generating microwaves."""
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop generating microwaves."""
 
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
-        self.device = Keithley2600Driver(
-            name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
-        )
-
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
         self.device.reset()

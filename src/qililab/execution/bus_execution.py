@@ -22,9 +22,9 @@ class BusExecution:
         if self.attenuator is not None:
             self.attenuator.setup()
 
-    def turn_on(self):
+    def start(self):
         """Start/Turn on the instruments."""
-        self.system_control.turn_on()
+        self.system_control.start()
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""

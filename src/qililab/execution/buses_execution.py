@@ -27,10 +27,10 @@ class BusesExecution:
         for bus in self.buses:
             bus.setup()
 
-    def turn_on(self):
+    def start(self):
         """Start/Turn on the instruments."""
         for bus in self.buses:
-            bus.turn_on()
+            bus.start()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path

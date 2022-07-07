@@ -27,7 +27,7 @@ class SystemControl(BusElement, ABC):
         self.settings = settings_class(**settings)
 
     @abstractmethod
-    def turn_on(self):
+    def start(self):
         """Start instrument."""
 
     @abstractmethod

@@ -45,9 +45,20 @@ class RuncardSchema:
             category: str
             nodes: List[dict]
 
+        @dataclass
+        class InstrumentControllerSchema:
+            """Instrument Controller schema class."""
+
+            id_: int
+            category: str
+            subcategory: str
+            connection: dict
+            modules: List[dict]
+
         chip: ChipSchema
         buses: List[BusSchema]
         instruments: List[dict]
+        instrument_controllers: List[InstrumentControllerSchema]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses]

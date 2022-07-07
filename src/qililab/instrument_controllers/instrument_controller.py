@@ -1,0 +1,224 @@
+"""Instrument Controller class"""
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import List, Type, get_type_hints
+
+from qililab.connections.connection import Connection
+from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
+from qililab.instrument_controllers.utils import loader
+from qililab.instruments import Instrument, Instruments
+from qililab.instruments.utils.instrument_reference import InstrumentReference
+from qililab.platform.components.bus_element import BusElement
+from qililab.settings import DDBBElement
+from qililab.typings.enums import (
+    Category,
+    InstrumentControllerName,
+    InstrumentControllerSubCategory,
+)
+from qililab.typings.instruments.device import Device
+from qililab.utils import Factory
+
+
+@dataclass
+class InstrumentControllerSettings(DDBBElement):
+    """Contains the settings of a specific Instrument Controller.
+    Args:
+        subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
+        connection (Connection): Connection class that represents the connection type of the Instrument Controller.
+        modules: (List[InstrumentReference]): List of the Instrument References that links to the actual Instruments
+                                                to be managed by the Instrument Controller.
+    """
+
+    connection: Connection
+    modules: List[InstrumentReference]
+    subcategory: InstrumentControllerSubCategory = field(
+        init=False
+    )  # a subtype of settings must be specified by the subclass
+
+    def __post_init__(self):
+        """Cast nodes and category to their corresponding classes."""
+        if self.connection and isinstance(self.connection, dict):
+            # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
+            self.connection = Factory.get(name=self.connection.pop(RUNCARD.NAME))(
+                **self.connection  # pylint: disable=not-a-mapping
+            )
+        self.modules = [
+            InstrumentReference(category=Category(category), alias=alias, slot_id=slot_id)
+            for category, alias, slot_id in self.modules
+        ]
+
+
+class InstrumentController(BusElement, ABC):
+    """Abstract base class declaring the necessary attributes
+    and methods for the instrument controllers that manages
+    the drivers (device) to one or several instruments and
+    the connection to them.
+
+    Args:
+        name (InstrumentControllerName): name of the instrument controller
+        settings (InstrumentControllerSettings): Settings of the instrument controller.
+        device (Device): Driver instance of the instrument to operate the instrument controller.
+        number_available_modules (int): Number of modules available in the Instrument Controller.
+        modules (List[Instrument]): Actual Instruments classes that manages the Instrument Controller.
+        connected_modules_slot_ids (List[int]): List with the slot ids from the connected instruments
+    """
+
+    name: InstrumentControllerName
+    settings: InstrumentControllerSettings  # a subtype of settings must be specified by the subclass
+    device: Device  # a subtype of device must be specified by the subclass
+    number_available_modules: int  # to be set by child classes
+    modules: List[Instrument]
+    connected_modules_slot_ids: List[int]
+
+    def __init__(self, settings: dict, loaded_instruments: Instruments):
+        settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        self.settings = settings_class(**settings)
+        self.modules = loader.replace_modules_from_settings_with_instrument_objects(
+            instruments=loaded_instruments,
+            instrument_references=self.settings.modules,
+        )
+        if len(self.modules) <= 0:
+            raise ValueError(f"The {self.name} Instrument Controller requires at least ONE module.")
+        if len(self.modules) > self.number_available_modules:
+            raise ValueError(
+                f"The {self.name} Instrument Controller only supports {self.number_available_modules} module/s."
+                + f"You have loaded {len(self.modules)} modules."
+            )
+        self.connected_modules_slot_ids = self._set_connected_modules_slot_ids()
+        if len(self.connected_modules_slot_ids) > self.number_available_modules:
+            raise ValueError(
+                f"The {self.name} Instrument Controller only supports {self.number_available_modules} module/s."
+                + f"You have connected {len(self.connected_modules_slot_ids)} modules."
+            )
+        if len(self.connected_modules_slot_ids) != len(self.modules):
+            raise ValueError(
+                f"The connected number of modules: {len(self.connected_modules_slot_ids)} differs from "
+                + f"the available modules: {len(self.modules)}."
+            )
+
+    def _set_connected_modules_slot_ids(self) -> List[int]:
+        """Initialize the modules slot ids from the settings"""
+        return [instrument_reference.slot_id for instrument_reference in self.settings.modules]
+
+    @abstractmethod
+    def _initialize_device(self) -> Device:
+        """Initialize device attribute to the corresponding device class."""
+
+    @abstractmethod
+    def _set_device_to_all_modules(self):
+        """Sets the initialized device to all modules."""
+
+    def _initialize_device_and_set_to_all_modules(self):
+        """Initialize the Controller Device driver and sets it for all modules"""
+        self.device = self._initialize_device()
+        self._set_device_to_all_modules()
+
+    def _release_device_to_all_modules(self):
+        """Releases the device to all modules"""
+        for module in self.modules:
+            module.device = None
+
+    def _release_device_and_set_to_all_modules(self):
+        """Release the Controller Device driver and also for all modules"""
+        self.device = None
+        self._release_device_to_all_modules()
+
+    @Connection.CheckConnected
+    def stop(self):
+        """Stop instrument."""
+        for module in self.modules:
+            module.stop()
+
+    @Connection.CheckConnected
+    def reset(self):
+        """Reset instrument."""
+        for module in self.modules:
+            module.reset()
+
+    @Connection.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the instrument."""
+        for module in self.modules:
+            module.initial_setup()
+
+    def connect(self):
+        """Establishes the connection with the instrument, performs the initial setup and resets it."""
+        self._initialize_device_and_set_to_all_modules()
+        self.connection.connect(device=self.device, device_name=self.__str__())
+        self.initial_setup()
+        self.reset()
+
+    def close(self):
+        """Stops all modules, resets them, close the connection to the instrument and releases the device."""
+        self.stop()
+        self.reset()
+        self.connection.close()
+        self._release_device_and_set_to_all_modules()
+
+    @property
+    def id_(self):
+        """Instrument Controller 'id_' property.
+
+        Returns:
+            int: settings.id_.
+        """
+        return self.settings.id_
+
+    @property
+    def alias(self):
+        """Instrument Controller 'alias' property.
+
+        Returns:
+            str: settings.alias.
+        """
+        return self.settings.alias
+
+    @property
+    def category(self):
+        """Instrument Controller 'category' property.
+
+        Returns:
+            Category: settings.category.
+        """
+        return self.settings.category
+
+    @property
+    def subcategory(self):
+        """Instrument Controller 'subcategory' property.
+
+        Returns:
+            InstrumentControllerSubcategory: settings.subcategory.
+        """
+        return self.settings.subcategory
+
+    @property
+    def connection(self):
+        """Instrument Controller 'connection' property.
+
+        Returns:
+            Connection: settings.connection.
+        """
+        return self.settings.connection
+
+    @property
+    def address(self):
+        """Instrument Controller 'address' property.
+
+        Returns:
+            str: connection.address.
+        """
+        return self.connection.address
+
+    def __str__(self):
+        """String representation of an instrument controller."""
+        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.subcategory}_{self.id_}"
+
+    def to_dict(self):
+        """Return a dict representation of the InstrumentReference class."""
+        return {
+            RUNCARD.NAME: self.name.value,
+            RUNCARD.ID: self.id_,
+            RUNCARD.CATEGORY: self.category.value,
+            INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
+            INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
+        }

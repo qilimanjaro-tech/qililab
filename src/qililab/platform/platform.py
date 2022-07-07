@@ -26,12 +26,12 @@ class Platform:
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
-        """Connect to the instruments."""
-        self.instruments.connect()
+        """Connect to the instrument controllers."""
+        self.instrument_controllers.connect()
 
     def close(self):
-        """Close connection to the instruments."""
-        self.instruments.close()
+        """Close connection to the instrument controllers."""
+        self.instrument_controllers.close()
 
     def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get platform element.
@@ -185,6 +185,15 @@ class Platform:
             Chip: Class descibing the chip properties.
         """
         return self.schema.chip
+
+    @property
+    def instrument_controllers(self):
+        """Platform 'instrument_controllers' property.
+
+        Returns:
+            InstrumentControllers: List of all instrument controllers.
+        """
+        return self.schema.instrument_controllers
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

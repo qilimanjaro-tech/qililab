@@ -22,14 +22,23 @@ class IntegratedSystemControl(SystemControl, Instrument):
 
     settings: IntegratedSystemControlSettings
 
-    def turn_on(self):
+    def start(self):
         """Start instrument."""
+
+    def initial_setup(self):
+        """Set initial instrument settings."""
 
     def setup(self, target_freqs: List[float]):  # type: ignore
         """Setup instruments."""
 
+    def reset(self):
+        """Reset instrument settings."""
+
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
+
+    def stop(self):
+        """Stop an instrument."""
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""

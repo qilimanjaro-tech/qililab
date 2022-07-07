@@ -52,7 +52,7 @@ class SimulatedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self.options = qutip.Options()
 
-    def turn_on(self):
+    def start(self):
         """Start instrument."""
 
     def setup(self, target_freqs: List[float]):

@@ -5,6 +5,7 @@ from pathlib import Path
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
@@ -67,11 +68,17 @@ class QbloxQRM(QbloxModule, QubitReadout):
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""
         super().setup()
         self._set_hardware_averaging()
         self._set_acquisition_mode()
+
+    @Instrument.CheckDeviceInitialized
+    def reset(self):
+        """Reset instrument."""
+        self.device.reset()
 
     def get_acquisitions(self):
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.

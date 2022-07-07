@@ -2,13 +2,13 @@
 from dataclasses import dataclass
 
 from qililab.connections.connection import Connection
+from qililab.typings import ConnectionName
+from qililab.utils import Factory
 
 
+@Factory.register
+@dataclass
 class TCPIPConnection(Connection):
-    """Abstract base class declaring the necessary attributes and methods for a TCP-IP connection."""
+    """Class declaring the necessary attributes and methods for a TCP-IP connection."""
 
-    @dataclass
-    class TCPIPConnectionSettings(Connection.ConnectionSettings):
-        """Contains the settings of a connection."""
-
-    settings: TCPIPConnectionSettings  # a subtype of settings must be specified by the subclass
+    name = ConnectionName.TCP_IP

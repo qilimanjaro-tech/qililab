@@ -53,9 +53,9 @@ class MixerBasedSystemControl(SystemControl):
         self.awg.setup()
         self.signal_generator.setup()
 
-    def turn_on(self):
+    def start(self):
         """Start/Turn on the instruments."""
-        self.signal_generator.turn_on()
+        self.signal_generator.start()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
