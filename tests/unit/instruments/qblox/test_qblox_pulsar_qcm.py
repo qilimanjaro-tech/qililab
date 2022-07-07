@@ -29,10 +29,10 @@ class TestQbloxQCM:
     def test_setup_method(self, qcm: QbloxQCM):
         """Test setup method"""
         qcm.setup()
-        qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.offset_awg_path0.assert_called_once_with(qcm.offset_i)
-        qcm.device.sequencer0.offset_awg_path1.assert_called_once_with(qcm.offset_q)
+        qcm.device.sequencer0.gain_awg_path0.assert_called()
+        qcm.device.sequencer0.gain_awg_path1.assert_called()
+        qcm.device.sequencer0.offset_awg_path0.assert_called()
+        qcm.device.sequencer0.offset_awg_path1.assert_called()
 
     def test_stop_method(self, qcm: QbloxQCM):
         """Test stop method"""

@@ -1,4 +1,5 @@
 """__init__.py"""
+from .asdict_factory import dict_factory
 from .factory import Factory
 from .live_plot import LivePlot
 from .loop import Loop

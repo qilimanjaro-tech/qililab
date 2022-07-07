@@ -10,7 +10,7 @@ class TestBusExecution:
 
     def test_add_pulse_method(self, bus_execution: BusExecution, pulse_sequence: PulseSequence):
         """Test add_pulse method."""
-        pulse_sequence.frequency = bus_execution.pulse_sequences[0].frequency
+        pulse_sequence.pulses[0].frequency = bus_execution.pulse_sequences[0].frequency
         bus_execution.add_pulse_sequence(pulse_sequence=pulse_sequence)
 
     def test_waveforms_method(self, bus_execution: BusExecution):

@@ -55,7 +55,7 @@ class SimulatedSystemControl(SystemControl):
     def start(self):
         """Start instrument."""
 
-    def setup(self, target_freqs: List[float]):
+    def setup(self, frequencies: List[float]):
         """Setup instruments."""
         self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
 

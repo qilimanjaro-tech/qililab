@@ -28,7 +28,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
     def initial_setup(self):
         """Set initial instrument settings."""
 
-    def setup(self, target_freqs: List[float]):  # type: ignore
+    def setup(self, frequencies: List[float]):  # type: ignore
         """Setup instruments."""
 
     def reset(self):

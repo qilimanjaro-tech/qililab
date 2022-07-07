@@ -76,7 +76,7 @@ def fixture_qcm(mock_pulsar: MagicMock):
     # connect to instrument
     settings = copy.deepcopy(Galadriel.qblox_qcm_0)
     settings.pop("name")
-    return QbloxQCM(device=mock_pulsar, slot_id=0, settings=settings)
+    return QbloxQCM(settings=settings)
 
 
 @pytest.fixture(name="qrm")
@@ -89,14 +89,14 @@ def fixture_qrm(mock_pulsar: MagicMock):
         [
             "reference_source",
             "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
         ]
     )
-    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
     mock_instance.sequencer0.mock_add_spec(
         [
             "sync_en",
@@ -118,7 +118,7 @@ def fixture_qrm(mock_pulsar: MagicMock):
     # connect to instrument
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     settings.pop("name")
-    return QbloxQRM(device=mock_pulsar, slot_id=0, settings=settings)
+    return QbloxQRM(settings=settings)
 
 
 @pytest.fixture(name="rohde_schwarz")
@@ -128,11 +128,9 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
-    # connect to instrument
     settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
     settings.pop("name")
     rohde_schwarz = SGS100A(settings=settings)
-    rohde_schwarz.connect()
     return rohde_schwarz
 
 
@@ -144,11 +142,9 @@ def fixture_keithley_2600(mock_driver: MagicMock):
     mock_instance = mock_driver.return_value
     mock_instance.smua = MagicMock(KeithleyChannel)
     mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
-    # connect to instrument
     settings = copy.deepcopy(Galadriel.keithley_2600)
     settings.pop("name")
     keithley_2600 = Keithley2600(settings=settings)
-    keithley_2600.connect()
     mock_driver.assert_called()
     return keithley_2600
 
@@ -178,7 +174,7 @@ def fixture_attenuator() -> Attenuator:
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
 def fixture_pulses(platform: Platform) -> PulseSequences:
     """Return Pulses instance."""
-    return CircuitToPulses(settings=platform.pulses_settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 @pytest.fixture(name="pulse_sequence")
@@ -235,7 +231,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
             mock_load.assert_called()
             mock_open.assert_called()
     loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(alias="qblox_qcm", parameter=Parameter.GAIN, start=0, stop=1, step=0.5, loop=loop3)
+    loop2 = Loop(alias="platform", parameter=Parameter.DELAY_BEFORE_READOUT, start=40, stop=100, step=40, loop=loop3)
     loop = Loop(
         instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )

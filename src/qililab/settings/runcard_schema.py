@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Parameter
+from qililab.typings.enums import Category, Parameter
 from qililab.utils import nested_dataclass
 
 
@@ -68,62 +68,52 @@ class RuncardSchema:
         """SettingsSchema class."""
 
         @dataclass
-        class PulsesSettings:
-            """TranslationSettingsSchema"""
+        class GateSettings:
+            """GatesSchema class."""
 
-            @dataclass
-            class GateSettings:
-                """GatesSchema class."""
+            name: str
+            amplitude: float
+            phase: float
+            duration: int
+            shape: dict
 
-                name: str
-                amplitude: float
-                phase: float
-                duration: int
-                shape: dict
-
-            delay_between_pulses: int
-            delay_before_readout: int
-            gates: List[GateSettings]
-
-            def __post_init__(self):
-                self.gates = [self.GateSettings(**gate) for gate in self.gates]
-
-            def get_gate(self, name: str):
-                """Get gate with the given name.
-
-                Args:
-                    name (str): Name of the gate.
-
-                Raises:
-                    ValueError: If no gate is found.
-
-                Returns:
-                    GateSettings: GateSettings class.
-                """
-                for gate in self.gates:
-                    if gate.name == name:
-                        return gate
-                raise ValueError(f"Gate {name} not found in settings.")
+        def __post_init__(self):
+            self.gates = [self.GateSettings(**gate) for gate in self.gates]
 
         name: str
-        pulses: PulsesSettings
+        delay_between_pulses: int
+        delay_before_readout: int
+        gates: List[GateSettings]
+
+        def get_gate(self, name: str):
+            """Get gate with the given name.
+            Args:
+                name (str): Name of the gate.
+            Raises:
+                ValueError: If no gate is found.
+            Returns:
+                GateSettings: GateSettings class.
+            """
+            for gate in self.gates:
+                if gate.name == name:
+                    return gate
+            raise ValueError(f"Gate {name} not found in settings.")
 
         @property
         def gate_names(self) -> List[str]:
             """PlatformSettings 'gate_names' property.
-
             Returns:
                 List[str]: List of the names of all the defined gates.
             """
-            return [gate.name for gate in self.pulses.gates]
+            return [gate.name for gate in self.gates]
 
         def set_parameter(self, parameter: Parameter, value: float | str | bool, alias: str | None = None):
             """Cast the new value to its corresponding type and set the new attribute."""
-            if alias is None:
+            if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value)
                 return
             param = parameter.value
-            settings = self.pulses.get_gate(name=alias)
+            settings = self.get_gate(name=alias)
             if not hasattr(settings, param):
                 settings = settings.shape
             attr_type = type(getattr(settings, param))

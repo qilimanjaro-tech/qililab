@@ -88,7 +88,7 @@ class TestExperiment:
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
         experiment.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert experiment.platform.settings.pulses.get_gate(name="M").amplitude == 0.3
+        assert experiment.platform.settings.get_gate(name="M").amplitude == 0.3
 
 
 @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
@@ -181,8 +181,8 @@ class TestExexution:
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
         assert isinstance(results, Results)
-        assert np.shape(results.acquisitions(mean=True))[1:4] == (2, 2, 2)
-        assert np.shape(results.probabilities(mean=True))[1:4] == (2, 2, 2)
+        assert np.shape(results.acquisitions(mean=True))[2:5] == (2, 2, 2)
+        assert np.shape(results.probabilities(mean=True))[2:5] == (2, 2, 2)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()

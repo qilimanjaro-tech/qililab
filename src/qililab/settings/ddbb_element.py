@@ -14,6 +14,7 @@ class DDBBElement:
         id_ (str): ID of the settings.
         category (str): General name of the settings category. Options are "platform", "awg",
         "signal_generator", "qubit", "resonator", "mixer", "bus" and "schema".
+        alias (str): Unique name identifying the element.
     """
 
     id_: int

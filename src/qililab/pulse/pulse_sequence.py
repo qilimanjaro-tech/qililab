@@ -1,5 +1,5 @@
 """BusPulses class."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
 
 import numpy as np
@@ -13,18 +13,11 @@ from qililab.utils import Waveforms
 
 @dataclass
 class PulseSequence:
-    """Container of Pulse objects addressed to the same bus. All pulses should be addressed to the same port and
-    have the same frequency."""
+    """Container of Pulse objects addressed to the same bus. All pulses should have the same name
+    (Pulse or ReadoutPulse) and have the same frequency."""
 
     pulses: List[Pulse]
     port: int
-    frequency: float = field(init=False)
-    _name: PulseName = field(init=False)
-
-    def __post_init__(self):
-        """Get port and frequency values from pulse."""
-        self.frequency = self.pulses[0].frequency
-        self._name = self.pulses[0].name
 
     def add(self, pulse: Pulse):
         """Add pulse to sequence.
@@ -32,11 +25,11 @@ class PulseSequence:
         Args:
             pulse (Pulse): Pulse object.
         """
-        if pulse.name != self.name:
+        if pulse.name != self.pulses[0].name:
             raise ValueError(
                 "All Pulse objects inside a BusPulses class should have the same type (Pulse or ReadoutPulse)."
             )
-        if pulse.frequency != self.frequency:
+        if pulse.frequency != self.pulses[0].frequency:
             raise ValueError("All Pulse objects inside a BusPulses class should have the same frequency.")
         self.pulses.append(pulse)
 
@@ -72,7 +65,15 @@ class PulseSequence:
 
         Returns:
             str: Name of the pulses. Options are "Pulse" or "ReadoutPulse"""
-        return self._name
+        return self.pulses[0].name
+
+    @property
+    def frequency(self):
+        """Frequency of the pulses of the pulse sequence.
+
+        Returns:
+            float: Frequency of the pulses."""
+        return self.pulses[0].frequency
 
     def to_dict(self):
         """Return dictionary representation of the class.

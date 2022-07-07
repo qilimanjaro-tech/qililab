@@ -37,11 +37,6 @@ class SIGNALGENERATOR:
     """SignalGenerator attribute names."""
 
     FREQUENCY = "frequency"
-
-
-class PLATFORM:
-    """Platform constants."""
-
     PULSES = "pulses"
 
 

@@ -16,7 +16,7 @@ class RX(HardwareGate):
     class_type = gates.RX
 
     @classmethod
-    def translate(cls, gate: gates.X) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.RX) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:

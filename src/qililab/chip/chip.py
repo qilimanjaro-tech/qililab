@@ -9,7 +9,7 @@ from qililab.chip.qubit import Qubit
 from qililab.chip.resonator import Resonator
 from qililab.constants import RUNCARD
 from qililab.typings import Category
-from qililab.utils import Factory
+from qililab.utils import Factory, dict_factory
 
 
 @dataclass
@@ -51,7 +51,7 @@ class Chip:
         Returns:
             List[Node]: List containing all adjacent nodes.
         """
-        return [self.nodes[node_idx] for node_idx in node.nodes]
+        return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
     def get_port_from_qubit_idx(self, idx: int, readout: bool) -> Port:
         """Get control/readout port number from qubit index.
@@ -89,9 +89,9 @@ class Chip:
             Port: Port class.
         """
         adj_nodes = self._get_adjacent_nodes(node)
-        for node in adj_nodes:
-            if isinstance(node, Port):
-                return node
+        for adj_node in adj_nodes:
+            if isinstance(adj_node, Port):
+                return adj_node
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
     def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler]:
@@ -138,22 +138,48 @@ class Chip:
                 return node
         raise ValueError(f"Could not find node with alias {alias}")
 
+    def get_qubit_idx_from_node(self, node: Node) -> int:
+        """Get qubit id from given node.
+
+        Args:
+            node (Node): Node class.
+
+        Returns:
+            int: Qubit id.
+        """
+        adj_nodes = self._get_adjacent_nodes(node=node)
+        for adj_node in adj_nodes:
+            if isinstance(adj_node, Qubit):
+                return adj_node.qubit_idx
+            if isinstance(adj_node, Resonator):
+                return self.get_qubit_idx_from_node(node=adj_node)
+        raise ValueError(f"Could not find qubit connected to node with id {node.id_}")
+
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {
             "id_": self.id_,
             "category": self.category.value,
-            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node) for node in self.nodes],
+            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node, dict_factory=dict_factory) for node in self.nodes],
         }
 
     @property
     def num_qubits(self) -> int:
-        """Chip 'num_qubit' property
+        """Chip 'num_qubits' property
 
         Returns:
             int: Number of qubits.
         """
         return sum(isinstance(node, Qubit) for node in self.nodes)
+
+    @property
+    def num_ports(self) -> int:
+        """Chip 'num_ports' property
+
+        Returns:
+            int: Number of ports.
+        """
+        return sum(isinstance(node, Port) for node in self.nodes)
 
     def __str__(self):
         """String representation of the Chip class."""

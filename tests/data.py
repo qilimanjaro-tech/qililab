@@ -5,7 +5,7 @@ from typing import Dict, List, Type
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import PLATFORM, RUNCARD, SCHEMA
+from qililab.constants import RUNCARD, SCHEMA
 
 
 class Galadriel:
@@ -17,28 +17,26 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.PULSES: {
-            "delay_between_pulses": 0,
-            "delay_before_readout": 40,
-            "gates": [
-                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-            ],
-        },
+        "delay_between_pulses": 0,
+        "delay_before_readout": 40,
+        "gates": [
+            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "X",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+            {
+                "name": "Y",
+                "amplitude": 1,
+                "phase": 1.5707963267948966,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+        ],
     }
 
     qblox_qcm_0 = {
@@ -49,15 +47,15 @@ class Galadriel:
         "ip": "192.168.0.3",
         "firmware": "0.7.0",
         "reference_clock": "internal",
-        "sequencer": 0,
         "sync_enabled": True,
-        "gain": 1,
         "frequency": 100000000,
         "num_bins": 100,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
+        "num_sequencers": 1,
+        "gain": [1],
+        "epsilon": [0],
+        "delta": [0],
+        "offset_i": [0],
+        "offset_q": [0],
     }
 
     qblox_qrm_0 = {
@@ -68,11 +66,9 @@ class Galadriel:
         "ip": "192.168.0.4",
         "firmware": "0.7.0",
         "reference_clock": "external",
-        "sequencer": 0,
         "sync_enabled": True,
-        "gain": 0.5,
-        "acquire_trigger_mode": "sequencer",
-        "hardware_averaging": True,
+        "scope_acquire_trigger_mode": "sequencer",
+        "scope_hardware_averaging": True,
         "sampling_rate": 1000000000,
         "integration": True,
         "integration_length": 2000,
@@ -82,10 +78,12 @@ class Galadriel:
         "acquisition_timeout": 1,
         "acquisition_delay_time": 100,
         "frequency": 20000000,
-        "epsilon": 0,
-        "delta": 0,
-        "offset_i": 0,
-        "offset_q": 0,
+        "num_sequencers": 2,
+        "gain": [0.5, 0.5],
+        "epsilon": [0, 0],
+        "delta": [0, 0],
+        "offset_i": [0, 0],
+        "offset_q": [0, 0],
     }
 
     rohde_schwarz_0 = {
@@ -136,7 +134,7 @@ class Galadriel:
         "nodes": [
             {"name": "port", "id_": 0, "nodes": [3]},
             {"name": "port", "id_": 1, "nodes": [2]},
-            {"name": "resonator", "id_": 2, "alias": "resonator", "frequency": 7.34730e09, "nodes": [1]},
+            {"name": "resonator", "id_": 2, "alias": "resonator", "frequency": 7.34730e09, "nodes": [1, 3]},
             {"name": "qubit", "id_": 3, "alias": "qubit", "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0, 2]},
         ],
     }
@@ -220,28 +218,35 @@ class FluxQubit:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         RUNCARD.CATEGORY: "platform",
-        PLATFORM.PULSES: {
-            "delay_between_pulses": 0,
-            "delay_before_readout": 40,
-            "gates": [
-                {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 100,
-                    "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
-                },
-            ],
-        },
+        "delay_between_pulses": 0,
+        "delay_before_readout": 40,
+        "gates": [
+            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
+            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "X",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+            {
+                "name": "Y",
+                "amplitude": 1,
+                "phase": 1.5707963267948966,
+                "duration": 100,
+                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+            },
+        ],
+    }
+
+    chip = {
+        "id_": 0,
+        "category": "chip",
+        "nodes": [
+            {"name": "port", "id_": 0, "nodes": [1]},
+            {"name": "qubit", "id_": 1, "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0]},
+        ],
     }
 
     chip = {
@@ -322,19 +327,23 @@ results_two_loops = {
     "results": [
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                "threshold": [0.48046875],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                    "threshold": [0.48046875],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                "threshold": [0.4599609375],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                    "threshold": [0.4599609375],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
     ],
 }
@@ -355,19 +364,23 @@ results_one_loops = {
     "results": [
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                "threshold": [0.48046875],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                    "threshold": [0.48046875],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
         {
             "name": "qblox",
-            "bins": {
-                "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                "threshold": [0.4599609375],
-                "avg_cnt": [1024],
-            },
+            "bins": [
+                {
+                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                    "threshold": [0.4599609375],
+                    "avg_cnt": [1024],
+                }
+            ],
         },
     ],
 }

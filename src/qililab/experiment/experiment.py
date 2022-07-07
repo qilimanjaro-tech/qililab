@@ -143,7 +143,7 @@ class Experiment:
         results.add(result=result)
         # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
         # in the ground state for the last sequence. Find a way to plot all the sequences.
-        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
+        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0][0], 4))
         return results
 
     def _set_x_label(self, loop: Loop, x_value: float) -> str:
@@ -244,16 +244,15 @@ class Experiment:
             value (float): New value.
         """
         category = Category(instrument.value) if instrument is not None else None
-        if element is not None:
-            if isinstance(element, RuncardSchema.PlatformSettings):
-                element.set_parameter(alias=alias, parameter=parameter, value=value)
-            else:
-                element.set_parameter(parameter=parameter, value=value)  # type: ignore
-
-        else:
+        if element is None:
             self.platform.set_parameter(
                 alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
             )
+        elif isinstance(element, RuncardSchema.PlatformSettings):
+            element.set_parameter(alias=alias, parameter=parameter, value=value)
+        else:
+            element.set_parameter(parameter=parameter, value=value)  # type: ignore
+
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
@@ -284,7 +283,7 @@ class Experiment:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
         """
         if isinstance(sequence_list[0], Circuit):
-            translator = CircuitToPulses(settings=self.platform.pulses_settings)
+            translator = CircuitToPulses(settings=self.platform.settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
         return execution, sequence_list

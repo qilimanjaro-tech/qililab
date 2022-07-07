@@ -14,7 +14,7 @@ class I(HardwareGate):  # pylint: disable=invalid-name # noqa: E742
     class_type = gates.I
 
     @classmethod
-    def translate(cls, gate: gates.X) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.I) -> HardwareGate.HardwareGateSettings:  # noqa: E741
         """Translate gate into pulse.
 
         Returns:

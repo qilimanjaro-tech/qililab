@@ -295,6 +295,7 @@ class Parameter(Enum):
     HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
+    SEQUENCE_TIMEOUT = "sequence_timeout"
 
 
 class ResultName(Enum):
