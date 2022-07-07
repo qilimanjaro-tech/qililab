@@ -126,8 +126,7 @@ class QbloxResult(Result):
                     acq = acq[-1]  # FIXME: Here we use -1 to get the last bin. Do we really want this?
                 probs.append((acq[2], acq[2]))
         if self.scope is not None:  # TODO: Integrate data when scope is not None.
-            for acq in acquisitions:
-                probs.append((acq[0][-1], acq[0][-1]))
+            probs.extend((acq[0][-1], acq[0][-1]) for acq in acquisitions)
         return probs
 
     def plot(self):

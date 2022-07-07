@@ -63,6 +63,7 @@ class MixerBasedSystemControl(SystemControl):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
+            self.signal_generator.setup()
         return self.awg.run(
             pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
         )

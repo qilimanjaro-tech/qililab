@@ -5,7 +5,7 @@ from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
-from qililab.typings import BusSubcategory, Category, Parameter, yaml
+from qililab.typings import Category, Parameter, yaml
 
 
 class Platform:
@@ -58,22 +58,17 @@ class Platform:
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
 
-    def get_bus(self, port: int, bus_subcategory: BusSubcategory):
+    def get_bus(self, port: int):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
 
         Args:
             qubit_ids (List[int]): List of qubit IDs.
-            bus_subcategory (BusSubcategory): Type of bus. Options are "control" and "readout".
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.
         """
         return next(
-            (
-                (bus_idx, bus)
-                for bus_idx, bus in enumerate(self.buses)
-                if bus.port == port and bus.subcategory == bus_subcategory
-            ),
+            ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
             ([], None),
         )
 
