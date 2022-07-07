@@ -12,14 +12,14 @@ class LivePlot:
     connection: API | None
     plot_ids: List[int] = field(default_factory=list)
 
-    def create_live_plot(self, title: str, x_label: str, y_label: str, plot_type: str = "LINES"):
+    def create_live_plot(self, title: str, x_label: str, y_label: str, plot_type: str = "SCATTER3D"):
         """Create live plot
 
         Args:
             title (str): Title of the plot.
             x_label (str): Label of the x axis.
             y_label (str): Label of the y axis.
-            plot_type (str, optional): Plot type. Options are "LINES" or "...". Defaults to "LINES".
+            plot_type (str, optional): Plot type. Options are "LINES", "SCATTER3D" or "HEATMAP". Defaults to "LINES".
         """
         if self.connection is not None:
             self.plot_ids.append(
