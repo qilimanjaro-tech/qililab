@@ -91,14 +91,14 @@ def fixture_qrm(mock_pulsar: MagicMock):
         [
             "reference_source",
             "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
         ]
     )
-    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
     mock_instance.sequencer0.mock_add_spec(
         [
             "sync_en",

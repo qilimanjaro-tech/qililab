@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, List, Tuple
 
+import numpy as np
+
 from qililab.constants import RUNCARD
 from qililab.instruments.awg import AWG
 from qililab.instruments.instruments import Instruments
@@ -45,11 +47,11 @@ class MixerBasedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self, target_freqs: List[float]):
+    def setup(self, frequencies: List[float]):
         """Setup instruments."""
-        self.signal_generator.frequency = (
-            target_freqs[0] + self.awg.frequency
-        )  # FIXME: Now we only take the first frequency. Fix for multiple readout frequencies.
+        mean_freq = np.mean(frequencies)
+        self.signal_generator.frequency = mean_freq + self.awg.frequency
+        self.awg.multiplexing_frequencies = list(self.signal_generator.frequency - np.array(frequencies))
         self.awg.setup()
         self.signal_generator.setup()
 

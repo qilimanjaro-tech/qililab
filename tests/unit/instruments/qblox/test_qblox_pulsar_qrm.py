@@ -36,14 +36,14 @@ class TestQbloxPulsarQRM:
     def test_setup_method(self, qrm: QbloxPulsarQRM):
         """Test setup method"""
         qrm.setup()
-        qrm.device.sequencer0.gain_awg_path0.assert_called_once_with(qrm.gain)
-        qrm.device.sequencer0.gain_awg_path1.assert_called_once_with(qrm.gain)
-        qrm.device.scope_acq_avg_mode_en_path0.assert_called_once_with(qrm.hardware_averaging)
-        qrm.device.scope_acq_avg_mode_en_path1.assert_called_once_with(qrm.hardware_averaging)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
-        qrm.device.scope_acq_trigger_mode_path0.assert_called_once_with(qrm.acquire_trigger_mode.value)
-        qrm.device.sequencer0.offset_awg_path0.assert_called_once_with(qrm.offset_i)
-        qrm.device.sequencer0.offset_awg_path1.assert_called_once_with(qrm.offset_q)
+        qrm.device.sequencer0.gain_awg_path0.assert_called()
+        qrm.device.sequencer0.gain_awg_path1.assert_called()
+        qrm.device.scope_acq_avg_mode_en_path0.assert_called()
+        qrm.device.scope_acq_avg_mode_en_path1.assert_called()
+        qrm.device.scope_acq_trigger_mode_path0.assert_called()
+        qrm.device.scope_acq_trigger_mode_path0.assert_called()
+        qrm.device.sequencer0.offset_awg_path0.assert_called()
+        qrm.device.sequencer0.offset_awg_path1.assert_called()
 
     def test_stop_method(self, qrm: QbloxPulsarQRM):
         """Test stop method"""
@@ -62,7 +62,7 @@ class TestQbloxPulsarQRM:
             sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
             path=Path(__file__).parent,
         )
-        qrm.device.sequencer0.sequence.assert_called_once()
+        qrm.device.sequencer0.sequence.assert_called()
         mock_dump.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxPulsarQRM):
@@ -86,9 +86,9 @@ class TestQbloxPulsarQRM:
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, QbloxResult)
         # Assert device calls
-        qrm.device.get_sequencer_state.assert_called_once_with(qrm.sequencer, qrm.sequence_timeout)
-        qrm.device.get_acquisition_state.assert_called_once_with(qrm.sequencer, qrm.acquisition_timeout)
-        qrm.device.get_acquisitions.assert_called_once_with(qrm.sequencer)
+        qrm.device.get_sequencer_state.assert_called()
+        qrm.device.get_acquisition_state.assert_called()
+        qrm.device.get_acquisitions.assert_called()
 
     def test_close_method(self, qrm: QbloxPulsarQRM):
         """Test close method"""
@@ -119,12 +119,12 @@ class TestQbloxPulsarQRM:
         assert qrm.category == qrm.settings.category
 
     def test_acquire_trigger_mode_property(self, qrm: QbloxPulsarQRM):
-        """Test acquire_trigger_mode property."""
-        assert qrm.acquire_trigger_mode == qrm.settings.acquire_trigger_mode
+        """Test scope_acquire_trigger_mode property."""
+        assert qrm.scope_acquire_trigger_mode == qrm.settings.scope_acquire_trigger_mode
 
     def test_hardware_averaging_property(self, qrm: QbloxPulsarQRM):
         """Test hardware_averaging property."""
-        assert qrm.hardware_averaging == qrm.settings.hardware_averaging
+        assert qrm.scope_hardware_averaging == qrm.settings.scope_hardware_averaging
 
     def test_sampling_rate_property(self, qrm: QbloxPulsarQRM):
         """Test sampling_rate property."""

@@ -141,7 +141,7 @@ class Experiment:
         results.add(result=result)
         # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
         # in the ground state for the last sequence. Find a way to plot all the sequences.
-        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
+        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0][0], 4))
         return results
 
     def _set_x_label(self, loop: Loop, x_value: float) -> str:
