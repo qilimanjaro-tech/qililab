@@ -59,8 +59,6 @@ class Loop:
         Returns:
             list: Range of values of all loops.
         """
-        if self.loop is None:
-            raise ValueError("Loop must not be None.")
         ranges = [loop.range for loop in self.loops]
         return np.array(ranges, dtype=object).squeeze()
 
