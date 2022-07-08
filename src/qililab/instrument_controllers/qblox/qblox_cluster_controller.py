@@ -31,6 +31,7 @@ class QbloxClusterController(MultiInstrumentController):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
         def __post_init__(self):
+            super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
     settings: QbloxClusterControllerSettings

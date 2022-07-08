@@ -1,10 +1,11 @@
 """Instrument Controller class"""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Type, get_type_hints
 
+from qililab.config import logger
 from qililab.connections.connection import Connection
-from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
+from qililab.constants import INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
 from qililab.instrument_controllers.utils.loader import (
     replace_modules_from_settings_with_instrument_objects,
 )
@@ -14,7 +15,6 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings.enums import (
-    Category,
     InstrumentControllerName,
     InstrumentControllerSubCategory,
 )
@@ -22,7 +22,7 @@ from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
 
-@dataclass
+@dataclass(kw_only=True)
 class InstrumentControllerSettings(DDBBElement):
     """Contains the settings of a specific Instrument Controller.
     Args:
@@ -34,22 +34,15 @@ class InstrumentControllerSettings(DDBBElement):
 
     connection: Connection
     modules: List[InstrumentReference]
-    subcategory: InstrumentControllerSubCategory = field(
-        init=False
-    )  # a subtype of settings must be specified by the subclass
+    subcategory: InstrumentControllerSubCategory  # a subtype of settings must be specified by the subclass
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
         super().__post_init__()
         if self.connection and isinstance(self.connection, dict):
             # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
-            self.connection = Factory.get(name=self.connection.pop(RUNCARD.NAME))(
-                **self.connection  # pylint: disable=not-a-mapping
-            )
-        self.modules = [
-            InstrumentReference(category=Category(category), alias=alias, slot_id=slot_id)
-            for category, alias, slot_id in self.modules
-        ]
+            self.connection = Factory.get(name=self.connection.pop(RUNCARD.NAME))(settings=self.connection)
+        self.modules = [InstrumentReference.from_dict(settings=module) for module in self.modules]
 
 
 class InstrumentController(BusElement, ABC):

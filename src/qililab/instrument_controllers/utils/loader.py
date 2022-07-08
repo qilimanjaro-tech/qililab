@@ -7,9 +7,9 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.typings.enums import Category
 
 
-def _get_instrument_or_raise_error_when_not_found(instruments: Instruments, category: str, alias: str):
+def _get_instrument_or_raise_error_when_not_found(instruments: Instruments, category: Category, alias: str):
     """get instrument or raise error when not found"""
-    instrument = instruments.get_instrument(alias=alias, category=Category(category))
+    instrument = instruments.get_instrument(alias=alias, category=category)
     if instrument is None:
         raise ValueError(f"No instrument object found for category {category} and value {alias}.")
     return instrument
@@ -29,6 +29,6 @@ def replace_modules_from_settings_with_instrument_objects(
         List[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
     """
     return [
-        _get_instrument_or_raise_error_when_not_found(instruments=instruments, category=name, alias=value)
-        for name, value, _ in instrument_references
+        _get_instrument_or_raise_error_when_not_found(instruments=instruments, category=category[1], alias=alias[1])
+        for category, alias, _ in instrument_references
     ]

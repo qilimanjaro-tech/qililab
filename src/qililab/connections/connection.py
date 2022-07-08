@@ -2,7 +2,7 @@
 from abc import ABC
 from dataclasses import asdict, dataclass
 from functools import partial
-from typing import Callable, Type, get_type_hints
+from typing import Callable
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
@@ -60,8 +60,7 @@ class Connection(ABC, FactoryElement):
             return self._method(ref, *args, **kwargs)
 
     def __init__(self, settings: dict):
-        settings_class: Type[self.ConnectionSettings] = get_type_hints(RUNCARD.SETTINGS)  # type: ignore
-        self.settings = settings_class(**settings)
+        self.settings = self.ConnectionSettings(**settings)
         self._connected = False
         self._device: Device | None = None
         self._device_name = ""

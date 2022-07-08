@@ -29,6 +29,7 @@ class SGS100AController(SingleInstrumentController):
         """Contains the settings of a specific SGS100A Controller."""
 
         def __post_init__(self):
+            super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
     settings: SGS100AControllerSettings

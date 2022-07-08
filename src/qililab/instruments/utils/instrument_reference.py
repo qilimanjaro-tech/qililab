@@ -26,10 +26,27 @@ class InstrumentReference:
         """Iterate over InstrumentReference elements.
 
         Yields:
-            Tuple[str, str]: _description_
+            Tuple[Tuple[str, Category], Tuple[str, int], Tuple[str, int]]: category, alias and slot_id
         """
-        yield self.category.value, self.alias, self.slot_id
+        yield from self.__dict__.items()
 
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
         return {self.category.value: self.alias, INSTRUMENTREFERENCE.SLOT_ID: self.slot_id}
+
+    @classmethod
+    def from_dict(cls, settings: dict):
+        """Build an InstrumentReference from a settings dictionary
+
+        Args:
+            settings (dict): an instrument reference from the settings file
+        """
+        for name, value in settings.items():
+            if name == INSTRUMENTREFERENCE.SLOT_ID:
+                slot_id = value
+                continue
+            if Category(name):
+                category = name
+                alias = value
+                continue
+        return InstrumentReference(category=Category(category), alias=alias, slot_id=slot_id)

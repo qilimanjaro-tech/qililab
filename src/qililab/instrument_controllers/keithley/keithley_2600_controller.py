@@ -29,6 +29,7 @@ class Keithley2600Controller(SingleInstrumentController):
         """Contains the settings of a specific Keithley2600 Controller."""
 
         def __post_init__(self):
+            super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
     settings: Keithley2600ControllerSettings

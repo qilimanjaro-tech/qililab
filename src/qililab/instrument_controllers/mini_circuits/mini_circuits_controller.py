@@ -29,6 +29,7 @@ class MiniCircuitsController(SingleInstrumentController):
         """Contains the settings of a specific MiniCircuits Controller."""
 
         def __post_init__(self):
+            super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
     settings: MiniCircuitsControllerSettings

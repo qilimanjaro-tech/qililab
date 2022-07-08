@@ -5,7 +5,13 @@ from typing import Dict, List, Type
 from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, U2, I, M, X, Y
 
-from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD, SCHEMA
+from qililab.constants import (
+    CONNECTION,
+    INSTRUMENTCONTROLLER,
+    INSTRUMENTREFERENCE,
+    RUNCARD,
+    SCHEMA,
+)
 from qililab.typings.enums import (
     Category,
     ConnectionName,
@@ -48,19 +54,27 @@ class Galadriel:
 
     pulsar_controller_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.3"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.AWG: InstrumentName.QBLOX_QCM}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.3",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.AWG.value: InstrumentName.QBLOX_QCM.value,
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     qblox_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.QBLOX_QCM,
-        RUNCARD.ALIAS: InstrumentName.QBLOX_QCM,
-        RUNCARD.CATEGORY: Category.AWG,
+        RUNCARD.NAME: InstrumentName.QBLOX_QCM.value,
+        RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
+        RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
         "reference_clock": "internal",
         "sync_enabled": True,
@@ -76,19 +90,27 @@ class Galadriel:
 
     pulsar_controller_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.4"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.AWG: InstrumentName.QBLOX_QRM}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.4",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     qblox_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.QBLOX_QRM,
-        RUNCARD.ALIAS: InstrumentName.QBLOX_QRM,
-        RUNCARD.CATEGORY: Category.AWG,
+        RUNCARD.NAME: InstrumentName.QBLOX_QRM.value,
+        RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
+        RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
         "reference_clock": "external",
         "sync_enabled": True,
@@ -113,75 +135,108 @@ class Galadriel:
 
     rohde_schwarz_controller_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.10"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.SIGNAL_GENERATOR: "rs_0"}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.10",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.SIGNAL_GENERATOR.value: "rs_0",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     rohde_schwarz_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rs_0",
-        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR,
+        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         "firmware": "4.30.046.295",
         "power": 15,
     }
 
     rohde_schwarz_controller_1 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.7"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.SIGNAL_GENERATOR: "rs_1"}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.7",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.SIGNAL_GENERATOR.value: "rs_1",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     rohde_schwarz_1 = {
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rs_1",
-        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR,
+        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         "firmware": "4.30.046.295",
         "power": 15,
     }
 
     attenuator_controller_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
+        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS.value,
         RUNCARD.ALIAS: "attenuator_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.222"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.ATTENUATOR: "attenuator"}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.222",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.ATTENUATOR.value: "attenuator",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     attenuator = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS,
+        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS.value,
         RUNCARD.ALIAS: "attenuator",
-        RUNCARD.CATEGORY: Category.ATTENUATOR,
+        RUNCARD.CATEGORY: Category.ATTENUATOR.value,
         "attenuation": 30,
         "firmware": None,
     }
 
     keithley_2600_controller_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600,
+        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600.value,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE,
-        INSTRUMENTCONTROLLER.CONNECTION: {RUNCARD.NAME: ConnectionName.TCP_IP, CONNECTION.ADDRESS: "192.168.0.112"},
-        INSTRUMENTCONTROLLER.MODULES: [{Category.DC_SOURCE: "keithley_2600"}],
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.0.112",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.DC_SOURCE.value: "keithley_2600",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
     }
 
     keithley_2600 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.KEITHLEY2600,
+        RUNCARD.NAME: InstrumentName.KEITHLEY2600.value,
         RUNCARD.ALIAS: "keithley_2600",
-        RUNCARD.CATEGORY: Category.DC_SOURCE,
+        RUNCARD.CATEGORY: Category.DC_SOURCE.value,
         "firmware": None,
         "max_current": 0.1,
         "max_voltage": 20.0,
@@ -241,6 +296,7 @@ class Galadriel:
         SCHEMA.INSTRUMENTS: instruments,
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: buses,
+        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
     runcard = {

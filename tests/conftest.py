@@ -9,6 +9,18 @@ from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
+from qililab.instrument_controllers.keithley.keithley_2600_controller import (
+    Keithley2600Controller,
+)
+from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import (
+    MiniCircuitsController,
+)
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
+    QbloxPulsarController,
+)
+from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
+    SGS100AController,
+)
 from qililab.instruments import (
     SGS100A,
     Attenuator,
@@ -35,6 +47,64 @@ from qililab.utils import Loop
 
 from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db()
+
+
+@pytest.fixture(name="schema")
+def fixture_schema(platform: Platform) -> Schema:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    return platform.schema
+
+
+@pytest.fixture(name="pulsar_controller_qcm")
+@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
+def fixture_pulsar_controller_qcm(mock_pulsar: MagicMock, platform: Platform):
+    """Return connected instance of QbloxPulsarController class"""
+    # add dynamically created attributes
+    mock_instance = mock_pulsar.return_value
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "scope_acq_sequencer_select",
+        ]
+    )
+    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencer0.mock_add_spec(
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+            "set",
+            "offset_awg_path0",
+            "offset_awg_path1",
+        ]
+    )
+    # connect to instrument
+    settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
+    settings.pop("name")
+    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="qcm")
@@ -73,10 +143,51 @@ def fixture_qcm(mock_pulsar: MagicMock):
             "offset_awg_path1",
         ]
     )
-    # connect to instrument
     settings = copy.deepcopy(Galadriel.qblox_qcm_0)
     settings.pop("name")
     return QbloxQCM(settings=settings)
+
+
+@pytest.fixture(name="pulsar_controller_qrm")
+@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
+def fixture_pulsar_controller_qrm(mock_pulsar: MagicMock, platform: Platform):
+    """Return connected instance of QbloxPulsarController class"""
+    # add dynamically created attributes
+    mock_instance = mock_pulsar.return_value
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "scope_acq_sequencer_select",
+        ]
+    )
+    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencer0.mock_add_spec(
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+            "set",
+            "offset_awg_path0",
+            "offset_awg_path1",
+        ]
+    )
+    # connect to instrument
+    settings = copy.deepcopy(Galadriel.pulsar_controller_qrm_0)
+    settings.pop("name")
+    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="qrm")
@@ -121,6 +232,18 @@ def fixture_qrm(mock_pulsar: MagicMock):
     return QbloxQRM(settings=settings)
 
 
+@pytest.fixture(name="rohde_schwarz_controller")
+@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
+def fixture_rohde_schwarz_controller(mock_rs: MagicMock, platform: Platform):
+    """Return connected instance of SGS100A controller class"""
+    # add dynamically created attributes
+    mock_instance = mock_rs.return_value
+    mock_instance.mock_add_spec(["power", "frequency"])
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
+    settings.pop("name")
+    return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
+
+
 @pytest.fixture(name="rohde_schwarz")
 @patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
 def fixture_rohde_schwarz(mock_rs: MagicMock):
@@ -130,8 +253,22 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
     mock_instance.mock_add_spec(["power", "frequency"])
     settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
     settings.pop("name")
-    rohde_schwarz = SGS100A(settings=settings)
-    return rohde_schwarz
+    return SGS100A(settings=settings)
+
+
+@pytest.fixture(name="keithley_2600_controller")
+@patch("qililab.instruments.keithley.keithley_2600.Keithley2600Driver", autospec=True)
+def fixture_keithley_2600_controller(mock_driver: MagicMock, platform: Platform):
+    """Return connected instance of Keithley2600Controller class"""
+    # add dynamically created attributes
+    mock_instance = mock_driver.return_value
+    mock_instance.smua = MagicMock(KeithleyChannel)
+    mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
+    settings = copy.deepcopy(Galadriel.keithley_2600_controller_0)
+    settings.pop("name")
+    keithley_2600 = Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
+    mock_driver.assert_called()
+    return keithley_2600
 
 
 @pytest.fixture(name="keithley_2600")
@@ -149,14 +286,16 @@ def fixture_keithley_2600(mock_driver: MagicMock):
     return keithley_2600
 
 
-@pytest.fixture(name="schema")
-def fixture_schema(platform: Platform) -> Schema:
+@pytest.fixture(name="attenuator_controller")
+def fixture_attenuator_controller(platform: Platform) -> MiniCircuitsController:
     """Load Schema.
 
     Returns:
         Schema: Instance of the Schema class.
     """
-    return platform.schema
+    settings = copy.deepcopy(Galadriel.attenuator_controller_0)
+    settings.pop("name")
+    return MiniCircuitsController(settings=settings, loaded_instruments=platform.instruments)
 
 
 @pytest.fixture(name="attenuator")
@@ -328,12 +467,6 @@ def fixture_simulated_platform() -> Platform:
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
-
-
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return platform_db()
 
 
 @pytest.fixture(name="loop")
