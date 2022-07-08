@@ -40,16 +40,26 @@ class Loop:
 
     @property
     def range(self) -> np.ndarray:
-        """ExperimentLoop 'range' property.
+        """Loop 'range' property.
 
         Returns:
-            ndarray: Range of values of loop.
+            ndarray: Range of values of first loop.
         """
         if self.num is not None:
             return np.linspace(start=self.start, stop=self.stop, num=self.num)
         if self.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
         raise ValueError("Please specify either 'step' or 'num' arguments.")
+
+    @property
+    def ranges(self) -> np.ndarray:
+        """Loop 'ranges' property.
+
+        Returns:
+            list: Range of values of all loops.
+        """
+        ranges = [loop.range for loop in self.loops]
+        return np.array(ranges, dtype=object)
 
     @property
     def shape(self) -> List[int]:
@@ -75,12 +85,21 @@ class Loop:
         Returns:
             int: Number of nested loops.
         """
-        num_loops = 0
+        return len(self.loops)
+
+    @property
+    def loops(self) -> List[Loop]:
+        """Loop 'loops' property.
+
+        Returns:
+            List[Loop]: List of loop objects.
+        """
+        loops = []
         loop: Loop | None = self
         while loop is not None:
-            num_loops += 1
+            loops.append(loop)
             loop = loop.loop
-        return num_loops
+        return loops
 
     def to_dict(self) -> dict:
         """Convert class to a dictionary.

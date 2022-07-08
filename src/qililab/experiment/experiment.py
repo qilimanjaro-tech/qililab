@@ -69,7 +69,8 @@ class Experiment:
         path = self._create_folder()
         self._create_results_file(path=path)
         self._dump_experiment_data(path=path)
-        plot = LivePlot(connection=connection)
+        plot = LivePlot(connection=connection, loop=self.loop)
+        plot.create_live_plot(title=self.name)
         results = Results(
             software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
         )
@@ -121,9 +122,6 @@ class Experiment:
         if loop is None:
             return self._execute_and_process_results(results=results, path=path, plot=plot, x_value=x_value)
 
-        if loop.loop is None:
-            x_label = self._set_x_label(loop=loop, x_value=x_value)
-            plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
         self._process_loop(results=results, loop=loop, depth=depth, path=path, plot=plot)
         return results
 
@@ -143,34 +141,8 @@ class Experiment:
         results.add(result=result)
         # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
         # in the ground state for the last sequence. Find a way to plot all the sequences.
-        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0][0], 4))
+        plot.send_points(value=np.round(result[-1].probabilities()[0][0], 4))
         return results
-
-    def _set_x_label(self, loop: Loop, x_value: float) -> str:
-        """Create x label for live plotting.
-
-        Args:
-            loop (Loop): Loop class.
-            x_value (float): X value used in live plotting.
-
-        Returns:
-            str: X label.
-        """
-        instrument_name = (
-            loop.alias
-            if loop.alias is not None
-            else f"{loop.instrument.value if loop.instrument is not None else None} {loop.id_}"
-        )
-        x_label = f"{instrument_name}: {loop.parameter.value} "
-        if loop.previous is not None:
-            instrument_name = (
-                loop.previous.alias
-                if loop.previous.alias is not None
-                else f"{loop.previous.instrument.value if loop.previous.instrument is not None else None}"
-                + f"{loop.previous.id_}"
-            )
-            x_label += f"({instrument_name}:" + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
-        return x_label
 
     def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
@@ -215,9 +187,6 @@ class Experiment:
         Returns:
             List[Result]: List of Result object for each pulse sequence.
         """
-        if plot is not None:
-            plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
-
         return self.execution.run(
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,

@@ -146,9 +146,6 @@ class QbloxModule(AWG):
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
-        Args:
-            nshots (int): Number of hardware shots.
-
         Returns:
             Acquisitions: Acquisitions object.
         """

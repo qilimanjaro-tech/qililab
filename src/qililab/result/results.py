@@ -100,10 +100,5 @@ class Results:
             list: Values of the loops.
         """
         if self.loop is None:
-            raise ValueError("Loop must not be None.")
-        ranges = []
-        loop: Loop | None = self.loop
-        while loop is not None:
-            ranges.append(loop.range)
-            loop = loop.loop
-        return np.array(ranges, dtype=object).squeeze()
+            raise ValueError("Results doesn't contain a loop.")
+        return self.loop.ranges.squeeze()
