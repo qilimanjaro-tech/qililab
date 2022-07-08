@@ -13,4 +13,12 @@ from qililab.typings.enums import (
 class FactoryElement:
     """Class FactoryElement"""
 
-    name: SystemControlSubcategory | PulseShapeName | ResultName | InstrumentName | NodeName | ConnectionName | InstrumentControllerName
+    name: (
+        SystemControlSubcategory
+        | PulseShapeName
+        | ResultName
+        | InstrumentName
+        | NodeName
+        | ConnectionName
+        | InstrumentControllerName
+    )
