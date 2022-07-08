@@ -38,7 +38,7 @@ from .side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="qcm")
-@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
 def fixture_qcm(mock_pulsar: MagicMock):
     """Return connected instance of QbloxQCM class"""
     # add dynamically created attributes
@@ -80,7 +80,7 @@ def fixture_qcm(mock_pulsar: MagicMock):
 
 
 @pytest.fixture(name="qrm")
-@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
+@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
 def fixture_qrm(mock_pulsar: MagicMock):
     """Return connected instance of QbloxQRM class"""
     # add dynamically created attributes
