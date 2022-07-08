@@ -3,9 +3,14 @@ from typing import List
 
 from qililab.chip import Chip
 from qililab.constants import RUNCARD, SCHEMA
-from qililab.instrument_controllers import InstrumentController, InstrumentControllers
-from qililab.instrument_controllers.utils import InstrumentControllerFactory
-from qililab.instruments import Instrument, InstrumentFactory, Instruments
+from qililab.instrument_controllers.instrument_controller import InstrumentController
+from qililab.instrument_controllers.instrument_controllers import InstrumentControllers
+from qililab.instrument_controllers.utils.instrument_controller_factory import (
+    InstrumentControllerFactory,
+)
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
 

@@ -5,8 +5,11 @@ from typing import List, Type, get_type_hints
 
 from qililab.connections.connection import Connection
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
-from qililab.instrument_controllers.utils import loader
-from qililab.instruments import Instrument, Instruments
+from qililab.instrument_controllers.utils.loader import (
+    replace_modules_from_settings_with_instrument_objects,
+)
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
@@ -74,7 +77,7 @@ class InstrumentController(BusElement, ABC):
     def __init__(self, settings: dict, loaded_instruments: Instruments):
         settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
-        self.modules = loader.replace_modules_from_settings_with_instrument_objects(
+        self.modules = replace_modules_from_settings_with_instrument_objects(
             instruments=loaded_instruments,
             instrument_references=self.settings.modules,
         )
