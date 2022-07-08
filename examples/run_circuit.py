@@ -2,9 +2,8 @@
 import os
 from pathlib import Path
 
-import numpy as np
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, M, X
+from qibo.gates import M, X
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
@@ -32,7 +31,7 @@ def run_circuit(connection: API | None = None):
 
 if __name__ == "__main__":
     configuration = ConnectionConfiguration(  # pylint: disable=no-value-for-parameter
-        username="amitjans", api_key="df187271-81e3-45d4-b420-f9c8b79b3b41"
+        username="test-user", api_key="test-api-key"
     )
     api = API(configuration=configuration)
     run_circuit(connection=api)
