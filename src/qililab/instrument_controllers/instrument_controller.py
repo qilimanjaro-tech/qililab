@@ -37,6 +37,7 @@ class InstrumentControllerSettings(DDBBElement):
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
+        super().__post_init__()
         if self.connection and isinstance(self.connection, dict):
             # Pop the connection name from the dictionary and instantiate its corresponding Connection class.
             self.connection = Factory.get(name=self.connection.pop(RUNCARD.NAME))(
