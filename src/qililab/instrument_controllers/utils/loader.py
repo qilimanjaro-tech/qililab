@@ -5,20 +5,17 @@ from typing import List
 
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
-from qililab.typings.enums import Category
 
 
 @dataclass
 class Loader:
     """Loads the Instruments supported types froom the Instrument References"""
 
-    def _get_instrument_or_raise_error_when_not_found_or_not_supported_type(
-        self, instruments: Instruments, category: Category, alias: str
-    ):
+    def _get_instrument_or_raise_error_when_not_found_or_not_supported_type(self, instruments: Instruments, alias: str):
         """get instrument or raise error when not found"""
-        instrument = instruments.get_instrument(alias=alias, category=category)
+        instrument = instruments.get_instrument(alias=alias)
         if instrument is None:
-            raise ValueError(f"No instrument object found for category {category} and value {alias}.")
+            raise ValueError(f"No instrument object found for alias {alias}.")
 
         return instrument
 
@@ -39,7 +36,7 @@ class Loader:
         """
         return [
             self._get_instrument_or_raise_error_when_not_found_or_not_supported_type(
-                instruments=instruments, category=category[1], alias=alias[1]
+                instruments=instruments, alias=alias[1]
             )
-            for category, alias, _ in instrument_references
+            for _, alias, _ in instrument_references
         ]

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qibo.core.circuit import Circuit
 from qibo.gates import M
 from qiboconnection.api import API
@@ -49,6 +50,7 @@ class TestExperiment:
         assert isinstance(dictionary, dict)
 
     def test_from_dict_method(self, experiment: Experiment):
+        # sourcery skip: class-extract-method
         """Test from_dict method."""
         dictionary = experiment.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
@@ -81,8 +83,62 @@ class TestExperiment:
         str(experiment_all_platforms)
         str(experiment_all_platforms.settings)
 
-    def test_set_parameter_method(self, experiment: Experiment):
+    def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
+        """Test set_parameter method raising an error when device is not connected."""
+        with pytest.raises(AttributeError):
+            experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+
+    @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+    @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+    @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+    @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+    def test_set_parameter_method_with_a_connected_device(
+        self,
+        mock_urllib: MagicMock,
+        mock_keithley: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment: Experiment,  # pylint: disable=unused-argument
+    ):
         """Test set_parameter method."""
+        # add dynamically created attributes
+        mock_instance = mock_pulsar.return_value
+        mock_instance.mock_add_spec(
+            [
+                "reference_source",
+                "sequencer0",
+                "scope_acq_trigger_mode_path0",
+                "scope_acq_trigger_mode_path1",
+                "scope_acq_sequencer_select",
+                "scope_acq_avg_mode_en_path0",
+                "scope_acq_avg_mode_en_path1",
+            ]
+        )
+        mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
+        mock_instance.sequencer0.mock_add_spec(
+            [
+                "sync_en",
+                "gain_awg_path0",
+                "gain_awg_path1",
+                "sequence",
+                "mod_en_awg",
+                "nco_freq",
+                "scope_acq_sequencer_select",
+                "channel_map_path0_out0_en",
+                "channel_map_path1_out1_en",
+                "demod_en_acq",
+                "integration_length_acq",
+                "set",
+                "offset_awg_path0",
+                "offset_awg_path1",
+            ]
+        )
+        mock_instance = mock_rs.return_value
+        mock_instance.mock_add_spec(["power", "frequency"])
+        mock_instance = mock_keithley.return_value
+        mock_instance.smua = MagicMock(KeithleyChannel)
+        mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
+        experiment.platform.connect()
         experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
