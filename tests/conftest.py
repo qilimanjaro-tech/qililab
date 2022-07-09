@@ -234,27 +234,30 @@ def fixture_qrm(mock_pulsar: MagicMock):
 
 
 @pytest.fixture(name="rohde_schwarz_controller")
-@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-def fixture_rohde_schwarz_controller(mock_rs: MagicMock, platform: Platform):
-    """Return connected instance of SGS100A controller class"""
-    # add dynamically created attributes
-    mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
+def fixture_rohde_schwarz_controller(platform: Platform):
+    """Return an instance of SGS100A controller class"""
     settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
     settings.pop("name")
     return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
 
 
+@pytest.fixture(name="rohde_schwarz_no_device")
+def fixture_rohde_schwarz_no_device():
+    """Return an instance of SGS100A class"""
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
+    settings.pop("name")
+    return SGS100A(settings=settings)
+
+
 @pytest.fixture(name="rohde_schwarz")
-@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-def fixture_rohde_schwarz(mock_rs: MagicMock):
+@patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AController):
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
-    settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
-    settings.pop("name")
-    return SGS100A(settings=settings)
+    rohde_schwarz_controller.connect()
+    return rohde_schwarz_controller.modules[0]
 
 
 @pytest.fixture(name="keithley_2600_controller")
@@ -282,7 +285,7 @@ def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keit
     mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
     keithley_2600_controller.connect()
     mock_driver.assert_called()
-    return cast(Keithley2600, keithley_2600_controller.modules[0])
+    return keithley_2600_controller.modules[0]
 
 
 @pytest.fixture(name="attenuator_controller")
