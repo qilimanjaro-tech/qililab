@@ -1,6 +1,5 @@
 """Pytest configuration fixtures."""
 import copy
-from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest

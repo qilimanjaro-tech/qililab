@@ -272,8 +272,8 @@ class Galadriel:
                 RUNCARD.ID: 0,
                 RUNCARD.CATEGORY: "system_control",
                 RUNCARD.SUBCATEGORY: "mixer_based_system_control",
-                "awg": "qblox_qcm",
-                "signal_generator": "rs_0",
+                Category.AWG.value: InstrumentName.QBLOX_QCM.value,
+                Category.SIGNAL_GENERATOR.value: "rs_0",
             },
             "port": 0,
         },
@@ -285,8 +285,8 @@ class Galadriel:
                 RUNCARD.ID: 1,
                 RUNCARD.CATEGORY: "system_control",
                 RUNCARD.SUBCATEGORY: "mixer_based_system_control",
-                "awg": "qblox_qrm",
-                "signal_generator": "rs_1",
+                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
+                Category.SIGNAL_GENERATOR.value: "rs_1",
             },
             "attenuator": "attenuator",
             "port": 1,
@@ -387,6 +387,7 @@ class FluxQubitSimulator:
 
     schema = {
         SCHEMA.INSTRUMENTS: [],
+        SCHEMA.INSTRUMENT_CONTROLLERS: [],
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: [
             {
