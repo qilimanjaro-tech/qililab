@@ -1,5 +1,6 @@
 """Pytest configuration fixtures."""
 import copy
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -281,7 +282,7 @@ def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keit
     mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
     keithley_2600_controller.connect()
     mock_driver.assert_called()
-    return keithley_2600_controller.modules[0]
+    return cast(Keithley2600, keithley_2600_controller.modules[0])
 
 
 @pytest.fixture(name="attenuator_controller")
@@ -296,8 +297,8 @@ def fixture_attenuator_controller(platform: Platform) -> MiniCircuitsController:
     return MiniCircuitsController(settings=settings, loaded_instruments=platform.instruments)
 
 
-@pytest.fixture(name="attenuator")
-def fixture_attenuator() -> Attenuator:
+@pytest.fixture(name="attenuator_no_device")
+def fixture_attenuator_no_device() -> Attenuator:
     """Load Schema.
 
     Returns:
@@ -306,6 +307,20 @@ def fixture_attenuator() -> Attenuator:
     settings = copy.deepcopy(Galadriel.attenuator)
     settings.pop("name")
     return Attenuator(settings=settings)
+
+
+@pytest.fixture(name="attenuator")
+@patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircuitsController) -> Attenuator:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    attenuator_controller.connect()
+    mock_urllib.request.Request.assert_called()
+    mock_urllib.request.urlopen.assert_called()
+    return attenuator_controller.modules[0]
 
 
 @pytest.fixture(name="pulse_sequences", params=experiment_params)

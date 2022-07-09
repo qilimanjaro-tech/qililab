@@ -322,3 +322,22 @@ class ConnectionName(Enum):
 
     TCP_IP = "tcp_ip"
     USB = "usb"
+
+
+class InstrumentTypeName(Enum):
+    """Instrument Type names (the name of the class).
+
+    Args:
+        enum (str): Available instrument type element names:
+        * QbloxQCM
+        * QbloxQRM
+        * SGS100A
+        * Attenuator
+        * Keithley2600
+    """
+
+    QBLOX_QCM = "QbloxQCM"
+    QBLOX_QRM = "QbloxQRM"
+    ROHDE_SCHWARZ = "SGS100A"
+    MINI_CIRCUITS = "Attenuator"
+    KEITHLEY2600 = "Keithley2600"

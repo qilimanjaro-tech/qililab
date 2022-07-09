@@ -1,5 +1,6 @@
 """ Keithley2600 Instrument Controller """
 from dataclasses import dataclass
+from typing import Sequence
 
 from qililab.instrument_controllers.single_instrument_controller import (
     SingleInstrumentController,
@@ -7,8 +8,13 @@ from qililab.instrument_controllers.single_instrument_controller import (
 from qililab.instrument_controllers.utils.instrument_controller_factory import (
     InstrumentControllerFactory,
 )
+from qililab.instruments.keithley.keithley_2600 import Keithley2600
 from qililab.typings import Keithley2600Driver
-from qililab.typings.enums import ConnectionName, InstrumentControllerName
+from qililab.typings.enums import (
+    ConnectionName,
+    InstrumentControllerName,
+    InstrumentTypeName,
+)
 
 
 @InstrumentControllerFactory.register
@@ -23,6 +29,7 @@ class Keithley2600Controller(SingleInstrumentController):
 
     name = InstrumentControllerName.KEITHLEY2600
     device: Keithley2600Driver
+    modules: Sequence[Keithley2600]
 
     @dataclass
     class Keithley2600ControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
@@ -39,3 +46,12 @@ class Keithley2600Controller(SingleInstrumentController):
         self.device = Keithley2600Driver(
             name=f"{self.name.value}_{self.id_}", address=f"TCPIP0::{self.address}::INSTR", visalib="@py"
         )
+
+    def _check_supported_modules(self):
+        """check if all instrument modules loaded are supported modules for the controller."""
+        for module in self.modules:
+            if not isinstance(module, Keithley2600):
+                raise ValueError(
+                    f"Instrument {type(module)} not supported."
+                    + f"The only supported instrument is {InstrumentTypeName.KEITHLEY2600}"
+                )

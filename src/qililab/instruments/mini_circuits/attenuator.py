@@ -1,7 +1,6 @@
 """Attenuator class."""
 from dataclasses import dataclass
 
-from qililab.connections import TCPIPConnection
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
@@ -29,7 +28,7 @@ class Attenuator(Instrument):
     settings: StepAttenuatorSettings
     device: MiniCircuitsDriver
 
-    @TCPIPConnection.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set instrument settings."""
         self.device.setup(attenuation=self.attenuation)

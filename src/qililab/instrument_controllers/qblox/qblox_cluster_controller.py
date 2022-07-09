@@ -1,5 +1,6 @@
 """Qblox Cluster Controller class"""
 from dataclasses import dataclass
+from typing import Sequence
 
 from qililab.instrument_controllers.multi_instrument_controller import (
     MultiInstrumentController,
@@ -7,7 +8,13 @@ from qililab.instrument_controllers.multi_instrument_controller import (
 from qililab.instrument_controllers.utils.instrument_controller_factory import (
     InstrumentControllerFactory,
 )
-from qililab.typings.enums import ConnectionName, InstrumentControllerName
+from qililab.instruments.qblox.qblox_qcm import QbloxQCM
+from qililab.instruments.qblox.qblox_qrm import QbloxQRM
+from qililab.typings.enums import (
+    ConnectionName,
+    InstrumentControllerName,
+    InstrumentTypeName,
+)
 from qililab.typings.instruments.cluster import Cluster
 
 
@@ -24,6 +31,7 @@ class QbloxClusterController(MultiInstrumentController):
     name = InstrumentControllerName.QBLOX_CLUSTER
     number_available_modules = 20
     device: Cluster
+    modules: Sequence[QbloxQCM | QbloxQRM]
 
     @dataclass
     class QbloxClusterControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
@@ -51,3 +59,13 @@ class QbloxClusterController(MultiInstrumentController):
         """Reset instrument."""
         super().reset()
         self.device.reset()
+
+    def _check_supported_modules(self):
+        """check if all instrument modules loaded are supported modules for the controller."""
+        for module in self.modules:
+            if not isinstance(module, QbloxQCM) and not isinstance(module, QbloxQRM):
+                raise ValueError(
+                    f"Instrument {type(module)} not supported."
+                    + f"The only supported instrument are {InstrumentTypeName.QBLOX_QCM} "
+                    + f"and {InstrumentTypeName.QBLOX_QRM}."
+                )

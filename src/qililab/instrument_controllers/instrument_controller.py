@@ -2,13 +2,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, List, Type, get_type_hints
+from typing import Callable, List, Sequence, Type, get_type_hints
 
 from qililab.connections.connection import Connection
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
-from qililab.instrument_controllers.utils.loader import (
-    replace_modules_from_settings_with_instrument_objects,
-)
+from qililab.instrument_controllers.utils.loader import Loader
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
@@ -56,7 +54,7 @@ class InstrumentController(BusElement, ABC):
         settings (InstrumentControllerSettings): Settings of the instrument controller.
         device (Device): Driver instance of the instrument to operate the instrument controller.
         number_available_modules (int): Number of modules available in the Instrument Controller.
-        modules (List[Instrument]): Actual Instruments classes that manages the Instrument Controller.
+        modules (Sequence[Instrument]): Actual Instruments classes that manages the Instrument Controller.
         connected_modules_slot_ids (List[int]): List with the slot ids from the connected instruments
     """
 
@@ -64,7 +62,7 @@ class InstrumentController(BusElement, ABC):
     settings: InstrumentControllerSettings  # a subtype of settings must be specified by the subclass
     device: Device  # a subtype of device must be specified by the subclass
     number_available_modules: int  # to be set by child classes
-    modules: List[Instrument]
+    modules: Sequence[Instrument]
     connected_modules_slot_ids: List[int]
 
     class CheckConnected:
@@ -91,7 +89,7 @@ class InstrumentController(BusElement, ABC):
     def __init__(self, settings: dict, loaded_instruments: Instruments):
         settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
-        self.modules = replace_modules_from_settings_with_instrument_objects(
+        self.modules = Loader().replace_modules_from_settings_with_instrument_objects(
             instruments=loaded_instruments,
             instrument_references=self.settings.modules,
         )
@@ -117,6 +115,10 @@ class InstrumentController(BusElement, ABC):
     def _set_connected_modules_slot_ids(self) -> List[int]:
         """Initialize the modules slot ids from the settings"""
         return [instrument_reference.slot_id for instrument_reference in self.settings.modules]
+
+    @abstractmethod
+    def _check_supported_modules(self):
+        """check if all instrument modules loaded are supported modules for the controller."""
 
     @abstractmethod
     def _initialize_device(self):
