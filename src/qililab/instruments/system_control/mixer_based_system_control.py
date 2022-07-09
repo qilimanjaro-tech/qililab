@@ -122,7 +122,9 @@ class MixerBasedSystemControl(SystemControl):
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
-        } | {key: value.alias for key, value in self}
+        } | dict(
+            self
+        )  # sourcery skip: remove-redundant-constructor-in-dict-union
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
