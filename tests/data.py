@@ -134,7 +134,7 @@ class Galadriel:
     }
 
     rohde_schwarz_controller_0 = {
-        RUNCARD.ID: 0,
+        RUNCARD.ID: 2,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
@@ -161,7 +161,7 @@ class Galadriel:
     }
 
     rohde_schwarz_controller_1 = {
-        RUNCARD.ID: 1,
+        RUNCARD.ID: 3,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
@@ -188,7 +188,7 @@ class Galadriel:
     }
 
     attenuator_controller_0 = {
-        RUNCARD.ID: 0,
+        RUNCARD.ID: 4,
         RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS.value,
         RUNCARD.ALIAS: "attenuator_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
@@ -215,7 +215,7 @@ class Galadriel:
     }
 
     keithley_2600_controller_0 = {
-        RUNCARD.ID: 0,
+        RUNCARD.ID: 5,
         RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600.value,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,

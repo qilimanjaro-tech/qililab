@@ -476,7 +476,7 @@ def buses() -> Buses:
     return platform.buses
 
 
-def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
+def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: MagicMock):
     """Mock dynamically created attributes."""
     mock_rs_instance = mock_rs.return_value
     mock_rs_instance.mock_add_spec(["power", "frequency"])
@@ -528,3 +528,6 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock):
             "offset_awg_path1",
         ]
     )
+    mock_keithley_instance = mock_keithley.return_value
+    mock_keithley_instance.smua = MagicMock(KeithleyChannel)
+    mock_keithley_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
