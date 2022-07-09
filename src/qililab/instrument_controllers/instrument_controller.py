@@ -239,6 +239,7 @@ class InstrumentController(BusElement, ABC):
             RUNCARD.NAME: self.name.value,
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.category.value,
+            RUNCARD.SUBCATEGORY: self.subcategory.value,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
             INSTRUMENTCONTROLLER.MODULES: [module.to_dict() for module in self.settings.modules],
         }
