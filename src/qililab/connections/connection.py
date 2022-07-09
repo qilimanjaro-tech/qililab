@@ -100,4 +100,4 @@ class Connection(ABC, FactoryElement):
 
     def to_dict(self):
         """Return a dict representation of the Connection class."""
-        return {RUNCARD.NAME: self.name} | asdict(self.settings)
+        return {RUNCARD.NAME: self.name.value} | asdict(self.settings)
