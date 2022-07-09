@@ -1,7 +1,6 @@
 """Qblox Cluster Controller class"""
 from dataclasses import dataclass
 
-from qililab.connections.connection import Connection
 from qililab.instrument_controllers.multi_instrument_controller import (
     MultiInstrumentController,
 )
@@ -47,7 +46,7 @@ class QbloxClusterController(MultiInstrumentController):
         for slot_id in self.connected_modules_slot_ids:
             self.modules[slot_id].device = self.device.modules[slot_id]
 
-    @Connection.CheckConnected
+    @MultiInstrumentController.CheckConnected
     def reset(self):
         """Reset instrument."""
         super().reset()

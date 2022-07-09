@@ -242,13 +242,14 @@ class Galadriel:
         "max_voltage": 20.0,
     }
 
-    instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator]
+    instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
     instrument_controllers = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
         rohde_schwarz_controller_0,
         rohde_schwarz_controller_1,
         attenuator_controller_0,
+        keithley_2600_controller_0,
     ]
 
     chip = {

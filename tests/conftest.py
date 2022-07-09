@@ -257,33 +257,31 @@ def fixture_rohde_schwarz(mock_rs: MagicMock):
 
 
 @pytest.fixture(name="keithley_2600_controller")
-@patch("qililab.instruments.keithley.keithley_2600.Keithley2600Driver", autospec=True)
-def fixture_keithley_2600_controller(mock_driver: MagicMock, platform: Platform):
+def fixture_keithley_2600_controller(platform: Platform):
     """Return connected instance of Keithley2600Controller class"""
-    # add dynamically created attributes
-    mock_instance = mock_driver.return_value
-    mock_instance.smua = MagicMock(KeithleyChannel)
-    mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
     settings = copy.deepcopy(Galadriel.keithley_2600_controller_0)
     settings.pop("name")
-    keithley_2600 = Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
-    mock_driver.assert_called()
-    return keithley_2600
+    return Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="keithley_2600_no_device")
+def fixture_keithley_2600_no_device():
+    """Return connected instance of Keithley2600 class"""
+    settings = copy.deepcopy(Galadriel.keithley_2600)
+    settings.pop("name")
+    return Keithley2600(settings=settings)
 
 
 @pytest.fixture(name="keithley_2600")
-@patch("qililab.instruments.keithley.keithley_2600.Keithley2600Driver", autospec=True)
-def fixture_keithley_2600(mock_driver: MagicMock):
+@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keithley2600Controller):
     """Return connected instance of Keithley2600 class"""
-    # add dynamically created attributes
     mock_instance = mock_driver.return_value
     mock_instance.smua = MagicMock(KeithleyChannel)
     mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
-    settings = copy.deepcopy(Galadriel.keithley_2600)
-    settings.pop("name")
-    keithley_2600 = Keithley2600(settings=settings)
+    keithley_2600_controller.connect()
     mock_driver.assert_called()
-    return keithley_2600
+    return keithley_2600_controller.modules[0]
 
 
 @pytest.fixture(name="attenuator_controller")

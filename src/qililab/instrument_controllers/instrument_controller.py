@@ -1,11 +1,11 @@
 """Instrument Controller class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Type, get_type_hints
+from functools import partial
+from typing import Callable, List, Type, get_type_hints
 
-from qililab.config import logger
 from qililab.connections.connection import Connection
-from qililab.constants import INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
+from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.utils.loader import (
     replace_modules_from_settings_with_instrument_objects,
 )
@@ -67,6 +67,27 @@ class InstrumentController(BusElement, ABC):
     modules: List[Instrument]
     connected_modules_slot_ids: List[int]
 
+    class CheckConnected:
+        """Property used to check if the connection has established with an instrument."""
+
+        def __init__(self, method: Callable):
+            self._method = method
+
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
+
+        def __call__(self, ref: "InstrumentController", *args, **kwargs):
+            """
+            Args:
+                method (Callable): Class method.
+
+            Raises:
+                AttributeError: If connection has not been established with an instrument.
+            """
+            ref.connection.check_instrument_is_connected()
+            return self._method(ref, *args, **kwargs)
+
     def __init__(self, settings: dict, loaded_instruments: Instruments):
         settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
@@ -98,7 +119,7 @@ class InstrumentController(BusElement, ABC):
         return [instrument_reference.slot_id for instrument_reference in self.settings.modules]
 
     @abstractmethod
-    def _initialize_device(self) -> Device:
+    def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
     @abstractmethod
@@ -107,7 +128,7 @@ class InstrumentController(BusElement, ABC):
 
     def _initialize_device_and_set_to_all_modules(self):
         """Initialize the Controller Device driver and sets it for all modules"""
-        self.device = self._initialize_device()
+        self._initialize_device()
         self._set_device_to_all_modules()
 
     def _release_device_to_all_modules(self):
@@ -120,19 +141,19 @@ class InstrumentController(BusElement, ABC):
         self.device = None
         self._release_device_to_all_modules()
 
-    @Connection.CheckConnected
+    @CheckConnected
     def stop(self):
         """Stop instrument."""
         for module in self.modules:
             module.stop()
 
-    @Connection.CheckConnected
+    @CheckConnected
     def reset(self):
         """Reset instrument."""
         for module in self.modules:
             module.reset()
 
-    @Connection.CheckConnected
+    @CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         for module in self.modules:

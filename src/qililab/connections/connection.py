@@ -92,6 +92,12 @@ class Connection(ABC, FactoryElement):
         """
         return self.settings.address
 
+    @CheckConnected
+    def check_instrument_is_connected(self):
+        """check if instrument has been connected and initialized.
+        It is checked via a decorator.
+        """
+
     def to_dict(self):
         """Return a dict representation of the Connection class."""
         return {RUNCARD.NAME: self.name} | asdict(self.settings)
