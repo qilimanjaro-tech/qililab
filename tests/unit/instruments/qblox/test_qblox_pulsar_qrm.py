@@ -43,7 +43,13 @@ class TestQbloxQRM:
         qrm.stop()
         qrm.device.stop_sequencer.assert_called_once()
 
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
+    def test_reset_method(self, qrm: QbloxQRM):
+        """Test reset method"""
+        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm.reset()
+        assert qrm._cache is None  # pylint: disable=protected-access
+
+    @patch("qililab.instruments.qblox.qblox_module.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxQRM):
         """Test upload method"""
         qrm.upload(
@@ -78,74 +84,74 @@ class TestQbloxQRM:
         qrm.device.get_acquisition_state.assert_called()
         qrm.device.get_acquisitions.assert_called()
 
-    def test_id_property(self, qrm: QbloxQRM):
+    def test_id_property(self, qrm_no_device: QbloxQRM):
         """Test id property."""
-        assert qrm.id_ == qrm.settings.id_
+        assert qrm_no_device.id_ == qrm_no_device.settings.id_
 
-    def test_name_property(self, qrm: QbloxQRM):
+    def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""
-        assert qrm.name == InstrumentName.QBLOX_QRM
+        assert qrm_no_device.name == InstrumentName.QBLOX_QRM
 
-    def test_category_property(self, qrm: QbloxQRM):
+    def test_category_property(self, qrm_no_device: QbloxQRM):
         """Test category property."""
-        assert qrm.category == qrm.settings.category
+        assert qrm_no_device.category == qrm_no_device.settings.category
 
-    def test_acquire_trigger_mode_property(self, qrm: QbloxQRM):
+    def test_acquire_trigger_mode_property(self, qrm_no_device: QbloxQRM):
         """Test scope_acquire_trigger_mode property."""
-        assert qrm.scope_acquire_trigger_mode == qrm.settings.scope_acquire_trigger_mode
+        assert qrm_no_device.scope_acquire_trigger_mode == qrm_no_device.settings.scope_acquire_trigger_mode
 
-    def test_hardware_averaging_property(self, qrm: QbloxQRM):
+    def test_hardware_averaging_property(self, qrm_no_device: QbloxQRM):
         """Test hardware_averaging property."""
-        assert qrm.scope_hardware_averaging == qrm.settings.scope_hardware_averaging
+        assert qrm_no_device.scope_hardware_averaging == qrm_no_device.settings.scope_hardware_averaging
 
-    def test_sampling_rate_property(self, qrm: QbloxQRM):
+    def test_sampling_rate_property(self, qrm_no_device: QbloxQRM):
         """Test sampling_rate property."""
-        assert qrm.sampling_rate == qrm.settings.sampling_rate
+        assert qrm_no_device.sampling_rate == qrm_no_device.settings.sampling_rate
 
-    def test_integration_length_property(self, qrm: QbloxQRM):
+    def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""
-        assert qrm.integration_length == qrm.settings.integration_length
+        assert qrm_no_device.integration_length == qrm_no_device.settings.integration_length
 
-    def test_integration_mode_property(self, qrm: QbloxQRM):
+    def test_integration_mode_property(self, qrm_no_device: QbloxQRM):
         """Test integration_mode property."""
-        assert qrm.integration_mode == qrm.settings.integration_mode
+        assert qrm_no_device.integration_mode == qrm_no_device.settings.integration_mode
 
-    def test_sequence_timeout_property(self, qrm: QbloxQRM):
+    def test_sequence_timeout_property(self, qrm_no_device: QbloxQRM):
         """Test sequence_timeout property."""
-        assert qrm.sequence_timeout == qrm.settings.sequence_timeout
+        assert qrm_no_device.sequence_timeout == qrm_no_device.settings.sequence_timeout
 
-    def test_acquisition_timeout_property(self, qrm: QbloxQRM):
+    def test_acquisition_timeout_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_timeout property."""
-        assert qrm.acquisition_timeout == qrm.settings.acquisition_timeout
+        assert qrm_no_device.acquisition_timeout == qrm_no_device.settings.acquisition_timeout
 
-    def test_acquisition_name_property(self, qrm: QbloxQRM):
+    def test_acquisition_name_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_name property."""
-        assert isinstance(qrm.acquisition_name, str)
+        assert isinstance(qrm_no_device.acquisition_name, str)
 
-    def tests_delay_time_property(self, qrm: QbloxQRM):
+    def tests_delay_time_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_delay_time property."""
-        assert qrm.acquisition_delay_time == qrm.settings.acquisition_delay_time
+        assert qrm_no_device.acquisition_delay_time == qrm_no_device.settings.acquisition_delay_time
 
-    def tests_firmware_property(self, qrm: QbloxQRM):
+    def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
-        assert qrm.firmware == qrm.settings.firmware
+        assert qrm_no_device.firmware == qrm_no_device.settings.firmware
 
-    def tests_frequency_property(self, qrm: QbloxQRM):
+    def tests_frequency_property(self, qrm_no_device: QbloxQRM):
         """Test frequency property."""
-        assert qrm.frequency == qrm.settings.frequency
+        assert qrm_no_device.frequency == qrm_no_device.settings.frequency
 
-    def tests_epsilon_property(self, qrm: QbloxQRM):
+    def tests_epsilon_property(self, qrm_no_device: QbloxQRM):
         """Test epsilon property."""
-        assert qrm.epsilon == qrm.settings.epsilon
+        assert qrm_no_device.epsilon == qrm_no_device.settings.epsilon
 
-    def tests_delta_property(self, qrm: QbloxQRM):
+    def tests_delta_property(self, qrm_no_device: QbloxQRM):
         """Test delta property."""
-        assert qrm.delta == qrm.settings.delta
+        assert qrm_no_device.delta == qrm_no_device.settings.delta
 
-    def tests_offset_i_property(self, qrm: QbloxQRM):
+    def tests_offset_i_property(self, qrm_no_device: QbloxQRM):
         """Test offset_i property."""
-        assert qrm.offset_i == qrm.settings.offset_i
+        assert qrm_no_device.offset_i == qrm_no_device.settings.offset_i
 
-    def tests_offset_q_property(self, qrm: QbloxQRM):
+    def tests_offset_q_property(self, qrm_no_device: QbloxQRM):
         """Test offset_q property."""
-        assert qrm.offset_q == qrm.settings.offset_q
+        assert qrm_no_device.offset_q == qrm_no_device.settings.offset_q

@@ -67,50 +67,24 @@ def fixture_schema(platform: Platform) -> Schema:
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
-@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
-def fixture_pulsar_controller_qcm(mock_pulsar: MagicMock, platform: Platform):
-    """Return connected instance of QbloxPulsarController class"""
-    # add dynamically created attributes
-    mock_instance = mock_pulsar.return_value
-    mock_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-            "scope_acq_sequencer_select",
-        ]
-    )
-    mock_instance.sequencers = [mock_instance.sequencer0]
-    mock_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "set",
-            "offset_awg_path0",
-            "offset_awg_path1",
-        ]
-    )
-    # connect to instrument
+def fixture_pulsar_controller_qcm(platform: Platform):
+    """Return an instance of QbloxPulsarController class"""
     settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
 
 
+@pytest.fixture(name="qcm_no_device")
+def fixture_qcm_no_device():
+    """Return an instance of QbloxQCM class"""
+    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+    settings.pop("name")
+    return QbloxQCM(settings=settings)
+
+
 @pytest.fixture(name="qcm")
-@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
-def fixture_qcm(mock_pulsar: MagicMock):
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
     """Return connected instance of QbloxQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -144,56 +118,29 @@ def fixture_qcm(mock_pulsar: MagicMock):
             "offset_awg_path1",
         ]
     )
-    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
-    settings.pop("name")
-    return QbloxQCM(settings=settings)
+    pulsar_controller_qcm.connect()
+    return pulsar_controller_qcm.modules[0]
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
-@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
-def fixture_pulsar_controller_qrm(mock_pulsar: MagicMock, platform: Platform):
-    """Return connected instance of QbloxPulsarController class"""
-    # add dynamically created attributes
-    mock_instance = mock_pulsar.return_value
-    mock_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-            "scope_acq_sequencer_select",
-        ]
-    )
-    mock_instance.sequencers = [mock_instance.sequencer0]
-    mock_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "set",
-            "offset_awg_path0",
-            "offset_awg_path1",
-        ]
-    )
-    # connect to instrument
+def fixture_pulsar_controller_qrm(platform: Platform):
+    """Return an instance of QbloxPulsarController class"""
     settings = copy.deepcopy(Galadriel.pulsar_controller_qrm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
 
 
+@pytest.fixture(name="qrm_no_device")
+def fixture_qrm_no_device():
+    """Return an instance of QbloxQRM class"""
+    settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+    settings.pop("name")
+    return QbloxQRM(settings=settings)
+
+
 @pytest.fixture(name="qrm")
-@patch("qililab.typings.instruments.pulsar.qblox_instruments.Pulsar", autospec=True)
-def fixture_qrm(mock_pulsar: MagicMock):
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarController):
     """Return connected instance of QbloxQRM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -228,9 +175,8 @@ def fixture_qrm(mock_pulsar: MagicMock):
         ]
     )
     # connect to instrument
-    settings = copy.deepcopy(Galadriel.qblox_qrm_0)
-    settings.pop("name")
-    return QbloxQRM(settings=settings)
+    pulsar_controller_qrm.connect()
+    return pulsar_controller_qrm.modules[0]
 
 
 @pytest.fixture(name="rohde_schwarz_controller")

@@ -77,11 +77,6 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self._set_acquisition_mode()
 
     @Instrument.CheckDeviceInitialized
-    def reset(self):
-        """Reset instrument."""
-        self.device.reset()
-
-    @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.

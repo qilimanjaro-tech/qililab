@@ -186,6 +186,12 @@ class QbloxModule(AWG):
         """Empty cache."""
         self._cache = None
 
+    @Instrument.CheckDeviceInitialized
+    def reset(self):
+        """Reset instrument."""
+        self.clear_cache()
+        self.device.reset()
+
     def upload(self, sequence: Sequence, path: Path):
         """Upload sequence to sequencer.
 

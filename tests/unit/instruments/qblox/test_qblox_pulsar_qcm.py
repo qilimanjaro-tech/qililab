@@ -2,7 +2,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
@@ -39,7 +38,13 @@ class TestQbloxQCM:
         qcm.stop()
         qcm.device.stop_sequencer.assert_called_once()
 
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
+    def test_reset_method(self, qrm: QbloxQCM):
+        """Test reset method"""
+        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm.reset()
+        assert qrm._cache is None  # pylint: disable=protected-access
+
+    @patch("qililab.instruments.qblox.qblox_module.json.dump", return_value=None)
     def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxQCM):
         """Test upload method"""
         qcm.upload(
@@ -49,22 +54,22 @@ class TestQbloxQCM:
         qcm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 
-    def test_id_property(self, qcm: QbloxQCM):
+    def test_id_property(self, qcm_no_device: QbloxQCM):
         """Test id property."""
-        assert qcm.id_ == qcm.settings.id_
+        assert qcm_no_device.id_ == qcm_no_device.settings.id_
 
-    def test_name_property(self, qcm: QbloxQCM):
+    def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
-        assert qcm.name == InstrumentName.QBLOX_QCM
+        assert qcm_no_device.name == InstrumentName.QBLOX_QCM
 
-    def test_category_property(self, qcm: QbloxQCM):
+    def test_category_property(self, qcm_no_device: QbloxQCM):
         """Test category property."""
-        assert qcm.category == qcm.settings.category
+        assert qcm_no_device.category == qcm_no_device.settings.category
 
-    def test_firmware_property(self, qcm: QbloxQCM):
+    def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
-        assert qcm.firmware == qcm.settings.firmware
+        assert qcm_no_device.firmware == qcm_no_device.settings.firmware
 
-    def test_frequency_property(self, qcm: QbloxQCM):
+    def test_frequency_property(self, qcm_no_device: QbloxQCM):
         """Test frequency property."""
-        assert qcm.frequency == qcm.settings.frequency
+        assert qcm_no_device.frequency == qcm_no_device.settings.frequency
