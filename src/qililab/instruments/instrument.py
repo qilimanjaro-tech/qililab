@@ -61,11 +61,11 @@ class Instrument(BusElement, ABC):
         settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
 
-    @CheckDeviceInitialized
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Redirect __setattr__ magic method."""
         self.settings.set_parameter(parameter=parameter, value=value)
-        self.setup()
+        if self.device:
+            self.setup()
 
     @CheckDeviceInitialized
     @abstractmethod
