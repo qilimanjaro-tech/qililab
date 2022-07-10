@@ -6,10 +6,10 @@ from typing import Callable, List, Sequence, Type, get_type_hints
 
 from qililab.connections.connection import Connection
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
-from qililab.instrument_controllers.utils.loader import Loader
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
+from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings.enums import (
@@ -238,6 +238,7 @@ class InstrumentController(BusElement, ABC):
         return {
             RUNCARD.NAME: self.name.value,
             RUNCARD.ID: self.id_,
+            RUNCARD.ALIAS: self.alias,
             RUNCARD.CATEGORY: self.category.value,
             RUNCARD.SUBCATEGORY: self.subcategory.value,
             INSTRUMENTCONTROLLER.CONNECTION: self.connection.to_dict(),
