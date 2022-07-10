@@ -96,42 +96,42 @@ class TestExecution:
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
-    # def test_execute_method_with_from_dict_experiment(
-    #     self,
-    #     mock_open_0: MagicMock,
-    #     mock_dump_0: MagicMock,
-    #     mock_makedirs: MagicMock,
-    #     mock_open_1: MagicMock,
-    #     mock_open_2: MagicMock,
-    #     mock_dump_1: MagicMock,
-    #     mock_rs: MagicMock,
-    #     mock_pulsar: MagicMock,
-    #     mock_urllib: MagicMock,
-    #     mock_keithley: MagicMock,
-    #     nested_experiment: Experiment,
-    # ):
-    #     """Test run method."""
-    #     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    #     nested_experiment_dict = nested_experiment.to_dict()
-    #     experiment = Experiment.from_dict(nested_experiment_dict)
-    #     results = experiment.execute()
-    #     results_2 = nested_experiment.execute()
-    #     mock_urllib.request.Request.assert_called()
-    #     mock_urllib.request.urlopen.assert_called()
-    #     assert results == results_2
-    #     mock_rs.assert_called()
-    #     mock_pulsar.assert_called()
-    #     assert isinstance(results, Results)
-    #     probabilities = results.probabilities()
-    #     acquisitions = results.acquisitions()
-    #     assert isinstance(probabilities, np.ndarray)
-    #     assert isinstance(acquisitions, np.ndarray)
-    #     mock_dump_0.assert_called()
-    #     mock_dump_1.assert_called()
-    #     mock_open_0.assert_called()
-    #     mock_open_1.assert_called()
-    #     mock_open_2.assert_called()
-    #     mock_makedirs.assert_called()
+    def test_execute_method_with_from_dict_experiment(
+        self,
+        mock_open_0: MagicMock,
+        mock_dump_0: MagicMock,
+        mock_makedirs: MagicMock,
+        mock_open_1: MagicMock,
+        mock_open_2: MagicMock,
+        mock_dump_1: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        mock_urllib: MagicMock,
+        mock_keithley: MagicMock,
+        nested_experiment: Experiment,
+    ):
+        """Test run method."""
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+        nested_experiment_dict = nested_experiment.to_dict()
+        experiment = Experiment.from_dict(nested_experiment_dict)
+        results = experiment.execute()
+        results_2 = nested_experiment.execute()
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
+        assert results == results_2
+        mock_rs.assert_called()
+        mock_pulsar.assert_called()
+        assert isinstance(results, Results)
+        probabilities = results.probabilities()
+        acquisitions = results.acquisitions()
+        assert isinstance(probabilities, np.ndarray)
+        assert isinstance(acquisitions, np.ndarray)
+        mock_dump_0.assert_called()
+        mock_dump_1.assert_called()
+        mock_open_0.assert_called()
+        mock_open_1.assert_called()
+        mock_open_2.assert_called()
+        mock_makedirs.assert_called()
 
     def test_execute_method_with_keyboard_interrupt(
         self,
