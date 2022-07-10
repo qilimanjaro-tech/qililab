@@ -2,7 +2,7 @@
 import pytest
 
 from qililab import save_platform
-from qililab.platform import Platform
+from qililab.platform import Platform, build_platform
 
 from ...conftest import platform_db, platform_yaml
 
@@ -16,3 +16,12 @@ class TestPlatform:
         save_platform(platform=platform)
         with pytest.raises(NotImplementedError):
             save_platform(platform=platform, database=True)
+
+
+class TestPlatformManagerYAML:
+    """Tests checking the Platform attributes and methods."""
+
+    def test_build_method(self):
+        """Test build method loading from YAML."""
+        platform = build_platform(name="galadriel", database=False)
+        assert isinstance(platform, Platform)
