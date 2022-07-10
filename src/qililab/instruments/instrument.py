@@ -64,7 +64,7 @@ class Instrument(BusElement, ABC):
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Redirect __setattr__ magic method."""
         self.settings.set_parameter(parameter=parameter, value=value)
-        if self.device:
+        if hasattr(self, "device"):
             self.setup()
 
     @CheckDeviceInitialized
