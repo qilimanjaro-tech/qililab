@@ -8,9 +8,11 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
-
+GALADRIEL_DEVICE_ID = 9
 
 # TODO: Distribute constants over different classes
+
+
 class RUNCARD:
     """YAML constants."""
 

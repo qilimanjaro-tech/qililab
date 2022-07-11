@@ -1,6 +1,8 @@
 """ExecutionBuilder class"""
 from typing import Dict, List
 
+from qiboconnection.api import API
+
 from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
@@ -12,7 +14,9 @@ from qililab.utils import Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_sequences: List[PulseSequences]) -> Execution:
+    def build(
+        self, platform: Platform, pulse_sequences: List[PulseSequences], connection: API | None, device_id: int | None
+    ) -> Execution:
         """Build Execution class.
 
         Returns:
@@ -20,7 +24,7 @@ class ExecutionBuilder(metaclass=Singleton):
         """
         buses_execution = self._build_buses_execution(platform=platform, pulse_sequences_list=pulse_sequences)
 
-        return Execution(buses_execution=buses_execution, platform=platform)
+        return Execution(buses_execution=buses_execution, platform=platform, connection=connection, device_id=device_id)
 
     def _build_buses_execution(self, platform: Platform, pulse_sequences_list: List[PulseSequences]):
         """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.
