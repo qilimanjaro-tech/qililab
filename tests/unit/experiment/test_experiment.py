@@ -82,8 +82,7 @@ class TestExperiment:
 
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
-        with pytest.raises(AttributeError):
-            experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
