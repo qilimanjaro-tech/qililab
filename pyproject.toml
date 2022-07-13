@@ -93,4 +93,5 @@ mdformat = true
 [tool.pytest.ini_options]
 filterwarnings = [
     'ignore::DeprecationWarning',
+    'ignore::PendingDeprecationWarning'
 ]
