@@ -151,13 +151,9 @@ class TestSimulatedExexution:
     ):
         """Test execute method with simulated qubit."""
         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        connection = MagicMock(name="API", spec=API, autospec=True)
-        connection.create_liveplot.return_value = 0
-        results = simulated_experiment.execute(connection=connection)  # type: ignore
+        results = simulated_experiment.execute()
         with pytest.raises(ValueError):
             results.acquisitions()
-        connection.create_liveplot.assert_called_once()
-        connection.send_plot_points.assert_called()
         mock_qutip.Options.assert_called()
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()

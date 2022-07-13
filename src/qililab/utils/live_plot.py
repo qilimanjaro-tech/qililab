@@ -4,8 +4,9 @@ from itertools import count
 from typing import Iterator, List
 
 import numpy as np
-from qiboconnection.api import API
+from qiboconnection.api import API as Connection
 
+from qililab.remote_connection import RemoteAPI
 from qililab.utils.loop import Loop
 
 
@@ -13,7 +14,7 @@ from qililab.utils.loop import Loop
 class LivePlot:
     """Plot class."""
 
-    connection: API | None
+    remote_api: RemoteAPI | None
     loop: Loop | None
     plot_ids: List[int] = field(default_factory=list)
     ranges: List[Iterator] = field(init=False)
@@ -58,7 +59,7 @@ class LivePlot:
             x_value (float): X value.
             y_value (float): Y value.
         """
-        if self.connection is not None and self.plot_ids:
+        if self.connection is not None:
             if self.plot_type == "SCATTER":
                 self.connection.send_plot_points(
                     plot_id=self.plot_ids[-1], x=float(next(self.ranges[0])), y=float(value)
@@ -133,6 +134,11 @@ class LivePlot:
             return self.label(loop=self.loop.loops[-1])
 
         return "Sequence idx"
+
+    @property
+    def connection(self) -> Connection | None:
+        """Return the Remote API connection if it is created"""
+        return None if self.remote_api is None else self.remote_api.connection
 
     def label(self, loop: Loop) -> str:
         """Return plot label from loop object.

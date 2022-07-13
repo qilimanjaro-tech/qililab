@@ -17,7 +17,6 @@ from qililab.constants import (
     DATA,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
-    GALADRIEL_DEVICE_ID,
     LOOP,
     RESULTS_FILENAME,
     RUNCARD,
@@ -25,6 +24,7 @@ from qililab.constants import (
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
+from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Instrument, Parameter
@@ -55,7 +55,7 @@ class Experiment:
         loop: Loop | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
         connection: API | None = None,
-        device_id: int = GALADRIEL_DEVICE_ID,
+        device_id: int | None = None,
         name: str = "experiment",
     ):
         self.platform = copy.deepcopy(platform)
@@ -65,30 +65,26 @@ class Experiment:
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
-        self.connection = connection
-        self.device_id = device_id
-        self.execution, self.sequences = self._build_execution(
-            sequence_list=self._initial_sequences, connection=self.connection, device_id=self.device_id
-        )
+        self.remote_api = RemoteAPI(connection=connection, device_id=device_id)
+        self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
-    def execute(self, connection: API | None) -> Results:
+    def execute(self) -> Results:
         """Run execution."""
-        if connection is not None:
-            self.connection = connection
-        path = self._create_folder()
-        self._create_results_file(path=path)
-        self._dump_experiment_data(path=path)
-        plot = LivePlot(connection=self.connection, loop=self.loop)
-        plot.create_live_plot(title=self.name)
-        results = Results(
-            software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
-        )
-        with self.execution:
-            try:
-                self._execute_loop(results=results, plot=plot, path=path)
-            except KeyboardInterrupt as error:  # pylint: disable=broad-except
-                logger.error("%s: %s", type(error).__name__, str(error))
-        return results
+        with self.remote_api:
+            path = self._create_folder()
+            self._create_results_file(path=path)
+            self._dump_experiment_data(path=path)
+            plot = LivePlot(remote_api=self.remote_api, loop=self.loop)
+            plot.create_live_plot(title=self.name)
+            results = Results(
+                software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
+            )
+            with self.execution:
+                try:
+                    self._execute_loop(results=results, plot=plot, path=path)
+                except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                    logger.error("%s: %s", type(error).__name__, str(error))
+            return results
 
     def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
         """Loop and execute sequence over given Platform parameters.
@@ -232,9 +228,7 @@ class Experiment:
             element.set_parameter(parameter=parameter, value=value)  # type: ignore
 
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            self.execution, self.sequences = self._build_execution(
-                sequence_list=self._initial_sequences, connection=self.connection, device_id=self.device_id
-            )
+            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
     def parameters(self):
@@ -256,9 +250,7 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(
-        self, sequence_list: List[Circuit | PulseSequences], connection: API | None, device_id: int | None
-    ) -> Tuple[Execution, List[PulseSequences]]:
+    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
         """Build Execution class.
 
         Args:
@@ -267,9 +259,7 @@ class Experiment:
         if isinstance(sequence_list[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(
-            platform=self.platform, pulse_sequences=sequence_list, connection=connection, device_id=device_id
-        )
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
         return execution, sequence_list
 
     def _create_folder(self) -> Path:

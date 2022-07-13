@@ -11,9 +11,8 @@ from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
 configuration = ConnectionConfiguration(
-    user_id=3,
-    username="qili-admin-test",
-    api_key="d31d38f4-228e-4898-a0a4-4c4139d0f79f",
+    username="a-valid-user",
+    api_key="a-valid-password",
 )
 
 connection = API(configuration=configuration)
@@ -36,5 +35,5 @@ def run_experiment(gate: str, instrument: str, id_: int, parameter: str, start: 
     loop = Loop(
         instrument=Instrument(instrument), id_=id_, parameter=Parameter(parameter), start=start, stop=stop, num=num
     )
-    experiment = Experiment(platform=platform, sequences=circuit, loop=loop)
-    experiment.execute(connection=connection)
+    experiment = Experiment(connection=connection, platform=platform, sequences=circuit, loop=loop)
+    experiment.execute()

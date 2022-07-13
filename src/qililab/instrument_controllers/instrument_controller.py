@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, List, Sequence, Type, get_type_hints
 
-from qililab.connections.connection import Connection
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
+from qililab.instrument_connections.connection import Connection
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference

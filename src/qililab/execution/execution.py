@@ -3,9 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from qiboconnection.api import API
-
-from qililab.constants import GALADRIEL_DEVICE_ID
 from qililab.execution.buses_execution import BusesExecution
 from qililab.platform import Platform
 from qililab.result import Result
@@ -18,21 +15,19 @@ class Execution:
 
     buses_execution: BusesExecution
     platform: Platform
-    connection: API | None
-    device_id: int | None = GALADRIEL_DEVICE_ID
+
+    def __post_init__(self):
+        """Post initial initialization"""
+        self._blocked_device = False
 
     def __enter__(self):
         """Code executed when starting a with statement."""
-        if self.connection is not None:
-            self.connection.block_device_id(device_id=self.device_id)
         self.connect()
         self.setup()
         self.start()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
-        if self.connection is not None:
-            self.connection.release_device(device_id=self.device_id)
         self.close()
 
     def connect(self):

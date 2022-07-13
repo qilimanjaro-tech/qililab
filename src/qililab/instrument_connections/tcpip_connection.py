@@ -1,6 +1,6 @@
 """TCPIPConnection class"""
 
-from qililab.connections.connection import Connection
+from qililab.instrument_connections.connection import Connection
 from qililab.typings import ConnectionName
 from qililab.utils import Factory
 

@@ -1,9 +1,15 @@
 """Pytest configuration fixtures."""
 import copy
+from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
 import pytest
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
+from qiboconnection.api import API
+from qiboconnection.typings.connection import (
+    ConnectionConfiguration,
+    ConnectionEstablished,
+)
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
@@ -42,6 +48,7 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
+from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
@@ -531,3 +538,73 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
     mock_keithley_instance = mock_keithley.return_value
     mock_keithley_instance.smua = MagicMock(KeithleyChannel)
     mock_keithley_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
+
+
+@pytest.fixture(scope="session", name="mocked_connection_configuration")
+def fixture_create_mocked_connection_configuration() -> ConnectionConfiguration:
+    """Create a mock connection configuration"""
+    return ConnectionConfiguration(user_id=666, username="mocked_user", api_key="betterNOTaskMockedAPIKey")
+
+
+@pytest.fixture(scope="session", name="mocked_connection_established")
+def fixture_create_mocked_connection_established(
+    mocked_connection_configuration: ConnectionConfiguration,
+) -> ConnectionEstablished:
+    """Create a mock connection configuration"""
+    return ConnectionEstablished(
+        **asdict(mocked_connection_configuration),
+        authorisation_access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3O"
+        + "DkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        api_path="/api/v1",
+    )
+
+
+@pytest.fixture(scope="session", name="mocked_api")
+def fixture_create_mocked_api_connection(mocked_connection_established: ConnectionEstablished) -> API:
+    """Create a mocked api connection
+    Returns:
+        API: API mocked connection
+    """
+    with patch(
+        "qiboconnection.connection.load_config_file_to_disk",
+        autospec=True,
+        return_value=mocked_connection_established,
+    ) as mock_config:
+        api = API()
+        mock_config.assert_called()
+        return api
+
+
+@pytest.fixture(name="mocked_remote_api")
+def fixtuer_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
+    """Create a mocked remote api connection
+    Returns:
+        RemoteAPI: Remote API mocked connection
+    """
+    return RemoteAPI(connection=mocked_api)
+
+
+@pytest.fixture(name="valid_remote_api")
+def fixtuer_create_valid_remote_api() -> RemoteAPI:
+    """Create a valid remote api connection
+    Returns:
+        RemoteAPI: Remote API connection
+    """
+    configuration = ConnectionConfiguration(
+        username="write-a-valid-user",
+        api_key="write-a-valid-key",
+    )
+    return RemoteAPI(connection=API(configuration=configuration))
+
+
+@pytest.fixture(name="second_valid_remote_api")
+def fixtuer_create_second_valid_remote_api() -> RemoteAPI:
+    """Create a valid remote api connection
+    Returns:
+        RemoteAPI: Remote API connection
+    """
+    configuration = ConnectionConfiguration(
+        username="write-a-valid-user",
+        api_key="write-a-valid-key",
+    )
+    return RemoteAPI(connection=API(configuration=configuration))
