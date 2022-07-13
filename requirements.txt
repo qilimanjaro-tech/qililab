@@ -7,11 +7,10 @@ PyYAML==6.0
 typeguard==2.13.3
 qblox-instruments==0.6.1
 qcodes==0.34.1
-PyVISA==1.11.3
-PyVISA-py==0.5.3
+PyVISA-py==0.5.2
 qutip==4.7.0
 tqdm==4.64.0
 urllib3==1.26.10
-qiboconnection @ git+https://github.com/qilimanjaro-tech/qiboconnection.git@feat/127-true-2D-plotting
+qiboconnection @ git+https://github.com/qilimanjaro-tech/qiboconnection.git@fix/qibo-172-raise-errors
 qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git
 qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git@add-files
