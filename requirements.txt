@@ -5,7 +5,7 @@
 qibo==0.1.7
 PyYAML==6.0
 typeguard==2.13.3
-qblox-instruments==0.6.1
+qblox-instruments==0.6.0
 qcodes==0.34.1
 PyVISA-py==0.5.2
 qutip==4.7.0
