@@ -17,6 +17,8 @@ class RemoteAPI:
     def __post_init__(self):
         """Post initial initialization"""
         self._blocked_device = False
+        if self.device_id is None:
+            self.device_id = GALADRIEL_DEVICE_ID
 
     def __enter__(self):
         """Code executed when starting a with statement."""
