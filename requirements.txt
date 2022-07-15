@@ -11,6 +11,6 @@ PyVISA-py==0.5.2
 qutip==4.7.0
 tqdm==4.64.0
 urllib3==1.26.10
-qiboconnection @ git+https://github.com/qilimanjaro-tech/qiboconnection.git@fix/qibo-172-raise-errors
+qiboconnection==0.4.2
 qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git
 qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git@add-files
