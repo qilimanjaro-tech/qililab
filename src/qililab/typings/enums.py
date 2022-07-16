@@ -341,3 +341,18 @@ class InstrumentTypeName(Enum):
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"
     KEITHLEY2600 = "Keithley2600"
+
+
+class LivePlotTypes(Enum):
+    """Live Plot Types.
+
+    Args:
+        enum (str): Available plot element types:
+        * LINES
+        * SCATTER
+        * HEATMAP
+    """
+
+    LINES = "LINES"
+    SCATTER = "SCATTER"
+    HEATMAP = "HEATMAP"

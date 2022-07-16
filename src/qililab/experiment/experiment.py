@@ -75,7 +75,6 @@ class Experiment:
             self._create_results_file(path=path)
             self._dump_experiment_data(path=path)
             plot = LivePlot(remote_api=self.remote_api, loop=self.loop)
-            plot.create_live_plot(title=self.name)
             results = Results(
                 software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
             )
