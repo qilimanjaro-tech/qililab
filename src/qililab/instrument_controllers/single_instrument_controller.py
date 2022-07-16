@@ -37,4 +37,4 @@ class SingleInstrumentController(InstrumentController):
         For a SingleInstrumentController, by default,
         the same controller device driver is set to the Instrument.
         """
-        setattr(self.modules[0], "device", self.device)
+        self.modules[0].device = self.device
