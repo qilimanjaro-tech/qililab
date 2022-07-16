@@ -42,8 +42,6 @@ class TestLivePlot:
         """Test that the LivePlot instance is created correctly without any connection"""
         plot = LivePlot(remote_api=remote_api_no_connection)
         assert isinstance(plot, LivePlot)
-        assert len(list(plot.x_iterator_ranges)) == 1
-        assert next(plot.x_iterator_ranges) == 0
 
     def test_live_plot_ranges_with_one_loop(self, remote_api_no_connection: RemoteAPI, one_loop: Loop):
         """test live plot ranges with one loop"""
