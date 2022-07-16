@@ -10,6 +10,8 @@ EXPERIMENT_FILENAME = "experiment.yml"
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
 
+DEFAULT_PLOT_Y_LABEL = "Sequence idx"
+
 # TODO: Distribute constants over different classes
 
 

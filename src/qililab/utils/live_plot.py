@@ -8,6 +8,7 @@ import numpy as np
 from qiboconnection.api import API as Connection
 
 from qililab.config import logger
+from qililab.constants import DEFAULT_PLOT_Y_LABEL
 from qililab.remote_connection import RemoteAPI
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
@@ -18,21 +19,40 @@ class LivePlot:
     """Plot class."""
 
     remote_api: RemoteAPI
-    loop: Loop | None
+    loop: Loop | None = None
     plot_ids: List[int] = field(default_factory=list)
+    x_iterator_ranges: Iterator = field(init=False)
+    y_iterator_ranges: Iterator = field(init=False)
     ranges: List[Iterator] = field(init=False)
+    plot_y_label: str | None = None
     title: InitVar[str] = ""
 
     def __post_init__(self, title: str):
         """Generate iterators that iterate over loop ranges."""
-        if self.loop is not None:
-            x_loop = self.loop.loops[-1].range
-            y_loop = self.loop.loops[-2].range if self.loop.num_loops > 1 else None
-            ranges_meshgrid = np.meshgrid(x_loop, y_loop)  # type: ignore
-            self.ranges = [iter(range[0]) for range in ranges_meshgrid]
-        else:
-            self.ranges = [count()]
+        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges()
         self.create_live_plot(title=title)
+
+    def _build_plot_ranges_from_loop_ranges(self) -> List[Iterator]:
+        """build plot ranges from loop ranges"""
+        return (
+            (self._build_empty_iterator(), self._build_empty_iterator())
+            if self.loop is None
+            else self._build_plot_ranges_from_defined_loop_ranges()
+        )
+
+    def _build_empty_iterator(self):
+        """build empty iterator"""
+        return count()
+
+    def _build_plot_ranges_from_defined_loop_ranges(self):
+        """build plot ranges from defined loop ranges"""
+        x_loop_range, y_loop_range = self.loop.outer_loop_range, self.loop.inner_loop_range
+
+        if y_loop_range is None:
+            return (iter(x_loop_range), self._build_empty_iterator())
+
+        ranges_meshgrid = np.meshgrid(x_loop_range, y_loop_range)
+        return iter(ranges_meshgrid[0].ravel()), iter(ranges_meshgrid[1].ravel())
 
     class CheckRemoteApiInitialized:
         """Property used to check if the Remote API has been initialized."""
@@ -83,7 +103,6 @@ class LivePlot:
 
     @CheckRemoteApiInitialized
     def send_points(self, value: float):
-        # sourcery skip: remove-unnecessary-cast
         """Send plot points.
 
         Args:
@@ -91,15 +110,18 @@ class LivePlot:
             y_value (float): Y value.
         """
         if self.plot_type == LivePlotTypes.SCATTER or self.plot_type == LivePlotTypes.LINES:
-            self.connection().send_plot_points(plot_id=self.plot_ids[-1], x=float(next(self.ranges[0])), y=float(value))
+            self.connection().send_plot_points(
+                plot_id=self.plot_ids[-1], x=float(next(self.x_iterator_ranges)), y=float(value)
+            )
             return
         if self.plot_type == LivePlotTypes.HEATMAP:
             self.connection().send_plot_points(
                 plot_id=self.plot_ids[-1],
-                x=float(next(self.ranges[0])),
-                y=float(next(self.ranges[1])),
+                x=float(next(self.x_iterator_ranges)),
+                y=float(next(self.y_iterator_ranges)),
                 z=float(value),
             )
+            return
         raise ValueError(
             f"PlotType {self.plot_type.value} not supported. Plot valid types are: {[plot_type.value for plot_type in LivePlotTypes]}"
         )
@@ -120,7 +142,7 @@ class LivePlot:
         Returns:
             List[int]: Values of the x axis.
         """
-        return self.loop.ranges[-1] if self.loop is not None else None
+        return self.loop.outer_loop_range if self.loop is not None else None
 
     @property
     def y_axis(self):
@@ -129,7 +151,7 @@ class LivePlot:
         Returns:
             List[int]: Values of the y axis.
         """
-        return self.loop.ranges[-2] if (self.loop is not None and self.loop.num_loops > 1) else None
+        return self.loop.inner_loop_range if self.loop is not None else None
 
     @property
     def y_label(self):
@@ -138,10 +160,12 @@ class LivePlot:
         Returns:
             str: Y label.
         """
+        if self.plot_y_label is not None:
+            return self.plot_y_label
         if self.loop is not None and self.loop.num_loops > 1:
             return self.label(loop=self.loop.loops[-2])
 
-        return "Sequence idx"
+        return DEFAULT_PLOT_Y_LABEL
 
     @property
     def z_label(self) -> str | None:

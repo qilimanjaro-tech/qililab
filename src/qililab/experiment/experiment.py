@@ -15,6 +15,7 @@ from qililab.chip import Node
 from qililab.config import logger
 from qililab.constants import (
     DATA,
+    DEFAULT_PLOT_Y_LABEL,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
     LOOP,
@@ -57,6 +58,7 @@ class Experiment:
         connection: API | None = None,
         device_id: int | None = None,
         name: str = "experiment",
+        plot_y_label: str | None = None,
     ):
         self.platform = copy.deepcopy(platform)
         self.name = name
@@ -67,6 +69,7 @@ class Experiment:
         self._initial_sequences = sequences
         self.remote_api = RemoteAPI(connection=connection, device_id=device_id)
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
+        self.plot_y_label = plot_y_label
 
     def execute(self) -> Results:
         """Run execution."""
@@ -74,7 +77,7 @@ class Experiment:
             path = self._create_folder()
             self._create_results_file(path=path)
             self._dump_experiment_data(path=path)
-            plot = LivePlot(remote_api=self.remote_api, loop=self.loop)
+            plot = LivePlot(remote_api=self.remote_api, loop=self.loop, plot_y_label=self.plot_y_label)
             results = Results(
                 software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
             )
