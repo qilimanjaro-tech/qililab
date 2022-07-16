@@ -16,10 +16,6 @@ class Execution:
     buses_execution: BusesExecution
     platform: Platform
 
-    def __post_init__(self):
-        """Post initial initialization"""
-        self._blocked_device = False
-
     def __enter__(self):
         """Code executed when starting a with statement."""
         self.connect()
