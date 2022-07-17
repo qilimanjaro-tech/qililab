@@ -106,8 +106,7 @@ class LivePlot:
         """Send plot points.
 
         Args:
-            x_value (float): X value.
-            y_value (float): Y value.
+            value (float): value to send to the plot
         """
         if self.plot_type == LivePlotTypes.SCATTER or self.plot_type == LivePlotTypes.LINES:
             self.connection().send_plot_points(
