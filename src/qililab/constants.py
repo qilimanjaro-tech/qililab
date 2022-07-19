@@ -37,6 +37,18 @@ class RUNCARD:
     FIRMWARE = "firmware"
 
 
+class CURRENTSOURCE:
+    """CurrentSource attribute names."""
+
+    CURRENT = "current"
+
+
+class VOLTAGESOURCE:
+    """CurrentSource attribute names."""
+
+    VOLTAGE = "voltage"
+
+
 class SIGNALGENERATOR:
     """SignalGenerator attribute names."""
 

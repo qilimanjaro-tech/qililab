@@ -25,6 +25,8 @@ from .instruments import (
     Keithley2600Driver,
     MiniCircuitsDriver,
     Pulsar,
+    QbloxD5a,
+    QbloxS4g,
     QcmQrm,
     RohdeSchwarzSGS100A,
 )

@@ -234,6 +234,8 @@ class InstrumentName(Enum):
         * integrated_system_control
         * simulated_system_control
         * keithley_2600
+        * qblox_D5a
+        * qblox_S4g
     """
 
     QBLOX_QCM = "QCM"
@@ -244,6 +246,8 @@ class InstrumentName(Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_D5A = "qblox_D5a"
+    QBLOX_S4G = "qblox_S4g"
 
 
 class InstrumentControllerName(Enum):
@@ -263,6 +267,7 @@ class InstrumentControllerName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_SPIRACK = "qblox_spi_rack"
 
 
 class Parameter(Enum):
@@ -334,6 +339,8 @@ class InstrumentTypeName(Enum):
         * SGS100A
         * Attenuator
         * Keithley2600
+        * QbloxD5a
+        * QbloxS4g
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -341,6 +348,8 @@ class InstrumentTypeName(Enum):
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"
     KEITHLEY2600 = "Keithley2600"
+    QBLOX_D5A = "QbloxD5a"
+    QBLOX_S4G = "QbloxS4g"
 
 
 class LivePlotTypes(Enum):
