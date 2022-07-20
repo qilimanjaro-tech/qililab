@@ -15,7 +15,6 @@ from qililab.chip import Node
 from qililab.config import logger
 from qililab.constants import (
     DATA,
-    DEFAULT_PLOT_Y_LABEL,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
     LOOP,
