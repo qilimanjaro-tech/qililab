@@ -9,7 +9,7 @@ from qililab.instrument_controllers.instrument_controller import (
 )
 from qililab.instruments.qblox.qblox_qcm import QbloxQCM
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
-from qililab.typings.enums import InstrumentTypeName, ReferenceClock
+from qililab.typings.enums import InstrumentTypeName, Parameter, ReferenceClock
 from qililab.typings.instruments.cluster import Cluster
 from qililab.typings.instruments.pulsar import Pulsar
 
@@ -61,3 +61,9 @@ class QbloxController(InstrumentController):
                     + f"The only supported instrument are {InstrumentTypeName.QBLOX_QCM} "
                     + f"and {InstrumentTypeName.QBLOX_QRM}."
                 )
+
+    def to_dict(self):
+        """Return a dict representation of the Qblox controller class."""
+        return super().to_dict() | {
+            Parameter.REFERENCE_CLOCK.value: self.reference_clock.value,
+        }
