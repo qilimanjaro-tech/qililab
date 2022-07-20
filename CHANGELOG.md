@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.0 (2022-07-20)
+
+### Feat
+
+- New features from TII trip (#31)
+
 ## 0.3.0 (2022-04-26)
 
 ### Feat
