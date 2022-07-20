@@ -1,20 +1,21 @@
 # CHANGELOG
+
 ## 0.3.0 (2022-04-26)
 
 ### Feat
 
-- [QILI-81] Implement schema class (#5)
+- \[QILI-81\] Implement schema class (#5)
 
 ## 0.2.0 (2022-04-19)
 
 ### Feat
 
-- [QILI-46] Implement instrument classes (#9)
+- \[QILI-46\] Implement instrument classes (#9)
 
 ## 0.1.0 (2022-04-06)
 
 ### Feat
 
-- [QILI-48] Implement platform, backend and settings classes (#8)
+- \[QILI-48\] Implement platform, backend and settings classes (#8)
 
 ## 0.0.0 (2022-03-28)

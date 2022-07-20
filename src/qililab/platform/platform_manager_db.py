@@ -1,19 +1,11 @@
-from qililab.constants import (
-    DEFAULT_PLATFORM_FILENAME,
-    DEFAULT_SCHEMA_FILENAME,
-    DEFAULT_SETTINGS_FOLDERNAME,
-)
+"""PlatformManagerDB class."""
 from qililab.platform.platform_manager import PlatformManager
-from qililab.settings import SETTINGS_MANAGER
-from qililab.typings import Category
 
 
 class PlatformManagerDB(PlatformManager):
     """Manager of platform objects."""
 
-    PLATFORM_NAME = "platform_name"
-
-    def _load_settings(self, *args, **kwargs: str) -> dict:
+    def _load_platform_settings(self, platform_name: str) -> dict:
         """Load platform and schema settings.
 
         Args:
@@ -22,14 +14,4 @@ class PlatformManagerDB(PlatformManager):
         Returns:
             dict: Dictionary with platform and schema settings.
         """
-        if self.PLATFORM_NAME not in kwargs:
-            raise ValueError(f"Please provide a '{self.PLATFORM_NAME}' keyword argument.")
-        platform_name = kwargs[self.PLATFORM_NAME]
-        return {
-            Category.PLATFORM.value: SETTINGS_MANAGER.load(
-                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_PLATFORM_FILENAME
-            ),
-            Category.SCHEMA.value: SETTINGS_MANAGER.load(
-                foldername=DEFAULT_SETTINGS_FOLDERNAME, platform_name=platform_name, filename=DEFAULT_SCHEMA_FILENAME
-            ),
-        }
+        raise NotImplementedError

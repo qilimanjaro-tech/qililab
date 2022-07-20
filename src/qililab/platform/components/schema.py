@@ -1,97 +1,68 @@
 """Schema class"""
-from dataclasses import dataclass
 from typing import List
 
+from qililab.chip import Chip
+from qililab.constants import RUNCARD, SCHEMA
+from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.utils import InstrumentControllerFactory
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components.bus import Bus
-from qililab.settings import Settings
-from qililab.typings import SchemaDrawOptions
+from qililab.platform.components.buses import Buses
 
 
 class Schema:
-    """Class representing the schema of the platform.
+    """Class representing the schema of the platform."""
 
-    Args:
-        settings (SchemaSettings): Settings that define the schema of the platform.
-    """
+    def __init__(self, buses: List[dict], instruments: List[dict], chip: dict, instrument_controllers: List[dict]):
+        """Cast each list element to its corresponding bus class and instantiate class Buses."""
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
+        self.chip = Chip(**chip)
+        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
+        self.instrument_controllers = InstrumentControllers(
+            elements=self._load_instrument_controllers(instrument_controllers_dict=instrument_controllers)
+        )
 
-    @dataclass
-    class SchemaSettings(Settings):
-        """Schema settings.
+    def __str__(self):
+        """String representation of the schema."""
+        return "\n".join(str(bus) for bus in self.buses)
 
-        Args:
-            buses (BusesSettings): List containing the settings of the elements for each bus.
-        """
-
-        buses: List[Bus.BusSettings]
-
-        def __post_init__(self):
-            """Cast the settings of each element to the Settings class."""
-            super().__post_init__()
-            self.buses = [Bus.BusSettings(**bus_settings) for bus_settings in self.buses]
-
-        def to_dict(self):
-            """Return a dict representation of the SchemaSettings class."""
-            return {
-                "id_": self.id_,
-                "name": self.name,
-                "category": self.category.value,
-                "buses": [bus.to_dict() for bus in self.buses],
-            }
-
-    def __init__(self, settings: dict):
-        self.settings = self.SchemaSettings(**settings)
-
-    @property
-    def id_(self):
-        """Schema 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
-    def name(self):
-        """Schema 'name' property.
-
-        Returns:
-            str: settings.name.
-        """
-        return self.settings.name
-
-    @property
-    def category(self):
-        """Schema 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def buses(self):
-        """Schema 'buses' property.
-
-        Returns:
-            List[BusSettings]: settings.buses.
-        """
-        return self.settings.buses
-
-    def draw(self, options: SchemaDrawOptions) -> None:
-        """Draw schema.
+    def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
+        """Instantiate all instrument classes from their respective dictionaries.
 
         Args:
-            options (SchemaDrawOptions): Method to generate the drawing.
+            instruments_dict (List[dict]): List of dictionaries containing the settings of each instrument.
+
+        Returns:
+            List[Instrument]: List of instantiated instrument classes.
         """
-        if options == SchemaDrawOptions.PRINT:
-            for idx, bus in enumerate(self.buses):
-                print(f"Bus {idx}:\t", end="------")
-                for element in bus:
-                    print(f"|{element.name}_{element.id_}", end="|------")
-                print()
-        elif options == SchemaDrawOptions.FILE:
-            raise NotImplementedError("This function is not implemented yet.")
+        return [
+            InstrumentFactory.get(instrument.pop(RUNCARD.NAME))(settings=instrument) for instrument in instruments_dict
+        ]
+
+    def _load_instrument_controllers(self, instrument_controllers_dict: List[dict]) -> List[InstrumentController]:
+        """Instantiate all instrument controller classes from their respective dictionaries.
+
+        Args:
+            instrument_controllers_dict (List[dict]): List of dictionaries containing
+            the settings of each instrument controller.
+
+        Returns:
+            List[InstrumentController]: List of instantiated instrument controller classes.
+        """
+        return [
+            InstrumentControllerFactory.get(instrument_controller.pop(RUNCARD.NAME))(
+                settings=instrument_controller, loaded_instruments=self.instruments
+            )
+            for instrument_controller in instrument_controllers_dict
+        ]
 
     def to_dict(self):
-        """Return a dict representation of the Schema class."""
-        return self.settings.to_dict()
+        """Return a dict representation of the SchemaSettings class."""
+        return {
+            SCHEMA.CHIP: self.chip.to_dict(),
+            SCHEMA.INSTRUMENTS: self.instruments.to_dict(),
+            SCHEMA.BUSES: self.buses.to_dict(),
+            SCHEMA.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict(),
+        }

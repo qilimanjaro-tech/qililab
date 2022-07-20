@@ -1,148 +1,147 @@
-from dataclasses import asdict, dataclass, field
+"""Bus class."""
+from dataclasses import dataclass
 from typing import List
 
-from qililab.instruments import Mixer, QubitControl, QubitReadout, SignalGenerator
-from qililab.platform.components.resonator import Resonator
-from qililab.platform.utils import BusElementHashTable, dict_factory
-from qililab.settings import Settings
-from qililab.typings import YAMLNames
+from qililab.chip import Chip, Coupler, Qubit, Resonator
+from qililab.constants import BUS, RUNCARD
+from qililab.instruments import Attenuator, Instruments, SystemControl
+from qililab.settings import DDBBElement
+from qililab.typings import BusSubcategory, Category
+from qililab.utils import Factory
 
 
-@dataclass
 class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
-    through a mixer for up- or down-conversion. At the end/beginning of the bus there should be a resonator object, which
-    is connected to one or multiple qubits.
+    through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
+    which is connected to one or multiple qubits.
 
     Args:
         settings (BusSettings): Bus settings.
     """
 
+    targets: List[Qubit | Resonator | Coupler]  # port target (or targets in case of multiple resonators)
+
     @dataclass
-    class BusSettings(Settings):
-        """BusSettings class.
+    class BusSettings(DDBBElement):
+        """Bus settings.
+
         Args:
-            qubit_control (None | QubitControl): Class containing the qubit control instrument.
-            qubit_readout (None | QubitReadout): Class containing the qubit readout instrument.
-            signal_generator (SignalGenerator): Class containing the signal generator instrument.
-            mixer (Mixer): Class containing the mixer object, used for up- or down-conversion.
-            resonator (Resonator): Class containing the resonator object.
+            subcategory (BusSubcategory): Bus subcategory. Options are "readout" and "control".
+            system_control (SystemControl): System control used to control and readout the qubits of the bus.
+            port (int): Chip's port where bus is connected.
         """
 
-        elements: List[QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator]
-        signal_generator: SignalGenerator = field(init=False)
-        mixer: Mixer = field(init=False)
-        resonator: Resonator = field(init=False)
-        qubit_control: None | QubitControl = field(init=False, default=None)
-        qubit_readout: None | QubitReadout = field(init=False, default=None)
-
-        def __post_init__(self):
-            """Cast each element to its corresponding class."""
-            super().__post_init__()
-            for idx, settings in enumerate(self.elements):
-                self.elements[idx] = BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings)
-                setattr(self, settings["category"], BusElementHashTable.get(settings[YAMLNames.NAME.value])(settings))
+        subcategory: BusSubcategory
+        system_control: SystemControl
+        port: int
+        attenuator: Attenuator | None = None
 
         def __iter__(self):
-            """Redirect __iter__ magic method to iterate over elements."""
-            return self.elements.__iter__()
+            """Iterate over Bus elements.
 
-        def to_dict(self):
-            """Return a dict representation of the BusSettings class"""
-            return {
-                "id_": self.id_,
-                "name": self.name,
-                "category": self.category.value,
-                "elements": [asdict(element.settings, dict_factory=dict_factory) for element in self.elements],
-            }
+            Yields:
+                Tuple[str, ]: _description_
+            """
+            for name, value in self.__dict__.items():
+                if name in [Category.SYSTEM_CONTROL.value, Category.ATTENUATOR.value] and value is not None:
+                    yield name, value
 
     settings: BusSettings
 
+    def __init__(self, settings: dict, instruments: Instruments, chip: Chip):
+        self.settings = self.BusSettings(**settings)
+        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self.targets = chip.get_port_nodes(port_id=self.port)
+
     @property
     def id_(self):
-        """Bus 'id' property.
-
+        """Bus 'id_' property.
         Returns:
             int: settings.id_.
         """
         return self.settings.id_
 
     @property
-    def name(self):
-        """Bus 'name' property.
-
+    def system_control(self):
+        """Bus 'system_control' property.
         Returns:
-            str: settings.name.
+            Resonator: settings.system_control.
         """
-        return self.settings.name
+        return self.settings.system_control
 
     @property
-    def category(self):
-        """Bus 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def elements(self):
-        """Bus 'elements' property.
-
-        Returns:
-            List[QubitControl | QubitReadout | SignalGenerator | Mixer | Resonator]: settings.elements.
-        """
-        return self.settings.elements
-
-    @property
-    def signal_generator(self):
-        """Bus 'signal_generator' property.
-
-        Returns:
-            SignalGenerator: settings.signal_generator.
-        """
-        return self.settings.signal_generator
-
-    @property
-    def mixer(self):
-        """Bus 'mixer' property.
-
-        Returns:
-            Mixer: settings.mixer.
-        """
-        return self.settings.mixer
-
-    @property
-    def resonator(self):
+    def port(self):
         """Bus 'resonator' property.
-
         Returns:
             Resonator: settings.resonator.
         """
-        return self.settings.resonator
+        return self.settings.port
 
     @property
-    def qubit_control(self):
-        """Bus 'qubit_control' property.
+    def attenuator(self) -> Attenuator | None:
+        """Bus 'attenuator' property.
 
         Returns:
-            (QubitControl | None): settings.qubit_control.
+            List[int]: settings.attenuator.
         """
-        return self.settings.qubit_control
+        return self.settings.attenuator
 
     @property
-    def qubit_readout(self):
-        """Bus 'qubit_readout' property.
+    def subcategory(self) -> BusSubcategory:
+        """Bus 'subcategory' property.
 
         Returns:
-            (QubitReadout | None): settings.qubit_readout.
+            BusSubcategory: Subcategory of the bus. Options are "control" or "readout".
         """
-        return self.settings.qubit_readout
+        return self.settings.subcategory
+
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+        """Replace dictionaries from settings into its respective instrument classes."""
+        for name, value in self.settings:
+            instrument_object = None
+            category = Category(name)
+            if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
+                subcategory = value.get(RUNCARD.SUBCATEGORY)
+                if not isinstance(subcategory, str):
+                    raise ValueError("Invalid value for subcategory.")
+                instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
+            if category == Category.ATTENUATOR and isinstance(value, str):
+                instrument_object = instruments.get_instrument(alias=value)
+            if instrument_object is None:
+                raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
+            setattr(self.settings, name, instrument_object)
+
+    def __str__(self):
+        """String representation of a bus. Prints a drawing of the bus elements."""
+        return (
+            f"Bus {self.id_} ({self.subcategory.value}):  "
+            + f"----|{self.system_control}|--"
+            + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
+            + "".join(f"--|{target}|----" for target in self.targets)
+        )
+
+    @property
+    def target_freqs(self):
+        """Bus 'target_freqs' property.
+
+        Returns:
+            List[float]: Frequencies of the nodes targetted by the bus.
+        """
+        return [target.frequency for target in self.targets]
 
     def __iter__(self):
-        """Redirect __iter__ magic method to iterate over bus elements."""
+        """Redirect __iter__ magic method."""
         return self.settings.__iter__()
 
-    def __getitem__(self, key):
-        """Redirect __get_item__ magic method."""
-        return self.settings.elements.__getitem__(key)
+    def to_dict(self):
+        """Return a dict representation of the SchemaSettings class."""
+        return (
+            {
+                RUNCARD.ID: self.id_,
+                RUNCARD.CATEGORY: self.settings.category.value,
+                RUNCARD.SUBCATEGORY: self.subcategory.value,
+                RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
+            }
+            | ({RUNCARD.ATTENUATOR: self.attenuator.alias} if self.attenuator is not None else {})
+            | {BUS.PORT: self.port}
+        )

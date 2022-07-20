@@ -48,7 +48,7 @@ ensure_newline_before_comments = true
 [tool.commitizen]
 version = "0.3.0"
 version_files = [
-    "src/qililab/__init__.py",
+    "src/qililab/config/version.py",
     "pyproject.toml:version"
 ]
 tag_format = "$version"
@@ -89,3 +89,9 @@ flake8 = [
 
 [tool.nbqa.md]
 mdformat = true
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore::DeprecationWarning',
+    'ignore::PendingDeprecationWarning'
+]

@@ -2,33 +2,40 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable
+from typing import Callable, Type, get_type_hints
 
-from qililab.settings import Settings
-from qililab.typings import Device
+from qililab.constants import RUNCARD
+from qililab.platform.components.bus_element import BusElement
+from qililab.settings import DDBBElement
+from qililab.typings.enums import InstrumentName, Parameter
+from qililab.typings.instruments.device import Device
 
 
-class Instrument(ABC):
+class Instrument(BusElement, ABC):
     """Abstract base class declaring the necessary attributes
-    and methods for the instruments connected via TCP/IP.
+    and methods for the instruments.
 
     Args:
-        device (Device): Class used for connecting to the instrument.
         settings (Settings): Class containing the settings of the instrument.
     """
 
+    name: InstrumentName
+
     @dataclass
-    class InstrumentSettings(Settings):
+    class InstrumentSettings(DDBBElement):
         """Contains the settings of an instrument.
 
         Args:
-            ip (str): IP address of the instrument.
+            firmware (str): Firmware version installed on the instrument.
         """
 
-        ip: str
+        firmware: str
 
-    class CheckConnected:
-        """Property used to check if the instrument is connected."""
+    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    device: Device
+
+    class CheckDeviceInitialized:
+        """Property used to check if the device has been initialized."""
 
         def __init__(self, method: Callable):
             self._method = method
@@ -43,47 +50,42 @@ class Instrument(ABC):
                 method (Callable): Class method.
 
             Raises:
-                AttributeError: If the instrument is not connected.
+                AttributeError: If device has not been initialized.
             """
-            if not ref._connected or not hasattr(ref, "device"):
-                raise AttributeError("Instrument is not connected")
+            if not hasattr(ref, "device"):
+                raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs)
 
-    device: Device  # a subtype of device must be specified by the subclass
-    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    def __init__(self, settings: dict):
+        """Cast the settings to its corresponding class."""
+        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        self.settings = settings_class(**settings)
 
-    def __init__(self):
-        self._connected = False
+    def set_parameter(self, parameter: Parameter, value: float | str | bool):
+        """Redirect __setattr__ magic method."""
+        self.settings.set_parameter(parameter=parameter, value=value)
+        if hasattr(self, "device"):
+            self.setup()
 
-    def connect(self):
-        """Establish connection with the instrument. Initialize self.device variable."""
-        if self._connected:
-            raise ValueError("Instrument is already connected")
-        self._initialize_device()
-        self._connected = True
-
-    @CheckConnected
-    def close(self):
-        """Close connection with the instrument."""
-        self.stop()
-        self.device.close()
-        self._connected = False
-
+    @CheckDeviceInitialized
     @abstractmethod
-    def start(self):
-        """Start instrument."""
+    def initial_setup(self):
+        """Set initial instrument settings."""
 
+    @CheckDeviceInitialized
     @abstractmethod
     def setup(self):
         """Set instrument settings."""
 
+    @CheckDeviceInitialized
+    @abstractmethod
+    def reset(self):
+        """Reset instrument settings."""
+
+    @CheckDeviceInitialized
     @abstractmethod
     def stop(self):
-        """Stop instrument."""
-
-    @abstractmethod
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
+        """Stop an instrument."""
 
     @property
     def id_(self):
@@ -95,28 +97,32 @@ class Instrument(ABC):
         return self.settings.id_
 
     @property
-    def name(self):
-        """Instrument 'name' property.
+    def alias(self):
+        """Instrument 'alias' property.
 
         Returns:
-            str: settings.name.
+            str: settings.alias.
         """
-        return self.settings.name
+        return self.settings.alias
 
     @property
     def category(self):
         """Instrument 'category' property.
 
         Returns:
-            str: settings.category.
+            Category: settings.category.
         """
         return self.settings.category
 
     @property
-    def ip(self):
-        """Instrument 'ip' property.
+    def firmware(self):
+        """Instrument 'firmware' property.
 
         Returns:
-            str: settings.ip.
+            str: settings.firmware.
         """
-        return self.settings.ip
+        return self.settings.firmware
+
+    def __str__(self):
+        """String representation of an instrument."""
+        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
