@@ -18,6 +18,8 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentControllerSubCategory,
     InstrumentName,
+    Parameter,
+    ReferenceClock,
 )
 
 
@@ -58,6 +60,7 @@ class Galadriel:
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
@@ -76,7 +79,6 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
-        "reference_clock": "internal",
         "sync_enabled": True,
         "frequency": 100000000,
         "num_bins": 100,
@@ -94,6 +96,7 @@ class Galadriel:
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.4",
@@ -112,7 +115,6 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
-        "reference_clock": "external",
         "sync_enabled": True,
         "scope_acquire_trigger_mode": "sequencer",
         "scope_hardware_averaging": True,

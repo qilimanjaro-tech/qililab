@@ -63,9 +63,13 @@ class QbloxQRM(QbloxModule, QubitReadout):
         if (pulse_sequence, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
             for seq_idx in range(self.num_sequencers):
-                self.device._delete_acquisition(sequencer=seq_idx, name=self.acquisition_name)
+                self.device._delete_acquisition(  # pylint: disable=protected-access
+                    sequencer=seq_idx, name=self.acquisition_name
+                )
                 acquisition = self._generate_acquisitions()
-                self.device._add_acquisitions(sequencer=seq_idx, acquisitions=acquisition.to_dict())
+                self.device._add_acquisitions(  # pylint: disable=protected-access
+                    sequencer=seq_idx, acquisitions=acquisition.to_dict()
+                )
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 

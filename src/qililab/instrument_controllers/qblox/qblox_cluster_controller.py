@@ -1,25 +1,19 @@
 """Qblox Cluster Controller class"""
 from dataclasses import dataclass
-from typing import Sequence
 
 from qililab.instrument_controllers.multi_instrument_controller import (
     MultiInstrumentController,
 )
+from qililab.instrument_controllers.qblox.qblox_controller import QbloxController
 from qililab.instrument_controllers.utils.instrument_controller_factory import (
     InstrumentControllerFactory,
 )
-from qililab.instruments.qblox.qblox_qcm import QbloxQCM
-from qililab.instruments.qblox.qblox_qrm import QbloxQRM
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentTypeName,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName
 from qililab.typings.instruments.cluster import Cluster
 
 
 @InstrumentControllerFactory.register
-class QbloxClusterController(MultiInstrumentController):
+class QbloxClusterController(MultiInstrumentController, QbloxController):
     """Qblox Cluster Controller class.
 
     Args:
@@ -31,10 +25,11 @@ class QbloxClusterController(MultiInstrumentController):
     name = InstrumentControllerName.QBLOX_CLUSTER
     number_available_modules = 20
     device: Cluster
-    modules: Sequence[QbloxQCM | QbloxQRM]
 
     @dataclass
-    class QbloxClusterControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
+    class QbloxClusterControllerSettings(
+        MultiInstrumentController.MultiInstrumentControllerSettings, QbloxController.QbloxControllerSettings
+    ):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
         def __post_init__(self):
@@ -51,21 +46,17 @@ class QbloxClusterController(MultiInstrumentController):
         """Sets the initialized device to all attached modules,
         taking it from the Qblox Cluster device modules
         """
-        for slot_id in self.connected_modules_slot_ids:
-            self.modules[slot_id].device = self.device.modules[slot_id]
+        for module, slot_id in zip(self.modules, self.connected_modules_slot_ids):
+            module.device = self.device.modules[slot_id]
 
-    @MultiInstrumentController.CheckConnected
+    @QbloxController.CheckConnected
     def reset(self):
         """Reset instrument."""
-        super().reset()
         self.device.reset()
-
-    def _check_supported_modules(self):
-        """check if all instrument modules loaded are supported modules for the controller."""
         for module in self.modules:
-            if not isinstance(module, QbloxQCM) and not isinstance(module, QbloxQRM):
-                raise ValueError(
-                    f"Instrument {type(module)} not supported."
-                    + f"The only supported instrument are {InstrumentTypeName.QBLOX_QCM} "
-                    + f"and {InstrumentTypeName.QBLOX_QRM}."
-                )
+            module.clear_cache()
+
+    @QbloxController.CheckConnected
+    def _set_reference_source(self):
+        """Set reference source. Options are 'internal' or 'external'"""
+        self.device.reference_source(self.reference_clock.value)

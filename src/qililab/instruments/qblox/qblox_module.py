@@ -19,7 +19,6 @@ from qpysequence.waveforms import Waveforms
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseSequence, PulseShape
-from qililab.typings.enums import ReferenceClock
 from qililab.typings.instruments import Pulsar, QcmQrm
 
 
@@ -45,7 +44,6 @@ class QbloxModule(AWG):
             sync_enabled (bool): Enable synchronization over multiple instruments.
         """
 
-        reference_clock: ReferenceClock
         sync_enabled: bool
         num_bins: int
 
@@ -57,7 +55,6 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
-        self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()
         self._set_nco()
@@ -223,10 +220,6 @@ class QbloxModule(AWG):
             self.device.sequencers[seq_idx].mod_en_awg(True)
             self.device.sequencers[seq_idx].nco_freq(frequency)
 
-    def _set_reference_source(self):
-        """Set reference source. Options are 'internal' or 'external'"""
-        self.device.reference_source(self.reference_clock.value)
-
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
         for seq_idx in range(self.num_sequencers):
@@ -263,15 +256,6 @@ class QbloxModule(AWG):
                 waveforms.add_pair((real, imag), name=str(pulse))
 
         return waveforms
-
-    @property
-    def reference_clock(self):
-        """QbloxPulsar 'reference_clock' property.
-
-        Returns:
-            ReferenceClock: settings.reference_clock.
-        """
-        return self.settings.reference_clock
 
     @property
     def sync_enabled(self):
