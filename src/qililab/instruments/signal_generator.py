@@ -42,7 +42,7 @@ class SignalGenerator(Instrument):
         return self.settings.frequency
 
     @abstractmethod
-    def turn_on(self):
+    def start(self):
         """Turn instrument on."""
 
     def to_dict(self):

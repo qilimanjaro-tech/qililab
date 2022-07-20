@@ -1,7 +1,7 @@
 """Class used as hashtable to load the class corresponding to a given category"""
 from typing import Dict, Type, TypeVar
 
-from qililab.typings import FactoryElement
+from qililab.typings.factory_element import FactoryElement
 
 Element = TypeVar("Element", bound=FactoryElement)
 

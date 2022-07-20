@@ -4,6 +4,7 @@ from .enums import (
     AcquisitionName,
     BusSubcategory,
     Category,
+    ConnectionName,
     GateName,
     Instrument,
     InstrumentName,
@@ -18,5 +19,13 @@ from .enums import (
     SystemControlSubcategory,
 )
 from .factory_element import FactoryElement
-from .instruments import Device, Keithley2600Driver, Pulsar, RohdeSchwarzSGS100A
+from .instruments import (
+    Cluster,
+    Device,
+    Keithley2600Driver,
+    MiniCircuitsDriver,
+    Pulsar,
+    QcmQrm,
+    RohdeSchwarzSGS100A,
+)
 from .yaml_type import yaml

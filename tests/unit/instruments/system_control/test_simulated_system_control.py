@@ -14,7 +14,7 @@ class TestSimulatedSystemControl:
 
     def test_setup_method(self, simulated_system_control: SimulatedSystemControl):
         """Test setup method."""
-        simulated_system_control.setup(target_freqs=[0])
+        simulated_system_control.setup(frequencies=[0])
         assert isinstance(simulated_system_control.options, qutip.Options)
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_sequence: PulseSequence):

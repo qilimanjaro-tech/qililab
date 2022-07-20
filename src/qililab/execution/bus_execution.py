@@ -18,13 +18,13 @@ class BusExecution:
 
     def setup(self):
         """Setup instruments."""
-        self.system_control.setup(target_freqs=self.bus.target_freqs)
+        self.system_control.setup(frequencies=self.bus.target_freqs)
         if self.attenuator is not None:
             self.attenuator.setup()
 
-    def turn_on(self):
+    def start(self):
         """Start/Turn on the instruments."""
-        self.system_control.turn_on()
+        self.system_control.start()
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
@@ -110,8 +110,6 @@ class BusExecution:
         Returns:
             int: Acquire time (in ns).
         """
-        if self.subcategory == BusSubcategory.CONTROL:
-            raise ValueError("Control bus doesn't have an acquire time property.")
         num_sequences = len(self.pulse_sequences)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")

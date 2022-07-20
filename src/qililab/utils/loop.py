@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 
 from qililab.constants import LOOP, RUNCARD
-from qililab.typings import Instrument, Parameter
+from qililab.typings.enums import Instrument, Parameter
 
 
 @dataclass
@@ -40,17 +40,26 @@ class Loop:
 
     @property
     def range(self) -> np.ndarray:
-        """ExperimentLoop 'range' property.
+        """Loop 'range' property.
 
         Returns:
-            ndarray: Range of values of loop.
+            ndarray: Range of values of first loop.
         """
         if self.num is not None:
             return np.linspace(start=self.start, stop=self.stop, num=self.num)
-        elif self.step is not None:
+        if self.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
-        else:
-            raise ValueError("Please specify either 'step' or 'num' arguments.")
+        raise ValueError("Please specify either 'step' or 'num' arguments.")
+
+    @property
+    def ranges(self) -> np.ndarray:
+        """Loop 'ranges' property.
+
+        Returns:
+            list: Range of values of all loops.
+        """
+        ranges = [loop.range for loop in self.loops]
+        return np.array(ranges, dtype=object)
 
     @property
     def shape(self) -> List[int]:
@@ -76,12 +85,37 @@ class Loop:
         Returns:
             int: Number of nested loops.
         """
-        num_loops = 0
+        return len(self.loops)
+
+    @property
+    def loops(self) -> List[Loop]:
+        """Loop 'loops' property.
+
+        Returns:
+            List[Loop]: List of loop objects.
+        """
+        loops = []
         loop: Loop | None = self
         while loop is not None:
-            num_loops += 1
+            loops.append(loop)
             loop = loop.loop
-        return num_loops
+        return loops
+
+    @property
+    def outer_loop_range(self) -> np.ndarray:
+        """return the range of the outer loop"""
+        if len(self.loops) <= 0:
+            raise ValueError("Loop MUST contain at least one loop")
+        return self.loops[-1].range
+
+    @property
+    def inner_loop_range(self) -> np.ndarray | None:
+        """Return the range of the inner loop or None
+        when there are not exactly two loops.
+        """
+        if len(self.loops) != 2:
+            return None
+        return self.loops[-2].range
 
     def to_dict(self) -> dict:
         """Convert class to a dictionary.

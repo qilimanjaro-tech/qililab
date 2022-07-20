@@ -16,26 +16,36 @@ All other files should be in your own global gitignore file:
 
 ### Mac
 
-    git config --global core.excludesfile ~/.gitignore
+```
+git config --global core.excludesfile ~/.gitignore
+```
 
 ### Windows
 
-    git config --global core.excludesfile "%USERPROFILE%\.gitignore"
+```
+git config --global core.excludesfile "%USERPROFILE%\.gitignore"
+```
 
 If using Powershell (credit: @kupmanj):
 
-    git config --global core.excludesFile "$Env:USERPROFILE\.gitignore"
+```
+git config --global core.excludesFile "$Env:USERPROFILE\.gitignore"
+```
 
 This will result in an entry in your .gitconfig that looks like this:
 
-    [core]
-        excludesfile = {path-to-home-dir}/.gitignore
+```
+[core]
+    excludesfile = {path-to-home-dir}/.gitignore
+```
 
 #### Confirm location
 
 Particularly for Windows users, verify any filename was correctly parsed for quotes and expansion:
 
-    git config --global core.excludesFile
+```
+git config --global core.excludesFile
+```
 
 #### Isn't there already a default global ignore?
 

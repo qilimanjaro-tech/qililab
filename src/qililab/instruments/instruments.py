@@ -4,8 +4,8 @@ from typing import List
 
 import yaml
 
-from qililab.instruments import Instrument
-from qililab.typings import Category
+from qililab.instruments.instrument import Instrument
+from qililab.typings.enums import Category
 
 
 @dataclass
@@ -13,16 +13,6 @@ class Instruments:
     """Instruments class."""
 
     elements: List[Instrument]
-
-    def connect(self):
-        """Connect to all instruments."""
-        for instrument in self.elements:
-            instrument.connect()
-
-    def close(self):
-        """Close all instruments."""
-        for instrument in self.elements:
-            instrument.close()
 
     def get_instrument(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get element given an id_ and category"""

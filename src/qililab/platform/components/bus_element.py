@@ -21,5 +21,5 @@ class BusElement(FactoryElement):
         return {
             key: value
             for key, value in self.to_dict().items()
-            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.IP, RUNCARD.FIRMWARE]
+            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.FIRMWARE]
         }

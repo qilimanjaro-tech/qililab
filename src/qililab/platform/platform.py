@@ -5,7 +5,8 @@ from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
-from qililab.typings import BusSubcategory, Category, Parameter, yaml
+from qililab.typings.enums import Category, Parameter
+from qililab.typings.yaml_type import yaml
 
 
 class Platform:
@@ -25,12 +26,12 @@ class Platform:
         self.schema = Schema(**asdict(runcard_schema.schema))
 
     def connect(self):
-        """Connect to the instruments."""
-        self.instruments.connect()
+        """Connect to the instrument controllers."""
+        self.instrument_controllers.connect()
 
     def close(self):
-        """Close connection to the instruments."""
-        self.instruments.close()
+        """Close connection to the instrument controllers."""
+        self.instrument_controllers.close()
 
     def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get platform element.
@@ -58,22 +59,17 @@ class Platform:
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
 
-    def get_bus(self, port: int, bus_subcategory: BusSubcategory):
+    def get_bus(self, port: int):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
 
         Args:
             qubit_ids (List[int]): List of qubit IDs.
-            bus_subcategory (BusSubcategory): Type of bus. Options are "control" and "readout".
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.
         """
         return next(
-            (
-                (bus_idx, bus)
-                for bus_idx, bus in enumerate(self.buses)
-                if bus.port == port and bus.subcategory == bus_subcategory
-            ),
+            ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
             ([], None),
         )
 
@@ -175,6 +171,15 @@ class Platform:
             Chip: Class descibing the chip properties.
         """
         return self.schema.chip
+
+    @property
+    def instrument_controllers(self):
+        """Platform 'instrument_controllers' property.
+
+        Returns:
+            InstrumentControllers: List of all instrument controllers.
+        """
+        return self.schema.instrument_controllers
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

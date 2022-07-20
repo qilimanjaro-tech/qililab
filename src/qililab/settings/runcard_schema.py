@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings import Category, Parameter
+from qililab.typings.enums import Category, Parameter
 from qililab.utils import nested_dataclass
 
 
@@ -45,9 +45,20 @@ class RuncardSchema:
             category: str
             nodes: List[dict]
 
+        @dataclass
+        class InstrumentControllerSchema:
+            """Instrument Controller schema class."""
+
+            id_: int
+            category: str
+            subcategory: str
+            connection: dict
+            modules: List[dict]
+
         chip: ChipSchema
         buses: List[BusSchema]
         instruments: List[dict]
+        instrument_controllers: List[InstrumentControllerSchema]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses]
@@ -76,13 +87,10 @@ class RuncardSchema:
 
         def get_gate(self, name: str):
             """Get gate with the given name.
-
             Args:
                 name (str): Name of the gate.
-
             Raises:
                 ValueError: If no gate is found.
-
             Returns:
                 GateSettings: GateSettings class.
             """
@@ -94,7 +102,6 @@ class RuncardSchema:
         @property
         def gate_names(self) -> List[str]:
             """PlatformSettings 'gate_names' property.
-
             Returns:
                 List[str]: List of the names of all the defined gates.
             """

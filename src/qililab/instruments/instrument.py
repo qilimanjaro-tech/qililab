@@ -4,19 +4,18 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Type, get_type_hints
 
-from qililab.config import logger
 from qililab.constants import RUNCARD
-from qililab.platform import BusElement
+from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
-from qililab.typings import Device, InstrumentName, Parameter
+from qililab.typings.enums import InstrumentName, Parameter
+from qililab.typings.instruments.device import Device
 
 
 class Instrument(BusElement, ABC):
     """Abstract base class declaring the necessary attributes
-    and methods for the instruments connected via TCP/IP.
+    and methods for the instruments.
 
     Args:
-        device (Device): Class used for connecting to the instrument.
         settings (Settings): Class containing the settings of the instrument.
     """
 
@@ -27,14 +26,16 @@ class Instrument(BusElement, ABC):
         """Contains the settings of an instrument.
 
         Args:
-            ip (str): IP address of the instrument.
+            firmware (str): Firmware version installed on the instrument.
         """
 
-        ip: str
         firmware: str
 
-    class CheckConnected:
-        """Property used to check if the instrument is connected."""
+    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
+    device: Device
+
+    class CheckDeviceInitialized:
+        """Property used to check if the device has been initialized."""
 
         def __init__(self, method: Callable):
             self._method = method
@@ -49,50 +50,42 @@ class Instrument(BusElement, ABC):
                 method (Callable): Class method.
 
             Raises:
-                AttributeError: If the instrument is not connected.
+                AttributeError: If device has not been initialized.
             """
-            if not ref._connected or not hasattr(ref, "device"):
-                raise AttributeError("Instrument is not connected")
+            if not hasattr(ref, "device"):
+                raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs)
-
-    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
-    device: Device  # a subtype of device must be specified by the subclass
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
         settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
-        self._connected = False
-
-    def connect(self):
-        """Establish connection with the instrument. Initialize self.device variable."""
-        logger.info("Connecting to instrument %s.", self.name.value)
-        if self._connected:
-            raise ValueError("Instrument is already connected")
-        self._initialize_device()
-        self._connected = True
-
-    def close(self):
-        """Close connection with the instrument."""
-        if self._connected:
-            logger.info("Closing instrument %s.", self.name.value)
-            self.stop()
-            self.device.close()
-            self._connected = False
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Redirect __setattr__ magic method."""
         self.settings.set_parameter(parameter=parameter, value=value)
-        if self._connected:
+        if hasattr(self, "device"):
             self.setup()
 
+    @CheckDeviceInitialized
+    @abstractmethod
+    def initial_setup(self):
+        """Set initial instrument settings."""
+
+    @CheckDeviceInitialized
     @abstractmethod
     def setup(self):
         """Set instrument settings."""
 
+    @CheckDeviceInitialized
     @abstractmethod
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
+    def reset(self):
+        """Reset instrument settings."""
+
+    @CheckDeviceInitialized
+    @abstractmethod
+    def stop(self):
+        """Stop an instrument."""
 
     @property
     def id_(self):
@@ -108,7 +101,7 @@ class Instrument(BusElement, ABC):
         """Instrument 'alias' property.
 
         Returns:
-            int: settings.alias.
+            str: settings.alias.
         """
         return self.settings.alias
 
@@ -117,18 +110,9 @@ class Instrument(BusElement, ABC):
         """Instrument 'category' property.
 
         Returns:
-            str: settings.category.
+            Category: settings.category.
         """
         return self.settings.category
-
-    @property
-    def ip(self):
-        """Instrument 'ip' property.
-
-        Returns:
-            str: settings.ip.
-        """
-        return self.settings.ip
 
     @property
     def firmware(self):

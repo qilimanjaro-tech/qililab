@@ -8,9 +8,13 @@ RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
+GALADRIEL_DEVICE_ID = 9
 
+DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
 # TODO: Distribute constants over different classes
+
+
 class RUNCARD:
     """YAML constants."""
 
@@ -29,7 +33,7 @@ class RUNCARD:
     SIGNAL_GENERATOR = "signal_generator"
     ATTENUATOR = "attenuator"
     SYSTEM_CONTROL = "system_control"
-    IP = "ip"
+    INSTRUMENT_CONTROLLER = "instrument_controller"
     FIRMWARE = "firmware"
 
 
@@ -37,6 +41,7 @@ class SIGNALGENERATOR:
     """SignalGenerator attribute names."""
 
     FREQUENCY = "frequency"
+    PULSES = "pulses"
 
 
 class EXPERIMENT:
@@ -57,6 +62,7 @@ class SCHEMA:
     INSTRUMENTS = "instruments"
     BUSES = "buses"
     CHIP = "chip"
+    INSTRUMENT_CONTROLLERS = "instrument_controllers"
 
 
 class BUS:
@@ -106,6 +112,25 @@ class PULSE:
     PORT = "port"
     PULSE_SHAPE = "pulse_shape"
     START_TIME = "start_time"
+
+
+class INSTRUMENTCONTROLLER:
+    """Instrument controller attribute names."""
+
+    CONNECTION = "connection"
+    MODULES = "modules"
+
+
+class CONNECTION:
+    " Connection attribute names." ""
+
+    ADDRESS = "address"
+
+
+class INSTRUMENTREFERENCE:
+    """InstrumentReference attribute names."""
+
+    SLOT_ID = "slot_id"
 
 
 UNITS = {"frequency": "Hz"}

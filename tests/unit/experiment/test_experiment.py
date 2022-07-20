@@ -1,7 +1,6 @@
 """Tests for the Experiment class."""
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 from qibo.core.circuit import Circuit
 from qibo.gates import M
@@ -10,7 +9,6 @@ from qiboconnection.api import API
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.result import Results
 from qililab.typings import Instrument, Parameter
 
 from ...conftest import mock_instruments
@@ -49,6 +47,7 @@ class TestExperiment:
         assert isinstance(dictionary, dict)
 
     def test_from_dict_method(self, experiment: Experiment):
+        # sourcery skip: class-extract-method
         """Test from_dict method."""
         dictionary = experiment.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
@@ -81,8 +80,28 @@ class TestExperiment:
         str(experiment_all_platforms)
         str(experiment_all_platforms.settings)
 
-    def test_set_parameter_method(self, experiment: Experiment):
+    def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
+        """Test set_parameter method raising an error when device is not connected."""
+        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+
+    @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+    @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+    @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+    @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+    def test_set_parameter_method_with_a_connected_device(
+        self,
+        mock_urllib: MagicMock,
+        mock_keithley: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment: Experiment,  # pylint: disable=unused-argument
+    ):
         """Test set_parameter method."""
+        # add dynamically created attributes
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+        experiment.platform.connect()
+        mock_urllib.request.Request.assert_called()
+        mock_urllib.request.urlopen.assert_called()
         experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
@@ -132,166 +151,13 @@ class TestSimulatedExexution:
     ):
         """Test execute method with simulated qubit."""
         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        connection = MagicMock(name="API", spec=API, autospec=True)
-        connection.create_liveplot.return_value = 0
-        results = simulated_experiment.execute(connection=connection)  # type: ignore
+        results = simulated_experiment.execute()
         with pytest.raises(ValueError):
             results.acquisitions()
-        connection.create_liveplot.assert_called_once()
-        connection.send_plot_points.assert_called()
         mock_qutip.Options.assert_called()
         mock_qutip.ket2dm.assert_called()
         mock_qutip.mesolve.assert_called()
         mock_open.assert_called()
         mock_open_1.assert_called()
         mock_dump.assert_called()
-        mock_makedirs.assert_called()
-
-
-@patch("qililab.instruments.mini_circuits.attenuator.urllib", autospec=True)
-@patch("qililab.instruments.qblox.qblox_pulsar.Pulsar", autospec=True)
-@patch("qililab.instruments.rohde_schwarz.sgs100a.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
-@patch("qililab.execution.buses_execution.open")
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
-@patch("qililab.instruments.qblox.qblox_pulsar.json.dump")
-@patch("qililab.instruments.qblox.qblox_pulsar.open")
-class TestExexution:
-    """Unit tests checking the the execution of a platform with instruments."""
-
-    def test_execute_method_with_nested_loop(
-        self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
-        mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
-        mock_dump_1: MagicMock,
-        mock_rs: MagicMock,
-        mock_pulsar: MagicMock,
-        mock_urllib: MagicMock,
-        nested_experiment: Experiment,
-    ):
-        """Test execute method with nested loops."""
-        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        nested_experiment.settings.software_average = 5
-        results = nested_experiment.execute()  # type: ignore
-        nested_experiment.to_dict()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        assert isinstance(results, Results)
-        assert np.shape(results.acquisitions(mean=True))[1:4] == (2, 2, 2)
-        assert np.shape(results.probabilities(mean=True))[1:4] == (2, 2, 2)
-        mock_dump_0.assert_called()
-        mock_dump_1.assert_called()
-        mock_open_0.assert_called()
-        mock_open_1.assert_called()
-        mock_open_2.assert_called()
-        mock_makedirs.assert_called()
-        assert (
-            results.ranges
-            == np.array(
-                [
-                    nested_experiment.loop.range,  # type: ignore
-                    nested_experiment.loop.loop.range,  # type: ignore
-                    nested_experiment.loop.loop.loop.range,  # type: ignore
-                ]
-            )
-        ).all()
-
-    def test_execute_method_with_instruments(
-        self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
-        mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
-        mock_dump_1: MagicMock,
-        mock_rs: MagicMock,
-        mock_pulsar: MagicMock,
-        mock_urllib: MagicMock,
-        experiment: Experiment,
-    ):
-        """Test run method."""
-        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        results = experiment.execute()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
-        assert isinstance(results, Results)
-        probabilities = results.probabilities()
-        acquisitions = results.acquisitions()
-        assert isinstance(probabilities, np.ndarray)
-        assert isinstance(acquisitions, np.ndarray)
-        mock_dump_0.assert_called()
-        mock_dump_1.assert_called()
-        mock_open_0.assert_called()
-        mock_open_1.assert_called()
-        mock_open_2.assert_called()
-        mock_makedirs.assert_called()
-
-    def test_execute_method_with_from_dict_experiment(
-        self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
-        mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
-        mock_dump_1: MagicMock,
-        mock_rs: MagicMock,
-        mock_pulsar: MagicMock,
-        mock_urllib: MagicMock,
-        nested_experiment: Experiment,
-    ):
-        """Test run method."""
-        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        experiment = Experiment.from_dict(nested_experiment.to_dict())
-        results = experiment.execute()
-        results_2 = nested_experiment.execute()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        assert results == results_2
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
-        assert isinstance(results, Results)
-        probabilities = results.probabilities()
-        acquisitions = results.acquisitions()
-        assert isinstance(probabilities, np.ndarray)
-        assert isinstance(acquisitions, np.ndarray)
-        mock_dump_0.assert_called()
-        mock_dump_1.assert_called()
-        mock_open_0.assert_called()
-        mock_open_1.assert_called()
-        mock_open_2.assert_called()
-        mock_makedirs.assert_called()
-
-    def test_execute_method_with_keyboard_interrupt(
-        self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
-        mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
-        mock_dump_1: MagicMock,
-        mock_rs: MagicMock,
-        mock_pulsar: MagicMock,
-        mock_urllib: MagicMock,
-        experiment: Experiment,
-    ):
-        """Test run method."""
-        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar)
-        mock_pulsar.return_value.get_acquisitions.side_effect = KeyboardInterrupt()
-        results = experiment.execute()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
-        assert isinstance(results, Results)
-        mock_open_0.assert_called()
-        mock_dump_0.assert_called()
-        mock_open_1.assert_called()
-        mock_dump_1.assert_not_called()
-        mock_open_2.assert_not_called()
         mock_makedirs.assert_called()

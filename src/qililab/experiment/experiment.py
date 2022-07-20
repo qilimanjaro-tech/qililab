@@ -22,12 +22,15 @@ from qililab.constants import (
     RUNCARD,
 )
 from qililab.execution import EXECUTION_BUILDER, Execution
-from qililab.platform import Platform
+from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
+from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
-from qililab.typings import Category, Instrument, Parameter, yaml
-from qililab.utils import LivePlot, Loop
+from qililab.typings.enums import Category, Instrument, Parameter
+from qililab.typings.yaml_type import yaml
+from qililab.utils.live_plot import LivePlot
+from qililab.utils.loop import Loop
 
 
 class Experiment:
@@ -51,7 +54,10 @@ class Experiment:
         platform: Platform,
         loop: Loop | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
+        connection: API | None = None,
+        device_id: int | None = None,
         name: str = "experiment",
+        plot_y_label: str | None = None,
     ):
         self.platform = copy.deepcopy(platform)
         self.name = name
@@ -60,23 +66,26 @@ class Experiment:
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
+        self.remote_api = RemoteAPI(connection=connection, device_id=device_id)
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
+        self.plot_y_label = plot_y_label
 
-    def execute(self, connection: API | None = None) -> Results:
+    def execute(self) -> Results:
         """Run execution."""
-        path = self._create_folder()
-        self._create_results_file(path=path)
-        self._dump_experiment_data(path=path)
-        plot = LivePlot(connection=connection)
-        results = Results(
-            software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
-        )
-        with self.execution:
-            try:
-                self._execute_loop(results=results, plot=plot, path=path)
-            except KeyboardInterrupt as error:  # pylint: disable=broad-except
-                logger.error("%s: %s", type(error).__name__, str(error))
-        return results
+        with self.remote_api:
+            path = self._create_folder()
+            self._create_results_file(path=path)
+            self._dump_experiment_data(path=path)
+            plot = LivePlot(remote_api=self.remote_api, loop=self.loop, plot_y_label=self.plot_y_label)
+            results = Results(
+                software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
+            )
+            with self.execution:
+                try:
+                    self._execute_loop(results=results, plot=plot, path=path)
+                except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                    logger.error("%s: %s", type(error).__name__, str(error))
+            return results
 
     def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
         """Loop and execute sequence over given Platform parameters.
@@ -119,9 +128,6 @@ class Experiment:
         if loop is None:
             return self._execute_and_process_results(results=results, path=path, plot=plot, x_value=x_value)
 
-        if loop.loop is None:
-            x_label = self._set_x_label(loop=loop, x_value=x_value)
-            plot.create_live_plot(title=self.name, x_label=x_label, y_label="Amplitude")
         self._process_loop(results=results, loop=loop, depth=depth, path=path, plot=plot)
         return results
 
@@ -141,34 +147,8 @@ class Experiment:
         results.add(result=result)
         # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
         # in the ground state for the last sequence. Find a way to plot all the sequences.
-        plot.send_points(x_value=x_value, y_value=np.round(result[-1].probabilities()[0], 4))
+        plot.send_points(value=np.round(result[-1].probabilities()[0][0], 4))
         return results
-
-    def _set_x_label(self, loop: Loop, x_value: float) -> str:
-        """Create x label for live plotting.
-
-        Args:
-            loop (Loop): Loop class.
-            x_value (float): X value used in live plotting.
-
-        Returns:
-            str: X label.
-        """
-        instrument_name = (
-            loop.alias
-            if loop.alias is not None
-            else f"{loop.instrument.value if loop.instrument is not None else None} {loop.id_}"
-        )
-        x_label = f"{instrument_name}: {loop.parameter.value} "
-        if loop.previous is not None:
-            instrument_name = (
-                loop.previous.alias
-                if loop.previous.alias is not None
-                else f"{loop.previous.instrument.value if loop.previous.instrument is not None else None}"
-                + f"{loop.previous.id_}"
-            )
-            x_label += f"({instrument_name}:" + f"{loop.previous.parameter.value}={np.round(x_value, 4)})"
-        return x_label
 
     def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
@@ -213,9 +193,6 @@ class Experiment:
         Returns:
             List[Result]: List of Result object for each pulse sequence.
         """
-        if plot is not None:
-            plot.create_live_plot(title=self.name, x_label="Sequence idx", y_label="Amplitude")
-
         return self.execution.run(
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,

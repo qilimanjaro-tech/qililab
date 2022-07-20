@@ -1,56 +1,50 @@
-"""Tests for the QbloxPulsarQCM class."""
+"""Tests for the QbloxQCM class."""
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
-from qililab.instruments import QbloxPulsarQCM
+from qililab.instruments import QbloxQCM
 from qililab.typings import InstrumentName
 
 
-class TestQbloxPulsarQCM:
-    """Unit tests checking the QbloxPulsarQCM attributes and methods"""
+class TestQbloxQCM:
+    """Unit tests checking the QbloxQCM attributes and methods"""
 
-    def test_connect_method_raises_error(self, qcm: QbloxPulsarQCM):
-        """Test that calling again connect raises a ValueError"""
-        with pytest.raises(ValueError):
-            qcm.connect()
-
-    def test_inital_setup_method(self, qcm: QbloxPulsarQCM):
+    def test_inital_setup_method(self, qcm: QbloxQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
-        qcm.device.reference_source.assert_called_with(qcm.reference_clock.value)
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.sync_enabled)
 
-    def test_start_sequencer_method(self, qcm: QbloxPulsarQCM):
+    def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
         qcm.start_sequencer()
         qcm.device.arm_sequencer.assert_called()
         qcm.device.start_sequencer.assert_called()
 
-    def test_setup_method(self, qcm: QbloxPulsarQCM):
+    def test_setup_method(self, qcm: QbloxQCM):
         """Test setup method"""
         qcm.setup()
-        qcm.device.sequencer0.gain_awg_path0.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.gain_awg_path1.assert_called_once_with(qcm.gain)
-        qcm.device.sequencer0.offset_awg_path0.assert_called_once_with(qcm.offset_i)
-        qcm.device.sequencer0.offset_awg_path1.assert_called_once_with(qcm.offset_q)
+        qcm.device.sequencer0.gain_awg_path0.assert_called()
+        qcm.device.sequencer0.gain_awg_path1.assert_called()
+        qcm.device.sequencer0.offset_awg_path0.assert_called()
+        qcm.device.sequencer0.offset_awg_path1.assert_called()
 
-    def test_stop_method(self, qcm: QbloxPulsarQCM):
+    def test_stop_method(self, qcm: QbloxQCM):
         """Test stop method"""
         qcm.stop()
         qcm.device.stop_sequencer.assert_called_once()
 
-    def test_reset_method(self, qcm: QbloxPulsarQCM):
+    def test_reset_method(self, qrm: QbloxQCM):
         """Test reset method"""
-        qcm.reset()
-        qcm.device.reset.assert_called()
+        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm.reset()
+        assert qrm._cache is None  # pylint: disable=protected-access
 
-    @patch("qililab.instruments.qblox.qblox_pulsar.json.dump", return_value=None)
-    def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxPulsarQCM):
+    @patch("qililab.instruments.qblox.qblox_module.json.dump", return_value=None)
+    def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxQCM):
         """Test upload method"""
         qcm.upload(
             sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
@@ -59,45 +53,22 @@ class TestQbloxPulsarQCM:
         qcm.device.sequencer0.sequence.assert_called_once()
         mock_dump.assert_called_once()
 
-    def test_close_method(self, qcm: QbloxPulsarQCM):
-        """Test close method"""
-        qcm.close()
-        qcm.device.stop_sequencer.assert_called_once()
-        qcm.device.close.assert_called_once()  # type: ignore
-
-    def test_close_method_with_value_error(self, qcm: QbloxPulsarQCM):
-        """Test close method"""
-        qcm.device.stop_sequencer.side_effect = ValueError()
-        qcm.close()
-        qcm.device.stop_sequencer.assert_called_once()
-        qcm.device.close.assert_called_once()  # type: ignore
-
-    def test_not_connected_attribute_error(self, qcm: QbloxPulsarQCM):
-        """Test that calling a method when the device is not connected raises an AttributeError."""
-        qcm.close()
-        with pytest.raises(AttributeError):
-            qcm.start_sequencer()
-
-    def test_ip_property(self, qcm: QbloxPulsarQCM):
-        """Test ip property."""
-        assert qcm.ip == qcm.settings.ip
-
-    def test_id_property(self, qcm: QbloxPulsarQCM):
+    def test_id_property(self, qcm_no_device: QbloxQCM):
         """Test id property."""
-        assert qcm.id_ == qcm.settings.id_
+        assert qcm_no_device.id_ == qcm_no_device.settings.id_
 
-    def test_name_property(self, qcm: QbloxPulsarQCM):
+    def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
-        assert qcm.name == InstrumentName.QBLOX_QCM
+        assert qcm_no_device.name == InstrumentName.QBLOX_QCM
 
-    def test_category_property(self, qcm: QbloxPulsarQCM):
+    def test_category_property(self, qcm_no_device: QbloxQCM):
         """Test category property."""
-        assert qcm.category == qcm.settings.category
+        assert qcm_no_device.category == qcm_no_device.settings.category
 
-    def test_firmware_property(self, qcm: QbloxPulsarQCM):
+    def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
-        assert qcm.firmware == qcm.settings.firmware
+        assert qcm_no_device.firmware == qcm_no_device.settings.firmware
 
-    def test_frequency_property(self, qcm: QbloxPulsarQCM):
+    def test_frequency_property(self, qcm_no_device: QbloxQCM):
         """Test frequency property."""
-        assert qcm.frequency == qcm.settings.frequency
+        assert qcm_no_device.frequency == qcm_no_device.settings.frequency

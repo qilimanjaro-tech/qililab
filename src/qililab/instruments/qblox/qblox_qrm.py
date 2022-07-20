@@ -2,40 +2,35 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from qpysequence.acquisitions import Acquisitions
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
-from qililab.instruments.qblox.qblox_pulsar import QbloxPulsar
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings import (
-    AcquireTriggerMode,
-    AcquisitionName,
-    InstrumentName,
-    IntegrationMode,
-)
+from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
 
 
 @InstrumentFactory.register
-class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
-    """Qblox pulsar QRM class.
+class QbloxQRM(QbloxModule, QubitReadout):
+    """Qblox QRM class.
 
     Args:
-        settings (QBloxPulsarQRMSettings): Settings of the instrument.
+        settings (QBloxQRMSettings): Settings of the instrument.
     """
 
     name = InstrumentName.QBLOX_QRM
 
     @dataclass
-    class QbloxPulsarQRMSettings(QbloxPulsar.QbloxPulsarSettings, QubitReadout.QubitReadoutSettings):
+    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, QubitReadout.QubitReadoutSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
             acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
-            hardware_averaging (bool): Enable/disable hardware averaging of the data.
+            scope_hardware_averaging (bool): Enable/disable hardware averaging of the data during scope mode.
             integration_length (int): Duration (in ns) of the integration.
             integration_mode (str): Integration mode. Options are 'ssb'.
             sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
@@ -45,8 +40,8 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             acquisition_name (str): Name of the acquisition saved in the sequencer.
         """
 
-        acquire_trigger_mode: AcquireTriggerMode
-        hardware_averaging: bool
+        scope_acquire_trigger_mode: AcquireTriggerMode
+        scope_hardware_averaging: bool
         sampling_rate: int
         integration: bool  # integration flag
         integration_length: int
@@ -54,9 +49,9 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         sequence_timeout: int  # minutes
         acquisition_timeout: int  # minutes
 
-    settings: QbloxPulsarQRMSettings
+    settings: QbloxQRMSettings
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:
@@ -67,21 +62,26 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         """
         if (pulse_sequence, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            self.device._delete_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
-            acquisition = self._generate_acquisitions()
-            self.device._add_acquisitions(sequencer=self.sequencer, acquisitions=acquisition.to_dict())
+            for seq_idx in range(self.num_sequencers):
+                self.device._delete_acquisition(  # pylint: disable=protected-access
+                    sequencer=seq_idx, name=self.acquisition_name
+                )
+                acquisition = self._generate_acquisitions()
+                self.device._add_acquisitions(  # pylint: disable=protected-access
+                    sequencer=seq_idx, acquisitions=acquisition.to_dict()
+                )
         super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
         return self.get_acquisitions()
 
-    @QbloxPulsar.CheckConnected
+    @Instrument.CheckDeviceInitialized
     def setup(self):
         """Connect to the instrument, reset it and configure its reference source and synchronization settings."""
         super().setup()
-        self._set_hardware_averaging()
+        self._set_scope_hardware_averaging()
         self._set_acquisition_mode()
 
-    @QbloxPulsar.CheckConnected
-    def get_acquisitions(self):
+    @Instrument.CheckDeviceInitialized
+    def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.
 
@@ -89,55 +89,63 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
             QbloxResult: Class containing the acquisition results.
 
         """
-        self.device.get_sequencer_state(sequencer=self.sequencer, timeout=self.sequence_timeout)
-        self.device.get_acquisition_state(sequencer=self.sequencer, timeout=self.acquisition_timeout)
+        for seq_idx in range(self.num_sequencers):
+            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout)
+            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout)
         if not self.integration:
-            self.device.store_scope_acquisition(sequencer=self.sequencer, name=self.acquisition_name)
-        result = self.device.get_acquisitions(sequencer=self.sequencer)[self.acquisition_name]["acquisition"][
-            self.data_name
+            self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name)
+            result = self.device.get_acquisitions(sequencer=0)[self.acquisition_name]["acquisition"][self.data_name]
+            return QbloxResult(scope=result)
+
+        results = [
+            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"][self.data_name]
+            for seq_idx in range(self.num_sequencers)
         ]
-        return QbloxResult(**{self.data_name: result})  # pylint: disable=unexpected-keyword-arg
+        return QbloxResult(bins=results)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
         super()._set_nco()
-        getattr(self.device, f"sequencer{self.sequencer}").demod_en_acq(True)
+        for seq_idx in range(self.num_sequencers):
+            self.device.sequencers[seq_idx].demod_en_acq(True)
 
-    def _set_hardware_averaging(self):
+    def _set_scope_hardware_averaging(self):
         """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.hardware_averaging)
-        self.device.scope_acq_avg_mode_en_path1(self.hardware_averaging)
+        self.device.scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
+        self.device.scope_acq_avg_mode_en_path1(self.scope_hardware_averaging)
 
     def _set_acquisition_mode(self):
         """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
-        self.device.scope_acq_sequencer_select(self.sequencer)
-        self.device.scope_acq_trigger_mode_path0(self.acquire_trigger_mode.value)
-        self.device.scope_acq_trigger_mode_path1(self.acquire_trigger_mode.value)
+        self.device.scope_acq_sequencer_select(0)
+        self.device.scope_acq_trigger_mode_path0(self.scope_acquire_trigger_mode.value)
+        self.device.scope_acq_trigger_mode_path1(self.scope_acquire_trigger_mode.value)
         if self.integration:
-            getattr(self.device, f"sequencer{self.sequencer}").integration_length_acq(int(self.integration_length))
+            for seq_idx in range(self.num_sequencers):
+                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
+                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
 
     def _append_acquire_instruction(self, loop: Loop, register: str):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = 0 if self.hardware_averaging else 1  # use binned acquisition if averaging is false
+        acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     @property
-    def acquire_trigger_mode(self):
+    def scope_acquire_trigger_mode(self):
         """QbloxPulsarQRM 'acquire_trigger_mode' property.
 
         Returns:
             AcquireTriggerMode: settings.acquire_trigger_mode.
         """
-        return self.settings.acquire_trigger_mode
+        return self.settings.scope_acquire_trigger_mode
 
     @property
-    def hardware_averaging(self):
-        """QbloxPulsarQRM 'hardware_averaging' property.
+    def scope_hardware_averaging(self):
+        """QbloxPulsarQRM 'scope_hardware_averaging' property.
 
         Returns:
-            bool: settings.hardware_averaging.
+            bool: settings.scope_hardware_averaging.
         """
-        return self.settings.hardware_averaging
+        return self.settings.scope_hardware_averaging
 
     @property
     def sampling_rate(self):
@@ -218,4 +226,4 @@ class QbloxPulsarQRM(QbloxPulsar, QubitReadout):
         Returns:
             str: Name of the acquisition. Options are "single" or "binning".
         """
-        return "single" if self.hardware_averaging else "binning"
+        return "single" if self.scope_hardware_averaging else "binning"

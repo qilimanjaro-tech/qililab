@@ -1,9 +1,10 @@
 """Result class."""
 from dataclasses import asdict, dataclass, field
-from typing import Tuple
+from typing import List, Tuple
 
 from qililab.constants import RUNCARD
-from qililab.typings import FactoryElement, ResultName
+from qililab.typings.enums import ResultName
+from qililab.typings.factory_element import FactoryElement
 
 
 # FIXME: Cannot use dataclass and ABC at the same time
@@ -17,7 +18,7 @@ class Result(FactoryElement):
         """Plot results."""
         raise NotImplementedError
 
-    def probabilities(self) -> Tuple[float, float]:
+    def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
