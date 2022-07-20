@@ -20,7 +20,7 @@ class LivePlot:
 
     remote_api: RemoteAPI
     loop: Loop | None = None
-    plot_ids: List[int] = field(default_factory=list)
+    plot_id: int = field(init=False)
     x_iterator_ranges: Iterator = field(init=False)
     y_iterator_ranges: Iterator = field(init=False)
     ranges: List[Iterator] = field(init=False)
@@ -30,7 +30,7 @@ class LivePlot:
     def __post_init__(self, title: str):
         """Generate iterators that iterate over loop ranges."""
         self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges()
-        self.create_live_plot(title=title)
+        self.plot_id = self.create_live_plot(title=title)
 
     def _build_plot_ranges_from_loop_ranges(self) -> List[Iterator]:
         """build plot ranges from loop ranges"""
@@ -81,7 +81,7 @@ class LivePlot:
             return self._method(ref, *args, **kwargs)
 
     @CheckRemoteApiInitialized
-    def create_live_plot(self, title: str):
+    def create_live_plot(self, title: str) -> int:
         """Create live plot
 
         Args:
@@ -89,16 +89,14 @@ class LivePlot:
             x_label (str): Label of the x axis.
             y_label (str): Label of the y axis.
         """
-        self.plot_ids.append(
-            self.connection().create_liveplot(
-                title=title,
-                x_label=self.x_label,
-                y_label=self.y_label,
-                z_label=self.z_label,
-                plot_type=self.plot_type.value,
-                x_axis=self.x_axis,
-                y_axis=self.y_axis,
-            )
+        return self.connection().create_liveplot(
+            title=title,
+            x_label=self.x_label,
+            y_label=self.y_label,
+            z_label=self.z_label,
+            plot_type=self.plot_type.value,
+            x_axis=self.x_axis,
+            y_axis=self.y_axis,
         )
 
     @CheckRemoteApiInitialized
@@ -108,21 +106,20 @@ class LivePlot:
         Args:
             value (float): value to send to the plot
         """
-        if self.plot_type == LivePlotTypes.SCATTER or self.plot_type == LivePlotTypes.LINES:
-            self.connection().send_plot_points(
-                plot_id=self.plot_ids[-1], x=float(next(self.x_iterator_ranges)), y=float(value)
-            )
+        if self.plot_type in [LivePlotTypes.SCATTER, LivePlotTypes.LINES]:
+            self.connection().send_plot_points(plot_id=self.plot_id, x=next(self.x_iterator_ranges), y=value)
             return
         if self.plot_type == LivePlotTypes.HEATMAP:
             self.connection().send_plot_points(
-                plot_id=self.plot_ids[-1],
-                x=float(next(self.x_iterator_ranges)),
-                y=float(next(self.y_iterator_ranges)),
-                z=float(value),
+                plot_id=self.plot_id,
+                x=next(self.x_iterator_ranges),
+                y=next(self.y_iterator_ranges),
+                z=value,
             )
             return
         raise ValueError(
-            f"PlotType {self.plot_type.value} not supported. Plot valid types are: {[plot_type.value for plot_type in LivePlotTypes]}"
+            f"PlotType {self.plot_type.value} not supported. Plot valid types are: "
+            + f"{[plot_type.value for plot_type in LivePlotTypes]}"
         )
 
     @property
