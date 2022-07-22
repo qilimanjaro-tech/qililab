@@ -1,6 +1,7 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
@@ -95,13 +96,14 @@ class QbloxQRM(QbloxModule, QubitReadout):
         if not self.integration:
             self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name)
             result = self.device.get_acquisitions(sequencer=0)[self.acquisition_name]["acquisition"][self.data_name]
-            return QbloxResult(scope=result)
+            return QbloxResult(pulse_length=self.integration_length, scope=result)
 
         results = [
             self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"][self.data_name]
             for seq_idx in range(self.num_sequencers)
         ]
-        return QbloxResult(bins=results)
+
+        return QbloxResult(pulse_length=self.integration_length, bins=results)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""

@@ -6,7 +6,7 @@ from typing import List, Tuple
 import numpy as np
 
 from qililab.constants import RUNCARD
-from qililab.result.qblox_result import QbloxResult
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
