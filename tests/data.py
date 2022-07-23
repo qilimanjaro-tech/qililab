@@ -9,6 +9,7 @@ from qililab.constants import (
     CONNECTION,
     INSTRUMENTCONTROLLER,
     INSTRUMENTREFERENCE,
+    PLATFORM,
     RUNCARD,
     SCHEMA,
 )
@@ -32,23 +33,37 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         RUNCARD.CATEGORY: "platform",
-        "delay_between_pulses": 0,
-        "delay_before_readout": 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
         "gates": [
-            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "M",
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                "phase": 0,
+                "duration": 2000,
+                "shape": {"name": "rectangular"},
+            },
+            {
+                "name": "I",
+                "amplitude": 0,
+                "phase": 0,
+                "duration": 0,
+                "shape": {"name": "rectangular"},
+            },
             {
                 "name": "X",
-                "amplitude": 1,
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
-                "duration": 100,
+                "duration": PLATFORM.MASTER_DURATION_GATE,
                 "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
             },
             {
                 "name": "Y",
-                "amplitude": 1,
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 1.5707963267948966,
-                "duration": 100,
+                "duration": PLATFORM.MASTER_DURATION_GATE,
                 "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
             },
         ],
@@ -347,8 +362,10 @@ class FluxQubitSimulator:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         RUNCARD.CATEGORY: "platform",
-        "delay_between_pulses": 0,
-        "delay_before_readout": 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
         "gates": [
             {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
             {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -521,7 +538,11 @@ results_one_loops = {
 
 experiment = {
     "platform": Galadriel.runcard,
-    "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
+    "settings": {
+        "hardware_average": 1024,
+        "software_average": 1,
+        "repetition_duration": 200000,
+    },
     "sequences": [
         {
             "elements": [
