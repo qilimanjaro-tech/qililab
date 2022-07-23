@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 import numpy as np
 
+from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
     QbloxAcquisitionsBuilder,
 )
@@ -32,14 +33,16 @@ class QbloxResult(Result):
     """
 
     name = ResultName.QBLOX
-    pulse_length: InitVar[int]
-    scope: InitVar[dict | None] = None
-    bins: InitVar[List[dict] | None] = None
+    pulse_length: int
+    scope: dict | None = None
+    bins: List[dict] | None = None
     qblox_acquisitions: QbloxScopeAcquisitions | QbloxBinsAcquisitions = field(init=False)
 
-    def __post_init__(self, pulse_length: int, scope: dict | None, bins: List[dict] | None):
+    def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
-        self.qblox_acquisitions = QbloxAcquisitionsBuilder.get(pulse_length=pulse_length, scope=scope, bins=bins)
+        self.qblox_acquisitions = QbloxAcquisitionsBuilder.get(
+            pulse_length=self.pulse_length, scope=self.scope, bins=self.bins
+        )
 
     def acquisitions(self) -> np.ndarray:
         """Return acquisition values.
@@ -69,3 +72,22 @@ class QbloxResult(Result):
             List[int]: Shape of the acquisitions.
         """
         return list(self.acquisitions().shape)
+
+    def to_dict(self) -> dict:
+        """
+        Returns:
+            dict: Dictionary containing all the class information.
+        """
+        results_dict: dict[str, str | int | dict | List[dict]] = {
+            RUNCARD.NAME: self.name.value,
+            QBLOXRESULT.PULSE_LENGTH: self.pulse_length,
+        }
+        if self.scope is not None:
+            results_dict |= {
+                QBLOXRESULT.SCOPE: self.scope,
+            }
+        if self.bins is not None:
+            results_dict |= {
+                QBLOXRESULT.BINS: self.bins,
+            }
+        return results_dict
