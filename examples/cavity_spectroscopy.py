@@ -7,6 +7,7 @@ from qibo.gates import M
 from qiboconnection.api import API
 
 from qililab import build_platform
+from qililab.constants import GALADRIEL_DEVICE_ID
 from qililab.experiment import Experiment
 from qililab.typings import Parameter
 from qililab.utils import Loop
@@ -23,7 +24,7 @@ def run_circuit(connection: API | None = None):
     circuit.add(M(0))
 
     # Define loops (optional)
-    loop_freq = Loop(alias="resonator", parameter=Parameter.FREQUENCY, start=7.32e9, stop=7.332e9, step=0.2e5)
+    loop_freq = Loop(alias="resonator", parameter=Parameter.FREQUENCY, start=7.32e9, stop=7.33e9, step=0.2e5)
 
     # Change settings (optional)
     settings = Experiment.ExperimentSettings()
@@ -38,6 +39,7 @@ def run_circuit(connection: API | None = None):
         loop=loop_freq,
         name="cavity_spectroscopy",
         connection=connection,
+        device_id=GALADRIEL_DEVICE_ID,
         settings=settings,
         plot_y_label="Voltage",
     )  # if you don't want to define any settings just remove settings=settings.
@@ -46,9 +48,8 @@ def run_circuit(connection: API | None = None):
     cavity_spectroscopy.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=1)  # by default was 0.4.
     # IMPORTANT: Need to disable Qblox synchronization since we are only using the QRM
     cavity_spectroscopy.set_parameter(alias="QRM", parameter=Parameter.SYNC_ENABLED, value=False)
-    cavity_spectroscopy.set_parameter(alias="attenuator", parameter=Parameter.ATTENUATION, value=10)
+    cavity_spectroscopy.set_parameter(alias="attenuator", parameter=Parameter.ATTENUATION, value=32)
     cavity_spectroscopy.set_parameter(alias="M", parameter=Parameter.DURATION, value=8000)
-    cavity_spectroscopy.set_parameter(alias="QRM", parameter=Parameter.INTEGRATION_LENGTH, value=8000)
 
     # Execute experiment
     results = (
