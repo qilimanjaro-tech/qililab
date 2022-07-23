@@ -37,6 +37,15 @@ class RUNCARD:
     FIRMWARE = "firmware"
 
 
+class PLATFORM:
+    """Platform attribute names."""
+
+    DELAY_BETWEEN_PULSES = "delay_between_pulses"
+    DELAY_BEFORE_READOUT = "delay_before_readout"
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
+
+
 class SIGNALGENERATOR:
     """SignalGenerator attribute names."""
 
