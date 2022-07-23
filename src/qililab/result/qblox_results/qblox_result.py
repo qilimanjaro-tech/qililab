@@ -1,5 +1,5 @@
 """QbloxResult class."""
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
@@ -91,3 +91,16 @@ class QbloxResult(Result):
                 QBLOXRESULT.BINS: self.bins,
             }
         return results_dict
+
+    def __eq__(self, other: object) -> bool:
+        """compare two Qblox Results"""
+        return (
+            (
+                self.name == other.name
+                and self.pulse_length == other.pulse_length
+                and self.scope == other.scope
+                and self.bins == other.bins
+            )
+            if isinstance(other, QbloxResult)
+            else False
+        )
