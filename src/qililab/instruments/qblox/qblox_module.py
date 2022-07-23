@@ -70,14 +70,19 @@ class QbloxModule(AWG):
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
+        self._check_cached_values(
+            pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
+        )
+        self.start_sequencer()
+
+    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+        """check if values are already cached and upload if not cached"""
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_sequence, nshots, repetition_duration)
             sequence = self._translate_pulse_sequence(
                 pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration
             )
             self.upload(sequence=sequence, path=path)
-
-        self.start_sequencer()
 
     def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
