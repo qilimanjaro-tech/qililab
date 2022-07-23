@@ -457,6 +457,7 @@ results_two_loops = {
     "results": [
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
@@ -467,6 +468,7 @@ results_two_loops = {
         },
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
@@ -494,6 +496,7 @@ results_one_loops = {
     "results": [
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
@@ -504,6 +507,7 @@ results_one_loops = {
         },
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
