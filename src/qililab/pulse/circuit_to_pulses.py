@@ -66,7 +66,7 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        gate_settings = HardwareGateFactory.gate_settings(control_gate)
+        gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         # TODO: Adapt this code to translate two-qubit gates.
@@ -87,6 +87,23 @@ class CircuitToPulses:
             port.id_,
         )
 
+    def _get_gate_settings_with_master_values(self, gate: Gate):
+        """get gate settings with master values"""
+        gate_settings = HardwareGateFactory.gate_settings(
+            gate=gate,
+            master_amplitude_gate=self.settings.master_amplitude_gate,
+            master_duration_gate=self.settings.master_duration_gate,
+        )
+        if not isinstance(gate_settings.amplitude, float) and not isinstance(gate_settings.amplitude, int):
+            raise ValueError(
+                f"Gate settings converstion to master failed. Value {gate_settings.amplitude} is still a string."
+            )
+        if not isinstance(gate_settings.duration, int):
+            raise ValueError(
+                f"Gate settings converstion to master failed. Value {gate_settings.duration} is still a string."
+            )
+        return gate_settings
+
     def _readout_gate_to_pulse(
         self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
     ) -> Tuple[ReadoutPulse | None, int]:
@@ -98,7 +115,7 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        gate_settings = HardwareGateFactory.gate_settings(readout_gate)
+        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         port = chip.get_port_from_qubit_idx(idx=qubit_idx, readout=True)

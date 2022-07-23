@@ -128,6 +128,18 @@ class GateName(Enum):
     M = "M"
 
 
+class MasterGateSettingsName(Enum):
+    """Master Gate Settings names.
+    Args:
+        enum (str): Available types of mastert gate settings names:
+        * master_amplitude_gate
+        * master_duration_gate
+    """
+
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
+
+
 class AcquisitionName(Enum):
     """Acquisition names.
 

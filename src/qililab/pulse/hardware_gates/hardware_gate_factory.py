@@ -27,7 +27,9 @@ class HardwareGateFactory:
         return cls.pulsed_gates[name]
 
     @classmethod
-    def gate_settings(cls, gate: Gate) -> HardwareGate.HardwareGateSettings:
+    def gate_settings(
+        cls, gate: Gate, master_amplitude_gate: float, master_duration_gate: int
+    ) -> HardwareGate.HardwareGateSettings:
         """Return the settings of the specified gate.
 
         Args:
@@ -38,6 +40,10 @@ class HardwareGateFactory:
         """
         for pulsed_gate in cls.pulsed_gates.values():
             if isinstance(gate, pulsed_gate.class_type):
-                return pulsed_gate.translate(gate=gate)
+                return pulsed_gate.translate(
+                    gate=gate,
+                    master_amplitude_gate=master_amplitude_gate,
+                    master_duration_gate=master_duration_gate,
+                )
 
         raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")

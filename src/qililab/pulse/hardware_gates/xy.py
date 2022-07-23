@@ -16,14 +16,22 @@ class XY(HardwareGate):
     class_type = gates.U2
 
     @classmethod
-    def translate(cls, gate: gates.U2) -> HardwareGate.HardwareGateSettings:
+    def translate(
+        cls,
+        gate: gates.U2,
+        master_amplitude_gate: float,
+        master_duration_gate: int,
+    ) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
         # TODO: Scale X and Y rotations independently!
-        x_settings = X.parameters()
+        x_settings = X.parameters(
+            master_amplitude_gate=master_amplitude_gate,
+            master_duration_gate=master_duration_gate,
+        )
         if x_settings is None:
             raise ValueError("Please specify the specifications of the X gate.")
         theta, phi = gate.parameters
