@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.2 (2022-07-23)
+
+### Fix
+
+- [QILI-176] set master value for gate amplitude and duration (#33)
+
 ## 0.4.1 (2022-07-23)
 
 ### Fix
