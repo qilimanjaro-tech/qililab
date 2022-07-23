@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.1 (2022-07-23)
+
+### Fix
+
+- [QILI-168] Set voltage normalization (#32)
+
 ## 0.4.0 (2022-07-20)
 
 ### Feat
