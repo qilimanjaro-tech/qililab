@@ -60,9 +60,14 @@ class BusesExecution:
         def _threaded_function(result: Result, path: Path, plot: LivePlot | None):
             """Asynchronous thread."""
             if plot is not None:
-                plot.send_points(value=result.probabilities()[0][0])
+                probs = result.probabilities()
+                # get zero prob and converting to a float to plot the value
+                # the value is a numpy.float32, so it is needed to convert it to float
+                zero_prob = float(probs[0][0])
+                plot.send_points(value=zero_prob)
             with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                yaml.safe_dump(data=[result.to_dict()], stream=data_file, sort_keys=False)
+                result_dict = result.to_dict()
+                yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function, args=(result, path, plot))
         thread.start()
