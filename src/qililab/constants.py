@@ -122,7 +122,7 @@ class INSTRUMENTCONTROLLER:
 
 
 class CONNECTION:
-    " Connection attribute names." ""
+    """Connection attribute names."""
 
     ADDRESS = "address"
 
@@ -131,6 +131,14 @@ class INSTRUMENTREFERENCE:
     """InstrumentReference attribute names."""
 
     SLOT_ID = "slot_id"
+
+
+class QBLOXRESULT:
+    """Qblox Results attribute names."""
+
+    PULSE_LENGTH = "pulse_length"
+    SCOPE = "scope"
+    BINS = "bins"
 
 
 UNITS = {"frequency": "Hz"}

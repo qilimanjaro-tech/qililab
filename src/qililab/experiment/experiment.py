@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
-import numpy as np
 from qibo.core.circuit import Circuit
 from qiboconnection.api import API
 from tqdm.auto import tqdm
@@ -82,34 +81,18 @@ class Experiment:
             )
             with self.execution:
                 try:
-                    self._execute_loop(results=results, plot=plot, path=path)
+                    results = self._recursive_loop(
+                        loop=self.loop,
+                        results=results,
+                        path=path,
+                        plot=plot,
+                    )
                 except KeyboardInterrupt as error:  # pylint: disable=broad-except
                     logger.error("%s: %s", type(error).__name__, str(error))
-            return results
+        return results
 
-    def _execute_loop(self, results: Results, plot: LivePlot, path: Path):
-        """Loop and execute sequence over given Platform parameters.
-
-        Args:
-            plot (LivePlot): LivePlot class used for live plotting.
-            path (Path): Path where the data is stored.
-
-        Returns:
-            List[List[Result]]: List containing the results for each loop execution.
-        """
-
-        if self.loop is None:
-            return results.add(self._execute(plot=plot, path=path))
-
-        return self.recursive_loop(
-            loop=self.loop,
-            results=results,
-            path=path,
-            plot=plot,
-        )
-
-    def recursive_loop(
-        self, loop: Loop | None, results: Results, path: Path, plot: LivePlot, x_value: float = 0, depth: int = 0
+    def _recursive_loop(
+        self, loop: Loop | None, results: Results, path: Path, plot: LivePlot, depth: int = 0
     ) -> Results:
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
@@ -119,35 +102,16 @@ class Experiment:
             results (Results): Results class containing all the execution results.
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
-            x_value (float): X value used in live plotting. Defaults to 0.
             depth (int): Depth of the recursive loop. Defaults to 0.
 
         Returns:
             Results: _description_
         """
         if loop is None:
-            return self._execute_and_process_results(results=results, path=path, plot=plot, x_value=x_value)
+            results.add(result=self._execute(path=path, plot=plot))
+            return results
 
         self._process_loop(results=results, loop=loop, depth=depth, path=path, plot=plot)
-        return results
-
-    def _execute_and_process_results(self, results: Results, path: Path, plot: LivePlot, x_value: float) -> Results:
-        """Execute pulse sequence, add results to Results class and plot the probability of being in the ground state.
-
-        Args:
-            results (Results): Results class containing all the execution results.
-            path (Path): Path where the data is stored.
-            plot (LivePlot): LivePlot class used for live plotting.
-            x_value (float): X value used in live plotting.
-
-        Returns:
-            Results: Results class containing all the execution results.
-        """
-        result = self._execute(path=path)
-        results.add(result=result)
-        # FIXME: If executing a list of sequences (example: AllXY), here we only plot the probability of being
-        # in the ground state for the last sequence. Find a way to plot all the sequences.
-        plot.send_points(value=np.round(result[-1].probabilities()[0][0], 4))
         return results
 
     def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
@@ -179,9 +143,7 @@ class Experiment:
                     parameter=loop.parameter,
                     value=value,
                 )
-                results = self.recursive_loop(
-                    loop=loop.loop, results=results, path=path, plot=plot, x_value=value, depth=depth + 1
-                )
+                results = self._recursive_loop(loop=loop.loop, results=results, path=path, plot=plot, depth=depth + 1)
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
