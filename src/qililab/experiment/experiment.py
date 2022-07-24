@@ -16,7 +16,6 @@ from qililab.constants import (
     DATA,
     EXPERIMENT,
     EXPERIMENT_FILENAME,
-    LOOP,
     RESULTS_FILENAME,
     RUNCARD,
 )
@@ -30,6 +29,7 @@ from qililab.typings.enums import Category, Instrument, Parameter
 from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
+from qililab.utils.util_loops import compute_shapes_from_loops
 
 
 class Experiment:
@@ -51,7 +51,7 @@ class Experiment:
         self,
         sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
         platform: Platform,
-        loop: Loop | None = None,
+        loops: List[Loop] | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
         connection: API | None = None,
         device_id: int | None = None,
@@ -60,7 +60,7 @@ class Experiment:
     ):
         self.platform = copy.deepcopy(platform)
         self.name = name
-        self.loop = loop
+        self.loops = loops
         self.settings = settings
         if not isinstance(sequences, list):
             sequences = [sequences]
@@ -75,14 +75,14 @@ class Experiment:
             path = self._create_folder()
             self._create_results_file(path=path)
             self._dump_experiment_data(path=path)
-            plot = LivePlot(remote_api=self.remote_api, loop=self.loop, plot_y_label=self.plot_y_label)
+            plot = LivePlot(remote_api=self.remote_api, loops=self.loops, plot_y_label=self.plot_y_label)
             results = Results(
-                software_average=self.software_average, num_sequences=self.execution.num_sequences, loop=self.loop
+                software_average=self.software_average, num_sequences=self.execution.num_sequences, loops=self.loops
             )
             with self.execution:
                 try:
-                    results = self._recursive_loop(
-                        loop=self.loop,
+                    results = self._recursive_loops(
+                        loops=self.loops,
                         results=results,
                         path=path,
                         plot=plot,
@@ -91,8 +91,8 @@ class Experiment:
                     logger.error("%s: %s", type(error).__name__, str(error))
         return results
 
-    def _recursive_loop(
-        self, loop: Loop | None, results: Results, path: Path, plot: LivePlot, depth: int = 0
+    def _recursive_loops(
+        self, loops: List[Loop] | None, results: Results, path: Path, plot: LivePlot, depth: int = 0
     ) -> Results:
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
@@ -107,43 +107,136 @@ class Experiment:
         Returns:
             Results: _description_
         """
-        if loop is None:
+        if loops is None or len(loops) <= 0:
             results.add(result=self._execute(path=path, plot=plot))
             return results
 
-        self._process_loop(results=results, loop=loop, depth=depth, path=path, plot=plot)
+        self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
         return results
 
-    def _process_loop(self, results: Results, loop: Loop, depth: int, path: Path, plot: LivePlot):
+    def _process_loops(self, results: Results, loops: List[Loop], depth: int, path: Path, plot: LivePlot):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
 
         Args:
             results (Results): Results class containing all the execution results.
-            loop (Loop): Loop class containing the the info of a Platform element and one of its parameters and the
+            loops (List[Loop]): Loop class containing the the info of one or more Platform element and the
             parameter values to loop over.
             depth (int): Depth of the recursive loop.
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
         """
-        element = self.platform.get_element(
+        is_the_top_loop = all(loop.previous is False for loop in loops)
+
+        with tqdm(total=self.minimum_length_loop, position=depth, leave=is_the_top_loop) as pbar:
+            loop_ranges = [loop.range for loop in loops]
+
+            for values in zip(*loop_ranges):
+                self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
+                self._update_parameters_from_loops_filtering_external_parameters(values=values, loops=loops)
+
+                results = self._recursive_loops(
+                    loops=self._create_loops_from_inner_loops(loops=loops),
+                    results=results,
+                    path=path,
+                    plot=plot,
+                    depth=depth + 1,
+                )
+
+    def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
+        """Updates TQDM bar"""
+        description = [self._set_parameter_text_and_value(value, loop) for value, loop in zip(values, loops)]
+        pbar.set_description(" | ".join(description))
+        pbar.update()
+
+    def _set_parameter_text_and_value(self, value: float, loop: Loop):
+        """set paramater text and value to print on terminal TQDM iterations"""
+        parameter_text = (
+            loop.alias if loop.parameter == Parameter.EXTERNAL and loop.alias is not None else loop.parameter.value
+        )
+        return f"{parameter_text}: {value}"
+
+    @property
+    def minimum_length_loop(self):
+        """return the minimum length from all loops"""
+        return min(len(loop.range) for loop in self.loops)
+
+    def _create_loops_from_inner_loops(self, loops: List[Loop]):
+        """create sequence of loops from inner loops (if exist)"""
+        return list(filter(None, [loop.loop for loop in loops]))
+
+    def _update_parameters_from_loops_filtering_external_parameters(
+        self,
+        values: Tuple[float],
+        loops: List[Loop],
+    ):
+        """Update parameters from loops filtering those loops that relates to external variables
+        not associated to neither platform, instrument, or gates settings
+        """
+        filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
+            values=values,
+            loops=loops,
+        )
+        self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
+
+    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
+        """filter loops and values removing those with external paramaters"""
+        if len(values) != len(loops):
+            raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
+        filtered_loops = loops.copy()
+        filtered_values = list(values).copy()
+        for idx, loop in enumerate(filtered_loops):
+            filtered_loops, filtered_values = self._filter_loop_value_when_parameters_is_external(
+                filtered_loops=filtered_loops,
+                filtered_values=filtered_values,
+                idx=idx,
+                loop=loop,
+            )
+        return filtered_loops, filtered_values
+
+    def _filter_loop_value_when_parameters_is_external(
+        self, filtered_loops: List[Loop], filtered_values: List[float], idx: int, loop: Loop
+    ):
+        """filter loop value when parameters is external"""
+        if loop.parameter == Parameter.EXTERNAL:
+            filtered_loops.pop(idx)
+            filtered_values.pop(idx)
+        return filtered_loops, filtered_values
+
+    def _update_parameters_from_loops(
+        self,
+        values: List[float],
+        loops: List[Loop],
+    ):
+        """update paramaters from loops"""
+        elements = self._get_platform_elements_from_loops(loops=loops)
+
+        for value, loop, element in zip(values, loops, elements):
+            self._update_parameter_from_loop(value=value, loop=loop, element=element)
+
+    def _update_parameter_from_loop(
+        self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument
+    ):
+        """update parameter from loop"""
+        self.set_parameter(
+            element=element,
+            alias=loop.alias,
+            instrument=loop.instrument,
+            id_=loop.id_,
+            parameter=loop.parameter,
+            value=value,
+        )
+
+    def _get_platform_elements_from_loops(self, loops: List[Loop]):
+        """get platform elements from loops"""
+        return [self._get_platform_element_from_one_loop(loop=loop) for loop in loops]
+
+    def _get_platform_element_from_one_loop(self, loop: Loop):
+        """get platform element from one loop"""
+        return self.platform.get_element(
             alias=loop.alias,
             category=Category(loop.instrument.value) if loop.instrument is not None else None,
             id_=loop.id_,
         )
-        leave = loop.previous is False
-        with tqdm(total=len(loop.range), position=depth, leave=leave) as pbar:
-            for value in loop.range:
-                pbar.set_description(f"{loop.parameter.value}: {value} ")
-                pbar.update()
-                self.set_parameter(
-                    element=element,
-                    alias=loop.alias,
-                    instrument=loop.instrument,
-                    id_=loop.id_,
-                    parameter=loop.parameter,
-                    value=value,
-                )
-                results = self._recursive_loop(loop=loop.loop, results=results, path=path, plot=plot, depth=depth + 1)
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse sequences.
@@ -248,11 +341,12 @@ class Experiment:
         Args:
             path (Path): Path to data folder.
         """
+
         data = {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
             EXPERIMENT.NUM_SEQUENCES: self.execution.num_sequences,
-            EXPERIMENT.SHAPE: [] if self.loop is None else self.loop.shape,
-            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
+            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: None,
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
@@ -316,7 +410,7 @@ class Experiment:
             RUNCARD.PLATFORM: self.platform.to_dict(),
             RUNCARD.SETTINGS: asdict(self.settings),
             EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
-            LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.NAME: self.name,
         }
 
@@ -330,12 +424,12 @@ class Experiment:
         settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
         sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
-        loop = dictionary[LOOP.LOOP]
-        loop = Loop(**loop) if loop is not None else None
+        input_loops = dictionary[EXPERIMENT.LOOPS]
+        loops = [Loop(**loop) for loop in input_loops] if input_loops is not None else None
         experiment_name = dictionary[RUNCARD.NAME]
         return Experiment(
             sequences=sequences,
-            loop=loop,
+            loops=loops,
             platform=platform,
             settings=settings,
             name=experiment_name,

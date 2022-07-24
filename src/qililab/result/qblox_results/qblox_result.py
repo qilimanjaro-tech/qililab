@@ -60,10 +60,6 @@ class QbloxResult(Result):
         """
         return self.qblox_acquisitions.probabilities()
 
-    def plot(self):
-        """Plot data."""
-        raise NotImplementedError
-
     @property
     def shape(self) -> List[int]:
         """QbloxResult 'shape' property.

@@ -113,9 +113,7 @@ class Loop:
         """Return the range of the inner loop or None
         when there are not exactly two loops.
         """
-        if len(self.loops) != 2:
-            return None
-        return self.loops[-2].range
+        return None if len(self.loops) != 2 else self.loops[-2].range
 
     def to_dict(self) -> dict:
         """Convert class to a dictionary.

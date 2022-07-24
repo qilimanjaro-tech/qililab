@@ -454,23 +454,25 @@ results_two_loops = {
     "software_average": 1,
     "num_sequences": 1,
     "shape": [75, 100],
-    "loop": {
-        "alias": "attenuator",
-        "parameter": "attenuation",
-        "start": 15,
-        "stop": 90,
-        "num": None,
-        "step": 1,
-        "loop": {
-            "alias": "rs_1",
-            "parameter": "frequency",
-            "start": 7342000000,
-            "stop": 7352000000,
+    "loops": [
+        {
+            "alias": "attenuator",
+            "parameter": "attenuation",
+            "start": 15,
+            "stop": 90,
             "num": None,
-            "step": 100000,
-            "loop": None,
-        },
-    },
+            "step": 1,
+            "loop": {
+                "alias": "rs_1",
+                "parameter": "frequency",
+                "start": 7342000000,
+                "stop": 7352000000,
+                "num": None,
+                "step": 100000,
+                "loop": None,
+            },
+        }
+    ],
     "results": [
         {
             "name": "qblox",
@@ -501,15 +503,17 @@ results_one_loops = {
     "software_average": 1,
     "num_sequences": 1,
     "shape": [100],
-    "loop": {
-        "alias": "rs_1",
-        "parameter": "frequency",
-        "start": 7342000000,
-        "stop": 7352000000,
-        "num": None,
-        "step": 100000,
-        "loop": None,
-    },
+    "loops": [
+        {
+            "alias": "rs_1",
+            "parameter": "frequency",
+            "start": 7342000000,
+            "stop": 7352000000,
+            "num": None,
+            "step": 100000,
+            "loop": None,
+        }
+    ],
     "results": [
         {
             "name": "qblox",
@@ -566,31 +570,33 @@ experiment = {
             "delay_before_readout": 40,
         }
     ],
-    "loop": {
-        "alias": "qblox_qrm",
-        "parameter": "gain",
-        "start": 0.1,
-        "stop": 1,
-        "num": None,
-        "step": 0.3,
-        "loop": {
-            "alias": "attenuator",
-            "parameter": "attenuation",
-            "start": 15,
-            "stop": 90,
+    "loops": [
+        {
+            "alias": "qblox_qrm",
+            "parameter": "gain",
+            "start": 0.1,
+            "stop": 1,
             "num": None,
-            "step": 1,
+            "step": 0.3,
             "loop": {
-                "alias": "rs_1",
-                "parameter": "frequency",
-                "start": 7342000000,
-                "stop": 7352000000,
+                "alias": "attenuator",
+                "parameter": "attenuation",
+                "start": 15,
+                "stop": 90,
                 "num": None,
-                "step": 100000,
-                "loop": None,
+                "step": 1,
+                "loop": {
+                    "alias": "rs_1",
+                    "parameter": "frequency",
+                    "start": 7342000000,
+                    "stop": 7352000000,
+                    "num": None,
+                    "step": 100000,
+                    "loop": None,
+                },
             },
-        },
-    },
+        }
+    ],
     "name": "punchout",
 }
 

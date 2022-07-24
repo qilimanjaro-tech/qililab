@@ -63,6 +63,7 @@ class EXPERIMENT:
     RESULTS = "results"
     NUM_SEQUENCES = "num_sequences"
     SEQUENCES = "sequences"
+    LOOPS = "loops"
 
 
 class SCHEMA:

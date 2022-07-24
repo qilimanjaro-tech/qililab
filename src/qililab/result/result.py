@@ -14,10 +14,6 @@ class Result(FactoryElement):
 
     name: ResultName = field(init=False)
 
-    def plot(self):
-        """Plot results."""
-        raise NotImplementedError
-
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
 

@@ -24,7 +24,3 @@ class SimulatorResult(Result):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         return [(self.prob_0, self.prob_1)]
-
-    def plot(self):
-        """Plot data."""
-        raise NotImplementedError
