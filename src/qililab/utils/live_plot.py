@@ -113,15 +113,15 @@ class LivePlot:
         """
         if self.plot_type in [LivePlotTypes.SCATTER, LivePlotTypes.LINES]:
             x_value = next(self.x_iterator_ranges)
-            self.connection().send_plot_points(plot_id=self.plot_id, x=x_value, y=value)
+            self.connection().send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
             return
         if self.plot_type == LivePlotTypes.HEATMAP:
             x_value = next(self.x_iterator_ranges)
             y_value = next(self.y_iterator_ranges)
             self.connection().send_plot_points(
                 plot_id=self.plot_id,
-                x=x_value,
-                y=y_value,
+                x=float(x_value),
+                y=float(y_value),
                 z=value,
             )
             return
