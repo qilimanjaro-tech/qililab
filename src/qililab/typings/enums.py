@@ -308,6 +308,8 @@ class Parameter(Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
 
 
 class ResultName(Enum):

@@ -18,7 +18,7 @@ os.environ["DATA"] = str(Path(__file__).parent / "data")
 
 def run_circuit(connection: API | None = None):
     """Load the platform 'galadriel' from the DB."""
-    platform = build_platform(name="galadriel_controller")
+    platform = build_platform(name="galadriel_master_gate")
     # Define Circuit to execute
     circuit = Circuit(1)
     circuit.add(M(0))
@@ -36,7 +36,7 @@ def run_circuit(connection: API | None = None):
     cavity_spectroscopy = Experiment(
         platform=platform,
         sequences=circuit,
-        loop=loop_freq,
+        loops=[loop_freq],
         name="cavity_spectroscopy",
         connection=connection,
         device_id=GALADRIEL_DEVICE_ID,
