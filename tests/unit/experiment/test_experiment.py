@@ -65,8 +65,8 @@ class TestExperiment:
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
-        if experiment_all_platforms.loop is not None:
-            print(experiment_all_platforms.loop.num_loops)
+        if experiment_all_platforms.loops is not None:
+            print(experiment_all_platforms.loops[0].num_loops)
 
     def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""

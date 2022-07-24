@@ -322,7 +322,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
         stop=3744000000,
         num=2,
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loop=loop)
+    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
     mock_load.assert_called()
     return experiment
 
@@ -342,7 +342,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     loop = Loop(
         instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loop=loop)
+    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
     mock_load.assert_called()
     return experiment
 
