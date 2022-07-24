@@ -310,6 +310,7 @@ class Parameter(Enum):
     SEQUENCE_TIMEOUT = "sequence_timeout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+    EXTERNAL = "external"
 
 
 class ResultName(Enum):

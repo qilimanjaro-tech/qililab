@@ -131,11 +131,8 @@ class Experiment:
             loop_ranges = [loop.range for loop in loops]
 
             for values in zip(*loop_ranges):
-                description = [f"{loop.parameter.value}: {value}" for value, loop in zip(values, loops)]
-                pbar.set_description(" | ".join(description))
-                pbar.update()
-
-                self._update_parameters_from_loops(values=values, loops=loops)
+                self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
+                self._update_parameters_from_loops_filtering_external_parameters(values=values, loops=loops)
 
                 results = self._recursive_loops(
                     loops=self._create_loops_from_inner_loops(loops=loops),
@@ -144,6 +141,19 @@ class Experiment:
                     plot=plot,
                     depth=depth + 1,
                 )
+
+    def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
+        """Updates TQDM bar"""
+        description = [self._set_parameter_text_and_value(value, loop) for value, loop in zip(values, loops)]
+        pbar.set_description(" | ".join(description))
+        pbar.update()
+
+    def _set_parameter_text_and_value(self, value: float, loop: Loop):
+        """set paramater text and value to print on terminal TQDM iterations"""
+        parameter_text = (
+            loop.alias if loop.parameter == Parameter.EXTERNAL and loop.alias is not None else loop.parameter.value
+        )
+        return f"{parameter_text}: {value}"
 
     @property
     def minimum_length_loop(self):
@@ -154,9 +164,47 @@ class Experiment:
         """create sequence of loops from inner loops (if exist)"""
         return list(filter(None, [loop.loop for loop in loops]))
 
-    def _update_parameters_from_loops(
+    def _update_parameters_from_loops_filtering_external_parameters(
         self,
         values: Tuple[float],
+        loops: List[Loop],
+    ):
+        """Update parameters from loops filtering those loops that relates to external variables
+        not associated to neither platform, instrument, or gates settings
+        """
+        filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
+            values=values,
+            loops=loops,
+        )
+        self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
+
+    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
+        """filter loops and values removing those with external paramaters"""
+        if len(values) != len(loops):
+            raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
+        filtered_loops = loops.copy()
+        filtered_values = list(values).copy()
+        for idx, loop in enumerate(filtered_loops):
+            filtered_loops, filtered_values = self._filter_loop_value_when_parameters_is_external(
+                filtered_loops=filtered_loops,
+                filtered_values=filtered_values,
+                idx=idx,
+                loop=loop,
+            )
+        return filtered_loops, filtered_values
+
+    def _filter_loop_value_when_parameters_is_external(
+        self, filtered_loops: List[Loop], filtered_values: List[float], idx: int, loop: Loop
+    ):
+        """filter loop value when parameters is external"""
+        if loop.parameter == Parameter.EXTERNAL:
+            filtered_loops.pop(idx)
+            filtered_values.pop(idx)
+        return filtered_loops, filtered_values
+
+    def _update_parameters_from_loops(
+        self,
+        values: List[float],
         loops: List[Loop],
     ):
         """update paramaters from loops"""
