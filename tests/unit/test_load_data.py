@@ -18,6 +18,7 @@ def test_load_results_two_loops(mock_load: MagicMock, mock_open: MagicMock, mock
     mock_open.assert_called_once()
     mock_os.assert_called()
     assert result is not None
+    assert result.loops is not None
     assert isinstance(result.loops[0], Loop)
 
 
@@ -31,6 +32,7 @@ def test_load_results_one_loop(mock_load: MagicMock, mock_open: MagicMock, mock_
     mock_open.assert_called_once()
     mock_os.assert_called()
     assert result is not None
+    assert result.loops is not None
     assert isinstance(result.loops[0], Loop)
 
 
