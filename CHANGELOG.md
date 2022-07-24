@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.0 (2022-07-24)
+
+### Feat
+
+- [QILI-174] loop support multiple parameters (#34)
+
 ## 0.4.2 (2022-07-23)
 
 ### Fix
