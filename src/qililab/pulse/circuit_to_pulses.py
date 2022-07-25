@@ -96,11 +96,11 @@ class CircuitToPulses:
         )
         if not isinstance(gate_settings.amplitude, float) and not isinstance(gate_settings.amplitude, int):
             raise ValueError(
-                f"Gate settings converstion to master failed. Value {gate_settings.amplitude} is still a string."
+                f"Gate settings conversion to master failed. Value {gate_settings.amplitude} is still a string."
             )
-        if not isinstance(gate_settings.duration, int):
+        if not isinstance(gate_settings.duration, float) and not isinstance(gate_settings.duration, int):
             raise ValueError(
-                f"Gate settings converstion to master failed. Value {gate_settings.duration} is still a string."
+                f"Gate settings conversion to master failed. Value {gate_settings.duration} is still a string."
             )
         return gate_settings
 
