@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.1 (2022-07-25)
+
+### Fix
+
+- [QILI-177] :bug: make sure amplitude and duration are float or int (#35)
+
 ## 0.5.0 (2022-07-24)
 
 ### Feat
