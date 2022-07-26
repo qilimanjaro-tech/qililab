@@ -1,5 +1,5 @@
 """Pulse class."""
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from typing import ClassVar
 
 import numpy as np
@@ -23,10 +23,10 @@ class Pulse:
     frequency: float | None = None
 
     def __post_init__(self):
-        """Cast qubit_ids to list."""
+        """Create Pulse Shape"""
         if isinstance(self.pulse_shape, dict):
             self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
-                **self.pulse_shape  # pylint: disable=not-a-mapping
+                **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
     def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:

@@ -131,7 +131,7 @@ class GateName(Enum):
 class MasterGateSettingsName(Enum):
     """Master Gate Settings names.
     Args:
-        enum (str): Available types of mastert gate settings names:
+        enum (str): Available types of master gate settings names:
         * master_amplitude_gate
         * master_duration_gate
     """
@@ -189,6 +189,29 @@ class PulseShapeName(Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+
+
+class PulseShapeSettingsName(Enum):
+    """Pulse Shape Settings names.
+    Args:
+        enum (str): Available types of pulse shape settings names:
+        * num_sigmas
+        * beta
+    """
+
+    NUM_SIGMAS = "num_sigmas"
+    BETA = "beta"
+
+
+class MasterPulseShapeSettingsName(Enum):
+    """Master Pulse Shape Settings names.
+    Args:
+        enum (str): Available types of master pulse shape settings names:
+        * master_amplitude_gate
+        * master_duration_gate
+    """
+
+    BETA = "master_beta_pulse_shape"
 
 
 class BusSubcategory(Enum):
@@ -310,6 +333,7 @@ class Parameter(Enum):
     SEQUENCE_TIMEOUT = "sequence_timeout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+    MASTER_BETA_PULSE_SHAPE = "master_beta_pulse_shape"
     EXTERNAL = "external"
 
 

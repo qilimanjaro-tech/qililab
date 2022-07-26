@@ -101,6 +101,7 @@ class RuncardSchema:
         delay_before_readout: int
         master_amplitude_gate: float
         master_duration_gate: int
+        master_beta_pulse_shape: float
         gates: List[GateSettings]
 
         def __post_init__(self):

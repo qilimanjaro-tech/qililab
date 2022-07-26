@@ -68,7 +68,9 @@ class CircuitToPulses:
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         shape_settings = gate_settings.shape.copy()
-        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(
+            **shape_settings, master_beta_pulse_shape=self.settings.master_beta_pulse_shape
+        )
         # TODO: Adapt this code to translate two-qubit gates.
         port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
         old_time = self._update_time(
