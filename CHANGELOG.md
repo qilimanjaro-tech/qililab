@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.4 (2022-07-26)
+
+### Fix
+
+- [QILI-181] :bug: fixed values types when they are numpy (#38)
+
 ## 0.5.3 (2022-07-26)
 
 ### Fix
