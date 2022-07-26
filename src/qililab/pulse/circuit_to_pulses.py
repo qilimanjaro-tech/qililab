@@ -2,6 +2,7 @@
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
+import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 
@@ -107,13 +108,19 @@ class CircuitToPulses:
             master_amplitude_gate=self.settings.master_amplitude_gate,
             master_duration_gate=self.settings.master_duration_gate,
         )
-        if not isinstance(gate_settings.amplitude, float) and not isinstance(gate_settings.amplitude, int):
+        if (
+            not isinstance(gate_settings.amplitude, float)
+            and not isinstance(gate_settings.amplitude, int)
+            and not isinstance(gate_settings.amplitude, np.number)
+        ):
             raise ValueError(
-                f"Gate settings conversion to master failed. Value {gate_settings.amplitude} is still a string."
+                f"Value amplitude: {gate_settings.amplitude} MUST be a float or an integer. "
+                f"Current type is {type(gate_settings.amplitude)}."
             )
-        if not isinstance(gate_settings.duration, float) and not isinstance(gate_settings.duration, int):
+        if not isinstance(gate_settings.duration, int) and not isinstance(gate_settings.duration, np.number):
             raise ValueError(
-                f"Gate settings conversion to master failed. Value {gate_settings.duration} is still a string."
+                f"Value duration: {gate_settings.duration} MUST be an integer. "
+                f"Current type is {type(gate_settings.duration)}."
             )
         return gate_settings
 

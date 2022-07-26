@@ -12,8 +12,10 @@ from qililab.utils import SingletonABC
 
 
 def _use_master_value_when_variable_is_referencing_master_name(
-    gate_current_value: int | float | MasterGateSettingsName, master_amplitude_gate: float, master_duration_gate: int
-):  # sourcery skip: remove-unnecessary-cast
+    gate_current_value: int | float | MasterGateSettingsName,
+    master_amplitude_gate: float | np.number,
+    master_duration_gate: int | np.number,
+):
     """use master value when variable is referencing master name"""
     if not isinstance(gate_current_value, MasterGateSettingsName):
         return gate_current_value
@@ -26,8 +28,8 @@ def _use_master_value_when_variable_is_referencing_master_name(
             + f"[{MasterGateSettingsName.MASTER_AMPLITUDE_GATE}, {MasterGateSettingsName.MASTER_DURATION_GATE}]"
         )
     if gate_current_value == MasterGateSettingsName.MASTER_AMPLITUDE_GATE:
-        return float(master_amplitude_gate)
-    return int(master_duration_gate)
+        return master_amplitude_gate.item() if isinstance(master_amplitude_gate, np.number) else master_amplitude_gate
+    return master_duration_gate.item() if isinstance(master_duration_gate, np.number) else master_duration_gate
 
 
 class HardwareGate(ABC, metaclass=SingletonABC):
