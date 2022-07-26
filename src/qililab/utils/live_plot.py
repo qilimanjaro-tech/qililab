@@ -23,6 +23,7 @@ class LivePlot:
     """Plot class."""
 
     remote_api: RemoteAPI
+    num_sequences: int
     loops: List[Loop] | None = None
     plot_id: int = field(init=False)
     x_iterator_ranges: Iterator = field(init=False)
@@ -33,25 +34,27 @@ class LivePlot:
 
     def __post_init__(self, title: str):
         """Generate iterators that iterate over loop ranges."""
-        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges()
+        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges(
+            num_sequences=self.num_sequences
+        )
         self.plot_id = self.create_live_plot(title=title)
 
-    def _build_plot_ranges_from_loop_ranges(self) -> List[Iterator]:
+    def _build_plot_ranges_from_loop_ranges(self, num_sequences: int) -> List[Iterator]:
         """build plot ranges from loop ranges"""
         return (
             (self._build_empty_iterator(), self._build_empty_iterator())
             if self.loops is None
-            else self._build_plot_ranges_from_defined_loop_ranges()
+            else self._build_plot_ranges_from_defined_loop_ranges(num_sequences=num_sequences)
         )
 
     def _build_empty_iterator(self):
         """build empty iterator"""
         return count()
 
-    def _build_plot_ranges_from_defined_loop_ranges(self):
+    def _build_plot_ranges_from_defined_loop_ranges(self, num_sequences: int):
         """build plot ranges from defined loop ranges"""
-        x_loop_range = find_minimum_outer_range_from_loops(loops=self.loops)
-        y_loop_range = find_minimum_inner_range_from_loops(loops=self.loops)
+        x_loop_range = np.tile(find_minimum_outer_range_from_loops(loops=self.loops), num_sequences)
+        y_loop_range = np.tile(find_minimum_inner_range_from_loops(loops=self.loops), num_sequences)
 
         if y_loop_range is None or len(y_loop_range) <= 0:
             return (iter(x_loop_range), self._build_empty_iterator())

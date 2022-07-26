@@ -6,9 +6,9 @@ import numpy as np
 from qililab.utils.loop import Loop
 
 
-def find_minimum_outer_range_from_loops(loops: List[Loop]):
+def find_minimum_outer_range_from_loops(loops: List[Loop] | None):
     """find minimum outer range from same level loops"""
-    if len(loops) <= 0:
+    if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
     minimum_outer_range = loops[0].outer_loop_range
     minimum_range_length = len(loops[0].outer_loop_range)
@@ -19,9 +19,9 @@ def find_minimum_outer_range_from_loops(loops: List[Loop]):
     return minimum_outer_range
 
 
-def find_minimum_inner_range_from_loops(loops: List[Loop]):
+def find_minimum_inner_range_from_loops(loops: List[Loop] | None):
     """find minimum inner range from same level loops"""
-    if len(loops) <= 0:
+    if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
 
     if loops[0].inner_loop_range is None:
@@ -38,9 +38,9 @@ def find_minimum_inner_range_from_loops(loops: List[Loop]):
     return minimum_inner_range
 
 
-def _find_minimum_range_from_loops(loops: List[Loop]):
+def _find_minimum_range_from_loops(loops: List[Loop] | None):
     """find minimum range from same level loops"""
-    if len(loops) <= 0:
+    if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
     minimum_range = loops[0].range
     minimum_range_length = len(loops[0].range)
