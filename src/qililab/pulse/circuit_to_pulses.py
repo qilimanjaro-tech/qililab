@@ -8,10 +8,12 @@ from qibo.core.circuit import Circuit
 from qililab.chip import Chip, Node
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
+from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
+from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -57,6 +59,18 @@ class CircuitToPulses:
 
         return pulse_sequences_list
 
+    def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
+        """Build Pulse Shape from Gate seetings"""
+        shape_settings = gate_settings.shape.copy()
+        if RUNCARD.NAME in shape_settings and shape_settings[RUNCARD.NAME] in [
+            PulseShapeName.DRAG,
+            PulseShapeName.DRAG.value,
+        ]:
+            return Factory.get(shape_settings.pop(RUNCARD.NAME))(
+                **shape_settings, master_beta_pulse_shape=self.settings.master_beta_pulse_shape
+            )
+        return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+
     def _control_gate_to_pulse(self, time: Dict[int, int], control_gate: Gate, chip: Chip) -> Tuple[Pulse | None, int]:
         """Translate a gate into a pulse.
 
@@ -67,8 +81,7 @@ class CircuitToPulses:
             Pulse: Pulse object.
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
-        shape_settings = gate_settings.shape.copy()
-        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Adapt this code to translate two-qubit gates.
         port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
         old_time = self._update_time(

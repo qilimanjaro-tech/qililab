@@ -37,6 +37,7 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.MASTER_BETA_PULSE_SHAPE: 0,
         "gates": [
             {
                 "name": "M",
@@ -57,14 +58,22 @@ class Galadriel:
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
                 "duration": PLATFORM.MASTER_DURATION_GATE,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                },
             },
             {
                 "name": "Y",
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 1.5707963267948966,
                 "duration": PLATFORM.MASTER_DURATION_GATE,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                },
             },
         ],
     }
@@ -366,22 +375,47 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.MASTER_BETA_PULSE_SHAPE: 0,
         "gates": [
-            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "M",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 2000,
+                "shape": {
+                    "name": "rectangular",
+                },
+            },
+            {
+                "name": "I",
+                "amplitude": 0,
+                "phase": 0,
+                "duration": 0,
+                "shape": {
+                    "name": "rectangular",
+                },
+            },
             {
                 "name": "X",
                 "amplitude": 1,
                 "phase": 0,
                 "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                },
             },
             {
                 "name": "Y",
                 "amplitude": 1,
                 "phase": 1.5707963267948966,
                 "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                },
             },
         ],
     }
