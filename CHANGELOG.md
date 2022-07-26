@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.2 (2022-07-26)
+
+### Fix
+
+- [QILI-180] :bug: check for multiple loops correctly (#36)
+
 ## 0.5.1 (2022-07-25)
 
 ### Fix
