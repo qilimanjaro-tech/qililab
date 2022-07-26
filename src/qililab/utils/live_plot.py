@@ -179,12 +179,16 @@ class LivePlot:
         """
         if self.plot_y_label is not None:
             return self.plot_y_label
-        if self.loops is None or self.total_inner_loops > 1:
+        if self._has_multiple_loops():
             for loop in self.loops:
                 if loop.inner_loop_range is not None:
                     return self.label(loop=loop.loops[-2])
 
         return DEFAULT_PLOT_Y_LABEL
+
+    def _has_multiple_loops(self):
+        """check if loops variable has multiple loops"""
+        return self.loops is not None and self.total_inner_loops > 1
 
     @property
     def z_label(self) -> str | None:
@@ -193,10 +197,7 @@ class LivePlot:
         Returns:
             str: Z label.
         """
-        if self.loops is None or self.total_inner_loops > 1:
-            return "Amplitude"
-
-        return None
+        return "Amplitude" if self._has_multiple_loops() else None
 
     @property
     def x_label(self) -> str:
