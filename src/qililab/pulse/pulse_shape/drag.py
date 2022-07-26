@@ -17,7 +17,6 @@ class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 
     name = PulseShapeName.DRAG
-
     num_sigmas: float
     beta: float | Literal[MasterPulseShapeSettingsName.BETA]
     master_beta_pulse_shape: float | None = None
