@@ -33,7 +33,7 @@ class QbloxResult(Result):
     """
 
     name = ResultName.QBLOX
-    pulse_length: int
+    pulse_length: int | np.number
     scope: dict | None = None
     bins: List[dict] | None = None
     qblox_acquisitions: QbloxScopeAcquisitions | QbloxBinsAcquisitions = field(init=False)
@@ -74,10 +74,14 @@ class QbloxResult(Result):
         Returns:
             dict: Dictionary containing all the class information.
         """
+
         results_dict: dict[str, str | int | dict | List[dict]] = {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.pulse_length,
+            QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
+            if isinstance(self.pulse_length, np.number)
+            else self.pulse_length,
         }
+
         if self.scope is not None:
             results_dict |= {
                 QBLOXRESULT.SCOPE: self.scope,
