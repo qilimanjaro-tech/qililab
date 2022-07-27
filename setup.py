@@ -10,7 +10,7 @@ PACKAGE = "qililab"
 def get_version():
     """Gets the version from the package's __init__ file
     if there is some problem, let it happily fail"""
-    version_file_path = os.path.join("src", PACKAGE, "__init__.py")
+    version_file_path = os.path.join("src", PACKAGE, "config", "version.py")
     with open(version_file_path, "rt", encoding="utf-8") as version_file:
         initfile_lines = version_file.readlines()
     vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
