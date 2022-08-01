@@ -1,4 +1,5 @@
 """Tests for the load function."""
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +11,7 @@ from ..data import experiment, results_one_loops, results_two_loops
 
 @patch("qililab.utils.load_data.os.path.exists", side_effect=lambda path: path == Path("results.yml"))
 @patch("qililab.utils.load_data.open")
-@patch("qililab.utils.load_data.yaml.safe_load", return_value=results_two_loops)
+@patch("qililab.utils.load_data.yaml.safe_load", return_value=deepcopy(results_two_loops))
 def test_load_results_two_loops(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Results class."""
     _, result = load(path="")
@@ -24,7 +25,7 @@ def test_load_results_two_loops(mock_load: MagicMock, mock_open: MagicMock, mock
 
 @patch("qililab.utils.load_data.os.path.exists", side_effect=lambda path: path == Path("results.yml"))
 @patch("qililab.utils.load_data.open")
-@patch("qililab.utils.load_data.yaml.safe_load", return_value=results_one_loops)
+@patch("qililab.utils.load_data.yaml.safe_load", return_value=deepcopy(results_one_loops))
 def test_load_results_one_loop(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Results class."""
     _, result = load(path="")
