@@ -121,3 +121,13 @@ class Results:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
         }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Transforms a dictionary into a Results instance. Inverse of to_dict().
+        Args:
+            dictionary: dict representation of a Results instance
+        Returns:
+            Results: deserialized Results instance
+        """
+        return Results(**dictionary)
