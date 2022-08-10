@@ -168,7 +168,6 @@ class InstrumentController(BusElement, ABC):
         self.reset()
         self.initial_setup()
 
-
     def close(self):
         """Stops all modules, resets them, close the connection to the instrument and releases the device."""
         self.stop()
