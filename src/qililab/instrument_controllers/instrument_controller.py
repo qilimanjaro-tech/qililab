@@ -165,8 +165,8 @@ class InstrumentController(BusElement, ABC):
         """Establishes the connection with the instrument, performs the initial setup and resets it."""
         self._initialize_device_and_set_to_all_modules()
         self.connection.connect(device=self.device, device_name=str(self))
-        self.initial_setup()
         self.reset()
+        self.initial_setup()
 
     def close(self):
         """Stops all modules, resets them, close the connection to the instrument and releases the device."""
