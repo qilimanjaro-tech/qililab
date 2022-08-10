@@ -3,14 +3,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
+import numpy as np
 from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
+from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseSequence, PulseShape
 from qililab.result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
 
@@ -247,3 +249,25 @@ class QbloxQRM(QbloxModule, QubitReadout):
             str: Name of the acquisition. Options are "single" or "binning".
         """
         return "single" if self.scope_hardware_averaging else "binning"
+
+    def _generate_waveforms(self, pulse_sequence: PulseSequence):
+        """Generate I and Q waveforms from a PulseSequence object.
+        Args:
+            pulse_sequence (PulseSequence): PulseSequence object.
+        Returns:
+            Waveforms: Waveforms object containing the generated waveforms.
+        """
+        waveforms = Waveforms()
+
+        unique_pulses: List[Tuple[int, PulseShape]] = []
+
+        for pulse in pulse_sequence.pulses:
+            if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
+                unique_pulses.append((pulse.duration, pulse.pulse_shape))
+                envelope = pulse.envelope(amplitude=1)
+                real = np.real(envelope)
+                # setting the Q part to 0 as QRM does not have to send anything from there
+                imag = envelope * 0
+                waveforms.add_pair((real, imag), name=str(pulse))
+
+        return waveforms
