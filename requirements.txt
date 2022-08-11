@@ -14,3 +14,4 @@ urllib3==1.26.10
 qiboconnection==0.4.3
 qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git
 qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git
+lmfit==1.0.3
