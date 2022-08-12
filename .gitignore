@@ -131,3 +131,5 @@ dmypy.json
 # Data
 data/
 _build
+
+.qibo_configuration
