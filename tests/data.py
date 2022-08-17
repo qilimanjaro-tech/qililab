@@ -491,6 +491,8 @@ results_two_loops = {
     "loops": [
         {
             "alias": "attenuator",
+            "instrument": None,
+            "id_": None,
             "parameter": "attenuation",
             "start": 15,
             "stop": 90,
@@ -498,6 +500,8 @@ results_two_loops = {
             "step": 1,
             "loop": {
                 "alias": "rs_1",
+                "instrument": None,
+                "id_": None,
                 "parameter": "frequency",
                 "start": 7342000000,
                 "stop": 7352000000,
@@ -540,6 +544,8 @@ results_one_loops = {
     "loops": [
         {
             "alias": "rs_1",
+            "instrument": None,
+            "id_": None,
             "parameter": "frequency",
             "start": 7342000000,
             "stop": 7352000000,

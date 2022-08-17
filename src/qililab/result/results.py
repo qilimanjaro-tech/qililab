@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from qililab.constants import RUNCARD
+from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils.factory import Factory
@@ -44,7 +44,7 @@ class Results:
         """Append an ExecutionResults object.
 
         Args:
-            execution_results (ExecutionResults): ExecutionResults object.
+            result (List[Result]): List of Result objects.
         """
         self.results += result
 
@@ -108,3 +108,26 @@ class Results:
 
         ranges = compute_ranges_from_loops(loops=self.loops)
         return np.array(ranges, dtype=object).squeeze()
+
+    def to_dict(self) -> dict:
+        """
+        Returns:
+            dict: Dictionary containing all the class information.
+        """
+        return {
+            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
+            EXPERIMENT.NUM_SEQUENCES: self.num_sequences,
+            EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
+            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
+            EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
+        }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Transforms a dictionary into a Results instance. Inverse of to_dict().
+        Args:
+            dictionary: dict representation of a Results instance
+        Returns:
+            Results: deserialized Results instance
+        """
+        return Results(**dictionary)
