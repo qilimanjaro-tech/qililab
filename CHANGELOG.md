@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.7 (2022-08-17)
+
+### Fix
+
+- set beta serialization correctly (#47)
+
 ## 0.5.6 (2022-08-17)
 
 ### Fix
