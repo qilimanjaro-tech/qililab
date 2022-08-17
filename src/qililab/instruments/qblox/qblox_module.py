@@ -169,8 +169,9 @@ class QbloxModule(AWG):
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
-        self.device.arm_sequencer()
-        self.device.start_sequencer()
+        for seq_idx in range(self.num_sequencers):
+            self.device.arm_sequencer(sequencer=seq_idx)
+            self.device.start_sequencer(sequencer=seq_idx)
 
     @Instrument.CheckDeviceInitialized
     def setup(self):
@@ -182,7 +183,8 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
-        self.device.stop_sequencer()
+        for seq_idx in range(self.num_sequencers):
+            self.device.stop_sequencer(sequencer=seq_idx)
 
     def clear_cache(self):
         """Empty cache."""

@@ -40,7 +40,7 @@ class TestQbloxQRM:
     def test_stop_method(self, qrm: QbloxQRM):
         """Test stop method"""
         qrm.stop()
-        qrm.device.stop_sequencer.assert_called_once()
+        qrm.device.stop_sequencer.assert_called()
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
