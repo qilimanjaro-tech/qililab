@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.6 (2022-08-17)
+
+### Fix
+
+- reference clock after reset and using only the necessary sequencers
+
 ## 0.5.5 (2022-07-27)
 
 ### Fix
