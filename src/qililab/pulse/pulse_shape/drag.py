@@ -75,7 +75,7 @@ class Drag(PulseShape):
         return {
             RUNCARD.NAME: self.name.value,
             PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
-            PulseShapeSettingsName.BETA.value: self.beta,
+            PulseShapeSettingsName.BETA.value: self.beta if isinstance(self.beta, float) else self.beta.value,
             MasterPulseShapeSettingsName.BETA.value: self.master_beta_pulse_shape
             if self.master_beta_pulse_shape is not None
             else None,

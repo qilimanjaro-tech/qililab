@@ -30,10 +30,10 @@ class Results:
         """Add num_sequences to shape."""
         if not self.shape:
             self.shape = compute_shapes_from_loops(loops=self.loops)
-            if self.num_sequences > 1:
-                self.shape.append(self.num_sequences)
-            if self.software_average > 1:
-                self.shape.append(self.software_average)
+        if self.num_sequences > 1:
+            self.shape.append(self.num_sequences)
+        if self.software_average > 1:
+            self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
             # Pop the result name (qblox, simulator) from the dictionary and instantiate its corresponding Result class.
             self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in self.results]

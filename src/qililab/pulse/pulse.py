@@ -88,3 +88,7 @@ class Pulse:
     def __repr__(self):
         """Return string representation of the Pulse object."""
         return f"{str(self.pulse_shape)} - {self.duration}ns"
+
+    def __str__(self):
+        """Return string representation of the Pulse object."""
+        return self.__repr__()
