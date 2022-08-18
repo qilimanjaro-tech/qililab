@@ -1,4 +1,5 @@
 """Results class."""
+from copy import deepcopy
 from dataclasses import dataclass, field
 from types import NoneType
 from typing import List, Tuple
@@ -35,8 +36,9 @@ class Results:
         if self.software_average > 1:
             self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
+            tmp_results = deepcopy(self.results)
             # Pop the result name (qblox, simulator) from the dictionary and instantiate its corresponding Result class.
-            self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in self.results]
+            self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in tmp_results]
         if self.loops is not None and isinstance(self.loops[0], dict):
             self.loops = [Loop(**loop) for loop in self.loops]
 
