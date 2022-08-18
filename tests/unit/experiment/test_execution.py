@@ -16,7 +16,7 @@ from ...conftest import mock_instruments
 @patch("qililab.execution.buses_execution.yaml.safe_dump")
 @patch("qililab.execution.buses_execution.open")
 @patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.utils.results_data_management.os.makedirs")
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
