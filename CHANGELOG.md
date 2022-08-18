@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.6.0 (2022-08-18)
+
+### Feat
+
+- [QILI-184] :sparkles: New daily directory generated for results data (#50)
+
 ## 0.5.9 (2022-08-18)
 
 ### Fix
