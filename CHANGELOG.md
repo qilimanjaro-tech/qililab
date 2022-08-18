@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.9 (2022-08-18)
+
+### Fix
+
+- [QILI-183] :bug: accept float master duration gate (#49)
+
 ## 0.5.8 (2022-08-18)
 
 ### Fix
