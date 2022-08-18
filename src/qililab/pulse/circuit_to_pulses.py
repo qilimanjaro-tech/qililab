@@ -117,11 +117,18 @@ class CircuitToPulses:
                 f"Value amplitude: {gate_settings.amplitude} MUST be a float or an integer. "
                 f"Current type is {type(gate_settings.amplitude)}."
             )
-        if not isinstance(gate_settings.duration, int) and not isinstance(gate_settings.duration, np.number):
+
+        if (
+            not isinstance(gate_settings.duration, float)
+            and not isinstance(gate_settings.duration, int)
+            and not isinstance(gate_settings.duration, np.number)
+        ):
             raise ValueError(
                 f"Value duration: {gate_settings.duration} MUST be an integer. "
                 f"Current type is {type(gate_settings.duration)}."
             )
+        if isinstance(gate_settings.duration, float):
+            gate_settings.duration = int(gate_settings.duration)
         return gate_settings
 
     def _readout_gate_to_pulse(
