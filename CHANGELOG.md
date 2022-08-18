@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.8 (2022-08-18)
+
+### Fix
+
+-  [QILI-182] :bug: uses deepcopy before pop dict key (#48)
+
 ## 0.5.7 (2022-08-17)
 
 ### Fix
