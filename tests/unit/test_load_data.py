@@ -51,8 +51,12 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
     assert isinstance(exp.loops[0], Loop)
 
 
-def test_load_without_path():
+@patch("qililab.utils.load_data.glob.glob", return_value=["one", "two"])
+@patch("qililab.utils.load_data.os.path.getctime", return_value=0)
+def test_load_without_path(mock_cttime: MagicMock, mock_glob: MagicMock):
     """Test load without path."""
     exp, results = load()
+    mock_cttime.assert_called()
+    mock_glob.assert_called()
     assert exp is None
     assert results is None
