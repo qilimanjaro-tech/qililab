@@ -1,8 +1,6 @@
-"""HardwareExperiment class."""
+""" Experiment class."""
 import copy
-import os
 from dataclasses import asdict, dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
@@ -12,13 +10,7 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import logger
-from qililab.constants import (
-    DATA,
-    EXPERIMENT,
-    EXPERIMENT_FILENAME,
-    RESULTS_FILENAME,
-    RUNCARD,
-)
+from qililab.constants import EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSequences
@@ -29,11 +21,12 @@ from qililab.typings.enums import Category, Instrument, Parameter
 from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
+from qililab.utils.results_data_management import create_results_folder
 from qililab.utils.util_loops import compute_shapes_from_loops
 
 
 class Experiment:
-    """HardwareExperiment class"""
+    """Experiment class"""
 
     @dataclass
     class ExperimentSettings:
@@ -72,7 +65,7 @@ class Experiment:
     def execute(self) -> Results:
         """Run execution."""
         with self.remote_api:
-            path = self._create_folder()
+            path = create_results_folder(name=self.name)
             self._create_results_file(path=path)
             self._dump_experiment_data(path=path)
             plot = LivePlot(
@@ -323,23 +316,6 @@ class Experiment:
         execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
         return execution, sequence_list
 
-    def _create_folder(self) -> Path:
-        """Create folder where the data will be saved.
-
-        Returns:
-            Path: Path to folder.
-        """
-        now = datetime.now()
-        # create folder
-        path = (
-            Path(self.folderpath)
-            / f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}_{self.name}"
-        )
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        return path
-
     def _create_results_file(self, path: Path):
         """Create 'results.yml' file.
 
@@ -365,18 +341,6 @@ class Experiment:
         """
         with open(file=path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
             yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
-
-    @property
-    def folderpath(self):
-        """Experiment 'path' property.
-
-        Returns:
-            Path: Path to the data folder.
-        """
-        folderpath = os.environ.get(DATA, None)
-        if folderpath is None:
-            raise ValueError("Environment variable DATA is not set.")
-        return folderpath
 
     @property
     def software_average(self):

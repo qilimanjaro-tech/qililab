@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from qibo.core.circuit import Circuit
 from qibo.gates import M
-from qiboconnection.api import API
 
 from qililab.execution import Execution
 from qililab.experiment import Experiment
@@ -114,7 +113,7 @@ class TestExperiment:
 @patch("qililab.execution.buses_execution.yaml.safe_dump")
 @patch("qililab.execution.buses_execution.open")
 @patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.utils.results_data_management.os.makedirs")
 class TestSimulatedExexution:
     """Unit tests checking the the execution of a simulated platform."""
 
