@@ -1,0 +1,63 @@
+@startuml
+
+participant Execution as exe
+participant Platform as plat
+participant Schema as schema
+participant InstrumentControllers as instrcontrollers
+participant InstrumentController as instrcontroller
+participant Instrument as instr
+participant InstrumentControllerSettings as instrcontrollerset
+participant Connection as conn
+participant Device as device
+
+
+[-> exe ++: __exit__ ()
+exe -> exe: close ()
+activate exe #7F1CDB
+exe -> plat ++: close ()
+plat -> schema ++: close_instrument_controllers ()
+schema -> instrcontrollers ++: close ()
+loop instrument_controller in elements
+    instrcontrollers -> instrcontroller ++: close ()
+    instrcontroller -> instrcontroller: stop ()
+    activate instrcontroller #7F1CDB
+    loop module in modules
+        instrcontroller -> instr ++: stop ()
+        note right of instr #E68AA3: Instrument stop
+        return
+    end
+    return
+    instrcontroller -> instrcontroller: reset ()
+    activate instrcontroller #7F1CDB
+    loop module in modules
+        instrcontroller -> instr ++: reset ()
+        note right of instr #E68AA3: Instrument reset
+        return
+    end
+    return
+    instrcontroller -> instrcontrollerset ++: close_connection ()
+    instrcontrollerset -> conn ++: close ()
+    conn -> device ++: close ()
+    return
+    return
+    return
+    instrcontroller -> instrcontroller: release_device_and_set_to_all_modules ()
+    activate instrcontroller #7F1CDB
+    note right of instrcontroller: self.device = None
+    instrcontroller -> instrcontroller: release_device_to_all_modules ()
+    activate instrcontroller #E6033F
+    loop module in modules
+        instrcontroller -> instr ++: set_device (None)
+        note right of instr: self.device = None
+        return
+    end
+    return
+    return
+    return
+end
+    return
+    return
+    return
+    return
+    [<-- exe
+@enduml

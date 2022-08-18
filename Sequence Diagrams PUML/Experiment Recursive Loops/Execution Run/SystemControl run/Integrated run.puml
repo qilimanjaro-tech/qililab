@@ -1,0 +1,9 @@
+@startuml
+
+participant IntegratedSystemControl as int
+
+[-> int ++: run (pulse_sequence, nshots, repetition_duration, path)
+note right of int: NOT IMPLEMENTED
+[<-- int
+
+@enduml

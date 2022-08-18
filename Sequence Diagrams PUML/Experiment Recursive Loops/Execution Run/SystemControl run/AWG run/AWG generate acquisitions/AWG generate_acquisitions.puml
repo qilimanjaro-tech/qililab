@@ -1,0 +1,18 @@
+@startuml
+
+participant QBloxModule as qblox
+participant QBloxModuleSettings as set
+participant Acquisitions as acqs
+
+[-> qblox ++: generate_acquisitions ()
+qblox -> acqs **: Acquisitions ()
+activate acqs
+note right of acqs: add (single, 1, 0)
+qblox -> set ++: get_num_bins ()
+return num_bins
+qblox -> acqs: add (binning, num_bins + 1, 1)
+note right of acqs: add (binning, num_bins + 1, 1)
+return acquisitions
+return acquisitions
+
+@enduml

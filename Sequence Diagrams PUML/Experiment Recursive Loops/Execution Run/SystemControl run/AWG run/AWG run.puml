@@ -1,0 +1,60 @@
+@startuml
+
+participant QBloxModule as qblox
+participant QBloxModuleSettings as set
+participant Pulsar_or_QcmQrm as dev
+
+[-> qblox ++: run (pulse_sequence, nshots, repetition_duration, path)
+qblox -> qblox: check_cached_values (pulse_sequence, nshots, repetition_duration, path)
+activate qblox #7F1CDB
+opt (pulse_sequence, nshots, repetition_duration) != cache
+    note right of qblox : (pulse_sequence, nshots, repetition_duration)
+    qblox -> qblox: translate_pulse_sequence (pulse_sequence, nshots, repetition_duration)
+    activate qblox #E6033F
+    qblox -> qblox: generate_waveforms (pulse_sequence)
+    activate qblox #3B23FF
+    note right of qblox #C2A5DC: AWG generate_waveforms
+    return waveforms
+
+    qblox -> qblox: generate_acquisitions ()
+    activate qblox #3B23FF
+    note right of qblox #C2A5DC: AWG generate_acquisitions
+    return acquisitions
+
+    qblox -> qblox: generate_program (pulse_sequence, waveforms, nshots, repetition_duration)
+    activate qblox #3B23FF
+    note right of qblox #C2A5DC: AWG generate_program
+    return program
+
+    qblox -> qblox: generate_weights ()
+    activate qblox #3B23FF
+    note right of qblox: weights = {}
+    return weights
+
+    note right of qblox: result = Sequence (program, waveforms, acquisitions, weights)
+    return result
+
+    qblox -> qblox: upload (result, path)
+    activate qblox #E6033F
+    note right of qblox: Dump sequence in a yml file
+    qblox -> set ++: get_num_sequencers ()
+    return num_sequencers
+    loop seq_idx in range (num_sequencers)
+        qblox -> dev ++: sequencers[seq_idx].sequence (path)
+        return
+    end
+    return
+end
+
+
+qblox -> qblox: start_sequencer ()
+activate qblox #E6033F
+qblox -> dev ++: arm_sequencer ()
+return
+qblox -> dev ++: start_sequencer ()
+return
+return
+return
+return
+
+@enduml

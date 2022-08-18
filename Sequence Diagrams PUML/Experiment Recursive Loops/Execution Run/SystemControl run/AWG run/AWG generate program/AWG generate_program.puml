@@ -1,0 +1,85 @@
+@startuml
+
+participant QBloxModule as qblox
+participant QBloxModuleSettings as set
+participant Program as prog
+participant Loop as loop
+participant Block as block
+participant Stop as stop
+participant PulseSequence as pulsesec
+participant Wait as wait
+participant Waveforms as wave
+participant Play as play
+
+[-> qblox ++: generate_program (pulse_sequence, waveforms, nshots, repetition_duration)
+qblox -> prog **: Program ()
+activate prog
+return program
+qblox -> set ++: get_num_bins ()
+return num_bins
+
+qblox -> loop **: Loop (binning, num_bins)
+activate loop
+return bin_loop
+qblox -> loop **: Loop (average, nshots)
+activate loop
+return avg_loop
+
+note right of qblox: bin_loop.append_block (avg_loop, 1)
+qblox -> block **: Block (stop)
+activate block
+block -> stop **: Stop ()
+activate stop
+return stop
+note right of block: append_component (stop)
+return stop
+
+qblox -> prog ++: program.append_block (bin_loop)
+return
+qblox -> prog ++: program.append_block (stop)
+return
+
+qblox -> pulsesec ++: get_pulses ()
+return pulses
+
+opt pulses[0].start != 0
+    qblox -> wait **: Wait (pulses[0].start)
+    activate wait
+    return wait
+    note right of qblox: avg_loop.append_component(wait)
+end
+
+loop i, pulse in pulses
+    qblox -> wave ++: find_pair_by_name (pulse)
+    return waveform_pair
+    alt i < (len (pulses) - 1)
+        note right of qblox: wait_time = pulses[i+1].start - pulse.start
+    else
+        note right of qblox: wait_time = self.final_wait_time
+    end
+    note right of qblox: avg_loop.append_component (pulse.phase)
+    note right of qblox: avg_loop.append_component (set_awg_gain_relative (pulse.amplitude, pulse.amplitude))
+    qblox -> play **: Play (waveform_pair.waveform_i.index, waveform_pair.waveform_q.index, wait_time)
+    activate play
+    return play
+    note right of qblox: avg_loop.append_component (play)
+end
+
+qblox -> qblox: append_acquire_instruction (avg_loop, "TR10")
+activate qblox #7F1CDB
+return
+
+note right of qblox: avg_loop.append_block (long_wait (repetition_duration - avg_loop.duration_iter, 1))
+note right of qblox: avg_loop.replace_register ("TR10", bin_loop.counter_register)
+note right of qblox: avg_loop.replace_register ("TR0", "R2")
+
+return program
+
+@enduml
+
+
+
+
+
+
+@enduml

@@ -1,0 +1,30 @@
+@startuml
+
+participant PlatformSettings as platset
+participant DDBBElement as DDBB
+participant GateSettings as gateset
+
+[-> platset ++: set_parameter (parameter, value, alias)
+alt alias is None OR alias is a Platform alias
+    platset -> DDBB ++: set_parameter (parameter, value)
+    note right of DDBB #C2A5DC: DDBB set_parameter
+    return
+else
+    platset -> gateset ++: get_gate (alias)
+    note right of gateset: returns the first gate with name == alias
+    return gate
+    note right of platset: settings = gate
+    opt not hasattr(settings, parameter)
+        platset -> gateset ++: get_shape ()
+        return shape
+        note right of platset: settings = shape
+    end
+    note right of platset: attr_type = type (getattr (settings, parameter))
+    opt attr_type = int
+        note right of platset: attr_type = float
+    end
+    note right of platset: setattr (settings, parameter, value)
+end
+
+[<-- platset
+@enduml

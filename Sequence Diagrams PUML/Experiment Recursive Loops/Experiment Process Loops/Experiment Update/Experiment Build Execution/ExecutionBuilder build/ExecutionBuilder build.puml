@@ -1,0 +1,58 @@
+@startuml
+
+participant ExecutionBuilder as builder
+participant PulseSequence as pulsesec
+participant Platform as plat
+participant Schema as schema
+participant BusExecution as busexe
+participant BusesExecution as busesexe
+participant Execution as exe
+
+[-> builder ++: build (platform, pulse_sequences)
+builder -> builder: build_buses_execution (platform, pulse_sequences_list = pulse_sequences)
+activate builder #7F1CDB
+
+note right of builder: buses = {}
+loop pulse_sequences in pulse_sequences_list
+    loop pulse_sequence in pulse_sequences
+        builder -> pulsesec ++: get_port ()
+        return port
+        builder -> plat ++: get_bus (port)
+        plat -> schema ++: get_buses ()
+        return buses
+        loop (bus_idx, bus) in buses
+            opt bus.port = port
+                note right of plat: result = (bus_idx, bus)
+                note right of plat: break
+            end
+        end
+        return bus_idx, bus
+        alt bus_idx not in buses
+            builder -> busexe **: BusExecution (bus, [pulse_sequence])
+            activate busexe
+            return busexecution
+            note right of builder: buses[bus_idx] = busexecution
+        else
+            builder -> busexe ++: add_pulse_sequence (pulse_sequence)
+            note right of busexe: pulse_sequences.append (pulse_sequence)
+            return
+        end
+    end
+end
+
+builder -> busesexe **: BusesExecution (buses, len (pulse_sequence_list))
+activate busesexe
+return buses_execution
+return buses_execution
+
+builder -> exe **: Execution (buses_execution, platform)
+activate exe
+return execution
+
+return execution
+
+@enduml
+
+
+
+

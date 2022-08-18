@@ -1,0 +1,40 @@
+@startuml
+
+participant Results as results
+participant Factory as factory
+participant Loop as loop_
+
+
+[-> results **: Results( software_average, num_sequences, loops)
+activate results
+opt not self.shape
+    results -> results: compute_shapes_from_loops (loops)
+    activate results #7F1CDB
+    return result_shape
+    note right of results: shape = result_shape
+    opt num_sequences > 1
+        results -> results: shape.append (num_sequences)
+    end
+    opt software_average > 1
+        results -> results: shape.append (software_average)
+    end
+end
+opt self.results AND isinstance(self.results[0], dict)
+    loop result in results
+        results -> factory ++: get (result.pop (RUNCARD.NAME))
+        return result_result
+        note right of results: results_aux.append(result_result)
+    end
+    note right of results: results = results_aux
+end
+opt self.loops is not None AND isinstance (self.loops[0], dict)
+    loop loop in loops
+        results -> loop_ **: Loop (**loop)
+        activate loop_
+        return result_loop
+        note right of results: loops_aux.append (result_loop)
+    end
+    note right of results: loops = loops_aux
+end
+[<-- results: results
+@enduml

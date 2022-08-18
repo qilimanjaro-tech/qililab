@@ -1,0 +1,54 @@
+@startuml
+
+participant QBloxModule as qblox
+participant QBloxModuleSettings as set
+participant Pulsar_or_QcmQrm as dev
+
+[-> qblox ++: initial_setup ()
+
+qblox -> qblox: set_sync_enabled ()
+activate qblox #7F1CDB
+qblox -> set ++: get_num_sequencers ()
+return num_sequencers
+qblox -> set ++: get_sync_enabled ()
+return sync_enabled
+loop seq_idx in range (num_sequencers)
+    qblox -> dev ++: sequencers[seq_idx].sync_en (sync_enabled)
+    return
+end
+return
+
+qblox -> qblox: map_outputs ()
+activate qblox #7F1CDB
+qblox -> dev ++: get_sequencers ()
+return sequencers
+loop sequencer, out in itertools.product (sequencers, range (NUM_SEQUENCERS))
+    opt hasattr (sequencer, channel_map_path_out_en)
+        note right of qblox: sequencer.set (channel_map_path_out_en, False)
+    end
+end
+
+loop seq_idx in range (num_sequencers)
+    qblox -> dev ++: sequencers[seq_idx].channel_map_path0_out0_en (True)
+    return
+    qblox -> dev ++: sequencers[seq_idx].channel_map_path1_out1_en (True)
+    return
+end
+return 
+
+qblox -> qblox: set_nco ()
+activate qblox #7F1CDB
+qblox -> set ++: get_multiplexing_frequencies ()
+return multiplexing_frequencies
+loop seq_idx, frequency in enumerate (multiplexing_frequencies)
+    qblox -> dev ++: sequencers[seq_idx].mod_en_awg (True)
+    return
+    qblox -> dev ++: sequencers[seq_idx].nco_freq (frequency)
+    return
+end
+return
+
+
+return
+
+@enduml

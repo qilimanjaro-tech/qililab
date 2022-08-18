@@ -1,0 +1,32 @@
+@startuml
+
+participant Experiment as exp
+participant ExperimentSettings as expset
+participant Execution as exe
+
+[-> exp: recursive_loops (self.loops, results, path, plot)
+activate exp #7F1CDB
+alt loops is not None AND len (loops) > 0
+      exp -> exp: process_loops (results, loops, depth, path, plot)
+      activate exp #E6033F
+      note right of exp #C2A5DC: Experiment process_loops
+      return result
+else
+      exp -> exp: execute (path, plot)
+      activate exp #E6033F
+      exp -> expset ++: get_hardware_average
+      return hardware_average
+      exp -> expset ++: get_repetition_duration
+      return repetition_duration
+      exp -> expset ++: get_software_average
+      return software_average
+      exp -> exe ++: run (hardware_average, repetition_duration, software_average, plot, path)
+      note right of exe #C2A5DC: Execution run
+      return result
+      return result
+      note right of exp: results.add (result)
+end
+                  
+return results
+
+@enduml

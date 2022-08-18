@@ -1,0 +1,37 @@
+@startuml
+
+participant QBloxModule as qblox
+participant Waveforms as wave
+participant PulseSequence as pulsesec
+participant Pulse as pulse
+participant PulseShape as pulseshape
+
+[-> qblox ++: generate_waveforms (pulse_sequence)
+qblox -> wave **: Waveforms ()
+activate wave
+return waveforms
+note right of qblox: unique_pulses = []
+qblox -> pulsesec ++: get_pulses ()
+return pulses
+loop pulse in pulses
+    qblox -> pulse ++: get_duration ()
+    return duration
+    qblox -> pulse ++: get_shape ()
+    return pulse_shape
+    opt (duration, pulse_shape) not in unique_pulses
+        note right of qblox: unique_pulses.append (duration, pulse_shape)
+        qblox -> pulse ++: envelope (amplitude = 1)
+        pulse -> pulseshape ++: envelope (self.duration, amplitude, resolution )
+        note right of pulseshape: NOT IMPLEMENTED
+        return envelope
+        return envelope
+        note right of qblox: real = real (envelope)
+        note right of qblox: imag = imag (envelope)
+        qblox -> wave ++: add_pair ((real, imag), pulse)
+        note right of wave: waveforms.add_pair ((real, imag), pulse)
+        return
+    end
+end
+return waveforms
+
+@enduml
