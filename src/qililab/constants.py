@@ -44,7 +44,7 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
-    MASTER_BETA_PULSE_SHAPE = "master_beta_pulse_shape"
+    MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
 
 
 class SIGNALGENERATOR:

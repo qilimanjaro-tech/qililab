@@ -37,7 +37,7 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
-        PLATFORM.MASTER_BETA_PULSE_SHAPE: 0,
+        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -61,7 +61,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
                 },
             },
             {
@@ -72,7 +72,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
                 },
             },
         ],
@@ -375,7 +375,7 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
-        PLATFORM.MASTER_BETA_PULSE_SHAPE: 0,
+        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -403,7 +403,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
                 },
             },
             {
@@ -414,7 +414,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "beta": PLATFORM.MASTER_BETA_PULSE_SHAPE,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
                 },
             },
         ],

@@ -466,7 +466,9 @@ def fixture_loop() -> Loop:
     return Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1)
 
 
-@pytest.fixture(name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, beta=1.0)])
+@pytest.fixture(
+    name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+)
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
     return request.param  # type: ignore

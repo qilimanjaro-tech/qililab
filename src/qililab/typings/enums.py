@@ -196,22 +196,21 @@ class PulseShapeSettingsName(Enum):
     Args:
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
-        * beta
+        * drag_coefficient
     """
 
     NUM_SIGMAS = "num_sigmas"
-    BETA = "beta"
+    DRAG_COEFFICIENT = "drag_coefficient"
 
 
 class MasterPulseShapeSettingsName(Enum):
     """Master Pulse Shape Settings names.
     Args:
         enum (str): Available types of master pulse shape settings names:
-        * master_amplitude_gate
-        * master_duration_gate
+        * master_drag_coefficient
     """
 
-    BETA = "master_beta_pulse_shape"
+    DRAG_COEFFICIENT = "master_drag_coefficient"
 
 
 class BusSubcategory(Enum):
@@ -333,7 +332,7 @@ class Parameter(Enum):
     SEQUENCE_TIMEOUT = "sequence_timeout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
-    MASTER_BETA_PULSE_SHAPE = "master_beta_pulse_shape"
+    MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
     EXTERNAL = "external"
     RESET = "reset"
 
