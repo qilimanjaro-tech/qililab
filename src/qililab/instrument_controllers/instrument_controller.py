@@ -15,6 +15,7 @@ from qililab.settings import DDBBElement
 from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentControllerSubCategory,
+    Parameter,
 )
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
@@ -33,6 +34,7 @@ class InstrumentControllerSettings(DDBBElement):
     connection: Connection
     modules: List[InstrumentReference]
     subcategory: InstrumentControllerSubCategory  # a subtype of settings must be specified by the subclass
+    reset: bool = True
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
@@ -143,6 +145,14 @@ class InstrumentController(BusElement, ABC):
         self.device = None
         self._release_device_to_all_modules()
 
+    def set_parameter(self, parameter: Parameter, value: float | str | bool):
+        """updates the reset settings for the controller"""
+        if parameter is not Parameter.RESET:
+            raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
+        if not isinstance(value, bool):
+            raise ValueError("Reset value Must be a boolean.")
+        self.settings.reset = value
+
     @CheckConnected
     def stop(self):
         """Stop instrument."""
@@ -165,13 +175,15 @@ class InstrumentController(BusElement, ABC):
         """Establishes the connection with the instrument, performs the initial setup and resets it."""
         self._initialize_device_and_set_to_all_modules()
         self.connection.connect(device=self.device, device_name=str(self))
-        self.reset()
+        if self.settings.reset:
+            self.reset()
         self.initial_setup()
 
     def close(self):
         """Stops all modules, resets them, close the connection to the instrument and releases the device."""
         self.stop()
-        self.reset()
+        if self.settings.reset:
+            self.reset()
         self.connection.close()
         self._release_device_and_set_to_all_modules()
 

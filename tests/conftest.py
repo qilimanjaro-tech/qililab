@@ -12,7 +12,7 @@ from qiboconnection.typings.connection import (
 )
 
 from qililab import build_platform
-from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
 from qililab.execution import BusesExecution, BusExecution
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import (
@@ -312,6 +312,29 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     runcard, sequences = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="galadriel")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop = Loop(
+        alias="rs_0",
+        parameter=Parameter.FREQUENCY,
+        start=3544000000,
+        stop=3744000000,
+        num=2,
+    )
+    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    mock_load.assert_called()
+    return experiment
+
+
+@pytest.fixture(name="experiment_reset", params=experiment_params[:2])
+@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, sequences = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
