@@ -18,34 +18,50 @@ class Drag(PulseShape):
 
     name = PulseShapeName.DRAG
     num_sigmas: float
-    beta: float | Literal[MasterPulseShapeSettingsName.BETA]
-    master_beta_pulse_shape: float | None = None
+    drag_coefficient: float | Literal[MasterPulseShapeSettingsName.DRAG_COEFFICIENT]
+    master_drag_coefficient: float | None = None
 
     def __post_init__(self):
-        """Update beta value"""
-        if isinstance(self.beta, str) and self.beta != MasterPulseShapeSettingsName.BETA.value:
+        """Update drag coefficient value"""
+        if (
+            isinstance(self.drag_coefficient, str)
+            and self.drag_coefficient != MasterPulseShapeSettingsName.DRAG_COEFFICIENT.value
+        ):
             raise ValueError(
-                f"master beta {self.beta} does not have a valid value: {MasterPulseShapeSettingsName.BETA.value}."
+                f"master drag coefficient {self.drag_coefficient} does not have a valid value: {MasterPulseShapeSettingsName.DRAG_COEFFICIENT.value}."
             )
-        if isinstance(self.beta, MasterPulseShapeSettingsName) and self.beta != MasterPulseShapeSettingsName.BETA:
+        if (
+            isinstance(self.drag_coefficient, MasterPulseShapeSettingsName)
+            and self.drag_coefficient != MasterPulseShapeSettingsName.DRAG_COEFFICIENT
+        ):
             raise ValueError(
-                f"master beta {self.beta} does not have a valid value: {MasterPulseShapeSettingsName.BETA.value}."
+                f"master drag coefficient {self.drag_coefficient} does not have a valid value: {MasterPulseShapeSettingsName.DRAG_COEFFICIENT.value}."
             )
-        if isinstance(self.beta, str):
-            self.beta = MasterPulseShapeSettingsName.BETA
-        if self.beta == MasterPulseShapeSettingsName.BETA and self.master_beta_pulse_shape is None:
-            raise ValueError(f"master beta pulse shape is not defined when beta value is {self.beta}.")
+        if isinstance(self.drag_coefficient, str):
+            self.drag_coefficient = MasterPulseShapeSettingsName.DRAG_COEFFICIENT
+        if (
+            self.drag_coefficient == MasterPulseShapeSettingsName.DRAG_COEFFICIENT
+            and self.master_drag_coefficient is None
+        ):
+            raise ValueError(
+                f"master drag coefficient pulse shape is not defined when drag coefficient value is {self.drag_coefficient}."
+            )
 
-    def _get_beta(self) -> float:
-        """Returns the associated beta value checking whether it has to retrieve
-        it from the `master_beta_pulse_shape`"""
-        if self.beta == MasterPulseShapeSettingsName.BETA and self.master_beta_pulse_shape is None:
-            raise ValueError(f"master beta pulse shape is not defined when beta value is {self.beta}.")
-        if self.beta == MasterPulseShapeSettingsName.BETA:
-            return self.master_beta_pulse_shape  # type: ignore
-        if not isinstance(self.beta, float):
-            raise ValueError(f"Beta value type should be float. Got {type(self.beta)} instead")
-        return self.beta
+    def _get_drag_coefficient(self) -> float:
+        """Returns the associated drag coefficient value checking whether it has to retrieve
+        it from the `master_drag coefficient_pulse_shape`"""
+        if (
+            self.drag_coefficient == MasterPulseShapeSettingsName.DRAG_COEFFICIENT
+            and self.master_drag_coefficient is None
+        ):
+            raise ValueError(
+                f"master drag coefficient pulse shape is not defined when drag coefficient value is {self.drag_coefficient}."
+            )
+        if self.drag_coefficient == MasterPulseShapeSettingsName.DRAG_COEFFICIENT:
+            return self.master_drag_coefficient  # type: ignore
+        if not isinstance(self.drag_coefficient, float):
+            raise ValueError(f"Beta value type should be float. Got {type(self.drag_coefficient)} instead")
+        return self.drag_coefficient
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.
@@ -58,13 +74,13 @@ class Drag(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
 
-        beta = self._get_beta()
+        drag_coefficient = self._get_drag_coefficient()
         sigma = duration / self.num_sigmas
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
-        return gaussian + 1j * beta * (-(time - mu_) / sigma**2) * gaussian
+        return gaussian + 1j * drag_coefficient * (-(time - mu_) / sigma**2) * gaussian
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
@@ -75,8 +91,10 @@ class Drag(PulseShape):
         return {
             RUNCARD.NAME: self.name.value,
             PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
-            PulseShapeSettingsName.BETA.value: self.beta if isinstance(self.beta, float) else self.beta.value,
-            MasterPulseShapeSettingsName.BETA.value: self.master_beta_pulse_shape
-            if self.master_beta_pulse_shape is not None
+            PulseShapeSettingsName.DRAG_COEFFICIENT.value: self.drag_coefficient
+            if isinstance(self.drag_coefficient, float)
+            else self.drag_coefficient.value,
+            MasterPulseShapeSettingsName.DRAG_COEFFICIENT.value: self.master_drag_coefficient
+            if self.master_drag_coefficient is not None
             else None,
         }

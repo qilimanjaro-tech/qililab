@@ -68,7 +68,7 @@ class CircuitToPulses:
             PulseShapeName.DRAG.value,
         ]:
             return Factory.get(shape_settings.pop(RUNCARD.NAME))(
-                **shape_settings, master_beta_pulse_shape=self.settings.master_beta_pulse_shape
+                **shape_settings, master_drag_coefficient=self.settings.master_drag_coefficient
             )
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
