@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.7.1 (2022-08-19)
+
+### Refactor
+
+- [QILI-186] :recycle: renamed beta to drag_coefficient (#56)
+
 ## 0.7.0 (2022-08-19)
 
 ### Feat
