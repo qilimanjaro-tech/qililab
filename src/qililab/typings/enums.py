@@ -335,6 +335,7 @@ class Parameter(Enum):
     MASTER_DURATION_GATE = "master_duration_gate"
     MASTER_BETA_PULSE_SHAPE = "master_beta_pulse_shape"
     EXTERNAL = "external"
+    RESET = "reset"
 
 
 class ResultName(Enum):
