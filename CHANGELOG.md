@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.7.0 (2022-08-19)
+
+### Feat
+
+- [QILI-185] add option to NOT reset an instrument (#54)
+
 ## 0.6.0 (2022-08-18)
 
 ### Feat
