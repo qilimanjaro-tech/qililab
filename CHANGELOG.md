@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.7.2 (2022-08-22)
+
+### Fix
+
+- [QILI-187 ] :bug: loops minimum length taking the passed value instead of the self (#57)
+
 ## 0.7.1 (2022-08-19)
 
 ### Refactor
