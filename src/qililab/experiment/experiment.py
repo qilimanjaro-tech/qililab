@@ -125,7 +125,7 @@ class Experiment:
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
 
-        with tqdm(total=self.minimum_length_loop, position=depth, leave=is_the_top_loop) as pbar:
+        with tqdm(total=self.get_minimum_length_loop(loops=loops), position=depth, leave=is_the_top_loop) as pbar:
             loop_ranges = [loop.range for loop in loops]
 
             for values in zip(*loop_ranges):
@@ -153,10 +153,9 @@ class Experiment:
         )
         return f"{parameter_text}: {value}"
 
-    @property
-    def minimum_length_loop(self):
+    def get_minimum_length_loop(self, loops: List[Loop]):
         """return the minimum length from all loops"""
-        return min(len(loop.range) for loop in self.loops)
+        return min(len(loop.range) for loop in loops)
 
     def _create_loops_from_inner_loops(self, loops: List[Loop]):
         """create sequence of loops from inner loops (if exist)"""
