@@ -1,0 +1,11 @@
+@startuml
+
+participant SGS100A as sgs
+participant RohdeSchwarzSGS100A as dev
+
+[-> sgs ++: start ()
+sgs -> dev ++: device.on ()
+return
+return
+
+@enduml

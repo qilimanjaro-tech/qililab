@@ -47,6 +47,7 @@ else
       note right of liveplot: result1 = result2           
 end
 return result1
+note right of liveplot: self.x_iterator_ranges, self.y_iterator_ranges = result1
 liveplot -> liveplot: create_live_plot (title)
 activate liveplot #7F1CDB
 liveplot -> remote_api ++: create_liveplot (title, x_label, y_label, z_label, plot_type, x_axis, y_axis)

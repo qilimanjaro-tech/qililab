@@ -1,0 +1,48 @@
+@startuml
+
+participant QBloxModule as qblox
+participant QBloxModuleSettings as set
+participant Pulsar_or_QcmQrm as dev
+
+[-> qblox ++: setup ()
+qblox -> qblox: set_nco ()
+activate qblox #7F1CDB
+qblox -> set ++: get_multiplexing_frequencies ()
+return multiplexing_frequencies
+loop seq_idx, frequency in enumerate (multiplexing_frequencies)
+    qblox -> dev ++: sequencers[seq_idx].mod_en_awg (True)
+    return
+    qblox -> dev ++: sequencers[seq_idx].nco_freq (frequency)
+    return
+end
+return
+
+qblox -> qblox: set_gains ()
+activate qblox #7F1CDB
+qblox -> set ++: get_gain ()
+return gain
+loop seq_idx, gain in enumerate (gain)
+    qblox -> dev ++: sequencers[seq_idx].gain_awg_path0 (gain)
+    return
+    qblox -> dev ++: sequencers[seq_idx].gain_awg_path1 (gain)
+    return
+end
+return
+
+qblox -> qblox: set_offsets ()
+activate qblox #7F1CDB
+qblox -> set ++: get_offset_i ()
+return offset_i
+qblox -> set ++: get_offset_q ()
+return offset_q
+loop seq_idx, (offset_i, offset_q) in enumerate (zip (offset_i, offset_q))
+    qblox -> dev ++: sequencers[seq_idx].offset_awg_path0 (offset_i)
+    return
+    qblox -> dev ++: sequencers[seq_idx].offset_awg_path1 (offset_q)
+    return
+end
+return
+
+return
+
+@enduml

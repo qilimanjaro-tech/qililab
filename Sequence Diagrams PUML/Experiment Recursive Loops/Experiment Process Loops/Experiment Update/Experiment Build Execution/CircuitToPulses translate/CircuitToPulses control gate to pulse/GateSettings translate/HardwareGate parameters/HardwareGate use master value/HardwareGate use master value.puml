@@ -1,0 +1,23 @@
+@startuml
+
+participant HardwareGate as hw
+
+[-> hw ++: use_master_value_when_variable_is_referencing_master_name\n(gate_current_value, master_amplitude_gate, master_duration_gate)
+alt not isinstance(gate_current_value, MasterGateSettingsName)
+    note right of hw: result = gate_current_value
+else gate_current_value = MasterGateSettingsName.MASTER_AMPLITUDE_GATE
+    alt isinstance(master_amplitude_gate, number)
+        note right of hw: result = master_amplitude_gate.item()
+    else 
+        note right of hw: result = master_amplitude_gate
+    end
+else
+    alt isinstance(master_duration_gate, number)
+        note right of hw: result = master_duration_gate.item()
+    else
+        note right of hw: result = master_duration_gate
+    end
+end
+return result
+
+@enduml

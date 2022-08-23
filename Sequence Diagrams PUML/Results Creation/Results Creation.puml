@@ -13,10 +13,10 @@ opt not self.shape
     return result_shape
     note right of results: shape = result_shape
     opt num_sequences > 1
-        results -> results: shape.append (num_sequences)
+        note right of results: shape.append (num_sequences)
     end
     opt software_average > 1
-        results -> results: shape.append (software_average)
+        note right of results: shape.append (software_average)
     end
 end
 opt self.results AND isinstance(self.results[0], dict)

@@ -23,7 +23,7 @@ loop idx, loop in filtered_loops
         activate exp #E6033F
         exp -> loop_ ++: get_parameter ()
         return parameter
-        opt parameter == external
+        opt parameter = external
                 note right of exp: filtered_loops.pop (idx)
                 note right of exp: filtered_values.pop (idx)
         end
