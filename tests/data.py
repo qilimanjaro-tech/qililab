@@ -108,8 +108,8 @@ class Galadriel:
         "num_bins": 100,
         "num_sequencers": 1,
         "gain": [1],
-        "epsilon": [0],
-        "delta": [0],
+        "gain_imbalance": [0],
+        "phase_imbalance": [0],
         "offset_i": [0],
         "offset_q": [0],
     }
@@ -153,8 +153,8 @@ class Galadriel:
         "frequency": 20000000,
         "num_sequencers": 2,
         "gain": [0.5, 0.5],
-        "epsilon": [0, 0],
-        "delta": [0, 0],
+        "gain_imbalance": [0, 0],
+        "phase_imbalance": [0, 0],
         "offset_i": [0, 0],
         "offset_q": [0, 0],
     }

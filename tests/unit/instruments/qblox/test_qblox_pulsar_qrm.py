@@ -139,13 +139,13 @@ class TestQbloxQRM:
         """Test frequency property."""
         assert qrm_no_device.frequency == qrm_no_device.settings.frequency
 
-    def tests_epsilon_property(self, qrm_no_device: QbloxQRM):
-        """Test epsilon property."""
-        assert qrm_no_device.epsilon == qrm_no_device.settings.epsilon
+    def tests_gain_imbalance_property(self, qrm_no_device: QbloxQRM):
+        """Test gain_imbalance property."""
+        assert qrm_no_device.gain_imbalance == qrm_no_device.settings.gain_imbalance
 
-    def tests_delta_property(self, qrm_no_device: QbloxQRM):
-        """Test delta property."""
-        assert qrm_no_device.delta == qrm_no_device.settings.delta
+    def tests_phase_imbalance_property(self, qrm_no_device: QbloxQRM):
+        """Test phase_imbalance property."""
+        assert qrm_no_device.phase_imbalance == qrm_no_device.settings.phase_imbalance
 
     def tests_offset_i_property(self, qrm_no_device: QbloxQRM):
         """Test offset_i property."""

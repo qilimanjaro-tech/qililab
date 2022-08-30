@@ -179,6 +179,8 @@ class QbloxModule(AWG):
         self._set_nco()
         self._set_gains()
         self._set_offsets()
+        self._set_gain_imbalance()
+        self._set_phase_imbalance()
 
     @Instrument.CheckDeviceInitialized
     def stop(self):
@@ -218,8 +220,18 @@ class QbloxModule(AWG):
     def _set_offsets(self):
         """Set I and Q offsets of sequencer."""
         for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
-            self.device.sequencers[seq_idx].offset_awg_path0(offset_i)
-            self.device.sequencers[seq_idx].offset_awg_path1(offset_q)
+            self.device.sequencers[seq_idx].out0_offset(offset_i)
+            self.device.sequencers[seq_idx].out1_offset(offset_q)
+            
+    def _set_gain_imbalance(self):
+        """Set I and Q gain imbalance of sequencer."""
+        for seq_idx, (gain_imbalance) in enumerate(zip(self.gain_imbalance)):
+            self.device.sequencers[seq_idx].mixer_corr_gain_ratio(gain_imbalance)
+            
+    def _set_phase_imbalance(self):
+        """Set I and Q phase imbalance of sequencer."""
+        for seq_idx, (phase_imbalance) in enumerate(zip(self.phase_imbalance)):
+            self.device.sequencers[seq_idx].mixer_corr_phase_offset_degree(phase_imbalance)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
