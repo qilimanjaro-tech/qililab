@@ -1,0 +1,31 @@
+@startuml
+
+participant RYGate as gatery
+participant HardwareGateSettings as hardset
+
+[-> gatery ++: translate (gate ,master_amplitude_gate, master_duration_gate)
+gatery -> gatery: parameters (master_amplitude_gate, master_duration_gate)
+activate gatery #7F1CDB
+note right of gatery: HardwareGate parameters
+return y_params
+note right of gatery: theta = gate.parameters
+gatery -> gatery: normalize_angle (theta)
+activate gatery #7F1CDB
+note right of gatery: angle %= 2 * pi
+opt angle > pi
+    note right of gatery: angle -= 2 * pi
+end
+return theta
+note right of gatery: amplitude = (theta / pi) * y_params.amplitude
+alt theta >= 0
+    note right of gatery: phase = y_params.phase
+else
+    note right of gatery: phase = y_params.phase + pi
+end
+
+gaterx -> hardset **: HardwareGateSettings (amplitude, phase, y_params.duration, y_params.shape)
+activate hardset
+return hardware_gate_settings
+return hardware_gate_settings
+
+@enduml

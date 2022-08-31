@@ -1,0 +1,12 @@
+@startuml
+
+participant QBloxPulsarController as qblox
+participant Pulsar as dev
+
+[-> qblox ++: initialize_device ()
+qblox -> dev **: Pulsar (name = self.name.value self.id, identifier = self.address)
+activate dev
+return device
+return
+
+@enduml

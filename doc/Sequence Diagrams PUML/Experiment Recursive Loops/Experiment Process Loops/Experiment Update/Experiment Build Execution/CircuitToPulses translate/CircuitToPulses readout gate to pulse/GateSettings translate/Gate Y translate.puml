@@ -1,0 +1,12 @@
+@startuml
+
+participant YGate as gatey
+
+[-> gatey ++: translate (gate ,master_amplitude_gate, master_duration_gate)
+gatey -> gatey: parameters (master_amplitude_gate, master_duration_gate)
+activate gatey #7F1CDB
+note right of gatey: HardwareGate parameters
+return hardware_gate_settings
+return hardware_gate_settings
+
+@enduml

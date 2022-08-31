@@ -1,0 +1,9 @@
+@startuml
+
+participant IntegratedSystemControl as int
+
+[-> int ++: setup (frequencies)
+note right of int: NOT IMPLEMENTED
+return
+
+@enduml

@@ -1,0 +1,12 @@
+@startuml
+
+participant SingleInstrumentContributor as single
+participant Instrument as instr
+
+[-> single ++: set_device_to_all_modules ()
+single -> instr ++: modules[0]_set_device (self.device)
+note right of instr: modules[0].device = self.device
+return
+return
+
+@enduml

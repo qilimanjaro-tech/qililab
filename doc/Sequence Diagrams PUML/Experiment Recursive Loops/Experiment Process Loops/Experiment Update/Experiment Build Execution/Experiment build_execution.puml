@@ -1,0 +1,33 @@
+@startuml
+
+participant Experiment as exp
+participant Platform as plat
+participant Schema as schema
+participant CircuitToPulses as trans
+participant ExecutionBuilder as exebuild
+
+
+[-> exp ++: build_execution (sequence_list)
+opt isinstance (sequence_list[0], Circuit)
+    exp -> plat ++: get_platform_settings ()
+    return settings
+    exp -> trans **: CircuitToPulses (settings)
+    activate trans
+    return translator
+    exp -> plat ++: get_chip ()
+    plat -> schema ++: get_chip ()
+    return chip
+    return chip
+    exp -> trans ++: translate (sequence_list, chip)
+    note right of trans #C2A5DC: CircuitToPulses translate
+    return sequence_list
+end
+
+exp -> exebuild ++: build (platform, sequence_list)
+note right of exebuild #C2A5DC: ExecutionBuilder build
+return execution
+
+return execution, sequence_list
+
+
+@enduml

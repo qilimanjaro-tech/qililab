@@ -1,0 +1,38 @@
+@startuml
+
+participant Chip as chip
+
+[-> chip ++: get_qubit_idx_from_node (node)
+chip -> chip: get_adjacent_nodes (node)
+activate chip #7F1CDB
+note right of chip: adj_nodes = []
+loop node_id in port.nodes
+    chip -> chip: get_node_from_id (node_id)
+    activate chip #E6033F
+    loop node in self.nodes
+        opt node.id = node_id
+            return node_result
+            note right of chip: break
+        end
+    end
+    note right of chip: adj_nodes.append(node_result)
+end
+return adj_nodes
+
+loop adj_node in adj_nodes
+    alt isinnstance (adj_node, Qubit)
+        note right of chip: idx = adj_node.qubit_idx
+        note right of chip: break
+    else isinstance (adj_node, Resonator)
+        chip -> chip: get_qubit_idx_from_node (adj_node)
+        activate chip #7F1CDB
+        note right of chip #8089FF: Chip get_qubit_idx_from_node
+        return idx
+        note right of chip: break
+    else
+        note right of chip: continue looping
+    end
+end
+return idx
+
+@enduml

@@ -1,0 +1,12 @@
+@startuml
+
+participant MiniCircuitsController as att
+participant MiniCircuitsDriver as dev
+
+[-> att ++: initialize_device ()
+att -> dev **: MiniCircuitsDriver\n(name = "self.name.value self.id",\naddress = "self.address")
+activate dev
+return device
+return
+
+@enduml

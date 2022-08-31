@@ -1,0 +1,11 @@
+@startuml
+
+participant Keithley2600 as kei
+participant Keithley2600Driver as dri
+
+[-> kei ++: reset()
+kei -> dri ++: reset ()
+return
+return 
+
+@enduml

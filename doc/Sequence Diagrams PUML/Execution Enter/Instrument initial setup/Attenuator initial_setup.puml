@@ -1,0 +1,12 @@
+@startuml
+
+participant Attenuator as att
+
+[-> att ++: initial_setup()
+att -> att: setup ()
+activate att #7F1CDB
+note right of att #C2A5DC: Attenuator setup
+return
+return
+
+@enduml

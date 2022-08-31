@@ -1,0 +1,12 @@
+@startuml
+
+participant Keithley2600Controller as keith
+participant Keithley2600Driver as dev
+
+[-> keith ++: initialize_device ()
+keith -> dev **: Keithley2600Driver\n(name = "self.name.value" "self.id",\naddress = "TCPIP0:: self.address::INSTR", visalib = "@py")
+activate dev
+return device
+return
+
+@enduml

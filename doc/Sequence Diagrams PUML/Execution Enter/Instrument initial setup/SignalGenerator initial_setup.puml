@@ -1,0 +1,12 @@
+@startuml
+
+participant SGS100A as sgs
+
+[-> sgs ++: initial_setup ()
+sgs -> sgs: setup ()
+activate sgs #7F1CDB
+note right of sgs #C2A5DC: SGS100A setup
+return
+return
+
+@enduml

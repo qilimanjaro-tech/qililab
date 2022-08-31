@@ -1,0 +1,12 @@
+@startuml
+
+participant SGS100A as sgs
+participant RohdeSchwarzSGS100A as rs
+
+
+[-> sgs ++: stop ()
+sgs -> rs ++: off ()
+return
+return
+
+@enduml

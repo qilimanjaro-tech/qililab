@@ -1,0 +1,41 @@
+@startuml
+
+participant CircuitToPulses as trans
+participant PulseSequences as pulseseqs
+
+[-> trans ++: translate (circuits, chip)
+note right of trans: pulse_sequences_list = []
+loop circuit in circuits
+    trans -> pulseseqs **: PulseSequences ()
+    activate pulseseqs
+    return pulse_sequences
+    note right of trans: time = {}
+    note right of trans: control_gates = circuit.queue
+    note right of trans: readout_gate = circuit.measurement_gate
+    loop gate in control_gates
+        trans -> trans: control_gate_to_pulse (time, gate, chip)
+        activate trans #7F1CDB
+        note right of trans #C2A5DC: CircuitToPulses control_gate_to_pulse
+        return pulse, port
+        opt pulse is not None
+            note right of trans: pulse_sequences.add (pulse, port)
+        end
+    end
+    opt readout_gate is not None
+        loop qubit_idx in readout_gate.target_qubits
+            trans -> trans: readout_gate_to_pulse (time, readout_gate, qubit_idx, chip)
+            activate trans #7F1CDB
+            note right of trans #C2A5DC: CircuitToPulses readout_gate_to_pulse
+            return readout_pulse, port
+            opt readout_pulse is not None
+                note right of trans: pulse_sequences.add (readout_pulse, port)
+            end
+        end
+    end
+
+    note right of trans: pulse_sequences_list.append (pulse_sequences)
+end
+
+return pulse_sequences_list
+
+@enduml

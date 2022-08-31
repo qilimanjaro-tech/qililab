@@ -1,0 +1,19 @@
+@startuml
+
+participant Attenuator as att
+participant StepAttenuatorSettings as attset
+participant MiniCircuitsDriver as mcd
+
+
+[-> att++: setup ()
+att -> attset ++: get_attenuation ()
+return attenuation
+att -> mcd ++: setup (attenuation)
+mcd -> mcd: http_request (SETATT = attenuation)
+activate mcd #7F1CDB
+return pte_return
+return
+return
+
+
+@enduml

@@ -1,0 +1,15 @@
+@startuml
+
+
+[-> DDBB ++: set_parameter (parameter, value)
+note right of DDBB: attr_type = type (getattr (self, parameter))
+opt attr_type = int
+    note right of DDBB: attr_type = float
+end
+opt attr_type != NoneType
+    note right of DDBB: value = attr_type (value)
+end
+note right of DDBB: set_attr (self, parameter, value)
+[<-- DDBB
+
+@enduml

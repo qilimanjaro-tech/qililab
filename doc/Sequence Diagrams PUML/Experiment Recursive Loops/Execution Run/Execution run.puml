@@ -1,0 +1,77 @@
+@startuml
+participant Execution as exe
+participant BusesExecution as busesexe
+participant BusExecution as busexe
+participant Bus as bus
+participant BusSettings as busset
+participant SystemControl as system_control
+participant Result as res
+participant LivePlot as liveplot
+participant RemoteAPI as remote_api
+participant API as api
+
+[-> exe ++: run (hardware_average, repetition_duration, software_average, plot, path)
+exe -> busesexe ++: run (nshots, repetition_duration, software_average, plot, path)
+loop bus in buses
+    busesexe -> busexe ++: run (nshots, repetition_duration, idx, path)
+    busexe -> bus ++: get_target_freqs[0]
+    return target_freqs[0]
+    busexe -> bus ++: get_system_control_frequency
+    bus -> busset ++: get_system_control_frequency
+    busset -> system_control ++: get_frequency
+    return system_control_frequency
+    return system_control_frequency
+    return system_control_frequency
+    opt target_freqs[0] != system_control_frequency
+            busexe -> bus ++: set_system_control_frequency (target_freqs)
+            bus -> system_control ++: set_frequency (target_freqs)
+            note right of system_control: frequency = target_freqs
+            return
+            return
+    end
+    busexe -> bus ++: run (pulse_sequences [idx], nshots, repetition_duration, path)
+    bus -> busset ++: run (pulse_sequences [idx], nshots, repetition_duration, path)
+    busset -> system_control ++: run (pulse_sequences [idx], nshots, repetition_duration, path)
+    note right of system_control #E68AA3: SystemControl run
+    return List [Result]
+    return List [Result]
+    return List [Result]
+    note right of busexe: result = List [Result]
+    return result
+    opt result is not None
+            note right of busesexe: results.append (result)
+            busesexe -> busesexe: asynchronous_data_handling (result, path, plot)
+            activate busesexe #7F1CDB
+            opt plot is not None
+                busesexe -> res ++: probabilities ()
+                return probs
+                note right of busesexe: zero_prob = probs[0][0]
+                busesexe -> liveplot ++: send_points (zero_prob)
+                alt self.plot_type in [SCATTER, LINES]
+                        note right of liveplot: x_value = next (x_iterator_ranges)
+                        liveplot -> remote_api ++: send_plot_points (plot_id, x_value, zero_prob)
+                        remote_api -> api ++: send_plot_points (plot_id, x_value, zero_prob)
+                        return
+                        return
+                else self.plot_type == HEATMAP
+                        note right of liveplot: x_value = next (x_iterator_ranges)
+                        note right of liveplot: y_value = next (y_iterator_ranges)
+                        liveplot -> remote_api ++: send_plot_points (plot_id, x_value, y_value, zero_prob)
+                        remote_api -> api ++: send_plot_points (plot_id, x_value, y_value, zero_prob)
+                        return
+                        return
+                end
+                return
+            end
+            note right of busesexe: data_file = open (path / "results.yml", "a", "utf8")
+            busesexe -> res ++: to_dict ()
+            return dict
+            busesexe -> busesexe: yaml.safe_dump ([result_dict], data_file, False)
+            activate busesexe #E6033F
+            return
+            return
+    end
+end
+return result
+[<-- exe: result
+@enduml
