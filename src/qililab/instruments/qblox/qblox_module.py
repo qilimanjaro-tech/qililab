@@ -222,12 +222,12 @@ class QbloxModule(AWG):
         for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
             self.device.sequencers[seq_idx].out0_offset(offset_i)
             self.device.sequencers[seq_idx].out1_offset(offset_q)
-            
+
     def _set_gain_imbalance(self):
         """Set I and Q gain imbalance of sequencer."""
         for seq_idx, gain_imbalance in enumerate(self.gain_imbalance):
             self.device.sequencers[seq_idx].mixer_corr_gain_ratio(gain_imbalance)
-            
+
     def _set_phase_imbalance(self):
         """Set I and Q phase imbalance of sequencer."""
         for seq_idx, phase_imbalance in enumerate(self.phase_imbalance):
