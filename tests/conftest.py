@@ -120,8 +120,10 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "offset_awg_path0",
-            "offset_awg_path1",
+            "out0_offset",
+            "out1_offset",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
         ]
     )
     pulsar_controller_qcm.connect()
@@ -176,8 +178,10 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "offset_awg_path0",
-            "offset_awg_path1",
+            "out0_offset",
+            "out1_offset",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
         ]
     )
     # connect to instrument
@@ -556,8 +560,10 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
             "channel_map_path1_out1_en",
             "demod_en_acq",
             "integration_length_acq",
-            "offset_awg_path0",
-            "offset_awg_path1",
+            "out0_offset",
+            "out1_offset",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
         ]
     )
     mock_keithley_instance = mock_keithley.return_value
