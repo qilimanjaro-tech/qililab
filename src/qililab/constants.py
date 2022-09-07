@@ -35,18 +35,26 @@ class RUNCARD:
     SYSTEM_CONTROL = "system_control"
     INSTRUMENT_CONTROLLER = "instrument_controller"
     FIRMWARE = "firmware"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class CURRENTSOURCE:
     """CurrentSource attribute names."""
 
     CURRENT = "current"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
 
 
 class VOLTAGESOURCE:
     """CurrentSource attribute names."""
 
     VOLTAGE = "voltage"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
 
 
 class SIGNALGENERATOR:

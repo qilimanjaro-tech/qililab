@@ -1,6 +1,8 @@
 """VoltageSource class."""
+import string
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import List
 
 from qililab.constants import VOLTAGESOURCE
 from qililab.instruments.instrument import Instrument
@@ -19,6 +21,10 @@ class VoltageSource(Instrument):
         """
 
         voltage: float
+        span: str
+        ramping_enabled: bool
+        ramp_rate: float
+        # TODO: Here a list of integers with available dacs
 
     settings: VoltageSourceSettings
 
@@ -30,6 +36,33 @@ class VoltageSource(Instrument):
             float: settings.voltage.
         """
         return self.settings.voltage
+
+    @property
+    def span(self):
+        """VoltageSource 'span' property.
+
+        Returns:
+            float: settings.span.
+        """
+        return self.settings.span
+
+    @property
+    def ramping_enabled(self):
+        """VoltageSource 'ramping_enabled' property.
+
+        Returns:
+            float: settings.ramping_enabled.
+        """
+        return self.settings.ramping_enabled
+
+    @property
+    def ramp_rate(self):
+        """VoltageSource 'ramp_rate' property.
+
+        Returns:
+            float: settings.ramp_rate.
+        """
+        return self.settings.ramp_rate
 
     @abstractmethod
     def start(self):

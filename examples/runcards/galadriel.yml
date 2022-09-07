@@ -1,0 +1,210 @@
+settings:
+  id_: 0
+  category: platform
+  name: galadriel_master
+  delay_between_pulses: 0
+  delay_before_readout: 40
+  # master_amplitude_gate: 1
+  # master_duration_gate: 100
+  # master_drag_coefficient: 0
+  gates:
+    - name: M
+      amplitude: 1
+      phase: 0
+      duration: 2000
+      shape:
+        name: rectangular
+
+    - name: I
+      amplitude: 0
+      phase: 0
+      duration: 100
+      shape:
+        name: rectangular
+
+    - name: X
+      amplitude: 0.5
+      phase: 0
+      duration: 100
+      shape:
+        name: drag
+        num_sigmas: 4
+        drag_coefficient: 0
+
+    - name: Y
+      amplitude: 0.5
+      phase: 1.5707963267948966  # pi / 2
+      duration: 100
+      shape:
+        name: drag
+        num_sigmas: 4
+        drag_coefficient: 0
+schema:
+  chip:
+    id_: 0
+    category: chip
+    nodes:
+      - name: port
+        id_: 0
+        nodes: [3]
+      - name: port
+        id_: 1
+        nodes: [2]
+      - name: resonator
+        alias: resonator
+        id_: 2
+        frequency: 7.3264369805783645e+09
+        nodes: [1, 3]
+      - name: qubit
+        alias: qubit
+        id_: 3
+        qubit_idx: 0
+        frequency: 3.351e+09
+        nodes: [0, 2]
+  instruments:
+  - name: QCM
+    alias: QCM
+    id_: 0
+    category: awg
+    firmware: 0.7.0
+    frequency: 1.e+08
+    num_bins: 1
+    num_sequencers: 1
+    gain: [1]
+    epsilon: [0]
+    delta: [0]
+    offset_i: [0]
+    offset_q: [0]
+    sync_enabled: true
+  - name: QRM
+    alias: QRM
+    id_: 1
+    category: awg
+    firmware: 0.7.0
+    frequency: 2.e+07
+    num_sequencers: 1
+    gain: [1]
+    epsilon: [0]
+    delta: [0]
+    offset_i: [0]
+    offset_q: [0]
+    acquisition_delay_time: 100
+    sync_enabled: true
+    scope_acquire_trigger_mode: sequencer
+    scope_hardware_averaging: false
+    sampling_rate: 1.e+09
+    num_bins: 1
+    integration: true
+    integration_length: 2000
+    integration_mode: ssb
+    sequence_timeout: 1
+    acquisition_timeout: 1
+  - name: rohde_schwarz
+    alias: rs_0
+    id_: 0
+    category: signal_generator
+    firmware: 4.30.046.295
+    power: 15
+
+  - name: rohde_schwarz
+    alias: rs_1
+    id_: 1
+    category: signal_generator
+    firmware: 4.30.046.295
+    power: 15
+
+  - name: mini_circuits
+    alias: attenuator
+    id_: 1
+    category: attenuator
+    firmware: None
+    attenuation: 32
+
+  - name: qblox_D5a
+    alias: qblox_D5a
+    id_: 0
+    category: voltage_source
+    firmware: None
+    dacs_settings: [{"index": 0, "voltage": 0, "ramping_enabled": True, "ramp_rate":0.01, "span":"range_bi_max",},
+                    {"index": 10, "voltage": 0, "ramping_enabled": True, "ramp_rate":0.01, "span":"range_bi_max",}]
+
+  buses:
+  - id_: 0
+    category: bus
+    subcategory: control
+    system_control:
+      id_: 0
+      category: system_control
+      subcategory: mixer_based_system_control
+      awg: QCM
+      signal_generator: rs_0
+    port: 0
+  - id_: 0
+    category: bus
+    subcategory: readout
+    system_control:
+      id_: 1
+      category: system_control
+      subcategory: mixer_based_system_control
+      awg: QRM
+      signal_generator: rs_1
+    attenuator: attenuator
+    port: 1
+  instrument_controllers:
+  - name: qblox_pulsar
+    id_: 0
+    alias: pulsar_controller_qcm_0
+    category: instrument_controller
+    subcategory: single_instrument
+    reference_clock: internal
+    connection:
+      name: tcp_ip
+      address: 192.168.0.3
+    modules:
+    - awg: QCM
+      slot_id: 0
+  - name: qblox_pulsar
+    id_: 1
+    alias: pulsar_controller_qrm_0
+    category: instrument_controller
+    subcategory: single_instrument
+    reference_clock: external
+    connection:
+      name: tcp_ip
+      address: 192.168.0.4
+    modules:
+    - awg: QRM
+      slot_id: 0
+  - name: rohde_schwarz
+    id_: 2
+    alias: rohde_schwarz_controller_0
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.0.10
+    modules:
+    - signal_generator: rs_0
+      slot_id: 0
+  - name: rohde_schwarz
+    id_: 3
+    alias: rohde_schwarz_controller_1
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.0.7
+    modules:
+    - signal_generator: rs_1
+      slot_id: 0
+  - name: mini_circuits
+    id_: 4
+    alias: attenuator_controller_0
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.0.222
+    modules:
+    - attenuator: attenuator
+      slot_id: 0

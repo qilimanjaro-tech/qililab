@@ -17,6 +17,8 @@ class Category(Enum):
         * resonator
         * node
         * instrument_controller
+        * voltage_source
+        * current_source
     """
 
     PLATFORM = "platform"
@@ -34,6 +36,8 @@ class Category(Enum):
     CHIP = "chip"
     NODE = "node"
     INSTRUMENT_CONTROLLER = "instrument_controller"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class Instrument(Enum):
@@ -46,6 +50,8 @@ class Instrument(Enum):
         * signal_generator
         * system_control
         * attenuator
+        * voltage_source
+        * current_source
     """
 
     PLATFORM = "platform"
@@ -53,6 +59,8 @@ class Instrument(Enum):
     SIGNAL_GENERATOR = "signal_generator"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class InstrumentControllerSubCategory(Enum):
@@ -301,6 +309,11 @@ class Parameter(Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
+    VOLTAGE = "voltage"
+    CURRENT = "current"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMPING_RATE = "ramp_rate"
+    SPAN = "span"
 
 
 class ResultName(Enum):

@@ -19,6 +19,9 @@ class CurrentSource(Instrument):
         """
 
         current: float
+        span: str
+        ramping_enabled: bool
+        ramp_rate: float
 
     settings: CurrentSourceSettings
 
@@ -30,6 +33,33 @@ class CurrentSource(Instrument):
             float: settings.current.
         """
         return self.settings.current
+
+    @property
+    def span(self):
+        """CurrentSource 'span' property.
+
+        Returns:
+            float: settings.span.
+        """
+        return self.settings.span
+
+    @property
+    def ramping_enabled(self):
+        """CurrentSource 'ramping_enabled' property.
+
+        Returns:
+            float: settings.ramping_enabled.
+        """
+        return self.settings.ramping_enabled
+
+    @property
+    def ramp_rate(self):
+        """CurrentSource 'ramp_rate' property.
+
+        Returns:
+            float: settings.ramp_rate.
+        """
+        return self.settings.ramp_rate
 
     @abstractmethod
     def start(self):

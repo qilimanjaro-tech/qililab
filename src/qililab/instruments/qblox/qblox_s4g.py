@@ -2,6 +2,7 @@
 Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
+from time import sleep
 
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument
@@ -34,7 +35,12 @@ class QbloxS4g(CurrentSource):
         """Set S4g current. Value ranges are:
         - current: (-40, 40)mA.
         """
+        self.device.dac0.ramping_enabled(self.ramping_enabled)
+        self.device.dac0.ramp_rate(self.ramp_rate)
+        self.device.dac0.span(self.span)
         self.device.dac0.current(self.current)
+        while self.device.dac0.is_ramping():
+            sleep(0.1)
         # TODO: Implement more dacs
 
     @Instrument.CheckDeviceInitialized
@@ -50,9 +56,9 @@ class QbloxS4g(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
-        self.device.set_dacs_zero()
+        # self.device.set_dacs_zero()
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
-        self.device.set_dacs_zero()
+        # self.device.set_dacs_zero()

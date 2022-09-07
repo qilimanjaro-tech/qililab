@@ -40,9 +40,12 @@ class QbloxSPIRackController(MultiInstrumentController):
     class QbloxSPIRackControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
         """Contains the settings of a specific Qblox Cluster Controller."""
 
+        reset = False
+
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.USB
+            # self.connection.address = "dev/ttyACM0"
 
     settings: QbloxSPIRackControllerSettings
 
@@ -57,14 +60,8 @@ class QbloxSPIRackController(MultiInstrumentController):
         # TODO: do it in a way that is not hardcoded
         self.device.add_spi_module(3, "D5a")
         self.device.add_spi_module(7, "S4g")
-        self.modules[3].device = self.device.module3
-        self.modules[7].device = self.device.module7
-
-    @MultiInstrumentController.CheckConnected
-    def reset(self):
-        """Reset instrument."""
-        super().reset()
-        self.device.set_dacs_zero()
+        self.modules[0].device = self.device.module3
+        self.modules[1].device = self.device.module7
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
