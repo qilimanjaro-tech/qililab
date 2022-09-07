@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.constants import PLATFORM
