@@ -219,9 +219,8 @@ class QbloxModule(AWG):
 
     def _set_offsets(self):
         """Set I and Q offsets of sequencer."""
-        for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
-            self.device.sequencers[seq_idx].out0_offset(offset_i)
-            self.device.sequencers[seq_idx].out1_offset(offset_q)
+        self.device.out0_offset(self.offset_i[0])
+        self.device.out1_offset(self.offset_q[0])
 
     def _set_gain_imbalance(self):
         """Set I and Q gain imbalance of sequencer."""

@@ -98,6 +98,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "out0_offset",
+            "out1_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
@@ -120,8 +122,6 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "out0_offset",
-            "out1_offset",
             "mixer_corr_phase_offset_degree",
             "mixer_corr_gain_ratio",
         ]
@@ -156,6 +156,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "out0_offset",
+            "out1_offset",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
@@ -178,8 +180,6 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
-            "out0_offset",
-            "out1_offset",
             "mixer_corr_phase_offset_degree",
             "mixer_corr_gain_ratio",
         ]
@@ -539,6 +539,8 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
         [
             "reference_source",
             "sequencer0",
+            "out0_offset",
+            "out1_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
@@ -560,8 +562,6 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
             "channel_map_path1_out1_en",
             "demod_en_acq",
             "integration_length_acq",
-            "out0_offset",
-            "out1_offset",
             "mixer_corr_phase_offset_degree",
             "mixer_corr_gain_ratio",
         ]
