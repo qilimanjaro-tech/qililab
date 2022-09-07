@@ -19,7 +19,6 @@ from qpysequence.waveforms import Waveforms
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseSequence, PulseShape
-from qililab.typings.enums import ReferenceClock
 from qililab.typings.instruments import Pulsar, QcmQrm
 
 
@@ -45,7 +44,6 @@ class QbloxModule(AWG):
             sync_enabled (bool): Enable synchronization over multiple instruments.
         """
 
-        reference_clock: ReferenceClock
         sync_enabled: bool
         num_bins: int
 
@@ -57,7 +55,6 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
-        self._set_reference_source()
         self._set_sync_enabled()
         self._map_outputs()
         self._set_nco()
@@ -73,14 +70,19 @@ class QbloxModule(AWG):
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
+        self._check_cached_values(
+            pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
+        )
+        self.start_sequencer()
+
+    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+        """check if values are already cached and upload if not cached"""
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_sequence, nshots, repetition_duration)
             sequence = self._translate_pulse_sequence(
                 pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration
             )
             self.upload(sequence=sequence, path=path)
-
-        self.start_sequencer()
 
     def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -167,8 +169,9 @@ class QbloxModule(AWG):
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
-        self.device.arm_sequencer()
-        self.device.start_sequencer()
+        for seq_idx in range(self.num_sequencers):
+            self.device.arm_sequencer(sequencer=seq_idx)
+            self.device.start_sequencer(sequencer=seq_idx)
 
     @Instrument.CheckDeviceInitialized
     def setup(self):
@@ -180,7 +183,8 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop the QBlox sequencer from sending pulses."""
-        self.device.stop_sequencer()
+        for seq_idx in range(self.num_sequencers):
+            self.device.stop_sequencer(sequencer=seq_idx)
 
     def clear_cache(self):
         """Empty cache."""
@@ -223,10 +227,6 @@ class QbloxModule(AWG):
             self.device.sequencers[seq_idx].mod_en_awg(True)
             self.device.sequencers[seq_idx].nco_freq(frequency)
 
-    def _set_reference_source(self):
-        """Set reference source. Options are 'internal' or 'external'"""
-        self.device.reference_source(self.reference_clock.value)
-
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
         for seq_idx in range(self.num_sequencers):
@@ -263,15 +263,6 @@ class QbloxModule(AWG):
                 waveforms.add_pair((real, imag), name=str(pulse))
 
         return waveforms
-
-    @property
-    def reference_clock(self):
-        """QbloxPulsar 'reference_clock' property.
-
-        Returns:
-            ReferenceClock: settings.reference_clock.
-        """
-        return self.settings.reference_clock
 
     @property
     def sync_enabled(self):

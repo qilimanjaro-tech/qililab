@@ -65,7 +65,10 @@ class MixerBasedSystemControl(SystemControl):
             self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
             self.signal_generator.setup()
         return self.awg.run(
-            pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_sequence=pulse_sequence,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            path=path,
         )
 
     @property

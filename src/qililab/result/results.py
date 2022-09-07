@@ -1,15 +1,20 @@
 """Results class."""
+from copy import deepcopy
 from dataclasses import dataclass, field
 from types import NoneType
 from typing import List, Tuple
 
 import numpy as np
 
-from qililab.constants import RUNCARD
-from qililab.result.qblox_result import QbloxResult
+from qililab.constants import EXPERIMENT, RUNCARD
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
+from qililab.utils.util_loops import (
+    compute_ranges_from_loops,
+    compute_shapes_from_loops,
+)
 
 
 @dataclass
@@ -18,29 +23,30 @@ class Results:
 
     software_average: int
     num_sequences: int
-    loop: Loop | None = None
+    loops: List[Loop] | None = None
     shape: List[int] = field(default_factory=list)
     results: List[Result] = field(default_factory=list)
 
     def __post_init__(self):
         """Add num_sequences to shape."""
         if not self.shape:
-            self.shape = self.loop.shape if self.loop is not None else []
-            if self.num_sequences > 1:
-                self.shape.append(self.num_sequences)
-            if self.software_average > 1:
-                self.shape.append(self.software_average)
+            self.shape = compute_shapes_from_loops(loops=self.loops)
+        if self.num_sequences > 1:
+            self.shape.append(self.num_sequences)
+        if self.software_average > 1:
+            self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
+            tmp_results = deepcopy(self.results)
             # Pop the result name (qblox, simulator) from the dictionary and instantiate its corresponding Result class.
-            self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in self.results]
-        if isinstance(self.loop, dict):
-            self.loop = Loop(**self.loop)
+            self.results = [Factory.get(result.pop(RUNCARD.NAME))(**result) for result in tmp_results]
+        if self.loops is not None and isinstance(self.loops[0], dict):
+            self.loops = [Loop(**loop) for loop in self.loops]
 
     def add(self, result: List[Result]):
         """Append an ExecutionResults object.
 
         Args:
-            execution_results (ExecutionResults): ExecutionResults object.
+            result (List[Result]): List of Result objects.
         """
         self.results += result
 
@@ -99,6 +105,31 @@ class Results:
         Returns:
             list: Values of the loops.
         """
-        if self.loop is None:
+        if self.loops is None:
             raise ValueError("Results doesn't contain a loop.")
-        return self.loop.ranges.squeeze()
+
+        ranges = compute_ranges_from_loops(loops=self.loops)
+        return np.array(ranges, dtype=object).squeeze()
+
+    def to_dict(self) -> dict:
+        """
+        Returns:
+            dict: Dictionary containing all the class information.
+        """
+        return {
+            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
+            EXPERIMENT.NUM_SEQUENCES: self.num_sequences,
+            EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
+            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
+            EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
+        }
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Transforms a dictionary into a Results instance. Inverse of to_dict().
+        Args:
+            dictionary: dict representation of a Results instance
+        Returns:
+            Results: deserialized Results instance
+        """
+        return Results(**dictionary)

@@ -12,6 +12,10 @@ from qililab.constants import DEFAULT_PLOT_Y_LABEL
 from qililab.remote_connection import RemoteAPI
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
+from qililab.utils.util_loops import (
+    find_minimum_inner_range_from_loops,
+    find_minimum_outer_range_from_loops,
+)
 
 
 @dataclass
@@ -19,8 +23,9 @@ class LivePlot:
     """Plot class."""
 
     remote_api: RemoteAPI
-    loop: Loop | None = None
-    plot_ids: List[int] = field(default_factory=list)
+    num_sequences: int
+    loops: List[Loop] | None = None
+    plot_id: int = field(init=False)
     x_iterator_ranges: Iterator = field(init=False)
     y_iterator_ranges: Iterator = field(init=False)
     ranges: List[Iterator] = field(init=False)
@@ -29,26 +34,29 @@ class LivePlot:
 
     def __post_init__(self, title: str):
         """Generate iterators that iterate over loop ranges."""
-        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges()
-        self.create_live_plot(title=title)
+        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges(
+            num_sequences=self.num_sequences
+        )
+        self.plot_id = self.create_live_plot(title=title)
 
-    def _build_plot_ranges_from_loop_ranges(self) -> List[Iterator]:
+    def _build_plot_ranges_from_loop_ranges(self, num_sequences: int) -> List[Iterator]:
         """build plot ranges from loop ranges"""
         return (
             (self._build_empty_iterator(), self._build_empty_iterator())
-            if self.loop is None
-            else self._build_plot_ranges_from_defined_loop_ranges()
+            if self.loops is None
+            else self._build_plot_ranges_from_defined_loop_ranges(num_sequences=num_sequences)
         )
 
     def _build_empty_iterator(self):
         """build empty iterator"""
         return count()
 
-    def _build_plot_ranges_from_defined_loop_ranges(self):
+    def _build_plot_ranges_from_defined_loop_ranges(self, num_sequences: int):
         """build plot ranges from defined loop ranges"""
-        x_loop_range, y_loop_range = self.loop.outer_loop_range, self.loop.inner_loop_range
+        x_loop_range = np.tile(find_minimum_outer_range_from_loops(loops=self.loops), num_sequences)
+        y_loop_range = np.tile(find_minimum_inner_range_from_loops(loops=self.loops), num_sequences)
 
-        if y_loop_range is None:
+        if y_loop_range is None or len(y_loop_range) <= 0:
             return (iter(x_loop_range), self._build_empty_iterator())
 
         ranges_meshgrid = np.meshgrid(x_loop_range, y_loop_range)
@@ -81,7 +89,7 @@ class LivePlot:
             return self._method(ref, *args, **kwargs)
 
     @CheckRemoteApiInitialized
-    def create_live_plot(self, title: str):
+    def create_live_plot(self, title: str) -> int:
         """Create live plot
 
         Args:
@@ -89,16 +97,14 @@ class LivePlot:
             x_label (str): Label of the x axis.
             y_label (str): Label of the y axis.
         """
-        self.plot_ids.append(
-            self.connection().create_liveplot(
-                title=title,
-                x_label=self.x_label,
-                y_label=self.y_label,
-                z_label=self.z_label,
-                plot_type=self.plot_type.value,
-                x_axis=self.x_axis,
-                y_axis=self.y_axis,
-            )
+        return self.connection().create_liveplot(
+            title=title,
+            x_label=self.x_label,
+            y_label=self.y_label,
+            z_label=self.z_label,
+            plot_type=self.plot_type.value,
+            x_axis=self.x_axis,
+            y_axis=self.y_axis,
         )
 
     @CheckRemoteApiInitialized
@@ -108,22 +114,29 @@ class LivePlot:
         Args:
             value (float): value to send to the plot
         """
-        if self.plot_type == LivePlotTypes.SCATTER or self.plot_type == LivePlotTypes.LINES:
-            self.connection().send_plot_points(
-                plot_id=self.plot_ids[-1], x=float(next(self.x_iterator_ranges)), y=float(value)
-            )
+        if self.plot_type in [LivePlotTypes.SCATTER, LivePlotTypes.LINES]:
+            x_value = next(self.x_iterator_ranges)
+            self.connection().send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
             return
         if self.plot_type == LivePlotTypes.HEATMAP:
+            x_value = next(self.x_iterator_ranges)
+            y_value = next(self.y_iterator_ranges)
             self.connection().send_plot_points(
-                plot_id=self.plot_ids[-1],
-                x=float(next(self.x_iterator_ranges)),
-                y=float(next(self.y_iterator_ranges)),
-                z=float(value),
+                plot_id=self.plot_id,
+                x=float(x_value),
+                y=float(y_value),
+                z=value,
             )
             return
         raise ValueError(
-            f"PlotType {self.plot_type.value} not supported. Plot valid types are: {[plot_type.value for plot_type in LivePlotTypes]}"
+            f"PlotType {self.plot_type.value} not supported. Plot valid types are: "
+            + f"{[plot_type.value for plot_type in LivePlotTypes]}"
         )
+
+    @property
+    def total_inner_loops(self):
+        """return total inner loops"""
+        return 0 if self.loops is None else max(loop.num_loops for loop in self.loops)
 
     @property
     def plot_type(self) -> LivePlotTypes:
@@ -132,7 +145,9 @@ class LivePlot:
         Returns:
             LivePlotTypes: Type of the LivePlot
         """
-        return LivePlotTypes.HEATMAP if (self.loop is not None and self.loop.num_loops > 1) else LivePlotTypes.SCATTER
+        if self.loops is None or self.total_inner_loops <= 1:
+            return LivePlotTypes.SCATTER
+        return LivePlotTypes.HEATMAP
 
     @property
     def x_axis(self):
@@ -141,7 +156,9 @@ class LivePlot:
         Returns:
             List[int]: Values of the x axis.
         """
-        return self.loop.outer_loop_range if self.loop is not None else None
+        if self.loops is None:
+            return None
+        return find_minimum_outer_range_from_loops(loops=self.loops)
 
     @property
     def y_axis(self):
@@ -150,7 +167,11 @@ class LivePlot:
         Returns:
             List[int]: Values of the y axis.
         """
-        return self.loop.inner_loop_range if self.loop is not None else None
+        if self.loops is None:
+            return None
+        if self.loops[0].inner_loop_range is None:
+            return None
+        return find_minimum_inner_range_from_loops(loops=self.loops)
 
     @property
     def y_label(self):
@@ -161,10 +182,16 @@ class LivePlot:
         """
         if self.plot_y_label is not None:
             return self.plot_y_label
-        if self.loop is not None and self.loop.num_loops > 1:
-            return self.label(loop=self.loop.loops[-2])
+        if self._has_multiple_loops():
+            for loop in self.loops:
+                if loop.inner_loop_range is not None:
+                    return self.label(loop=loop.loops[-2])
 
         return DEFAULT_PLOT_Y_LABEL
+
+    def _has_multiple_loops(self):
+        """check if loops variable has multiple loops"""
+        return self.loops is not None and self.total_inner_loops > 1
 
     @property
     def z_label(self) -> str | None:
@@ -173,10 +200,7 @@ class LivePlot:
         Returns:
             str: Z label.
         """
-        if self.loop is not None and self.loop.num_loops > 1:
-            return "Amplitude"
-
-        return None
+        return "Amplitude" if self._has_multiple_loops() else None
 
     @property
     def x_label(self) -> str:
@@ -185,10 +209,16 @@ class LivePlot:
         Returns:
             str: X label.
         """
-        if self.loop is not None:
-            return self.label(loop=self.loop.loops[-1])
+        if self.loops is None:
+            return "Sequence idx"
 
-        return "Sequence idx"
+        minimum_outer_loop_range_length = len(self.loops[0].outer_loop_range)
+        index = 0
+        for loop in self.loops:
+            if len(loop.outer_loop_range) < minimum_outer_loop_range_length:
+                minimum_outer_loop_range_length = len(loop.outer_loop_range)
+                index += 1
+        return self.label(loop=self.loops[index].loops[-1])
 
     @CheckRemoteApiInitialized
     def connection(self) -> Connection:

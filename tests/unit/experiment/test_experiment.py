@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from qibo.core.circuit import Circuit
 from qibo.gates import M
-from qiboconnection.api import API
 
 from qililab.execution import Execution
 from qililab.experiment import Experiment
@@ -65,8 +64,8 @@ class TestExperiment:
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
-        if experiment_all_platforms.loop is not None:
-            print(experiment_all_platforms.loop.num_loops)
+        if experiment_all_platforms.loops is not None:
+            print(experiment_all_platforms.loops[0].num_loops)
 
     def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""
@@ -109,12 +108,65 @@ class TestExperiment:
         experiment.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=0.3)
         assert experiment.platform.settings.get_gate(name="M").amplitude == 0.3
 
+    def test_set_parameter_method_with_instrument_controller_reset(self, experiment: Experiment):
+        """Test set_parameter method with instrument controller reset."""
+        experiment.set_parameter(alias="pulsar_controller_qcm_0", parameter=Parameter.RESET, value=False)
+        assert (
+            experiment.platform.instrument_controllers.get_instrument_controller(
+                alias="pulsar_controller_qcm_0"
+            ).settings.reset
+            is False
+        )
+
+    @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+    @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+    @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+    @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+    @patch("qililab.instrument_controllers.instrument_controller.InstrumentController.reset")
+    def test_set_reset_true_with_connected_device(
+        self,
+        mock_reset: MagicMock,
+        mock_urllib: MagicMock,  # pylint: disable=unused-argument
+        mock_keithley: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment: Experiment,  # pylint: disable=unused-argument
+    ):
+        """Test set reset to false method."""
+        # add dynamically created attributes
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+        experiment.platform.connect()
+        experiment.platform.close()
+        mock_reset.assert_called()
+        assert mock_reset.call_count == 12
+
+    @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+    @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+    @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+    @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+    @patch("qililab.instrument_controllers.instrument_controller.InstrumentController.reset")
+    def test_set_reset_false_with_connected_device(
+        self,
+        mock_reset: MagicMock,
+        mock_urllib: MagicMock,  # pylint: disable=unused-argument
+        mock_keithley: MagicMock,
+        mock_rs: MagicMock,
+        mock_pulsar: MagicMock,
+        experiment_reset: Experiment,  # pylint: disable=unused-argument
+    ):
+        """Test set reset to false method."""
+        # add dynamically created attributes
+        mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+        experiment_reset.platform.connect()
+        experiment_reset.platform.close()
+        assert mock_reset.call_count == 10
+
 
 @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
 @patch("qililab.execution.buses_execution.yaml.safe_dump")
 @patch("qililab.execution.buses_execution.open")
 @patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.utils.results_data_management.os.makedirs")
 class TestSimulatedExexution:
     """Unit tests checking the the execution of a simulated platform."""
 

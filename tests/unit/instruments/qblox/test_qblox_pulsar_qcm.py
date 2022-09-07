@@ -16,7 +16,6 @@ class TestQbloxQCM:
     def test_inital_setup_method(self, qcm: QbloxQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
-        qcm.device.reference_source.assert_called_with(qcm.reference_clock.value)
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.sync_enabled)
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):

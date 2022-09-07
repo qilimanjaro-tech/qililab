@@ -75,6 +75,22 @@ class PulseSequence:
             float: Frequency of the pulses."""
         return self.pulses[0].frequency
 
+    @property
+    def readout_pulse_duration(self):
+        """Duration in ns of the longest readout pulse in the pulse sequence.
+
+        Returns:
+            int: Duration in ns of the readout pulse
+        """
+
+        max_readout_pulse_duration = max(
+            pulse.duration for pulse in self.pulses if pulse.name == PulseName.READOUT_PULSE
+        )
+
+        if max_readout_pulse_duration == 0:
+            raise ValueError("No ReadoutPulse found.")
+        return max_readout_pulse_duration
+
     def to_dict(self):
         """Return dictionary representation of the class.
 

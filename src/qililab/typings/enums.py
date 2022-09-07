@@ -136,6 +136,18 @@ class GateName(Enum):
     M = "M"
 
 
+class MasterGateSettingsName(Enum):
+    """Master Gate Settings names.
+    Args:
+        enum (str): Available types of master gate settings names:
+        * master_amplitude_gate
+        * master_duration_gate
+    """
+
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
+
+
 class AcquisitionName(Enum):
     """Acquisition names.
 
@@ -185,6 +197,28 @@ class PulseShapeName(Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+
+
+class PulseShapeSettingsName(Enum):
+    """Pulse Shape Settings names.
+    Args:
+        enum (str): Available types of pulse shape settings names:
+        * num_sigmas
+        * drag_coefficient
+    """
+
+    NUM_SIGMAS = "num_sigmas"
+    DRAG_COEFFICIENT = "drag_coefficient"
+
+
+class MasterPulseShapeSettingsName(Enum):
+    """Master Pulse Shape Settings names.
+    Args:
+        enum (str): Available types of master pulse shape settings names:
+        * master_drag_coefficient
+    """
+
+    DRAG_COEFFICIENT = "master_drag_coefficient"
 
 
 class BusSubcategory(Enum):
@@ -309,6 +343,11 @@ class Parameter(Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
+    MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
+    EXTERNAL = "external"
+    RESET = "reset"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"

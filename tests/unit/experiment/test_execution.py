@@ -16,7 +16,7 @@ from ...conftest import mock_instruments
 @patch("qililab.execution.buses_execution.yaml.safe_dump")
 @patch("qililab.execution.buses_execution.open")
 @patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.utils.results_data_management.os.makedirs")
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
@@ -56,9 +56,9 @@ class TestExecution:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.loop.range,  # type: ignore
-                    nested_experiment.loop.loop.range,  # type: ignore
-                    nested_experiment.loop.loop.loop.range,  # type: ignore
+                    nested_experiment.loops[0].range,  # type: ignore
+                    nested_experiment.loops[0].loop.range,  # type: ignore
+                    nested_experiment.loops[0].loop.loop.range,  # type: ignore
                 ]
             )
         ).all()

@@ -2,16 +2,19 @@
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
+import numpy as np
 from qibo.abstractions.gates import Gate
 from qibo.core.circuit import Circuit
 
 from qililab.chip import Chip, Node
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
+from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_sequences import PulseSequences
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
+from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -57,6 +60,18 @@ class CircuitToPulses:
 
         return pulse_sequences_list
 
+    def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
+        """Build Pulse Shape from Gate seetings"""
+        shape_settings = gate_settings.shape.copy()
+        if RUNCARD.NAME in shape_settings and shape_settings[RUNCARD.NAME] in [
+            PulseShapeName.DRAG,
+            PulseShapeName.DRAG.value,
+        ]:
+            return Factory.get(shape_settings.pop(RUNCARD.NAME))(
+                **shape_settings, master_drag_coefficient=self.settings.master_drag_coefficient
+            )
+        return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+
     def _control_gate_to_pulse(self, time: Dict[int, int], control_gate: Gate, chip: Chip) -> Tuple[Pulse | None, int]:
         """Translate a gate into a pulse.
 
@@ -66,9 +81,8 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        gate_settings = HardwareGateFactory.gate_settings(control_gate)
-        shape_settings = gate_settings.shape.copy()
-        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
+        pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Adapt this code to translate two-qubit gates.
         port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
         old_time = self._update_time(
@@ -87,6 +101,36 @@ class CircuitToPulses:
             port.id_,
         )
 
+    def _get_gate_settings_with_master_values(self, gate: Gate):
+        """get gate settings with master values"""
+        gate_settings = HardwareGateFactory.gate_settings(
+            gate=gate,
+            master_amplitude_gate=self.settings.master_amplitude_gate,
+            master_duration_gate=self.settings.master_duration_gate,
+        )
+        if (
+            not isinstance(gate_settings.amplitude, float)
+            and not isinstance(gate_settings.amplitude, int)
+            and not isinstance(gate_settings.amplitude, np.number)
+        ):
+            raise ValueError(
+                f"Value amplitude: {gate_settings.amplitude} MUST be a float or an integer. "
+                f"Current type is {type(gate_settings.amplitude)}."
+            )
+
+        if (
+            not isinstance(gate_settings.duration, float)
+            and not isinstance(gate_settings.duration, int)
+            and not isinstance(gate_settings.duration, np.number)
+        ):
+            raise ValueError(
+                f"Value duration: {gate_settings.duration} MUST be an integer. "
+                f"Current type is {type(gate_settings.duration)}."
+            )
+        if isinstance(gate_settings.duration, float):
+            gate_settings.duration = int(gate_settings.duration)
+        return gate_settings
+
     def _readout_gate_to_pulse(
         self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
     ) -> Tuple[ReadoutPulse | None, int]:
@@ -98,7 +142,7 @@ class CircuitToPulses:
         Returns:
             Pulse: Pulse object.
         """
-        gate_settings = HardwareGateFactory.gate_settings(readout_gate)
+        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         port = chip.get_port_from_qubit_idx(idx=qubit_idx, readout=True)

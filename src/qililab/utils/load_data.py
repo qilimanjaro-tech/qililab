@@ -11,6 +11,24 @@ from qililab.experiment import Experiment
 from qililab.result import Results
 
 
+def _get_last_created_path(folderpath: Path) -> Path:
+    """Get the last created path for files in a directory"""
+    files_list = glob.glob(os.path.join(folderpath, "*"))
+    if not files_list:
+        raise ValueError("No previous experiment data found.")
+    path = max(files_list, key=os.path.getctime)
+    return Path(path)
+
+
+def _get_last_created_experiment_path() -> Path:
+    """Get the last created path for the experiment"""
+    folderpath = os.environ.get(DATA, None)
+    if folderpath is None:
+        raise ValueError("Environment variable DATA is not set.")
+    last_daily_directory_path = _get_last_created_path(folderpath=Path(folderpath))
+    return _get_last_created_path(folderpath=last_daily_directory_path)
+
+
 def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     """Load Experiment and Results from yaml data.
 
@@ -20,22 +38,14 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     Returns:
         Tuple(Experiment | None, Results | None): Return Experiment and Results objects, or None.
     """
-    if path is None:
-        folderpath = os.environ.get(DATA, None)
-        if folderpath is None:
-            raise ValueError("Environment variable DATA is not set.")
-        files_list = glob.glob(os.path.join(folderpath, "*"))
-        if not files_list:
-            return None, None
-        path = max(files_list, key=os.path.getctime)
-    experiment = None
-    results = None
-    if os.path.exists(Path(path) / "experiment.yml"):
-        with open(Path(path) / "experiment.yml", mode="r", encoding="utf-8") as experiment_file:
+    parsed_path = Path(path) if isinstance(path, str) else _get_last_created_experiment_path()
+    experiment, results = None, None
+    if os.path.exists(parsed_path / "experiment.yml"):
+        with open(parsed_path / "experiment.yml", mode="r", encoding="utf-8") as experiment_file:
             experiment = Experiment.from_dict(yaml.safe_load(stream=experiment_file))
 
-    if os.path.exists(Path(path) / "results.yml"):
-        with open(Path(path) / "results.yml", mode="r", encoding="utf-8") as results_file:
+    if os.path.exists(parsed_path / "results.yml"):
+        with open(parsed_path / "results.yml", mode="r", encoding="utf-8") as results_file:
             results = Results(**yaml.safe_load(stream=results_file))
 
     return experiment, results

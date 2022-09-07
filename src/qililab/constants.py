@@ -39,6 +39,16 @@ class RUNCARD:
     CURRENT_SOURCE = "current_source"
 
 
+class PLATFORM:
+    """Platform attribute names."""
+
+    DELAY_BETWEEN_PULSES = "delay_between_pulses"
+    DELAY_BEFORE_READOUT = "delay_before_readout"
+    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
+    MASTER_DURATION_GATE = "master_duration_gate"
+    MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
+
+
 class CURRENTSOURCE:
     """CurrentSource attribute names."""
 
@@ -49,7 +59,7 @@ class CURRENTSOURCE:
 
 
 class VOLTAGESOURCE:
-    """CurrentSource attribute names."""
+    """VoltageSource attribute names."""
 
     VOLTAGE = "voltage"
     SPAN = "span"
@@ -74,6 +84,7 @@ class EXPERIMENT:
     RESULTS = "results"
     NUM_SEQUENCES = "num_sequences"
     SEQUENCES = "sequences"
+    LOOPS = "loops"
 
 
 class SCHEMA:
@@ -142,7 +153,7 @@ class INSTRUMENTCONTROLLER:
 
 
 class CONNECTION:
-    " Connection attribute names." ""
+    """Connection attribute names."""
 
     ADDRESS = "address"
 
@@ -151,6 +162,14 @@ class INSTRUMENTREFERENCE:
     """InstrumentReference attribute names."""
 
     SLOT_ID = "slot_id"
+
+
+class QBLOXRESULT:
+    """Qblox Results attribute names."""
+
+    PULSE_LENGTH = "pulse_length"
+    SCOPE = "scope"
+    BINS = "bins"
 
 
 UNITS = {"frequency": "Hz"}

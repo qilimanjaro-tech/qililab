@@ -9,6 +9,7 @@ from qililab.constants import (
     CONNECTION,
     INSTRUMENTCONTROLLER,
     INSTRUMENTREFERENCE,
+    PLATFORM,
     RUNCARD,
     SCHEMA,
 )
@@ -18,6 +19,8 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentControllerSubCategory,
     InstrumentName,
+    Parameter,
+    ReferenceClock,
 )
 
 
@@ -30,24 +33,47 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         RUNCARD.CATEGORY: "platform",
-        "delay_between_pulses": 0,
-        "delay_before_readout": 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
-            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "M",
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                "phase": 0,
+                "duration": 2000,
+                "shape": {"name": "rectangular"},
+            },
+            {
+                "name": "I",
+                "amplitude": 0,
+                "phase": 0,
+                "duration": 0,
+                "shape": {"name": "rectangular"},
+            },
             {
                 "name": "X",
-                "amplitude": 1,
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
-                "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "duration": PLATFORM.MASTER_DURATION_GATE,
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
             },
             {
                 "name": "Y",
-                "amplitude": 1,
+                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 1.5707963267948966,
-                "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "duration": PLATFORM.MASTER_DURATION_GATE,
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
             },
         ],
     }
@@ -58,6 +84,7 @@ class Galadriel:
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.3",
@@ -76,7 +103,6 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
-        "reference_clock": "internal",
         "sync_enabled": True,
         "frequency": 100000000,
         "num_bins": 100,
@@ -94,6 +120,7 @@ class Galadriel:
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.4",
@@ -112,7 +139,6 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
-        "reference_clock": "external",
         "sync_enabled": True,
         "scope_acquire_trigger_mode": "sequencer",
         "scope_hardware_averaging": True,
@@ -345,24 +371,51 @@ class FluxQubitSimulator:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         RUNCARD.CATEGORY: "platform",
-        "delay_between_pulses": 0,
-        "delay_before_readout": 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
-            {"name": "M", "amplitude": 1, "phase": 0, "duration": 2000, "shape": {"name": "rectangular"}},
-            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+            {
+                "name": "M",
+                "amplitude": 1,
+                "phase": 0,
+                "duration": 2000,
+                "shape": {
+                    "name": "rectangular",
+                },
+            },
+            {
+                "name": "I",
+                "amplitude": 0,
+                "phase": 0,
+                "duration": 0,
+                "shape": {
+                    "name": "rectangular",
+                },
+            },
             {
                 "name": "X",
                 "amplitude": 1,
                 "phase": 0,
                 "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
             },
             {
                 "name": "Y",
                 "amplitude": 1,
                 "phase": 1.5707963267948966,
                 "duration": 100,
-                "shape": {"name": "drag", "num_sigmas": 4, "beta": 0},
+                "shape": {
+                    "name": "drag",
+                    "num_sigmas": 4,
+                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
             },
         ],
     }
@@ -435,26 +488,33 @@ results_two_loops = {
     "software_average": 1,
     "num_sequences": 1,
     "shape": [75, 100],
-    "loop": {
-        "alias": "attenuator",
-        "parameter": "attenuation",
-        "start": 15,
-        "stop": 90,
-        "num": None,
-        "step": 1,
-        "loop": {
-            "alias": "rs_1",
-            "parameter": "frequency",
-            "start": 7342000000,
-            "stop": 7352000000,
+    "loops": [
+        {
+            "alias": "attenuator",
+            "instrument": None,
+            "id_": None,
+            "parameter": "attenuation",
+            "start": 15,
+            "stop": 90,
             "num": None,
-            "step": 100000,
-            "loop": None,
-        },
-    },
+            "step": 1,
+            "loop": {
+                "alias": "rs_1",
+                "instrument": None,
+                "id_": None,
+                "parameter": "frequency",
+                "start": 7342000000,
+                "stop": 7352000000,
+                "num": None,
+                "step": 100000,
+                "loop": None,
+            },
+        }
+    ],
     "results": [
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
@@ -465,6 +525,7 @@ results_two_loops = {
         },
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
@@ -480,18 +541,23 @@ results_one_loops = {
     "software_average": 1,
     "num_sequences": 1,
     "shape": [100],
-    "loop": {
-        "alias": "rs_1",
-        "parameter": "frequency",
-        "start": 7342000000,
-        "stop": 7352000000,
-        "num": None,
-        "step": 100000,
-        "loop": None,
-    },
+    "loops": [
+        {
+            "alias": "rs_1",
+            "instrument": None,
+            "id_": None,
+            "parameter": "frequency",
+            "start": 7342000000,
+            "stop": 7352000000,
+            "num": None,
+            "step": 100000,
+            "loop": None,
+        }
+    ],
     "results": [
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
@@ -502,6 +568,7 @@ results_one_loops = {
         },
         {
             "name": "qblox",
+            "pulse_length": 8000,
             "bins": [
                 {
                     "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
@@ -515,7 +582,11 @@ results_one_loops = {
 
 experiment = {
     "platform": Galadriel.runcard,
-    "settings": {"hardware_average": 1024, "software_average": 1, "repetition_duration": 200000},
+    "settings": {
+        "hardware_average": 1024,
+        "software_average": 1,
+        "repetition_duration": 200000,
+    },
     "sequences": [
         {
             "elements": [
@@ -539,31 +610,33 @@ experiment = {
             "delay_before_readout": 40,
         }
     ],
-    "loop": {
-        "alias": "qblox_qrm",
-        "parameter": "gain",
-        "start": 0.1,
-        "stop": 1,
-        "num": None,
-        "step": 0.3,
-        "loop": {
-            "alias": "attenuator",
-            "parameter": "attenuation",
-            "start": 15,
-            "stop": 90,
+    "loops": [
+        {
+            "alias": "qblox_qrm",
+            "parameter": "gain",
+            "start": 0.1,
+            "stop": 1,
             "num": None,
-            "step": 1,
+            "step": 0.3,
             "loop": {
-                "alias": "rs_1",
-                "parameter": "frequency",
-                "start": 7342000000,
-                "stop": 7352000000,
+                "alias": "attenuator",
+                "parameter": "attenuation",
+                "start": 15,
+                "stop": 90,
                 "num": None,
-                "step": 100000,
-                "loop": None,
+                "step": 1,
+                "loop": {
+                    "alias": "rs_1",
+                    "parameter": "frequency",
+                    "start": 7342000000,
+                    "stop": 7352000000,
+                    "num": None,
+                    "step": 100000,
+                    "loop": None,
+                },
             },
-        },
-    },
+        }
+    ],
     "name": "punchout",
 }
 

@@ -32,3 +32,11 @@ class PulseShape(FactoryElement):
             dict: Dictionary.
         """
         return {RUNCARD.NAME: self.name.value} | self.__dict__
+
+    def __repr__(self):
+        """Return string representation of the Pulse Shape object."""
+        return f"{str(self.to_dict())}"
+
+    def __str__(self):
+        """Return string representation of the Pulse Shape object."""
+        return f"{str(self.to_dict())}"
