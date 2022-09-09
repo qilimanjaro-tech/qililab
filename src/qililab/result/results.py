@@ -75,6 +75,8 @@ class Results:
         Returns:
             np.ndarray: Acquisition values.
         """
+        if self.results is None or len(self.results) <= 0:
+            return np.array([])
         if not isinstance(self.results[0], QbloxResult):
             raise ValueError(f"{type(self.results[0]).__name__} class doesn't have an acquisitions method.")
         result_shape = self.results[0].shape

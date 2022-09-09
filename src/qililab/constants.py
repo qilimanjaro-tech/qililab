@@ -35,6 +35,7 @@ class RUNCARD:
     SYSTEM_CONTROL = "system_control"
     INSTRUMENT_CONTROLLER = "instrument_controller"
     FIRMWARE = "firmware"
+    GATES = "gates"
 
 
 class PLATFORM:

@@ -2,24 +2,20 @@
 import os
 from pathlib import Path
 
-from qiboconnection.api import API
-
 from qililab import load
+from qililab.utils.load_data import update_results_files_format
 
-os.environ["RUNCARDS"] = str(Path(__file__).parent / "runcards")
 os.environ["DATA"] = str(Path(__file__).parent / "data")
 
 
-def run_circuit(connection: API | None = None):
+def run_circuit():
     """Load the platform 'galadriel' from the DB."""
     # experiment, results = load(path="./examples/data/20220725_121101_allxy_cmap")
-    experiment, results = load(path="./examples/data/20220730_114929_qubit_spectroscopy")
+    update_results_files_format(path="./examples/data/fail_flip")
+    _, results = load(path="./examples/data/fail_flip")
     acquisitions = results.acquisitions(mean=False)
-    i, q, amplitude, phase = acquisitions
-    ampl_pulse, fq_pulse = results.ranges
-    print(len(ampl_pulse), len(fq_pulse), len(acquisitions), len(i), len(q), len(amplitude), len(phase))
+    print(acquisitions)
 
 
 if __name__ == "__main__":
-    api = API()
-    run_circuit(connection=api)
+    run_circuit()
