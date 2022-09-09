@@ -18,9 +18,11 @@ class Execution:
 
     def __enter__(self):
         """Code executed when starting a with statement."""
+        print('    Started __enter__()')#verbosity_abuse
         self.connect()
         self.setup()
         self.start()
+        print('    Finished __enter__()')#verbosity_abuse
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
@@ -42,6 +44,7 @@ class Execution:
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
     ) -> List[Result]:
         """Run the given pulse sequence."""
+        print('STARTED EXECUTION.run()')#verbosity_abuse        
         return self.buses_execution.run(
             nshots=nshots,
             repetition_duration=repetition_duration,

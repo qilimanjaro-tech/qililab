@@ -54,6 +54,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
     def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """check if values are already cached and upload if not cached"""
+        print(f'awg._check_cached_values {self}')#verbosity_abuse
         readout_pulse_duration = pulse_sequence.readout_pulse_duration
         if self.integration_length != readout_pulse_duration:
             self._update_integration_length_with_readout_pulse_duration(readout_pulse_duration=readout_pulse_duration)
@@ -79,6 +80,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         Returns:
             Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
+        print(f'awg.run {self}')#verbosity_abuse
         if (pulse_sequence, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
             for seq_idx in range(self.num_sequencers):
@@ -120,6 +122,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
             self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"][self.data_name]
             for seq_idx in range(self.num_sequencers)
         ]
+        print('Returned with results\n')
+        print(results)
+        print(results[0])
 
         return QbloxResult(pulse_length=self.integration_length, bins=results)
 

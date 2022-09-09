@@ -38,14 +38,19 @@ class BusesExecution:
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
     ) -> List[Result]:
         """Run the given pulse sequence."""
+        print('1. Buses_execution.run()')#verbosity_abuse 
         results: List[Result] = []
         disable = self.num_sequences == 1
+        print('1.1 For loop [SW_AVG wrong order here!]')#verbosity_abuse 
         for idx, _ in itertools.product(
             tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable), range(software_average)
         ):
+            print(f'1.2 trigger start() in buses {self.buses}')#verbosity_abuse 
             for bus in self.buses:
+                print(f'1.2.x triggerred start() in {bus}')#verbosity_abuse 
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
+                    print(f'1.2.x this one came back with results')#verbosity_abuse 
                     results.append(result)
                     self._asynchronous_data_handling(result=result, path=path, plot=plot)
 

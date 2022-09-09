@@ -77,6 +77,7 @@ class Experiment:
             results = Results(
                 software_average=self.software_average, num_sequences=self.execution.num_sequences, loops=self.loops
             )
+            print('1. Enter execution') # verbosity_abuse
             with self.execution:
                 try:
                     results = self._recursive_loops(
@@ -105,10 +106,13 @@ class Experiment:
         Returns:
             Results: _description_
         """
+        print('2. Enter _recursive_loops()') # verbosity_abuse
         if loops is None or len(loops) <= 0:
+            print('2.Y (loop None or len0)') # Enter _recursive_loops()'
             results.add(result=self._execute(path=path, plot=plot))
             return results
 
+        print('2.N (Have loops)') # Enter _recursive_loops()'
         self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
         return results
 
@@ -127,11 +131,13 @@ class Experiment:
 
         with tqdm(total=self.get_minimum_length_loop(loops=loops), position=depth, leave=is_the_top_loop) as pbar:
             loop_ranges = [loop.range for loop in loops]
-
+            print('2.N.1 (tqdm for values in loop)') # Enter _recursive_loops()'
             for values in zip(*loop_ranges):
                 self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
+                print('2.N.1.1 Filters external params') # Enter _recursive_loops()'
                 self._update_parameters_from_loops_filtering_external_parameters(values=values, loops=loops)
 
+                print('2.N.1.2 Calls recursive with next loop') # Enter _recursive_loops()'
                 results = self._recursive_loops(
                     loops=self._create_loops_from_inner_loops(loops=loops),
                     results=results,
@@ -245,6 +251,7 @@ class Experiment:
         Returns:
             List[Result]: List of Result object for each pulse sequence.
         """
+        print('2.Y.1 _execute via Execution class') # Enter _recursive_loops()'
         return self.execution.run(
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
@@ -270,6 +277,7 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        print(f'2.N.1.N sets {parameter}@{instrument} as {alias}={value}') # Enter _recursive_loops()'
         category = Category(instrument.value) if instrument is not None else None
         if element is None:
             self.platform.set_parameter(

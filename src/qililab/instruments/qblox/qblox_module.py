@@ -70,6 +70,7 @@ class QbloxModule(AWG):
         Args:
             pulse_sequence (PulseSequence): Pulse sequence.
         """
+        print(f'awg.run PARENT {self}')#verbosity_abuse
         self._check_cached_values(
             pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
@@ -77,6 +78,7 @@ class QbloxModule(AWG):
 
     def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """check if values are already cached and upload if not cached"""
+        print(f'awg._check_cached_values PARENT {self}')#verbosity_abuse
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_sequence, nshots, repetition_duration)
             sequence = self._translate_pulse_sequence(
@@ -203,7 +205,12 @@ class QbloxModule(AWG):
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
+        print(f'Uploading sequence to {self}')#verbosity_abuse
+        print(sequence.todict().keys())
+        print('weights',sequence.todict()['weights'])
+        print(sequence.todict()['program'])
         file_path = str(path / f"{self.name.value}_sequence.yml")
+        print('json filepath',file_path)
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
         for seq_idx in range(self.num_sequencers):

@@ -61,9 +61,13 @@ class MixerBasedSystemControl(SystemControl):
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
+        print(f'1.2.x.1 entered run() in SysCtrl {self}')#verbosity_abuse
+        print(f'1.2.x.1.1 [UNNECESARY TOUCH OF freqs]')#verbosity_abuse 
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
             self.signal_generator.setup()
+        
+        print(f'1.2.x.1.2 run() for awg={self.awg}')#verbosity_abuse
         return self.awg.run(
             pulse_sequence=pulse_sequence,
             nshots=nshots,

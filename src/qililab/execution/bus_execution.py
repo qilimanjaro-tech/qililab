@@ -28,6 +28,8 @@ class BusExecution:
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
+        print(f'1.2.x entered run() in {self}')#verbosity_abuse 
+        print(f'1.2.x [UNNECESARY TOUCH OF freqs]')#verbosity_abuse 
         if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
             self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
