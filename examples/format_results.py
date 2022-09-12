@@ -1,4 +1,5 @@
 """Run circuit experiment"""
+import argparse
 import glob
 import os
 from pathlib import Path
@@ -8,10 +9,12 @@ from qililab.utils.load_data import update_results_files_format
 
 os.environ["DATA"] = str(Path(__file__).parent / "data")
 
+DEFAULT_PATH = "./examples/data/"
 
-def format_results():
+
+def format_results(path: str):
     """Format all results files to the latest qililab version"""
-    directories = glob.glob(os.path.join("./examples/data/", "*"))
+    directories = glob.glob(os.path.join(path, "*"))
     if not directories:
         raise ValueError("No previous directories data found.")
     for directory in directories:
@@ -34,9 +37,9 @@ def load_one_result(path: str):
     print(acquisitions)
 
 
-def load_results():
+def load_results(path: str):
     """Load all formatted results"""
-    directories = glob.glob(os.path.join("./examples/data/", "*"))
+    directories = glob.glob(os.path.join(path, "*"))
     if not directories:
         raise ValueError("No previous directories data found.")
     for directory in directories:
@@ -53,5 +56,16 @@ def load_results():
 
 
 if __name__ == "__main__":
-    format_results()
-    load_results()
+    parser = argparse.ArgumentParser(description="Format results to the latest qililab version")
+    parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        required=False,
+        metavar="<PATH>",
+        help="Relative path from where the executable is run",
+    )
+    args = parser.parse_args()
+    path: str = args.path if "path" in args else DEFAULT_PATH
+    format_results(path=path)
+    load_results(path=path)
