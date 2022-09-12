@@ -5,7 +5,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Tuple
 
+import numpy as np
 import yaml
+from tqdm import tqdm
 
 from qililab.constants import (
     DATA,
@@ -13,18 +15,24 @@ from qililab.constants import (
     EXPERIMENT_FILENAME,
     PLATFORM,
     PULSE,
+    PULSESEQUENCE,
+    PULSESEQUENCES,
     QBLOXRESULT,
     RESULTS_FILENAME,
     RUNCARD,
 )
 from qililab.experiment import Experiment
 from qililab.result import Results
-from qililab.typings.enums import PulseShapeSettingsName
+from qililab.typings.enums import Parameter, PulseShapeName, PulseShapeSettingsName
 
 RESULTS_FILENAME_BACKUP = "results_bak.yml"
 EXPERIMENT_FILENAME_BACKUP = "experiment_bak.yml"
 DEFAULT_PULSE_LENGTH = 8000.0
 DEFAULT_MASTER_DRAG_COEFFICIENT = 0
+PATH0 = "path0"
+PATH1 = "path1"
+THRESHOLD = "threshold"
+AVG_CNT = "avg_cnt"
 
 
 def _get_last_created_path(folderpath: Path) -> Path:
@@ -74,6 +82,14 @@ def _fix_loop_keyword(yaml_loaded: dict) -> dict:
         loop_value = yaml_loaded["loop"]
         del yaml_loaded["loop"]
         yaml_loaded["loops"] = [loop_value]
+        return yaml_loaded
+
+    if EXPERIMENT.LOOPS in yaml_loaded:
+        if isinstance(yaml_loaded[EXPERIMENT.LOOPS], list):
+            return yaml_loaded
+        if not isinstance(yaml_loaded[EXPERIMENT.LOOPS], dict):
+            raise ValueError("loops has a type not recognized. Only list or dict are admitted.")
+        yaml_loaded[EXPERIMENT.LOOPS] = [yaml_loaded[EXPERIMENT.LOOPS]]
 
     return yaml_loaded
 
@@ -86,7 +102,7 @@ def _load_backup_results_file(path: str) -> dict:
     """
     parsed_path = Path(path)
     if not os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
-        raise ValueError(f"results file {parsed_path}{RESULTS_FILENAME_BACKUP} not found!")
+        raise ValueError(f"results file {parsed_path}/{RESULTS_FILENAME_BACKUP} not found!")
 
     with open(parsed_path / RESULTS_FILENAME_BACKUP, mode="r", encoding="utf-8") as results_file:
         return yaml.safe_load(stream=results_file)
@@ -169,15 +185,15 @@ def _get_missing_pulse_length(path: str) -> float:
     return _get_pulse_length_from_experiment_dict(experiment=loaded_experiment)
 
 
-def _one_result_pulse_length_fix(result_to_fix: dict, path: str) -> dict:
+def _one_result_pulse_length_fix(result_to_fix: dict, experiment_pulse_length: float) -> dict:
     """from a loaded results checks that pulse length exist, and fixes it when does not.
     It takes the pulse length of the measurement gate from the experiment file.
     """
     if QBLOXRESULT.PULSE_LENGTH in result_to_fix:
         return result_to_fix
 
-    result_fixed = deepcopy(result_to_fix)
-    result_fixed[QBLOXRESULT.PULSE_LENGTH] = _get_missing_pulse_length(path=path)
+    result_fixed = result_to_fix
+    result_fixed[QBLOXRESULT.PULSE_LENGTH] = experiment_pulse_length
 
     return result_fixed
 
@@ -191,16 +207,19 @@ def _one_result_pulse_length_integration(result_to_fix: dict) -> dict:
     if not isinstance(result_to_fix[QBLOXRESULT.BINS], dict):
         raise ValueError("bins has a type not recognized. Only list or dict are admitted.")
 
-    result_fixed = deepcopy(result_to_fix)
+    result_fixed = result_to_fix
     result_fixed[QBLOXRESULT.BINS] = [result_to_fix[QBLOXRESULT.BINS]]
 
     return result_fixed
 
 
-def _fix_one_result(result_to_fix: dict, path: str) -> dict:
-    """from a given result, fix the pulse length and the integration"""
-    pulse_length_fixed = _one_result_pulse_length_fix(result_to_fix=result_to_fix, path=path)
-    return _one_result_pulse_length_integration(result_to_fix=pulse_length_fixed)
+def _fix_one_result(result_to_fix: dict, experiment_pulse_length: float) -> dict:
+    """from a given result, fix the pulse length, the integration and nans"""
+    pulse_length_fixed = _one_result_pulse_length_fix(
+        result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length
+    )
+    integration_fixed = _one_result_pulse_length_integration(result_to_fix=pulse_length_fixed)
+    return _remove_result_nans(result_to_fix=integration_fixed)
 
 
 def _fix_pulse_length(results_to_fix: dict, path: str) -> dict:
@@ -208,15 +227,50 @@ def _fix_pulse_length(results_to_fix: dict, path: str) -> dict:
     It takes the pulse length of the measurement gate from the experiment file.
     """
     print("fixing pulse_length and integration of each result")
+
     if EXPERIMENT.RESULTS not in results_to_fix:
         return results_to_fix
     if results_to_fix[EXPERIMENT.RESULTS] is None or len(results_to_fix[EXPERIMENT.RESULTS]) <= 0:
         return results_to_fix
-    results_fixed = deepcopy(results_to_fix)
+    results_fixed = results_to_fix
+
+    experiment_pulse_length = _get_missing_pulse_length(path=path)
+
     results_fixed[EXPERIMENT.RESULTS] = [
-        _fix_one_result(result_to_fix=result_to_fix, path=path) for result_to_fix in results_to_fix[EXPERIMENT.RESULTS]
+        _fix_one_result(result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length)
+        for result_to_fix in tqdm(results_to_fix[EXPERIMENT.RESULTS])
     ]
     return results_fixed
+
+
+def _remove_nans_one_bin(one_bin_to_fix: dict) -> dict:
+    """remove nans in one bin"""
+    one_bin_fixed = one_bin_to_fix
+    if Parameter.INTEGRATION.value in one_bin_to_fix:
+        if PATH0 in one_bin_to_fix[Parameter.INTEGRATION.value]:
+            one_bin_fixed[Parameter.INTEGRATION.value][PATH0] = [
+                value for value in one_bin_to_fix[Parameter.INTEGRATION.value][PATH0] if not np.isnan(value)
+            ]
+        if PATH1 in one_bin_to_fix[Parameter.INTEGRATION.value]:
+            one_bin_fixed[Parameter.INTEGRATION.value][PATH1] = [
+                value for value in one_bin_to_fix[Parameter.INTEGRATION.value][PATH1] if not np.isnan(value)
+            ]
+    if THRESHOLD in one_bin_to_fix:
+        one_bin_fixed[THRESHOLD] = [value for value in one_bin_to_fix[THRESHOLD] if not np.isnan(value)]
+    if AVG_CNT in one_bin_to_fix:
+        one_bin_fixed[AVG_CNT] = [value for value in one_bin_to_fix[AVG_CNT] if not np.isnan(value)]
+    return one_bin_fixed
+
+
+def _remove_result_nans(result_to_fix: dict) -> dict:
+    """remove all nans in result bins"""
+    if QBLOXRESULT.BINS not in result_to_fix:
+        return result_to_fix
+    result_fixed = result_to_fix
+    result_fixed[QBLOXRESULT.BINS] = [
+        _remove_nans_one_bin(one_bin_to_fix=one_bin_to_fix) for one_bin_to_fix in result_to_fix[QBLOXRESULT.BINS]
+    ]
+    return result_fixed
 
 
 def _update_results_file_format(path: str) -> None:
@@ -250,17 +304,16 @@ def _update_experiments_file_format(path: str) -> None:
 def _backup_results_and_experiments_files(path: str) -> None:
     """from a given result, create a backup files from results and experiment files"""
     parsed_path = Path(path)
-    if os.path.exists(parsed_path / RESULTS_FILENAME):
+    if os.path.exists(parsed_path / RESULTS_FILENAME) and not os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
         os.rename(parsed_path / RESULTS_FILENAME, parsed_path / RESULTS_FILENAME_BACKUP)
-    if os.path.exists(parsed_path / EXPERIMENT_FILENAME):
+    if os.path.exists(parsed_path / EXPERIMENT_FILENAME) and not os.path.exists(
+        parsed_path / EXPERIMENT_FILENAME_BACKUP
+    ):
         os.rename(parsed_path / EXPERIMENT_FILENAME, parsed_path / EXPERIMENT_FILENAME_BACKUP)
 
 
-def _fix_beta_to_drag_coefficient(experiment_to_fix: dict) -> dict:
-    """from a experiment data, rename beta to drag_coefficient"""
-    print("fixing beta to drag_coefficient experiment")
-    experiment = deepcopy(experiment_to_fix)
-
+def _fix_beta_to_drag_coefficient_on_platform(experiment: dict) -> dict:
+    """from a experiment data, rename beta to drag_coefficient on the platform section"""
     if RUNCARD.PLATFORM not in experiment:
         return experiment
     if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM]:
@@ -274,17 +327,77 @@ def _fix_beta_to_drag_coefficient(experiment_to_fix: dict) -> dict:
         experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][
             PLATFORM.MASTER_DRAG_COEFFICIENT
         ] = DEFAULT_MASTER_DRAG_COEFFICIENT
+    return experiment
 
+
+def _fix_beta_to_drag_coefficient_on_gates(experiment: dict) -> dict:
+    """from a experiment data, rename beta to drag_coefficient on the gates section"""
     if RUNCARD.GATES not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
         return experiment
     gates: List[dict] = experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.GATES]
     for gate in gates:
         if EXPERIMENT.SHAPE in gate and "beta" in gate[EXPERIMENT.SHAPE]:
+            if isinstance(gate[EXPERIMENT.SHAPE]["beta"], str) and "beta" in gate[EXPERIMENT.SHAPE]["beta"]:
+                gate[EXPERIMENT.SHAPE]["beta"] = PLATFORM.MASTER_DRAG_COEFFICIENT
             gate[EXPERIMENT.SHAPE][PulseShapeSettingsName.DRAG_COEFFICIENT.value] = gate[EXPERIMENT.SHAPE]["beta"]
             del gate[EXPERIMENT.SHAPE]["beta"]
-        if PulseShapeSettingsName.DRAG_COEFFICIENT.value not in gate[EXPERIMENT.SHAPE]:
+        if (
+            EXPERIMENT.SHAPE in gate
+            and gate[EXPERIMENT.SHAPE][RUNCARD.NAME] == PulseShapeName.DRAG.value
+            and PulseShapeSettingsName.DRAG_COEFFICIENT.value not in gate[EXPERIMENT.SHAPE]
+        ):
             gate[EXPERIMENT.SHAPE][PulseShapeSettingsName.DRAG_COEFFICIENT.value] = PLATFORM.MASTER_DRAG_COEFFICIENT
     return experiment
+
+
+def _fix_beta_to_drag_coefficient_on_pulses(experiment: dict) -> dict:
+    """from a experiment data, rename beta to drag_coefficient on the pulses section"""
+    if EXPERIMENT.SEQUENCES not in experiment:
+        return experiment
+    pulse_sequences: List[dict] = experiment[EXPERIMENT.SEQUENCES]
+    for pulse_sequence in pulse_sequences:
+        if PULSESEQUENCES.ELEMENTS not in pulse_sequence:
+            continue
+        elements: List[dict] = pulse_sequence[PULSESEQUENCES.ELEMENTS]
+        for element in elements:
+            if PULSESEQUENCE.PULSES not in element:
+                continue
+            pulses: List[dict] = element[PULSESEQUENCE.PULSES]
+            for pulse in pulses:
+                if PULSE.PULSE_SHAPE in pulse and "beta" in pulse[PULSE.PULSE_SHAPE]:
+                    if isinstance(pulse[PULSE.PULSE_SHAPE]["beta"], str) and "beta" in pulse[PULSE.PULSE_SHAPE]["beta"]:
+                        pulse[PULSE.PULSE_SHAPE]["beta"] = PLATFORM.MASTER_DRAG_COEFFICIENT
+                    pulse[PULSE.PULSE_SHAPE][PulseShapeSettingsName.DRAG_COEFFICIENT.value] = pulse[PULSE.PULSE_SHAPE][
+                        "beta"
+                    ]
+                    del pulse[PULSE.PULSE_SHAPE]["beta"]
+                if (
+                    PULSE.PULSE_SHAPE in pulse
+                    and pulse[PULSE.PULSE_SHAPE][RUNCARD.NAME] == PulseShapeName.DRAG.value
+                    and "master_beta_pulse_shape" in pulse[PULSE.PULSE_SHAPE]
+                ):
+                    pulse[PULSE.PULSE_SHAPE][PulseShapeSettingsName.DRAG_COEFFICIENT.value] = pulse[PULSE.PULSE_SHAPE][
+                        "master_beta_pulse_shape"
+                    ]
+                    del pulse[PULSE.PULSE_SHAPE]["master_beta_pulse_shape"]
+                if (
+                    PULSE.PULSE_SHAPE in pulse
+                    and pulse[PULSE.PULSE_SHAPE][RUNCARD.NAME] == PulseShapeName.DRAG.value
+                    and "master_beta_pulse_shape" not in pulse[PULSE.PULSE_SHAPE]
+                ):
+                    pulse[PULSE.PULSE_SHAPE][PulseShapeSettingsName.DRAG_COEFFICIENT.value] = experiment[
+                        RUNCARD.PLATFORM
+                    ][RUNCARD.SETTINGS][PLATFORM.MASTER_DRAG_COEFFICIENT]
+    return experiment
+
+
+def _fix_beta_to_drag_coefficient(experiment_to_fix: dict) -> dict:
+    """from a experiment data, rename beta to drag_coefficient"""
+    print("fixing beta to drag_coefficient experiment")
+    experiment = deepcopy(experiment_to_fix)
+    experiment = _fix_beta_to_drag_coefficient_on_platform(experiment=experiment)
+    experiment = _fix_beta_to_drag_coefficient_on_gates(experiment=experiment)
+    return _fix_beta_to_drag_coefficient_on_pulses(experiment=experiment)
 
 
 def update_results_files_format(path: str) -> None:
