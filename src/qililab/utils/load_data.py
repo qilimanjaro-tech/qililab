@@ -43,6 +43,7 @@ PATH0 = "path0"
 PATH1 = "path1"
 THRESHOLD = "threshold"
 AVG_CNT = "avg_cnt"
+NUMBER_SEQUENCERS = "num_sequencers"
 
 
 def _get_last_created_path(folderpath: Path) -> Path:
@@ -339,7 +340,7 @@ def _fix_instrument_controllers(experiment: dict) -> dict:
         return experiment
     fixed_experiment = deepcopy(experiment)
     if SCHEMA.INSTRUMENT_CONTROLLERS not in fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA]:
-        fixed_experiment[SCHEMA.INSTRUMENT_CONTROLLERS] = []
+        fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS] = []
         return fixed_experiment
 
     instrument_controllers: List[dict] = experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS]
@@ -374,16 +375,65 @@ def _remove_reference_clock(qxm: dict) -> dict:
     return qxm
 
 
+def _update_sequencer_number(qxm: dict) -> dict:
+    """updates sequencer number reference"""
+    if "sequencer" in qxm:
+        qxm[NUMBER_SEQUENCERS] = 1
+        del qxm["sequencer"]
+    return qxm
+
+
+def _update_acquire_trigger_mode(qxm: dict) -> dict:
+    """updates acquire trigger mode reference"""
+    if "acquire_trigger_mode" in qxm:
+        qxm["scope_acquire_trigger_mode"] = qxm["acquire_trigger_mode"]
+        del qxm["acquire_trigger_mode"]
+    return qxm
+
+
+def _update_hardware_averaging(qxm: dict) -> dict:
+    """updates hardware_averaging reference"""
+    if "hardware_averaging" in qxm:
+        qxm["scope_hardware_averaging"] = qxm["hardware_averaging"]
+        del qxm["hardware_averaging"]
+    return qxm
+
+
+def _remove_connection_ip(instrument: dict) -> dict:
+    """remove connection ip from an instrument"""
+    if "ip" in instrument:
+        del instrument["ip"]
+    return instrument
+
+
+def _update_sequencer_params(qxm: dict, key: str) -> dict:
+    """update sequencer params: gain, epsilon, delta, offset_i, offset_q"""
+    if key in qxm and not isinstance(qxm[key], list):
+        qxm[key] = [qxm[key]]
+    return qxm
+
+
 def _fix_instrument(instrument: dict) -> dict:
     """fix an instrument so it is loadable"""
     fixed_instrument = instrument
+    if fixed_instrument[RUNCARD.NAME] == "qblox_qcm":
+        fixed_instrument[RUNCARD.NAME] = InstrumentName.QBLOX_QCM.value
+    if fixed_instrument[RUNCARD.NAME] == "qblox_qrm":
+        fixed_instrument[RUNCARD.NAME] = InstrumentName.QBLOX_QRM.value
     if fixed_instrument[RUNCARD.NAME] in [
         InstrumentName.QBLOX_QCM.value,
         InstrumentName.QBLOX_QRM.value,
-        "qblox_qcm",
-        "qblox_qrm",
     ]:
         fixed_instrument = _remove_reference_clock(qxm=fixed_instrument)
+        fixed_instrument = _update_sequencer_number(qxm=fixed_instrument)
+        fixed_instrument = _update_acquire_trigger_mode(qxm=fixed_instrument)
+        fixed_instrument = _update_hardware_averaging(qxm=fixed_instrument)
+        fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="gain")
+        fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="epsilon")
+        fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="delta")
+        fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="offset_i")
+        fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="offset_q")
+    fixed_instrument = _remove_connection_ip(instrument=fixed_instrument)
     return fixed_instrument
 
 
