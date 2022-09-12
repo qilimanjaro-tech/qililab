@@ -20,15 +20,25 @@ from qililab.constants import (
     QBLOXRESULT,
     RESULTS_FILENAME,
     RUNCARD,
+    SCHEMA,
 )
 from qililab.experiment import Experiment
 from qililab.result import Results
-from qililab.typings.enums import Parameter, PulseShapeName, PulseShapeSettingsName
+from qililab.typings.enums import (
+    InstrumentControllerName,
+    InstrumentName,
+    Parameter,
+    PulseShapeName,
+    PulseShapeSettingsName,
+    ReferenceClock,
+)
 
 RESULTS_FILENAME_BACKUP = "results_bak.yml"
 EXPERIMENT_FILENAME_BACKUP = "experiment_bak.yml"
 DEFAULT_PULSE_LENGTH = 8000.0
 DEFAULT_MASTER_DRAG_COEFFICIENT = 0
+DEFAULT_MASTER_AMPLITUDE_GATE = 1
+DEFAULT_MASTER_DURATION_GATE = 100
 PATH0 = "path0"
 PATH1 = "path1"
 THRESHOLD = "threshold"
@@ -82,7 +92,6 @@ def _fix_loop_keyword(yaml_loaded: dict) -> dict:
         loop_value = yaml_loaded["loop"]
         del yaml_loaded["loop"]
         yaml_loaded["loops"] = [loop_value]
-        return yaml_loaded
 
     if EXPERIMENT.LOOPS in yaml_loaded:
         if isinstance(yaml_loaded[EXPERIMENT.LOOPS], list):
@@ -298,7 +307,47 @@ def _update_experiments_file_format(path: str) -> None:
         return
     fixed_experiment = deepcopy(loaded_experiment)
     fixed_beta_experiment = _fix_beta_to_drag_coefficient(experiment_to_fix=fixed_experiment)
-    _save_experiment(path=path, data=fixed_beta_experiment)
+    fixed_master_gate_experiment = _fix_master_gate_on_platform(experiment=fixed_beta_experiment)
+    fixed_instruments_experiment = _fix_instruments(experiment=fixed_master_gate_experiment)
+    fixed_instrument_controllers_experiment = _fix_instrument_controllers(experiment=fixed_instruments_experiment)
+    fixed_loops_experiment = _fix_loop_keyword(yaml_loaded=fixed_instrument_controllers_experiment)
+    _save_experiment(path=path, data=fixed_loops_experiment)
+
+
+def _fix_instrument_controller(instrument_controller: dict) -> dict:
+    """fix an instrument_controller so it is loadable"""
+    fixed_instrument_controller = instrument_controller
+    if (
+        fixed_instrument_controller[RUNCARD.NAME]
+        in [
+            InstrumentControllerName.QBLOX_PULSAR.value,
+            InstrumentControllerName.QBLOX_CLUSTER.value,
+        ]
+        and Parameter.REFERENCE_CLOCK.value not in fixed_instrument_controller
+    ):
+        fixed_instrument_controller = _add_reference_clock(
+            qxm_controller=fixed_instrument_controller, value=ReferenceClock.INTERNAL.value
+        )
+    return fixed_instrument_controller
+
+
+def _fix_instrument_controllers(experiment: dict) -> dict:
+    """fix the instrument controllers section so it is loadable"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    fixed_experiment = deepcopy(experiment)
+    if SCHEMA.INSTRUMENT_CONTROLLERS not in fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA]:
+        fixed_experiment[SCHEMA.INSTRUMENT_CONTROLLERS] = []
+        return fixed_experiment
+
+    instrument_controllers: List[dict] = experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS]
+    fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS] = [
+        _fix_instrument_controller(instrument_controller=instrument_controller)
+        for instrument_controller in instrument_controllers
+    ]
+    return fixed_experiment
 
 
 def _backup_results_and_experiments_files(path: str) -> None:
@@ -310,6 +359,61 @@ def _backup_results_and_experiments_files(path: str) -> None:
         parsed_path / EXPERIMENT_FILENAME_BACKUP
     ):
         os.rename(parsed_path / EXPERIMENT_FILENAME, parsed_path / EXPERIMENT_FILENAME_BACKUP)
+
+
+def _add_reference_clock(qxm_controller: dict, value: str) -> dict:
+    """add reference clock on a QCM or QRM instrument controller"""
+    qxm_controller[Parameter.REFERENCE_CLOCK.value] = value
+    return qxm_controller
+
+
+def _remove_reference_clock(qxm: dict) -> dict:
+    """remove reference clock on a QCM or QRM instrument"""
+    if Parameter.REFERENCE_CLOCK.value in qxm:
+        del qxm[Parameter.REFERENCE_CLOCK.value]
+    return qxm
+
+
+def _fix_instrument(instrument: dict) -> dict:
+    """fix an instrument so it is loadable"""
+    fixed_instrument = instrument
+    if fixed_instrument[RUNCARD.NAME] in [
+        InstrumentName.QBLOX_QCM.value,
+        InstrumentName.QBLOX_QRM.value,
+        "qblox_qcm",
+        "qblox_qrm",
+    ]:
+        fixed_instrument = _remove_reference_clock(qxm=fixed_instrument)
+    return fixed_instrument
+
+
+def _fix_instruments(experiment: dict) -> dict:
+    """fix the instrument section so it is loadable"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    if SCHEMA.INSTRUMENTS not in experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA]:
+        return experiment
+    fixed_experiment = deepcopy(experiment)
+    instruments: List[dict] = experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENTS]
+    fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.INSTRUMENTS] = [
+        _fix_instrument(instrument=instrument) for instrument in instruments
+    ]
+    return fixed_experiment
+
+
+def _fix_master_gate_on_platform(experiment: dict) -> dict:
+    """from a experiment data, add master amplitude and duration on the platform section"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    if PLATFORM.MASTER_AMPLITUDE_GATE not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PLATFORM.MASTER_AMPLITUDE_GATE] = DEFAULT_MASTER_AMPLITUDE_GATE
+    if PLATFORM.MASTER_DURATION_GATE not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PLATFORM.MASTER_DURATION_GATE] = DEFAULT_MASTER_DURATION_GATE
+    return experiment
 
 
 def _fix_beta_to_drag_coefficient_on_platform(experiment: dict) -> dict:
