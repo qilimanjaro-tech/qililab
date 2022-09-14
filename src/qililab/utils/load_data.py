@@ -25,6 +25,7 @@ from qililab.constants import (
 from qililab.experiment import Experiment
 from qililab.result import Results
 from qililab.typings.enums import (
+    GateName,
     InstrumentControllerName,
     InstrumentName,
     Parameter,
@@ -44,6 +45,7 @@ PATH1 = "path1"
 THRESHOLD = "threshold"
 AVG_CNT = "avg_cnt"
 NUMBER_SEQUENCERS = "num_sequencers"
+MAX_FILE_SIZE_200_MB = 200
 
 
 def _get_last_created_path(folderpath: Path) -> Path:
@@ -88,6 +90,7 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
 
 def _fix_loop_keyword(yaml_loaded: dict) -> dict:
     """from a loaded yaml fixes that loop keyword is changed by loops"""
+    # print("_fix_loop_keyword")
     if "loop" in yaml_loaded:
         print("fixing loop key")
         loop_value = yaml_loaded["loop"]
@@ -99,6 +102,7 @@ def _fix_loop_keyword(yaml_loaded: dict) -> dict:
             return yaml_loaded
         if not isinstance(yaml_loaded[EXPERIMENT.LOOPS], dict):
             raise ValueError("loops has a type not recognized. Only list or dict are admitted.")
+        print("fixing loops key")
         yaml_loaded[EXPERIMENT.LOOPS] = [yaml_loaded[EXPERIMENT.LOOPS]]
 
     return yaml_loaded
@@ -110,6 +114,7 @@ def _load_backup_results_file(path: str) -> dict:
     Args:
         path (str): Path to folder.
     """
+    # print("_load_backup_results_file")
     parsed_path = Path(path)
     if not os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
         raise ValueError(f"results file {parsed_path}/{RESULTS_FILENAME_BACKUP} not found!")
@@ -118,20 +123,21 @@ def _load_backup_results_file(path: str) -> dict:
         return yaml.safe_load(stream=results_file)
 
 
-def _load_backup_experiment_file(path: str) -> dict | None:
+def _load_backup_experiment_file(path: str) -> dict:
     """Load Experiment yaml file.
 
     Args:
         path (str): Path to folder.
 
     Returns:
-        dict | None: Return an experiment data dictionary or None.
+        dict : Return an experiment data dictionary.
     """
+    # print("_load_backup_experiment_file")
     parsed_path = Path(path)
     if os.path.exists(parsed_path / EXPERIMENT_FILENAME_BACKUP):
         with open(parsed_path / EXPERIMENT_FILENAME_BACKUP, mode="r", encoding="utf-8") as experiment_file:
             return yaml.safe_load(stream=experiment_file)
-    return None
+    raise ValueError("No experiment file found")
 
 
 def _save_file(path: str, data: dict, filename: str) -> None:
@@ -153,6 +159,7 @@ def _save_experiment(path: str, data: dict) -> None:
         path (str): Path to folder.
         data (dict): Fixed experiment dictionary data
     """
+    # print(f"saving {path}/{EXPERIMENT_FILENAME}")
     _save_file(path=path, data=data, filename=EXPERIMENT_FILENAME)
 
 
@@ -166,11 +173,13 @@ def _save_results(path: str, data: dict) -> None:
     Returns:
         Results: Loaded dictionary results.
     """
+    # print(f"saving {path}/{RESULTS_FILENAME}")
     _save_file(path=path, data=data, filename=RESULTS_FILENAME)
 
 
 def _get_pulse_length_from_experiment_dict(experiment: dict) -> float:
     """get pulse length from the experiment dictionary"""
+    # print("_get_pulse_length_from_experiment_dict")
     if RUNCARD.PLATFORM not in experiment:
         return DEFAULT_PULSE_LENGTH
     if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM]:
@@ -187,18 +196,11 @@ def _get_pulse_length_from_experiment_dict(experiment: dict) -> float:
     return measurement_gate[PULSE.DURATION]
 
 
-def _get_missing_pulse_length(path: str) -> float:
-    """get the missing pulse length from either the experiment dictionary or the default one: 8000"""
-    loaded_experiment = _load_backup_results_file(path=path)
-    if loaded_experiment is None:
-        return DEFAULT_PULSE_LENGTH
-    return _get_pulse_length_from_experiment_dict(experiment=loaded_experiment)
-
-
 def _one_result_pulse_length_fix(result_to_fix: dict, experiment_pulse_length: float) -> dict:
     """from a loaded results checks that pulse length exist, and fixes it when does not.
     It takes the pulse length of the measurement gate from the experiment file.
     """
+    # print("_one_result_pulse_length_fix")
     if QBLOXRESULT.PULSE_LENGTH in result_to_fix:
         return result_to_fix
 
@@ -210,6 +212,7 @@ def _one_result_pulse_length_fix(result_to_fix: dict, experiment_pulse_length: f
 
 def _one_result_pulse_length_integration(result_to_fix: dict) -> dict:
     """from a loaded results checks that integration exist, and fixes it when does not."""
+    # print("_one_result_pulse_length_integration")
     if QBLOXRESULT.BINS not in result_to_fix:
         return result_to_fix
     if isinstance(result_to_fix[QBLOXRESULT.BINS], list):
@@ -225,6 +228,7 @@ def _one_result_pulse_length_integration(result_to_fix: dict) -> dict:
 
 def _fix_one_result(result_to_fix: dict, experiment_pulse_length: float) -> dict:
     """from a given result, fix the pulse length, the integration and nans"""
+    # print("_fix_one_result")
     pulse_length_fixed = _one_result_pulse_length_fix(
         result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length
     )
@@ -232,7 +236,7 @@ def _fix_one_result(result_to_fix: dict, experiment_pulse_length: float) -> dict
     return _remove_result_nans(result_to_fix=integration_fixed)
 
 
-def _fix_pulse_length(results_to_fix: dict, path: str) -> dict:
+def _fix_pulse_length(results_to_fix: dict, experiment: dict) -> dict:
     """from a loaded results checks that pulse length exist, and fixes it when does not.
     It takes the pulse length of the measurement gate from the experiment file.
     """
@@ -244,7 +248,7 @@ def _fix_pulse_length(results_to_fix: dict, path: str) -> dict:
         return results_to_fix
     results_fixed = results_to_fix
 
-    experiment_pulse_length = _get_missing_pulse_length(path=path)
+    experiment_pulse_length = _get_pulse_length_from_experiment_dict(experiment=experiment)
 
     results_fixed[EXPERIMENT.RESULTS] = [
         _fix_one_result(result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length)
@@ -255,6 +259,7 @@ def _fix_pulse_length(results_to_fix: dict, path: str) -> dict:
 
 def _remove_nans_one_bin(one_bin_to_fix: dict) -> dict:
     """remove nans in one bin"""
+    # print("_remove_nans_one_bin")
     one_bin_fixed = one_bin_to_fix
     if Parameter.INTEGRATION.value in one_bin_to_fix:
         if PATH0 in one_bin_to_fix[Parameter.INTEGRATION.value]:
@@ -274,6 +279,7 @@ def _remove_nans_one_bin(one_bin_to_fix: dict) -> dict:
 
 def _remove_result_nans(result_to_fix: dict) -> dict:
     """remove all nans in result bins"""
+    # print("_remove_result_nans")
     if QBLOXRESULT.BINS not in result_to_fix:
         return result_to_fix
     result_fixed = result_to_fix
@@ -283,20 +289,113 @@ def _remove_result_nans(result_to_fix: dict) -> dict:
     return result_fixed
 
 
-def _update_results_file_format(path: str) -> None:
+def _file_greater_than_200_mb(path: str) -> bool:
+    """check if file is greater than 200MB"""
+    parsed_path = Path(path)
+    filename = parsed_path / RESULTS_FILENAME_BACKUP
+    return int(filename.stat().st_size / 1024 / 1024) > MAX_FILE_SIZE_200_MB
+
+
+def _update_results_file_format(path: str, experiment: dict) -> None:
     """Load and fix Results generated from the versionless qililab yaml data to the current format.
 
     Args:
         path (str): Path to folder.
     """
+    # print("_update_results_file_format")
 
+    if _file_greater_than_200_mb(path=path):
+        print(f"File {path}/{RESULTS_FILENAME_BACKUP} NOT PROCESSED: It is greater than 200MB.")
+        return
     loaded_results = _load_backup_results_file(path=path)
     results_fixed_loop = _fix_loop_keyword(yaml_loaded=loaded_results)
-    results_fixed_pulse_length = _fix_pulse_length(results_to_fix=results_fixed_loop, path=path)
+    results_fixed_pulse_length = _fix_pulse_length(results_to_fix=results_fixed_loop, experiment=experiment)
     _save_results(path=path, data=results_fixed_pulse_length)
 
 
-def _update_experiments_file_format(path: str) -> None:
+def _fix_platform_to_settings(experiment: dict) -> dict:
+    """fix platform structure to contain settings"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.PLATFORM not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    if RUNCARD.SETTINGS in experiment[RUNCARD.PLATFORM]:
+        return experiment
+
+    # update experiment[platform][platform]
+    experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] = experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
+    del experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
+
+    # update experiment[platform][settings][settings]
+    if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
+        return experiment
+    experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] |= experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.SETTINGS]
+    del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.SETTINGS]
+
+    settings: dict = experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]
+    # change readout_duration, readout_amplitude and readout_phase
+    if "readout_duration" in settings and "readout_amplitude" in settings and "readout_phase" in settings:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.GATES] = [
+            {
+                RUNCARD.NAME: GateName.M.value,
+                Parameter.AMPLITUDE.value: settings["readout_amplitude"],
+                Parameter.DURATION.value: settings["readout_duration"],
+                Parameter.PHASE.value: settings["readout_phase"],
+                EXPERIMENT.SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
+            }
+        ]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]["readout_amplitude"]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]["readout_duration"]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]["readout_phase"]
+
+    # change gate_duration and drag_coefficient
+    if "gate_duration" in settings and PulseShapeSettingsName.DRAG_COEFFICIENT.value in settings:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PLATFORM.MASTER_DURATION_GATE] = settings["gate_duration"]
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PLATFORM.MASTER_AMPLITUDE_GATE] = settings[
+            PulseShapeSettingsName.DRAG_COEFFICIENT.value
+        ]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]["gate_duration"]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PulseShapeSettingsName.DRAG_COEFFICIENT.value]
+
+    # change num_sigmas
+    if PulseShapeSettingsName.NUM_SIGMAS.value in settings:
+        sigmas = settings[PulseShapeSettingsName.NUM_SIGMAS.value]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][PulseShapeSettingsName.NUM_SIGMAS.value]
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.GATES] += [
+            {
+                RUNCARD.NAME: GateName.I.value,
+                Parameter.AMPLITUDE.value: 0,
+                Parameter.DURATION.value: PLATFORM.MASTER_DURATION_GATE,
+                Parameter.PHASE.value: 0,
+                EXPERIMENT.SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
+            },
+            {
+                RUNCARD.NAME: GateName.X.value,
+                Parameter.AMPLITUDE.value: PLATFORM.MASTER_AMPLITUDE_GATE,
+                Parameter.DURATION.value: PLATFORM.MASTER_DURATION_GATE,
+                Parameter.PHASE.value: 0,
+                EXPERIMENT.SHAPE: {
+                    RUNCARD.NAME: PulseShapeName.DRAG.value,
+                    PulseShapeSettingsName.NUM_SIGMAS.value: sigmas,
+                    PulseShapeSettingsName.DRAG_COEFFICIENT.value: PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
+            },
+            {
+                RUNCARD.NAME: GateName.Y.value,
+                Parameter.AMPLITUDE.value: PLATFORM.MASTER_AMPLITUDE_GATE,
+                Parameter.DURATION.value: PLATFORM.MASTER_DURATION_GATE,
+                Parameter.PHASE.value: 1.5708,
+                EXPERIMENT.SHAPE: {
+                    RUNCARD.NAME: PulseShapeName.DRAG.value,
+                    PulseShapeSettingsName.NUM_SIGMAS.value: sigmas,
+                    PulseShapeSettingsName.DRAG_COEFFICIENT.value: PLATFORM.MASTER_DRAG_COEFFICIENT,
+                },
+            },
+        ]
+    return experiment
+
+
+def _update_experiments_file_format(path: str) -> dict:
     """Load and fix Experiments generated from the versionless qililab yaml data to the current format.
 
     Args:
@@ -304,19 +403,22 @@ def _update_experiments_file_format(path: str) -> None:
     """
 
     loaded_experiment = _load_backup_experiment_file(path=path)
-    if loaded_experiment is None:
-        return
+    # print("updating experiments file")
     fixed_experiment = deepcopy(loaded_experiment)
-    fixed_beta_experiment = _fix_beta_to_drag_coefficient(experiment_to_fix=fixed_experiment)
+    fixed_platform_to_settings = _fix_platform_to_settings(experiment=fixed_experiment)
+    fixed_beta_experiment = _fix_beta_to_drag_coefficient(experiment_to_fix=fixed_platform_to_settings)
     fixed_master_gate_experiment = _fix_master_gate_on_platform(experiment=fixed_beta_experiment)
     fixed_instruments_experiment = _fix_instruments(experiment=fixed_master_gate_experiment)
     fixed_instrument_controllers_experiment = _fix_instrument_controllers(experiment=fixed_instruments_experiment)
-    fixed_loops_experiment = _fix_loop_keyword(yaml_loaded=fixed_instrument_controllers_experiment)
+    fixed_chip = _fix_chip(experiment=fixed_instrument_controllers_experiment)
+    fixed_loops_experiment = _fix_loop_keyword(yaml_loaded=fixed_chip)
     _save_experiment(path=path, data=fixed_loops_experiment)
+    return fixed_experiment
 
 
 def _fix_instrument_controller(instrument_controller: dict) -> dict:
     """fix an instrument_controller so it is loadable"""
+    # print("_fix_instrument_controller")
     fixed_instrument_controller = instrument_controller
     if (
         fixed_instrument_controller[RUNCARD.NAME]
@@ -332,8 +434,26 @@ def _fix_instrument_controller(instrument_controller: dict) -> dict:
     return fixed_instrument_controller
 
 
+def _fix_chip(experiment: dict) -> dict:
+    """fix the chip section so it is loadable"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    fixed_experiment = deepcopy(experiment)
+    if SCHEMA.CHIP not in fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA]:
+        fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.CHIP] = {
+            RUNCARD.ID: 0,
+            RUNCARD.CATEGORY: SCHEMA.CHIP,
+            "nodes": [],
+        }
+        return fixed_experiment
+    return fixed_experiment
+
+
 def _fix_instrument_controllers(experiment: dict) -> dict:
     """fix the instrument controllers section so it is loadable"""
+    # print("_fix_instrument_controllers")
     if RUNCARD.PLATFORM not in experiment:
         return experiment
     if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
@@ -353,6 +473,7 @@ def _fix_instrument_controllers(experiment: dict) -> dict:
 
 def _backup_results_and_experiments_files(path: str) -> None:
     """from a given result, create a backup files from results and experiment files"""
+    # print("_backup_results_and_experiments_files")
     parsed_path = Path(path)
     if os.path.exists(parsed_path / RESULTS_FILENAME) and not os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
         os.rename(parsed_path / RESULTS_FILENAME, parsed_path / RESULTS_FILENAME_BACKUP)
@@ -362,14 +483,30 @@ def _backup_results_and_experiments_files(path: str) -> None:
         os.rename(parsed_path / EXPERIMENT_FILENAME, parsed_path / EXPERIMENT_FILENAME_BACKUP)
 
 
+def _add_num_bins(qxm: dict) -> dict:
+    """add num bins on a QCM or QRM instrument"""
+    if Parameter.NUM_BINS.value not in qxm:
+        qxm[Parameter.NUM_BINS.value] = 1
+    return qxm
+
+
+def _add_integration(qxm: dict) -> dict:
+    """add integration on a QRM instrument"""
+    if Parameter.INTEGRATION_LENGTH.value in qxm and Parameter.INTEGRATION.value not in qxm:
+        qxm[Parameter.INTEGRATION.value] = True
+    return qxm
+
+
 def _add_reference_clock(qxm_controller: dict, value: str) -> dict:
     """add reference clock on a QCM or QRM instrument controller"""
+    # print("_add_reference_clock")
     qxm_controller[Parameter.REFERENCE_CLOCK.value] = value
     return qxm_controller
 
 
 def _remove_reference_clock(qxm: dict) -> dict:
     """remove reference clock on a QCM or QRM instrument"""
+    # print("_remove_reference_clock")
     if Parameter.REFERENCE_CLOCK.value in qxm:
         del qxm[Parameter.REFERENCE_CLOCK.value]
     return qxm
@@ -377,6 +514,7 @@ def _remove_reference_clock(qxm: dict) -> dict:
 
 def _update_sequencer_number(qxm: dict) -> dict:
     """updates sequencer number reference"""
+    # print("_update_sequencer_number")
     if "sequencer" in qxm:
         qxm[NUMBER_SEQUENCERS] = 1
         del qxm["sequencer"]
@@ -385,6 +523,7 @@ def _update_sequencer_number(qxm: dict) -> dict:
 
 def _update_acquire_trigger_mode(qxm: dict) -> dict:
     """updates acquire trigger mode reference"""
+    # print("_update_acquire_trigger_mode")
     if "acquire_trigger_mode" in qxm:
         qxm["scope_acquire_trigger_mode"] = qxm["acquire_trigger_mode"]
         del qxm["acquire_trigger_mode"]
@@ -393,21 +532,54 @@ def _update_acquire_trigger_mode(qxm: dict) -> dict:
 
 def _update_hardware_averaging(qxm: dict) -> dict:
     """updates hardware_averaging reference"""
+    # print("_update_hardware_averaging")
     if "hardware_averaging" in qxm:
         qxm["scope_hardware_averaging"] = qxm["hardware_averaging"]
         del qxm["hardware_averaging"]
     return qxm
 
 
+def _update_delay_time(qxm: dict) -> dict:
+    """updates delay time reference"""
+    if "delay_time" in qxm:
+        qxm[Parameter.ACQUISITION_DELAY_TIME.value] = qxm["delay_time"]
+        del qxm["delay_time"]
+    return qxm
+
+
+def _update_scope_acquisition_averaging(qxm: dict) -> dict:
+    """updates scope_acquisition_averaging reference"""
+    if "scope_acquisition_averaging" in qxm:
+        qxm["scope_hardware_averaging"] = qxm["scope_acquisition_averaging"]
+        del qxm["scope_acquisition_averaging"]
+    return qxm
+
+
 def _remove_connection_ip(instrument: dict) -> dict:
     """remove connection ip from an instrument"""
+    # print("_remove_connection_ip")
     if "ip" in instrument:
         del instrument["ip"]
     return instrument
 
 
+def _remove_frequency(instrument: dict) -> dict:
+    """remove frequency reference"""
+    if Parameter.FREQUENCY.value in instrument:
+        del instrument[Parameter.FREQUENCY.value]
+    return instrument
+
+
+def _remove_acquisition_name(qxm: dict) -> dict:
+    """remove acquisition_name reference"""
+    if "acquisition_name" in qxm:
+        del qxm["acquisition_name"]
+    return qxm
+
+
 def _update_sequencer_params(qxm: dict, key: str) -> dict:
     """update sequencer params: gain, epsilon, delta, offset_i, offset_q"""
+    # print("_update_sequencer_params")
     if key in qxm and not isinstance(qxm[key], list):
         qxm[key] = [qxm[key]]
     return qxm
@@ -415,6 +587,7 @@ def _update_sequencer_params(qxm: dict, key: str) -> dict:
 
 def _fix_instrument(instrument: dict) -> dict:
     """fix an instrument so it is loadable"""
+    # print("_fix_instrument")
     fixed_instrument = instrument
     if fixed_instrument[RUNCARD.NAME] == "qblox_qcm":
         fixed_instrument[RUNCARD.NAME] = InstrumentName.QBLOX_QCM.value
@@ -433,12 +606,20 @@ def _fix_instrument(instrument: dict) -> dict:
         fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="delta")
         fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="offset_i")
         fixed_instrument = _update_sequencer_params(qxm=fixed_instrument, key="offset_q")
+        fixed_instrument = _add_num_bins(qxm=fixed_instrument)
+        fixed_instrument = _update_delay_time(qxm=fixed_instrument)
+        fixed_instrument = _update_scope_acquisition_averaging(qxm=fixed_instrument)
+        fixed_instrument = _remove_acquisition_name(qxm=fixed_instrument)
+        fixed_instrument = _add_integration(qxm=fixed_instrument)
+    if fixed_instrument[RUNCARD.NAME] == InstrumentName.ROHDE_SCHWARZ.value:
+        fixed_instrument = _remove_frequency(instrument=fixed_instrument)
     fixed_instrument = _remove_connection_ip(instrument=fixed_instrument)
     return fixed_instrument
 
 
 def _fix_instruments(experiment: dict) -> dict:
     """fix the instrument section so it is loadable"""
+    # print("_fix_instruments")
     if RUNCARD.PLATFORM not in experiment:
         return experiment
     if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
@@ -455,6 +636,7 @@ def _fix_instruments(experiment: dict) -> dict:
 
 def _fix_master_gate_on_platform(experiment: dict) -> dict:
     """from a experiment data, add master amplitude and duration on the platform section"""
+    # print("_fix_master_gate_on_platform")
     if RUNCARD.PLATFORM not in experiment:
         return experiment
     if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM]:
@@ -468,6 +650,7 @@ def _fix_master_gate_on_platform(experiment: dict) -> dict:
 
 def _fix_beta_to_drag_coefficient_on_platform(experiment: dict) -> dict:
     """from a experiment data, rename beta to drag_coefficient on the platform section"""
+    # print("_fix_beta_to_drag_coefficient_on_platform")
     if RUNCARD.PLATFORM not in experiment:
         return experiment
     if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM]:
@@ -486,6 +669,7 @@ def _fix_beta_to_drag_coefficient_on_platform(experiment: dict) -> dict:
 
 def _fix_beta_to_drag_coefficient_on_gates(experiment: dict) -> dict:
     """from a experiment data, rename beta to drag_coefficient on the gates section"""
+    # print("_fix_beta_to_drag_coefficient_on_gates")
     if RUNCARD.GATES not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
         return experiment
     gates: List[dict] = experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.GATES]
@@ -506,6 +690,7 @@ def _fix_beta_to_drag_coefficient_on_gates(experiment: dict) -> dict:
 
 def _fix_beta_to_drag_coefficient_on_pulses(experiment: dict) -> dict:
     """from a experiment data, rename beta to drag_coefficient on the pulses section"""
+    # print("_fix_beta_to_drag_coefficient_on_pulses")
     if EXPERIMENT.SEQUENCES not in experiment:
         return experiment
     pulse_sequences: List[dict] = experiment[EXPERIMENT.SEQUENCES]
@@ -548,7 +733,7 @@ def _fix_beta_to_drag_coefficient_on_pulses(experiment: dict) -> dict:
 def _fix_beta_to_drag_coefficient(experiment_to_fix: dict) -> dict:
     """from a experiment data, rename beta to drag_coefficient"""
     print("fixing beta to drag_coefficient experiment")
-    experiment = deepcopy(experiment_to_fix)
+    experiment = experiment_to_fix
     experiment = _fix_beta_to_drag_coefficient_on_platform(experiment=experiment)
     experiment = _fix_beta_to_drag_coefficient_on_gates(experiment=experiment)
     return _fix_beta_to_drag_coefficient_on_pulses(experiment=experiment)
@@ -561,5 +746,5 @@ def update_results_files_format(path: str) -> None:
         path (str): Path to folder.
     """
     _backup_results_and_experiments_files(path=path)
-    _update_experiments_file_format(path=path)
-    _update_results_file_format(path=path)
+    fixed_experiment = _update_experiments_file_format(path=path)
+    _update_results_file_format(path=path, experiment=fixed_experiment)
