@@ -25,10 +25,13 @@ from qililab.constants import (
 from qililab.experiment import Experiment
 from qililab.result import Results
 from qililab.typings.enums import (
+    Category,
     GateName,
     InstrumentControllerName,
     InstrumentName,
+    NodeName,
     Parameter,
+    PulseName,
     PulseShapeName,
     PulseShapeSettingsName,
     ReferenceClock,
@@ -212,9 +215,21 @@ def _one_result_pulse_length_fix(result_to_fix: dict, experiment_pulse_length: f
 
 def _one_result_pulse_length_integration(result_to_fix: dict) -> dict:
     """from a loaded results checks that integration exist, and fixes it when does not."""
-    # print("_one_result_pulse_length_integration")
     if QBLOXRESULT.BINS not in result_to_fix:
+        if Parameter.INTEGRATION.value not in result_to_fix:
+            return result_to_fix
+        result_to_fix[QBLOXRESULT.BINS] = [
+            {
+                Parameter.INTEGRATION.value: result_to_fix[Parameter.INTEGRATION.value],
+                "threshold": result_to_fix["threshold"],
+                "avg_cnt": result_to_fix["avg_cnt"],
+            },
+        ]
+        del result_to_fix[Parameter.INTEGRATION.value]
+        del result_to_fix["threshold"]
+        del result_to_fix["avg_cnt"]
         return result_to_fix
+
     if isinstance(result_to_fix[QBLOXRESULT.BINS], list):
         return result_to_fix
     if not isinstance(result_to_fix[QBLOXRESULT.BINS], dict):
@@ -395,6 +410,89 @@ def _fix_platform_to_settings(experiment: dict) -> dict:
     return experiment
 
 
+def _fix_bus(bus: dict) -> dict:
+    """fix bus structure"""
+    # == BusSubcategory.CONTROL.value:
+    fixed_bus = deepcopy(bus)
+    if RUNCARD.AWG in bus[RUNCARD.SYSTEM_CONTROL] and RUNCARD.NAME in bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.AWG]:
+        if bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.AWG][RUNCARD.NAME] == "qblox_qcm":
+            fixed_bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.AWG] = InstrumentName.QBLOX_QCM.value
+        if bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.AWG][RUNCARD.NAME] == "qblox_qrm":
+            fixed_bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.AWG] = InstrumentName.QBLOX_QRM.value
+    if (
+        RUNCARD.SIGNAL_GENERATOR in bus[RUNCARD.SYSTEM_CONTROL]
+        and RUNCARD.NAME in bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR]
+        and bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR][RUNCARD.NAME] == RUNCARD.SIGNAL_GENERATOR
+    ):
+        if bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR][RUNCARD.ID] == 0:
+            fixed_bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR] = "rs_0"
+        if bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR][RUNCARD.ID] == 1:
+            fixed_bus[RUNCARD.SYSTEM_CONTROL][RUNCARD.SIGNAL_GENERATOR] = "rs_1"
+    if (
+        RUNCARD.ATTENUATOR in bus
+        and RUNCARD.NAME in bus[RUNCARD.ATTENUATOR]
+        and bus[RUNCARD.ATTENUATOR][RUNCARD.NAME] == InstrumentName.MINI_CIRCUITS.value
+    ):
+        fixed_bus[RUNCARD.ATTENUATOR] = InstrumentName.QBLOX_QCM.value
+    return fixed_bus
+
+
+def _fix_buses(experiment: dict) -> dict:
+    """fix buses structure"""
+    if RUNCARD.PLATFORM not in experiment:
+        return experiment
+    if RUNCARD.SCHEMA not in experiment[RUNCARD.PLATFORM]:
+        return experiment
+    fixed_experiment = deepcopy(experiment)
+    if SCHEMA.BUSES not in experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA]:
+        return experiment
+    buses = experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.BUSES]
+    fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.BUSES] = [_fix_bus(bus=bus) for bus in buses]
+    return fixed_experiment
+
+
+def _fix_pulse(pulse: dict) -> dict:
+    """fix pulse structure"""
+    if RUNCARD.NAME in pulse and pulse[RUNCARD.NAME] == "ReadoutPulse":
+        pulse[RUNCARD.NAME] = PulseName.READOUT_PULSE.value
+    if "qubit_ids" in pulse:
+        del pulse["qubit_ids"]
+    return pulse
+
+
+def _fix_pulses_port(pulses: List[dict]) -> int:
+    """fix pulses port"""
+    if len(pulses) <= 0:
+        return 0
+    return 0 if pulses[0][RUNCARD.NAME] == PulseName.PULSE.value else 1
+
+
+def _fix_sequence(sequence: dict) -> dict:
+    """fix sequences structure"""
+    if PULSESEQUENCES.ELEMENTS not in sequence:
+        if PULSESEQUENCE.PULSES not in sequence:
+            return {PULSESEQUENCES.ELEMENTS: []}
+        fixed_pulses = [_fix_pulse(pulse=pulse) for pulse in sequence[PULSESEQUENCE.PULSES]]
+        return {
+            PULSESEQUENCES.ELEMENTS: [
+                {PULSESEQUENCE.PULSES: fixed_pulses, PULSESEQUENCE.PORT: _fix_pulses_port(pulses=fixed_pulses)},
+            ]
+        }
+    return sequence
+
+
+def _fix_sequences(experiment: dict) -> dict:
+    """fix sequences structure"""
+    fixed_experiment = deepcopy(experiment)
+    if EXPERIMENT.SEQUENCES not in experiment:
+        fixed_experiment[EXPERIMENT.SEQUENCES] = []
+        return fixed_experiment
+    fixed_experiment[EXPERIMENT.SEQUENCES] = [
+        _fix_sequence(sequence=sequence) for sequence in fixed_experiment[EXPERIMENT.SEQUENCES]
+    ]
+    return fixed_experiment
+
+
 def _update_experiments_file_format(path: str) -> dict:
     """Load and fix Experiments generated from the versionless qililab yaml data to the current format.
 
@@ -412,7 +510,9 @@ def _update_experiments_file_format(path: str) -> dict:
     fixed_instrument_controllers_experiment = _fix_instrument_controllers(experiment=fixed_instruments_experiment)
     fixed_chip = _fix_chip(experiment=fixed_instrument_controllers_experiment)
     fixed_loops_experiment = _fix_loop_keyword(yaml_loaded=fixed_chip)
-    _save_experiment(path=path, data=fixed_loops_experiment)
+    fixed_buses = _fix_buses(experiment=fixed_loops_experiment)
+    fixed_sequences = _fix_sequences(experiment=fixed_buses)
+    _save_experiment(path=path, data=fixed_sequences)
     return fixed_experiment
 
 
@@ -434,6 +534,43 @@ def _fix_instrument_controller(instrument_controller: dict) -> dict:
     return fixed_instrument_controller
 
 
+def _add_chip_nodes_one_qubit() -> List[dict]:
+    """create a chip nodes structure for a single qubit"""
+    return [
+        {
+            RUNCARD.NAME: NodeName.PORT.value,
+            RUNCARD.ID: 0,
+            RUNCARD.CATEGORY: Category.NODE.value,
+            RUNCARD.ALIAS: "",
+            "nodes": [3],
+        },
+        {
+            RUNCARD.NAME: NodeName.PORT.value,
+            RUNCARD.ID: 1,
+            RUNCARD.CATEGORY: Category.NODE.value,
+            RUNCARD.ALIAS: "",
+            "nodes": [2],
+        },
+        {
+            RUNCARD.NAME: NodeName.RESONATOR.value,
+            RUNCARD.ID: 2,
+            RUNCARD.CATEGORY: Category.NODE.value,
+            RUNCARD.ALIAS: NodeName.RESONATOR.value,
+            "nodes": [1, 3],
+            Parameter.FREQUENCY.value: 7.32644e09,
+        },
+        {
+            RUNCARD.NAME: NodeName.QUBIT.value,
+            RUNCARD.ID: 3,
+            RUNCARD.CATEGORY: Category.NODE.value,
+            RUNCARD.ALIAS: NodeName.QUBIT.value,
+            "nodes": [0, 2],
+            Parameter.FREQUENCY.value: 3.351e09,
+            "qubit_idx": 0,
+        },
+    ]
+
+
 def _fix_chip(experiment: dict) -> dict:
     """fix the chip section so it is loadable"""
     if RUNCARD.PLATFORM not in experiment:
@@ -445,7 +582,7 @@ def _fix_chip(experiment: dict) -> dict:
         fixed_experiment[RUNCARD.PLATFORM][RUNCARD.SCHEMA][SCHEMA.CHIP] = {
             RUNCARD.ID: 0,
             RUNCARD.CATEGORY: SCHEMA.CHIP,
-            "nodes": [],
+            "nodes": _add_chip_nodes_one_qubit(),
         }
         return fixed_experiment
     return fixed_experiment
@@ -585,6 +722,13 @@ def _update_sequencer_params(qxm: dict, key: str) -> dict:
     return qxm
 
 
+def _fix_instrument_alias(instrument: dict, alias: str) -> dict:
+    """add instrument alias when not set"""
+    if RUNCARD.ALIAS not in instrument:
+        instrument[RUNCARD.ALIAS] = alias
+    return instrument
+
+
 def _fix_instrument(instrument: dict) -> dict:
     """fix an instrument so it is loadable"""
     # print("_fix_instrument")
@@ -611,8 +755,14 @@ def _fix_instrument(instrument: dict) -> dict:
         fixed_instrument = _update_scope_acquisition_averaging(qxm=fixed_instrument)
         fixed_instrument = _remove_acquisition_name(qxm=fixed_instrument)
         fixed_instrument = _add_integration(qxm=fixed_instrument)
+        fixed_instrument = _fix_instrument_alias(instrument=fixed_instrument, alias=fixed_instrument[RUNCARD.NAME])
     if fixed_instrument[RUNCARD.NAME] == InstrumentName.ROHDE_SCHWARZ.value:
         fixed_instrument = _remove_frequency(instrument=fixed_instrument)
+        fixed_instrument = _fix_instrument_alias(
+            instrument=fixed_instrument, alias=f"rs_{fixed_instrument[RUNCARD.ID]}"
+        )
+    if fixed_instrument[RUNCARD.NAME] == InstrumentName.MINI_CIRCUITS.value:
+        fixed_instrument = _fix_instrument_alias(instrument=fixed_instrument, alias=RUNCARD.ATTENUATOR)
     fixed_instrument = _remove_connection_ip(instrument=fixed_instrument)
     return fixed_instrument
 
