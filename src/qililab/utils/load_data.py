@@ -111,19 +111,65 @@ def _fix_loop_keyword(yaml_loaded: dict) -> dict:
     return yaml_loaded
 
 
-def _load_backup_results_file(path: str) -> dict:
-    """Load Results generated from the versionless qililab yaml data.
-
-    Args:
-        path (str): Path to folder.
-    """
-    # print("_load_backup_results_file")
-    parsed_path = Path(path)
-    if not os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
-        raise ValueError(f"results file {parsed_path}/{RESULTS_FILENAME_BACKUP} not found!")
-
-    with open(parsed_path / RESULTS_FILENAME_BACKUP, mode="r", encoding="utf-8") as results_file:
-        return yaml.safe_load(stream=results_file)
+def _fix_bad_beta_and_amplitude_serialized(in_path: Path, in_filename: str, out_path: Path, out_filename: str) -> None:
+    """fix bad beta serialized and save the file with the correct format to be loaded correctly"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+        out_path / out_filename, mode="w", encoding="utf-8"
+    ) as output_file:
+        line_to_remove = False
+        beta_found = False
+        amplitude_found = False
+        duration_found = False
+        shape_found = False
+        phase_found = False
+        lines_removed = 0
+        for line in input_file:
+            text = line.strip("\n")
+            if (beta_found or amplitude_found or duration_found) and lines_removed == 0:
+                line_to_remove = True
+            if beta_found and lines_removed > 0:
+                line_to_remove = False
+                beta_found = False
+                lines_removed = 0
+            if amplitude_found and "phase" in text:
+                phase_found = True
+            if duration_found and "shape" in text:
+                shape_found = True
+            if amplitude_found and phase_found:
+                line_to_remove = False
+                amplitude_found = False
+                phase_found = False
+                lines_removed = 0
+            if duration_found and shape_found:
+                line_to_remove = False
+                duration_found = False
+                shape_found = False
+                lines_removed = 0
+            if "beta" in text and "!!python/object/apply:qililab.typings.enums.MasterPulseShapeSettingsName" in text:
+                out_text = text.replace(
+                    "!!python/object/apply:qililab.typings.enums.MasterPulseShapeSettingsName",
+                    "master_beta_pulse_shape",
+                )
+                beta_found = True
+                text = out_text
+            if "amplitude" in text and "!!python/object/apply:numpy.core.multiarray.scalar" in text:
+                out_text = text.replace(
+                    "!!python/object/apply:numpy.core.multiarray.scalar",
+                    "1",
+                )
+                amplitude_found = True
+                text = out_text
+            if "duration" in text and "!!python/object/apply:numpy.core.multiarray.scalar" in text:
+                out_text = text.replace(
+                    "!!python/object/apply:numpy.core.multiarray.scalar",
+                    "100",
+                )
+                duration_found = True
+                text = out_text
+            if not line_to_remove:
+                output_file.write(text + "\n")
+            if line_to_remove:
+                lines_removed += 1
 
 
 def _load_backup_experiment_file(path: str) -> dict:
@@ -138,9 +184,93 @@ def _load_backup_experiment_file(path: str) -> dict:
     # print("_load_backup_experiment_file")
     parsed_path = Path(path)
     if os.path.exists(parsed_path / EXPERIMENT_FILENAME_BACKUP):
-        with open(parsed_path / EXPERIMENT_FILENAME_BACKUP, mode="r", encoding="utf-8") as experiment_file:
-            return yaml.safe_load(stream=experiment_file)
+        try:
+            return _yaml_load_file(path=parsed_path, filename=EXPERIMENT_FILENAME_BACKUP)
+        except yaml.constructor.ConstructorError:
+            _fix_bad_beta_and_amplitude_serialized(
+                in_path=parsed_path,
+                in_filename=EXPERIMENT_FILENAME_BACKUP,
+                out_path=parsed_path,
+                out_filename="experiment_fixed.yml",
+            )
+            os.rename(parsed_path / EXPERIMENT_FILENAME_BACKUP, parsed_path / "experiment_original.yml")
+            os.rename(parsed_path / "experiment_fixed.yml", parsed_path / EXPERIMENT_FILENAME_BACKUP)
+            return _yaml_load_file(path=parsed_path, filename=EXPERIMENT_FILENAME_BACKUP)
+
     raise ValueError("No experiment file found")
+
+
+def _fix_bad_results_serialized(in_path: Path, in_filename: str, out_path: Path, out_filename: str) -> None:
+    """fix bad results serialized and save the file with the correct format to be loaded correctly"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+        out_path / out_filename, mode="w", encoding="utf-8"
+    ) as output_file:
+        for line in input_file:
+            text = line.strip("\n")
+            if "-0" in text:
+                print("\n ***** fixing -0\n")
+                out_text = text.replace(
+                    "-0",
+                    "- 0",
+                )
+                text = out_text
+            # if "0.08402540302882266" in text and "-" not in text:
+            #     print("\n ***** FOUND ELEMENT\n")
+            #     print(f"{text.startswith('0')}")
+            #     print(f"{text.startswith('0.')}")
+            #     print(text)
+            #     print(text[0])
+            #     print(text[1])
+            if text.startswith(" 0."):
+                print("\n ***** fixing starts with 0.\n")
+                out_text = text.replace(
+                    " 0.",
+                    "      - 0.",
+                )
+                text = out_text
+            if text.startswith(" - 0."):
+                print("\n ***** fixing starts with ' - 0.'\n")
+                out_text = text.replace(
+                    " - 0.",
+                    "      - 0.",
+                )
+                text = out_text
+            output_file.write(text + "\n")
+
+
+def _load_backup_results_file(path: str) -> dict:
+    """Load Results yaml file.
+
+    Args:
+        path (str): Path to folder.
+
+    Returns:
+        dict : Return a results data dictionary.
+    """
+
+    parsed_path = Path(path)
+    if os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
+        try:
+            return _yaml_load_file(path=parsed_path, filename=RESULTS_FILENAME_BACKUP)
+        except (yaml.scanner.ScannerError, yaml.parser.ParserError):
+            print("\n ***** YAML ERROR **** .\n")
+            _fix_bad_results_serialized(
+                in_path=parsed_path,
+                in_filename=RESULTS_FILENAME_BACKUP,
+                out_path=parsed_path,
+                out_filename="results_fixed.yml",
+            )
+            os.rename(parsed_path / RESULTS_FILENAME_BACKUP, parsed_path / "results_original.yml")
+            os.rename(parsed_path / "results_fixed.yml", parsed_path / RESULTS_FILENAME_BACKUP)
+            return _yaml_load_file(path=parsed_path, filename=RESULTS_FILENAME_BACKUP)
+
+    raise ValueError("No results file found")
+
+
+def _yaml_load_file(path: Path, filename: str) -> dict:
+    """yaml load file"""
+    with open(path / filename, mode="r", encoding="utf-8") as stream_file:
+        return yaml.safe_load(stream=stream_file)
 
 
 def _save_file(path: str, data: dict, filename: str) -> None:
