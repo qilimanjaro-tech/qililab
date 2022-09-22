@@ -233,10 +233,12 @@ class SystemControlSubcategory(Enum):
         enum (str): Available bus element names:
         * mixer_based_system_control
         * simulated_system_control
+        * heterodyne_system_control
     """
-
+    HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    
 
 
 class NodeName(Enum):
@@ -267,6 +269,7 @@ class InstrumentName(Enum):
         * mixer_based_system_control
         * integrated_system_control
         * simulated_system_control
+        * heterodyne_system_control
         * keithley_2600
     """
 
@@ -275,6 +278,7 @@ class InstrumentName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
+    HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
