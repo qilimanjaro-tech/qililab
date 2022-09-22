@@ -19,8 +19,6 @@ class BusExecution:
     def setup(self):
         """Setup instruments."""
         self.system_control.setup(frequencies=self.bus.target_freqs)
-        if self.attenuator is not None:
-            self.attenuator.setup()
 
     def start(self):
         """Start/Turn on the instruments."""
@@ -28,8 +26,6 @@ class BusExecution:
 
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
-        if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
-            self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
@@ -85,15 +81,6 @@ class BusExecution:
             int: bus.id_
         """
         return self.bus.id_
-
-    @property
-    def attenuator(self):
-        """BusExecution 'attenuator' property.
-
-        Returns:
-            SystemControl: bus.attenuator
-        """
-        return self.bus.attenuator
 
     @property
     def subcategory(self) -> BusSubcategory:
