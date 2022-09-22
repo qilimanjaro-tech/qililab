@@ -15,6 +15,9 @@ from qililab.pulse import PulseSequence
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
 
+import scipy.integrate as integ
+import json
+
 
 @Factory.register
 class HeterodyneSystemControl(SystemControl):
