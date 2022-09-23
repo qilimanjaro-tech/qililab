@@ -7,12 +7,9 @@ from typing import List, Tuple
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.block import Block
-from qpysequence.instructions.control import Stop
-from qpysequence.instructions.real_time import Play, Wait
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
-from qpysequence.loop import Loop
-from qpysequence.program import Program
+from qpysequence.program import Block, Loop, Program, Register
+from qpysequence.program.instructions import Play, Stop, Wait
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
@@ -138,10 +135,8 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register="TR10")
+        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
         avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
-        avg_loop.replace_register(old="TR10", new=bin_loop.counter_register)
-        avg_loop.replace_register(old="TR0", new="R2")  # FIXME: Qpysequence: Automatic reallocation doesn't work
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
@@ -164,7 +159,7 @@ class QbloxModule(AWG):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop, register: str):
+    def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
