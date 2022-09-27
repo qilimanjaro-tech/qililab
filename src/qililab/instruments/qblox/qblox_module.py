@@ -112,8 +112,8 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        bin_loop = Loop(name="binning", iterations=int(self.num_bins))
-        avg_loop = Loop(name="average", iterations=nshots)
+        bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins))
+        avg_loop = Loop(name="average", begin=0, end=nshots)
         bin_loop.append_block(block=avg_loop, bot_position=1)
         stop = Block(name="stop")
         stop.append_component(Stop())
