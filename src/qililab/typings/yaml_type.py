@@ -5,4 +5,4 @@ from qililab.utils import null_representer, yaml_representer
 
 yaml.add_representer(float, yaml_representer)
 yaml.add_representer(int, yaml_representer)
-yaml.add_representer(None, null_representer)
+yaml.add_representer(type(None), null_representer)
