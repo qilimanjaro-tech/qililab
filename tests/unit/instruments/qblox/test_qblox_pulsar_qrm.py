@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from qpysequence.acquisitions import Acquisitions
+from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
@@ -52,7 +53,7 @@ class TestQbloxQRM:
     def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxQRM):
         """Test upload method"""
         qrm.upload(
-            sequence=Sequence(program={}, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
+            sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
             path=Path(__file__).parent,
         )
         qrm.device.sequencer0.sequence.assert_called()
