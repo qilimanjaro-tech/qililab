@@ -12,13 +12,12 @@ class RemoteAPI:
 
     connection: API | None = field(default=None)
     device_id: int | None = field(default=GALADRIEL_DEVICE_ID)
+    manual_override: bool = False
     _blocked_device: bool = field(init=False)
-    manual_override: bool = field(init=False)
 
     def __post_init__(self):
         """Post initial initialization"""
         self._blocked_device = False
-        self.manual_override = False
         if self.device_id is None:
             self.device_id = GALADRIEL_DEVICE_ID
 
