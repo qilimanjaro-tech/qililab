@@ -61,3 +61,17 @@ class TestRemoteAPI:
                 assert mocked_remote_api._blocked_device is False  # pylint: disable=protected-access
             assert mocked_remote_api._blocked_device is False  # pylint: disable=protected-access
             mock_release_device.assert_not_called()
+
+    @patch("qiboconnection.api.API.block_device_id", autospec=True)
+    @patch("qiboconnection.api.API.release_device", autospec=True)
+    def test_override_avoids_calls_to_block_unblock(
+        self, mock_release_device: MagicMock, mock_block_device: MagicMock, mocked_remote_api: RemoteAPI
+    ):
+        """test connection is blocked when enter and relesed when exit"""
+        previous_status_block = mocked_remote_api._blocked_device
+        mocked_remote_api.manual_override = True
+        with mocked_remote_api:
+            assert mocked_remote_api._blocked_device is previous_status_block  # pylint: disable=protected-access
+            mock_block_device.assert_not_called()
+        assert mocked_remote_api._blocked_device is previous_status_block  # pylint: disable=protected-access
+        mock_release_device.assert_not_called()
