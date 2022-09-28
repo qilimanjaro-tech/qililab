@@ -63,11 +63,14 @@ schema:
         category: system_control
         subcategory: simulated_system_control
         qubit: csfq4jj
-        driving_hamiltonian: zport
+        qubit_params:  # qubit parameters
+          n_cut: 10
+          phi_x: 6.28318530718 # 2*pi
+          phi_z: -0.25132741228 # -0.08*pi
+        drive: zport
+        drive_params:  # driving hamiltonian parameters
+          dimension: 10
         resolution: 1.0e-9
-        frequency: 3.351e+09
-        nsteps: 1000
         store_states: False
-        dimension: 2
       port: 0
   instrument_controllers: []
