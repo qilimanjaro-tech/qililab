@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
+
+"""
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.block import Block
 from qpysequence.instructions.control import Stop
@@ -15,7 +17,7 @@ from qpysequence.loop import Loop
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
-
+"""
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseSequence, PulseShape
@@ -84,77 +86,77 @@ class QbloxModule(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-    def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
-        """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
+    # def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
+    #     """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
-        Args:
-            pulse_sequence (PulseSequence): Pulse sequence to translate.
+    #     Args:
+    #         pulse_sequence (PulseSequence): Pulse sequence to translate.
 
-        Returns:
-            Sequence: Qblox Sequence object containing the program and waveforms.
-        """
-        waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
-        acquisitions = self._generate_acquisitions()
-        program = self._generate_program(
-            pulse_sequence=pulse_sequence, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
-        )
-        weights = self._generate_weights()
-        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+    #     Returns:
+    #         Sequence: Qblox Sequence object containing the program and waveforms.
+    #     """
+    #     waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
+    #     acquisitions = self._generate_acquisitions()
+    #     program = self._generate_program(
+    #         pulse_sequence=pulse_sequence, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
+    #     )
+    #     weights = self._generate_weights()
+    #     return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_program(
-        self, pulse_sequence: PulseSequence, waveforms: Waveforms, nshots: int, repetition_duration: int
-    ):
-        """Generate Q1ASM program
+    # def _generate_program(
+    #     self, pulse_sequence: PulseSequence, waveforms: Waveforms, nshots: int, repetition_duration: int
+    # ):
+    #     """Generate Q1ASM program
 
-        Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
-            waveforms (Waveforms): Waveforms.
+    #     Args:
+    #         pulse_sequence (PulseSequence): Pulse sequence.
+    #         waveforms (Waveforms): Waveforms.
 
-        Returns:
-            Program: Q1ASM program.
-        """
-        # Define program's blocks
-        program = Program()
-        bin_loop = Loop(name="binning", iterations=int(self.num_bins))
-        avg_loop = Loop(name="average", iterations=nshots)
-        bin_loop.append_block(block=avg_loop, bot_position=1)
-        stop = Block(name="stop")
-        stop.append_component(Stop())
-        program.append_block(block=bin_loop)
-        program.append_block(block=stop)
-        pulses = pulse_sequence.pulses
-        if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(pulses[0].start)))
+    #     Returns:
+    #         Program: Q1ASM program.
+    #     """
+    #     # Define program's blocks
+    #     program = Program()
+    #     bin_loop = Loop(name="binning", iterations=int(self.num_bins))
+    #     avg_loop = Loop(name="average", iterations=nshots)
+    #     bin_loop.append_block(block=avg_loop, bot_position=1)
+    #     stop = Block(name="stop")
+    #     stop.append_component(Stop())
+    #     program.append_block(block=bin_loop)
+    #     program.append_block(block=stop)
+    #     pulses = pulse_sequence.pulses
+    #     if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+    #         avg_loop.append_component(Wait(wait_time=int(pulses[0].start)))
 
-        for i, pulse in enumerate(pulses):
-            waveform_pair = waveforms.find_pair_by_name(str(pulse))
-            wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
-            avg_loop.append_component(set_phase_rad(rads=pulse.phase))
-            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
-            avg_loop.append_component(
-                Play(
-                    waveform_0=waveform_pair.waveform_i.index,
-                    waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
-                )
-            )
-        self._append_acquire_instruction(loop=avg_loop, register="TR10")
-        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
-        avg_loop.replace_register(old="TR10", new=bin_loop.counter_register)
-        avg_loop.replace_register(old="TR0", new="R2")  # FIXME: Qpysequence: Automatic reallocation doesn't work
-        return program
+    #     for i, pulse in enumerate(pulses):
+    #         waveform_pair = waveforms.find_pair_by_name(str(pulse))
+    #         wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
+    #         avg_loop.append_component(set_phase_rad(rads=pulse.phase))
+    #         avg_loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
+    #         avg_loop.append_component(
+    #             Play(
+    #                 waveform_0=waveform_pair.waveform_i.index,
+    #                 waveform_1=waveform_pair.waveform_q.index,
+    #                 wait_time=int(wait_time),
+    #             )
+    #         )
+    #     self._append_acquire_instruction(loop=avg_loop, register="TR10")
+    #     avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+    #     avg_loop.replace_register(old="TR10", new=bin_loop.counter_register)
+    #     avg_loop.replace_register(old="TR0", new="R2")  # FIXME: Qpysequence: Automatic reallocation doesn't work
+    #     return program
 
-    def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-        and index = 0.
+    # def _generate_acquisitions(self) -> Acquisitions:
+    #     """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+    #     and index = 0.
 
-        Returns:
-            Acquisitions: Acquisitions object.
-        """
-        acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
-        return acquisitions
+    #     Returns:
+    #         Acquisitions: Acquisitions object.
+    #     """
+    #     acquisitions = Acquisitions()
+    #     acquisitions.add(name="single", num_bins=1, index=0)
+    #     acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
+    #     return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -164,8 +166,8 @@ class QbloxModule(AWG):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop, register: str):
-        """Append an acquire instruction to the loop."""
+    # def _append_acquire_instruction(self, loop: Loop, register: str):
+    #     """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
@@ -196,18 +198,18 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: Sequence, path: Path):
-        """Upload sequence to sequencer.
+    # def upload(self, sequence: Sequence, path: Path):
+    #     """Upload sequence to sequencer.
 
-        Args:
-            sequence (Sequence): Sequence object containing the waveforms, weights,
-            acquisitions and program of the sequence.
-        """
-        file_path = str(path / f"{self.name.value}_sequence.yml")
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            json.dump(obj=sequence.todict(), fp=file)
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sequence(file_path)
+    #     Args:
+    #         sequence (Sequence): Sequence object containing the waveforms, weights,
+    #         acquisitions and program of the sequence.
+    #     """
+    #     file_path = str(path / f"{self.name.value}_sequence.yml")
+    #     with open(file=file_path, mode="w", encoding="utf-8") as file:
+    #         json.dump(obj=sequence.todict(), fp=file)
+    #     for seq_idx in range(self.num_sequencers):
+    #         self.device.sequencers[seq_idx].sequence(file_path)
 
     def _set_gains(self):
         """Set gain of sequencer for all paths."""

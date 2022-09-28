@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
-from qpysequence.instructions.real_time import Acquire
+# from qpysequence.instructions.real_time import Acquire
 from qpysequence.loop import Loop
 
 from qililab.instruments.instrument import Instrument
