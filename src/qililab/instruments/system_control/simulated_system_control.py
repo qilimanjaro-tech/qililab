@@ -43,14 +43,13 @@ class SimulatedSystemControl(SystemControl):
                 or only those at the end of each pulse (False)
         """
 
+        # Note: DDBBElement already casts enums from value
         qubit: QubitName
         qubit_params: dict
         drive: DrivingHamiltonianName
         drive_params: dict
         resolution: float
         store_states: bool
-
-        # TODO: post init to get QubitName/DrivingHamiltonianName from string
 
     settings: SimulatedSystemControlSettings
     _evo: Evolution

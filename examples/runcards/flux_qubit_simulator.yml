@@ -70,7 +70,7 @@ schema:
         drive: zport
         drive_params:  # driving hamiltonian parameters
           dimension: 10
-        resolution: 1.0e-9
+        resolution: 0.1
         store_states: False
       port: 0
   instrument_controllers: []
