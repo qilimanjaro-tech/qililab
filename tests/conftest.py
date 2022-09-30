@@ -448,8 +448,18 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-def fixture_simulated_platform() -> Platform:
+@patch("qililab.instruments.system_control.simulated_system_control.Evolution", autospec=True)
+def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
+
+    # Mocked Evolution needs: system.qubit.frequency, psi0, states, times
+    mock_system = MagicMock()
+    mock_system.qubit.frequency = 0
+    mock_evolution.return_value.system = mock_system
+    mock_evolution.return_value.states = []
+    mock_evolution.return_value.times = []
+    mock_evolution.return_value.psi0 = None
+
     with patch(
         "qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=FluxQubitSimulator.runcard
     ) as mock_load:
