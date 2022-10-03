@@ -14,7 +14,7 @@ mdformat-gfm==0.3.5
 mdformat_footnote==0.1.1
 mdformat_frontmatter==0.4.1
 mdformat_tables==0.4.1
-mypy==0.961
+mypy==0.981
 mypy-extensions==0.4.3
 nbclient==0.6.6
 nbconvert==6.5.1
