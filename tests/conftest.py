@@ -52,7 +52,13 @@ from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
+from .data import (
+    FluxQubitSimulator,
+    Galadriel,
+    circuit,
+    experiment_params,
+    simulated_experiment_circuit,
+)
 from .side_effect import yaml_safe_load_side_effect
 
 
@@ -370,19 +376,10 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     return experiment
 
 
-@pytest.fixture(name="simulated_experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_simulated_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+@pytest.fixture(name="simulated_experiment")
+def fixture_simulated_experiment(simulated_platform: Platform):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    experiment = Experiment(platform=platform, sequences=sequences)
-    mock_load.assert_called()
-    return experiment
+    return Experiment(platform=simulated_platform, sequences=simulated_experiment_circuit)
 
 
 @pytest.fixture(name="buses_execution")

@@ -34,6 +34,16 @@ class SimulatorResult(Result):
     def probabilities(self) -> list[tuple[float, float]]:
         """Probabilities of being in the ground and excited state.
 
-        Raises NotImplementedError.
+        Returns arbitrary result.
         """
-        return super().probabilities()
+        # FIXME: need bypass when this is not implemented
+        return [(0, 1)] * len(self.states)
+
+    def to_dict(self) -> dict:
+        """Returns dict with class data.
+
+        Notes:
+            - Since Qobj is returned as object, PyYAML complains.
+        """
+        # FIXME: yaml.safe_dump fails with default implementation
+        return {}
