@@ -374,7 +374,7 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.MASTER_DURATION_GATE: 10,
         PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
@@ -399,7 +399,7 @@ class FluxQubitSimulator:
                 "name": "X",
                 "amplitude": 1,
                 "phase": 0,
-                "duration": 100,
+                "duration": 10,
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
@@ -410,22 +410,13 @@ class FluxQubitSimulator:
                 "name": "Y",
                 "amplitude": 1,
                 "phase": 1.5707963267948966,
-                "duration": 100,
+                "duration": 10,
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
                     "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
                 },
             },
-        ],
-    }
-
-    chip = {
-        "id_": 0,
-        "category": "chip",
-        "nodes": [
-            {"name": "port", "id_": 0, "nodes": [1]},
-            {"name": "qubit", "id_": 1, "qubit_idx": 0, "frequency": 3.451e09, "nodes": [0]},
         ],
     }
 
@@ -452,12 +443,11 @@ class FluxQubitSimulator:
                     RUNCARD.CATEGORY: "system_control",
                     RUNCARD.SUBCATEGORY: "simulated_system_control",
                     "qubit": "csfq4jj",
-                    "frequency": 2085540698,
-                    "driving_hamiltonian": "zport",
-                    "resolution": 0.01,
-                    "nsteps": 100000000,
+                    "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
+                    "drive": "zport",
+                    "drive_params": {"dimension": 10},
+                    "resolution": 1,
                     "store_states": False,
-                    "dimension": 10,
                 },
                 "port": 0,
             }
@@ -471,7 +461,7 @@ class FluxQubitSimulator:
 
 
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
-for platform in (Galadriel, FluxQubitSimulator):
+for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
     circuit.add(X(0))
