@@ -305,7 +305,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
     return experiment
 
 
-@pytest.fixture(name="experiment", params=experiment_params[:2])
+@pytest.fixture(name="experiment", params=experiment_params)
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
@@ -327,7 +327,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     return experiment
 
 
-@pytest.fixture(name="experiment_reset", params=experiment_params[:2])
+@pytest.fixture(name="experiment_reset", params=experiment_params)
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
@@ -350,7 +350,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
     return experiment
 
 
-@pytest.fixture(name="nested_experiment", params=experiment_params[:2])
+@pytest.fixture(name="nested_experiment", params=experiment_params)
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
@@ -370,7 +370,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     return experiment
 
 
-@pytest.fixture(name="simulated_experiment", params=experiment_params[2:])
+@pytest.fixture(name="simulated_experiment", params=experiment_params)
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_simulated_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""

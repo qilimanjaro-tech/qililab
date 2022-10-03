@@ -461,7 +461,7 @@ class FluxQubitSimulator:
 
 
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
-for platform in (Galadriel, FluxQubitSimulator):
+for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
     circuit.add(X(0))
