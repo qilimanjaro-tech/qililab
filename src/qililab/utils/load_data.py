@@ -1,6 +1,7 @@
 """Load method used to load experiment and results data."""
 import glob
 import os
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Tuple
@@ -93,14 +94,19 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
 
 def _fix_loop_keyword(yaml_loaded: dict) -> dict:
     """from a loaded yaml fixes that loop keyword is changed by loops"""
-    # print("_fix_loop_keyword")
+    print("_fix_loop_keyword")
     if "loop" in yaml_loaded:
         print("fixing loop key")
         loop_value = yaml_loaded["loop"]
         del yaml_loaded["loop"]
-        yaml_loaded["loops"] = [loop_value]
+        if loop_value:
+            yaml_loaded["loops"] = [loop_value]
+        if loop_value is None:
+            yaml_loaded["loops"] = None
 
     if EXPERIMENT.LOOPS in yaml_loaded:
+        if yaml_loaded[EXPERIMENT.LOOPS] is None:
+            return yaml_loaded
         if isinstance(yaml_loaded[EXPERIMENT.LOOPS], list):
             return yaml_loaded
         if not isinstance(yaml_loaded[EXPERIMENT.LOOPS], dict):
@@ -120,12 +126,20 @@ def _fix_bad_beta_and_amplitude_serialized(in_path: Path, in_filename: str, out_
         beta_found = False
         amplitude_found = False
         duration_found = False
+        start_time_found = False
+        parameter_found = False
+        multiplexing_frequencies_found = False
         shape_found = False
         phase_found = False
+        port_found = False
+        start_found = False
+        sync_enabled_found = False
         lines_removed = 0
         for line in input_file:
             text = line.strip("\n")
-            if (beta_found or amplitude_found or duration_found) and lines_removed == 0:
+            if (
+                beta_found or amplitude_found or duration_found or start_time_found or parameter_found
+            ) and lines_removed == 0:
                 line_to_remove = True
             if beta_found and lines_removed > 0:
                 line_to_remove = False
@@ -135,6 +149,12 @@ def _fix_bad_beta_and_amplitude_serialized(in_path: Path, in_filename: str, out_
                 phase_found = True
             if duration_found and "shape" in text:
                 shape_found = True
+            if start_time_found and "port" in text:
+                port_found = True
+            if parameter_found and "start" in text:
+                start_found = True
+            if multiplexing_frequencies_found and ("sync_enabled" in text or "acquisition_delay_time" in text):
+                sync_enabled_found = True
             if amplitude_found and phase_found:
                 line_to_remove = False
                 amplitude_found = False
@@ -144,6 +164,21 @@ def _fix_bad_beta_and_amplitude_serialized(in_path: Path, in_filename: str, out_
                 line_to_remove = False
                 duration_found = False
                 shape_found = False
+                lines_removed = 0
+            if start_time_found and port_found:
+                line_to_remove = False
+                start_time_found = False
+                port_found = False
+                lines_removed = 0
+            if parameter_found and start_found:
+                line_to_remove = False
+                parameter_found = False
+                start_found = False
+                lines_removed = 0
+            if multiplexing_frequencies_found and sync_enabled_found:
+                line_to_remove = False
+                multiplexing_frequencies_found = False
+                sync_enabled_found = False
                 lines_removed = 0
             if "beta" in text and "!!python/object/apply:qililab.typings.enums.MasterPulseShapeSettingsName" in text:
                 out_text = text.replace(
@@ -166,6 +201,24 @@ def _fix_bad_beta_and_amplitude_serialized(in_path: Path, in_filename: str, out_
                 )
                 duration_found = True
                 text = out_text
+            if "start_time" in text and "!!python/object/apply:numpy.core.multiarray.scalar" in text:
+                out_text = text.replace(
+                    "!!python/object/apply:numpy.core.multiarray.scalar",
+                    "140",
+                )
+                start_time_found = True
+                text = out_text
+            if "parameter" in text and "!!python/object/apply:qililab.typings.enums.Parameter" in text:
+                out_text = text.replace(
+                    "!!python/object/apply:qililab.typings.enums.Parameter",
+                    "frequency",
+                )
+                parameter_found = True
+                text = out_text
+            if "multiplexing_frequencies" in text:
+                multiplexing_frequencies_found = True
+            if multiplexing_frequencies_found and "!!python/object/apply:numpy.core.multiarray.scalar" in text:
+                line_to_remove = True
             if not line_to_remove:
                 output_file.write(text + "\n")
             if line_to_remove:
@@ -186,7 +239,12 @@ def _load_backup_experiment_file(path: str) -> dict:
     if os.path.exists(parsed_path / EXPERIMENT_FILENAME_BACKUP):
         try:
             return _yaml_load_file(path=parsed_path, filename=EXPERIMENT_FILENAME_BACKUP)
-        except yaml.constructor.ConstructorError:
+        except (
+            yaml.constructor.ConstructorError,
+            yaml.scanner.ScannerError,
+            yaml.parser.ParserError,
+            yaml.composer.ComposerError,
+        ):
             _fix_bad_beta_and_amplitude_serialized(
                 in_path=parsed_path,
                 in_filename=EXPERIMENT_FILENAME_BACKUP,
@@ -200,42 +258,375 @@ def _load_backup_experiment_file(path: str) -> dict:
     raise ValueError("No experiment file found")
 
 
+def _split_numbers(line: str) -> Tuple[str, str]:
+    """split numbers"""
+    init_zero_dot = "0."
+    dash = "-"
+
+    if dash not in line:
+        return _split_and_parse_numbers(line=line, split_separator=init_zero_dot)
+    if line.count(dash) == 2:
+        negative_zero_dot = "-0."
+        return _split_and_parse_numbers(line=line, split_separator=negative_zero_dot)
+    if line.count(dash) == 1 and line[0] == "-":
+        line_no_negative = line.replace("-", "")
+        numbers = _split_and_parse_numbers(line=line_no_negative, split_separator=init_zero_dot)
+        return f"{dash}{numbers[0]}", numbers[1]
+    # last option
+    line_no_negative = line.replace("-", "")
+    numbers = _split_and_parse_numbers(line=line_no_negative, split_separator=init_zero_dot)
+    return numbers[0], f"{dash}{numbers[1]}"
+
+
+def _split_and_parse_numbers(line: str, split_separator: str) -> Tuple[str, str]:
+    """split and parse numbers"""
+    numbers = line.split(split_separator)
+    numbers_no_spaces = [number.replace(" ", "") for number in numbers]
+    fixed_numbers = [split_separator + number for number in numbers_no_spaces if len(number) > 0]
+    if len(fixed_numbers) > 2:
+        raise ValueError(f"Only two numbers expected: {fixed_numbers}")
+    return (fixed_numbers[0], fixed_numbers[1])
+
+
+def _fix_two_numbers_in_a_line(line: str) -> str:
+    """fix two numbers in a line returning two lines with a number in each one"""
+    init_line = "      - "
+    line_removed_spaces = re.sub(" +", " ", line)
+    line_removed_prefix = line_removed_spaces.replace(" - ", "")
+    line_removed_prefix = line_removed_prefix.replace("- ", "")
+    numbers = _split_numbers(line=line_removed_prefix)
+    return init_line + numbers[0] + "\n" + init_line + numbers[1]
+
+
 def _fix_bad_results_serialized(in_path: Path, in_filename: str, out_path: Path, out_filename: str) -> None:
     """fix bad results serialized and save the file with the correct format to be loaded correctly"""
     with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
         out_path / out_filename, mode="w", encoding="utf-8"
     ) as output_file:
-        for line in input_file:
+        previous_line = ""
+        bins_eof_found = False
+        for idx, line in enumerate(input_file):
+            # print(f"line: #{idx}")
             text = line.strip("\n")
-            if "-0" in text:
-                print("\n ***** fixing -0\n")
-                out_text = text.replace(
-                    "-0",
-                    "- 0",
-                )
-                text = out_text
-            # if "0.08402540302882266" in text and "-" not in text:
-            #     print("\n ***** FOUND ELEMENT\n")
-            #     print(f"{text.startswith('0')}")
-            #     print(f"{text.startswith('0.')}")
-            #     print(text)
-            #     print(text[0])
-            #     print(text[1])
-            if text.startswith(" 0."):
-                print("\n ***** fixing starts with 0.\n")
-                out_text = text.replace(
-                    " 0.",
-                    "      - 0.",
-                )
-                text = out_text
-            if text.startswith(" - 0."):
-                print("\n ***** fixing starts with ' - 0.'\n")
-                out_text = text.replace(
-                    " - 0.",
-                    "      - 0.",
-                )
-                text = out_text
-            output_file.write(text + "\n")
+            orig_text = text
+            if "bins: null" in text:
+                bins_eof_found = True
+            if not bins_eof_found:
+                if text.startswith("      -       - 0."):
+                    print("\n ***** fixing starts with '- -0.'\n")
+                    print(text)
+                    out_text = text.replace(
+                        "      -       - 0.",
+                        "      - 0.",
+                    )
+                    text = out_text
+                if text.count(".") == 2:
+                    print("\n ***** fixing double values\n")
+                    print(text)
+                    out_text = _fix_two_numbers_in_a_line(line=text)
+                    text = out_text
+                if "- - 0" in text and "0." in previous_line and "-" in previous_line:
+                    print("\n ***** fixing - - 0\n")
+                    print(text)
+                    out_text = text.replace(
+                        "- - 0",
+                        "- -0",
+                    )
+                    text = out_text
+                if "--0" in text and "0." in previous_line and "-" in previous_line:
+                    print("\n ***** fixing --0\n")
+                    print(text)
+                    out_text = text.replace(
+                        "--0",
+                        "- -0",
+                    )
+                    text = out_text
+                if text.count("-") == 1 and "-0" in text and "0." in previous_line and "-" in previous_line:
+                    print("\n ***** fixing -0\n")
+                    print(text)
+                    out_text = text.replace(
+                        "-0",
+                        "- -0",
+                    )
+                    text = out_text
+                if "0." in text and "-" not in text and "0." in previous_line and "-" in previous_line:
+                    print("\n ***** fixing no - \n")
+                    print(text)
+                    out_text = text.replace(
+                        "0.",
+                        "- 0.",
+                    )
+                    text = out_text
+                if "0." in text and "--" in text and "0." in previous_line and "-" in previous_line:
+                    print("\n ***** fixing double -- \n")
+                    print(text)
+                    out_text = text.replace(
+                        "-- 0.",
+                        "- 0.",
+                    )
+                    text = out_text
+                if "0.0." in text:
+                    print("\n ***** fixing double 0.0.\n")
+                    print(text)
+                    out_text = text.replace(
+                        "0.0.",
+                        "0.",
+                    )
+                    text = out_text
+                if text.startswith("      - - name:"):
+                    print("\n ***** fixing starts with - - name:\n")
+                    out_text = text.replace(
+                        "      - - name:",
+                        "- name: ",
+                    )
+                    text = out_text
+                if text.startswith(" 0."):
+                    print("\n ***** fixing starts with 0.\n")
+                    out_text = text.replace(
+                        " 0.",
+                        "      - 0.",
+                    )
+                    text = out_text
+                if text.startswith("0."):
+                    print("\n ***** fixing starts with 0.\n")
+                    out_text = text.replace(
+                        "0.",
+                        "      - 0.",
+                    )
+                    text = out_text
+                if text.startswith(" - 0."):
+                    print("\n ***** fixing starts with ' - 0.'\n")
+                    out_text = text.replace(
+                        " - 0.",
+                        "      - 0.",
+                    )
+                    text = out_text
+                if text.startswith("- 0."):
+                    print("\n ***** fixing starts with '- 0.'\n")
+                    out_text = text.replace(
+                        "- 0.",
+                        "      - 0.",
+                    )
+                    text = out_text
+                if text.startswith("- -0."):
+                    print("\n ***** fixing starts with '- -0.'\n")
+                    out_text = text.replace(
+                        "- -0.",
+                        "      - -0.",
+                    )
+                    text = out_text
+                if text.startswith(" - -0."):
+                    print("\n ***** fixing starts with ' - -0.'\n")
+                    out_text = text.replace(
+                        " - -0.",
+                        "      - -0.",
+                    )
+                    text = out_text
+                if text.startswith("-0."):
+                    print("\n ***** fixing starts with '-0.'\n")
+                    out_text = text.replace(
+                        "-0.",
+                        "      -0.",
+                    )
+                    text = out_text
+                if "      - - name" in text:
+                    print("\n ***** fixing     - - name\n")
+                    out_text = text.replace(
+                        "      - - name",
+                        "- name",
+                    )
+                    text = out_text
+                if "- - name" in text:
+                    print("\n ***** fixing - - name\n")
+                    out_text = text.replace(
+                        "- - name",
+                        "- name",
+                    )
+                    text = out_text
+                if "- - -0." in text:
+                    print("\n ***** fixing - - -0.\n")
+                    out_text = text.replace(
+                        "- - -0.",
+                        "- -0.",
+                    )
+                    text = out_text
+                if "- - " in text:
+                    print(f"line: #{idx}")
+                    print(f"ERROR: {text} contains - - ")
+                    raise ValueError(f"{text} contains - - ")
+                if "0.03126526624328285 - 0.0449438202247191" in text:
+                    print(f"line: #{idx} {orig_text}")
+                    print(f"ERROR: {text}")
+                    raise ValueError(f"{text}")
+                output_file.write(text + "\n")
+                previous_line = text
+
+
+def _check_and_fix_for_bad_serialization(in_path: Path, in_filename: str) -> None:
+    """check and fix for bad serialization"""
+    try:
+        _check_for_bad_serialization(in_path=in_path, in_filename=in_filename)
+    except ValueError:
+        RESULTS_CHECKED = "results_checked.yml"
+        with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+            in_path / RESULTS_CHECKED, mode="w", encoding="utf-8"
+        ) as output_file:
+            for idx, line in enumerate(input_file):
+                # print(f"line: #{idx}")
+                text = line.strip("\n")
+                if "- - " in text:
+                    print("\n ***** fixing - - \n")
+                    print(f"line: #{idx} --> {text}")
+                    out_text = text.replace(
+                        "- - ",
+                        "- ",
+                    )
+                    text = out_text
+                    print(f"line: #{idx} FIXED --> {text}")
+                output_file.write(text + "\n")
+        os.rename(in_path / RESULTS_CHECKED, in_path / in_filename)
+
+
+def _check_for_bad_serialization(
+    in_path: Path,
+    in_filename: str,
+) -> None:
+    """check for bad serialization"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file:
+        for idx, line in enumerate(input_file):
+            # print(f"line: #{idx}")
+            text = line.strip("\n")
+            if "- - " in text:
+                print(f"line: #{idx}")
+                print(f"ERROR: {text} contains - - ")
+                raise ValueError(f"{text} contains - - ")
+
+
+def _check_for_bad_paths(
+    in_path: Path,
+    in_filename: str,
+) -> None:
+    """check for bad paths"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file:
+        path1_found = False
+        for idx, line in enumerate(input_file):
+            # print(f"line: #{idx}")
+            text = line.strip("\n")
+            if "path1" in text and not path1_found:
+                path1_found = True
+            if "path1" in text and path1_found:
+                print(f"line: #{idx}")
+                print(f"ERROR: {text} contains repeated path1 ")
+                raise ValueError(f"{text} contains repeated path1 ")
+
+
+def _check_and_fix_for_bad_paths(in_path: Path, in_filename: str) -> None:
+    """check and fix for bad paths"""
+    try:
+        _check_for_bad_paths(in_path=in_path, in_filename=in_filename)
+    except ValueError:
+        RESULTS_CHECKED = "results_checked.yml"
+        with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+            in_path / RESULTS_CHECKED, mode="w", encoding="utf-8"
+        ) as output_file:
+            path1_found = False
+            remove_line = False
+            for idx, line in enumerate(input_file):
+                # print(f"line: #{idx}")
+                text = line.strip("\n")
+                if "path1" in text and path1_found:
+                    remove_line = True
+                if "path1" in text and not path1_found:
+                    path1_found = True
+                if not remove_line:
+                    output_file.write(text + "\n")
+        os.rename(in_path / RESULTS_CHECKED, in_path / in_filename)
+
+
+def _check_for_two_numbers_in_a_row(
+    in_path: Path,
+    in_filename: str,
+) -> None:
+    """check for two numbers in a row"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file:
+        for idx, line in enumerate(input_file):
+            # print(f"line: #{idx}")
+            text = line.strip("\n")
+            if text.count("0.") == 2 and text.count("- ") == 2:
+                print(f"line: #{idx}")
+                print(f"ERROR: {text} contains two numbers ")
+                raise ValueError(f"{text} contains two numbers ")
+
+
+def _check_and_fix_for_two_numbers_in_a_row(in_path: Path, in_filename: str) -> bool:
+    """check and fix for two numbers in a row
+    Returns True if it had to fix the results file
+    """
+    try:
+        _check_for_two_numbers_in_a_row(in_path=in_path, in_filename=in_filename)
+        return False
+    except ValueError:
+        RESULTS_CHECKED = "results_checked.yml"
+        with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+            in_path / RESULTS_CHECKED, mode="w", encoding="utf-8"
+        ) as output_file:
+            for idx, line in enumerate(input_file):
+                # print(f"line: #{idx}")
+                text = line.strip("\n")
+                if text.count("0.") == 2 and text.count("- ") == 2:
+                    out_text = _fix_two_numbers_in_a_line(line=text)
+                    text = out_text
+                output_file.write(text + "\n")
+        os.rename(in_path / RESULTS_CHECKED, in_path / in_filename)
+        return True
+
+
+def _check_for_results_missplaced(
+    in_path: Path,
+    in_filename: str,
+) -> None:
+    """check for results missplaced"""
+    with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file:
+        results_found = False
+        results_line_number = 0
+        for idx, line in enumerate(input_file):
+            # print(f"line: #{idx}")
+            text = line.strip("\n")
+            if "results" in text:
+                results_found = True
+                results_line_number = idx
+            if results_found and "loop" in text and idx == results_line_number + 1:
+                print(f"line: #{idx}")
+                print(f"ERROR: {text} contains missplaced loop ")
+                raise ValueError(f"{text} contains missplaced loop ")
+
+
+def _check_and_fix_for_results_missplaced(in_path: Path, in_filename: str) -> None:
+    """check and fix for results missplaced"""
+    try:
+        _check_for_results_missplaced(in_path=in_path, in_filename=in_filename)
+    except ValueError:
+        RESULTS_CHECKED = "results_checked.yml"
+        with open(in_path / in_filename, mode="r", encoding="utf-8") as input_file, open(
+            in_path / RESULTS_CHECKED, mode="w", encoding="utf-8"
+        ) as output_file:
+            remove_line = False
+            results_found = False
+            results_fixed = False
+            for idx, line in enumerate(input_file):
+                # print(f"line: #{idx}")
+                text = line.strip("\n")
+                if results_found and remove_line:
+                    remove_line = False
+                if "results" in text:
+                    results_found = True
+                    remove_line = True
+                if "name: qblox" in text and not results_fixed:
+                    text = "results:\n" + text
+                    results_fixed = True
+                if not remove_line:
+                    output_file.write(text + "\n")
+        os.rename(in_path / RESULTS_CHECKED, in_path / in_filename)
 
 
 def _load_backup_results_file(path: str) -> dict:
@@ -252,7 +643,7 @@ def _load_backup_results_file(path: str) -> dict:
     if os.path.exists(parsed_path / RESULTS_FILENAME_BACKUP):
         try:
             return _yaml_load_file(path=parsed_path, filename=RESULTS_FILENAME_BACKUP)
-        except (yaml.scanner.ScannerError, yaml.parser.ParserError):
+        except (yaml.scanner.ScannerError, yaml.parser.ParserError, yaml.composer.ComposerError):
             print("\n ***** YAML ERROR **** .\n")
             _fix_bad_results_serialized(
                 in_path=parsed_path,
@@ -260,8 +651,11 @@ def _load_backup_results_file(path: str) -> dict:
                 out_path=parsed_path,
                 out_filename="results_fixed.yml",
             )
-            os.rename(parsed_path / RESULTS_FILENAME_BACKUP, parsed_path / "results_original.yml")
+            if not os.path.exists(parsed_path / "results_original.yml"):
+                os.rename(parsed_path / RESULTS_FILENAME_BACKUP, parsed_path / "results_original.yml")
             os.rename(parsed_path / "results_fixed.yml", parsed_path / RESULTS_FILENAME_BACKUP)
+            _check_and_fix_for_results_missplaced(in_path=parsed_path, in_filename=RESULTS_FILENAME_BACKUP)
+            _check_and_fix_for_bad_serialization(in_path=parsed_path, in_filename=RESULTS_FILENAME_BACKUP)
             return _yaml_load_file(path=parsed_path, filename=RESULTS_FILENAME_BACKUP)
 
     raise ValueError("No results file found")
@@ -351,23 +745,69 @@ def _one_result_pulse_length_integration(result_to_fix: dict) -> dict:
         result_to_fix[QBLOXRESULT.BINS] = [
             {
                 Parameter.INTEGRATION.value: result_to_fix[Parameter.INTEGRATION.value],
-                "threshold": result_to_fix["threshold"],
-                "avg_cnt": result_to_fix["avg_cnt"],
+                "threshold": result_to_fix["threshold"] if THRESHOLD in result_to_fix else [0.0],
+                "avg_cnt": result_to_fix["avg_cnt"] if AVG_CNT in result_to_fix else [1024],
             },
         ]
         del result_to_fix[Parameter.INTEGRATION.value]
-        del result_to_fix["threshold"]
-        del result_to_fix["avg_cnt"]
-        return result_to_fix
+        if THRESHOLD in result_to_fix:
+            del result_to_fix["threshold"]
+        if AVG_CNT in result_to_fix:
+            del result_to_fix["avg_cnt"]
+        # return result_to_fix
 
     if isinstance(result_to_fix[QBLOXRESULT.BINS], list):
-        return result_to_fix
+        if len(result_to_fix[QBLOXRESULT.BINS]) != 1:
+            return result_to_fix
+        result_fixed = result_to_fix
+        if "path0" not in result_fixed[QBLOXRESULT.BINS][0]["integration"]:
+            result_fixed[QBLOXRESULT.BINS][0]["integration"]["path0"] = [0.0]
+        if "path1" not in result_fixed[QBLOXRESULT.BINS][0]["integration"]:
+            result_fixed[QBLOXRESULT.BINS][0]["integration"]["path1"] = [0.0]
+        if THRESHOLD not in result_fixed[QBLOXRESULT.BINS][0]:
+            result_fixed[QBLOXRESULT.BINS][0][THRESHOLD] = [0.0]
+        if AVG_CNT not in result_fixed[QBLOXRESULT.BINS][0]:
+            result_fixed[QBLOXRESULT.BINS][0][AVG_CNT] = [1024]
+        return result_fixed
+
     if not isinstance(result_to_fix[QBLOXRESULT.BINS], dict):
         raise ValueError("bins has a type not recognized. Only list or dict are admitted.")
 
     result_fixed = result_to_fix
     result_fixed[QBLOXRESULT.BINS] = [result_to_fix[QBLOXRESULT.BINS]]
 
+    return result_fixed
+
+
+def _fix_scope_path(result_to_fix: dict) -> dict:
+    """when result is a scope, fixes that the structure is well defined ."""
+    if QBLOXRESULT.SCOPE not in result_to_fix or result_to_fix[QBLOXRESULT.SCOPE] is None:
+        return result_to_fix
+    path_result_structure = {
+        "data": [],
+        "avg_cnt": 0,
+        "out_of_range": False,
+    }
+    result_fixed = result_to_fix
+    if "path0" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path0"] = path_result_structure
+    if "path0" in result_fixed[QBLOXRESULT.SCOPE] and "avg_cnt" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path0"]["avg_cnt"] = 0
+    if "path0" in result_fixed[QBLOXRESULT.SCOPE] and "out_of_range" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path0"]["out_of_range"] = False
+    if "path1" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path1"] = path_result_structure
+        result_fixed[QBLOXRESULT.SCOPE]["path1"]["data"] = [0.0] * len(result_fixed[QBLOXRESULT.SCOPE]["path0"]["data"])
+    if "path1" in result_fixed[QBLOXRESULT.SCOPE] and "avg_cnt" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path1"]["avg_cnt"] = 0
+    if "path1" in result_fixed[QBLOXRESULT.SCOPE] and "out_of_range" not in result_fixed[QBLOXRESULT.SCOPE]:
+        result_fixed[QBLOXRESULT.SCOPE]["path1"]["out_of_range"] = False
+    path0_len = len(result_fixed[QBLOXRESULT.SCOPE]["path0"]["data"])
+    path1_len = len(result_fixed[QBLOXRESULT.SCOPE]["path1"]["data"])
+    if path0_len != path1_len:
+        print(f"path len differs!! path0: {path0_len} and path1: {path1_len}")
+        result_fixed[QBLOXRESULT.SCOPE]["path0"]["data"] += [0.0] * (path1_len - path0_len)
+        result_fixed[QBLOXRESULT.SCOPE]["path1"]["data"] += [0.0] * (path0_len - path1_len)
     return result_fixed
 
 
@@ -378,7 +818,8 @@ def _fix_one_result(result_to_fix: dict, experiment_pulse_length: float) -> dict
         result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length
     )
     integration_fixed = _one_result_pulse_length_integration(result_to_fix=pulse_length_fixed)
-    return _remove_result_nans(result_to_fix=integration_fixed)
+    nans_fixed = _remove_result_nans(result_to_fix=integration_fixed)
+    return _fix_scope_path(result_to_fix=nans_fixed)
 
 
 def _fix_pulse_length(results_to_fix: dict, experiment: dict) -> dict:
@@ -398,6 +839,21 @@ def _fix_pulse_length(results_to_fix: dict, experiment: dict) -> dict:
     results_fixed[EXPERIMENT.RESULTS] = [
         _fix_one_result(result_to_fix=result_to_fix, experiment_pulse_length=experiment_pulse_length)
         for result_to_fix in tqdm(results_to_fix[EXPERIMENT.RESULTS])
+    ]
+    return results_fixed
+
+
+def _fix_results_path_length(results_to_fix: dict) -> dict:
+    """fix results path length"""
+
+    if EXPERIMENT.RESULTS not in results_to_fix:
+        return results_to_fix
+    if results_to_fix[EXPERIMENT.RESULTS] is None or len(results_to_fix[EXPERIMENT.RESULTS]) <= 0:
+        return results_to_fix
+    results_fixed = results_to_fix
+
+    results_fixed[EXPERIMENT.RESULTS] = [
+        _fix_scope_path(result_to_fix=result_to_fix) for result_to_fix in tqdm(results_to_fix[EXPERIMENT.RESULTS])
     ]
     return results_fixed
 
@@ -452,32 +908,45 @@ def _update_results_file_format(path: str, experiment: dict) -> None:
     if _file_greater_than_200_mb(path=path):
         print(f"File {path}/{RESULTS_FILENAME_BACKUP} NOT PROCESSED: It is greater than 200MB.")
         return
+    _check_and_fix_for_bad_paths(in_path=Path(path), in_filename=RESULTS_FILENAME_BACKUP)
     loaded_results = _load_backup_results_file(path=path)
     results_fixed_loop = _fix_loop_keyword(yaml_loaded=loaded_results)
     results_fixed_pulse_length = _fix_pulse_length(results_to_fix=results_fixed_loop, experiment=experiment)
     _save_results(path=path, data=results_fixed_pulse_length)
+    _check_and_fix_for_bad_serialization(in_path=Path(path), in_filename=RESULTS_FILENAME)
+    if _check_and_fix_for_two_numbers_in_a_row(in_path=Path(path), in_filename=RESULTS_FILENAME):
+        loaded_final_results = _yaml_load_file(path=Path(path), filename=RESULTS_FILENAME)
+        fixed_results = _fix_results_path_length(results_to_fix=loaded_final_results)
+        _save_results(path=path, data=fixed_results)
 
 
 def _fix_platform_to_settings(experiment: dict) -> dict:
     """fix platform structure to contain settings"""
     if RUNCARD.PLATFORM not in experiment:
         return experiment
-    if RUNCARD.PLATFORM not in experiment[RUNCARD.PLATFORM]:
-        return experiment
-    if RUNCARD.SETTINGS in experiment[RUNCARD.PLATFORM]:
-        return experiment
+    # if RUNCARD.PLATFORM not in experiment[RUNCARD.PLATFORM]:
+    #     return experiment
+    # if RUNCARD.SETTINGS in experiment[RUNCARD.PLATFORM]:
+    #     return experiment
 
     # update experiment[platform][platform]
-    experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] = experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
-    del experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
+    if RUNCARD.PLATFORM in experiment[RUNCARD.PLATFORM]:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] = experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.PLATFORM]
 
     # update experiment[platform][settings][settings]
-    if RUNCARD.SETTINGS not in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
-        return experiment
-    experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] |= experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.SETTINGS]
-    del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.SETTINGS]
+    if RUNCARD.SETTINGS in experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]:
+        experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS] |= experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][
+            RUNCARD.SETTINGS
+        ]
+        del experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.SETTINGS]
 
     settings: dict = experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS]
+    # change translation_settings
+    if "translation_settings" in settings:
+        settings |= settings["translation_settings"]
+        del settings["translation_settings"]
+
     # change readout_duration, readout_amplitude and readout_phase
     if "readout_duration" in settings and "readout_amplitude" in settings and "readout_phase" in settings:
         experiment[RUNCARD.PLATFORM][RUNCARD.SETTINGS][RUNCARD.GATES] = [
@@ -585,6 +1054,8 @@ def _fix_pulse(pulse: dict) -> dict:
     """fix pulse structure"""
     if RUNCARD.NAME in pulse and pulse[RUNCARD.NAME] == "ReadoutPulse":
         pulse[RUNCARD.NAME] = PulseName.READOUT_PULSE.value
+    if RUNCARD.NAME in pulse and pulse[RUNCARD.NAME] == "Pulse":
+        pulse[RUNCARD.NAME] = PulseName.PULSE.value
     if "qubit_ids" in pulse:
         del pulse["qubit_ids"]
     return pulse
@@ -634,15 +1105,15 @@ def _update_experiments_file_format(path: str) -> dict:
     # print("updating experiments file")
     fixed_experiment = deepcopy(loaded_experiment)
     fixed_platform_to_settings = _fix_platform_to_settings(experiment=fixed_experiment)
-    fixed_beta_experiment = _fix_beta_to_drag_coefficient(experiment_to_fix=fixed_platform_to_settings)
+    fixed_sequences = _fix_sequences(experiment=fixed_platform_to_settings)
+    fixed_beta_experiment = _fix_beta_to_drag_coefficient(experiment_to_fix=fixed_sequences)
     fixed_master_gate_experiment = _fix_master_gate_on_platform(experiment=fixed_beta_experiment)
     fixed_instruments_experiment = _fix_instruments(experiment=fixed_master_gate_experiment)
     fixed_instrument_controllers_experiment = _fix_instrument_controllers(experiment=fixed_instruments_experiment)
     fixed_chip = _fix_chip(experiment=fixed_instrument_controllers_experiment)
     fixed_loops_experiment = _fix_loop_keyword(yaml_loaded=fixed_chip)
     fixed_buses = _fix_buses(experiment=fixed_loops_experiment)
-    fixed_sequences = _fix_sequences(experiment=fixed_buses)
-    _save_experiment(path=path, data=fixed_sequences)
+    _save_experiment(path=path, data=fixed_buses)
     return fixed_experiment
 
 
