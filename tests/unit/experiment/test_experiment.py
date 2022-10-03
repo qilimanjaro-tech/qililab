@@ -162,54 +162,54 @@ class TestExperiment:
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
-@patch("qililab.execution.buses_execution.open")
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.utils.results_data_management.os.makedirs")
-class TestSimulatedExexution:
-    """Unit tests checking the the execution of a simulated platform."""
+# @patch("qililab.instruments.system_control.simulated_system_control.qutip", autospec=True)
+# @patch("qililab.execution.buses_execution.yaml.safe_dump")
+# @patch("qililab.execution.buses_execution.open")
+# @patch("qililab.experiment.experiment.open")
+# @patch("qililab.utils.results_data_management.os.makedirs")
+# class TestSimulatedExexution:
+#     """Unit tests checking the the execution of a simulated platform."""
 
-    def test_execute_method_without_loop(
-        self,
-        mock_makedirs: MagicMock,
-        mock_open: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump: MagicMock,
-        mock_qutip: MagicMock,
-        simulated_experiment: Experiment,
-    ):
-        """Test execute method with simulated qubit."""
-        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        results = simulated_experiment.execute()  # type: ignore
-        mock_qutip.Options.assert_called()
-        mock_qutip.ket2dm.assert_called()
-        mock_qutip.mesolve.assert_called()
-        mock_dump.assert_called()
-        mock_open.assert_called()
-        mock_open_1.assert_called()
-        mock_makedirs.assert_called()
-        with pytest.raises(ValueError):
-            print(results.ranges)
+#     def test_execute_method_without_loop(
+#         self,
+#         mock_makedirs: MagicMock,
+#         mock_open: MagicMock,
+#         mock_open_1: MagicMock,
+#         mock_dump: MagicMock,
+#         mock_qutip: MagicMock,
+#         simulated_experiment: Experiment,
+#     ):
+#         """Test execute method with simulated qubit."""
+#         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
+#         results = simulated_experiment.execute()  # type: ignore
+#         mock_qutip.Options.assert_called()
+#         mock_qutip.ket2dm.assert_called()
+#         mock_qutip.mesolve.assert_called()
+#         mock_dump.assert_called()
+#         mock_open.assert_called()
+#         mock_open_1.assert_called()
+#         mock_makedirs.assert_called()
+#         with pytest.raises(ValueError):
+#             print(results.ranges)
 
-    def test_execute_method_with_simulated_qubit(
-        self,
-        mock_makedirs: MagicMock,
-        mock_open: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump: MagicMock,
-        mock_qutip: MagicMock,
-        simulated_experiment: Experiment,
-    ):
-        """Test execute method with simulated qubit."""
-        mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
-        results = simulated_experiment.execute()
-        with pytest.raises(ValueError):
-            results.acquisitions()
-        mock_qutip.Options.assert_called()
-        mock_qutip.ket2dm.assert_called()
-        mock_qutip.mesolve.assert_called()
-        mock_open.assert_called()
-        mock_open_1.assert_called()
-        mock_dump.assert_called()
-        mock_makedirs.assert_called()
+#     def test_execute_method_with_simulated_qubit(
+#         self,
+#         mock_makedirs: MagicMock,
+#         mock_open: MagicMock,
+#         mock_open_1: MagicMock,
+#         mock_dump: MagicMock,
+#         mock_qutip: MagicMock,
+#         simulated_experiment: Experiment,
+#     ):
+#         """Test execute method with simulated qubit."""
+#         mock_qutip.mesolve.return_value.expect = [[1.0], [0.0]]
+#         results = simulated_experiment.execute()
+#         with pytest.raises(ValueError):
+#             results.acquisitions()
+#         mock_qutip.Options.assert_called()
+#         mock_qutip.ket2dm.assert_called()
+#         mock_qutip.mesolve.assert_called()
+#         mock_open.assert_called()
+#         mock_open_1.assert_called()
+#         mock_dump.assert_called()
+#         mock_makedirs.assert_called()
