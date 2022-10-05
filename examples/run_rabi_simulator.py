@@ -22,8 +22,7 @@ def run_rabi_simulator():
         circuit.add(RX(0, angle))
         circuits.append(circuit)
     experiment = Experiment(platform=platform, sequences=circuits)
-    _ = experiment.execute()
-    print("success")
+    experiment.execute()
 
 
 if __name__ == "__main__":
