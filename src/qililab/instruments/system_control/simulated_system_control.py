@@ -1,16 +1,10 @@
 """SimulatedSystemControl class."""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Type
 
 import numpy as np
-import qutip
-from qilisimulator.constants import HBAR
-from qilisimulator.driving_hamiltonian import DrivingHamiltonian
-from qilisimulator.qubits.csfq4jj import (
-    CSFQ4JJ,  # TODO: Change the CSFQ4JJ import to the general Qubit class
-)
-from qilisimulator.utils import Factory as SimulatorFactory
+from qilisimulator.evolution import Evolution
+from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
@@ -25,116 +19,81 @@ class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
 
     name = SystemControlSubcategory.SIMULATED_SYSTEM_CONTROL
-    energy_norm: float = HBAR * 2 * np.pi
 
     @dataclass
     class SimulatedSystemControlSettings(SystemControl.SystemControlSettings):
-        """SimulatedSystemControlSettings class."""
+        """SimulatedSystemControlSettings class.
 
-        qubit: CSFQ4JJ
-        driving_hamiltonian: Type[DrivingHamiltonian]
+        Args:
+            - qubit (string): qubit name, must refer to a valid qubit type
+            - qubit_params (dict): parameters for the qubit
+            - drive (string): driving hamiltonian name, must refer to a valid driving hamiltonian type
+            - drive_params (dict): parameters for the driving hamiltonian
+            - resolution (float): time resolution for the sampling of pulses, in ns
+            - store_states (bool): indicates whether to store all states (True)
+                or only those at the end of each pulse (False)
+
+        Attributes:
+            - qubit (QubitName): qubit type
+            - qubit_params (dict): parameters for the qubit
+            - drive (DrivingHamiltonianName): driving hamiltonian type
+            - drive_params (dict)): parameters for the driving hamiltonian
+            - resolution (float): time resolution for the sampling of pulses, in ns
+            - store_states (bool): indicates whether to store all states (True)
+                or only those at the end of each pulse (False)
+        """
+
+        # Note: DDBBElement already casts enums from value
+        qubit: QubitName
+        qubit_params: dict
+        drive: DrivingHamiltonianName
+        drive_params: dict
         resolution: float
-        frequency: float
-        nsteps: int
         store_states: bool
-        dimension: int
-
-        def __post_init__(self):
-            """Cast qubit to its corresponding class."""
-            super().__post_init__()
-            self.qubit = SimulatorFactory.get(self.qubit)()
-            self.driving_hamiltonian = SimulatorFactory.get(self.driving_hamiltonian)
 
     settings: SimulatedSystemControlSettings
-    options: qutip.Options
+    _evo: Evolution
 
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
-        self.options = qutip.Options()
+        self._evo = Evolution(
+            qubit_name=self.settings.qubit,
+            qubit_params=self.settings.qubit_params,
+            port_name=self.settings.drive,
+            port_params=self.settings.drive_params,
+            store_states=self.settings.store_states,
+        )
 
     def start(self):
         """Start instrument."""
 
-    def setup(self, frequencies: List[float]):
+    def setup(self, frequencies: list[float]):
         """Setup instruments."""
-        self.options = qutip.Options(nsteps=self.nsteps, store_states=self.store_states)
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
-        waveforms = pulse_sequence.waveforms(frequency=self.awg_frequency, resolution=self.resolution)
-        i_waveform = np.array(waveforms.i) * self.amplitude_norm_factor
-        hamiltonian = self.hamiltonian(
-            qubit=self.qubit,
-            waveforms=i_waveform,
-            dimension=self.dimension,
-            energy_norm=self.energy_norm,
-            resolution=self.resolution,
-        )
-        hami, tlist = hamiltonian.to_qutip()
-        _, eigen_states = hami[0].eigenstates()
-        init0 = qutip.ket2dm(eigen_states[0])
-        init1 = qutip.ket2dm(eigen_states[1])
-        eops = [init0, init1]
-        results = qutip.mesolve(hami, init0, tlist, options=self.options, e_ops=eops)
-        return SimulatorResult(prob_0=results.expect[0][-1], prob_1=results.expect[1][-1])
 
-    @property
-    def amplitude_norm_factor(self) -> float:
-        """SimulatedSystemControl 'amplitude_norm_factor' property.
+        resolution = self.settings.resolution
+        frequency = self.frequency
+        if pulse_sequence.frequency is not None:
+            frequency = pulse_sequence.frequency
 
-        Returns:
-            float: Normalization factor used for the pulse amplitude.
-        """
-        # TODO: Add the 0.2 in the pi_pulse_amplitude parameter of the qubit
-        return np.abs(self.qubit.a_b()[0] / self.energy_norm) * 0.2
+        # TODO: get pulses -> check
+        waveforms = pulse_sequence.waveforms(frequency=frequency, resolution=resolution)
+        i_waveform = np.array(waveforms.i)
+        sequence = [i_waveform]
 
-    @property
-    def hamiltonian(self):
-        """SimulatedSystemControl 'Hamiltonian' property.
+        # Init evolution pulse sequence
+        self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
 
-        Returns:
-            Type[DrivingHamiltonian]: Hamiltonian class type.
-        """
-        return self.settings.driving_hamiltonian
+        # Evolve
+        self._evo.evolve()
 
-    @property
-    def qubit(self):
-        """SimulatedSystemControl 'qubit' property.
-
-        Returns:
-            Qubit: Qubit object.
-        """
-        return self.settings.qubit
-
-    @property
-    def nsteps(self):
-        """SimulatedSystemControl 'nsteps' property.
-
-        Returns:
-            int: Qutip's number of steps.
-        """
-        return self.settings.nsteps
-
-    @property
-    def dimension(self):
-        """SimulatedSystemControl 'dimension' property.
-
-        Returns:
-            int: Dimension of the qubit.
-        """
-        return self.settings.dimension
-
-    @property
-    def store_states(self):
-        """SimulatedSystemControl 'store_states' property.
-
-        Returns:
-            bool: Flag to store states by Qutip.
-        """
-        return self.settings.store_states
+        # Store results
+        return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
 
     @property
     def awg_frequency(self):
@@ -150,27 +109,18 @@ class SimulatedSystemControl(SystemControl):
         """SimulatedSystemControl 'frequency' property.
 
         Returns:
-            float: Normalized frequency of the applied pulses.
+            float: qubit frequency
         """
-        return self.settings.frequency
+        return self._evo.system.qubit.frequency
 
     @frequency.setter
-    def frequency(self, target_freqs: List[float]):
-        """SimulatedSystemControl 'frequency' property.
+    def frequency(self, target_freqs: list[float]):
+        """SimulatedSystemControl 'frequency' property setter.
 
-        Returns:
-            float: Normalized frequency of the applied pulses.
+        Note:
+            - The property value is not actually changed.
+            - This serves as a bypass for the frequency setter used for physical qubits.
         """
-        self.settings.frequency = target_freqs[0]
-
-    @property
-    def resolution(self):
-        """SimulatedSystemControl 'resolution' property.
-
-        Returns:
-            float: Resolution of the pulse in ns.
-        """
-        return self.settings.resolution
 
     @property
     def acquisition_delay_time(self):
