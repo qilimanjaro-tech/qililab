@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.9.0 (2022-10-06)
+
+### Feat
+
+- qilisimulator integration (#79)
+
 ## 0.8.0 (2022-10-05)
 
 ### Feat
