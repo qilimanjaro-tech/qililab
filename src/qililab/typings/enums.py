@@ -31,6 +31,7 @@ class Category(Enum):
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
+    VNA = "VNA"
     CHIP = "chip"
     NODE = "node"
     INSTRUMENT_CONTROLLER = "instrument_controller"
@@ -303,8 +304,8 @@ class InstrumentControllerName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
-    KEYSIGHT_E5080B = "keysight_e5080b"
-    AGILENT_E5071B = "agilent_e5071B"
+    KEYSIGHT_E5080B = "keysight_e5080b_controller"
+    AGILENT_E5071B = "agilent_e5071B_controller"
 
 
 class Parameter(Enum):
