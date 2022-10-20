@@ -22,6 +22,7 @@ from .factory_element import FactoryElement
 from .instruments import (
     Cluster,
     Device,
+    E5080BDriver,
     Keithley2600Driver,
     MiniCircuitsDriver,
     Pulsar,

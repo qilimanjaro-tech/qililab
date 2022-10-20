@@ -268,6 +268,8 @@ class InstrumentName(Enum):
         * integrated_system_control
         * simulated_system_control
         * keithley_2600
+        * keysight_e5080b
+        * agilent_e5071B
     """
 
     QBLOX_QCM = "QCM"
@@ -278,6 +280,8 @@ class InstrumentName(Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    KEYSIGHT_E5080B = "keysight_e5080b"
+    AGILENT_E5071B = "agilent_e5071B"
 
 
 class InstrumentControllerName(Enum):
@@ -290,6 +294,8 @@ class InstrumentControllerName(Enum):
         * rohde_schwarz
         * mini_circuits
         * keithley_2600
+        * keysight_e5080b
+        * agilent_e5071B
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -297,6 +303,8 @@ class InstrumentControllerName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    KEYSIGHT_E5080B = "keysight_e5080b"
+    AGILENT_E5071B = "agilent_e5071B"
 
 
 class Parameter(Enum):
@@ -395,3 +403,33 @@ class LivePlotTypes(Enum):
     LINES = "LINES"
     SCATTER = "SCATTER"
     HEATMAP = "HEATMAP"
+
+
+class VNATriggerModes(Enum):
+    """Vector Network Analyzers Trigger Modes
+
+    Args:
+        enum (str): Available types of trigger modes:
+        * INT
+        * BUS
+    """
+
+    INT = "INT"
+    BUS = "BUS"
+
+
+class VNAScatteringParameters(Enum):
+    """Vector Network Analyzers Scattering Parameters
+
+    Args:
+        enum (str): Available types of scattering parameters:
+        * S11
+        * S12
+        * S22
+        * S21
+    """
+
+    S11 = "S11"
+    S12 = "S12"
+    S22 = "S22"
+    S21 = "S21"

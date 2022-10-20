@@ -3,6 +3,7 @@ from .awg import AWG
 from .instrument import Instrument
 from .instruments import Instruments
 from .keithley import Keithley2600
+from .keysight import E5080B
 from .mini_circuits import Attenuator
 from .qblox.qblox_qcm import QbloxQCM
 from .qblox.qblox_qrm import QbloxQRM

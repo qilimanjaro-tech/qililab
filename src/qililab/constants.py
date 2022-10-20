@@ -12,6 +12,8 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
+DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
+
 # TODO: Distribute constants over different classes
 
 
