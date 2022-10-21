@@ -1,55 +1,47 @@
-""" Rohde & Schwarz SGS100A Instrument Controller """
+""" Vector Network Analyzer General Instrument Controller """
 from dataclasses import dataclass
-from typing import Sequence
 
+from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instrument_controllers.single_instrument_controller import (
     SingleInstrumentController,
 )
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
-from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
-from qililab.typings import RohdeSchwarzSGS100A
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentTypeName,
+from qililab.typings.enums import ConnectionName
+from qililab.typings.instruments.vector_network_analyzer import (
+    VectorNetworkAnalyzerDriver,
 )
 
 
-@InstrumentControllerFactory.register
-class SGS100AController(SingleInstrumentController):
-    """Rohde & Schwarz SGS100A class
+class VectorNetworkAnalyzerController(SingleInstrumentController):
+    """Vector Network Analyzer General Instrument Controller
 
     Args:
-        name (InstrumentControllerName): Name of the Instrument Controller.
-        device (RohdeSchwarz_SGS100A): Instance of the qcodes SGS100A class.
-        settings (SGS100ASettings): Settings of the instrument.
+        settings (VectorNetworkAnalyzerControllerSettings): Settings of the instrument controller.
     """
 
-    name = InstrumentControllerName.ROHDE_SCHWARZ
-    device: RohdeSchwarzSGS100A
-    modules: Sequence[SGS100A]
-
     @dataclass
-    class SGS100AControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
-        """Contains the settings of a specific SGS100A Controller."""
+    class VectorNetworkAnalyzerControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
+        """Contains the settings of a specific VectorNetworkAnalyzer Controller."""
+
+        timeout: float = DEFAULT_TIMEOUT
 
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
-    settings: SGS100AControllerSettings
+    settings: VectorNetworkAnalyzerControllerSettings
+    device: VectorNetworkAnalyzerDriver
 
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.address}::inst0::INSTR")
+    @property
+    def timeout(self):
+        """VectorNetworkAnalyzer 'timeout' property.
 
-    def _check_supported_modules(self):
-        """check if all instrument modules loaded are supported modules for the controller."""
-        for module in self.modules:
-            if not isinstance(module, SGS100A):
-                raise ValueError(
-                    f"Instrument {type(module)} not supported."
-                    + f"The only supported instrument is {InstrumentTypeName.ROHDE_SCHWARZ}"
-                )
+        Returns:
+            float: settings.timeout.
+        """
+        return self.settings.timeout
+
+    @timeout.setter
+    def timeout(self, value: float):
+        """sets the timeout"""
+        self.settings.timeout = value
+        self.device.set_timeout(value=self.settings.timeout)

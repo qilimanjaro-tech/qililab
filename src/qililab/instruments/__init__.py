@@ -1,4 +1,5 @@
 """__init__.py"""
+from .agilent import E5071B
 from .awg import AWG
 from .instrument import Instrument
 from .instruments import Instruments
