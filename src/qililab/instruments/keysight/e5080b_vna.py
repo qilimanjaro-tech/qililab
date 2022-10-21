@@ -1,4 +1,6 @@
 """KeySight Vector Network Analyzer E5080B class."""
+from dataclasses import dataclass
+
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.typings.enums import InstrumentName
@@ -11,3 +13,9 @@ class E5080B(VectorNetworkAnalyzer):
 
     name = InstrumentName.KEYSIGHT_E5080B
     device: E5080BDriver
+
+    @dataclass
+    class E5080BSettings(VectorNetworkAnalyzer.VectorNetworkAnalyzerSettings):
+        """Contains the settings of a specific VectorNetworkAnalyzer"""
+
+    settings: E5080BSettings
