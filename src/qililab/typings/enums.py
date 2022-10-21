@@ -31,7 +31,7 @@ class Category(Enum):
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
-    VNA = "VNA"
+    VNA = "vna"
     CHIP = "chip"
     NODE = "node"
     INSTRUMENT_CONTROLLER = "instrument_controller"

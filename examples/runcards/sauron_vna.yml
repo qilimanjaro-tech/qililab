@@ -7,38 +7,7 @@ settings:
   master_amplitude_gate: 1
   master_duration_gate: 100
   master_drag_coefficient: 0
-  gates:
-    - name: M
-      amplitude: 1
-      phase: 0
-      duration: 2000
-      shape:
-        name: rectangular
-
-    - name: I
-      amplitude: 0
-      phase: 0
-      duration: master_duration_gate
-      shape:
-        name: rectangular
-
-    - name: X
-      amplitude: master_amplitude_gate
-      phase: 0
-      duration: master_duration_gate
-      shape:
-        name: drag
-        num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
-
-    - name: Y
-      amplitude: master_amplitude_gate
-      phase: 1.5707963267948966 # pi / 2
-      duration: master_duration_gate
-      shape:
-        name: drag
-        num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
+  gates: []
 schema:
   chip:
     id_: 0
