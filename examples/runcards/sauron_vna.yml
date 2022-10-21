@@ -10,17 +10,6 @@ settings:
   gates: []
 schema:
   chip:
-    id_: 0
-    category: chip
-    nodes:
-      - name: port
-        id_: 1
-        nodes: [2]
-      - name: resonator
-        alias: resonator
-        id_: 2
-        frequency: 7.32730e+09
-        nodes: [1]
   instruments:
     - name: keysight_e5080b
       alias: keysight_e5080b

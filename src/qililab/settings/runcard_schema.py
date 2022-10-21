@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.constants import PLATFORM
@@ -56,7 +56,7 @@ class RuncardSchema:
             connection: dict
             modules: List[dict]
 
-        chip: ChipSchema
+        chip: ChipSchema | None
         buses: List[BusSchema]
         instruments: List[dict]
         instrument_controllers: List[InstrumentControllerSchema]
