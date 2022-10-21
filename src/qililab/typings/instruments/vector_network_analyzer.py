@@ -15,7 +15,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     name: str
     address: str
-    timeout: int = DEFAULT_TIMEOUT
+    timeout: float = DEFAULT_TIMEOUT
     driver: pyvisa.Resource = field(init=False)
 
     def __post_init__(self):
@@ -136,3 +136,8 @@ class VectorNetworkAnalyzerDriver(Device):
         """Set/query number of averages"""
         com_str = f":SENS{channel}:AVER:COUN"
         return int(self.send_command(command=com_str, arg=count))
+
+    def set_timeout(self, value: float):
+        """set timeout in mili seconds"""
+        self.timeout = value
+        self.driver.timeout = self.timeout

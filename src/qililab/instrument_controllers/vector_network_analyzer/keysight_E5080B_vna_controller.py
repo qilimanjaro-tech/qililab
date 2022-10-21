@@ -36,7 +36,7 @@ class E5080BController(SingleInstrumentController):
     class E5080BControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
         """Contains the settings of a specific E5080B Controller."""
 
-        timeout: int = DEFAULT_TIMEOUT
+        timeout: float = DEFAULT_TIMEOUT
 
         def __post_init__(self):
             super().__post_init__()
@@ -46,7 +46,7 @@ class E5080BController(SingleInstrumentController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = E5080BDriver(name=f"{self.name.value}_{self.id_}", address=self.address)
+        self.device = E5080BDriver(name=f"{self.name.value}_{self.id_}", address=self.address, timeout=self.timeout)
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
@@ -56,3 +56,18 @@ class E5080BController(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentName.KEYSIGHT_E5080B}"
                 )
+
+    @property
+    def timeout(self):
+        """VectorNetworkAnalyzer 'timeout' property.
+
+        Returns:
+            float: settings.timeout.
+        """
+        return self.settings.timeout
+
+    @timeout.setter
+    def timeout(self, value: float):
+        """sets the timeout"""
+        self.settings.timeout = value
+        self.device.set_timeout(value=self.settings.timeout)
