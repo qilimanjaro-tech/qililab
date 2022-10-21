@@ -58,7 +58,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def scattering_parameter(self, par: str = "?", trace: int = 1):
         """set scattering parameter"""
-        if isinstance(par, str):
+        if not isinstance(par, str):
             raise ValueError("PAREXC: Par must be a string")
         upper_par = par.upper()
         if upper_par == "?":
