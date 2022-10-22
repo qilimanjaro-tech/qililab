@@ -107,7 +107,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def get_data(self):  # sourcery skip: simplify-division
         """get data"""
-        self.driver.write("CALC:MEAS:DATA:Serialized_dATA?")
+        self.driver.write("CALC:MEAS:DATA:SDATA?")
         serialized_data = self.driver.read_raw()
         i_0 = serialized_data.find(b"#")
         number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
