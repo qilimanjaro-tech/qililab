@@ -1,5 +1,5 @@
 """Pulse class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import ClassVar
 
 import numpy as np

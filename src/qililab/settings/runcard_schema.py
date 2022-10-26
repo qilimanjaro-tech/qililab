@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.constants import PLATFORM
@@ -62,7 +62,7 @@ class RuncardSchema:
         instrument_controllers: List[InstrumentControllerSchema]
 
         def __post_init__(self):
-            self.buses = [self.BusSchema(**bus) for bus in self.buses]
+            self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
 
     @nested_dataclass
     class PlatformSettings(DDBBElement):

@@ -19,7 +19,11 @@ class Schema:
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
         self.chip = Chip(**chip)
-        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
+        self.buses = (
+            Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
+            if buses is not None
+            else None
+        )
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=instrument_controllers)
         )

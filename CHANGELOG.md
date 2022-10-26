@@ -4,37 +4,37 @@
 
 ### Fix
 
-- [QILI-187 ] :bug: loops minimum length taking the passed value instead of the self (#57)
+- \[QILI-187 \] :bug: loops minimum length taking the passed value instead of the self (#57)
 
 ## 0.7.1 (2022-08-19)
 
 ### Refactor
 
-- [QILI-186] :recycle: renamed beta to drag_coefficient (#56)
+- \[QILI-186\] :recycle: renamed beta to drag_coefficient (#56)
 
 ## 0.7.0 (2022-08-19)
 
 ### Feat
 
-- [QILI-185] add option to NOT reset an instrument (#54)
+- \[QILI-185\] add option to NOT reset an instrument (#54)
 
 ## 0.6.0 (2022-08-18)
 
 ### Feat
 
-- [QILI-184] :sparkles: New daily directory generated for results data (#50)
+- \[QILI-184\] :sparkles: New daily directory generated for results data (#50)
 
 ## 0.5.9 (2022-08-18)
 
 ### Fix
 
-- [QILI-183] :bug: accept float master duration gate (#49)
+- \[QILI-183\] :bug: accept float master duration gate (#49)
 
 ## 0.5.8 (2022-08-18)
 
 ### Fix
 
--  [QILI-182] :bug: uses deepcopy before pop dict key (#48)
+- \[QILI-182\] :bug: uses deepcopy before pop dict key (#48)
 
 ## 0.5.7 (2022-08-17)
 
@@ -58,43 +58,43 @@
 
 ### Fix
 
-- [QILI-181] :bug: fixed values types when they are numpy (#38)
+- \[QILI-181\] :bug: fixed values types when they are numpy (#38)
 
 ## 0.5.3 (2022-07-26)
 
 ### Fix
 
-- [QILI-178] set beta master (#37)
+- \[QILI-178\] set beta master (#37)
 
 ## 0.5.2 (2022-07-26)
 
 ### Fix
 
-- [QILI-180] :bug: check for multiple loops correctly (#36)
+- \[QILI-180\] :bug: check for multiple loops correctly (#36)
 
 ## 0.5.1 (2022-07-25)
 
 ### Fix
 
-- [QILI-177] :bug: make sure amplitude and duration are float or int (#35)
+- \[QILI-177\] :bug: make sure amplitude and duration are float or int (#35)
 
 ## 0.5.0 (2022-07-24)
 
 ### Feat
 
-- [QILI-174] loop support multiple parameters (#34)
+- \[QILI-174\] loop support multiple parameters (#34)
 
 ## 0.4.2 (2022-07-23)
 
 ### Fix
 
-- [QILI-176] set master value for gate amplitude and duration (#33)
+- \[QILI-176\] set master value for gate amplitude and duration (#33)
 
 ## 0.4.1 (2022-07-23)
 
 ### Fix
 
-- [QILI-168] Set voltage normalization (#32)
+- \[QILI-168\] Set voltage normalization (#32)
 
 ## 0.4.0 (2022-07-20)
 
