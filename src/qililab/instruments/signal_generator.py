@@ -19,7 +19,7 @@ class SignalGenerator(Instrument):
         """
 
         power: float
-        frequency: float | None = field(init=False, default=None)
+        frequency: float #| None = field(init=False, default=None)
 
     settings: SignalGeneratorSettings
 

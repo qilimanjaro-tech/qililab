@@ -47,7 +47,7 @@ class BusesExecution:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
                 if result is not None:
                     results.append(result)
-                    self._asynchronous_data_handling(result=result, path=path, plot=plot)
+                    self._asynchronous_data_handling(result=result, path=path, plot=None) # plot)
 
         return results
 
@@ -63,6 +63,7 @@ class BusesExecution:
         def _threaded_function(result: Result, path: Path, plot: LivePlot | None):
             """Asynchronous thread."""
             if plot is not None:
+                print(result)
                 probs = result.probabilities()
                 # get zero prob and converting to a float to plot the value
                 # the value is a numpy.float32, so it is needed to convert it to float

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 # from qpysequence.instructions.real_time import Acquire
-from qpysequence.loop import Loop
+# from qpysequence.loop import Loop
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -144,10 +144,10 @@ class QbloxQRM(QbloxModule, QubitReadout):
                 self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
                 self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
 
-    def _append_acquire_instruction(self, loop: Loop, register: str):
-        """Append an acquire instruction to the loop."""
-        acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+    # def _append_acquire_instruction(self, loop: Loop, register: str):
+    #     """Append an acquire instruction to the loop."""
+    #     acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
+    #     loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     @property
     def scope_acquire_trigger_mode(self):

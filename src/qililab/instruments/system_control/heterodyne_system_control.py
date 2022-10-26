@@ -14,6 +14,7 @@ from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
+from qililab.result import Results
 
 import scipy.integrate as integ
 import json
@@ -57,7 +58,7 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.multiplexing_frequencies = list(self.signal_generator.device.frequency - np.array(frequencies))
         self.awg.setup()
         self.signal_generator.device.setup()"""
-        print('[Heterodyne SysCtrl] Entered setup')
+        #print('[Heterodyne SysCtrl] Entered setup')
         self.awg.device.reset()
         # # 1. Setup/Preparation
         # ## 1.1 Generate Waveforms
@@ -66,7 +67,7 @@ class HeterodyneSystemControl(SystemControl):
         times_vector = np.arange(0,waveform_length+.5,1) # 1ns per sample
         self.freq_if = 0.01 # in GHz to match nanosecond units
         envelope_I = np.ones(waveform_length) #+ scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
-        envelope_Q = np.zeros(waveform_length) 
+        envelope_Q = np.zeros(waveform_length)
 
         cosalpha = np.cos(2*np.pi*self.freq_if*times_vector)
         sinalpha = np.sin(2*np.pi*self.freq_if*times_vector)
@@ -90,7 +91,7 @@ class HeterodyneSystemControl(SystemControl):
 
         # ## 1.2. Set LO
         self.signal_generator.device.power(16)  # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        self.signal_generator.device.frequency(7e9)
+        #self.signal_generator.device.frequency(7e9)
         self.signal_generator.device.on()
         # ## 1.2 Acquisition
         # Acquisitions
@@ -104,14 +105,23 @@ class HeterodyneSystemControl(SystemControl):
 
         # ## 1.3 Sequence
         # Sequence program.
-        seq_prog = """
+        # seq_prog = """
+        # play    0,1,4     #Play waveforms and wait 4ns.
+        # acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
+        # wait    100
+        # stop              #Stop.orms and wait remaining duration of scope acquisition.
+        # stop              #Stop.
+        # """
+        seq_prog = """ 
+        move    1000,R0   #Loop iterator.
+        loop: 
         play    0,1,4     #Play waveforms and wait 4ns.
         acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
         wait    100
+        loop    R0,@loop  #Run until number of iterations is done.
         stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
-
         # ## 1.4 Upload all
         # Add sequence to single dictionary and write to JSON file.
         sequence = {
@@ -137,11 +147,17 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.sequencer0.channel_map_path0_out0_en(True)
         self.awg.device.sequencer0.channel_map_path1_out1_en(True)
         self.awg.device.sequencer0.mod_en_awg(False)
+        # enable hardware average
+        self.awg.device.scope_acq_avg_mode_en_path0(True)
+        self.awg.device.scope_acq_avg_mode_en_path1(True)
+        # set gain
+        self.awg.device.sequencer0.gain_awg_path0(1.)
+        self.awg.device.sequencer0.gain_awg_path1(1.)
 
     def start(self):
         """Start/Turn on the instruments.
         self.signal_generator.device.start()"""
-        print('[Heterodyne SysCtrl] Entered start')
+        # print('[Heterodyne SysCtrl] Entered start')
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence.
@@ -154,16 +170,16 @@ class HeterodyneSystemControl(SystemControl):
             repetition_duration=repetition_duration,
             path=path,
         )"""
-        print('[Heterodyne SysCtrl] Entered run')
+        # print('[Heterodyne SysCtrl] Entered run')
         # # 2. Running the Bus
         # ## 2.1 Arm & Run
         # Arm and start sequencer.
         self.awg.device.arm_sequencer(0)
         self.awg.device.start_sequencer()
-        self.signal_generator.device.off()
+        #self.signal_generator.device.off()
         # Print status of sequencer.
-        print("Status:")
-        print(self.awg.device.get_sequencer_state(0))
+        # print("Status:")
+        # print(self.awg.device.get_sequencer_state(0))
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
         self.awg.device.get_acquisition_state(0, 1)
@@ -188,8 +204,8 @@ class HeterodyneSystemControl(SystemControl):
         # ## 2.4 Integrate
         integrated_I = integ.trapz(demodulated_I, dx=1)/len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1)/len(demodulated_Q)
-        print(integrated_I,integrated_Q)
-        return integrated_I,integrated_Q
+        # print(integrated_I,integrated_Q)
+        return Results(results=[integrated_I,integrated_Q],software_average=1,num_sequences=1)
     
     @property
     def awg_frequency(self):
