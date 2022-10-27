@@ -18,7 +18,6 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
-    start_time: int
     pulse_shape: PulseShape
     frequency: float | None = None
 
@@ -29,18 +28,19 @@ class Pulse:
                 **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
+    def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
-            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
+            resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
+            start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
 
         Returns:
-            NDArray: I and Q modulated waveforms.
+            Waveforms: I and Q modulated waveforms.
         """
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(self.duration / resolution) * 1e-9 * resolution + self.start_time * 1e-9
+        time = np.arange(self.duration / resolution) * 1e-9 * resolution + start_time * 1e-9
         cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
         sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
         mod_matrix = (1.0 / np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
