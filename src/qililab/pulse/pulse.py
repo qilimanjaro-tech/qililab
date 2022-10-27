@@ -70,7 +70,6 @@ class Pulse:
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
-            PULSE.START_TIME: self.start_time,
         }
 
     def __repr__(self):
