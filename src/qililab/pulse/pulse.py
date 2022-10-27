@@ -57,18 +57,6 @@ class Pulse:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
-    @property
-    def start(self):
-        """Pulse 'start' property.
-
-        Raises:
-            ValueError: Is start time is not defined.
-
-        Returns:
-            int: Start time of the pulse.
-        """
-        return self.start_time
-
     def to_dict(self):
         """Return dictionary of pulse.
 

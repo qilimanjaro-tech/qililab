@@ -16,3 +16,15 @@ class PulseEvent:
     def __post_init__(self):
         self.sort_index = self.start_time
         self.end_time = self.start_time + self.pulse.duration
+
+    @property
+    def start(self):
+        """Pulse 'start' property.
+
+        Raises:
+            ValueError: Is start time is not defined.
+
+        Returns:
+            int: Start time of the pulse.
+        """
+        return self.start_time
