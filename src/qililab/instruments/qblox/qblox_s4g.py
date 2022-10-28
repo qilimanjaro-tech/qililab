@@ -39,6 +39,7 @@ class QbloxS4g(CurrentSource):
         self.device.dac0.ramp_rate(self.ramp_rate)
         self.device.dac0.span(self.span)
         self.device.dac0.current(self.current)
+        print(f'SPI current set to {self.device.dac0.current()}')
         while self.device.dac0.is_ramping():
             sleep(0.1)
         # TODO: Implement more dacs
@@ -56,7 +57,8 @@ class QbloxS4g(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
-        # self.device.set_dacs_zero()
+        self.device.set_dacs_zero()
+        print('SPI reset done')
 
     @Instrument.CheckDeviceInitialized
     def reset(self):

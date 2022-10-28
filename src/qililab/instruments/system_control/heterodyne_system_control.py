@@ -151,8 +151,8 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
         # set gain
-        self.awg.device.sequencer0.gain_awg_path0(1.)
-        self.awg.device.sequencer0.gain_awg_path1(1.)
+        self.awg.device.sequencer0.gain_awg_path0(0.05)
+        self.awg.device.sequencer0.gain_awg_path1(0.05)
 
     def start(self):
         """Start/Turn on the instruments.
