@@ -57,8 +57,9 @@ class QbloxS4g(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
-        self.device.set_dacs_zero()
-        print('SPI reset done')
+        self.device.dac0.current(0.0)
+        sleep(0.1)
+        print(f'Current resetted to {self.device.dac0.current()}')
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
