@@ -113,7 +113,7 @@ class HeterodyneSystemControl(SystemControl):
         # stop              #Stop.
         # """
         seq_prog = """ 
-        move    1000,R0   #Loop iterator.
+        move    2000,R0   #Loop iterator.
         loop: 
         play    0,1,4     #Play waveforms and wait 4ns.
         acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
@@ -205,6 +205,9 @@ class HeterodyneSystemControl(SystemControl):
         integrated_I = integ.trapz(demodulated_I, dx=1)/len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1)/len(demodulated_Q)
         # print(integrated_I,integrated_Q)
+        
+        
+
         return Results(results=[integrated_I,integrated_Q],software_average=1,num_sequences=1)
     
     @property
