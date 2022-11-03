@@ -1,9 +1,11 @@
 """HeterodyneSystemControl class."""
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, List, Tuple
 
 import numpy as np
+import scipy.integrate as integ
 
 from qililab.constants import RUNCARD
 from qililab.instruments.awg import AWG
@@ -12,12 +14,9 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
+from qililab.result.heterodyne_result import HeterodyneResult
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
-from qililab.result import Results
-
-import scipy.integrate as integ
-import json
 
 
 @Factory.register
@@ -58,23 +57,23 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.multiplexing_frequencies = list(self.signal_generator.device.frequency - np.array(frequencies))
         self.awg.setup()
         self.signal_generator.device.setup()"""
-        #print('[Heterodyne SysCtrl] Entered setup')
+        # print('[Heterodyne SysCtrl] Entered setup')
         self.awg.device.reset()
         # # 1. Setup/Preparation
         # ## 1.1 Generate Waveforms
         # Waveform parameters
         waveform_length = 6000  # nanoseconds
-        times_vector = np.arange(0,waveform_length+.5,1) # 1ns per sample
-        self.freq_if = 0.01 # in GHz to match nanosecond units
-        envelope_I = np.ones(waveform_length) #+ scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
+        times_vector = np.arange(0, waveform_length + 0.5, 1)  # 1ns per sample
+        self.freq_if = 0.01  # in GHz to match nanosecond units
+        envelope_I = np.ones(waveform_length)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
         envelope_Q = np.zeros(waveform_length)
 
-        cosalpha = np.cos(2*np.pi*self.freq_if*times_vector)
-        sinalpha = np.sin(2*np.pi*self.freq_if*times_vector)
-        mod_matrix = np.array([[cosalpha,sinalpha],[-sinalpha,cosalpha]])
+        cosalpha = np.cos(2 * np.pi * self.freq_if * times_vector)
+        sinalpha = np.sin(2 * np.pi * self.freq_if * times_vector)
+        mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
         result = []
-        for it,t,ii,qq in zip(np.arange(envelope_I.shape[0]),times_vector,envelope_I,envelope_Q):
-            result.append(mod_matrix[:,:,it]@np.array([ii,qq]))
+        for it, t, ii, qq in zip(np.arange(envelope_I.shape[0]), times_vector, envelope_I, envelope_Q):
+            result.append(mod_matrix[:, :, it] @ np.array([ii, qq]))
         modulated_signal = np.array(result)
         modulated_I, modulated_Q = modulated_signal.transpose()
         # Waveform dictionary (data will hold the samples and index will be used to select the waveforms in the instrument).
@@ -90,8 +89,10 @@ class HeterodyneSystemControl(SystemControl):
         }
 
         # ## 1.2. Set LO
-        self.signal_generator.device.power(16)  # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        #self.signal_generator.device.frequency(7e9)
+        self.signal_generator.device.power(
+            16
+        )  # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
+        # self.signal_generator.device.frequency(7e9)
         self.signal_generator.device.on()
         # ## 1.2 Acquisition
         # Acquisitions
@@ -112,9 +113,9 @@ class HeterodyneSystemControl(SystemControl):
         # stop              #Stop.orms and wait remaining duration of scope acquisition.
         # stop              #Stop.
         # """
-        seq_prog = """ 
-        move    2000,R0   #Loop iterator.
-        loop: 
+        seq_prog = """
+        move    1000,R0   #Loop iterator.
+        loop:
         play    0,1,4     #Play waveforms and wait 4ns.
         acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
         wait    100
@@ -176,7 +177,7 @@ class HeterodyneSystemControl(SystemControl):
         # Arm and start sequencer.
         self.awg.device.arm_sequencer(0)
         self.awg.device.start_sequencer()
-        #self.signal_generator.device.off()
+        # self.signal_generator.device.off()
         # Print status of sequencer.
         # print("Status:")
         # print(self.awg.device.get_sequencer_state(0))
@@ -191,25 +192,24 @@ class HeterodyneSystemControl(SystemControl):
         # ## 2.3 should be outside!
         output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])
         output_Q = np.array(single_acq["single"]["acquisition"]["scope"]["path1"]["data"][:6100])
-        time_vector_demod = np.linspace(0,len(output_I),len(output_I))
-        cosalpha = np.cos(2*np.pi*self.freq_if*time_vector_demod)
-        sinalpha = np.sin(2*np.pi*self.freq_if*time_vector_demod)
-        demod_matrix = 2*np.array([[cosalpha,-sinalpha],[sinalpha,cosalpha]])
+        time_vector_demod = np.linspace(0, len(output_I), len(output_I))
+        cosalpha = np.cos(2 * np.pi * self.freq_if * time_vector_demod)
+        sinalpha = np.sin(2 * np.pi * self.freq_if * time_vector_demod)
+        demod_matrix = 2 * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
         result = []
-        for it,t,ii,qq in zip(np.arange(output_I.shape[0]),time_vector_demod,output_I,output_Q):
-            result.append(demod_matrix[:,:,it]@np.array([ii,qq]))
+        for it, t, ii, qq in zip(np.arange(output_I.shape[0]), time_vector_demod, output_I, output_Q):
+            result.append(demod_matrix[:, :, it] @ np.array([ii, qq]))
         demodulated_signal = np.array(result)
-        demodulated_I = demodulated_signal[:,0]
-        demodulated_Q = demodulated_signal[:,1]
+        demodulated_I = demodulated_signal[:, 0]
+        demodulated_Q = demodulated_signal[:, 1]
         # ## 2.4 Integrate
-        integrated_I = integ.trapz(demodulated_I, dx=1)/len(demodulated_I)  # dx is the spacing between points, in our case 1ns
-        integrated_Q = integ.trapz(demodulated_Q, dx=1)/len(demodulated_Q)
+        integrated_I = integ.trapz(demodulated_I, dx=1) / len(
+            demodulated_I
+        )  # dx is the spacing between points, in our case 1ns
+        integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
         # print(integrated_I,integrated_Q)
-        
-        
+        return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
-        return Results(results=[integrated_I,integrated_Q],software_average=1,num_sequences=1)
-    
     @property
     def awg_frequency(self):
         """SystemControl 'awg_frequency' property."""
