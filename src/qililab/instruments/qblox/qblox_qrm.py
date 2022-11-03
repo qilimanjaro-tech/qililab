@@ -43,6 +43,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
         scope_acquire_trigger_mode: AcquireTriggerMode
         scope_hardware_averaging: bool
+        scope_store_enabled: bool
         sampling_rate: int
         integration: bool  # integration flag
         integration_length: int
@@ -111,17 +112,16 @@ class QbloxQRM(QbloxModule, QubitReadout):
         for seq_idx in range(self.num_sequencers):
             self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout)
             self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout)
-        if not self.integration:
+
+        if self.scope_store_enabled:
             self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name)
-            result = self.device.get_acquisitions(sequencer=0)[self.acquisition_name]["acquisition"][self.data_name]
-            return QbloxResult(pulse_length=self.integration_length, scope=result)
 
         results = [
-            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"][self.data_name]
+            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"]
             for seq_idx in range(self.num_sequencers)
         ]
 
-        return QbloxResult(pulse_length=self.integration_length, bins=results)
+        return QbloxResult(pulse_length=self.integration_length, qblox_raw_results=results)
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
@@ -166,6 +166,15 @@ class QbloxQRM(QbloxModule, QubitReadout):
             bool: settings.scope_hardware_averaging.
         """
         return self.settings.scope_hardware_averaging
+
+    @property
+    def scope_store_enabled(self):
+        """QbloxPulsarQRM 'scope_store_enabled' property.
+
+
+        Returns:
+            bool: settings.scope_store_enabled."""
+        return self.settings.scope_store_enabled
 
     @property
     def sampling_rate(self):

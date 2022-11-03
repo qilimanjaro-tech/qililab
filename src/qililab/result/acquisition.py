@@ -35,9 +35,9 @@ class Acquisition:
         self.acquisition = self._create_acquisition()
 
     def _create_acquisition(self) -> npt.NDArray[np.float32]:
-        """transposes each of the acquired results arrays so that we have for each value
-        a structure with i, q, amplitude, phase.
-        For multiple values you may need to redefine this method
+        """Transposes each of the acquired results arrays so that we have for each value a structure with i, q,
+        amplitude, phase.
+        For multiple values you may need to redefine this method.
         """
         return np.array([self.i_values, self.q_values, self.amplitude_values, self.phase_values]).transpose()
 

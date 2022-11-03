@@ -1,10 +1,13 @@
 """QbloxResult class."""
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 from qililab.constants import QBLOXRESULT, RUNCARD
+from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
     QbloxAcquisitionsBuilder,
 )
@@ -34,23 +37,54 @@ class QbloxResult(Result):
 
     name = ResultName.QBLOX
     pulse_length: int | np.number
-    scope: dict | None = None
-    bins: List[dict] | None = None
-    qblox_acquisitions: QbloxScopeAcquisitions | QbloxBinsAcquisitions = field(init=False)
+    qblox_raw_results: List[dict]
+    qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
+    qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
     def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
-        self.qblox_acquisitions = QbloxAcquisitionsBuilder.get(
-            pulse_length=self.pulse_length, scope=self.scope, bins=self.bins
+        self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
+            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
         )
+        self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
+            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+        )
+        self._qblox_scope_acquisition_copy = deepcopy(self.qblox_bins_acquisitions)
 
-    def acquisitions(self) -> np.ndarray:
+    def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
+        """Returns the scope acquisitions demodulated in the given frequency with the given phase offset.
+
+        Returns:
+            QbloxScopeAcquisitions: demodulated scope acquisitions."""
+        return self.qblox_scope_acquisitions.demodulated(frequency=frequency, phase_offset=phase_offset)
+
+    def _integrated_scope(
+        self, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
+    ) -> QbloxScopeAcquisitions:
+        return self.qblox_scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
+
+    def acquisitions(self) -> npt.NDArray[np.float32]:
         """Return acquisition values.
 
         Returns:
-            Tuple[float]: I, Q, amplitude and phase.
+            NDArray[numpy.float32]: I, Q, amplitude and phase.
         """
-        return self.qblox_acquisitions.acquisitions()
+        return self.qblox_bins_acquisitions.acquisitions()
+
+    def acquisitions_scope(
+        self,
+        demod_freq: float = 0.0,
+        demod_phase_offset: float = 0.0,
+        integrate: bool = False,
+        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> npt.NDArray[np.float32]:
+        acquisitions = self.qblox_scope_acquisitions
+        if demod_freq != 0.0:
+            acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
+        if integrate:
+            integrate_from, integrate_to = integration_range
+            acquisitions = self._integrated_scope(integrate_from=integrate_from, integrate_to=integrate_to)
+        return acquisitions
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
@@ -58,7 +92,7 @@ class QbloxResult(Result):
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
-        return self.qblox_acquisitions.probabilities()
+        return self.qblox_bins_acquisitions.probabilities()
 
     @property
     def shape(self) -> List[int]:
@@ -74,33 +108,9 @@ class QbloxResult(Result):
         Returns:
             dict: Dictionary containing all the class information.
         """
-
-        results_dict: dict[str, str | int | dict | List[dict]] = {
+        return {
             RUNCARD.NAME: self.name.value,
             QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
             if isinstance(self.pulse_length, np.number)
             else self.pulse_length,
-        }
-
-        if self.scope is not None:
-            results_dict |= {
-                QBLOXRESULT.SCOPE: self.scope,
-            }
-        if self.bins is not None:
-            results_dict |= {
-                QBLOXRESULT.BINS: self.bins,
-            }
-        return results_dict
-
-    def __eq__(self, other: object) -> bool:
-        """compare two Qblox Results"""
-        return (
-            (
-                self.name == other.name
-                and self.pulse_length == other.pulse_length
-                and self.scope == other.scope
-                and self.bins == other.bins
-            )
-            if isinstance(other, QbloxResult)
-            else False
-        )
+        } | {QBLOXRESULT.RAW: self.qblox_raw_results}

@@ -151,6 +151,7 @@ class QBLOXRESULT:
     PULSE_LENGTH = "pulse_length"
     SCOPE = "scope"
     BINS = "bins"
+    RAW = "raw"
 
 
 UNITS = {"frequency": "Hz"}
