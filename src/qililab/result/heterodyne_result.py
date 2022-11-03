@@ -2,6 +2,8 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
+import numpy as np
+
 from qililab.constants import RUNCARD
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
@@ -32,6 +34,6 @@ class HeterodyneResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            "integrated_I": self.integrated_i,
-            "integrated_Q": self.integrated_q,
+            "integrated_I": np.array(self.integrated_i).tolist(),
+            "integrated_Q": np.array(self.integrated_q).tolist(),
         }
