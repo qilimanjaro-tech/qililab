@@ -43,20 +43,28 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
+        print("Entered to get an element")
+        print(f"alias={alias}; category={category}; id_={id_}")
         if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
             category is not None and Category(category) == Category.PLATFORM
         ):
+            print("Entered IF A")
             return self.settings
 
         element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
         if element is None:
+            print("Entered case 1")
             element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
         if element is None:
+            print("Entered case 2")
             if category is not None and id_ is not None:
+                print("Entered case 2.a")
                 element = self.chip.get_node_from_id(node_id=id_)
             if alias is not None:
+                print("Entered case 2.b")
                 element = self.chip.get_node_from_alias(alias=alias)
         if element is None:
+            print("Entered case 3")
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
 
