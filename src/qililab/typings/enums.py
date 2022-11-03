@@ -235,11 +235,10 @@ class SystemControlSubcategory(Enum):
         * simulated_system_control
         * heterodyne_system_control
     """
-    
+
     HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
-    
 
 
 class NodeName(Enum):
@@ -353,6 +352,7 @@ class ResultName(Enum):
 
     QBLOX = "qblox"
     SIMULATOR = "simulator"
+    HETERODYNE = "heterodyne"
 
 
 class ConnectionName(Enum):
