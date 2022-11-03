@@ -270,25 +270,25 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        print("Setting parameter")
-        print(f"parameter={parameter}; value={value}; alias={alias}")
-        print(f"instrument={instrument}; id_={id_}; element={element}")
-        print(type(element))
+        #print("Setting parameter")
+        #print(f"parameter={parameter}; value={value}; alias={alias}")
+        #print(f"instrument={instrument}; id_={id_}; element={element}")
+        #print(type(element))
         category = Category(instrument.value) if instrument is not None else None
         if element is None:
-            print("Entered branch 1")
+            #print("Entered branch 1")
             self.platform.set_parameter(
                 alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
             )
         elif isinstance(element, RuncardSchema.PlatformSettings):
-            print("Entered branch 2")
+            #print("Entered branch 2")
             element.set_parameter(alias=alias, parameter=parameter, value=value)
         else:
-            print("Entered branch 3")
+            #print("Entered branch 3")
             element.set_parameter(parameter=parameter, value=value)  # type: ignore
 
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            print("Rebuild execution")
+            #print("Rebuild execution")
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
