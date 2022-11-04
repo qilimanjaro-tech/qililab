@@ -6,6 +6,7 @@ from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
 from qililab.platform import Platform
 from qililab.pulse import PulseSequences
+from qililab.typings.enums import SystemControlSubcategory
 from qililab.utils import Singleton
 
 
@@ -29,6 +30,7 @@ class ExecutionBuilder(metaclass=Singleton):
             BusesExecution: BusesExecution object.
         """
         buses: Dict[int, BusExecution] = {}
+
         for pulse_sequences in pulse_sequences_list:
             for pulse_sequence in pulse_sequences:
                 port = pulse_sequence.port
@@ -39,5 +41,12 @@ class ExecutionBuilder(metaclass=Singleton):
                     buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[pulse_sequence])
                     continue
                 buses[bus_idx].add_pulse_sequence(pulse_sequence=pulse_sequence)
+
+        # TODO: This is a temporary fix to add a CW bus when present in the platform, without a pulse sequence
+        bus_idx, bus = platform.get_bus_by_system_control_type(
+            system_control_subcategory=SystemControlSubcategory.CW_SYSTEM_CONTROL
+        )
+        if bus is not None:
+            buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[])
 
         return BusesExecution(buses=list(buses.values()), num_sequences=len(pulse_sequences_list))

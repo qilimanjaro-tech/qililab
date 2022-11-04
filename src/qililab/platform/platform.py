@@ -5,7 +5,7 @@ from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlSubcategory
 from qililab.typings.yaml_type import yaml
 
 
@@ -43,28 +43,28 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        #print("Entered to get an element")
-        #print(f"alias={alias}; category={category}; id_={id_}")
+        # print("Entered to get an element")
+        # print(f"alias={alias}; category={category}; id_={id_}")
         if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
             category is not None and Category(category) == Category.PLATFORM
         ):
-            #print("Entered IF A")
+            # print("Entered IF A")
             return self.settings
 
         element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
         if element is None:
-            #print("Entered case 1")
+            # print("Entered case 1")
             element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
         if element is None:
-            #print("Entered case 2")
+            # print("Entered case 2")
             if category is not None and id_ is not None:
-                #print("Entered case 2.a")
+                # print("Entered case 2.a")
                 element = self.chip.get_node_from_id(node_id=id_)
             if alias is not None:
-                #print("Entered case 2.b")
+                # print("Entered case 2.b")
                 element = self.chip.get_node_from_alias(alias=alias)
         if element is None:
-            # 
+            #
             # print("Entered case 3")
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
@@ -80,6 +80,21 @@ class Platform:
         """
         return next(
             ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
+            ([], None),
+        )
+
+    def get_bus_by_system_control_type(self, system_control_subcategory: SystemControlSubcategory):
+        """Find bus with a sytem control of type 'system_control_subcategory'.
+
+        Returns:
+            Bus | None: Returns a Bus object or None if none is found.
+        """
+        return next(
+            (
+                (bus_idx, bus)
+                for bus_idx, bus in enumerate(self.buses)
+                if bus.system_control.subcategory == system_control_subcategory
+            ),
             ([], None),
         )
 
