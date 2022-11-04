@@ -43,8 +43,13 @@ class BusesExecution:
         for idx, _ in itertools.product(
             tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable), range(software_average)
         ):
+            # TODO: change the order to be async: first all controls and finally the readout. And also the ones without pulses, should run without those
             for bus in self.buses:
-                result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
+                result = (
+                    bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
+                    if len(bus.pulse_sequences) > 0
+                    else bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=None, path=path)
+                )
                 if result is not None:
                     results.append(result)
                     self._asynchronous_data_handling(result=result, path=path, plot=plot)

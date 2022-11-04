@@ -24,8 +24,13 @@ class BusExecution:
         """Start/Turn on the instruments."""
         self.system_control.start()
 
-    def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
+    def run(self, nshots: int, repetition_duration: int, idx: int | None, path: Path):
         """Run the given pulse sequence."""
+        # TODO: fix this options when a system_control can run without a pulse sequence
+        if idx is None:
+            return self.system_control.run(
+                pulse_sequence=None, nshots=nshots, repetition_duration=repetition_duration, path=path
+            )
         return self.system_control.run(
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )

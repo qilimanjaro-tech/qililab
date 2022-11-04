@@ -36,7 +36,7 @@ class SystemControl(BusElement, ABC):
 
     @abstractmethod
     def run(
-        self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path
+        self, pulse_sequence: PulseSequence | None, nshots: int, repetition_duration: int, path: Path
     ) -> List[Result] | None:
         """Run the given pulse sequence."""
 
