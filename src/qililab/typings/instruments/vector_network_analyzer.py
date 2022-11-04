@@ -144,7 +144,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.timeout = value
         self.driver.timeout = self.timeout
 
-    def continuous(self, continuous: boolean):
+    def continuous(self, continuous):
         if continuous:
             self.driver.write(":INIT:CONT ON")
         else:
