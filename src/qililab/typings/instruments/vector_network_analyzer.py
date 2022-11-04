@@ -107,6 +107,8 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def get_data(self):  # sourcery skip: simplify-division
         """get data"""
+        self.driver.write(":INIT:CONT OFF")
+        self.driver.write(":INIT:IMM; *WAI")
         self.driver.write("CALC:MEAS:DATA:SDATA?")
         serialized_data = self.driver.read_raw()
         i_0 = serialized_data.find(b"#")
@@ -141,3 +143,9 @@ class VectorNetworkAnalyzerDriver(Device):
         """set timeout in mili seconds"""
         self.timeout = value
         self.driver.timeout = self.timeout
+
+    def continuous(self, continuous: boolean):
+        if continuous:
+            self.driver.write(":INIT:CONT ON")
+        else:
+            self.driver.write(":INIT:CONT OFF")
