@@ -25,7 +25,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def initial_setup(self):
         """Set initial preset"""
-        self.driver.write("FORM:DATA REAL32")
+        self.driver.write("FORM:DATA REAL,32")
         self.driver.write("*CLS")
         self.driver.write("SYST:PRES; *OPC?")
 
@@ -64,7 +64,7 @@ class VectorNetworkAnalyzerDriver(Device):
         if upper_par == "?":
             return self.send_command(f"CALC1:PAR{trace}:DEF")
         scatter_param = VNAScatteringParameters(upper_par)
-        return self.send_command(f"CALC1:MEAS{scatter_param.value}:PAR", upper_par)
+        return self.send_command(f"CALC1:MEAS{trace}:PAR", upper_par)
 
     def autoscale(self):
         """autoscale"""
