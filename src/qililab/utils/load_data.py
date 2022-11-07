@@ -6,7 +6,7 @@ from typing import Tuple
 
 import yaml
 
-from qililab.constants import DATA
+from qililab.constants import DATA, EXPERIMENT_FILENAME, RESULTS_FILENAME
 from qililab.experiment import Experiment
 from qililab.result import Results
 
@@ -40,12 +40,12 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     """
     parsed_path = Path(path) if isinstance(path, str) else _get_last_created_experiment_path()
     experiment, results = None, None
-    if os.path.exists(parsed_path / "experiment.yml"):
-        with open(parsed_path / "experiment.yml", mode="r", encoding="utf-8") as experiment_file:
+    if os.path.exists(parsed_path / EXPERIMENT_FILENAME):
+        with open(parsed_path / EXPERIMENT_FILENAME, mode="r", encoding="utf-8") as experiment_file:
             experiment = Experiment.from_dict(yaml.safe_load(stream=experiment_file))
 
-    if os.path.exists(parsed_path / "results.yml"):
-        with open(parsed_path / "results.yml", mode="r", encoding="utf-8") as results_file:
+    if os.path.exists(parsed_path / RESULTS_FILENAME):
+        with open(parsed_path / RESULTS_FILENAME, mode="r", encoding="utf-8") as results_file:
             results = Results(**yaml.safe_load(stream=results_file))
 
     return experiment, results

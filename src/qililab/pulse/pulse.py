@@ -40,10 +40,10 @@ class Pulse:
         """
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(self.duration / resolution) * 1e-9 * resolution
+        time = np.arange(self.duration / resolution) * 1e-9 * resolution + self.start_time * 1e-9
         cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
         sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
-        mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
+        mod_matrix = (1.0 / np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
         imod, qmod = np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 

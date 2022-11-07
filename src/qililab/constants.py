@@ -12,6 +12,8 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
+DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
+
 # TODO: Distribute constants over different classes
 
 
@@ -37,6 +39,7 @@ class RUNCARD:
     FIRMWARE = "firmware"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    GATES = "gates"
 
 
 class PLATFORM:
