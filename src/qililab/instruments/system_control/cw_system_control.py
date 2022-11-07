@@ -29,6 +29,9 @@ class CWSystemControl(SystemControl):
         """CWSystemControlSettings class."""
 
         signal_generator: SignalGenerator
+        power: float = -20
+        frequency: float = 7e9
+        status: bool = False
         # awg: AWG
         def __iter__(
             self,
@@ -44,16 +47,20 @@ class CWSystemControl(SystemControl):
 
     settings: CWSystemControlSettings
 
+    def set_parameter(self, **kw):
+        print(f'[CW Sys Ctrl] Called Set Parameter {kw}')
+
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
         print("created sysctrl CW")
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     def setup(self, frequencies: List[float]):
-        self.signal_generator.device.power(-20)
+        self.signal_generator.device.power(self.settings.power)
         # self.signal_generator.device.power(self.settings.power)
-        self.signal_generator.device.frequency(7e9)
-        self.signal_generator.device.on()
+        self.signal_generator.device.frequency(self.settings.frequency)
+        if self.settings.status:
+            self.signal_generator.device.on()
         print('CW bus setup')
 
     def start(self):
