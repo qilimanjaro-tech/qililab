@@ -69,6 +69,18 @@ class Results:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array.squeeze()
 
+    def to_dataframe(self, reset_index: bool = True) -> np.ndarray:
+        """Probabilities of being in the ground and excited state of all the nested Results classes.
+
+        Returns:
+            np.ndarray: List of probabilities of each executed loop and sequence.
+        """
+        # TODO:
+        #  results = list of self.results
+        #  df = pd.Dataframe ( concatenate resutls adding index layer with index of result )
+        #  if reset_index:  # optional
+        #      return df.reset_index() instead of df. It is probably more visual this way
+
     def acquisitions(self, mean: bool = False) -> np.ndarray:
         """QbloxResult acquisitions of all the nested Results classes.
 

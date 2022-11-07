@@ -2,9 +2,13 @@
 from dataclasses import asdict, dataclass, field
 from typing import List, Tuple
 
+from qililab.utils import nested_dict_to_pandas_dataframe
+
 from qililab.constants import RUNCARD
 from qililab.typings.enums import ResultName
 from qililab.typings.factory_element import FactoryElement
+
+import pandas as pd
 
 
 # FIXME: Cannot use dataclass and ABC at the same time
@@ -28,3 +32,11 @@ class Result(FactoryElement):
             dict: Dictionary containing all the class information.
         """
         return asdict(self) | {RUNCARD.NAME: self.name.value}
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """
+        Returns:
+            DataFrame: dataframe containing all the results.
+        """
+
+        return nested_dict_to_pandas_dataframe(self.to_dict())
