@@ -5,14 +5,14 @@ from qililab.execution.bus_execution import BusExecution
 from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
 from qililab.platform import Platform
-from qililab.pulse import PulseSequences
+from qililab.pulse import PulseSchedule
 from qililab.utils import Singleton
 
 
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_sequences: List[PulseSequences]) -> Execution:
+    def build(self, platform: Platform, pulse_sequences: List[PulseSchedule]) -> Execution:
         """Build Execution class.
 
         Returns:
@@ -22,7 +22,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
         return Execution(buses_execution=buses_execution, platform=platform)
 
-    def _build_buses_execution(self, platform: Platform, pulse_sequences_list: List[PulseSequences]):
+    def _build_buses_execution(self, platform: Platform, pulse_sequences_list: List[PulseSchedule]):
         """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.
 
         Returns:

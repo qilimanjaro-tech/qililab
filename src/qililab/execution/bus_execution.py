@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.typings import BusSubcategory
 from qililab.utils import Waveforms
 
@@ -14,7 +14,7 @@ class BusExecution:
     """BusExecution class."""
 
     bus: Bus
-    pulse_sequences: List[PulseSequence] = field(default_factory=list)
+    pulse_sequences: List[PulseBusSchedule] = field(default_factory=list)
 
     def setup(self):
         """Setup instruments."""
@@ -34,7 +34,7 @@ class BusExecution:
             pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
         )
 
-    def add_pulse_sequence(self, pulse_sequence: PulseSequence):
+    def add_pulse_sequence(self, pulse_sequence: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
 
         Args:

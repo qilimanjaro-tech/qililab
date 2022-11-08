@@ -42,9 +42,11 @@ from qililab.pulse import (
     Drag,
     Gaussian,
     Pulse,
-    PulseSequence,
-    PulseSequences,
+    PulseBusSchedule,
+    PulseEvent,
+    PulseSchedule,
     PulseShape,
+    ReadoutEvent,
     ReadoutPulse,
     Rectangular,
 )
@@ -285,15 +287,15 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
 
 
 @pytest.fixture(name="pulse_sequences", params=experiment_params)
-def fixture_pulses(platform: Platform) -> PulseSequences:
+def fixture_pulses(platform: Platform) -> PulseSchedule:
     """Return Pulses instance."""
     return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 @pytest.fixture(name="pulse_sequence")
-def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseSequences instance."""
-    return PulseSequence(pulses=[pulse], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
@@ -410,7 +412,30 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
+    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="readout_event")
+def fixture_readout_event() -> ReadoutEvent:
+    """Load ReadoutEvent.
+
+    Returns:
+        ReadoutEvent: Instance of the PulseEvent class.
+    """
+    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50)
+    return ReadoutEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="readout_pulse")
@@ -421,7 +446,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="mixer_based_system_control")

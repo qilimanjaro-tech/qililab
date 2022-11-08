@@ -8,7 +8,7 @@ from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.typings.enums import SystemControlSubcategory
 from qililab.utils.factory import Factory
@@ -73,7 +73,7 @@ class SimulatedSystemControl(SystemControl):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
 
         resolution = self.settings.resolution

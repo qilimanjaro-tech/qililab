@@ -15,7 +15,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
-from qililab.pulse import PulseSequence, PulseShape
+from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.instruments import Pulsar, QcmQrm
 
 
@@ -47,7 +47,7 @@ class QbloxModule(AWG):
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
     # Cache containing the last PulseSequence, nshots and repetition_duration used.
-    _cache: Tuple[PulseSequence, int, int] | None = None
+    _cache: Tuple[PulseBusSchedule, int, int] | None = None
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -61,7 +61,7 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
         Args:
@@ -72,7 +72,7 @@ class QbloxModule(AWG):
         )
         self.start_sequencer()
 
-    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """check if values are already cached and upload if not cached"""
         if (pulse_sequence, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_sequence, nshots, repetition_duration)
@@ -81,7 +81,7 @@ class QbloxModule(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-    def _translate_pulse_sequence(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int):
+    def _translate_pulse_sequence(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -99,7 +99,7 @@ class QbloxModule(AWG):
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_sequence: PulseSequence, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self, pulse_sequence: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
@@ -238,7 +238,7 @@ class QbloxModule(AWG):
             self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
             self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
 
-    def _generate_waveforms(self, pulse_sequence: PulseSequence):
+    def _generate_waveforms(self, pulse_sequence: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_sequence (PulseSequence): PulseSequence object.

@@ -109,7 +109,7 @@ class PULSESEQUENCES:
 class PULSESEQUENCE:
     """PulseSequence attribute names."""
 
-    PULSES = "pulses"
+    TIMELINE = "timeline"
     PORT = "port"
 
 
@@ -123,6 +123,12 @@ class PULSE:
     DURATION = "duration"
     PORT = "port"
     PULSE_SHAPE = "pulse_shape"
+
+
+class PULSEEVENT:
+    """PulseEvent attribute names."""
+
+    PULSE = "pulse"
     START_TIME = "start_time"
 
 

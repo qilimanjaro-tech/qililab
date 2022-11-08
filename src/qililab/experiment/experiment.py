@@ -13,7 +13,7 @@ from qililab.config import logger
 from qililab.constants import EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSequences
+from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
@@ -42,7 +42,7 @@ class Experiment:
 
     def __init__(
         self,
-        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
+        sequences: List[Circuit | PulseSchedule] | Circuit | PulseSchedule,
         platform: Platform,
         loops: List[Loop] | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
@@ -303,7 +303,7 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
+    def _build_execution(self, sequence_list: List[Circuit | PulseSchedule]) -> Tuple[Execution, List[PulseSchedule]]:
         """Build Execution class.
 
         Args:
@@ -391,7 +391,7 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+        sequences = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         input_loops = dictionary[EXPERIMENT.LOOPS]
         loops = [Loop(**loop) for loop in input_loops] if input_loops is not None else None
         experiment_name = dictionary[RUNCARD.NAME]

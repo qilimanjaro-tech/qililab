@@ -10,7 +10,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
 
@@ -52,7 +52,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
     settings: QbloxQRMSettings
 
-    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """check if values are already cached and upload if not cached"""
         readout_pulse_duration = pulse_sequence.readout_pulse_duration
         if self.integration_length != readout_pulse_duration:
@@ -70,7 +70,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.settings.integration_length = readout_pulse_duration
         self.setup()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
+    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:

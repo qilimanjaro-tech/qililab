@@ -11,7 +11,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
 
@@ -59,7 +59,7 @@ class MixerBasedSystemControl(SystemControl):
         """Start/Turn on the instruments."""
         self.signal_generator.start()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
