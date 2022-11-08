@@ -36,6 +36,7 @@ class RuncardSchema:
             subcategory: str
             system_control: dict
             port: int
+            alias: str | None = None
             attenuator: dict | None = None
 
         @dataclass
