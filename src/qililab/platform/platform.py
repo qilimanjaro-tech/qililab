@@ -55,6 +55,11 @@ class Platform:
         if element is None:
             # print("Entered case 1")
             element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
+            
+        # case for alias of buses
+        if element is None:
+            print('Entered expected case')
+            element = self.get_bus_by_alias(alias=alias)
         if element is None:
             # print("Entered case 2")
             if category is not None and id_ is not None:
@@ -68,6 +73,22 @@ class Platform:
             # print("Entered case 3")
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
+    
+    def get_bus_by_alias(self, alias: str | None = None):
+        """Get bus element by its alias.
+
+        Args:
+            alias (str): Alias of bus being searched.
+
+        Returns:
+            Bus
+        """
+        print(f'Looking for bus {alias}')
+        for b_candidate in self.buses.elements:
+            print(f'Testing {b_candidate.settings.alias}')
+            if b_candidate.settings.alias == alias:
+                print('Found!')
+                return b_candidate
 
     def get_bus(self, port: int):
         """Find bus of type 'bus_subcategory' that contains the given qubits.

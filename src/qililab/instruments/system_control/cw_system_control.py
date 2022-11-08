@@ -14,7 +14,7 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
-from qililab.typings import Category, SystemControlSubcategory
+from qililab.typings import Category, SystemControlSubcategory, Parameter
 from qililab.utils import Factory
 
 
@@ -47,8 +47,13 @@ class CWSystemControl(SystemControl):
 
     settings: CWSystemControlSettings
 
-    def set_parameter(self, **kw):
+    def set_parameter(self, parameter: Parameter, value: float, **kw):
         print(f'[CW Sys Ctrl] Called Set Parameter {kw}')
+        if parameter == Parameter.FREQUENCY:
+            self.settings.frequency = value
+            print('Doing something to change frequency')
+            self.signal_generator.device.frequency(value)
+        
 
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
@@ -137,4 +142,4 @@ class CWSystemControl(SystemControl):
 
     def __str__(self):
         """String representation of the CWSystemControl class."""
-        return f"{self.awg}|----|{self.signal_generator}"
+        return f"{self.signal_generator}"

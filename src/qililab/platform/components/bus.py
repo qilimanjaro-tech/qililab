@@ -53,6 +53,10 @@ class Bus:
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
         self.targets = chip.get_port_nodes(port_id=self.port)
 
+    def set_parameter(self, **kw):
+        print(f'[Bus {self.settings.alias}] Called Set Parameter {kw}')
+        self.system_control.set_parameter(**kw)
+
     @property
     def id_(self):
         """Bus 'id_' property.

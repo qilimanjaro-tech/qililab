@@ -270,10 +270,10 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        #print("Setting parameter")
-        #print(f"parameter={parameter}; value={value}; alias={alias}")
-        #print(f"instrument={instrument}; id_={id_}; element={element}")
-        #print(type(element))
+        print("Setting parameter")
+        print(f"parameter={parameter}; value={value}; alias={alias}")
+        print(f"instrument={instrument}; id_={id_}; element={element}")
+        print(type(element))
         category = Category(instrument.value) if instrument is not None else None
         if element is None:
             #print("Entered branch 1")
