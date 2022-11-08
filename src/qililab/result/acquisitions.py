@@ -3,8 +3,7 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-import numpy as np
-import numpy.typing as npt
+import pandas as pd
 
 from qililab.result.acquisition import Acquisition
 
@@ -19,11 +18,12 @@ class Acquisitions:
 
     _acquisitions: List[Acquisition] = field(init=False)
 
-    def acquisitions(self) -> npt.NDArray[np.float32]:
+    def acquisitions(self) -> pd.DataFrame:
         """return the acquisitions with a structure
         I, Q, Amplitude, Phase
         """
-        return np.array([acquisition.acquisition for acquisition in self._acquisitions])
+        acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
+        return pd.concat(acquisition_list, keys=range(len(acquisition_list)), names=['acquisition_index'])
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.

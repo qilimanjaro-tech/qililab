@@ -45,7 +45,7 @@ class QbloxResult(Result):
             pulse_length=self.pulse_length, scope=self.scope, bins=self.bins
         )
 
-    def acquisitions(self) -> np.ndarray:
+    def acquisitions(self) -> pd.DataFrame:
         """Return acquisition values.
 
         Returns:

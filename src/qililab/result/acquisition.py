@@ -5,6 +5,7 @@ from typing import List
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
 
 @dataclass
@@ -24,7 +25,7 @@ class Acquisition:
     q_values: npt.NDArray[np.float32]
     amplitude_values: npt.NDArray[np.float32] = field(init=False)
     phase_values: npt.NDArray[np.float32] = field(init=False)
-    acquisition: npt.NDArray[np.float32] = field(init=False)
+    acquisition: pd.DataFrame = field(init=False)
 
     def __post_init__(self):
         """Create acquisitions"""
@@ -34,12 +35,17 @@ class Acquisition:
         self.phase_values = self._phases(i_normalized=self.i_values, q_normalized=self.q_values)
         self.acquisition = self._create_acquisition()
 
-    def _create_acquisition(self) -> npt.NDArray[np.float32]:
+    def _create_acquisition(self) -> pd.DataFrame:
         """transposes each of the acquired results arrays so that we have for each value
         a structure with i, q, amplitude, phase.
         For multiple values you may need to redefine this method
         """
-        return np.array([self.i_values, self.q_values, self.amplitude_values, self.phase_values]).transpose()
+        return pd.DataFrame({
+            "i_values": self.i_values,
+            "q_values": self.q_values,
+            "amplitude_values": self.amplitude_values,
+            "phase_values": self.phase_values,
+        })
 
     def _normalized_data(self, data: List[float]):
         """Normalizes the given data with the integration length,
@@ -63,7 +69,7 @@ class Acquisition:
         Returns:
             NDArray[numpy.float]: amplitude
         """
-        return np.sqrt(i_normalized**2 + q_normalized**2)
+        return np.sqrt(i_normalized ** 2 + q_normalized ** 2)
 
     def _phases(self, i_normalized: npt.NDArray[np.float32], q_normalized: npt.NDArray[np.float32]):
         """Computes the phases of a given I and Q data
