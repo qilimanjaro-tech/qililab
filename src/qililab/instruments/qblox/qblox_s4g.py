@@ -30,25 +30,39 @@ class QbloxS4g(CurrentSource):
     settings: QbloxS4gSettings
     device: QbloxS4gDriver
 
+    def dac(self, dac_index: int):
+        """get channel associated to the specific dac
+
+        Args:
+            dac_index (int): channel index
+
+        Returns:
+            _type_: _description_
+        """
+        return getattr(self.device, f"dac{dac_index}")
+
+    def _channel_setup(self, dac_index: int) -> None:
+        """Setup for a specific dac channel
+
+        Args:
+            dac_index (int): dac specific index channel
+        """
+        channel = self.dac(dac_index=dac_index)
+        channel.ramping_enabled(self.ramping_enabled[dac_index])
+        channel.ramp_rate(self.ramp_rate[dac_index])
+        channel.span(self.span[dac_index])
+        channel.current(self.current[dac_index])
+        print(f"SPI current set to {channel.current()}")
+        while channel.is_ramping():
+            sleep(0.1)
+
     @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set S4g current. Value ranges are:
         - current: (-40, 40)mA.
         """
-        # get channel associated to the specific dac
-        channel = self.get_dac_channel_from_device(dac_idx=self.dac)
-
-        channel.ramping_enabled(self.ramping_enabled)
-        channel.ramp_rate(self.ramp_rate)
-        channel.span(self.span)
-        channel.current(self.current)
-        print(f"SPI current set to {channel.current()}")
-        while channel.is_ramping():
-            sleep(0.1)
-
-    def get_dac_channel_from_device(self, dac_idx: int):
-        """get channel associated to the specific dac"""
-        return getattr(self.device, f"dac{dac_idx}")
+        for channel_index in self.dacs:
+            self._channel_setup(dac_index=channel_index)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

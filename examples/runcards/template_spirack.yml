@@ -131,10 +131,11 @@ schema:
     id_: 0
     category: current_source
     firmware: None
-    current: 0.001
-    ramping_enabled: True
-    ramp_rate: 0.0001
-    span: "range_max_bi"
+    current: [0.001, 0.002] 
+    ramping_enabled: [True, True]
+    ramp_rate: [0.0001, 0.0001]
+    span: ["range_max_bi", "range_max_bi"]
+    dacs: [0,1]
 
 
 

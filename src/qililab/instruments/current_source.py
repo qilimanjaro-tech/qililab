@@ -1,8 +1,8 @@
 """CurrentSource class."""
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import List
 
-from qililab.constants import CURRENTSOURCE
 from qililab.instruments.instrument import Instrument
 
 
@@ -18,11 +18,11 @@ class CurrentSource(Instrument):
                 Value range is (-8, 8).
         """
 
-        current: float
-        span: str
-        ramping_enabled: bool
-        ramp_rate: float
-        dac: int 
+        current: List[float]
+        span: List[str]
+        ramping_enabled: List[bool]
+        ramp_rate: List[float]
+        dacs: List[int]
 
     settings: CurrentSourceSettings
 
@@ -36,13 +36,13 @@ class CurrentSource(Instrument):
         return self.settings.current
 
     @property
-    def dac(self):
-        """CurrentSource 'dac' property.
+    def dacs(self):
+        """CurrentSource 'dacs' property.
 
         Returns:
-            int: settings.dac
+            int: settings.dacs
         """
-        return self.settings.dac
+        return self.settings.dacs
 
     @property
     def span(self):
@@ -77,5 +77,4 @@ class CurrentSource(Instrument):
 
     def to_dict(self):
         """Return a dict representation of the CurrentSource class."""
-        return {key: value for key, value in super().to_dict().items() if key != CURRENTSOURCE.CURRENT}
-        # TODO: Ask why except CURRENT? (was frequency in signal generator)
+        return dict(super().to_dict().items())
