@@ -5,6 +5,7 @@ from types import NoneType
 from typing import List, Tuple
 
 import numpy as np
+import pandas as pd
 
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.result.qblox_results.qblox_result import QbloxResult
@@ -15,6 +16,7 @@ from qililab.utils.util_loops import (
     compute_ranges_from_loops,
     compute_shapes_from_loops,
 )
+from qililab.utils import insert_index_level_into_dataframe
 
 
 @dataclass
@@ -56,6 +58,8 @@ class Results:
         Returns:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
+
+        # Add to self.results the Nones necessary to reach the shape deduced from Loops
         self._fill_missing_values()
         num_qubits = len(self.results[0].probabilities())
         probs: List[List[Tuple[float, float]]] = [[] for _ in range(num_qubits)]
@@ -69,44 +73,40 @@ class Results:
             flipped_array = np.mean(a=flipped_array, axis=-1)
         return flipped_array.squeeze()
 
-    def to_dataframe(self, reset_index: bool = True) -> np.ndarray:
-        """Probabilities of being in the ground and excited state of all the nested Results classes.
+    def to_dataframe(self, reset_index: bool = True) -> pd.DataFrame:
+        """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an
+        index that specifies to which result belongs the data.
 
         Returns:
-            np.ndarray: List of probabilities of each executed loop and sequence.
+            pd.DataFrame: List of probabilities of each executed loop and sequence.
         """
-        # TODO:
-        #  results = list of self.results
-        #  df = pd.Dataframe ( concatenate resutls adding index layer with index of result )
-        #  if reset_index:  # optional
-        #      return df.reset_index() instead of df. It is probably more visual this way
 
-    def acquisitions(self, mean: bool = False) -> np.ndarray:
+        result_dataframes = [result.to_dataframe() for result in self.results]
+        return pd.concat(result_dataframes, keys=range(len(result_dataframes)), names=['result_index'])
+
+    def acquisitions(self, mean: bool = False) -> pd.DataFrame:
         """QbloxResult acquisitions of all the nested Results classes.
 
         Returns:
             np.ndarray: Acquisition values.
         """
+
         if self.results is None or len(self.results) <= 0:
-            return np.array([])
+            return pd.DataFrame([])
+
         if not isinstance(self.results[0], QbloxResult):
             raise ValueError(f"{type(self.results[0]).__name__} class doesn't have an acquisitions method.")
-        result_shape = self.results[0].shape
+
         self._fill_missing_values()
-        results: List[List[np.ndarray]] = [[] for _ in range(result_shape[0])]
-        for result in self.results:
-            if not isinstance(result, (QbloxResult, NoneType)):
-                raise ValueError(f"{type(result).__name__} class doesn't have an acquisitions method.")
-            result_values = (
-                result.acquisitions() if result is not None else np.full(shape=result_shape, fill_value=np.nan)
-            )
-            for result_idx, result_value in enumerate(result_values):
-                results[result_idx].append(result_value)
-        array = np.reshape(a=np.array(results), newshape=[result_shape[0]] + self.shape + result_shape[1:])
-        flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=1)
-        if mean and self.software_average > 1:
-            flipped_array = np.mean(a=flipped_array, axis=-1)
-        return flipped_array.squeeze()
+
+        result_dataframe_list = [result.acquisitions() if result is not None
+                                 else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
+                                 for result in self.results]
+        return pd.concat(result_dataframe_list, keys=range(len(result_dataframe_list)), names=['result_index'])
+
+        # TODO: mean can be easily done with a groupby. What index is the mean done over? The mean is the mean of what?
+        # if mean and self.software_average > 1:
+        #     flipped_array = np.mean(a=flipped_array, axis=-1)
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""
