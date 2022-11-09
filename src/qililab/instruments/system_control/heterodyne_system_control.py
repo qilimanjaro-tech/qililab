@@ -201,9 +201,7 @@ class HeterodyneSystemControl(SystemControl):
         demodulated_I = demodulated_signal[:, 0]
         demodulated_Q = demodulated_signal[:, 1]
         # ## 2.4 Integrate
-        integrated_I = integ.trapz(demodulated_I, dx=1) / len(
-            demodulated_I
-        )  # dx is the spacing between points, in our case 1ns
+        integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
         # print(integrated_I,integrated_Q)
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)

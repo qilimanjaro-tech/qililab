@@ -22,6 +22,7 @@ class CurrentSource(Instrument):
         span: str
         ramping_enabled: bool
         ramp_rate: float
+        dac: int 
 
     settings: CurrentSourceSettings
 
@@ -33,6 +34,15 @@ class CurrentSource(Instrument):
             float: settings.current.
         """
         return self.settings.current
+
+    @property
+    def dac(self):
+        """CurrentSource 'dac' property.
+
+        Returns:
+            int: settings.dac
+        """
+        return self.settings.dac
 
     @property
     def span(self):
