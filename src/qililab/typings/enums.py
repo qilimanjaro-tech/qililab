@@ -371,6 +371,7 @@ class Parameter(Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
+    DAC = "dac"
 
 
 class ResultName(Enum):
