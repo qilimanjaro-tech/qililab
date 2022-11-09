@@ -29,33 +29,26 @@ class QbloxS4g(CurrentSource):
 
     settings: QbloxS4gSettings
     device: QbloxS4gDriver
-    
+
     @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set S4g current. Value ranges are:
         - current: (-40, 40)mA.
         """
-        channel = f'dac{self.dac}'
+        # get channel associated to the specific dac
+        channel = self.get_dac_channel_from_device(dac_idx=self.dac)
 
-        if channel=="dac0":
-            self.device.dac0.ramping_enabled(self.ramping_enabled)
-            self.device.dac0.ramp_rate(self.ramp_rate)
-            self.device.dac0.span(self.span)
-            self.device.dac0.current(self.current)
-            print(f'SPI current set to {self.device.dac0.current()}')
-            while self.device.dac0.is_ramping():
-                sleep(0.1)
+        channel.ramping_enabled(self.ramping_enabled)
+        channel.ramp_rate(self.ramp_rate)
+        channel.span(self.span)
+        channel.current(self.current)
+        print(f"SPI current set to {channel.current()}")
+        while channel.is_ramping():
+            sleep(0.1)
 
-        if channel=="dac1":
-            self.device.dac1.ramping_enabled(self.ramping_enabled)
-            self.device.dac1.ramp_rate(self.ramp_rate)
-            self.device.dac1.span(self.span)
-            self.device.dac1.current(self.current)
-            print(f'SPI current set to {self.device.dac1.current()}')
-            while self.device.dac1.is_ramping():
-                sleep(0.1)
-
-        # TODO: Implement more dacs
+    def get_dac_channel_from_device(self, dac_idx: int):
+        """get channel associated to the specific dac"""
+        return getattr(self.device, f"dac{dac_idx}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -71,7 +64,7 @@ class QbloxS4g(CurrentSource):
     def stop(self):
         """Stop outputing current."""
         # self.device.dac0.current(0.0)
-        #sleep(0.1)
+        # sleep(0.1)
         # print(f'Current resetted to {self.device.dac0.current()}')
 
     @Instrument.CheckDeviceInitialized
