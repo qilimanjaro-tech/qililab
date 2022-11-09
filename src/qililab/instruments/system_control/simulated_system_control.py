@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from qilisimulator.evolution import Evolution
+# from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.instruments.instruments import Instruments
@@ -52,17 +52,17 @@ class SimulatedSystemControl(SystemControl):
         store_states: bool
 
     settings: SimulatedSystemControlSettings
-    _evo: Evolution
+    # _evo: Evolution
 
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
-        self._evo = Evolution(
-            qubit_name=self.settings.qubit,
-            qubit_params=self.settings.qubit_params,
-            port_name=self.settings.drive,
-            port_params=self.settings.drive_params,
-            store_states=self.settings.store_states,
-        )
+        # self._evo = Evolution(
+        #     qubit_name=self.settings.qubit,
+        #     qubit_params=self.settings.qubit_params,
+        #     port_name=self.settings.drive,
+        #     port_params=self.settings.drive_params,
+        #     store_states=self.settings.store_states,
+        # )
 
     def start(self):
         """Start instrument."""
@@ -87,13 +87,13 @@ class SimulatedSystemControl(SystemControl):
         sequence = [i_waveform]
 
         # Init evolution pulse sequence
-        self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
+        # self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
 
         # Evolve
-        self._evo.evolve()
+        # self._evo.evolve()
 
         # Store results
-        return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
+        # return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
 
     @property
     def awg_frequency(self):
@@ -111,7 +111,7 @@ class SimulatedSystemControl(SystemControl):
         Returns:
             float: qubit frequency
         """
-        return self._evo.system.qubit.frequency
+        # return self._evo.system.qubit.frequency
 
     @frequency.setter
     def frequency(self, target_freqs: list[float]):

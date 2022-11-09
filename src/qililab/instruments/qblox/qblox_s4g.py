@@ -29,18 +29,21 @@ class QbloxS4g(CurrentSource):
 
     settings: QbloxS4gSettings
     device: QbloxS4gDriver
+    dac: int = 0
 
     @Instrument.CheckDeviceInitialized
     def setup(self):
         """Set S4g current. Value ranges are:
         - current: (-40, 40)mA.
         """
-        self.device.dac0.ramping_enabled(self.ramping_enabled)
-        self.device.dac0.ramp_rate(self.ramp_rate)
-        self.device.dac0.span(self.span)
-        self.device.dac0.current(self.current)
-        print(f'SPI current set to {self.device.dac0.current()}')
-        while self.device.dac0.is_ramping():
+        ch = f'dac{dac}'
+
+        self.device.ch.ramping_enabled(self.ramping_enabled)
+        self.device.ch.ramp_rate(self.ramp_rate)
+        self.device.ch.span(self.span)
+        self.device.ch.current(self.current)
+        print(f'SPI current set to {self.device.ch.current()}')
+        while self.device.ch.is_ramping():
             sleep(0.1)
         # TODO: Implement more dacs
 
