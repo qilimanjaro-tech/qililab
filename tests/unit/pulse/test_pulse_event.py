@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import Pulse, PulseEvent
+from qililab.pulse import PulseEvent
 from qililab.utils import Waveforms
 
 

@@ -10,7 +10,7 @@ from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
@@ -20,13 +20,6 @@ class Pulse:
     duration: int
     pulse_shape: PulseShape
     frequency: float | None = None
-
-    def __post_init__(self):
-        """Create Pulse Shape"""
-        if isinstance(self.pulse_shape, dict):
-            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
-                **self.pulse_shape,  # pylint: disable=not-a-mapping
-            )
 
     def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.

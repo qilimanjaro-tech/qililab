@@ -2,7 +2,8 @@
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSEEVENT, RUNCARD
-from qililab.pulse import Pulse, ReadoutPulse
+from qililab.pulse.pulse import Pulse
+from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.typings.enums import PulseName
 from qililab.utils.waveforms import Waveforms
 
@@ -14,11 +15,13 @@ class PulseEvent:
     pulse: Pulse
     start_time: int
     end_time: int = field(init=False)
-    sort_index = field(init=False)
+    duration: int = field(init=False)
+    sort_index: int = field(init=False)
 
     def __post_init__(self):
         self.sort_index = self.start_time
-        self.end_time = self.start_time + self.pulse.duration
+        self.duration = self.pulse.duration
+        self.end_time = self.start_time + self.duration
 
     def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
         return self.pulse.modulated_waveforms(frequency=frequency, resolution=resolution, start_time=self.start_time)

@@ -19,8 +19,8 @@ class PulseBusSchedule:
     (Pulse or ReadoutPulse) and have the same frequency."""
 
     port: int
-    timeline: List[PulseEvent] = []
-    _pulses: Set[Pulse] = field(init=False)
+    timeline: List[PulseEvent] = field(default_factory=list)
+    _pulses: Set[Pulse] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Sort timeline and add used pulses to the pulses set if timeline is not empty."""
@@ -31,9 +31,9 @@ class PulseBusSchedule:
         """Sort timeline and add used pulses to the pulses set."""
         self.timeline.sort()
         for pulse_event in self.timeline:
-            self._pulses.add(pulse_event.pulse)
+            self.pulses.add(pulse_event.pulse)
         reference_pulse = self.timeline[0].pulse
-        for pulse in self._pulses:
+        for pulse in self.pulses:
             if pulse.frequency != reference_pulse.frequency:
                 raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
             if pulse.name != reference_pulse.name:
@@ -123,14 +123,14 @@ class PulseBusSchedule:
         """
         waveforms = Waveforms()
         time = 0
-        for pulse in self.pulses:
-            wait_time = round((pulse.start - time) / resolution)
+        for pulse_event in self.timeline:
+            wait_time = round((pulse_event.start - time) / resolution)
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
-            time += pulse.start
-            pulse_waveforms = pulse.modulated_waveforms(frequency=frequency, resolution=resolution)
+            time += pulse_event.start
+            pulse_waveforms = pulse_event.modulated_waveforms(frequency=frequency, resolution=resolution)
             waveforms += pulse_waveforms
-            time += pulse.duration
+            time += pulse_event.duration
 
         return waveforms
 
