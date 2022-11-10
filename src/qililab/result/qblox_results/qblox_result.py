@@ -56,11 +56,15 @@ class QbloxResult(Result):
 
         Returns:
             QbloxScopeAcquisitions: demodulated scope acquisitions."""
+        if self.qblox_scope_acquisitions is None:
+            raise ValueError("Scope acquisitions cannot be demodulated because it doesn't exist.")
         return self.qblox_scope_acquisitions.demodulated(frequency=frequency, phase_offset=phase_offset)
 
     def _integrated_scope(
         self, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
     ) -> QbloxScopeAcquisitions:
+        if self.qblox_scope_acquisitions is None:
+            raise ValueError("Scope acquisitions cannot be integrated because it doesn't exist.")
         return self.qblox_scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
 
     def acquisitions(self) -> npt.NDArray[np.float32]:
@@ -77,8 +81,10 @@ class QbloxResult(Result):
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
         integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> npt.NDArray[np.float32]:
+    ) -> npt.NDArray[np.float32] | None:
         acquisitions = self.qblox_scope_acquisitions
+        if acquisitions is None:
+            return None
         if demod_freq != 0.0:
             acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
         if integrate:
