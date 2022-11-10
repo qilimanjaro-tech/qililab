@@ -38,7 +38,7 @@ class Drag(PulseShape):
                 f"master drag coefficient {self.drag_coefficient} does not have a valid value: {MasterPulseShapeSettingsName.DRAG_COEFFICIENT.value}."
             )
         if isinstance(self.drag_coefficient, str):
-            object.__setattr__(self, 'drag_coefficient', MasterPulseShapeSettingsName.DRAG_COEFFICIENT)
+            object.__setattr__(self, "drag_coefficient", MasterPulseShapeSettingsName.DRAG_COEFFICIENT)
         if (
             self.drag_coefficient == MasterPulseShapeSettingsName.DRAG_COEFFICIENT
             and self.master_drag_coefficient is None
