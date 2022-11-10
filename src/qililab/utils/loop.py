@@ -24,6 +24,7 @@ class Loop:
     step: float | None = None
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
+    parameter_index: int | None = None
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""

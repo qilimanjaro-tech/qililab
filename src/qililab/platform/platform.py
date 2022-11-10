@@ -55,10 +55,10 @@ class Platform:
         if element is None:
             # print("Entered case 1")
             element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
-            
+
         # case for alias of buses
         if element is None:
-            print('Entered expected case')
+            print("Entered expected case")
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
             # print("Entered case 2")
@@ -73,7 +73,7 @@ class Platform:
             # print("Entered case 3")
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
-    
+
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus element by its alias.
 
@@ -83,11 +83,11 @@ class Platform:
         Returns:
             Bus
         """
-        print(f'Looking for bus {alias}')
+        print(f"Looking for bus {alias}")
         for b_candidate in self.buses.elements:
-            print(f'Testing {b_candidate.settings.alias}')
+            print(f"Testing {b_candidate.settings.alias}")
             if b_candidate.settings.alias == alias:
-                print('Found!')
+                print("Found!")
                 return b_candidate
 
     def get_bus(self, port: int):
@@ -126,6 +126,7 @@ class Platform:
         alias: str | None = None,
         category: Category | None = None,
         id_: int | None = None,
+        parameter_index: int | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -134,17 +135,20 @@ class Platform:
             id_ (int): ID of the element.
             parameter (str): Name of the parameter to change.
             value (float): New value.
+            paramter_index (int | None): Index of the parameter to change (when it is a list)
         """
         if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
             category is not None and Category(category) == Category.PLATFORM
         ):
             if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value)
+                self.settings.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
             else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value)
+                self.settings.set_parameter(
+                    alias=alias, parameter=parameter, value=value, parameter_index=parameter_index
+                )
             return
         element = self.get_element(alias=alias, category=category, id_=id_)
-        element.set_parameter(parameter=parameter, value=value)
+        element.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
 
     @property
     def id_(self):

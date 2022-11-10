@@ -145,7 +145,12 @@ class InstrumentController(BusElement, ABC):
         self.device = None
         self._release_device_to_all_modules()
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        parameter_index: int | None = None,  # pylint: disable=unused-argument
+    ):
         """updates the reset settings for the controller"""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")

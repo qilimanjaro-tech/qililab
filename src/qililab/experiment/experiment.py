@@ -221,6 +221,7 @@ class Experiment:
             id_=loop.id_,
             parameter=loop.parameter,
             value=value,
+            parameter_index=loop.parameter_index,
         )
 
     def _get_platform_elements_from_loops(self, loops: List[Loop]):
@@ -261,6 +262,7 @@ class Experiment:
         instrument: Instrument | None = None,
         id_: int | None = None,
         element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        parameter_index: int | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -276,19 +278,19 @@ class Experiment:
         print(type(element))
         category = Category(instrument.value) if instrument is not None else None
         if element is None:
-            #print("Entered branch 1")
+            # print("Entered branch 1")
             self.platform.set_parameter(
                 alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
             )
         elif isinstance(element, RuncardSchema.PlatformSettings):
-            #print("Entered branch 2")
-            element.set_parameter(alias=alias, parameter=parameter, value=value)
+            # print("Entered branch 2")
+            element.set_parameter(alias=alias, parameter=parameter, value=value, parameter_index=parameter_index)
         else:
-            #print("Entered branch 3")
-            element.set_parameter(parameter=parameter, value=value)  # type: ignore
+            # print("Entered branch 3")
+            element.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)  # type: ignore
 
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            #print("Rebuild execution")
+            # print("Rebuild execution")
             self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
 
     @property
