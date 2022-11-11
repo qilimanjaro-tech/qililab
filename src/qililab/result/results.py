@@ -58,7 +58,7 @@ class Results:
                                      else pd.DataFrame([]).reindex_like(self.results[0].probabilities())
                                      for result in self.results]
         return pd.concat(result_probabilities_list, keys=range(len(result_probabilities_list)),
-                         names=['result_index'])
+                         names=['result_index']).reset_index()
 
     def _add_meaningful_probabilities_indices(self, result_acquisition_dataframe: pd.DataFrame):
         """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
@@ -98,7 +98,7 @@ class Results:
         self._add_meaningful_probabilities_indices(result_acquisition_dataframe=result_probabilities_df)
         return self._process_dataframe_if_needed(result_acquisition_dataframe=result_probabilities_df, mean=mean)
 
-    def to_dataframe(self, reset_index: bool = True) -> pd.DataFrame:
+    def to_dataframe(self) -> pd.DataFrame:
         """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an
         index that specifies to which result belongs the data.
 
@@ -115,7 +115,7 @@ class Results:
                                    else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
                                    for result in self.results]
         return pd.concat(
-            result_acquisition_list, keys=range(len(result_acquisition_list)), names=['result_index'])
+            result_acquisition_list, keys=range(len(result_acquisition_list)), names=['result_index']).reset_index()
 
     def _add_meaningful_acquisition_indices(self, result_acquisition_dataframe: pd.DataFrame):
         """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
