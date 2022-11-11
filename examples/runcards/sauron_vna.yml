@@ -7,9 +7,35 @@ settings:
   master_amplitude_gate: 1
   master_duration_gate: 100
   master_drag_coefficient: 0
-  gates: []
+  gates: 
+    - name: M
+      amplitude: 1
+      phase: 0
+      duration: 2000
+      shape:
+        name: rectangular
 schema:
   chip:
+    id_: 0
+    category: chip
+    nodes:
+      - name: port
+        id_: 0
+        nodes: [3]
+      - name: port
+        id_: 1
+        nodes: [2]
+      - name: resonator
+        alias: resonator
+        id_: 2
+        frequency: 7.3264369805783645e+09
+        nodes: [1, 3]
+      - name: qubit
+        alias: qubit
+        id_: 3
+        qubit_idx: 0
+        frequency: 3.351e+09
+        nodes: [0, 2]
   instruments:
     - name: keysight_e5080b
       alias: keysight_e5080b
@@ -18,7 +44,18 @@ schema:
       firmware: A.15.10.06
       power: -60.0
 
-  buses: []
+  buses:
+  - id_: 0
+    category: bus
+    subcategory: control
+    alias: vna_bus
+    system_control:
+      id_: 1
+      category: system_control
+      subcategory: vna_system_control
+      vna: E5080B
+    port: 1 
+
   instrument_controllers:
     - name: keysight_e5080b_controller
       id_: 0

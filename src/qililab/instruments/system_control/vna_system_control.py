@@ -10,6 +10,7 @@ import scipy.integrate as integ
 from qililab.constants import RUNCARD
 from qililab.instruments.awg import AWG
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.instruments.system_control.system_control import SystemControl
@@ -29,7 +30,7 @@ class VNASystemControl(SystemControl):
     class VNASystemControlSettings(SystemControl.SystemControlSettings):
         """VNASystemControlSettings class."""
 
-        vna: E5080B
+        vna: VectorNetworkAnalyzer
         
 
         def __iter__(
@@ -45,6 +46,14 @@ class VNASystemControl(SystemControl):
                     yield name, value
 
     settings: VNASystemControlSettings
+
+    @property
+    def vna(self):
+        """Bus 'vna' property.
+        Returns:
+            .
+        """
+        return self.settings.vna
 
     # def set_parameter(self, parameter: Parameter, value: float, **kw):
         
@@ -62,14 +71,13 @@ class VNASystemControl(SystemControl):
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     def setup(self, frequencies: List[float]):
-        """Setup instruments.
-        min_freq = np.min(frequencies)
-        self.signal_generator.device.frequency = min_freq + self.awg.frequency
-        self.awg.multiplexing_frequencies = list(self.signal_generator.device.frequency - np.array(frequencies))
-        self.awg.setup()
-        self.signal_generator.device.setup()"""
+        """Setup instruments."""
 
-        E5080B.send_command("*IDN?")
+        print('Entered setup Syst Ctrl')
+        self.settings.vna.setup()
+
+        print('Finished setup')
+
 
 
 

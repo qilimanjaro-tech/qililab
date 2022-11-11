@@ -19,3 +19,9 @@ class E5080B(VectorNetworkAnalyzer):
         """Contains the settings of a specific VectorNetworkAnalyzer"""
 
     settings: E5080BSettings
+
+
+    def setup(self):
+        self.device.send_command(command="*IDN?")
+        self.device.read()
+        print("[instrument.keysight.e5080b_vna]")
