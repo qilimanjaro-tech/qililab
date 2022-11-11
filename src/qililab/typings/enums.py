@@ -53,6 +53,7 @@ class Instrument(Enum):
         * attenuator
         * voltage_source
         * current_source
+        * vna
     """
 
     PLATFORM = "platform"
@@ -62,6 +63,7 @@ class Instrument(Enum):
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    VNA = "vna"
 
 
 class InstrumentControllerSubCategory(Enum):
@@ -248,6 +250,7 @@ class SystemControlSubcategory(Enum):
 
     HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
     CW_SYSTEM_CONTROL = "cw_system_control"
+    VNA_SYSTEM_CONTROL = "vna_system_control"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
 
@@ -281,6 +284,7 @@ class InstrumentName(Enum):
         * integrated_system_control
         * simulated_system_control
         * heterodyne_system_control
+        * vna_system_control
         * cw_system_control
         * keithley_2600
         * qblox_D5a
@@ -296,6 +300,7 @@ class InstrumentName(Enum):
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
     HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
+    VNA_SYSTEM_CONTROL = "vna_system_control"
     CW_SYSTEM_CONTROL = "cw_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
