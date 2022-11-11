@@ -31,6 +31,11 @@ class HeterodyneSystemControl(SystemControl):
 
         awg: AWG
         signal_generator: SignalGenerator
+        pulse_length: int = 6000
+        IF: float = 76.3
+        LO: float
+        Gain: float
+        shots: int = 1000
 
         def __iter__(
             self,
@@ -50,18 +55,47 @@ class HeterodyneSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self, frequencies: List[float]):
-        """Setup instruments.
-        min_freq = np.min(frequencies)
-        self.signal_generator.device.frequency = min_freq + self.awg.frequency
-        self.awg.multiplexing_frequencies = list(self.signal_generator.device.frequency - np.array(frequencies))
-        self.awg.setup()
-        self.signal_generator.device.setup()"""
-        # print('[Heterodyne SysCtrl] Entered setup')
+    def setup(self):
+        # TODO: Find a way of managing the tone, LO and IF frequencies
+
+        """ Write the description of this function """
+        
+        print('!!!!!!! Did the parameters arrive ?????????')
+        print(self.IF)
+        print(self.LO)
+        print(self.shots)
+        
+        # Clean the memory of the awg
         self.awg.device.reset()
-        # # 1. Setup/Preparation
-        # ## 1.1 Generate Waveforms
-        # Waveform parameters
+
+        """ # New code : 
+        T = 6000  # nanoseconds and number of points since sample rate is 1 GS/s
+        time = np.linspace(0, T, T+1)  # 1ns per sample
+
+        IF = 0.01  # in GHz to match nanosecond units
+
+        I = np.ones(T+1)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
+        Q = np.zeros(T+1)
+
+        cos = np.cos(2 * np.pi * IF * time)
+        sin = np.sin(2 * np.pi * IF * time)
+
+        modI = cos*I + sin*Q
+        modQ = -sin*I + cos*Q
+
+        waveforms = {
+            "modI": {
+                "data": list(modI),
+                "index": 0,
+            },
+            "modQ": {
+                "data": list(modQ),
+                "index": 1,
+            },
+        }
+        """
+
+        # Generate Waveforms
         waveform_length = 6000  # nanoseconds
         times_vector = np.arange(0, waveform_length + 0.5, 1)  # 1ns per sample
         self.freq_if = 0.01  # in GHz to match nanosecond units
@@ -89,9 +123,12 @@ class HeterodyneSystemControl(SystemControl):
         }
 
         # ## 1.2. Set LO
-        self.signal_generator.device.power(16)  # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        # self.signal_generator.device.frequency(7e9)
+        self.signal_generator.device.power(16)
         self.signal_generator.device.on()
+        
+        # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
+        # self.signal_generator.device.frequency(7e9)
+        
         # ## 1.2 Acquisition
         # Acquisitions
         acquisitions = {
@@ -111,7 +148,17 @@ class HeterodyneSystemControl(SystemControl):
         # stop              #Stop.orms and wait remaining duration of scope acquisition.
         # stop              #Stop.
         # """
-        seq_prog = """
+        # seq_prog = f"""
+        # move    {self.shots},R0   #Loop iterator.
+        # loop:
+        # play    0,1,4     #Play waveforms and wait 4ns.
+        # acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
+        # wait    100
+        # loop    R0,@loop  #Run until number of iterations is done.
+        # stop              #Stop.orms and wait remaining duration of scope acquisition.
+        # stop              #Stop.
+        # """
+        seq_prog = f"""
         move    1000,R0   #Loop iterator.
         loop:
         play    0,1,4     #Play waveforms and wait 4ns.
