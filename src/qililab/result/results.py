@@ -52,6 +52,39 @@ class Results:
         """
         self.results += result
 
+    def _concatenate_probabilities_dataframes(self):
+        """ Concatenates the probabilities dataframes from all the results"""
+        result_probabilities_list = [result.probabilities() if result is not None
+                                     else pd.DataFrame([]).reindex_like(self.results[0].probabilities())
+                                     for result in self.results]
+        return pd.concat(result_probabilities_list, keys=range(len(result_probabilities_list)),
+                         names=['result_index'])
+
+    def _add_meaningful_probabilities_indices(self, result_acquisition_dataframe: pd.DataFrame):
+        """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
+        `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
+        num_qbits = len(self.results[0].probabilities())
+        new_columns = ['qubit_index',
+                       *[f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
+                       ]
+        if self.num_sequences > 1:
+            new_columns.append('sequence_index')
+        if self.software_average > 1:
+            new_columns.append('software_avg_index')
+        result_acquisition_dataframe[num_qbits, new_columns] = result_acquisition_dataframe.apply(
+            lambda row: coordinate_decompose(
+                new_dimension_shape=[num_qbits, *self.shape],
+                original_size=len(self.results),
+                original_idx=row['result_index']),
+            axis=1)
+
+    def _process_dataframe_if_needed(self, result_acquisition_dataframe: pd.DataFrame, mean: bool = False):
+        """ Process the dataframe by applying software average if required """
+
+        if mean and self.software_average > 1:
+            return result_acquisition_dataframe.groupby('software_avg_index').mean()
+        return result_acquisition_dataframe
+
     def probabilities(self, mean: bool = True) -> np.ndarray:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
@@ -59,19 +92,11 @@ class Results:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
 
-        # Add to self.results the Nones necessary to reach the shape deduced from Loops
         self._fill_missing_values()
-        num_qubits = len(self.results[0].probabilities())
-        probs: List[List[Tuple[float, float]]] = [[] for _ in range(num_qubits)]
-        for result in self.results:
-            result_probs = result.probabilities()
-            for idx, result_prob in enumerate(result_probs):
-                probs[idx].append(result_prob)
-        array = np.reshape(a=probs, newshape=[num_qubits] + self.shape + [2])
-        flipped_array = np.moveaxis(a=array, source=array.ndim - 1, destination=0)
-        if mean and self.software_average > 1:
-            flipped_array = np.mean(a=flipped_array, axis=-1)
-        return flipped_array.squeeze()
+
+        result_probabilities_df = self._concatenate_acquisition_dataframes()
+        self._add_meaningful_probabilities_indices(result_acquisition_dataframe=result_probabilities_df)
+        return self._process_dataframe_if_needed(result_acquisition_dataframe=result_probabilities_df, mean=mean)
 
     def to_dataframe(self, reset_index: bool = True) -> pd.DataFrame:
         """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an
@@ -106,13 +131,6 @@ class Results:
                 original_size=len(self.results),
                 original_idx=row['result_index']),
             axis=1)
-
-    def _process_dataframe_if_needed(self, result_acquisition_dataframe: pd.DataFrame, mean: bool = False):
-        """ Process the dataframe by applying software average if required """
-
-        if mean and self.software_average > 1:
-            return result_acquisition_dataframe.groupby('software_avg_index').mean()
-        return result_acquisition_dataframe
 
     def acquisitions(self, mean: bool = False) -> pd.DataFrame:
         """QbloxResult acquisitions of all the nested Results classes.

@@ -25,7 +25,7 @@ class Acquisitions:
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
         return pd.concat(acquisition_list, keys=range(len(acquisition_list)), names=['acquisition_index'])
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:

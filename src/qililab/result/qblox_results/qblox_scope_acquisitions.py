@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 import numpy as np
+import pandas as pd
 
 from qililab.result.acquisition import Acquisition
 from qililab.result.acquisitions import Acquisitions
@@ -29,14 +30,15 @@ class QbloxScopeAcquisitions(Acquisitions):
 
         self._acquisitions = [Acquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)]
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
-        probs: List[Tuple[float, float]] = []
         # TODO: Integrate data when scope
-        probs.extend((acq[0][-1], acq[0][-1]) for acq in acquisitions)
-        return probs
+        probs_dict = {"acquisition_index": range(len(acquisitions)),
+                      "p0": (acq[0][-1] for acq in acquisitions),
+                      "p1": (acq[0][-1] for acq in acquisitions)}
+        return pd.DataFrame(probs_dict)

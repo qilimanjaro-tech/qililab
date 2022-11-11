@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.qblox_results.bin_data import BinData
@@ -32,17 +33,17 @@ class QbloxBinsAcquisitions(Acquisitions):
         q_values = np.array(bin_data.integration.path1, dtype=np.float32)
         return QbloxBinAcquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
-        return [
-            (self._get_last_bin(one_acquisition=acq)[2], self._get_last_bin(one_acquisition=acq)[2])
-            for acq in acquisitions
-        ]
+        probs_dict = {"acquisition_index": range(len(acquisitions)),
+                      "p0": (self._get_last_bin(one_acquisition=acq)[2] for acq in acquisitions),
+                      "p1": (self._get_last_bin(one_acquisition=acq)[2] for acq in acquisitions)}
+        return pd.DataFrame(probs_dict)
 
     def _get_last_bin(self, one_acquisition: npt.NDArray[np.float32]) -> npt.NDArray:
         """get last bin"""
