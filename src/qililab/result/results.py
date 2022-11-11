@@ -16,7 +16,7 @@ from qililab.utils.util_loops import (
     compute_ranges_from_loops,
     compute_shapes_from_loops,
 )
-from qililab.utils import insert_index_level_into_dataframe
+from qililab.utils import coordinate_decompose
 
 
 @dataclass
@@ -84,6 +84,36 @@ class Results:
         result_dataframes = [result.to_dataframe() for result in self.results]
         return pd.concat(result_dataframes, keys=range(len(result_dataframes)), names=['result_index'])
 
+    def _concatenate_acquisition_dataframes(self):
+        """ Concatenates the acquisitions from all the results"""
+        result_acquisition_list = [result.acquisitions() if result is not None
+                                   else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
+                                   for result in self.results]
+        return pd.concat(
+            result_acquisition_list, keys=range(len(result_acquisition_list)), names=['result_index'])
+
+    def _add_meaningful_acquisition_indices(self, result_acquisition_dataframe: pd.DataFrame):
+        """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
+        `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
+        new_columns = [f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
+        if self.num_sequences > 1:
+            new_columns.append('sequence_index')
+        if self.software_average > 1:
+            new_columns.append('software_avg_index')
+        result_acquisition_dataframe[new_columns] = result_acquisition_dataframe.apply(
+            lambda row: coordinate_decompose(
+                new_dimension_shape=self.shape,
+                original_size=len(self.results),
+                original_idx=row['result_index']),
+            axis=1)
+
+    def _process_dataframe_if_needed(self, result_acquisition_dataframe: pd.DataFrame, mean: bool = False):
+        """ Process the dataframe by applying software average if required """
+
+        if mean and self.software_average > 1:
+            return result_acquisition_dataframe.groupby('software_avg_index').mean()
+        return result_acquisition_dataframe
+
     def acquisitions(self, mean: bool = False) -> pd.DataFrame:
         """QbloxResult acquisitions of all the nested Results classes.
 
@@ -99,14 +129,9 @@ class Results:
 
         self._fill_missing_values()
 
-        result_dataframe_list = [result.acquisitions() if result is not None
-                                 else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
-                                 for result in self.results]
-        return pd.concat(result_dataframe_list, keys=range(len(result_dataframe_list)), names=['result_index'])
-
-        # TODO: mean can be easily done with a groupby. What index is the mean done over? The mean is the mean of what?
-        # if mean and self.software_average > 1:
-        #     flipped_array = np.mean(a=flipped_array, axis=-1)
+        result_acquisition_df = self._concatenate_acquisition_dataframes()
+        self._add_meaningful_acquisition_indices(result_acquisition_dataframe=result_acquisition_df)
+        return self._process_dataframe_if_needed(result_acquisition_dataframe=result_acquisition_df, mean=mean)
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""

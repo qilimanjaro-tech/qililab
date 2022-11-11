@@ -47,7 +47,7 @@ class Acquisition:
             "phase_values": self.phase_values,
         })
 
-    def _normalized_data(self, data: List[float]):
+    def _normalized_data(self, data: npt.NDArray):
         """Normalizes the given data with the integration length,
         which should be the same as the pulse length.
 

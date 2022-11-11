@@ -57,7 +57,7 @@ def _get_nth_coordinate(coord_elem_idx: int, new_indices: npt.ArrayLike, origina
     return (numerator / denominator) % modulus
 
 
-def coordinate_decomposition(new_dimension_shape: npt.ArrayLike, original_size: int, original_idx: int, ):
+def coordinate_decompose(new_dimension_shape: npt.ArrayLike, original_size: int, original_idx: int, ):
     """ Converts an index from a 1D array to an index in an NDArray, as long as both expressions have the same sizes.
     i.e. expresses the index r in an array of R elements as the indices [n, m, l] of nested arrays with shape [N, M, L],
     as log as N*M*L==R.
