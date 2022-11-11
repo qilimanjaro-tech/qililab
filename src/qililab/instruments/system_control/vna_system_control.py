@@ -35,14 +35,14 @@ class VNASystemControl(SystemControl):
 
         def __iter__(
             self,
-        ) -> Generator[Tuple[str, SignalGenerator | AWG | int], None, None]:
+        ) -> Generator[Tuple[str, VectorNetworkAnalyzer | int], None, None]:
             """Iterate over Bus elements.
 
             Yields:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if name in [Category.AWG.value, Category.SIGNAL_GENERATOR.value]:
+                if name in [Category.VNA.value]:
                     yield name, value
 
     settings: VNASystemControlSettings
@@ -97,42 +97,8 @@ class VNASystemControl(SystemControl):
             repetition_duration=repetition_duration,
             path=path,
         )"""
-        # print('[Heterodyne SysCtrl] Entered run')
-        # # 2. Running the Bus
-        # ## 2.1 Arm & Run
-        # Arm and start sequencer.
-        self.awg.device.arm_sequencer(0)
-        self.awg.device.start_sequencer()
-        # self.signal_generator.device.off()
-        # Print status of sequencer.
-        # print("Status:")
-        # print(self.awg.device.get_sequencer_state(0))
-        # ## 2.2 Query data and plotting
-        # Wait for the acquisition to finish with a timeout period of one minute.
-        self.awg.device.get_acquisition_state(0, 1)
-        # Move acquisition data from temporary memory to acquisition list.
-        self.awg.device.store_scope_acquisition(0, "single")
-        # Get acquisition list from instrument.
-        single_acq = self.awg.device.get_acquisitions(0)
-
-        # ## 2.3 should be outside!
-        output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])
-        output_Q = np.array(single_acq["single"]["acquisition"]["scope"]["path1"]["data"][:6100])
-        time_vector_demod = np.linspace(0, len(output_I), len(output_I))
-        cosalpha = np.cos(2 * np.pi * self.freq_if * time_vector_demod)
-        sinalpha = np.sin(2 * np.pi * self.freq_if * time_vector_demod)
-        demod_matrix = 2 * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
-        result = []
-        for it, t, ii, qq in zip(np.arange(output_I.shape[0]), time_vector_demod, output_I, output_Q):
-            result.append(demod_matrix[:, :, it] @ np.array([ii, qq]))
-        demodulated_signal = np.array(result)
-        demodulated_I = demodulated_signal[:, 0]
-        demodulated_Q = demodulated_signal[:, 1]
-        # ## 2.4 Integrate
-        integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
-        integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
-        # print(integrated_I,integrated_Q)
-        return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
+       
+        return HeterodyneResult(integrated_i=np.ones(100), integrated_q=np.zeros(100))
 
     @property
     def awg_frequency(self):
@@ -164,7 +130,7 @@ class VNASystemControl(SystemControl):
 
     @property
     def awg(self):
-        """Bus 'awg' property.
+        """Bus 'awg' property.Fto
         Returns:
             (QubitControl | None): settings.qubit_control.
         """
@@ -188,6 +154,7 @@ class VNASystemControl(SystemControl):
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
+            RUNCARD.
         } | {key: value.alias for key, value in self}
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
@@ -199,4 +166,4 @@ class VNASystemControl(SystemControl):
 
     def __str__(self):
         """String representation of the VNASystemControl class."""
-        return f"{self.awg}|----|{self.signal_generator}"
+        return f"{self.vna}"
