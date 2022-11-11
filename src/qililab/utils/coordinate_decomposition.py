@@ -3,7 +3,7 @@ import numpy.typing as npt
 
 
 def product(array: npt.ArrayLike, start: int = 0, stop: int = -1):
-    """Takes in an array and does the productory of the elements between `start_intex` and `end_index`"""
+    """Takes in an array and does the product-of-a-sequence of the elements between `start_index` and `end_index`"""
     if stop == -1:
         stop = len(array)
 
@@ -11,7 +11,7 @@ def product(array: npt.ArrayLike, start: int = 0, stop: int = -1):
 
 
 def summation(array: npt.ArrayLike, start: int = 0, stop: int = -1):
-    """Takes in an array and does the summatory of the elements between `start_intex` and `end_index`"""
+    """Takes in an array and does the summation of the elements between `start_index` and `end_index`"""
     if stop == -1:
         stop = len(array)
 
@@ -22,7 +22,7 @@ def _do_target_dimensions_check(new_dimension_shape: npt.ArrayLike):
     """ Checks that all target dimensions should have at least one element. """
     if any(size < 1 for size in new_dimension_shape):
         raise ValueError(
-            f"Sizes of of targer array should not be 0 nor negative: {str(new_dimension_shape)}")
+            f"Sizes of of target array should not be 0 nor negative: {str(new_dimension_shape)}")
 
 
 def _do_size_match_check(original_size: int, new_dimension_shape: npt.ArrayLike):
@@ -36,7 +36,7 @@ def _do_size_match_check(original_size: int, new_dimension_shape: npt.ArrayLike)
 
 
 def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: npt.ArrayLike):
-    """ Perform some checks before aplying the algorithm"""
+    """ Perform some checks before applying the algorithm"""
     _do_target_dimensions_check(new_dimension_shape=new_dimension_shape)
     _do_size_match_check(original_size=original_size, new_dimension_shape=new_dimension_shape)
 
@@ -62,14 +62,14 @@ def coordinate_decomposition(new_dimension_shape: npt.ArrayLike, original_size: 
     i.e. expresses the index r in an array of R elements as the indices [n, m, l] of nested arrays with shape [N, M, L],
     as log as N*M*L==R.
     In this case, we can see that r can be expressed as r = n*M*L + m*L + l
-    Mod-Dividin each side by L:
+    Mod-Dividing each side by L:
     l = r % L
     Isolating m and mod-dividing by M:
     m = ((r - l) / (M*L) ) % M
     Isolating n and mod-dividing by N:
     n = ((r - l - m*L) / (N*M*L)) % N
 
-    In general, r can be expresed as r = sum_{k=0}^{D-1} (i_k) * prod_{l=k+1}^{D-1} (I_k), where:
+    In general, r can be expressed as r = sum_{k=0}^{D-1} (i_k) * prod_{l=k+1}^{D-1} (I_k), where:
      * i_k is the index in the kth dimension, for k belonging to [0, D-1]
      * I_k is the size of the kth dimension, for k belonging to [0, D-1]
      * D is the number of dimensions
