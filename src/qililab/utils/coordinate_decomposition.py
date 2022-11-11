@@ -86,11 +86,11 @@ def coordinate_decomposition(new_dimension_shape: npt.ArrayLike, original_size: 
 
     """
 
-    number_of_dimensions = len(new_dimension_shape)
-
     _coordinate_decomposition_checks(original_size=original_size, new_dimension_shape=new_dimension_shape)
 
+    number_of_dimensions = len(new_dimension_shape)
     new_indices = np.zeros_like(new_dimension_shape)
+
     for coord_elem_idx in reversed(range(len(new_dimension_shape))):
         new_indices[coord_elem_idx] = _get_nth_coordinate(
             coord_elem_idx=coord_elem_idx,
