@@ -335,6 +335,13 @@ class Parameter(Enum):
     MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
     EXTERNAL = "external"
     RESET = "reset"
+    CURRENT = "current"
+    VOLTAGE = "voltage"
+    HARDWARE_MODULATION = "hardware_modulation"
+    HARDWARE_DEMODULATION = "hardware_demodulation"
+    HARDWARE_INTEGRATION = "hardware_integration"
+    ACQUISITION_MODE = "acquisition_mode"
+    FREQUENCIES = "frequencies"
 
 
 class ResultName(Enum):

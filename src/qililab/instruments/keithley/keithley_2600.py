@@ -7,6 +7,7 @@ import numpy as np
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Keithley2600Driver
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -34,16 +35,22 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    def setup(self, parameter: Parameter, value: float | str | bool):
         """Setup instrument."""
-        self.device.smua.limiti(self.max_current)
-        self.device.smua.limitv(self.max_voltage)
+        if not isinstance(value, float):
+            raise ValueError(f"Value must be a float. Current type is: {type(value)}")
+        if parameter.value == Parameter.CURRENT.value:
+            self.max_current = value
+            self.device.smua.limiti(self.max_current)
+        if parameter.value == Parameter.VOLTAGE.value:
+            self.max_voltage = value
+            self.device.smua.limitv(self.max_voltage)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """performs an initial setup.
-        For this instrument it is the same as a regular setup"""
-        self.setup()
+        """performs an initial setup"""
+        self.device.smua.limiti(self.max_current)
+        self.device.smua.limitv(self.max_voltage)
 
     @Instrument.CheckDeviceInitialized
     def start(self):
@@ -85,7 +92,7 @@ class Keithley2600(Instrument):
         return self.settings.max_current
 
     @max_current.setter
-    def max_current(self, value):
+    def max_current(self, value: float):
         """Keithley2600 'max_current' setter property.
 
         Args:
@@ -104,7 +111,7 @@ class Keithley2600(Instrument):
         return self.settings.max_voltage
 
     @max_voltage.setter
-    def max_voltage(self, value):
+    def max_voltage(self, value: float):
         """Keithley2600 'max_voltage' setter property.
 
         Args:

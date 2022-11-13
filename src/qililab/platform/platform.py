@@ -81,6 +81,7 @@ class Platform:
         alias: str | None = None,
         category: Category | None = None,
         id_: int | None = None,
+        channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -94,12 +95,12 @@ class Platform:
             category is not None and Category(category) == Category.PLATFORM
         ):
             if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value)
+                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value)
+                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias, category=category, id_=id_)
-        element.set_parameter(parameter=parameter, value=value)
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     @property
     def id_(self):

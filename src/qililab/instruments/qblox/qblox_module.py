@@ -16,6 +16,7 @@ from qpysequence.waveforms import Waveforms
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseSequence, PulseShape
+from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
 
@@ -36,12 +37,11 @@ class QbloxModule(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
-            sequencer (int): Index of the sequencer to use.
-            sync_enabled (bool): Enable synchronization over multiple instruments.
+            sync_enabled (List[bool]): Enable synchronization over multiple instruments for each sequencer.
+            num_bins (int): Number of bins
         """
 
-        sync_enabled: bool
+        sync_enabled: List[bool]
         num_bins: int
 
     settings: QbloxModuleSettings
@@ -169,11 +169,123 @@ class QbloxModule(AWG):
             self.device.start_sequencer(sequencer=seq_idx)
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
-        self._set_nco()
-        self._set_gains()
-        self._set_offsets()
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        if channel_id > self.num_sequencers - 1:
+            raise ValueError(
+                f"the specified channel_id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
+            )
+        if parameter.value == Parameter.GAIN:
+            self._set_gain(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.OFFSET_I:
+            self._set_offset_i(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.OFFSET_Q:
+            self._set_offset_q(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.FREQUENCIES:
+            self._set_frequency(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.HARDWARE_MODULATION:
+            self._set_hardware_modulation(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.SYNC_ENABLED:
+            self._set_sync_enabled_one_channel(value=value, channel_id=channel_id)
+            return
+
+    def _set_sync_enabled_one_channel(self, value: float | str | bool, channel_id: int):
+        """set sync enabled for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if not isinstance(value, bool):
+            raise ValueError(f"value must be a bool. Current type: {type(value)}")
+        self.settings.sync_enabled[channel_id] = value
+        self.device.sequencers[channel_id].sync_en(value)
+
+    def _set_hardware_modulation(self, value: float | str | bool, channel_id: int):
+        """set hardware modulation
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if not isinstance(value, bool):
+            raise ValueError(f"value must be a bool. Current type: {type(value)}")
+        self.settings.hardware_modulation[channel_id] = value
+        self.device.sequencers[channel_id].mod_en_awg(value)
+
+    def _set_frequency(self, value: float | str | bool, channel_id: int):
+        """set frequency
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.frequencies[channel_id] = value
+        self.device.sequencers[channel_id].nco_freq(value)
+
+    def _set_offset_q(self, value: float | str | bool, channel_id: int):
+        """set offset Q
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.offset_q[channel_id] = value
+        self.device.sequencers[channel_id].offset_awg_path1(value)
+
+    def _set_offset_i(self, value: float | str | bool, channel_id: int):
+        """set offset I
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.offset_i[channel_id] = value
+        self.device.sequencers[channel_id].offset_awg_path0(value)
+
+    def _set_gain(self, value: float | str | bool, channel_id: int):
+        """set gain
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.gain[channel_id] = value
+        self.device.sequencers[channel_id].gain_awg_path0(value)
+        self.device.sequencers[channel_id].gain_awg_path1(value)
 
     @Instrument.CheckDeviceInitialized
     def stop(self):
@@ -218,14 +330,14 @@ class QbloxModule(AWG):
 
     def _set_nco(self):
         """Enable modulation of pulses and setup NCO frequency."""
-        for seq_idx, frequency in enumerate(self.multiplexing_frequencies):
+        for seq_idx, frequency in enumerate(self.frequencies):
             self.device.sequencers[seq_idx].mod_en_awg(True)
             self.device.sequencers[seq_idx].nco_freq(frequency)
 
     def _set_sync_enabled(self):
         """Enable/disable synchronization over multiple instruments."""
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sync_en(self.sync_enabled)
+        for seq_idx, sync_enabled in enumerate(self.sync_enabled):
+            self.device.sequencers[seq_idx].sync_en(sync_enabled)
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""

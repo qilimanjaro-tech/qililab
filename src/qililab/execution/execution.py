@@ -18,13 +18,13 @@ class Execution:
 
     def __enter__(self):
         """Code executed when starting a with statement."""
-        self.connect()
-        self.setup()
-        self.start()
+        # self.connect()
+        # self.setup()
+        # self.start()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
-        self.close()
+        # self.close()
 
     def connect(self):
         """Connect to the instruments."""
