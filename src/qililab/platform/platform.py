@@ -52,6 +52,8 @@ class Platform:
         if element is None:
             element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
         if element is None:
+            element = self.get_bus_by_alias(alias=alias, category=category, id_=id_)
+        if element is None:
             if category is not None and id_ is not None:
                 element = self.chip.get_node_from_id(node_id=id_)
             if alias is not None:
@@ -72,6 +74,22 @@ class Platform:
         return next(
             ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
             ([], None),
+        )
+
+    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+        """Get bus given an alias or id_ and category"""
+        if alias is not None:
+            return next(
+                (element for element in self.buses if element.settings.alias == alias),
+                None,
+            )
+        return next(
+            (
+                element
+                for element in self.buses
+                if element.id_ == id_ and element.settings.category == Category(category)
+            ),
+            None,
         )
 
     def set_parameter(

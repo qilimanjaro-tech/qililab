@@ -26,6 +26,8 @@ def run_circuit(connection: API | None = None):
     # loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.e+08, stop=1.5e+08, step=0.1e6)
     # loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=1)
     loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=0)
+    # loop = Loop(alias="bus_control", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=0)
+    # loop = Loop(alias="bus_control", parameter=Parameter.FREQUENCY, start=6.0e09, stop=6.5e09, num=10, channel_id=0)
 
     experiment = Experiment(platform=platform, sequences=circuit, loops=[loop])
 

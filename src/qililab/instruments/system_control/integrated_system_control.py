@@ -8,6 +8,7 @@ from qililab.instruments.system_control.system_control import SystemControl
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.typings import InstrumentName
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -55,3 +56,12 @@ class IntegratedSystemControl(SystemControl, Instrument):
     def acquisition_delay_time(self) -> int:
         """SystemControl 'acquisition_delay_time' property.
         Delay (in ns) between the readout pulse and the acquisition."""
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set parameter for an instrument
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """

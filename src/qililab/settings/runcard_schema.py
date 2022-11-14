@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.constants import PLATFORM
@@ -36,6 +36,7 @@ class RuncardSchema:
             subcategory: str
             system_control: dict
             port: int
+            alias: str | None = None
             attenuator: dict | None = None
 
         @dataclass

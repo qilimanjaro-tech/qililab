@@ -64,9 +64,18 @@ class Instrument(BusElement, ABC):
         self.settings = settings_class(**settings)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
-        """Redirect __setattr__ magic method."""
+        """set parameter for an instrument
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
         self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-        logger.info("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
+        if channel_id is None:
+            logger.info("Setting parameter: %s to value: %f", parameter.value, value)
+        if channel_id is not None:
+            logger.info("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
         if hasattr(self, "device"):
             self.setup(parameter=parameter, value=value, channel_id=channel_id)
 

@@ -13,6 +13,7 @@ from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.typings import Category, SystemControlSubcategory
+from qililab.typings.enums import Parameter
 from qililab.utils import Factory
 
 
@@ -51,7 +52,7 @@ class MixerBasedSystemControl(SystemControl):
         """Setup instruments."""
         min_freq = np.min(frequencies)
         self.signal_generator.frequency = min_freq + self.awg.frequency
-        self.awg.multiplexing_frequencies = list(self.signal_generator.frequency - np.array(frequencies))
+        self.awg.frequencies = list(self.signal_generator.frequency - np.array(frequencies))
         self.awg.setup()
         self.signal_generator.setup()
 
@@ -62,14 +63,50 @@ class MixerBasedSystemControl(SystemControl):
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
-            self.signal_generator.frequency = pulse_sequence.frequency + self.awg.frequency
-            self.signal_generator.setup()
+            # FIXME: find the channel associated to the port of a pulse
+            self._update_frequency(frequency=pulse_sequence.frequency, channel_id=0)
         return self.awg.run(
             pulse_sequence=pulse_sequence,
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
         )
+
+    def _update_frequency(self, frequency: float, channel_id: int | None = None):
+        """update frequency to the signal generator and AWG
+
+        Args:
+            frequency (float): the bus final frequency (AWG + Signal Generator)
+            channel_id (int | None, optional): AWG Channel. Defaults to None.
+        """
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        if channel_id > self.awg.num_sequencers - 1:
+            raise ValueError(
+                f"the specified channel_id:{channel_id} is out of range. "
+                + f"Number of sequencers is {self.awg.num_sequencers}"
+            )
+        signal_generator_frequency = frequency - self.awg.frequencies[channel_id]
+        self.signal_generator.set_parameter(parameter=Parameter.FREQUENCY, value=signal_generator_frequency)
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set parameter for an instrument
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        if parameter.value == Parameter.POWER.value:
+            self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.FREQUENCY.value:
+            if not isinstance(value, float):
+                raise ValueError(f"value must be a float. Current type: {type(value)}")
+            self._update_frequency(frequency=value, channel_id=channel_id)
+            return
+        # the rest of parameters are assigned to the AWG
+        self.awg.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     @property
     def awg_frequency(self):

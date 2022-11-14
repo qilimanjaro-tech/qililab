@@ -126,6 +126,7 @@ schema:
     - id_: 0
       category: bus
       subcategory: control
+      alias: bus_control
       system_control:
         id_: 0
         category: system_control
@@ -133,9 +134,10 @@ schema:
         awg: QCM
         signal_generator: rs_0
       port: 0
-    - id_: 0
+    - id_: 1
       category: bus
       subcategory: readout
+      alias: bus_readout
       system_control:
         id_: 1
         category: system_control
