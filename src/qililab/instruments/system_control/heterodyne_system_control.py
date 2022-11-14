@@ -33,8 +33,6 @@ class HeterodyneSystemControl(SystemControl):
         signal_generator: SignalGenerator
         pulse_length: int = 6000
         IF: float = 0.01
-        # LO: float
-        gain: float
         shots: int = 1000
 
         def __iter__(
@@ -55,7 +53,22 @@ class HeterodyneSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self):
+    def heterodyne_mixing(self,I, Q, fLO, dt):
+        # This function should probably go to utilities. I also need a better name for it
+        N = I.shape[0]
+
+        time = np.linspace(0, N * dt,N)  
+
+        cos = np.cos(2 * np.pi * fLO * time)
+        sin = np.sin(2 * np.pi * fLO * time)
+
+        modI = cos*I + sin*Q
+        modQ = -sin*I + cos*Q
+
+        return modI, modQ
+
+
+    def setup(self, frequencies: List[float]):
         # TODO: Find a way of managing the tone, LO and IF frequencies
 
         """ Write the description of this function """
@@ -63,20 +76,13 @@ class HeterodyneSystemControl(SystemControl):
         # Clean the memory of the awg
         # self.awg.reset()
 
-        """ # New code : 
-        T = 6000  # nanoseconds and number of points since sample rate is 1 GS/s
-        time = np.linspace(0, T, T+1)  # 1ns per sample
+        # New code : 
+        dt = 1 # one nanosecond for GS/s resolution
 
-        IF = 0.01  # in GHz to match nanosecond units
+        I = np.ones(self.settings.pulse_length)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
+        Q = np.zeros(self.settings.pulse_length)
 
-        I = np.ones(T+1)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
-        Q = np.zeros(T+1)
-
-        cos = np.cos(2 * np.pi * IF * time)
-        sin = np.sin(2 * np.pi * IF * time)
-
-        modI = cos*I + sin*Q
-        modQ = -sin*I + cos*Q
+        modI, modQ = self.heterodyne_mixing(I, Q, self.settings.IF, dt)
 
         waveforms = {
             "modI": {
@@ -88,42 +94,12 @@ class HeterodyneSystemControl(SystemControl):
                 "index": 1,
             },
         }
-        """
-
-        # Generate Waveforms
-        waveform_length = 6000  # nanoseconds
-        times_vector = np.arange(0, waveform_length + 0.5, 1)  # 1ns per sample
-        self.freq_if = self.settings.IF  # in GHz to match nanosecond units
-        envelope_I = np.ones(waveform_length)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
-        envelope_Q = np.zeros(waveform_length)
-
-        cosalpha = np.cos(2 * np.pi * self.freq_if * times_vector)
-        sinalpha = np.sin(2 * np.pi * self.freq_if * times_vector)
-        mod_matrix = np.array([[cosalpha, sinalpha], [-sinalpha, cosalpha]])
-        result = []
-        for it, t, ii, qq in zip(np.arange(envelope_I.shape[0]), times_vector, envelope_I, envelope_Q):
-            result.append(mod_matrix[:, :, it] @ np.array([ii, qq]))
-        modulated_signal = np.array(result)
-        modulated_I, modulated_Q = modulated_signal.transpose()
-        # Waveform dictionary (data will hold the samples and index will be used to select the waveforms in the instrument).
-        waveforms = {
-            "modI": {
-                "data": list(modulated_I),
-                "index": 0,
-            },
-            "modQ": {
-                "data": list(modulated_Q),
-                "index": 1,
-            },
-        }
 
         # ## 1.2. Set LO
+        # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
         self.signal_generator.device.power(16)
         self.signal_generator.device.on()
-        
-        # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        # self.signal_generator.device.frequency(7e9)
-        
+
         # ## 1.2 Acquisition
         # Acquisitions
         acquisitions = {
@@ -134,25 +110,6 @@ class HeterodyneSystemControl(SystemControl):
             "avg": {"num_bins": 1, "index": 4},
         }
 
-        # ## 1.3 Sequence
-        # Sequence program.
-        # seq_prog = """
-        # play    0,1,4     #Play waveforms and wait 4ns.
-        # acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
-        # wait    100
-        # stop              #Stop.orms and wait remaining duration of scope acquisition.
-        # stop              #Stop.
-        # """
-        # seq_prog = f"""
-        # move    {self.shots},R0   #Loop iterator.
-        # loop:
-        # play    0,1,4     #Play waveforms and wait 4ns.
-        # acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
-        # wait    100
-        # loop    R0,@loop  #Run until number of iterations is done.
-        # stop              #Stop.orms and wait remaining duration of scope acquisition.
-        # stop              #Stop.
-        # """
         seq_prog = f"""
         move    {self.settings.shots},R0   #Loop iterator.
         loop:
@@ -163,6 +120,7 @@ class HeterodyneSystemControl(SystemControl):
         stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
+
         # ## 1.4 Upload all
         # Add sequence to single dictionary and write to JSON file.
         sequence = {
@@ -181,6 +139,7 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_sequencer_select(0)
         self.awg.device.scope_acq_trigger_mode_path0("sequencer")
         self.awg.device.scope_acq_trigger_mode_path1("sequencer")
+
         # Map sequencer to specific outputs (but first disable all sequencer connections)
         for sequencer in self.awg.device.sequencers:
             for out in range(0, 2):
@@ -188,12 +147,10 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.sequencer0.channel_map_path0_out0_en(True)
         self.awg.device.sequencer0.channel_map_path1_out1_en(True)
         self.awg.device.sequencer0.mod_en_awg(False)
+
         # enable hardware average
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
-        # set gain
-        self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-        self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
 
     def start(self):
         """Start/Turn on the instruments.
@@ -217,6 +174,10 @@ class HeterodyneSystemControl(SystemControl):
         # Arm and start sequencer.
         self.awg.device.arm_sequencer(0)
         self.awg.device.start_sequencer()
+
+        # print(f"Path 0: {self.awg.device.sequencer0.gain_awg_path0()}")
+        # print(f"Path 1: {self.awg.device.sequencer0.gain_awg_path1()}")
+        
         # self.signal_generator.device.off()
         # Print status of sequencer.
         print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
@@ -234,8 +195,8 @@ class HeterodyneSystemControl(SystemControl):
         output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])
         output_Q = np.array(single_acq["single"]["acquisition"]["scope"]["path1"]["data"][:6100])
         time_vector_demod = np.linspace(0, len(output_I), len(output_I))
-        cosalpha = np.cos(2 * np.pi * self.freq_if * time_vector_demod)
-        sinalpha = np.sin(2 * np.pi * self.freq_if * time_vector_demod)
+        cosalpha = np.cos(2 * np.pi * self.settings.IF * time_vector_demod)
+        sinalpha = np.sin(2 * np.pi * self.settings.IF * time_vector_demod)
         demod_matrix = 2 * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
         result = []
         for it, t, ii, qq in zip(np.arange(output_I.shape[0]), time_vector_demod, output_I, output_Q):
