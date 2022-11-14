@@ -64,11 +64,3 @@ class Pulse:
             PULSE.DURATION: self.duration,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
         }
-
-    def __repr__(self):
-        """Return string representation of the Pulse object."""
-        return f"{str(self.pulse_shape)} - {self.duration}ns"
-
-    def __str__(self):
-        """Return string representation of the Pulse object."""
-        return self.__repr__()

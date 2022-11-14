@@ -11,7 +11,7 @@ from qililab.typings import FactoryElement, PulseShapeName
 class PulseShape(FactoryElement):
     """Pulse shape abstract base class."""
 
-    name: PulseShapeName = field(init=False, repr=False)
+    name: PulseShapeName = field(init=False)
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
@@ -31,12 +31,4 @@ class PulseShape(FactoryElement):
         Returns:
             dict: Dictionary.
         """
-        return {RUNCARD.NAME: self.name.value} | self.__dict__
-
-    def __repr__(self):
-        """Return string representation of the Pulse Shape object."""
-        return f"{str(self.to_dict())}"
-
-    def __str__(self):
-        """Return string representation of the Pulse Shape object."""
-        return f"{str(self.to_dict())}"
+        return self.__dict__

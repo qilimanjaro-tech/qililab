@@ -14,7 +14,6 @@ class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
     name = PulseShapeName.GAUSSIAN
-
     num_sigmas: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):

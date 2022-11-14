@@ -8,15 +8,15 @@ from qililab.typings.enums import PulseName
 from qililab.utils.waveforms import Waveforms
 
 
-@dataclass
+@dataclass(order=True)
 class PulseEvent:
     """Describes a single pulse with a start time."""
-
+    sort_index: int = field(init=False, repr=False)
+    
     pulse: Pulse
     start_time: int
-    end_time: int = field(init=False)
-    duration: int = field(init=False)
-    sort_index: int = field(init=False)
+    end_time: int = field(init=False, repr=False)
+    duration: int = field(init=False, repr=False)
 
     def __post_init__(self):
         self.sort_index = self.start_time

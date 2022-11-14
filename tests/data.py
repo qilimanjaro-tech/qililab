@@ -23,6 +23,8 @@ from qililab.typings.enums import (
     ReferenceClock,
 )
 
+from qililab.pulse.pulse_shape import Rectangular, Drag
+
 
 class Galadriel:
     """Test data of the galadriel platform."""
@@ -44,36 +46,28 @@ class Galadriel:
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
                 "duration": 2000,
-                "shape": {"name": "rectangular"},
+                "shape": Rectangular(),
             },
             {
                 "name": "I",
                 "amplitude": 0,
                 "phase": 0,
                 "duration": 0,
-                "shape": {"name": "rectangular"},
+                "shape": Rectangular(),
             },
             {
                 "name": "X",
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
                 "duration": PLATFORM.MASTER_DURATION_GATE,
-                "shape": {
-                    "name": "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
-                },
+                "shape": Drag(num_sigmas=4, drag_coefficient=PLATFORM.MASTER_DRAG_COEFFICIENT),
             },
             {
                 "name": "Y",
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 1.5707963267948966,
                 "duration": PLATFORM.MASTER_DURATION_GATE,
-                "shape": {
-                    "name": "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
-                },
+                "shape": Drag(num_sigmas=4, drag_coefficient=PLATFORM.MASTER_DRAG_COEFFICIENT),
             },
         ],
     }
@@ -589,14 +583,17 @@ experiment = {
         {
             "elements": [
                 {
-                    "pulses": [
+                    "timeline": [
                         {
-                            "name": "readout_pulse",
-                            "amplitude": 1,
-                            "frequency": 1e9,
-                            "phase": 0,
-                            "duration": 2000,
-                            "pulse_shape": {"name": "rectangular"},
+                            "pulse":
+                                {
+                                "name": "readout_pulse",
+                                "amplitude": 1,
+                                "frequency": 1e9,
+                                "phase": 0,
+                                "duration": 2000,
+                                "pulse_shape": Rectangular(),
+                                },
                             "start_time": 40,
                         }
                     ],

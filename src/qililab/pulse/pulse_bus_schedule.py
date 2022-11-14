@@ -31,9 +31,9 @@ class PulseBusSchedule:
         """Sort timeline and add used pulses to the pulses set."""
         self.timeline.sort()
         for pulse_event in self.timeline:
-            self.pulses.add(pulse_event.pulse)
+            self._pulses.add(pulse_event.pulse)
         reference_pulse = self.timeline[0].pulse
-        for pulse in self.pulses:
+        for pulse in self._pulses:
             if pulse.frequency != reference_pulse.frequency:
                 raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
             if pulse.name != reference_pulse.name:
