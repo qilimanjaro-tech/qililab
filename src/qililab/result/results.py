@@ -52,6 +52,18 @@ class Results:
         """
         self.results += result
 
+    def _generate_new_probabilities_column_names(self):
+        """ Checks shape, num_sequence and software_average and returns with that the list of columns that should
+         be added to the dataframe. """
+        new_columns = ['qubit_index',
+                       *[f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
+                       ]
+        if self.num_sequences > 1:
+            new_columns.append('sequence_index')
+        if self.software_average > 1:
+            new_columns.append('software_avg_index')
+        return new_columns
+
     def _concatenate_probabilities_dataframes(self):
         """ Concatenates the probabilities dataframes from all the results"""
         result_probabilities_list = [result.probabilities() if result is not None
@@ -60,30 +72,29 @@ class Results:
         return pd.concat(result_probabilities_list, keys=range(len(result_probabilities_list)),
                          names=['result_index']).reset_index()
 
-    def _add_meaningful_probabilities_indices(self, result_acquisition_dataframe: pd.DataFrame):
+    def _add_meaningful_probabilities_indices(self, result_probabilities_dataframe: pd.DataFrame) -> pd.DataFrame:
         """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
         `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
+        old_columns = result_probabilities_dataframe.columns
+        new_columns = self._generate_new_probabilities_column_names()
+
         num_qbits = len(self.results[0].probabilities())
-        new_columns = ['qubit_index',
-                       *[f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
-                       ]
-        if self.num_sequences > 1:
-            new_columns.append('sequence_index')
-        if self.software_average > 1:
-            new_columns.append('software_avg_index')
-        result_acquisition_dataframe[num_qbits, new_columns] = result_acquisition_dataframe.apply(
+
+        result_probabilities_dataframe[new_columns] = result_probabilities_dataframe.apply(
             lambda row: coordinate_decompose(
                 new_dimension_shape=[num_qbits, *self.shape],
                 original_size=len(self.results),
                 original_idx=row['result_index']),
-            axis=1)
+            axis=1,
+            result_type='expand')
+        return result_probabilities_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)
 
-    def _process_dataframe_if_needed(self, result_acquisition_dataframe: pd.DataFrame, mean: bool = False):
+    def _process_dataframe_if_needed(self, result_dataframe: pd.DataFrame, mean: bool = False):
         """ Process the dataframe by applying software average if required """
 
         if mean and self.software_average > 1:
-            return result_acquisition_dataframe.groupby('software_avg_index').mean()
-        return result_acquisition_dataframe
+            return result_dataframe.groupby('software_avg_index').mean()
+        return result_dataframe
 
     def probabilities(self, mean: bool = True) -> np.ndarray:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
@@ -95,8 +106,9 @@ class Results:
         self._fill_missing_values()
 
         result_probabilities_df = self._concatenate_acquisition_dataframes()
-        self._add_meaningful_probabilities_indices(result_acquisition_dataframe=result_probabilities_df)
-        return self._process_dataframe_if_needed(result_acquisition_dataframe=result_probabilities_df, mean=mean)
+        expanded_probabilities_df = self._add_meaningful_probabilities_indices(
+            result_probabilities_dataframe=result_probabilities_df)
+        return self._process_dataframe_if_needed(result_dataframe=expanded_probabilities_df, mean=mean)
 
     def to_dataframe(self) -> pd.DataFrame:
         """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an
@@ -117,20 +129,30 @@ class Results:
         return pd.concat(
             result_acquisition_list, keys=range(len(result_acquisition_list)), names=['result_index']).reset_index()
 
-    def _add_meaningful_acquisition_indices(self, result_acquisition_dataframe: pd.DataFrame):
-        """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
-        `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
+    def _generate_new_acquisitoin_column_names(self):
+        """ Checks shape, num_sequence and software_average and returns with that the list of columns that should
+         be added to the dataframe. """
         new_columns = [f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
         if self.num_sequences > 1:
             new_columns.append('sequence_index')
         if self.software_average > 1:
             new_columns.append('software_avg_index')
+        return new_columns
+
+    def _add_meaningful_acquisition_indices(self, result_acquisition_dataframe: pd.DataFrame) -> pd.DataFrame:
+        """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
+        `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
+        old_columns = result_acquisition_dataframe.columns
+        new_columns = self._generate_new_acquisitoin_column_names()
+
         result_acquisition_dataframe[new_columns] = result_acquisition_dataframe.apply(
             lambda row: coordinate_decompose(
                 new_dimension_shape=self.shape,
                 original_size=len(self.results),
                 original_idx=row['result_index']),
-            axis=1)
+            axis=1,
+            result_type='expand')
+        return result_acquisition_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)
 
     def acquisitions(self, mean: bool = False) -> pd.DataFrame:
         """QbloxResult acquisitions of all the nested Results classes.
@@ -148,8 +170,9 @@ class Results:
         self._fill_missing_values()
 
         result_acquisition_df = self._concatenate_acquisition_dataframes()
-        self._add_meaningful_acquisition_indices(result_acquisition_dataframe=result_acquisition_df)
-        return self._process_dataframe_if_needed(result_acquisition_dataframe=result_acquisition_df, mean=mean)
+        expanded_acquisition_df = self._add_meaningful_acquisition_indices(
+            result_acquisition_dataframe=result_acquisition_df)
+        return self._process_dataframe_if_needed(result_dataframe=expanded_acquisition_df, mean=mean)
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""
