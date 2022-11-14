@@ -29,6 +29,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
     """
 
     name = InstrumentName.QBLOX_QRM
+    _NUM_SEQUENCERS: int = 2
 
     @dataclass
     class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, QubitReadout.QubitReadoutSettings):
@@ -175,10 +176,10 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.device.get_sequencer_state(sequencer=sequencer, timeout=self.sequence_timeout)
         self.device.get_acquisition_state(sequencer=sequencer, timeout=self.acquisition_timeout)
         if not self.hardware_integration[sequencer]:
-            self.device.store_scope_acquisition(sequencer=sequencer, name=self.acquisition_name)
-        return self.device.get_acquisitions(sequencer=sequencer)[self.acquisition_name]["acquisition"][
-            self.data_name(sequencer=sequencer)
-        ]
+            self.device.store_scope_acquisition(sequencer=sequencer, name=self.acquisition_name(sequencer=sequencer))
+        return self.device.get_acquisitions(sequencer=sequencer)[self.acquisition_name(sequencer=sequencer)][
+            "acquisition"
+        ][self.data_name(sequencer=sequencer)]
 
     @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
@@ -195,25 +196,11 @@ class QbloxQRM(QbloxModule, QubitReadout):
         # it needs to accept a result that contains both scope and bins instead of one or the other
         return QbloxResult(pulse_length=self.integration_length, bins=results)
 
-    def _set_nco(self):
+    def _set_nco(self, channel_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        super()._set_nco()
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].demod_en_acq(True)
-
-    def _set_scope_hardware_averaging(self):
-        """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
-        self.device.scope_acq_avg_mode_en_path1(self.scope_hardware_averaging)
-
-    def _set_acquisition_mode(self):
-        """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
-        for seq_idx in range(self.num_sequencers):
-            self._set_acquisition_mode_one_channel(
-                value=self.scope_acquire_trigger_mode[seq_idx].value, channel_id=seq_idx
-            )
-            if self.hardware_integration[seq_idx]:
-                self._set_integration_length(value=self.integration_length, channel_id=seq_idx)
+        super()._set_nco(channel_id=channel_id)
+        if self.settings.hardware_demodulation[channel_id]:
+            self.device.sequencers[channel_id].demod_en_acq(True)
 
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
@@ -309,11 +296,10 @@ class QbloxQRM(QbloxModule, QubitReadout):
         """
         return "bins" if self.hardware_integration[sequencer] else "scope"
 
-    @property
-    def acquisition_name(self) -> str:
+    def acquisition_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'acquisition_name' property:
 
         Returns:
             str: Name of the acquisition. Options are "single" or "binning".
         """
-        return "single" if self.scope_hardware_averaging else "binning"
+        return "single" if self.scope_hardware_averaging[sequencer] else "binning"

@@ -91,7 +91,7 @@ schema:
       offset_q: [0]
       hardware_modulation: [true]
       sync_enabled: [true]
-      num_bins: 1
+      num_bins: [1]
       scope_acquire_trigger_mode: [sequencer]
       scope_hardware_averaging: [false]
       sampling_rate: [1.e+09]

@@ -42,7 +42,7 @@ class QbloxModule(AWG):
         """
 
         sync_enabled: List[bool]
-        num_bins: int
+        num_bins: List[int]
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -52,9 +52,10 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
-        self._set_sync_enabled()
         self._map_outputs()
-        self._set_nco()
+        for channel_id in range(self.num_sequencers):
+            self._set_sync_enabled_one_channel(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
+            self._set_nco(channel_id=channel_id)
 
     @property
     def module_type(self):
@@ -112,7 +113,9 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins))
+        bin_loop = Loop(
+            name="binning", begin=0, end=int(self.num_bins[0])
+        )  # FIXME: get the channel instead of using the first
         avg_loop = Loop(name="average", begin=0, end=nshots)
         bin_loop.append_block(block=avg_loop, bot_position=1)
         stop = Block(name="stop")
@@ -148,7 +151,8 @@ class QbloxModule(AWG):
         """
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
+        # FIXME: using first channel instead of the desired
+        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
         return acquisitions
 
     def _generate_weights(self) -> dict:
@@ -195,6 +199,25 @@ class QbloxModule(AWG):
         if parameter.value == Parameter.SYNC_ENABLED:
             self._set_sync_enabled_one_channel(value=value, channel_id=channel_id)
             return
+        if parameter.value == Parameter.NUM_BINS:
+            self._set_num_bins(value=value, channel_id=channel_id)
+            return
+
+    def _set_num_bins(self, value: float | str | bool, channel_id: int):
+        """set sync enabled for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if not isinstance(value, float) or not isinstance(value, int):
+            raise ValueError(f"value must be a int or float. Current type: {type(value)}")
+        if value > self._MAX_BINS:
+            raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
+        self.settings.num_bins[channel_id] = int(value)
 
     def _set_sync_enabled_one_channel(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
@@ -316,28 +339,11 @@ class QbloxModule(AWG):
         for seq_idx in range(self.num_sequencers):
             self.device.sequencers[seq_idx].sequence(file_path)
 
-    def _set_gains(self):
-        """Set gain of sequencer for all paths."""
-        for seq_idx, gain in enumerate(self.gain):
-            self.device.sequencers[seq_idx].gain_awg_path0(gain)
-            self.device.sequencers[seq_idx].gain_awg_path1(gain)
-
-    def _set_offsets(self):
-        """Set I and Q offsets of sequencer."""
-        for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
-            self.device.sequencers[seq_idx].offset_awg_path0(offset_i)
-            self.device.sequencers[seq_idx].offset_awg_path1(offset_q)
-
-    def _set_nco(self):
+    def _set_nco(self, channel_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        for seq_idx, frequency in enumerate(self.frequencies):
-            self.device.sequencers[seq_idx].mod_en_awg(True)
-            self.device.sequencers[seq_idx].nco_freq(frequency)
-
-    def _set_sync_enabled(self):
-        """Enable/disable synchronization over multiple instruments."""
-        for seq_idx, sync_enabled in enumerate(self.sync_enabled):
-            self.device.sequencers[seq_idx].sync_en(sync_enabled)
+        if self.settings.hardware_modulation[channel_id]:
+            self._set_hardware_modulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
+            self._set_frequency(value=self.settings.frequencies[channel_id], channel_id=channel_id)
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
@@ -390,7 +396,7 @@ class QbloxModule(AWG):
         return self._MIN_WAIT_TIME
 
     @property
-    def num_bins(self) -> int:
+    def num_bins(self):
         """QbloxPulsar 'num_bins' property.
 
         Returns:
