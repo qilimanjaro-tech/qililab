@@ -158,7 +158,7 @@ schema:
         address: 192.168.0.3
       modules:
         - awg: QCM
-          slot_id: 0
+          slot_id: 1
     - name: qblox_pulsar
       id_: 1
       alias: pulsar_controller_qrm_0
@@ -170,7 +170,7 @@ schema:
         address: 192.168.0.4
       modules:
         - awg: QRM
-          slot_id: 0
+          slot_id: 1
     - name: rohde_schwarz
       id_: 2
       alias: rohde_schwarz_controller_0
@@ -181,7 +181,7 @@ schema:
         address: 192.168.0.10
       modules:
         - signal_generator: rs_0
-          slot_id: 0
+          slot_id: 1
     - name: rohde_schwarz
       id_: 3
       alias: rohde_schwarz_controller_1
@@ -192,7 +192,7 @@ schema:
         address: 192.168.0.7
       modules:
         - signal_generator: rs_1
-          slot_id: 0
+          slot_id: 1
     - name: mini_circuits
       id_: 4
       alias: attenuator_controller_0
@@ -203,4 +203,4 @@ schema:
         address: 192.168.0.222
       modules:
         - attenuator: attenuator
-          slot_id: 0
+          slot_id: 1
