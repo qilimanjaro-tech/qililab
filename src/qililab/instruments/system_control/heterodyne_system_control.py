@@ -32,9 +32,9 @@ class HeterodyneSystemControl(SystemControl):
         awg: AWG
         signal_generator: SignalGenerator
         pulse_length: int = 6000
-        IF: float = 76.3
-        LO: float
-        Gain: float
+        IF: float = 0.01
+        # LO: float
+        gain: float
         shots: int = 1000
 
         def __iter__(
@@ -60,13 +60,8 @@ class HeterodyneSystemControl(SystemControl):
 
         """ Write the description of this function """
         
-        print('!!!!!!! Did the parameters arrive ?????????')
-        print(self.IF)
-        print(self.LO)
-        print(self.shots)
-        
         # Clean the memory of the awg
-        self.awg.device.reset()
+        # self.awg.reset()
 
         """ # New code : 
         T = 6000  # nanoseconds and number of points since sample rate is 1 GS/s
@@ -98,7 +93,7 @@ class HeterodyneSystemControl(SystemControl):
         # Generate Waveforms
         waveform_length = 6000  # nanoseconds
         times_vector = np.arange(0, waveform_length + 0.5, 1)  # 1ns per sample
-        self.freq_if = 0.01  # in GHz to match nanosecond units
+        self.freq_if = self.settings.IF  # in GHz to match nanosecond units
         envelope_I = np.ones(waveform_length)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
         envelope_Q = np.zeros(waveform_length)
 
@@ -159,7 +154,7 @@ class HeterodyneSystemControl(SystemControl):
         # stop              #Stop.
         # """
         seq_prog = f"""
-        move    1000,R0   #Loop iterator.
+        move    {self.settings.shots},R0   #Loop iterator.
         loop:
         play    0,1,4     #Play waveforms and wait 4ns.
         acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
@@ -197,8 +192,8 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
         # set gain
-        self.awg.device.sequencer0.gain_awg_path0(0.05)
-        self.awg.device.sequencer0.gain_awg_path1(0.05)
+        self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+        self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
 
     def start(self):
         """Start/Turn on the instruments.
@@ -224,15 +219,16 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.start_sequencer()
         # self.signal_generator.device.off()
         # Print status of sequencer.
-        # print("Status:")
-        # print(self.awg.device.get_sequencer_state(0))
+        print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
-        self.awg.device.get_acquisition_state(0, 1)
+        print(f"Acquisition state: {self.awg.device.get_acquisition_state(0, 1)}")
         # Move acquisition data from temporary memory to acquisition list.
         self.awg.device.store_scope_acquisition(0, "single")
         # Get acquisition list from instrument.
         single_acq = self.awg.device.get_acquisitions(0)
+
+        print(single_acq.keys())
 
         # ## 2.3 should be outside!
         output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])

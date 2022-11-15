@@ -74,7 +74,8 @@ class VNASystemControl(SystemControl):
         """Setup instruments."""
 
         print('Entered setup Syst Ctrl')
-        self.settings.vna.setup()
+        self.settings.vna.send_command(command="*IDN?")
+        self.vna.settings.read()
 
         print('Finished setup')
 
@@ -148,14 +149,14 @@ class VNASystemControl(SystemControl):
         """Redirect __iter__ magic method."""
         return self.settings.__iter__()
 
-    def to_dict(self):
-        """Return a dict representation of the VNASystemControl class."""
-        return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.CATEGORY: self.settings.category.value,
-            RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
-            RUNCARD.
-        } | {key: value.alias for key, value in self}
+    # def to_dict(self):
+    #     """Return a dict representation of the VNASystemControl class."""
+    #     return {
+    #         RUNCARD.ID: self.id_,
+    #         RUNCARD.CATEGORY: self.settings.category.value,
+    #         RUNCARD.SUBCATEGORY: self.settings.subcategory.value,
+    #         RUNCARD.
+    #     } | {key: value.alias for key, value in self}
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""

@@ -18,7 +18,7 @@ class BusExecution:
 
     def setup(self):
         """Setup instruments."""
-        self.system_control.setup(frequencies=self.bus.target_freqs)
+        self.system_control.setup()
 
     def start(self):
         """Start/Turn on the instruments."""
