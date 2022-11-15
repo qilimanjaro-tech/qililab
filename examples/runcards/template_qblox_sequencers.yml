@@ -67,8 +67,8 @@ schema:
       id_: 0
       category: awg
       firmware: 0.7.0
-      num_bins: 1
       num_sequencers: 1
+      num_bins: [1]
       frequencies: [1.e+08]
       gain: [1]
       epsilon: [0]

@@ -65,7 +65,7 @@ class InstrumentController(BusElement, ABC):
     device: Device  # a subtype of device must be specified by the subclass
     number_available_modules: int  # to be set by child classes
     modules: Sequence[Instrument]
-    connected_modules_slot_ids: List[int]
+    connected_modules_slot_ids: List[int]  # slot_id represents the number displayed in the cluster
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""
