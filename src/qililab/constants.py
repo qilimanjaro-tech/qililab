@@ -96,8 +96,13 @@ class LOOP:
     PARAMETER = "parameter"
     START = "start"
     STOP = "stop"
+    ALIAS = "alias"
     NUM = "num"
     STEP = "step"
+    LOGARITHMIC = "logarithmic"
+    CHANNEL_ID = "channel_id"
+    PREVIOUS = "previous"
+    VALUES = "values"
 
 
 class PULSESEQUENCES:
