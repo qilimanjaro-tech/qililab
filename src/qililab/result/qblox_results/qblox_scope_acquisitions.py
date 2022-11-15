@@ -37,8 +37,8 @@ class QbloxScopeAcquisitions(Acquisitions):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
-        # TODO: Integrate data when scope
-        probs_dict = {"acquisition_index": range(len(acquisitions)),
-                      "p0": (acq[0][-1] for acq in acquisitions),
-                      "p1": (acq[0][-1] for acq in acquisitions)}
-        return pd.DataFrame(probs_dict)
+        probs_df = pd.DataFrame()
+        probs_df["p0"] = acquisitions["amplitude_values"].values
+        probs_df["p1"] = acquisitions["amplitude_values"].values
+        probs_df.index.rename("acquisition_index", inplace=True)
+        return probs_df

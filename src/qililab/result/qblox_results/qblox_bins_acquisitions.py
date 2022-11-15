@@ -40,12 +40,8 @@ class QbloxBinsAcquisitions(Acquisitions):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
-        probs_dict = {"acquisition_index": range(len(acquisitions)),
-                      "p0": (self._get_last_bin(one_acquisition=acq)[2] for acq in acquisitions),
-                      "p1": (self._get_last_bin(one_acquisition=acq)[2] for acq in acquisitions)}
-        return pd.DataFrame(probs_dict)
-
-    def _get_last_bin(self, one_acquisition: npt.NDArray[np.float32]) -> npt.NDArray:
-        """get last bin"""
-        # FIXME: Here we use -1 to get the last bin. Do we really want this?
-        return one_acquisition[-1] if one_acquisition.ndim > 1 else one_acquisition
+        probs_df = pd.DataFrame()
+        probs_df["p0"] = acquisitions["amplitude_values"].values
+        probs_df["p1"] = acquisitions["amplitude_values"].values
+        probs_df.index.rename("acquisition_index", inplace=True)
+        return probs_df

@@ -105,7 +105,7 @@ class Results:
 
         self._fill_missing_values()
 
-        result_probabilities_df = self._concatenate_acquisition_dataframes()
+        result_probabilities_df = self._concatenate_probabilities_dataframes()
         expanded_probabilities_df = self._add_meaningful_probabilities_indices(
             result_probabilities_dataframe=result_probabilities_df)
         return self._process_dataframe_if_needed(result_dataframe=expanded_probabilities_df, mean=mean)

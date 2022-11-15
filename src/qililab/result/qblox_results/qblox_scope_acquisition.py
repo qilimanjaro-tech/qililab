@@ -7,7 +7,7 @@ import pandas as pd
 
 
 @dataclass
-class QbloxBinAcquisition(Acquisition):
+class QbloxScopeAcquisition(Acquisition):
     """Qblox Bin Acquisition normalized"""
 
     def _create_acquisition(self) -> pd.DataFrame:
@@ -15,5 +15,5 @@ class QbloxBinAcquisition(Acquisition):
         a structure with i, q, amplitude, phase.
         """
         acquisition_dataframe = super()._create_acquisition()
-        acquisition_dataframe.index.rename('bin_index', inplace=True)
+        acquisition_dataframe.index.rename('scope_index', inplace=True)
         return acquisition_dataframe
