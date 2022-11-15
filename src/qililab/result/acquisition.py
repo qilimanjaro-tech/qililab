@@ -7,6 +7,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
+
 
 @dataclass
 class Acquisition:
@@ -41,10 +43,10 @@ class Acquisition:
         For multiple values you may need to redefine this method
         """
         return pd.DataFrame({
-            "i_values": self.i_values,
-            "q_values": self.q_values,
-            "amplitude_values": self.amplitude_values,
-            "phase_values": self.phase_values,
+            RESULTSDATAFRAME.I: self.i_values,
+            RESULTSDATAFRAME.Q: self.q_values,
+            RESULTSDATAFRAME.AMPLITUDE: self.amplitude_values,
+            RESULTSDATAFRAME.PHASE: self.phase_values,
         })
 
     def _normalized_data(self, data: npt.NDArray):

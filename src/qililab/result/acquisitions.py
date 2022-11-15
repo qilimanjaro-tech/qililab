@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisition import Acquisition
 
 
@@ -23,7 +24,8 @@ class Acquisitions:
         I, Q, Amplitude, Phase
         """
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
-        return pd.concat(acquisition_list, keys=range(len(acquisition_list)), names=['acquisition_index'])
+        return pd.concat(
+            acquisition_list, keys=range(len(acquisition_list)), names=[RESULTSDATAFRAME.ACQUISITION_INDEX])
 
     def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.

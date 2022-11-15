@@ -7,7 +7,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
-from qililab.constants import EXPERIMENT, RUNCARD
+from qililab.constants import EXPERIMENT, RUNCARD, RESULTSDATAFRAME
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils.factory import Factory
@@ -55,13 +55,12 @@ class Results:
     def _generate_new_probabilities_column_names(self):
         """ Checks shape, num_sequence and software_average and returns with that the list of columns that should
          be added to the dataframe. """
-        new_columns = ['qubit_index',
-                       *[f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
-                       ]
+        new_columns = [RESULTSDATAFRAME.QUBIT_INDEX] + [
+            f'{RESULTSDATAFRAME.LOOP_INDEX}{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
         if self.num_sequences > 1:
-            new_columns.append('sequence_index')
+            new_columns.append(RESULTSDATAFRAME.SEQUENCE_INDEX)
         if self.software_average > 1:
-            new_columns.append('software_avg_index')
+            new_columns.append(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX)
         return new_columns
 
     def _concatenate_probabilities_dataframes(self):
@@ -70,7 +69,7 @@ class Results:
                                      else pd.DataFrame([]).reindex_like(self.results[0].probabilities())
                                      for result in self.results]
         return pd.concat(result_probabilities_list, keys=range(len(result_probabilities_list)),
-                         names=['result_index']).reset_index()
+                         names=[RESULTSDATAFRAME.RESULTS_INDEX]).reset_index()
 
     def _add_meaningful_probabilities_indices(self, result_probabilities_dataframe: pd.DataFrame) -> pd.DataFrame:
         """ Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
@@ -84,7 +83,7 @@ class Results:
             lambda row: coordinate_decompose(
                 new_dimension_shape=[num_qbits, *self.shape],
                 original_size=len(self.results),
-                original_idx=row['result_index']),
+                original_idx=row[RESULTSDATAFRAME.RESULTS_INDEX]),
             axis=1,
             result_type='expand')
         return result_probabilities_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)
@@ -93,7 +92,7 @@ class Results:
         """ Process the dataframe by applying software average if required """
 
         if mean and self.software_average > 1:
-            return result_dataframe.groupby('software_avg_index').mean()
+            return result_dataframe.groupby(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX).mean()
         return result_dataframe
 
     def probabilities(self, mean: bool = True) -> np.ndarray:
@@ -127,16 +126,19 @@ class Results:
                                    else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
                                    for result in self.results]
         return pd.concat(
-            result_acquisition_list, keys=range(len(result_acquisition_list)), names=['result_index']).reset_index()
+            result_acquisition_list,
+            keys=range(len(result_acquisition_list)),
+            names=[RESULTSDATAFRAME.RESULTS_INDEX]).reset_index()
 
     def _generate_new_acquisitoin_column_names(self):
         """ Checks shape, num_sequence and software_average and returns with that the list of columns that should
          be added to the dataframe. """
-        new_columns = [f'loop_index_{i}' for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
+        new_columns = [f'{RESULTSDATAFRAME.LOOP_INDEX}{i}'
+                       for i in range(len(compute_shapes_from_loops(loops=self.loops)))]
         if self.num_sequences > 1:
-            new_columns.append('sequence_index')
+            new_columns.append(RESULTSDATAFRAME.SEQUENCE_INDEX)
         if self.software_average > 1:
-            new_columns.append('software_avg_index')
+            new_columns.append(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX)
         return new_columns
 
     def _add_meaningful_acquisition_indices(self, result_acquisition_dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -149,7 +151,7 @@ class Results:
             lambda row: coordinate_decompose(
                 new_dimension_shape=self.shape,
                 original_size=len(self.results),
-                original_idx=row['result_index']),
+                original_idx=row[RESULTSDATAFRAME.RESULTS_INDEX]),
             axis=1,
             result_type='expand')
         return result_acquisition_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)

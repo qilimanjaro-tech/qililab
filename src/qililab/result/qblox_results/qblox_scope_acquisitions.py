@@ -6,6 +6,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisition import Acquisition
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.qblox_results.scope_data import ScopeData
@@ -38,7 +39,7 @@ class QbloxScopeAcquisitions(Acquisitions):
         """
         acquisitions = self.acquisitions()
         probs_df = pd.DataFrame()
-        probs_df["p0"] = acquisitions["amplitude_values"].values
-        probs_df["p1"] = acquisitions["amplitude_values"].values
-        probs_df.index.rename("acquisition_index", inplace=True)
+        probs_df[RESULTSDATAFRAME.P0] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
+        probs_df[RESULTSDATAFRAME.P1] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
+        probs_df.index.rename(RESULTSDATAFRAME.ACQUISITION_INDEX, inplace=True)
         return probs_df

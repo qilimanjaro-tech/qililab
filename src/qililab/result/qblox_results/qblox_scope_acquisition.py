@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from qililab.result.acquisition import Acquisition
+from qililab.constants import RESULTSDATAFRAME
 import pandas as pd
 
 
@@ -15,5 +16,5 @@ class QbloxScopeAcquisition(Acquisition):
         a structure with i, q, amplitude, phase.
         """
         acquisition_dataframe = super()._create_acquisition()
-        acquisition_dataframe.index.rename('scope_index', inplace=True)
+        acquisition_dataframe.index.rename(RESULTSDATAFRAME.SCOPE_INDEX, inplace=True)
         return acquisition_dataframe
