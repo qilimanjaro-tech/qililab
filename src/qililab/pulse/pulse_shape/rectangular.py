@@ -13,7 +13,7 @@ from qililab.utils import Factory
 class Rectangular(PulseShape):
     """Rectangular/square pulse shape."""
 
-    name = PulseShapeName.RECTANGULAR
+    name: PulseShapeName = PulseShapeName.RECTANGULAR
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.

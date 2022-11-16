@@ -287,7 +287,7 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
 
 
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
-def fixture_pulses(platform: Platform) -> PulseSchedule:
+def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
     return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 

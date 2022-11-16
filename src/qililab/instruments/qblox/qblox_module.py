@@ -61,45 +61,45 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
+            pulse_bus_schedule (PulseBusSchedule): Pulse sequence.
         """
         self._check_cached_values(
-            pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
         self.start_sequencer()
 
-    def _check_cached_values(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """check if values are already cached and upload if not cached"""
-        if (pulse_sequence, nshots, repetition_duration) != self._cache:
-            self._cache = (pulse_sequence, nshots, repetition_duration)
-            sequence = self._translate_pulse_sequence(
-                pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration
+        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
+            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
+            sequence = self._translate_pulse_bus_schedule(
+                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
             self.upload(sequence=sequence, path=path)
 
-    def _translate_pulse_sequence(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int):
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence to translate.
+            pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
 
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulse_sequence=pulse_sequence)
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulse_sequence=pulse_sequence, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
         )
         weights = self._generate_weights()
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_sequence: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
@@ -119,15 +119,15 @@ class QbloxModule(AWG):
         stop.append_component(Stop())
         program.append_block(block=bin_loop)
         program.append_block(block=stop)
-        pulses = pulse_sequence.pulses
-        if pulses[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(pulses[0].start)))
+        timeline = pulse_bus_schedule.timeline
+        if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
 
-        for i, pulse in enumerate(pulses):
-            waveform_pair = waveforms.find_pair_by_name(str(pulse))
-            wait_time = pulses[i + 1].start - pulse.start if (i < (len(pulses) - 1)) else self.final_wait_time
-            avg_loop.append_component(set_phase_rad(rads=pulse.phase))
-            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse.amplitude, gain_1=pulse.amplitude))
+        for i, pulse_event in enumerate(timeline):
+            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+            wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
+            avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
+            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -238,10 +238,10 @@ class QbloxModule(AWG):
             self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
             self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
 
-    def _generate_waveforms(self, pulse_sequence: PulseBusSchedule):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
-            pulse_sequence (PulseSequence): PulseSequence object.
+            pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
         Returns:
             Waveforms: Waveforms object containing the generated waveforms.
         """
@@ -249,13 +249,13 @@ class QbloxModule(AWG):
 
         unique_pulses: List[Tuple[int, PulseShape]] = []
 
-        for pulse in pulse_sequence.pulses:
-            if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
-                unique_pulses.append((pulse.duration, pulse.pulse_shape))
-                envelope = pulse.envelope(amplitude=1)
+        for pulse_event in pulse_bus_schedule.timeline:
+            if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
+                unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
+                envelope = pulse_event.pulse.envelope(amplitude=1)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
-                waveforms.add_pair((real, imag), name=str(pulse))
+                waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
 
         return waveforms
 

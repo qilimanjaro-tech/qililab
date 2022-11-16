@@ -42,7 +42,7 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
         Args:

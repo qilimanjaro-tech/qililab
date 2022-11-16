@@ -1,4 +1,5 @@
 """PulseEvent class."""
+from __future__ import annotations
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSEEVENT, RUNCARD
@@ -8,18 +9,15 @@ from qililab.typings.enums import PulseName
 from qililab.utils.waveforms import Waveforms
 
 
-@dataclass(order=True)
+@dataclass
 class PulseEvent:
     """Describes a single pulse with a start time."""
-    sort_index: int = field(init=False, repr=False)
-    
     pulse: Pulse
     start_time: int
     end_time: int = field(init=False, repr=False)
     duration: int = field(init=False, repr=False)
 
     def __post_init__(self):
-        self.sort_index = self.start_time
         self.duration = self.pulse.duration
         self.end_time = self.start_time + self.duration
 
@@ -57,10 +55,14 @@ class PulseEvent:
             PulseEvent: Loaded class.
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
+        print(dictionary)
         pulse = (
-            Pulse(**pulse_settings)
+            Pulse.from_dict(pulse_settings)
             if Pulse.name == PulseName(pulse_settings.pop(RUNCARD.NAME))
-            else ReadoutPulse(**pulse_settings)
+            else ReadoutPulse.from_dict(pulse_settings)
         )
         start_time = dictionary[PULSEEVENT.START_TIME]
         return PulseEvent(pulse=pulse, start_time=start_time)
+
+    def __lt__(self, other: PulseEvent):
+        return self.start_time < other.start_time

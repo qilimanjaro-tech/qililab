@@ -1,5 +1,6 @@
 """PulseShape abstract base class."""
 from dataclasses import dataclass, field
+from enum import Enum
 
 import numpy as np
 
@@ -31,4 +32,8 @@ class PulseShape(FactoryElement):
         Returns:
             dict: Dictionary.
         """
-        return self.__dict__
+        dictionary = self.__dict__.copy()
+        for key, value in dictionary.items():
+            if isinstance(value, Enum):
+                dictionary[key] = value.value
+        return dictionary

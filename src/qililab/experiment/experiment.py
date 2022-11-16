@@ -312,7 +312,7 @@ class Experiment:
         if isinstance(sequence_list[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedule=sequence_list)
         return execution, sequence_list
 
     def _create_results_file(self, path: Path):

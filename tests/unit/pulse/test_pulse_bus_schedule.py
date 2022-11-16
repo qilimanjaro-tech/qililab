@@ -8,9 +8,9 @@ from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, ReadoutEvent
 class TestPulseBusSchedule:
     """Unit tests checking the PulseSequence attributes and methods"""
 
-    def test_add_method(self, pulse_bus_schedule: PulseBusSchedule, pulse: Pulse, start_time: int):
+    def test_add_method(self, pulse_bus_schedule: PulseBusSchedule, pulse: Pulse):
         """Test add method."""
-        pulse_bus_schedule.add(pulse=pulse, start_time=start_time)
+        pulse_bus_schedule.add(pulse=pulse, start_time=0)
 
     def test_add_event_method(self, pulse_bus_schedule: PulseBusSchedule, pulse_event: PulseEvent):
         """Test add method."""

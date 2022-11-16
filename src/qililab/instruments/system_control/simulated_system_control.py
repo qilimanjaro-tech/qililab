@@ -73,16 +73,16 @@ class SimulatedSystemControl(SystemControl):
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 
-    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
 
         resolution = self.settings.resolution
         frequency = self.frequency
-        if pulse_sequence.frequency is not None:
-            frequency = pulse_sequence.frequency
+        if pulse_bus_schedule.frequency is not None:
+            frequency = pulse_bus_schedule.frequency
 
         # TODO: get pulses -> check
-        waveforms = pulse_sequence.waveforms(frequency=frequency, resolution=resolution)
+        waveforms = pulse_bus_schedule.waveforms(frequency=frequency, resolution=resolution)
         i_waveform = np.array(waveforms.i)
         sequence = [i_waveform]
 

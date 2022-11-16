@@ -17,12 +17,10 @@ class TestPulseSequences:
         pulse_schedule: PulseSchedule,
         pulse: Pulse,
         readout_pulse: ReadoutPulse,
-        pulse_start: int,
-        readout_start: int,
     ):
         """Test add method."""
-        pulse_schedule.add(pulse=pulse, start_time=pulse_start, port=0)
-        pulse_schedule.add(pulse=readout_pulse, start_time=readout_start, port=1)
+        pulse_schedule.add(pulse=pulse, start_time=0, port=0)
+        pulse_schedule.add(pulse=readout_pulse, start_time=2000, port=1)
 
     def test_add_event_method(
         self, pulse_schedule: PulseSchedule, pulse_event: PulseEvent, readout_event: ReadoutEvent

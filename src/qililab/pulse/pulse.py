@@ -1,13 +1,15 @@
 """Pulse class."""
+from __future__ import annotations
 from dataclasses import InitVar, dataclass
 from typing import ClassVar
 
 import numpy as np
 
-from qililab.constants import PULSE, RUNCARD
+from qililab.constants import PULSE, PULSESHAPE
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseName
-from qililab.utils import Factory, Waveforms
+from qililab.pulse.pulse_shape import Gaussian, Rectangular, Drag
+from qililab.typings import PulseName, PulseShapeName
+from qililab.utils import Waveforms
 
 
 @dataclass(unsafe_hash=True, eq=True)
@@ -49,6 +51,30 @@ class Pulse:
         if amplitude is None:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
+    
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> Pulse:
+        """Load Pulse object from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the Pulse object.
+
+        Returns:
+            Pulse: Loaded class.
+        """
+        pulse_shape_dictionary = dictionary[PULSE.PULSE_SHAPE]
+        pulse_shape = cls._build_shape(pulse_shape_dictionary)
+        pulse_settings = dictionary.copy()
+        pulse_settings[PULSE.PULSE_SHAPE] = pulse_shape
+        return cls(**pulse_settings)
+    
+    @classmethod
+    def _build_shape(cls, pulse_shape_dictionary: dict) -> PulseShape:
+        name_class_map = {PulseShapeName.DRAG.value: Drag, PulseShapeName.GAUSSIAN.value: Gaussian, PulseShapeName.RECTANGULAR.value: Rectangular}
+        PulseShapeClass: PulseShape = name_class_map[pulse_shape_dictionary[PULSESHAPE.NAME]]
+        pulse_shape_dictionary_copy = pulse_shape_dictionary.copy()
+        del pulse_shape_dictionary_copy[PULSESHAPE.NAME]
+        return PulseShapeClass(**pulse_shape_dictionary_copy)
 
     def to_dict(self):
         """Return dictionary of pulse.
@@ -64,3 +90,8 @@ class Pulse:
             PULSE.DURATION: self.duration,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
         }
+
+    def label(self) -> str:
+        """Return short string representation of the Pulse object."""
+        return f"{str(self.pulse_shape)} - {self.duration}ns" 
+  
