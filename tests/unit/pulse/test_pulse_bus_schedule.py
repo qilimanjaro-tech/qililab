@@ -33,3 +33,21 @@ class TestPulseBusSchedule:
         """Test __iter__ method."""
         for pulse in pulse_bus_schedule:
             assert isinstance(pulse, PulseEvent)
+
+    def test_unique_pulses_duration(self, pulse_bus_schedule: PulseBusSchedule):
+        pulses_duration = sum(pulse.duration for pulse in pulse_bus_schedule.pulses)
+        assert pulses_duration == pulse_bus_schedule.unique_pulses_duration
+
+    def test_end(self, pulse_bus_schedule: PulseBusSchedule):
+        last_pulse_event = pulse_bus_schedule.timeline[-1]
+        end = last_pulse_event.start + last_pulse_event.pulse.duration
+        assert end == pulse_bus_schedule.end
+        
+    def test_start(self, pulse_bus_schedule: PulseBusSchedule):
+        first_pulse_event = pulse_bus_schedule.timeline[0]
+        start = first_pulse_event.start
+        assert start == pulse_bus_schedule.start
+    
+    def test_total_duration(self, pulse_bus_schedule: PulseBusSchedule):
+        duration = pulse_bus_schedule.end - pulse_bus_schedule.start
+        assert pulse_bus_schedule.duration == duration

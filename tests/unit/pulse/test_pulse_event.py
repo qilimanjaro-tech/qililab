@@ -6,8 +6,8 @@ from qililab.pulse import PulseEvent
 from qililab.utils import Waveforms
 
 
-class TestPulse:
-    """Unit tests checking the Pulse attributes and methods"""
+class TestPulseEvent:
+    """Unit tests checking the PulseEvent attributes and methods"""
 
     def test_modulated_waveforms_method(self, pulse_event: PulseEvent):
         """Test modulated_waveforms method."""
