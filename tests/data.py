@@ -13,6 +13,7 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
+from qililab.pulse.pulse_shape import Drag, Rectangular
 from qililab.typings.enums import (
     Category,
     ConnectionName,
@@ -22,8 +23,6 @@ from qililab.typings.enums import (
     Parameter,
     ReferenceClock,
 )
-
-from qililab.pulse.pulse_shape import Rectangular, Drag
 
 
 class Galadriel:
@@ -593,15 +592,14 @@ experiment = {
                 {
                     "timeline": [
                         {
-                            "pulse":
-                                {
+                            "pulse": {
                                 "name": "readout_pulse",
                                 "amplitude": 1,
                                 "frequency": 1e9,
                                 "phase": 0,
                                 "duration": 2000,
                                 "pulse_shape": {"name": "rectangular"},
-                                },
+                            },
                             "start_time": 40,
                         }
                     ],

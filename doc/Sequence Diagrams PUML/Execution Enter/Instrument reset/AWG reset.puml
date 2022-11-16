@@ -9,7 +9,7 @@ activate qblox #7F1CDB
 note right of qblox: cache = None
 return
 qblox -> dev ++: reset ()
-return 
+return
 return
 
 @enduml
