@@ -9,7 +9,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(frozen=True, eq=True)
+@dataclass(unsafe_hash=True, eq=True)
 class Rectangular(PulseShape):
     """Rectangular/square pulse shape."""
 

@@ -10,7 +10,7 @@ from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 
 
-@dataclass(frozen=True, eq=True)
+@dataclass(unsafe_hash=True, eq=True)
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 

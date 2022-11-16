@@ -7,7 +7,7 @@ from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseShapeName
 
 
-@dataclass(frozen=True, eq=True)
+@dataclass(unsafe_hash=True, eq=True)
 class PulseShape(FactoryElement):
     """Pulse shape abstract base class."""
 
