@@ -20,8 +20,7 @@ class PulseEvent:
     duration: int = field(init=False, repr=False)
 
     def __post_init__(self):
-        """Set the duration of the PulseEvent from that of the Pulse and calculate end_time.
-        """
+        """Set the duration of the PulseEvent from that of the Pulse and calculate end_time."""
         self.duration = self.pulse.duration
         self.end_time = self.start_time + self.duration
 

@@ -72,10 +72,10 @@ class Pulse:
     @classmethod
     def _build_shape(cls, pulse_shape_dictionary: dict) -> PulseShape:
         """Generates a PulseShape object from the given pulse_shape_dictionary.
-        
+
         Args:
             pulse_shape_dictionary (dict): Dictionary representation of the PulseShape object.
-            
+
         Returns:
             PulseShape: PulseShape object generated from the dictionary.
         """
