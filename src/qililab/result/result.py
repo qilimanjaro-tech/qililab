@@ -2,13 +2,12 @@
 from dataclasses import asdict, dataclass, field
 from typing import List, Tuple
 
-from qililab.utils import nested_dict_to_pandas_dataframe
+import pandas as pd
 
 from qililab.constants import RUNCARD
 from qililab.typings.enums import ResultName
 from qililab.typings.factory_element import FactoryElement
-
-import pandas as pd
+from qililab.utils import nested_dict_to_pandas_dataframe
 
 
 # FIXME: Cannot use dataclass and ABC at the same time

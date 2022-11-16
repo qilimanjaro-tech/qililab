@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 
-from qililab.result.acquisition import Acquisition
-from qililab.constants import RESULTSDATAFRAME
 import pandas as pd
+
+from qililab.constants import RESULTSDATAFRAME
+from qililab.result.acquisition import Acquisition
 
 
 @dataclass

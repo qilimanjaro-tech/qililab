@@ -2,8 +2,8 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
@@ -97,10 +97,10 @@ class QbloxResult(Result):
         """compare two Qblox Results"""
         return (
             (
-                    self.name == other.name
-                    and self.pulse_length == other.pulse_length
-                    and self.scope == other.scope
-                    and self.bins == other.bins
+                self.name == other.name
+                and self.pulse_length == other.pulse_length
+                and self.scope == other.scope
+                and self.bins == other.bins
             )
             if isinstance(other, QbloxResult)
             else False
