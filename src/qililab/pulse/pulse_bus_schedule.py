@@ -61,6 +61,15 @@ class PulseBusSchedule:
         insort(self.timeline, pulse_event)
 
     def _check_pulse_validity(self, pulse: Pulse):
+        """Checks whether pulse is valid or not based on its name and frequency.
+        
+        Args:
+            pulse (Pulse): Pulse to check.
+        
+        Raises:
+            ValueError: All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)
+            ValueError: All Pulse objects inside a PulseSequence should have the same frequency.
+        """
         if self.pulses:
             if pulse.name != self.timeline[0].pulse.name:
                 raise ValueError(
