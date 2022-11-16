@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 import numpy.typing as npt
 
@@ -18,13 +20,13 @@ def summation(array: npt.ArrayLike, start: int = 0, stop: int = -1):
     return 0 if stop - start <= 0 else np.sum(array[start:stop])
 
 
-def _do_target_dimensions_check(new_dimension_shape: npt.ArrayLike):
+def _do_target_dimensions_check(new_dimension_shape: Sequence):
     """Checks that all target dimensions should have at least one element."""
     if any(size < 1 for size in new_dimension_shape):
         raise ValueError(f"Sizes of of target array should not be 0 nor negative: {str(new_dimension_shape)}")
 
 
-def _do_size_match_check(original_size: int, new_dimension_shape: npt.ArrayLike):
+def _do_size_match_check(original_size: int, new_dimension_shape: Sequence):
     """Checks that sizes of original and target spaces are compatible."""
     new_space_size = np.prod(new_dimension_shape)
     if new_space_size != original_size:
@@ -35,7 +37,7 @@ def _do_size_match_check(original_size: int, new_dimension_shape: npt.ArrayLike)
         )
 
 
-def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: npt.ArrayLike):
+def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: Sequence):
     """Perform some checks before applying the algorithm"""
     _do_target_dimensions_check(new_dimension_shape=new_dimension_shape)
     _do_size_match_check(original_size=original_size, new_dimension_shape=new_dimension_shape)
@@ -43,9 +45,9 @@ def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: np
 
 def _get_nth_coordinate(
     coord_elem_idx: int,
-    new_indices: npt.ArrayLike,
+    new_indices: Sequence,
     original_idx: int,
-    new_dimension_shape: npt.ArrayLike,
+    new_dimension_shape: Sequence,
     number_of_dimensions: int,
 ):
     """Builds precisely the i_k by using:
@@ -63,7 +65,7 @@ def _get_nth_coordinate(
 
 
 def coordinate_decompose(
-    new_dimension_shape: npt.ArrayLike,
+    new_dimension_shape: Sequence,
     original_size: int,
     original_idx: int,
 ):
