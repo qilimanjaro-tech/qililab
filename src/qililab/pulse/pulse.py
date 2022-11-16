@@ -52,7 +52,7 @@ class Pulse:
         if amplitude is None:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
-    
+
     @classmethod
     def from_dict(cls, dictionary: dict) -> Pulse:
         """Load Pulse object from dictionary.
@@ -68,11 +68,15 @@ class Pulse:
         pulse_settings = dictionary.copy()
         pulse_settings[PULSE.PULSE_SHAPE] = pulse_shape
         return cls(**pulse_settings)
-    
+
     @classmethod
     def _build_shape(cls, pulse_shape_dictionary: dict) -> PulseShape:
-        name_class_map = {PulseShapeName.DRAG.value: Drag, PulseShapeName.GAUSSIAN.value: Gaussian, PulseShapeName.RECTANGULAR.value: Rectangular}
-        PulseShapeClass: PulseShape = name_class_map[pulse_shape_dictionary[PULSESHAPE.NAME]]
+        name_class_map = {
+            PulseShapeName.DRAG.value: Drag,
+            PulseShapeName.GAUSSIAN.value: Gaussian,
+            PulseShapeName.RECTANGULAR.value: Rectangular,
+        }
+        PulseShapeClass = name_class_map[pulse_shape_dictionary[PULSESHAPE.NAME]]
         pulse_shape_dictionary_copy = pulse_shape_dictionary.copy()
         del pulse_shape_dictionary_copy[PULSESHAPE.NAME]
         return PulseShapeClass(**pulse_shape_dictionary_copy)
@@ -94,5 +98,4 @@ class Pulse:
 
     def label(self) -> str:
         """Return short string representation of the Pulse object."""
-        return f"{str(self.pulse_shape)} - {self.duration}ns" 
-  
+        return f"{str(self.pulse_shape)} - {self.duration}ns"

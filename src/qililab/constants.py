@@ -124,11 +124,12 @@ class PULSE:
     PORT = "port"
     PULSE_SHAPE = "pulse_shape"
 
+
 class PULSESHAPE:
     """PulseShape attribute names."""
-    
+
     NAME = "name"
-    
+
 
 class PULSEEVENT:
     """PulseEvent attribute names."""

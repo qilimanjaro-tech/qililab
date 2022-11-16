@@ -13,6 +13,7 @@ from qililab.utils.waveforms import Waveforms
 @dataclass
 class PulseEvent:
     """Describes a single pulse with a start time."""
+
     pulse: Pulse
     start_time: int
     end_time: int = field(init=False, repr=False)

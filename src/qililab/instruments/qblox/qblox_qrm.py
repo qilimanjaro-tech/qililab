@@ -52,7 +52,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
     settings: QbloxQRMSettings
 
-    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ):
         """check if values are already cached and upload if not cached"""
         readout_pulse_duration = pulse_bus_schedule.readout_pulse_duration
         if self.integration_length != readout_pulse_duration:
@@ -70,7 +72,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.settings.integration_length = readout_pulse_duration
         self.setup()
 
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
+    def run(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> QbloxResult:
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:
@@ -89,7 +93,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=seq_idx, acquisitions=acquisition.to_dict()
                 )
-        super().run(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path)
+        super().run(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+        )
         return self.get_acquisitions()
 
     @Instrument.CheckDeviceInitialized

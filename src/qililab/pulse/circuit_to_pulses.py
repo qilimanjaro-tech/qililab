@@ -155,7 +155,7 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time, chip=chip, node=port, pulse_time=gate_settings.duration + self.settings.delay_before_readout
         )
-        
+
         return (
             ReadoutEvent(
                 pulse=ReadoutPulse(

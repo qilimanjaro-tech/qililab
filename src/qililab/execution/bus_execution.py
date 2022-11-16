@@ -31,7 +31,10 @@ class BusExecution:
         if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
             self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
-            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=self.pulse_schedule[idx],
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            path=path,
         )
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):

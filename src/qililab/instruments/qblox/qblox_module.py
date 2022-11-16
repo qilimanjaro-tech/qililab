@@ -72,7 +72,9 @@ class QbloxModule(AWG):
         )
         self.start_sequencer()
 
-    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
@@ -81,7 +83,9 @@ class QbloxModule(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
+    def _translate_pulse_bus_schedule(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+    ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -93,7 +97,10 @@ class QbloxModule(AWG):
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=pulse_bus_schedule,
+            waveforms=waveforms,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
         return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
@@ -127,7 +134,9 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
             avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
-            avg_loop.append_component(set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude))
+            avg_loop.append_component(
+                set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
+            )
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
