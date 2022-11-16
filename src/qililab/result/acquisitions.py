@@ -25,7 +25,8 @@ class Acquisitions:
         """
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
         return pd.concat(
-            acquisition_list, keys=range(len(acquisition_list)), names=[RESULTSDATAFRAME.ACQUISITION_INDEX])
+            acquisition_list, keys=range(len(acquisition_list)), names=[RESULTSDATAFRAME.ACQUISITION_INDEX]
+        )
 
     def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.

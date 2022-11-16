@@ -1,8 +1,12 @@
 import pandas as pd
 
 
-def insert_index_level_into_dataframe(dataframe: pd.DataFrame, default_value: str | int, position: int = 0, ):
-    """ Modify a dataframe adding to it an index level with a default value.
+def insert_index_level_into_dataframe(
+    dataframe: pd.DataFrame,
+    default_value: str | int,
+    position: int = 0,
+):
+    """Modify a dataframe adding to it an index level with a default value.
 
     Args:
         dataframe (pd.DataFrame): dataframe to modify
@@ -13,5 +17,5 @@ def insert_index_level_into_dataframe(dataframe: pd.DataFrame, default_value: st
         None
     """
     dataframe_index = dataframe.index.to_frame()
-    dataframe_index.insert(position, 'result', [default_value] * dataframe_index.shape[0])
+    dataframe_index.insert(position, "result", [default_value] * dataframe_index.shape[0])
     dataframe.index = pd.MultiIndex.from_frame(dataframe_index)

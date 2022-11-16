@@ -42,12 +42,14 @@ class Acquisition:
         a structure with i, q, amplitude, phase.
         For multiple values you may need to redefine this method
         """
-        return pd.DataFrame({
-            RESULTSDATAFRAME.I: self.i_values,
-            RESULTSDATAFRAME.Q: self.q_values,
-            RESULTSDATAFRAME.AMPLITUDE: self.amplitude_values,
-            RESULTSDATAFRAME.PHASE: self.phase_values,
-        })
+        return pd.DataFrame(
+            {
+                RESULTSDATAFRAME.I: self.i_values,
+                RESULTSDATAFRAME.Q: self.q_values,
+                RESULTSDATAFRAME.AMPLITUDE: self.amplitude_values,
+                RESULTSDATAFRAME.PHASE: self.phase_values,
+            }
+        )
 
     def _normalized_data(self, data: npt.NDArray):
         """Normalizes the given data with the integration length,
@@ -71,7 +73,7 @@ class Acquisition:
         Returns:
             NDArray[numpy.float]: amplitude
         """
-        return np.sqrt(i_normalized ** 2 + q_normalized ** 2)
+        return np.sqrt(i_normalized**2 + q_normalized**2)
 
     def _phases(self, i_normalized: npt.NDArray[np.float32], q_normalized: npt.NDArray[np.float32]):
         """Computes the phases of a given I and Q data

@@ -1,7 +1,5 @@
 """ Tests for LivePlot """
 
-import pytest
-
 from qililab.utils import coordinate_decompose
 
 
@@ -15,7 +13,8 @@ class TestCoordinateDecompose:
         new_dimension_shape = [original_size]
         for index in original_array:
             new_indices = coordinate_decompose(
-                new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=index)
+                new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=index
+            )
             assert new_indices[0] == index
 
     def test_coordinate_decompose_2d(self):
@@ -28,7 +27,8 @@ class TestCoordinateDecompose:
         target_result = [1, 2]
 
         new_indices = coordinate_decompose(
-            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index)
+            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index
+        )
 
         assert all(target_result == new_indices)
 
@@ -42,7 +42,8 @@ class TestCoordinateDecompose:
         target_result = [1, 2, 2]
 
         new_indices = coordinate_decompose(
-            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index)
+            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index
+        )
 
         assert all(target_result == new_indices)
 
@@ -56,6 +57,7 @@ class TestCoordinateDecompose:
         target_result = [0, 1, 0, 1]
 
         new_indices = coordinate_decompose(
-            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index)
+            new_dimension_shape=new_dimension_shape, original_size=original_size, original_idx=test_index
+        )
 
         assert all(target_result == new_indices)

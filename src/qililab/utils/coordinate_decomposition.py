@@ -19,46 +19,55 @@ def summation(array: npt.ArrayLike, start: int = 0, stop: int = -1):
 
 
 def _do_target_dimensions_check(new_dimension_shape: npt.ArrayLike):
-    """ Checks that all target dimensions should have at least one element. """
+    """Checks that all target dimensions should have at least one element."""
     if any(size < 1 for size in new_dimension_shape):
-        raise ValueError(
-            f"Sizes of of target array should not be 0 nor negative: {str(new_dimension_shape)}")
+        raise ValueError(f"Sizes of of target array should not be 0 nor negative: {str(new_dimension_shape)}")
 
 
 def _do_size_match_check(original_size: int, new_dimension_shape: npt.ArrayLike):
-    """ Checks that sizes of original and target spaces are compatible. """
+    """Checks that sizes of original and target spaces are compatible."""
     new_space_size = np.prod(new_dimension_shape)
     if new_space_size != original_size:
         raise ValueError(
             f"Sizes of original and target arrays do not match:"
             f" original size {original_size} does not match"
-            f" size of {str(new_dimension_shape)}: {new_space_size}")
+            f" size of {str(new_dimension_shape)}: {new_space_size}"
+        )
 
 
 def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: npt.ArrayLike):
-    """ Perform some checks before applying the algorithm"""
+    """Perform some checks before applying the algorithm"""
     _do_target_dimensions_check(new_dimension_shape=new_dimension_shape)
     _do_size_match_check(original_size=original_size, new_dimension_shape=new_dimension_shape)
 
 
-def _get_nth_coordinate(coord_elem_idx: int, new_indices: npt.ArrayLike, original_idx: int,
-                        new_dimension_shape: npt.ArrayLike, number_of_dimensions: int):
-    """ Builds precisely the i_k by using:
-     i_k = ((r - sum_{p=k+1}^{D-1}(i_p*prod_{l=p+1}*{D-1}(I_l))) / (prod_{l+1}^{D-1}(I_l))) % I_k"""
+def _get_nth_coordinate(
+    coord_elem_idx: int,
+    new_indices: npt.ArrayLike,
+    original_idx: int,
+    new_dimension_shape: npt.ArrayLike,
+    number_of_dimensions: int,
+):
+    """Builds precisely the i_k by using:
+    i_k = ((r - sum_{p=k+1}^{D-1}(i_p*prod_{l=p+1}*{D-1}(I_l))) / (prod_{l+1}^{D-1}(I_l))) % I_k"""
 
     numerator_series_elements = [
         new_indices[k] * product(new_dimension_shape, start=k + 1, stop=number_of_dimensions)
-        for k in range(coord_elem_idx + 1, number_of_dimensions)]
-    numerator = original_idx - summation(
-        numerator_series_elements, start=coord_elem_idx + 1, stop=number_of_dimensions)
+        for k in range(coord_elem_idx + 1, number_of_dimensions)
+    ]
+    numerator = original_idx - summation(numerator_series_elements, start=coord_elem_idx + 1, stop=number_of_dimensions)
     denominator = product(new_dimension_shape, start=coord_elem_idx + 1, stop=number_of_dimensions)
     modulus = new_dimension_shape[coord_elem_idx]
 
     return (numerator / denominator) % modulus
 
 
-def coordinate_decompose(new_dimension_shape: npt.ArrayLike, original_size: int, original_idx: int, ):
-    """ Converts an index from a 1D array to an index in an NDArray, as long as both expressions have the same sizes.
+def coordinate_decompose(
+    new_dimension_shape: npt.ArrayLike,
+    original_size: int,
+    original_idx: int,
+):
+    """Converts an index from a 1D array to an index in an NDArray, as long as both expressions have the same sizes.
     i.e. expresses the index r in an array of R elements as the indices [n, m, l] of nested arrays with shape [N, M, L],
     as log as N*M*L==R.
     In this case, we can see that r can be expressed as r = n*M*L + m*L + l
@@ -97,6 +106,7 @@ def coordinate_decompose(new_dimension_shape: npt.ArrayLike, original_size: int,
             new_indices=new_indices,
             original_idx=original_idx,
             new_dimension_shape=new_dimension_shape,
-            number_of_dimensions=number_of_dimensions)
+            number_of_dimensions=number_of_dimensions,
+        )
 
     return new_indices
