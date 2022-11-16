@@ -1,5 +1,6 @@
 """PulseEvent class."""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSEEVENT, RUNCARD

@@ -2,8 +2,8 @@
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSEEVENT
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.pulse.pulse_event import PulseEvent
+from qililab.pulse.readout_pulse import ReadoutPulse
 
 
 @dataclass

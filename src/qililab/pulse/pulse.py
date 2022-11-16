@@ -1,13 +1,14 @@
 """Pulse class."""
 from __future__ import annotations
+
 from dataclasses import InitVar, dataclass
 from typing import ClassVar
 
 import numpy as np
 
 from qililab.constants import PULSE, PULSESHAPE
+from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.pulse.pulse_shape import Gaussian, Rectangular, Drag
 from qililab.typings import PulseName, PulseShapeName
 from qililab.utils import Waveforms
 
