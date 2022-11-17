@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.9.1 (2022-11-17)
+
+### Refactor
+
+- pulse events (#93)
+
 ## 0.9.0 (2022-10-06)
 
 ### Feat
