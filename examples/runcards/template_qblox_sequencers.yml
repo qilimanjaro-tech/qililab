@@ -6,7 +6,6 @@ settings:
   delay_before_readout: 40
   master_amplitude_gate: 1
   master_duration_gate: 100
-  master_drag_coefficient: 0
   gates:
     - name: M
       amplitude: 1
@@ -29,7 +28,7 @@ settings:
       shape:
         name: drag
         num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
+        drag_coefficient: 0
 
     - name: Y
       amplitude: master_amplitude_gate
@@ -38,7 +37,7 @@ settings:
       shape:
         name: drag
         num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
+        drag_coefficient: 0
 schema:
   chip:
     id_: 0
