@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.platform import Bus
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.typings import BusSubcategory
 from qililab.utils import Waveforms
 
@@ -14,7 +14,7 @@ class BusExecution:
     """BusExecution class."""
 
     bus: Bus
-    pulse_sequences: List[PulseSequence] = field(default_factory=list)
+    pulse_schedule: List[PulseBusSchedule] = field(default_factory=list)
 
     def setup(self):
         """Setup instruments."""
@@ -31,10 +31,13 @@ class BusExecution:
         if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed
             self.system_control.frequency = self.bus.target_freqs
         return self.system_control.run(
-            pulse_sequence=self.pulse_sequences[idx], nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=self.pulse_schedule[idx],
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            path=path,
         )
 
-    def add_pulse_sequence(self, pulse_sequence: PulseSequence):
+    def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
 
         Args:
@@ -42,7 +45,7 @@ class BusExecution:
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
 
-        self.pulse_sequences.append(pulse_sequence)
+        self.pulse_schedule.append(pulse_bus_schedule)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
@@ -54,10 +57,10 @@ class BusExecution:
             Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
-        num_sequences = len(self.pulse_sequences)
+        num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_sequences[idx].waveforms(frequency=self.system_control.awg_frequency, resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(frequency=self.system_control.awg_frequency, resolution=resolution)
 
     @property
     def port(self):
@@ -110,8 +113,8 @@ class BusExecution:
         Returns:
             int: Acquire time (in ns).
         """
-        num_sequences = len(self.pulse_sequences)
+        num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
-            raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        readout_pulse = self.pulse_sequences[idx]
-        return readout_pulse.pulses[-1].start + self.system_control.acquisition_delay_time
+            raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
+        readout_schedule = self.pulse_schedule[idx]
+        return readout_schedule.timeline[-1].start + self.system_control.acquisition_delay_time

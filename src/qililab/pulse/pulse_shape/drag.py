@@ -12,7 +12,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 

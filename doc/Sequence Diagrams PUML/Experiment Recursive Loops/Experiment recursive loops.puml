@@ -5,7 +5,7 @@ participant ExperimentSettings as expset
 participant Execution as exe
 
 [-> exp: recursive_loops (self.loops, results, path, plot)
-activate exp 
+activate exp
 alt loops is not None AND len (loops) > 0
       exp -> exp: process_loops (results, loops, depth, path, plot)
       activate exp #7F1CDB
@@ -26,7 +26,7 @@ else
       return result
       note right of exp: results.add (result)
 end
-                  
+
 return results
 
 @enduml

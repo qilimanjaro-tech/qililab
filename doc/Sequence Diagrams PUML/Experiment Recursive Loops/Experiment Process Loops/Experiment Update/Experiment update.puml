@@ -60,7 +60,7 @@ loop value, loop, element in zip (values, loops, elements)
         return alias
         exp -> loop_ ++: get_instrument ()
         return instrument
-        exp -> loop_ ++: get_id () 
+        exp -> loop_ ++: get_id ()
         return id
         exp -> loop_ ++: get_parameter ()
         return parameter
@@ -102,7 +102,7 @@ loop value, loop, element in zip (values, loops, elements)
 end
 return
 [<-- exp
-                        
+
 
 
 @enduml

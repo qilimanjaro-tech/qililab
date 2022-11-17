@@ -11,10 +11,10 @@ kei -> dri ++: set_smua_limiti (max_current)
 note right of dri: smua.limiti = max_current
 return
 kei -> set ++: get_max_voltage ()
-return max_voltage 
+return max_voltage
 kei -> dri ++: set_smua_limitv (max_voltage)
 note right of dri: smua.limitv = max_voltage
 return
-return 
+return
 
 @enduml

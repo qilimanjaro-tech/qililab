@@ -2,16 +2,16 @@
 import pytest
 
 from qililab.execution import BusExecution
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 
 
 class TestBusExecution:
     """Unit tests checking the Bus attributes and methods."""
 
-    def test_add_pulse_method(self, bus_execution: BusExecution, pulse_sequence: PulseSequence):
+    def test_add_pulse_method(self, bus_execution: BusExecution, pulse_bus_schedule: PulseBusSchedule):
         """Test add_pulse method."""
-        pulse_sequence.pulses[0].frequency = bus_execution.pulse_sequences[0].frequency
-        bus_execution.add_pulse_sequence(pulse_sequence=pulse_sequence)
+        pulse_bus_schedule.timeline[0].pulse.frequency = bus_execution.pulse_schedule[0].frequency
+        bus_execution.add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
     def test_waveforms_method(self, bus_execution: BusExecution):
         """Test waveforms method."""
