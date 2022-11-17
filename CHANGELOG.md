@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.9.2 (2022-11-17)
+
+### Fix
+
+- remove master drag coefficient (#98)
+
 ## 0.9.1 (2022-11-17)
 
 ### Refactor
