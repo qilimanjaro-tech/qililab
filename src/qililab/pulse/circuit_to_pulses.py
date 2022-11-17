@@ -65,13 +65,6 @@ class CircuitToPulses:
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
         """Build Pulse Shape from Gate seetings"""
         shape_settings = gate_settings.shape.copy()
-        if RUNCARD.NAME in shape_settings and shape_settings[RUNCARD.NAME] in [
-            PulseShapeName.DRAG,
-            PulseShapeName.DRAG.value,
-        ]:
-            return Factory.get(shape_settings.pop(RUNCARD.NAME))(
-                **shape_settings, master_drag_coefficient=self.settings.master_drag_coefficient
-            )
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
     def _control_gate_to_pulse_event(

@@ -13,7 +13,6 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
-from qililab.pulse.pulse_shape import Drag, Rectangular
 from qililab.typings.enums import (
     Category,
     ConnectionName,
@@ -38,7 +37,6 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -62,7 +60,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -73,7 +71,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
@@ -376,7 +374,6 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -404,7 +401,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -415,7 +412,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
