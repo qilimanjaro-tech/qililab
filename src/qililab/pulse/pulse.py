@@ -6,11 +6,11 @@ from typing import ClassVar
 
 import numpy as np
 
-from qililab.constants import PULSE, PULSESHAPE
+from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseName, PulseShapeName
-from qililab.utils import Waveforms
+from qililab.utils import Factory, Waveforms
 
 
 @dataclass(unsafe_hash=True, eq=True)
@@ -23,6 +23,13 @@ class Pulse:
     duration: int
     pulse_shape: PulseShape
     frequency: float | None = None
+
+    def __post_init__(self):
+        """Create Pulse Shape"""
+        if isinstance(self.pulse_shape, dict):
+            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
+                **self.pulse_shape,  # pylint: disable=not-a-mapping
+            )
 
     def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
@@ -63,31 +70,7 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
-        pulse_shape_dictionary = dictionary[PULSE.PULSE_SHAPE]
-        pulse_shape = cls._build_shape(pulse_shape_dictionary)
-        pulse_settings = dictionary.copy()
-        pulse_settings[PULSE.PULSE_SHAPE] = pulse_shape
-        return cls(**pulse_settings)
-
-    @classmethod
-    def _build_shape(cls, pulse_shape_dictionary: dict) -> PulseShape:
-        """Generates a PulseShape object from the given pulse_shape_dictionary.
-
-        Args:
-            pulse_shape_dictionary (dict): Dictionary representation of the PulseShape object.
-
-        Returns:
-            PulseShape: PulseShape object generated from the dictionary.
-        """
-        name_class_map = {
-            PulseShapeName.DRAG.value: Drag,
-            PulseShapeName.GAUSSIAN.value: Gaussian,
-            PulseShapeName.RECTANGULAR.value: Rectangular,
-        }
-        PulseShapeClass = name_class_map[pulse_shape_dictionary[PULSESHAPE.NAME]]
-        pulse_shape_dictionary_copy = pulse_shape_dictionary.copy()
-        del pulse_shape_dictionary_copy[PULSESHAPE.NAME]
-        return PulseShapeClass(**pulse_shape_dictionary_copy)
+        return cls(**dictionary)
 
     def to_dict(self):
         """Return dictionary of pulse.
