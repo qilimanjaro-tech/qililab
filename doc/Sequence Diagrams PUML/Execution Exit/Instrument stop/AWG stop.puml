@@ -5,7 +5,7 @@ participant Pulsar_or_QcmQrm as dev
 
 [-> qblox ++: stop ()
 qblox -> dev ++: stop_sequencer ()
-return 
+return
 return
 
 @enduml

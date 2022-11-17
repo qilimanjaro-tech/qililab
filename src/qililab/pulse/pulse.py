@@ -1,16 +1,19 @@
 """Pulse class."""
+from __future__ import annotations
+
 from dataclasses import InitVar, dataclass
 from typing import ClassVar
 
 import numpy as np
 
 from qililab.constants import PULSE, RUNCARD
+from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseName
+from qililab.typings import PulseName, PulseShapeName
 from qililab.utils import Factory, Waveforms
 
 
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
@@ -18,7 +21,6 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
-    start_time: int
     pulse_shape: PulseShape
     frequency: float | None = None
 
@@ -29,18 +31,19 @@ class Pulse:
                 **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
+    def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
-            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
+            resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
+            start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
 
         Returns:
-            NDArray: I and Q modulated waveforms.
+            Waveforms: I and Q modulated waveforms.
         """
         envelope = self.envelope(resolution=resolution)
         envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(self.duration / resolution) * 1e-9 * resolution + self.start_time * 1e-9
+        time = np.arange(self.duration / resolution) * 1e-9 * resolution + start_time * 1e-9
         cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
         sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
         mod_matrix = (1.0 / np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
@@ -57,17 +60,17 @@ class Pulse:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
-    @property
-    def start(self):
-        """Pulse 'start' property.
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> Pulse:
+        """Load Pulse object from dictionary.
 
-        Raises:
-            ValueError: Is start time is not defined.
+        Args:
+            dictionary (dict): Dictionary representation of the Pulse object.
 
         Returns:
-            int: Start time of the pulse.
+            Pulse: Loaded class.
         """
-        return self.start_time
+        return cls(**dictionary)
 
     def to_dict(self):
         """Return dictionary of pulse.
@@ -82,13 +85,8 @@ class Pulse:
             PULSE.PHASE: self.phase,
             PULSE.DURATION: self.duration,
             PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
-            PULSE.START_TIME: self.start_time,
         }
 
-    def __repr__(self):
-        """Return string representation of the Pulse object."""
+    def label(self) -> str:
+        """Return short string representation of the Pulse object."""
         return f"{str(self.pulse_shape)} - {self.duration}ns"
-
-    def __str__(self):
-        """Return string representation of the Pulse object."""
-        return self.__repr__()

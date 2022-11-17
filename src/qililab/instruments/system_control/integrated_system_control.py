@@ -6,7 +6,7 @@ from typing import List
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 
@@ -35,7 +35,7 @@ class IntegratedSystemControl(SystemControl, Instrument):
     def reset(self):
         """Reset instrument settings."""
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
 
     def stop(self):

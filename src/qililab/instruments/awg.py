@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.instruments.instrument import Instrument
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 
 
 class AWG(Instrument):
@@ -38,7 +38,7 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run execution of a pulse sequence.
 
         Args:
