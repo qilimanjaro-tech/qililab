@@ -30,6 +30,7 @@ class QbloxScopeAcquisitions(Acquisitions):
         q_values = np.array(self.scope.path1.data, dtype=np.float32)
 
         self._acquisitions = [Acquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)]
+        self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.

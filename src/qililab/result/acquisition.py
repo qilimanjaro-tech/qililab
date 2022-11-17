@@ -1,7 +1,7 @@
 """ Acquisition Result """
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 
 import numpy as np
 import numpy.typing as npt
@@ -28,6 +28,7 @@ class Acquisition:
     amplitude_values: npt.NDArray[np.float32] = field(init=False)
     phase_values: npt.NDArray[np.float32] = field(init=False)
     acquisition: pd.DataFrame = field(init=False)
+    data_dataframe_indices: Set = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Create acquisitions"""
@@ -36,12 +37,19 @@ class Acquisition:
         self.amplitude_values = self._amplitudes(i_normalized=self.i_values, q_normalized=self.q_values)
         self.phase_values = self._phases(i_normalized=self.i_values, q_normalized=self.q_values)
         self.acquisition = self._create_acquisition()
+        self.data_dataframe_indices = {
+            RESULTSDATAFRAME.I,
+            RESULTSDATAFRAME.Q,
+            RESULTSDATAFRAME.AMPLITUDE,
+            RESULTSDATAFRAME.PHASE,
+        }
 
     def _create_acquisition(self) -> pd.DataFrame:
         """transposes each of the acquired results arrays so that we have for each value
         a structure with i, q, amplitude, phase.
         For multiple values you may need to redefine this method
         """
+
         return pd.DataFrame(
             {
                 RESULTSDATAFRAME.I: self.i_values,

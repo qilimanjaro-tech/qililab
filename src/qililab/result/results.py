@@ -1,7 +1,7 @@
 """Results class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Set
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,8 @@ class Results:
     loops: List[Loop] | None = None
     shape: List[int] = field(default_factory=list)
     results: List[Result] = field(default_factory=list)
+    _computed_dataframe_indices: List[str] = field(init=False, default_factory=list)
+    _data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Add num_sequences to shape."""
@@ -81,11 +83,11 @@ class Results:
         """Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
         `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
         old_columns = result_probabilities_dataframe.columns
-        new_columns = self._generate_new_probabilities_column_names()
+        self._computed_dataframe_indices = self._generate_new_probabilities_column_names()
 
         num_qbits = len(self.results[0].probabilities())
 
-        result_probabilities_dataframe[new_columns] = result_probabilities_dataframe.apply(
+        result_probabilities_dataframe[self._computed_dataframe_indices] = result_probabilities_dataframe.apply(
             lambda row: coordinate_decompose(
                 new_dimension_shape=[num_qbits, *self.shape],
                 original_size=len(self.results),
@@ -94,16 +96,38 @@ class Results:
             axis=1,
             result_type="expand",
         )
-        return result_probabilities_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)
+        return result_probabilities_dataframe.reindex(
+            columns=[*self._computed_dataframe_indices, *old_columns], copy=True
+        )
 
-    def _process_dataframe_if_needed(self, result_dataframe: pd.DataFrame, mean: bool = False):
+    def _process_probabilities_dataframe_if_needed(
+        self, result_dataframe: pd.DataFrame, mean: bool = False
+    ) -> pd.DataFrame:
         """Process the dataframe by applying software average if required"""
 
         if mean and self.software_average > 1:
-            return result_dataframe.groupby(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX).mean()
+            preserved_columns = [
+                col
+                for col in result_dataframe.columns.values
+                if col
+                not in {
+                    RESULTSDATAFRAME.P0,
+                    RESULTSDATAFRAME.P1,
+                    RESULTSDATAFRAME.RESULTS_INDEX,
+                    RESULTSDATAFRAME.SOFTWARE_AVG_INDEX,
+                }
+            ]
+            groups_to_average = result_dataframe.groupby(preserved_columns)
+            averaged_df = groups_to_average.mean().reset_index()
+            averaged_df[RESULTSDATAFRAME.RESULTS_INDEX] = groups_to_average.first().reset_index()[
+                RESULTSDATAFRAME.RESULTS_INDEX
+            ]
+            averaged_df.drop(columns=RESULTSDATAFRAME.SOFTWARE_AVG_INDEX, inplace=True)
+            result_dataframe = averaged_df
+
         return result_dataframe
 
-    def probabilities(self, mean: bool = True) -> np.ndarray:
+    def probabilities(self, mean: bool = True) -> pd.DataFrame:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
         Returns:
@@ -116,7 +140,7 @@ class Results:
         expanded_probabilities_df = self._add_meaningful_probabilities_indices(
             result_probabilities_dataframe=result_probabilities_df
         )
-        return self._process_dataframe_if_needed(result_dataframe=expanded_probabilities_df, mean=mean)
+        return self._process_probabilities_dataframe_if_needed(result_dataframe=expanded_probabilities_df, mean=mean)
 
     def to_dataframe(self) -> pd.DataFrame:
         """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an
@@ -157,9 +181,10 @@ class Results:
         """Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
         `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
         old_columns = result_acquisition_dataframe.columns
-        new_columns = self._generate_new_acquisitoin_column_names()
+        self._computed_dataframe_indices = self._generate_new_acquisitoin_column_names()
+        self._data_dataframe_indices = set().union(*[result.data_dataframe_indices for result in self.results])
 
-        result_acquisition_dataframe[new_columns] = result_acquisition_dataframe.apply(
+        result_acquisition_dataframe[self._computed_dataframe_indices] = result_acquisition_dataframe.apply(
             lambda row: coordinate_decompose(
                 new_dimension_shape=self.shape,
                 original_size=len(self.results),
@@ -168,7 +193,33 @@ class Results:
             axis=1,
             result_type="expand",
         )
-        return result_acquisition_dataframe.reindex(columns=[*new_columns, *old_columns], copy=True)
+        return result_acquisition_dataframe.reindex(
+            columns=[*self._computed_dataframe_indices, *old_columns], copy=True
+        )
+
+    def _process_acquisition_dataframe_if_needed(
+        self, result_dataframe: pd.DataFrame, mean: bool = False
+    ) -> pd.DataFrame:
+        """Process the dataframe by applying software average if required"""
+
+        if mean and self.software_average > 1:
+            preserved_columns = [
+                col
+                for col in result_dataframe.columns.values
+                if col
+                not in self._data_dataframe_indices.union(
+                    {RESULTSDATAFRAME.RESULTS_INDEX, RESULTSDATAFRAME.SOFTWARE_AVG_INDEX}
+                )
+            ]
+            groups_to_average = result_dataframe.groupby(preserved_columns)
+            averaged_df = groups_to_average.mean().reset_index()
+            averaged_df[RESULTSDATAFRAME.RESULTS_INDEX] = groups_to_average.first().reset_index()[
+                RESULTSDATAFRAME.RESULTS_INDEX
+            ]
+            averaged_df.drop(columns=RESULTSDATAFRAME.SOFTWARE_AVG_INDEX, inplace=True)
+            result_dataframe = averaged_df
+
+        return result_dataframe
 
     def acquisitions(self, mean: bool = False) -> pd.DataFrame:
         """QbloxResult acquisitions of all the nested Results classes.
@@ -189,7 +240,7 @@ class Results:
         expanded_acquisition_df = self._add_meaningful_acquisition_indices(
             result_acquisition_dataframe=result_acquisition_df
         )
-        return self._process_dataframe_if_needed(result_dataframe=expanded_acquisition_df, mean=mean)
+        return self._process_acquisition_dataframe_if_needed(result_dataframe=expanded_acquisition_df, mean=mean)
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""

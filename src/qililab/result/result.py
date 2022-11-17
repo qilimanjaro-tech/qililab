@@ -1,6 +1,6 @@
 """Result class."""
 from dataclasses import asdict, dataclass, field
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import pandas as pd
 
@@ -16,6 +16,7 @@ class Result(FactoryElement):
     """Result class."""
 
     name: ResultName = field(init=False)
+    data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.

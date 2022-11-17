@@ -26,6 +26,7 @@ class QbloxBinsAcquisitions(Acquisitions):
     def __post_init__(self):
         """Create acquisitions"""
         self._acquisitions = [self._build_bin_acquisition(bin_data=bin_data) for bin_data in self.bins]
+        self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def _build_bin_acquisition(self, bin_data: BinData):
         """build a bin acquisition"""

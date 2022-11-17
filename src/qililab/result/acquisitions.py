@@ -1,7 +1,7 @@
 """ Acquisitions Result """
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import pandas as pd
 
@@ -18,6 +18,7 @@ class Acquisitions:
     """
 
     _acquisitions: List[Acquisition] = field(init=False)
+    data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
     def acquisitions(self) -> pd.DataFrame:
         """return the acquisitions with a structure
