@@ -108,7 +108,7 @@ class QbloxD5a(VoltageSource):
     def initial_setup(self):
         """performs an initial setup.
         For this instrument it is the same as a regular setup"""
-        self.setup()
+        # self.setup()
 
     @Instrument.CheckDeviceInitialized
     def start(self):
