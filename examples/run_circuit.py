@@ -8,30 +8,39 @@ from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 
 from qililab import build_platform
-from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.experiment import Experiment
 from qililab.typings import Parameter
 from qililab.utils import Loop
 
-os.environ["RUNCARDS"] = str(Path(__file__).parent)
+os.environ["RUNCARDS"] = str(Path(__file__).parent / "runcards")
 os.environ["DATA"] = str(Path(__file__).parent / "data")
 
 
 def run_circuit(connection: API | None = None):
     """Load the platform 'galadriel' from the DB."""
-    platform = build_platform(name=DEFAULT_PLATFORM_NAME)
+    platform = build_platform(name="template_qblox_sequencers")
+    # print(platform)
     circuit = Circuit(1)
     circuit.add(X(0))
     circuit.add(M(0))
-    loop = Loop(alias="resonator", parameter=Parameter.FREQUENCY, start=7.314e9, stop=7.332e9, step=0.1e6)
-    experiment = Experiment(platform=platform, sequences=circuit, loop=loop)
-    results = experiment.execute(connection=connection)
-    print(results.acquisitions())
+    # loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.e+08, stop=1.5e+08, step=0.1e6)
+    # loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=1)
+    loop = Loop(alias="QCM", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=0)
+    # loop = Loop(alias="bus_control", parameter=Parameter.FREQUENCIES, start=1.0e08, stop=1.5e08, num=10, channel_id=0)
+    # loop = Loop(alias="bus_control", parameter=Parameter.FREQUENCY, start=6.0e09, stop=6.5e09, num=10, channel_id=0)
+
+    experiment = Experiment(platform=platform, sequences=circuit, loops=[loop])
+
+    results = experiment.execute()
+    print(results)
+    # print(results.acquisitions())
 
 
 if __name__ == "__main__":
-    configuration = ConnectionConfiguration(  # pylint: disable=no-value-for-parameter
-        username="test-user", api_key="test-api-key"
-    )
-    api = API(configuration=configuration)
+    # configuration = ConnectionConfiguration(
+    #     username="user",
+    #     api_key="api_key",
+    # )
+    # api = API(configuration=configuration)
+    api = API()
     run_circuit(connection=api)

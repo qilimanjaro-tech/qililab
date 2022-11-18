@@ -1,6 +1,6 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
@@ -16,28 +16,24 @@ class AWG(Instrument):
         """Contains the settings of a AWG.
 
         Args:
-            frequency (float): Intermediate frequency (IF).
-            gain (float): Gain step used by the sequencer.
-            offset_i (float): I offset (unitless). amplitude + offset should be in range [0 to 1].
-            offset_q (float): Q offset (unitless). amplitude + offset should be in range [0 to 1].
-            epsilon (float): Amplitude added to the Q channel.
-            delta (float): Dephasing.
+            num_sequencers (int): Number of sequencers
+            frequencies (List[float]): Frequency for each sequencer
+            gain (List[float]): Gain step used by the sequencer.
+            epsilon (List[float]): Amplitude added to the Q channel.
+            delta (List[float]): Dephasing.
+            offset_i (List[float]): I offset (unitless). amplitude + offset should be in range [0 to 1].
+            offset_q (List[float]): Q offset (unitless). amplitude + offset should be in range [0 to 1].
+            hardware_modulation (List[bool]): Flag to determine if the modulation of a specific channel is performed by the device
         """
 
-        frequency: float
         num_sequencers: int
+        frequencies: List[float]
         gain: List[float]
         epsilon: List[float]
         delta: List[float]
         offset_i: List[float]
         offset_q: List[float]
-        multiplexing_frequencies: List[float] = field(default_factory=list)
-
-        def __post_init__(self):
-            """Set the multiplexing_frequencies to the intermediate frequency by default."""
-            super().__post_init__()
-            if not self.multiplexing_frequencies:
-                self.multiplexing_frequencies = [self.frequency]
+        hardware_modulation: List[bool]
 
     settings: AWGSettings
 
@@ -56,7 +52,9 @@ class AWG(Instrument):
         Returns:
             float: settings.frequency.
         """
-        return self.settings.frequency
+        # FIXME: this must be deleted, as an AWG has a frequency for each channel.
+        # Returning the first frequency for now.
+        return self.settings.frequencies[0]
 
     @property
     def num_sequencers(self):
@@ -113,15 +111,15 @@ class AWG(Instrument):
         return self.settings.delta
 
     @property
-    def multiplexing_frequencies(self):
-        """QbloxPulsar 'multiplexing_frequencies' property.
+    def frequencies(self):
+        """QbloxPulsar 'frequencies' property.
 
         Returns:
-            float: settings.multiplexing_frequencies.
+            float: settings.frequencies.
         """
-        return self.settings.multiplexing_frequencies
+        return self.settings.frequencies
 
-    @multiplexing_frequencies.setter
-    def multiplexing_frequencies(self, frequencies: List[float]):
-        """QbloxPulsar 'multiplexing_frequencies' property setter."""
-        self.settings.multiplexing_frequencies = frequencies
+    @frequencies.setter
+    def frequencies(self, frequencies: List[float]):
+        """QbloxPulsar 'frequencies' property setter."""
+        self.settings.frequencies = frequencies

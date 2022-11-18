@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
+from qililab.typings.enums import Parameter
 from qililab.typings.instruments.mini_circuits import MiniCircuitsDriver
 
 
@@ -29,15 +30,18 @@ class Attenuator(Instrument):
     device: MiniCircuitsDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    def setup(self, parameter: Parameter, value: float | str | bool):
         """Set instrument settings."""
-        self.device.setup(attenuation=self.attenuation)
+        if not isinstance(value, float):
+            raise ValueError(f"Value must be a float. Current type is: {type(value)}")
+        if parameter.value == Parameter.ATTENUATION.value:
+            self.settings.attenuation = value
+            self.device.setup(attenuation=self.attenuation)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """performs an initial setup.
-        For this instrument it is the same as a regular setup"""
-        self.setup()
+        """performs an initial setup."""
+        self.device.setup(attenuation=self.attenuation)
 
     @Instrument.CheckDeviceInitialized
     def start(self):

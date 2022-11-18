@@ -106,7 +106,7 @@ class Experiment:
             Results: _description_
         """
         if loops is None or len(loops) <= 0:
-            results.add(result=self._execute(path=path, plot=plot))
+            # results.add(result=self._execute(path=path, plot=plot))
             return results
 
         self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
@@ -221,7 +221,7 @@ class Experiment:
             id_=loop.id_,
             parameter=loop.parameter,
             value=value,
-            parameter_index=loop.parameter_index,
+            channel_id=loop.channel_id,
         )
 
     def _get_platform_elements_from_loops(self, loops: List[Loop]):
@@ -262,7 +262,7 @@ class Experiment:
         instrument: Instrument | None = None,
         id_: int | None = None,
         element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
-        parameter_index: int | None = None,
+        channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -280,14 +280,17 @@ class Experiment:
         if element is None:
             # print("Entered branch 1")
             self.platform.set_parameter(
-                alias=alias, category=category, id_=id_, parameter=Parameter(parameter), value=value
+                alias=alias,
+                category=category,
+                id_=id_,
+                parameter=Parameter(parameter),
+                value=value,
+                channel_id=channel_id,
             )
         elif isinstance(element, RuncardSchema.PlatformSettings):
-            # print("Entered branch 2")
-            element.set_parameter(alias=alias, parameter=parameter, value=value, parameter_index=parameter_index)
+            element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
         else:
-            # print("Entered branch 3")
-            element.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)  # type: ignore
+            element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             # print("Rebuild execution")

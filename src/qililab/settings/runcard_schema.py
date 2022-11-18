@@ -135,12 +135,12 @@ class RuncardSchema:
             self,
             parameter: Parameter,
             value: float | str | bool,
-            parameter_index: int | None = None,
+            channel_id: int | None = None,
             alias: str | None = None,
         ):
             """Cast the new value to its corresponding type and set the new attribute."""
             if alias is None or alias == Category.PLATFORM.value:
-                super().set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
+                super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
             param = parameter.value
             settings = self.get_gate(name=alias)

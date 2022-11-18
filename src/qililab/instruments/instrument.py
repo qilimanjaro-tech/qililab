@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Type, get_type_hints
 
+from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
@@ -27,6 +28,7 @@ class Instrument(BusElement, ABC):
 
         Args:
             firmware (str): Firmware version installed on the instrument.
+            channels (int | None): Number of channels supported or None otherwise.
         """
 
         firmware: str
@@ -61,11 +63,21 @@ class Instrument(BusElement, ABC):
         settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, parameter_index: int | None = None):
-        """Redirect __setattr__ magic method."""
-        self.settings.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set parameter for an instrument
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        if channel_id is None:
+            logger.info("Setting parameter: %s to value: %f", parameter.value, value)
+        if channel_id is not None:
+            logger.info("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
         if hasattr(self, "device"):
-            self.setup()
+            self.setup(parameter=parameter, value=value, channel_id=channel_id)
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -74,8 +86,14 @@ class Instrument(BusElement, ABC):
 
     @CheckDeviceInitialized
     @abstractmethod
-    def setup(self):
-        """Set instrument settings."""
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Set instrument settings parameter to the corresponding value
+
+        Args:
+            parameter (Parameter): settings parameter to be updated
+            value (float | str | bool): new value
+            channel_id (int | None): channel identifier of the parameter to update
+        """
 
     @CheckDeviceInitialized
     @abstractmethod

@@ -58,10 +58,8 @@ class Platform:
 
         # case for alias of buses
         if element is None:
-            print("Entered expected case")
-            element = self.get_bus_by_alias(alias=alias)
+            element = self.get_bus_by_alias(alias=alias, category=category, id_=id_)
         if element is None:
-            # print("Entered case 2")
             if category is not None and id_ is not None:
                 # print("Entered case 2.a")
                 element = self.chip.get_node_from_id(node_id=id_)
@@ -73,22 +71,6 @@ class Platform:
             # print("Entered case 3")
             raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
         return element
-
-    def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus element by its alias.
-
-        Args:
-            alias (str): Alias of bus being searched.
-
-        Returns:
-            Bus
-        """
-        print(f"Looking for bus {alias}")
-        for b_candidate in self.buses.elements:
-            print(f"Testing {b_candidate.settings.alias}")
-            if b_candidate.settings.alias == alias:
-                print("Found!")
-                return b_candidate
 
     def get_bus(self, port: int):
         """Find bus of type 'bus_subcategory' that contains the given qubits.
@@ -118,6 +100,22 @@ class Platform:
             ),
             ([], None),
         )
+        
+    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+        """Get bus given an alias or id_ and category"""
+        if alias is not None:
+            return next(
+                (element for element in self.buses if element.settings.alias == alias),
+                None,
+            )
+        return next(
+            (
+                element
+                for element in self.buses
+                if element.id_ == id_ and element.settings.category == Category(category)
+            ),
+            None,
+        )
 
     def set_parameter(
         self,
@@ -126,7 +124,7 @@ class Platform:
         alias: str | None = None,
         category: Category | None = None,
         id_: int | None = None,
-        parameter_index: int | None = None,
+        channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
 
@@ -141,14 +139,12 @@ class Platform:
             category is not None and Category(category) == Category.PLATFORM
         ):
             if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
+                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             else:
-                self.settings.set_parameter(
-                    alias=alias, parameter=parameter, value=value, parameter_index=parameter_index
-                )
+                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias, category=category, id_=id_)
-        element.set_parameter(parameter=parameter, value=value, parameter_index=parameter_index)
+        element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     @property
     def id_(self):

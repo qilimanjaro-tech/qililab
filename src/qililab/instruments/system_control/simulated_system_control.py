@@ -10,7 +10,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseSequence
 from qililab.result.simulator_result import SimulatorResult
-from qililab.typings.enums import SystemControlSubcategory
+from qililab.typings.enums import Parameter, SystemControlSubcategory
 from qililab.utils.factory import Factory
 
 
@@ -72,6 +72,15 @@ class SimulatedSystemControl(SystemControl):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set parameter for an instrument
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""

@@ -1,7 +1,7 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 # from qpysequence.instructions.real_time import Acquire
 # from qpysequence.loop import Loop
@@ -12,7 +12,12 @@ from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSequence
 from qililab.result import QbloxResult
-from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
+from qililab.typings.enums import (
+    AcquireTriggerMode,
+    InstrumentName,
+    IntegrationMode,
+    Parameter,
+)
 
 
 @InstrumentFactory.register
@@ -24,6 +29,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
     """
 
     name = InstrumentName.QBLOX_QRM
+    _NUM_SEQUENCERS: int = 2
 
     @dataclass
     class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, QubitReadout.QubitReadoutSettings):
@@ -41,34 +47,17 @@ class QbloxQRM(QbloxModule, QubitReadout):
             acquisition_name (str): Name of the acquisition saved in the sequencer.
         """
 
-        scope_acquire_trigger_mode: AcquireTriggerMode
-        scope_hardware_averaging: bool
-        sampling_rate: int
-        integration: bool  # integration flag
-        integration_length: int
-        integration_mode: IntegrationMode
-        sequence_timeout: int  # minutes
-        acquisition_timeout: int  # minutes
+        scope_acquire_trigger_mode: List[AcquireTriggerMode]
+        scope_hardware_averaging: List[bool]
+        sampling_rate: List[int]
+        hardware_integration: List[bool]  # integration flag
+        hardware_demodulation: List[bool]  # demodulation flag
+        integration_length: List[int]
+        integration_mode: List[IntegrationMode]
+        sequence_timeout: List[int]  # minutes
+        acquisition_timeout: List[int]  # minutes
 
     settings: QbloxQRMSettings
-
-    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
-        """check if values are already cached and upload if not cached"""
-        readout_pulse_duration = pulse_sequence.readout_pulse_duration
-        if self.integration_length != readout_pulse_duration:
-            self._update_integration_length_with_readout_pulse_duration(readout_pulse_duration=readout_pulse_duration)
-        super()._check_cached_values(
-            pulse_sequence=pulse_sequence,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            path=path,
-        )
-
-    def _update_integration_length_with_readout_pulse_duration(self, readout_pulse_duration: int):
-        """update integration length with readout pulse duration and performs a new setup to
-        the instrument to update the values"""
-        self.settings.integration_length = readout_pulse_duration
-        self.setup()
 
     def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
         """Run execution of a pulse sequence. Return acquisition results.
@@ -93,11 +82,104 @@ class QbloxQRM(QbloxModule, QubitReadout):
         return self.get_acquisitions()
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
-        """Connect to the instrument, reset it and configure its reference source and synchronization settings."""
-        super().setup()
-        self._set_scope_hardware_averaging()
-        self._set_acquisition_mode()
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set a specific parameter to the instrument"""
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        super().setup(parameter=parameter, value=value, channel_id=channel_id)
+        if parameter.value == Parameter.HARDWARE_AVERAGE:
+            self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.HARDWARE_DEMODULATION:
+            self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.ACQUISITION_MODE:
+            self._set_acquisition_mode_one_channel(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.INTEGRATION_LENGTH:
+            self._set_integration_length(value=value, channel_id=channel_id)
+            return
+
+    def _set_hardware_demodulation(self, value: float | str | bool, channel_id: int):
+        """set hardware demodulation
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if not isinstance(value, bool):
+            raise ValueError(f"value must be a bool. Current type: {type(value)}")
+        self.settings.hardware_demodulation[channel_id] = value
+        self.device.sequencers[channel_id].demod_en_acq(value)
+
+    def _set_acquisition_mode_one_channel(self, value: float | str | bool | AcquireTriggerMode, channel_id: int):
+        """set acquisition_mode for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not string
+        """
+        if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
+            raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
+        self.settings.scope_acquire_trigger_mode[channel_id] = AcquireTriggerMode(value)
+        self.device.scope_acq_sequencer_select(channel_id)
+        self.device.scope_acq_trigger_mode_path0(self.scope_acquire_trigger_mode[channel_id].value)
+        self.device.scope_acq_trigger_mode_path1(self.scope_acquire_trigger_mode[channel_id].value)
+
+    def _set_integration_length(self, value: int | float | str | bool, channel_id: int):
+        """set integration_length for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, int) and not isinstance(value, float):
+            raise ValueError(f"value must be a int or float. Current type: {type(value)}")
+        self.settings.integration_length[channel_id] = int(value)
+        self.device.sequencers[channel_id].integration_length_acq(self.integration_length)
+
+    def _set_scope_hardware_averaging_one_channel(self, value: float | str | bool, channel_id: int):
+        """set scope_hardware_averaging for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if not isinstance(value, bool):
+            raise ValueError(f"value must be a bool. Current type: {type(value)}")
+        self.settings.scope_hardware_averaging[channel_id] = value
+        self.device.scope_acq_sequencer_select(channel_id)
+        self.device.scope_acq_avg_mode_en_path0(value)
+        self.device.scope_acq_avg_mode_en_path1(value)
+
+    def _acquire_result_one_sequencer(self, sequencer: int):
+        """Acquire result for one sequencer
+
+        Args:
+            sequencer (int): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        self.device.get_sequencer_state(sequencer=sequencer, timeout=self.sequence_timeout)
+        self.device.get_acquisition_state(sequencer=sequencer, timeout=self.acquisition_timeout)
+        if not self.hardware_integration[sequencer]:
+            self.device.store_scope_acquisition(sequencer=sequencer, name=self.acquisition_name(sequencer=sequencer))
+        return self.device.get_acquisitions(sequencer=sequencer)[self.acquisition_name(sequencer=sequencer)][
+            "acquisition"
+        ][self.data_name(sequencer=sequencer)]
 
     @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
@@ -108,41 +190,17 @@ class QbloxQRM(QbloxModule, QubitReadout):
             QbloxResult: Class containing the acquisition results.
 
         """
-        for seq_idx in range(self.num_sequencers):
-            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout)
-            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout)
-        if not self.integration:
-            self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name)
-            result = self.device.get_acquisitions(sequencer=0)[self.acquisition_name]["acquisition"][self.data_name]
-            return QbloxResult(pulse_length=self.integration_length, scope=result)
+        results = [self._acquire_result_one_sequencer(sequencer=sequencer) for sequencer in range(self.num_sequencers)]
 
-        results = [
-            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name]["acquisition"][self.data_name]
-            for seq_idx in range(self.num_sequencers)
-        ]
-
+        # FIXME: the results are created into a QbloxResult with always a bins structure
+        # it needs to accept a result that contains both scope and bins instead of one or the other
         return QbloxResult(pulse_length=self.integration_length, bins=results)
 
-    def _set_nco(self):
+    def _set_nco(self, channel_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        super()._set_nco()
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].demod_en_acq(True)
-
-    def _set_scope_hardware_averaging(self):
-        """Enable/disable hardware averaging of the data for all paths."""
-        self.device.scope_acq_avg_mode_en_path0(self.scope_hardware_averaging)
-        self.device.scope_acq_avg_mode_en_path1(self.scope_hardware_averaging)
-
-    def _set_acquisition_mode(self):
-        """Set scope acquisition trigger mode for all paths. Options are 'sequencer' or 'level'."""
-        self.device.scope_acq_sequencer_select(0)
-        self.device.scope_acq_trigger_mode_path0(self.scope_acquire_trigger_mode.value)
-        self.device.scope_acq_trigger_mode_path1(self.scope_acquire_trigger_mode.value)
-        if self.integration:
-            for seq_idx in range(self.num_sequencers):
-                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
-                self.device.sequencers[seq_idx].integration_length_acq(int(self.integration_length))
+        super()._set_nco(channel_id=channel_id)
+        if self.settings.hardware_demodulation[channel_id]:
+            self.device.sequencers[channel_id].demod_en_acq(True)
 
     # def _append_acquire_instruction(self, loop: Loop, register: str):
     #     """Append an acquire instruction to the loop."""
@@ -222,28 +280,26 @@ class QbloxQRM(QbloxModule, QubitReadout):
         return self.acquisition_delay_time
 
     @property
-    def integration(self) -> bool:
+    def hardware_integration(self):
         """QbloxPulsarQRM 'integration' property.
 
         Returns:
             bool: Integration flag.
         """
-        return self.settings.integration
+        return self.settings.hardware_integration
 
-    @property
-    def data_name(self) -> str:
+    def data_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'data_name' property:
 
         Returns:
             str: Name of the data. Options are "bins" or "scope".
         """
-        return "bins" if self.integration else "scope"
+        return "bins" if self.hardware_integration[sequencer] else "scope"
 
-    @property
-    def acquisition_name(self) -> str:
+    def acquisition_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'acquisition_name' property:
 
         Returns:
             str: Name of the acquisition. Options are "single" or "binning".
         """
-        return "single" if self.scope_hardware_averaging else "binning"
+        return "single" if self.scope_hardware_averaging[sequencer] else "binning"

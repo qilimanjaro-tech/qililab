@@ -7,6 +7,7 @@ from qililab.constants import BUS, RUNCARD
 from qililab.instruments import Attenuator, Instruments, SystemControl
 from qililab.settings import DDBBElement
 from qililab.typings import BusSubcategory, Category
+from qililab.typings.enums import Parameter
 from qililab.utils import Factory
 
 
@@ -145,3 +146,13 @@ class Bus:
             | ({RUNCARD.ATTENUATOR: self.attenuator.alias} if self.attenuator is not None else {})
             | {BUS.PORT: self.port}
         )
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """_summary_
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
