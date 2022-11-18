@@ -45,4 +45,4 @@ class QbloxBinsAcquisitions(Acquisitions):
         probs_df[RESULTSDATAFRAME.P0] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
         probs_df[RESULTSDATAFRAME.P1] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
         probs_df.index.rename(RESULTSDATAFRAME.ACQUISITION_INDEX, inplace=True)
-        return probs_df
+        return probs_df.iloc[-1:]

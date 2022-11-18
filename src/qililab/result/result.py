@@ -18,7 +18,7 @@ class Result(FactoryElement):
     name: ResultName = field(init=False)
     data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
