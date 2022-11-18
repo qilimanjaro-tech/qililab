@@ -47,14 +47,7 @@ class VNASystemControl(SystemControl):
 
     settings: VNASystemControlSettings
 
-    @property
-    def vna(self):
-        """Bus 'vna' property.
-        Returns:
-            .
-        """
-        return self.settings.vna
-
+  
     # def set_parameter(self, parameter: Parameter, value: float, **kw):
         
     #     if parameter == Parameter.GAIN:
@@ -74,8 +67,8 @@ class VNASystemControl(SystemControl):
         """Setup instruments."""
 
         print('Entered setup Syst Ctrl')
-        self.settings.vna.send_command(command="*IDN?")
-        self.vna.settings.read()
+        self.settings.vna.
+        
 
         print('Finished setup')
 
