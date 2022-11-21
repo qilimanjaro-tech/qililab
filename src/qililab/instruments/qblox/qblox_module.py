@@ -179,13 +179,16 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
+       
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
                 f"the specified channel_id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
-        if parameter.value == Parameter.GAIN:
+
+        # if parameter.value == Parameter.Gain:
+        if parameter.value == 'gain': # FIXME: I made it work by using the string
             self._set_gain(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.OFFSET_I:
@@ -206,6 +209,8 @@ class QbloxModule(AWG):
         if parameter.value == Parameter.NUM_BINS:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
+        
+        print('Parameter did not change!')
 
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
