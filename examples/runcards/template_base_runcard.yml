@@ -1,7 +1,7 @@
 settings:
   id_: 0
   category: platform
-  name: galadriel_master
+  name: multiple_sequencers
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -125,6 +125,7 @@ schema:
     - id_: 0
       category: bus
       subcategory: control
+      alias: bus_control
       system_control:
         id_: 0
         category: system_control
@@ -132,9 +133,10 @@ schema:
         awg: QCM
         signal_generator: rs_0
       port: 0
-    - id_: 0
+    - id_: 1
       category: bus
       subcategory: readout
+      alias: bus_readout
       system_control:
         id_: 1
         category: system_control

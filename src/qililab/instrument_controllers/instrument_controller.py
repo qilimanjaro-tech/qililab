@@ -103,14 +103,14 @@ class InstrumentController(BusElement, ABC):
                 + f"You have loaded {len(self.modules)} modules."
             )
         self.connected_modules_slot_ids = self._set_connected_modules_slot_ids()
-        if len(self.connected_modules_slot_ids) - 1 > self.number_available_modules:
+        if len(self.connected_modules_slot_ids) > self.number_available_modules:
             raise ValueError(
                 f"The {self.name} Instrument Controller only supports {self.number_available_modules} module/s."
-                + f"You have connected {len(self.connected_modules_slot_ids) - 1} modules."
+                + f"You have connected {len(self.connected_modules_slot_ids)} modules."
             )
-        if len(self.connected_modules_slot_ids) - 1 != len(self.modules):
+        if len(self.connected_modules_slot_ids) != len(self.modules):
             raise ValueError(
-                f"The connected number of modules: {len(self.connected_modules_slot_ids) - 1} differs from "
+                f"The connected number of modules: {len(self.connected_modules_slot_ids)} differs from "
                 + f"the available modules: {len(self.modules)}."
             )
 
