@@ -142,7 +142,6 @@ class Loop:
             LOOP.STEP: self.step,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             LOOP.LOGARITHMIC: self.logarithmic,
-            LOOP.PREVIOUS: self.previous.to_dict() if self.previous is not None else None,
             LOOP.CHANNEL_ID: self.channel_id,
             LOOP.VALUES: list(self.values) if self.values is not None else None,
         }
