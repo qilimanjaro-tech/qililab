@@ -87,12 +87,14 @@ class SystemControl(BusElement, ABC):
             int: Delay (in ns) between the readout pulse and the acquisition.
         """
 
-    @abstractmethod
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
-        """_summary_
+    # @abstractmethod
+    # def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    #     """_summary_
 
-        Args:
-            parameter (Parameter): parameter settings of the instrument to update
-            value (float | str | bool): value to update
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
-        """
+    #     Args:
+    #         parameter (Parameter): parameter settings of the instrument to update
+    #         value (float | str | bool): value to update
+    #         channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+    #     """
+
+    #     print('Hello!')

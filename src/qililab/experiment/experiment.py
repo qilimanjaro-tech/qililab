@@ -106,7 +106,7 @@ class Experiment:
             Results: _description_
         """
         if loops is None or len(loops) <= 0:
-            # results.add(result=self._execute(path=path, plot=plot))
+            results.add(result=self._execute(path=path, plot=plot))
             return results
 
         self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
@@ -272,10 +272,6 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        # print("Setting parameter")
-        # print(f"parameter={parameter}; value={value}; alias={alias}")
-        # print(f"instrument={instrument}; id_={id_}; element={element}")
-        # print(type(element))
         category = Category(instrument.value) if instrument is not None else None
         if element is None:
             # print("Entered branch 1")
