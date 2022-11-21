@@ -67,7 +67,7 @@ class VNASystemControl(SystemControl):
         """Setup instruments."""
 
         print('Entered setup Syst Ctrl')
-        self.settings.vna.
+        # self.settings.vna.
         
 
         print('Finished setup')

@@ -1,4 +1,5 @@
 """HeterodyneSystemControl class."""
+from abc import ABC, abstractmethod
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,7 @@ from qililab.pulse import PulseSequence
 from qililab.result.heterodyne_result import HeterodyneResult
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
+from qililab.typings.enums import Parameter
 
 
 @Factory.register
@@ -34,7 +36,7 @@ class HeterodyneSystemControl(SystemControl):
         pulse_length: int = 6000
         IF: float = 0.01
         # LO: float
-        gain: float
+        gain: float = None
         shots: int = 1000
 
         def __iter__(
@@ -191,9 +193,17 @@ class HeterodyneSystemControl(SystemControl):
         # enable hardware average
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
+        
         # set gain
-        self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-        self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+        if self.settings.gain is not None:
+            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+            print(f"Heterodyne bus set gain to {self.settings.gain}")
+
+        else: 
+            print("Gain is not set by Heterodyne bus")
+
+        print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
 
     def start(self):
         """Start/Turn on the instruments.
@@ -211,6 +221,9 @@ class HeterodyneSystemControl(SystemControl):
             repetition_duration=repetition_duration,
             path=path,
         )"""
+
+        
+
         # print('[Heterodyne SysCtrl] Entered run')
         # # 2. Running the Bus
         # ## 2.1 Arm & Run
@@ -219,16 +232,16 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.start_sequencer()
         # self.signal_generator.device.off()
         # Print status of sequencer.
-        print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
+        # print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
-        print(f"Acquisition state: {self.awg.device.get_acquisition_state(0, 1)}")
+        # print(f"Acquisition state: {self.awg.device.get_acquisition_state(0, 1)}")
         # Move acquisition data from temporary memory to acquisition list.
         self.awg.device.store_scope_acquisition(0, "single")
         # Get acquisition list from instrument.
         single_acq = self.awg.device.get_acquisitions(0)
 
-        print(single_acq.keys())
+        # print(single_acq.keys())
 
         # ## 2.3 should be outside!
         output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])
@@ -246,6 +259,8 @@ class HeterodyneSystemControl(SystemControl):
         # ## 2.4 Integrate
         integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
+
+        print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(integrated_I,integrated_Q)
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
@@ -315,3 +330,26 @@ class HeterodyneSystemControl(SystemControl):
     def __str__(self):
         """String representation of the HeterodyneSystemControl class."""
         return f"{self.awg}|----|{self.signal_generator}"
+
+    
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """_summary_
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        if parameter.value == Parameter.POWER.value:
+            self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.FREQUENCY.value:
+            if not isinstance(value, float):
+                raise ValueError(f"value must be a float. Current type: {type(value)}")
+            self._update_frequency(frequency=value, channel_id=channel_id)
+            return
+        # the rest of parameters are assigned to the AWG
+        if parameter.value == Parameter.GAIN.value:
+            self.settings.gain = value
+            return
+        self.awg.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
