@@ -50,6 +50,7 @@ class Experiment:
         device_id: int | None = None,
         name: str = "experiment",
         plot_y_label: str | None = None,
+        remote_device_manual_override: bool = False,
     ):
         self.platform = copy.deepcopy(platform)
         self.name = name
@@ -58,7 +59,9 @@ class Experiment:
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
-        self.remote_api = RemoteAPI(connection=connection, device_id=device_id)
+        self.remote_api = RemoteAPI(
+            connection=connection, device_id=device_id, manual_override=remote_device_manual_override
+        )
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
         self.plot_y_label = plot_y_label
 
@@ -86,6 +89,7 @@ class Experiment:
                         plot=plot,
                     )
                 except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                    self.remote_api.release_remote_device()
                     logger.error("%s: %s", type(error).__name__, str(error))
         return results
 

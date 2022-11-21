@@ -33,8 +33,11 @@ class RemoteAPI:
             self._blocked_device = True
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Code executed when stopping a with statement.
-        If:
+        """Code executed when stopping a with statement."""
+        self.release_remote_device()
+
+    def release_remote_device(self) -> None:
+        """Release the remote API device when:
             1. there is a connection,
             2. the device is blocked and,
             3. this control has not been overriden,
