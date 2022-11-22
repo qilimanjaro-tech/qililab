@@ -101,7 +101,7 @@ class HeterodyneSystemControl(SystemControl):
 
         # ## 1.2. Set LO
         # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        self.signal_generator.device.power(16)
+        # self.signal_generator.device.power(16) # This does not need to be hardcoded here. The runcard initiates it correctly
         self.signal_generator.device.on()
 
         # ## 1.2 Acquisition
