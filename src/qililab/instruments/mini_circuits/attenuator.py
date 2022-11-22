@@ -30,7 +30,7 @@ class Attenuator(Instrument):
     device: MiniCircuitsDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set instrument settings."""
         if not isinstance(value, float):
             raise ValueError(f"Value must be a float. Current type is: {type(value)}")

@@ -91,16 +91,16 @@ class QbloxQRM(QbloxModule, QubitReadout):
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
         super().setup(parameter=parameter, value=value, channel_id=channel_id)
-        if parameter.value == Parameter.HARDWARE_AVERAGE:
+        if parameter.value == Parameter.HARDWARE_AVERAGE.value:
             self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.HARDWARE_DEMODULATION:
+        if parameter.value == Parameter.HARDWARE_DEMODULATION.value:
             self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.ACQUISITION_MODE:
+        if parameter.value == Parameter.ACQUISITION_MODE.value:
             self._set_acquisition_mode_one_channel(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.INTEGRATION_LENGTH:
+        if parameter.value == Parameter.INTEGRATION_LENGTH.value:
             self._set_integration_length(value=value, channel_id=channel_id)
             return
 

@@ -190,25 +190,25 @@ class QbloxModule(AWG):
             raise ValueError(
                 f"the specified channel_id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
-        if parameter.value == Parameter.GAIN:
+        if parameter.value == Parameter.GAIN.value:
             self._set_gain(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_I:
+        if parameter.value == Parameter.OFFSET_I.value:
             self._set_offset_i(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_Q:
+        if parameter.value == Parameter.OFFSET_Q.value:
             self._set_offset_q(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.FREQUENCIES:
+        if parameter.value == Parameter.FREQUENCIES.value:
             self._set_frequency(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.HARDWARE_MODULATION:
+        if parameter.value == Parameter.HARDWARE_MODULATION.value:
             self._set_hardware_modulation(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.SYNC_ENABLED:
+        if parameter.value == Parameter.SYNC_ENABLED.value:
             self._set_sync_enabled_one_channel(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.NUM_BINS:
+        if parameter.value == Parameter.NUM_BINS.value:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
 
