@@ -47,7 +47,7 @@ class BusesExecution:
             for bus in self.buses:
                 result = (
                     bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)
-                    if len(bus.pulse_sequences) > 0
+                    if len(bus.pulse_schedule) > 0
                     else bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=None, path=path)
                 )
                 if result is not None:

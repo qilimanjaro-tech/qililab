@@ -23,13 +23,17 @@ class Loop:
     num: int | None = None
     step: float | None = None
     loop: Loop | None = None
-    previous: Loop | None = field(compare=False, default=None)
+    logarithmic: bool = False
     channel_id: int | None = None
+    values: np.ndarray | None = None
+    previous: Loop | None = field(compare=False, default=None)
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
         if self.step is not None and self.num is not None:
             raise ValueError("'step' and 'num' arguments cannot be used together.")
+        if self.logarithmic and self.num is None:
+            raise ValueError("'logarithmic' requires 'num' argument to be specified.")
         if self.loop is not None:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
@@ -46,10 +50,15 @@ class Loop:
         Returns:
             ndarray: Range of values of first loop.
         """
+        if self.values is not None:
+            return self.values
+        if self.logarithmic and self.num is not None:
+            return np.geomspace(start=self.start, stop=self.stop, num=self.num)
         if self.num is not None:
             return np.linspace(start=self.start, stop=self.stop, num=self.num)
         if self.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
+
         raise ValueError("Please specify either 'step' or 'num' arguments.")
 
     @property
@@ -123,13 +132,33 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            RUNCARD.ALIAS: self.alias,
-            RUNCARD.INSTRUMENT: self.instrument.value if self.instrument is not None else None,
-            RUNCARD.ID: self.id_,
             LOOP.PARAMETER: self.parameter.value,
             LOOP.START: self.start,
             LOOP.STOP: self.stop,
+            RUNCARD.ALIAS: self.alias,
+            RUNCARD.INSTRUMENT: self.instrument.value if self.instrument is not None else None,
+            RUNCARD.ID: self.id_,
             LOOP.NUM: self.num,
             LOOP.STEP: self.step,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            LOOP.LOGARITHMIC: self.logarithmic,
+            LOOP.CHANNEL_ID: self.channel_id,
+            LOOP.VALUES: list(self.values) if self.values is not None else None,
         }
+
+    def to_array(self):
+        """returns the array of the loops"""
+        return self.ranges
+
+    @classmethod
+    def from_array(cls, parameter: Parameter, alias: str, values: np.ndarray):
+        """Build a loop from specified values"""
+        if values is None or len(values) == 0:
+            raise ValueError("Values should be an array of at least one element")
+        return Loop(
+            parameter=parameter,
+            alias=alias,
+            start=values[0],
+            stop=values[-1],
+            values=values,
+        )

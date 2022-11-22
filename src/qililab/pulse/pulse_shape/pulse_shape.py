@@ -1,5 +1,6 @@
 """PulseShape abstract base class."""
 from dataclasses import dataclass, field
+from enum import Enum
 
 import numpy as np
 
@@ -7,11 +8,11 @@ from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseShapeName
 
 
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class PulseShape(FactoryElement):
     """Pulse shape abstract base class."""
 
-    name: PulseShapeName = field(init=False, repr=False)
+    name: PulseShapeName = field(init=False)
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
@@ -31,12 +32,8 @@ class PulseShape(FactoryElement):
         Returns:
             dict: Dictionary.
         """
-        return {RUNCARD.NAME: self.name.value} | self.__dict__
-
-    def __repr__(self):
-        """Return string representation of the Pulse Shape object."""
-        return f"{str(self.to_dict())}"
-
-    def __str__(self):
-        """Return string representation of the Pulse Shape object."""
-        return f"{str(self.to_dict())}"
+        dictionary = self.__dict__.copy()
+        for key, value in dictionary.items():
+            if isinstance(value, Enum):
+                dictionary[key] = value.value
+        return dictionary

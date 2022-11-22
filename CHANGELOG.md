@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.9.2 (2022-11-17)
+
+### Fix
+
+- remove master drag coefficient (#98)
+
+## 0.9.1 (2022-11-17)
+
+### Refactor
+
+- pulse events (#93)
+
 ## 0.9.0 (2022-10-06)
 
 ### Feat
@@ -16,7 +28,7 @@
 
 ### Fix
 
-- [QILI-169] load 2D results (#69)
+- \[QILI-169\] load 2D results (#69)
 
 ## 0.7.2 (2022-08-22)
 

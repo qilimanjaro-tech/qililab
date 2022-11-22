@@ -8,7 +8,7 @@ alt not isinstance(gate_current_value, MasterGateSettingsName)
 else gate_current_value = MasterGateSettingsName.MASTER_AMPLITUDE_GATE
     alt isinstance(master_amplitude_gate, number)
         note right of hw: result = master_amplitude_gate.item()
-    else 
+    else
         note right of hw: result = master_amplitude_gate
     end
 else

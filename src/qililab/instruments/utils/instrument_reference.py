@@ -20,7 +20,7 @@ class InstrumentReference:
 
     category: Category
     alias: str
-    slot_id: int
+    slot_id: int  # slot_id represents the number displayed in the cluster
 
     def __iter__(self):
         """Iterate over InstrumentReference elements.

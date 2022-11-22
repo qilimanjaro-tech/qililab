@@ -14,7 +14,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseSchedule, PulseBusSchedule
 from qililab.result.heterodyne_result import HeterodyneResult
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
@@ -164,22 +164,22 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
         
-        # set gain
-        if self.settings.gain is not None:
-            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
-            print(f"Heterodyne bus set gain to {self.settings.gain}")
+        # # set gain
+        # if self.settings.gain is not None:
+        #     self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+        #     self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+        #     print(f"Heterodyne bus set gain to {self.settings.gain}")
 
-        else: 
-            print("Gain is not set by Heterodyne bus")
+        # else: 
+        #     print("Gain is not set by Heterodyne bus")
 
-        print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
+        # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
 
     def start(self):
         """Start/Turn on the instruments.
         self.signal_generator.device.start()"""
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence.
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.device.frequency = pulse_sequence.frequency + self.awg.frequency
@@ -241,6 +241,7 @@ class HeterodyneSystemControl(SystemControl):
 
         # print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(integrated_I,integrated_Q)
+        
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
     @property

@@ -5,7 +5,7 @@ import pytest
 from qilisimulator.evolution import Evolution
 
 from qililab.instruments import SimulatedSystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result import SimulatorResult
 
 
@@ -17,10 +17,10 @@ class TestSimulatedSystemControl:
         assert isinstance(simulated_system_control.settings, SimulatedSystemControl.SimulatedSystemControlSettings)
         assert isinstance(simulated_system_control._evo, Evolution)
 
-    def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_sequence: PulseSequence):
+    def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test run method."""
         result = simulated_system_control.run(
-            pulse_sequence=pulse_sequence, nshots=1, repetition_duration=2000, path=Path(__file__).parent
+            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=2000, path=Path(__file__).parent
         )
         assert isinstance(result, SimulatorResult)
 
