@@ -14,7 +14,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseSchedule, PulseBusSchedule
 from qililab.result.heterodyne_result import HeterodyneResult
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.utils import Factory
@@ -171,7 +171,7 @@ class HeterodyneSystemControl(SystemControl):
         """Start/Turn on the instruments.
         self.signal_generator.device.start()"""
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence.
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.device.frequency = pulse_sequence.frequency + self.awg.frequency

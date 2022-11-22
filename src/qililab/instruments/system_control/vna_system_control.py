@@ -14,7 +14,7 @@ from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseSchedule
 from qililab.result.heterodyne_result import HeterodyneResult
 from qililab.typings import Category, SystemControlSubcategory, Parameter
 from qililab.utils import Factory
@@ -80,7 +80,7 @@ class VNASystemControl(SystemControl):
         self.signal_generator.device.start()"""
         # print('[Heterodyne SysCtrl] Entered start')
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_schedule: PulseSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence.
         if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
             self.signal_generator.device.frequency = pulse_sequence.frequency + self.awg.frequency

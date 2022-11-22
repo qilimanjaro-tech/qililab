@@ -89,72 +89,72 @@ class QbloxModule(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-    def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ):
-        """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
-
-        Returns:
-            Sequence: Qblox Sequence object containing the program and waveforms.
-        """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        acquisitions = self._generate_acquisitions()
-        program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule,
-            waveforms=waveforms,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-        )
-        weights = self._generate_weights()
-        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
-
-    def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
-    ):
-        """Generate Q1ASM program
+    # def _translate_pulse_bus_schedule(
+    #     self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+    # ):
+    #     """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
     #     Args:
-    #         pulse_sequence (PulseSequence): Pulse sequence.
-    #         waveforms (Waveforms): Waveforms.
+    #         pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
 
-        Returns:
-            Program: Q1ASM program.
-        """
-        # Define program's blocks
-        program = Program()
-        bin_loop = Loop(
-            name="binning", begin=0, end=int(self.num_bins[0])
-        )  # FIXME: get the channel instead of using the first
-        avg_loop = Loop(name="average", begin=0, end=nshots)
-        bin_loop.append_block(block=avg_loop, bot_position=1)
-        stop = Block(name="stop")
-        stop.append_component(Stop())
-        program.append_block(block=bin_loop)
-        program.append_block(block=stop)
-        timeline = pulse_bus_schedule.timeline
-        if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+    #     Returns:
+    #         Sequence: Qblox Sequence object containing the program and waveforms.
+    #     """
+    #     waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+    #     acquisitions = self._generate_acquisitions()
+    #     program = self._generate_program(
+    #         pulse_bus_schedule=pulse_bus_schedule,
+    #         waveforms=waveforms,
+    #         nshots=nshots,
+    #         repetition_duration=repetition_duration,
+    #     )
+    #     weights = self._generate_weights()
+    #     return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-        for i, pulse_event in enumerate(timeline):
-            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-            wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
-            avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
-            avg_loop.append_component(
-                set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
-            )
-            avg_loop.append_component(
-                Play(
-                    waveform_0=waveform_pair.waveform_i.index,
-                    waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
-                )
-            )
-        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
-        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
-        return program
+    # def _generate_program(
+    #     self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+    # ):
+    #     """Generate Q1ASM program
+
+    # #     Args:
+    # #         pulse_sequence (PulseSequence): Pulse sequence.
+    # #         waveforms (Waveforms): Waveforms.
+
+    #     Returns:
+    #         Program: Q1ASM program.
+    #     """
+    #     # Define program's blocks
+    #     program = Program()
+    #     bin_loop = Loop(
+    #         name="binning", begin=0, end=int(self.num_bins[0])
+    #     )  # FIXME: get the channel instead of using the first
+    #     avg_loop = Loop(name="average", begin=0, end=nshots)
+    #     bin_loop.append_block(block=avg_loop, bot_position=1)
+    #     stop = Block(name="stop")
+    #     stop.append_component(Stop())
+    #     program.append_block(block=bin_loop)
+    #     program.append_block(block=stop)
+    #     timeline = pulse_bus_schedule.timeline
+    #     if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+    #         avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+
+    #     for i, pulse_event in enumerate(timeline):
+    #         waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+    #         wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
+    #         avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
+    #         avg_loop.append_component(
+    #             set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
+    #         )
+    #         avg_loop.append_component(
+    #             Play(
+    #                 waveform_0=waveform_pair.waveform_i.index,
+    #                 waveform_1=waveform_pair.waveform_q.index,
+    #                 wait_time=int(wait_time),
+    #             )
+    #         )
+    #     self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
+    #     avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+    #     return program
 
     # def _generate_acquisitions(self) -> Acquisitions:
     #     """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1

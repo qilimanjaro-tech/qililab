@@ -13,7 +13,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseSchedule
 from qililab.typings import Category, SystemControlSubcategory, Parameter
 from qililab.utils import Factory
 
@@ -74,7 +74,7 @@ class CWSystemControl(SystemControl):
         # print('[Heterodyne SysCtrl] Entered start')
         pass
 
-    def run(self, pulse_sequence: PulseSequence | None, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_schedule: PulseSchedule | None, nshots: int, repetition_duration: int, path: Path):
         pass
 
     @property
