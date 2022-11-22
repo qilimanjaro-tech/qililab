@@ -8,7 +8,7 @@ from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.typings.enums import Parameter, SystemControlSubcategory
 from qililab.utils.factory import Factory
@@ -82,16 +82,16 @@ class SimulatedSystemControl(SystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Run the given pulse sequence."""
 
         resolution = self.settings.resolution
         frequency = self.frequency
-        if pulse_sequence.frequency is not None:
-            frequency = pulse_sequence.frequency
+        if pulse_bus_schedule.frequency is not None:
+            frequency = pulse_bus_schedule.frequency
 
         # TODO: get pulses -> check
-        waveforms = pulse_sequence.waveforms(frequency=frequency, resolution=resolution)
+        waveforms = pulse_bus_schedule.waveforms(frequency=frequency, resolution=resolution)
         i_waveform = np.array(waveforms.i)
         sequence = [i_waveform]
 

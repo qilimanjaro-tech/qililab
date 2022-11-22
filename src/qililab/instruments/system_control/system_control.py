@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Type, get_type_hints
 
 from qililab.platform.components import BusElement
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result import Result
 from qililab.settings import DDBBElement
 from qililab.typings import SystemControlSubcategory
@@ -37,7 +37,7 @@ class SystemControl(BusElement, ABC):
 
     @abstractmethod
     def run(
-        self, pulse_sequence: PulseSequence | None, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ) -> List[Result] | None:
         """Run the given pulse sequence."""
 

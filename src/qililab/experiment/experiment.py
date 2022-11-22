@@ -13,7 +13,7 @@ from qililab.config import logger
 from qililab.constants import EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSequences
+from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
@@ -42,7 +42,7 @@ class Experiment:
 
     def __init__(
         self,
-        sequences: List[Circuit | PulseSequences] | Circuit | PulseSequences,
+        sequences: List[Circuit | PulseSchedule] | Circuit | PulseSchedule,
         platform: Platform,
         loops: List[Loop] | None = None,
         settings: ExperimentSettings = ExperimentSettings(),
@@ -50,6 +50,7 @@ class Experiment:
         device_id: int | None = None,
         name: str = "experiment",
         plot_y_label: str | None = None,
+        remote_device_manual_override: bool = False,
     ):
         self.platform = copy.deepcopy(platform)
         self.name = name
@@ -58,7 +59,9 @@ class Experiment:
         if not isinstance(sequences, list):
             sequences = [sequences]
         self._initial_sequences = sequences
-        self.remote_api = RemoteAPI(connection=connection, device_id=device_id)
+        self.remote_api = RemoteAPI(
+            connection=connection, device_id=device_id, manual_override=remote_device_manual_override
+        )
         self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
         self.plot_y_label = plot_y_label
 
@@ -86,6 +89,7 @@ class Experiment:
                         plot=plot,
                     )
                 except KeyboardInterrupt as error:  # pylint: disable=broad-except
+                    self.remote_api.release_remote_device()
                     logger.error("%s: %s", type(error).__name__, str(error))
         return results
 
@@ -316,7 +320,7 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(self, sequence_list: List[Circuit | PulseSequences]) -> Tuple[Execution, List[PulseSequences]]:
+    def _build_execution(self, sequence_list: List[Circuit | PulseSchedule]) -> Tuple[Execution, List[PulseSchedule]]:
         """Build Execution class.
 
         Args:
@@ -325,7 +329,7 @@ class Experiment:
         if isinstance(sequence_list[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_sequences=sequence_list)
+        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedule=sequence_list)
         return execution, sequence_list
 
     def _create_results_file(self, path: Path):
@@ -404,7 +408,7 @@ class Experiment:
         """
         settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        sequences = [PulseSequences.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+        sequences = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         input_loops = dictionary[EXPERIMENT.LOOPS]
         loops = [Loop(**loop) for loop in input_loops] if input_loops is not None else None
         experiment_name = dictionary[RUNCARD.NAME]

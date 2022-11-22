@@ -8,7 +8,7 @@ from qililab.pulse.pulse_shape.rectangular import Rectangular
 from qililab.typings import PulseName
 
 
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class ReadoutPulse(Pulse):
     """Describes a single pulse to be added to waveform array."""
 
