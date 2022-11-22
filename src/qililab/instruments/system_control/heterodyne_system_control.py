@@ -78,7 +78,7 @@ class HeterodyneSystemControl(SystemControl):
         """ Write the description of this function """
         
         # Clean the memory of the awg
-        self.awg.reset()
+        # self.awg.reset()
 
         # New code : 
         dt = 1 # one nanosecond for GS/s resolution
@@ -118,13 +118,21 @@ class HeterodyneSystemControl(SystemControl):
         move    {self.settings.shots},R0   #Loop iterator.
         loop:
         play    0,1,4     #Play waveforms and wait 4ns.
-        acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
-        wait    100
+        acquire 0,0,7000 #Acquire waveforms and wait remaining duration of scope acquisition.
         loop    R0,@loop  #Run until number of iterations is done.
         stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
 
+        # move    193,R1
+        # loop1:
+        # wait    1000
+        # loop    R1,@loop1
+
+
+        print(seq_prog)
+
+        print(f"Hardare averaging: {self.settings.shots}")
         # ## 1.4 Upload all
         # Add sequence to single dictionary and write to JSON file.
         sequence = {
@@ -184,12 +192,14 @@ class HeterodyneSystemControl(SystemControl):
         )"""
 
         
-
+        print()
         # print('[Heterodyne SysCtrl] Entered run')
         # # 2. Running the Bus
         # ## 2.1 Arm & Run
         # Arm and start sequencer.
         self.awg.device.arm_sequencer(0)
+
+
         self.awg.device.start_sequencer()
 
         # print(f"Path 0: {self.awg.device.sequencer0.gain_awg_path0()}")
@@ -200,6 +210,7 @@ class HeterodyneSystemControl(SystemControl):
         # print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
+        self.awg.device.get_acquisition_state(0, 1)
         # print(f"Acquisition state: {self.awg.device.get_acquisition_state(0, 1)}")
         # Move acquisition data from temporary memory to acquisition list.
         self.awg.device.store_scope_acquisition(0, "single")
@@ -228,7 +239,7 @@ class HeterodyneSystemControl(SystemControl):
         integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
 
-        print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
+        # print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(integrated_I,integrated_Q)
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
