@@ -156,16 +156,16 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
         
-        # set gain
-        if self.settings.gain is not None:
-            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
-            print(f"Heterodyne bus set gain to {self.settings.gain}")
+        # # set gain
+        # if self.settings.gain is not None:
+        #     self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+        #     self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+        #     print(f"Heterodyne bus set gain to {self.settings.gain}")
 
-        else: 
-            print("Gain is not set by Heterodyne bus")
+        # else: 
+        #     print("Gain is not set by Heterodyne bus")
 
-        print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
+        # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
 
     def start(self):
         """Start/Turn on the instruments.
@@ -228,8 +228,9 @@ class HeterodyneSystemControl(SystemControl):
         integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
 
-        print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
+        # print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(integrated_I,integrated_Q)
+        
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
     @property
