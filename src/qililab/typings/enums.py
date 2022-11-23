@@ -236,6 +236,7 @@ class SystemControlSubcategory(Enum):
         * simulated_system_control
         * heterodyne_system_control
         * cw_system_control
+        * two_tone_system_control
     """
 
     HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
@@ -243,6 +244,7 @@ class SystemControlSubcategory(Enum):
     VNA_SYSTEM_CONTROL = "vna_system_control"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    TWO_TONE_SYSTEM_CONTROL = "two_tone_system_control"
 
 
 class NodeName(Enum):
@@ -289,7 +291,7 @@ class InstrumentName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
-    HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
+    HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control" # Why is this here?
     VNA_SYSTEM_CONTROL = "vna_system_control"
     CW_SYSTEM_CONTROL = "cw_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"

@@ -22,21 +22,19 @@ from qililab.typings.enums import Parameter
 
 
 @Factory.register
-class HeterodyneSystemControl(SystemControl):
-    """HeterodyneSystemControl class."""
+class TwoToneSystemControl(SystemControl): #
+    """TwoToneSystemControl class."""
 
-    name = SystemControlSubcategory.HETERODYNE_SYSTEM_CONTROL
-
+    name = SystemControlSubcategory.TWO_TONE_SYSTEM_CONTROL
     @dataclass(kw_only=True)
-    class HeterodyneSystemControlSettings(SystemControl.SystemControlSettings):
+    class TwoToneSystemControlSettings(SystemControl.SystemControlSettings):
         """HeterodyneSystemControlSettings class."""
 
         awg: AWG
         signal_generator: SignalGenerator
+        signal_generator2: SignalGenerator
         pulse_length: int = 6000
         IF: float = 0.01
-        # LO: float
-        gain: float = None
         shots: int = 1000
 
         def __iter__(
@@ -48,10 +46,11 @@ class HeterodyneSystemControl(SystemControl):
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if name in [Category.AWG.value, Category.SIGNAL_GENERATOR.value]:
+                
+                if name in [Category.AWG.value, Category.SIGNAL_GENERATOR.value, 'signal_generator2']:
                     yield name, value
 
-    settings: HeterodyneSystemControlSettings
+    settings: TwoToneSystemControlSettings
 
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
@@ -78,7 +77,7 @@ class HeterodyneSystemControl(SystemControl):
         """ Write the description of this function """
         
         # Clean the memory of the awg
-        # self.awg.reset()
+        self.awg.reset()
 
         # New code : 
         dt = 1 # one nanosecond for GS/s resolution
@@ -101,8 +100,9 @@ class HeterodyneSystemControl(SystemControl):
 
         # ## 1.2. Set LO
         # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
-        # self.signal_generator.device.power(16) # This does not need to be hardcoded here. The runcard initiates it correctly
+        # self.signal_generator.device.power(16)
         self.signal_generator.device.on()
+        self.signal_generator2.device.on()
 
         # ## 1.2 Acquisition
         # Acquisitions
@@ -118,21 +118,13 @@ class HeterodyneSystemControl(SystemControl):
         move    {self.settings.shots},R0   #Loop iterator.
         loop:
         play    0,1,4     #Play waveforms and wait 4ns.
-        acquire 0,0,7000 #Acquire waveforms and wait remaining duration of scope acquisition.
+        acquire 0,0,20000 #Acquire waveforms and wait remaining duration of scope acquisition.
+        wait    100
         loop    R0,@loop  #Run until number of iterations is done.
         stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
 
-        # move    193,R1
-        # loop1:
-        # wait    1000
-        # loop    R1,@loop1
-
-
-        print(seq_prog)
-
-        print(f"Hardare averaging: {self.settings.shots}")
         # ## 1.4 Upload all
         # Add sequence to single dictionary and write to JSON file.
         sequence = {
@@ -164,65 +156,25 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.scope_acq_avg_mode_en_path0(True)
         self.awg.device.scope_acq_avg_mode_en_path1(True)
         
-        # # set gain
-        # if self.settings.gain is not None:
-        #     self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-        #     self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
-        #     print(f"Heterodyne bus set gain to {self.settings.gain}")
-
-        # else: 
-        #     print("Gain is not set by Heterodyne bus")
-
-        # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
-
     def start(self):
         """Start/Turn on the instruments.
         self.signal_generator.device.start()"""
 
     def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Change the SignalGenerator frequency if needed and run the given pulse sequence.
-        if pulse_sequence.frequency is not None and pulse_sequence.frequency != self.frequency:
-            self.signal_generator.device.frequency = pulse_sequence.frequency + self.awg.frequency
-            self.signal_generator.device.setup()
-        return self.awg.run(
-            pulse_sequence=pulse_sequence,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            path=path,
-        )"""
-
         
-        print()
-        # print('[Heterodyne SysCtrl] Entered run')
-        # # 2. Running the Bus
-        # ## 2.1 Arm & Run
-        # Arm and start sequencer.
         self.awg.device.arm_sequencer(0)
-
-
         self.awg.device.start_sequencer()
 
-        # print(f"Path 0: {self.awg.device.sequencer0.gain_awg_path0()}")
-        # print(f"Path 1: {self.awg.device.sequencer0.gain_awg_path1()}")
-        
-        # self.signal_generator.device.off()
-        # Print status of sequencer.
-        # print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
-        # ## 2.2 Query data and plotting
-        # Wait for the acquisition to finish with a timeout period of one minute.
         self.awg.device.get_acquisition_state(0, 1)
-        # Move acquisition data from temporary memory to acquisition list.
-        self.awg.device.store_scope_acquisition(0, "single")
-        # Get acquisition list from instrument.
-        single_acq = self.awg.device.get_acquisitions(0)
 
-        # print(single_acq.keys())
+        self.awg.device.store_scope_acquisition(0, "single")
+
+        single_acq = self.awg.device.get_acquisitions(0)
 
         # ## 2.3 should be outside!
         output_I = np.array(single_acq["single"]["acquisition"]["scope"]["path0"]["data"][:6100])
         output_Q = np.array(single_acq["single"]["acquisition"]["scope"]["path1"]["data"][:6100])
 
-        # print(f'output: {output_I}')
         time_vector_demod = np.linspace(0, len(output_I), len(output_I))
         cosalpha = np.cos(2 * np.pi * self.settings.IF * time_vector_demod)
         sinalpha = np.sin(2 * np.pi * self.settings.IF * time_vector_demod)
@@ -234,12 +186,10 @@ class HeterodyneSystemControl(SystemControl):
 
         demodulated_I = demodulated_signal[:, 0]
         demodulated_Q = demodulated_signal[:, 1]
+        
         # ## 2.4 Integrate
         integrated_I = integ.trapz(demodulated_I, dx=1) / len(demodulated_I)  # dx is the spacing between points, in our case 1ns
         integrated_Q = integ.trapz(demodulated_Q, dx=1) / len(demodulated_Q)
-
-        # print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
-        # print(integrated_I,integrated_Q)
         
         return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
 
@@ -278,6 +228,14 @@ class HeterodyneSystemControl(SystemControl):
             (QubitControl | None): settings.qubit_control.
         """
         return self.settings.awg
+    
+    @property
+    def signal_generator2(self):
+        """Bus 'signal_generator2' property.
+        Returns:
+            (QubitControl | None): settings.qubit_control.
+        """
+        return self.settings.signal_generator2
 
     @property
     def acquisition_delay_time(self) -> int:
