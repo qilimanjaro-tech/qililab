@@ -165,7 +165,7 @@ class Results:
             result_acquisition_list, keys=range(len(result_acquisition_list)), names=[RESULTSDATAFRAME.RESULTS_INDEX]
         ).reset_index()
 
-    def _generate_new_acquisitoin_column_names(self):
+    def _generate_new_acquisition_column_names(self):
         """Checks shape, num_sequence and software_average and returns with that the list of columns that should
         be added to the dataframe."""
         new_columns = [
@@ -181,7 +181,7 @@ class Results:
         """Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
         `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
         old_columns = result_acquisition_dataframe.columns
-        self._computed_dataframe_indices = self._generate_new_acquisitoin_column_names()
+        self._computed_dataframe_indices = self._generate_new_acquisition_column_names()
         self._data_dataframe_indices = set().union(*[result.data_dataframe_indices for result in self.results])
 
         result_acquisition_dataframe[self._computed_dataframe_indices] = result_acquisition_dataframe.apply(
