@@ -40,7 +40,7 @@ class TestExecution:
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-        nested_experiment.settings.software_average = 5
+        nested_experiment.settings.software_average = 1
         results = nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
         mock_urllib.request.Request.assert_called()

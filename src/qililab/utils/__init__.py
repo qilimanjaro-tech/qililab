@@ -1,7 +1,6 @@
 """__init__.py"""
 from .asdict_factory import dict_factory
 from .coordinate_decomposition import coordinate_decompose
-from .dataframe_utilities import insert_index_level_into_dataframe
 from .factory import Factory
 from .live_plot import LivePlot
 from .loop import Loop
