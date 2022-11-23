@@ -9,6 +9,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import QbloxS4g as QbloxS4gDriver
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -57,18 +58,27 @@ class QbloxS4g(CurrentSource):
             sleep(0.1)
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
-        """Set S4g current. Value ranges are:
-        - current: (-40, 40)mA.
-        """
-        for channel_index in self.dacs:
-            self._channel_setup(dac_index=channel_index)
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Set Qblox instrument calibration settings."""
+       
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        if channel_id > 3:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range. Number of dacs is 3"
+            )
+        if parameter.value == Parameter.CURRENT.value:
+            channel = self.dac(dac_index=channel_id)
+            channel.current(self.current[channel_id])
+            return
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup.
         For this instrument it is the same as a regular setup"""
-        self.setup()
+        for dac_index in self.settings.dacs:
+            self.setup(Parameter.CURRENT, Parameter.CURRENT.value, dac_index)
+
 
     @Instrument.CheckDeviceInitialized
     def start(self):

@@ -369,7 +369,6 @@ class QbloxModule(AWG):
         for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
-
         for seq_idx in range(self.num_sequencers):
             self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
             self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
