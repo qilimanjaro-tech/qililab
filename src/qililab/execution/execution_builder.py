@@ -46,6 +46,6 @@ class ExecutionBuilder(metaclass=Singleton):
             system_control_subcategory=SystemControlSubcategory.CW_SYSTEM_CONTROL
         )
         if bus is not None:
-            buses[bus_idx] = BusExecution(bus=bus, pulse_sequences=[])
+            buses[bus_idx] = BusExecution(bus=bus, pulse_schedule=[])
 
         return BusesExecution(buses=list(buses.values()), num_sequences=len(pulse_schedule_list))

@@ -30,7 +30,7 @@ class CWSystemControl(SystemControl):
 
         signal_generator: SignalGenerator
         power: float = -20
-        frequency: float = 7e9
+        frequencies: float = 7e9
         status: bool = False
         # awg: AWG
         def __iter__(
@@ -49,10 +49,10 @@ class CWSystemControl(SystemControl):
 
     def set_parameter(self, parameter: Parameter, value: float, **kw):
         print(f'[CW Sys Ctrl] Called Set Parameter {kw}')
-        if parameter == Parameter.FREQUENCY:
-            self.settings.frequency = value
-            print('Doing something to change frequency')
-            self.signal_generator.device.frequency(value)
+        if parameter == Parameter.FREQUENCIES:
+            self.settings.frequencies = value
+            print('Doing something to change frequencies')
+            self.signal_generator.device.frequencies(value)
         
 
     def __init__(self, settings: dict, instruments: Instruments):
@@ -63,9 +63,10 @@ class CWSystemControl(SystemControl):
     def setup(self, frequencies: List[float]):
         self.signal_generator.device.power(self.settings.power)
         # self.signal_generator.device.power(self.settings.power)
-        self.signal_generator.device.frequency(self.settings.frequency)
+        self.signal_generator.device.frequencies(self.settings.frequencies)
         if self.settings.status:
             self.signal_generator.device.on()
+            print('RS ON')
         print('CW bus setup')
 
     def start(self):
@@ -78,23 +79,23 @@ class CWSystemControl(SystemControl):
         pass
 
     @property
-    def awg_frequency(self):
-        """SystemControl 'awg_frequency' property."""
-        return self.awg.frequency
+    def awg_frequencies(self):
+        """SystemControl 'awg_frequencies' property."""
+        return self.awg.frequencies
 
     @property
-    def frequency(self):
-        """SystemControl 'frequency' property."""
+    def frequencies(self):
+        """SystemControl 'frequencies' property."""
         return (
-            self.signal_generator.frequency - self.awg.frequency
-            if self.signal_generator.frequency is not None
+            self.signal_generator.frequencies - self.awg.frequencies
+            if self.signal_generator.frequencies is not None
             else None
         )
 
-    @frequency.setter
-    def frequency(self, target_freqs: List[float]):
-        """SystemControl 'frequency' property setter."""
-        self.signal_generator.frequency = target_freqs[0] + self.awg.frequency
+    @frequencies.setter
+    def frequencies(self, target_freqs: List[float]):
+        """SystemControl 'frequencies' property setter."""
+        self.signal_generator.frequencies = target_freqs[0] + self.awg.frequencies
         self.signal_generator.setup()
 
     @property
