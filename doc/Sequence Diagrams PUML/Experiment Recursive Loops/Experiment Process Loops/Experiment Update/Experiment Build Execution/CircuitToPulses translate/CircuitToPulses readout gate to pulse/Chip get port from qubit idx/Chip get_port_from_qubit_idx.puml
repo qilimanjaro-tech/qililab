@@ -36,7 +36,7 @@ alt not readout
             return port
             note right of chip: break
         end
-    end 
+    end
     note right of chip: result = port
 else readout
     chip -> chip: get_adjacent_nodes (qubit)
@@ -80,11 +80,11 @@ else readout
                     return port
                     note right of chip: break
                 end
-            end 
+            end
         end
     end
     note right of chip: result = port
-end 
+end
 
 return result
 

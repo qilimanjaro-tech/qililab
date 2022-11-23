@@ -4,30 +4,42 @@ from typing import List
 
 from qililab.constants import PULSESEQUENCES
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_sequence import PulseSequence
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+from qililab.pulse.pulse_event import PulseEvent
 
 
 @dataclass
-class PulseSequences:
+class PulseSchedule:
     """Class containing a list of PulseSequence objects. It is the pulsed representation of a Qibo circuit.
 
     Args:
         elements (List[PulseSequences]): List of pulse sequences.
     """
 
-    elements: List[PulseSequence] = field(default_factory=list)
+    elements: List[PulseBusSchedule] = field(default_factory=list)
 
-    def add(self, pulse: Pulse, port: int):
-        """Add pulse sequence.
+    def add(self, pulse: Pulse, start_time: int, port: int):
+        """Add pulse.
 
         Args:
-            pulse_sequence (PulseSequence): Pulse object.
+            pulse (Pulse): Pulse object.
+            start_time (int): start time of the pulse.
+            port (int): target port.
+        """
+        pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+        self.add_event(pulse_event=pulse_event, port=port)
+
+    def add_event(self, pulse_event: PulseEvent, port: int):
+        """Add pulse event.
+
+        Args:
+            pulse (PulseEvent): PulseEvent object.
         """
         for pulse_sequence in self.elements:
-            if port == pulse_sequence.port and pulse.name == pulse_sequence.name:
-                pulse_sequence.add(pulse=pulse)
+            if port == pulse_sequence.port and pulse_event.pulse.name == pulse_sequence.name:
+                pulse_sequence.add_event(pulse_event=pulse_event)
                 return
-        self.elements.append(PulseSequence(pulses=[pulse], port=port))
+        self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
 
     def to_dict(self):
         """Return dictionary representation of the class.
@@ -47,9 +59,9 @@ class PulseSequences:
         Returns:
             PulseSequence: Class instance.
         """
-        elements = [PulseSequence.from_dict(dictionary=settings) for settings in dictionary[PULSESEQUENCES.ELEMENTS]]
+        elements = [PulseBusSchedule.from_dict(dictionary=settings) for settings in dictionary[PULSESEQUENCES.ELEMENTS]]
 
-        return PulseSequences(elements=elements)
+        return PulseSchedule(elements=elements)
 
     def __iter__(self):
         """Redirect __iter__ magic method to elements."""

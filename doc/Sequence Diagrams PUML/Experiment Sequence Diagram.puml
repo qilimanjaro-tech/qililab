@@ -29,7 +29,7 @@ note right of exp: path = create_daily_results_folder (get_current_time ())
 note right of exp: create_directory_if_not_exists (path)
 return path
 exp -> exp: create_results_file (path)
-activate exp #7F1CDB 
+activate exp #7F1CDB
 return
 exp -> exp: dump_experiment_data (path)
 activate exp #7F1CDB
@@ -59,7 +59,7 @@ return
 exp -> exp: recursive_loops (self.loops, results, path, plot)
 activate exp #7F1CDB
 note right of exp #C2A5DC: Experiment recursive_loops ()
-                  
+
 return results
 exp -> exe ++: __exit__()
 note right of exe #C2A5DC: Execution __exit__ ()
@@ -73,5 +73,5 @@ opt self.connection is not None AND self._blocked_device
 end
 return
 
-usr <-- exp: results            
+usr <-- exp: results
 @enduml

@@ -6,6 +6,6 @@ participant Keithley2600Driver as dri
 [-> kei ++: reset()
 kei -> dri ++: reset ()
 return
-return 
+return
 
 @enduml

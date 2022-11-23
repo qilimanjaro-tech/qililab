@@ -34,7 +34,7 @@ loop seq_idx in range (num_sequencers)
     qblox -> dev ++: sequencers[seq_idx].channel_map_path1_out1_en (True)
     return
 end
-return 
+return
 
 qblox -> qblox: set_nco ()
 activate qblox #7F1CDB

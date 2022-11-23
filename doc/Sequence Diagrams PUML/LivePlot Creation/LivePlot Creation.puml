@@ -44,7 +44,7 @@ else
             note right of liveplot: result2 = (aux_vec_x, aux_vec_y)
       end
       return result2
-      note right of liveplot: result1 = result2           
+      note right of liveplot: result1 = result2
 end
 return result1
 note right of liveplot: self.x_iterator_ranges, self.y_iterator_ranges = result1

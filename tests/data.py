@@ -37,7 +37,6 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -61,7 +60,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -72,7 +71,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
@@ -385,7 +384,6 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -413,7 +411,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -424,7 +422,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
@@ -599,14 +597,16 @@ experiment = {
         {
             "elements": [
                 {
-                    "pulses": [
+                    "timeline": [
                         {
-                            "name": "readout_pulse",
-                            "amplitude": 1,
-                            "frequency": 1e9,
-                            "phase": 0,
-                            "duration": 2000,
-                            "pulse_shape": {"name": "rectangular"},
+                            "pulse": {
+                                "name": "readout_pulse",
+                                "amplitude": 1,
+                                "frequency": 1e9,
+                                "phase": 0,
+                                "duration": 2000,
+                                "pulse_shape": {"name": "rectangular"},
+                            },
                             "start_time": 40,
                         }
                     ],
