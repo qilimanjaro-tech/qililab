@@ -16,16 +16,6 @@ class BusExecution:
     bus: Bus
     pulse_schedule: List[PulseBusSchedule] = field(default_factory=list)
 
-    def setup(self):
-        """Setup instruments."""
-        self.system_control.setup(frequencies=self.bus.target_freqs)
-        if self.attenuator is not None:
-            self.attenuator.setup()
-
-    def start(self):
-        """Start/Turn on the instruments."""
-        self.system_control.start()
-
     def run(self, nshots: int, repetition_duration: int, idx: int, path: Path):
         """Run the given pulse sequence."""
         if self.bus.target_freqs[0] != self.system_control.frequency:  # update freq if target_freq has changed

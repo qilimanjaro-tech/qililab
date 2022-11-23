@@ -38,10 +38,10 @@ class TestQbloxQRM:
         qrm.device.sequencer0.offset_awg_path0.assert_called()
         qrm.device.sequencer0.offset_awg_path1.assert_called()
 
-    def test_stop_method(self, qrm: QbloxQRM):
-        """Test stop method"""
-        qrm.stop()
-        qrm.device.stop_sequencer.assert_called()
+    def test_turn_off_method(self, qrm: QbloxQRM):
+        """Test turn_off method"""
+        qrm.turn_off()
+        qrm.device.turn_off_sequencer.assert_called()
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
@@ -138,7 +138,7 @@ class TestQbloxQRM:
 
     def tests_frequency_property(self, qrm_no_device: QbloxQRM):
         """Test frequency property."""
-        assert qrm_no_device.frequency == qrm_no_device.settings.frequency
+        assert qrm_no_device.frequency == qrm_no_device.settings.frequencies[0]
 
     def tests_epsilon_property(self, qrm_no_device: QbloxQRM):
         """Test epsilon property."""

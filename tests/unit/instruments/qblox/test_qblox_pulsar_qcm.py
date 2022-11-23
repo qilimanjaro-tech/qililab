@@ -33,10 +33,10 @@ class TestQbloxQCM:
         qcm.device.sequencer0.offset_awg_path0.assert_called()
         qcm.device.sequencer0.offset_awg_path1.assert_called()
 
-    def test_stop_method(self, qcm: QbloxQCM):
-        """Test stop method"""
-        qcm.stop()
-        qcm.device.stop_sequencer.assert_called_once()
+    def test_turn_off_method(self, qcm: QbloxQCM):
+        """Test turn_off method"""
+        qcm.turn_off()
+        qcm.device.turn_off_sequencer.assert_called_once()
 
     def test_reset_method(self, qrm: QbloxQCM):
         """Test reset method"""
@@ -72,4 +72,4 @@ class TestQbloxQCM:
 
     def test_frequency_property(self, qcm_no_device: QbloxQCM):
         """Test frequency property."""
-        assert qcm_no_device.frequency == qcm_no_device.settings.frequency
+        assert qcm_no_device.frequency == qcm_no_device.settings.frequencies[0]

@@ -6,6 +6,7 @@ from typing import List
 from qililab.execution.buses_execution import BusesExecution
 from qililab.platform import Platform
 from qililab.result import Result
+from qililab.typings.execution import ExecutionOptions
 from qililab.utils import LivePlot
 
 
@@ -15,28 +16,39 @@ class Execution:
 
     buses_execution: BusesExecution
     platform: Platform
+    options: ExecutionOptions
 
     def __enter__(self):
         """Code executed when starting a with statement."""
-        # self.connect()
-        # self.setup()
-        # self.start()
+        if self.options.automatic_connect_to_instruments:
+            self.connect()
+        if self.options.set_initial_setup:
+            self.set_initial_setup()
+        if self.options.automatic_turn_on_instruments:
+            self.turn_on_instruments()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
-        # self.close()
+        if self.options.automatic_turn_off_instruments:
+            self.turn_off_instruments()
+        if self.options.automatic_disconnect_to_instruments:
+            self.disconnect()
 
     def connect(self):
         """Connect to the instruments."""
         self.platform.connect()
 
-    def setup(self):
+    def set_initial_setup(self):
         """Setup instruments with experiment settings."""
-        self.buses_execution.setup()
+        self.platform.set_initial_setup()
 
-    def start(self):
+    def turn_off_instruments(self):
         """Start/Turn on the instruments."""
-        self.buses_execution.start()
+        self.platform.turn_off_instruments()
+
+    def turn_on_instruments(self):
+        """Start/Turn on the instruments."""
+        self.platform.turn_on_instruments()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
@@ -50,9 +62,9 @@ class Execution:
             path=path,
         )
 
-    def close(self):
-        """Close connection to the instruments."""
-        self.platform.close()
+    def disconnect(self):
+        """Disconnect from the instruments."""
+        self.platform.disconnect()
 
     def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
@@ -66,10 +78,10 @@ class Execution:
         return self.buses_execution.draw(resolution=resolution, idx=idx)
 
     @property
-    def num_sequences(self):
-        """Execution 'num_sequences' property.
+    def num_schedules(self):
+        """Execution 'num_schedules' property.
 
         Returns:
             int: Number of sequences played.
         """
-        return self.buses_execution.num_sequences
+        return self.buses_execution.num_schedules

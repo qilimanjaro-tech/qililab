@@ -53,12 +53,12 @@ class Keithley2600(Instrument):
         self.device.smua.limitv(self.max_voltage)
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
-        """Start generating microwaves."""
+    def turn_off(self):
+        """Turn off an instrument."""
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
-        """Stop generating microwaves."""
+    def turn_on(self):
+        """Turn on an instrument."""
 
     @Instrument.CheckDeviceInitialized
     def reset(self):

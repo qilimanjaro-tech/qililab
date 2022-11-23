@@ -71,7 +71,7 @@ class TestExperiment:
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
         circuit.add(M(0))
-        experiment = Experiment(sequences=circuit, platform=platform)
+        experiment = Experiment(schedules=circuit, platform=platform)
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
@@ -136,7 +136,7 @@ class TestExperiment:
         # add dynamically created attributes
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment.platform.connect()
-        experiment.platform.close()
+        experiment.platform.disconnect()
         mock_reset.assert_called()
         assert mock_reset.call_count == 12
 
@@ -158,7 +158,7 @@ class TestExperiment:
         # add dynamically created attributes
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment_reset.platform.connect()
-        experiment_reset.platform.close()
+        experiment_reset.platform.disconnect()
         assert mock_reset.call_count == 10
 
 

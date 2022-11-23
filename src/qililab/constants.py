@@ -65,6 +65,11 @@ class EXPERIMENT:
     NUM_SEQUENCES = "num_sequences"
     SEQUENCES = "sequences"
     LOOPS = "loops"
+    OPTIONS = "execution_options"
+    DEVICE_ID = "device_id"
+    PLOT_Y_LABEL = "plot_y_label"
+    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
+    CONNECTION = "connection"
 
 
 class SCHEMA:

@@ -44,12 +44,12 @@ class Attenuator(Instrument):
         self.device.setup(attenuation=self.attenuation)
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
-        """Start generating microwaves."""
+    def turn_off(self):
+        """Turn off an instrument."""
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
-        """Stop generating microwaves."""
+    def turn_on(self):
+        """Turn on an instrument."""
 
     @Instrument.CheckDeviceInitialized
     def reset(self):

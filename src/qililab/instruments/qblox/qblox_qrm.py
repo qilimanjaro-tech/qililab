@@ -103,6 +103,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         if parameter.value == Parameter.INTEGRATION_LENGTH.value:
             self._set_integration_length(value=value, channel_id=channel_id)
             return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     def _set_hardware_demodulation(self, value: float | str | bool, channel_id: int):
         """set hardware demodulation

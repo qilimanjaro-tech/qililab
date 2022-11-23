@@ -5,44 +5,29 @@ from typing import List
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.system_control.system_control import SystemControl
-from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
+from qililab.result import Result
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
+from qililab.utils.factory import Factory
 
 
-@InstrumentFactory.register
-class IntegratedSystemControl(SystemControl, Instrument):
+@Factory.register
+class IntegratedSystemControl(SystemControl):
     """IntegratedSystemControl class."""
 
     name = InstrumentName.INTEGRATED_SYSTEM_CONTROL
 
     @dataclass
-    class IntegratedSystemControlSettings(SystemControl.SystemControlSettings, Instrument.InstrumentSettings):
+    class IntegratedSystemControlSettings(SystemControl.SystemControlSettings):
         """IntegratedSystemControlSettings class."""
 
     settings: IntegratedSystemControlSettings
 
-    def start(self):
-        """Start instrument."""
-
-    def initial_setup(self):
-        """Set initial instrument settings."""
-
-    def setup(self, frequencies: List[float]):  # type: ignore
-        """Setup instruments."""
-
-    def reset(self):
-        """Reset instrument settings."""
-
-    def run(self, pulse_sequence: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
+    def run(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> List[Result] | None:
         """Run the given pulse sequence."""
-
-    def stop(self):
-        """Stop an instrument."""
-
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
 
     @property
     def awg_frequency(self) -> float:

@@ -37,13 +37,13 @@ class TestAttenuator:
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
 
-    def test_start_method(self, attenuator: Attenuator):
-        """Test start method."""
-        attenuator.start()
+    def test_turn_on_method(self, attenuator: Attenuator):
+        """Test turn_on method."""
+        attenuator.turn_on()
 
-    def test_stop_method(self, attenuator: Attenuator):
-        """Test stop method."""
-        attenuator.stop()
+    def test_turn_off_method(self, attenuator: Attenuator):
+        """Test turn_off method."""
+        attenuator.turn_off()
 
     def test_reset_method(self, attenuator: Attenuator):
         """Test reset method."""

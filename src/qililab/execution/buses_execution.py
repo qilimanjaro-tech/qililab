@@ -21,27 +21,17 @@ from qililab.utils import LivePlot, Waveforms
 class BusesExecution:
     """BusesExecution class."""
 
-    num_sequences: int
+    num_schedules: int
     buses: List[BusExecution] = field(default_factory=list)
-
-    def setup(self):
-        """Setup instruments with experiment settings."""
-        for bus in self.buses:
-            bus.setup()
-
-    def start(self):
-        """Start/Turn on the instruments."""
-        for bus in self.buses:
-            bus.start()
 
     def run(
         self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
     ) -> List[Result]:
         """Run the given pulse sequence."""
         results: List[Result] = []
-        disable = self.num_sequences == 1
+        disable = self.num_schedules == 1
         for idx, _ in itertools.product(
-            tqdm(range(self.num_sequences), desc="Sequences", leave=False, disable=disable), range(software_average)
+            tqdm(range(self.num_schedules), desc="Sequences", leave=False, disable=disable), range(software_average)
         ):
             for bus in self.buses:
                 result = bus.run(nshots=nshots, repetition_duration=repetition_duration, idx=idx, path=path)

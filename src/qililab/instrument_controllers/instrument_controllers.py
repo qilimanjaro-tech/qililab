@@ -33,10 +33,25 @@ class InstrumentControllers:
         for instrument_controller in self.elements:
             instrument_controller.connect()
 
-    def close(self):
-        """Close all instrument controllers."""
+    def initial_setup(self):
+        """Set the initial setup of the instruments"""
         for instrument_controller in self.elements:
-            instrument_controller.close()
+            instrument_controller.initial_setup()
+
+    def turn_on_instruments(self):
+        """Turn on the instrument"""
+        for instrument_controller in self.elements:
+            instrument_controller.turn_on()
+
+    def turn_off_instruments(self):
+        """Turn off the instrument"""
+        for instrument_controller in self.elements:
+            instrument_controller.turn_off()
+
+    def disconnect(self):
+        """Disconnect from all instrument controllers."""
+        for instrument_controller in self.elements:
+            instrument_controller.disconnect()
 
     def to_dict(self):
         """Return a dict representation of the Instrument Controllers class."""

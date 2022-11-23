@@ -21,13 +21,13 @@ class TestKeithley2600:
         """Test initial_setup method."""
         keithley_2600.initial_setup()
 
-    def test_start_method(self, keithley_2600: Keithley2600):
-        """Test start method."""
-        keithley_2600.start()
+    def test_turn_on_method(self, keithley_2600: Keithley2600):
+        """Test turn_on method."""
+        keithley_2600.turn_on()
 
-    def test_stop_method(self, keithley_2600: Keithley2600):
-        """Test stop method."""
-        keithley_2600.stop()
+    def test_turn_off_method(self, keithley_2600: Keithley2600):
+        """Test turn_off method."""
+        keithley_2600.turn_off()
 
     def test_reset_method(self, keithley_2600: Keithley2600):
         """Test reset method."""

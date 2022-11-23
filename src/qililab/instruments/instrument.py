@@ -102,8 +102,13 @@ class Instrument(BusElement, ABC):
 
     @CheckDeviceInitialized
     @abstractmethod
-    def stop(self):
-        """Stop an instrument."""
+    def turn_on(self):
+        """Turn on an instrument."""
+
+    @CheckDeviceInitialized
+    @abstractmethod
+    def turn_off(self):
+        """Turn off an instrument."""
 
     @property
     def id_(self):

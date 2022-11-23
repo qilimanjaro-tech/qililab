@@ -1,11 +1,9 @@
 """ Experiment class."""
 import copy
-from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import List, Tuple
 
 from qibo.core.circuit import Circuit
-from qiboconnection.api import API
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
@@ -18,6 +16,8 @@ from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Instrument, Parameter
+from qililab.typings.execution import ExecutionOptions
+from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
@@ -28,42 +28,29 @@ from qililab.utils.util_loops import compute_shapes_from_loops
 class Experiment:
     """Experiment class"""
 
-    @dataclass
-    class ExperimentSettings:
-        """Experiment settings."""
-
-        hardware_average: int = 1024
-        software_average: int = 1
-        repetition_duration: int = 200000
-
-        def __str__(self):
-            """Returns a string representation of the experiment settings."""
-            return yaml.dump(asdict(self), sort_keys=False)
-
     def __init__(
         self,
-        sequences: List[Circuit | PulseSchedule] | Circuit | PulseSchedule,
+        schedules: List[Circuit | PulseSchedule] | Circuit | PulseSchedule,
         platform: Platform,
-        loops: List[Loop] | None = None,
-        settings: ExperimentSettings = ExperimentSettings(),
-        connection: API | None = None,
-        device_id: int | None = None,
-        name: str = "experiment",
-        plot_y_label: str | None = None,
-        remote_device_manual_override: bool = False,
+        options: ExperimentOptions = ExperimentOptions(),
     ):
         self.platform = copy.deepcopy(platform)
-        self.name = name
-        self.loops = loops
-        self.settings = settings
-        if not isinstance(sequences, list):
-            sequences = [sequences]
-        self._initial_sequences = sequences
+        self.options = options
+        self.name = options.name
+        self.loops = options.loops
+        self.settings = options.settings
+        if not isinstance(schedules, list):
+            schedules = [schedules]
+        self._initial_schedules = schedules
         self.remote_api = RemoteAPI(
-            connection=connection, device_id=device_id, manual_override=remote_device_manual_override
+            connection=options.connection,
+            device_id=options.device_id,
+            manual_override=options.remote_device_manual_override,
         )
-        self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
-        self.plot_y_label = plot_y_label
+        self.execution, self.schedules = self._build_execution(
+            sequence_list=self._initial_schedules, execution_options=options.execution_options
+        )
+        self.plot_y_label = options.plot_y_label
 
     def execute(self) -> Results:
         """Run execution."""
@@ -75,10 +62,10 @@ class Experiment:
                 remote_api=self.remote_api,
                 loops=self.loops,
                 plot_y_label=self.plot_y_label,
-                num_sequences=self.execution.num_sequences,
+                num_schedules=self.execution.num_schedules,
             )
             results = Results(
-                software_average=self.software_average, num_sequences=self.execution.num_sequences, loops=self.loops
+                software_average=self.software_average, num_schedules=self.execution.num_schedules, loops=self.loops
             )
             with self.execution:
                 try:
@@ -241,7 +228,7 @@ class Experiment:
         )
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
-        """Execute pulse sequences.
+        """Execute pulse schedules.
 
         Args:
             path (Path): Path to data folder.
@@ -292,7 +279,9 @@ class Experiment:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
         if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            self.execution, self.sequences = self._build_execution(sequence_list=self._initial_sequences)
+            self.execution, self.schedules = self._build_execution(
+                sequence_list=self._initial_schedules, execution_options=self.options.execution_options
+            )
 
     @property
     def parameters(self):
@@ -314,16 +303,21 @@ class Experiment:
         """
         return self.execution.draw(resolution=resolution, idx=idx)
 
-    def _build_execution(self, sequence_list: List[Circuit | PulseSchedule]) -> Tuple[Execution, List[PulseSchedule]]:
+    def _build_execution(
+        self, sequence_list: List[Circuit | PulseSchedule], execution_options: ExecutionOptions
+    ) -> Tuple[Execution, List[PulseSchedule]]:
         """Build Execution class.
 
         Args:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
+            options (ExecutionOptions): Execution options
         """
         if isinstance(sequence_list[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.settings)
             sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedule=sequence_list)
+        execution = EXECUTION_BUILDER.build(
+            platform=self.platform, pulse_schedule=sequence_list, execution_options=execution_options
+        )
         return execution, sequence_list
 
     def _create_results_file(self, path: Path):
@@ -335,7 +329,7 @@ class Experiment:
 
         data = {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.execution.num_sequences,
+            EXPERIMENT.NUM_SEQUENCES: self.execution.num_schedules,
             EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: None,
@@ -386,11 +380,9 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
+            EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.schedules],
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            RUNCARD.SETTINGS: asdict(self.settings),
-            EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.sequences],
-            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
-            RUNCARD.NAME: self.name,
+            EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
 
     @classmethod
@@ -400,16 +392,11 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        settings = cls.ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
+        schedules = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        sequences = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
-        input_loops = dictionary[EXPERIMENT.LOOPS]
-        loops = [Loop(**loop) for loop in input_loops] if input_loops is not None else None
-        experiment_name = dictionary[RUNCARD.NAME]
+        experiment_options = ExperimentOptions.from_dict(**dictionary[EXPERIMENT.OPTIONS])
         return Experiment(
-            sequences=sequences,
-            loops=loops,
+            schedules=schedules,
             platform=platform,
-            settings=settings,
-            name=experiment_name,
+            options=experiment_options,
         )

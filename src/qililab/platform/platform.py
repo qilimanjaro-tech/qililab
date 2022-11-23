@@ -25,13 +25,38 @@ class Platform:
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
 
+    def connect_and_set_initial_setup(self, automatic_turn_on_instruments: bool = False):
+        """Connect and set initial setup of the instruments
+
+        Args:
+            automatic_turn_on_instruments (bool, optional): Turn on the instruments. Defaults to False.
+        """
+        self.connect()
+        self.set_initial_setup()
+        if automatic_turn_on_instruments:
+            self.turn_on_instruments()
+
     def connect(self):
         """Connect to the instrument controllers."""
         self.instrument_controllers.connect()
 
-    def close(self):
+    def set_initial_setup(self):
+        """Set the initial setup of the instruments"""
+        self.instrument_controllers.initial_setup()
+
+    def turn_on_instruments(self):
+        """Turn on the instruments"""
+        self.instrument_controllers.turn_on_instruments()
+
+    def turn_off_instruments(self):
+        """Turn off the instruments"""
+        self.instrument_controllers.turn_off_instruments()
+
+    def disconnect(self, automatic_turn_off_instruments: bool = False):
         """Close connection to the instrument controllers."""
-        self.instrument_controllers.close()
+        if automatic_turn_off_instruments:
+            self.turn_off_instruments()
+        self.instrument_controllers.disconnect()
 
     def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
         """Get platform element.

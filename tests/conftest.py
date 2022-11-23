@@ -52,6 +52,7 @@ from qililab.pulse import (
 )
 from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.typings import Instrument, Parameter
+from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 
 from .data import (
@@ -302,13 +303,13 @@ def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, schedules = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    experiment = Experiment(platform=platform, sequences=sequences)
+    experiment = Experiment(platform=platform, schedules=schedules)
     mock_load.assert_called()
     return experiment
 
@@ -317,7 +318,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, schedules = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
@@ -330,7 +331,8 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
         stop=3744000000,
         num=2,
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(platform=platform, schedules=schedules, options=options)
     mock_load.assert_called()
     return experiment
 
@@ -339,7 +341,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, schedules = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
@@ -353,7 +355,8 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
         stop=3744000000,
         num=2,
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(platform=platform, schedules=schedules, options=options)
     mock_load.assert_called()
     return experiment
 
@@ -362,7 +365,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, schedules = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
@@ -373,7 +376,8 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     loop = Loop(
         instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(platform=platform, schedules=schedules, options=options)
     mock_load.assert_called()
     return experiment
 
@@ -381,7 +385,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
     """Return Experiment object."""
-    return Experiment(platform=simulated_platform, sequences=simulated_experiment_circuit)
+    return Experiment(platform=simulated_platform, schedules=simulated_experiment_circuit)
 
 
 @pytest.fixture(name="buses_execution")

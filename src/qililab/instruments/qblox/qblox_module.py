@@ -82,6 +82,7 @@ class QbloxModule(AWG):
             sequence = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
+            # FIXME: Qblox supports to set it directly to the device instead of using a file
             self.upload(sequence=sequence, path=path)
 
     def _translate_pulse_bus_schedule(
@@ -211,6 +212,7 @@ class QbloxModule(AWG):
         if parameter.value == Parameter.NUM_BINS.value:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
@@ -320,10 +322,14 @@ class QbloxModule(AWG):
         self.device.sequencers[channel_id].gain_awg_path1(value)
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop the QBlox sequencer from sending pulses."""
         for seq_idx in range(self.num_sequencers):
             self.device.stop_sequencer(sequencer=seq_idx)
+
+    @Instrument.CheckDeviceInitialized
+    def turn_on(self):
+        """Turn on an instrument."""
 
     def clear_cache(self):
         """Empty cache."""

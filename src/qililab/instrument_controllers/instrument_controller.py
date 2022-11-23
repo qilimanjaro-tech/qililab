@@ -159,8 +159,14 @@ class InstrumentController(BusElement, ABC):
         self.settings.reset = value
 
     @CheckConnected
-    def stop(self):
-        """Stop instrument."""
+    def turn_on(self):
+        """Turn on an instrument."""
+        for module in self.modules:
+            module.start()
+
+    @CheckConnected
+    def turn_off(self):
+        """Turn off an instrument."""
         for module in self.modules:
             module.stop()
 
@@ -177,16 +183,14 @@ class InstrumentController(BusElement, ABC):
             module.initial_setup()
 
     def connect(self):
-        """Establishes the connection with the instrument, performs the initial setup and resets it."""
+        """Establishes the connection with the instrument and performs a reset (if necessary)."""
         self._initialize_device_and_set_to_all_modules()
         self.connection.connect(device=self.device, device_name=str(self))
         if self.settings.reset:
             self.reset()
-        self.initial_setup()
 
-    def close(self):
-        """Stops all modules, resets them, close the connection to the instrument and releases the device."""
-        self.stop()
+    def disconnect(self):
+        """Resets the devices (if needed), close the connection to the instrument and releases the device."""
         if self.settings.reset:
             self.reset()
         self.connection.close()

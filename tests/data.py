@@ -103,7 +103,7 @@ class Galadriel:
         RUNCARD.CATEGORY: Category.AWG.value,
         "firmware": "0.7.0",
         "sync_enabled": True,
-        "frequency": 100000000,
+        Parameter.FREQUENCIES.value: [100000000],
         "num_bins": 100,
         "num_sequencers": 1,
         "gain": [1],

@@ -16,14 +16,14 @@ class TestSGS100A:
         rohde_schwarz.initial_setup()
         rohde_schwarz.device.power.assert_called_with(rohde_schwarz.power)
 
-    def test_start_method(self, rohde_schwarz: SGS100A):
-        """Test start method"""
-        rohde_schwarz.start()
+    def test_turn_on_method(self, rohde_schwarz: SGS100A):
+        """Test turn_on method"""
+        rohde_schwarz.turn_on()
         rohde_schwarz.device.on.assert_called_once()  # type: ignore
 
-    def test_stop_method(self, rohde_schwarz: SGS100A):
-        """Test stop method"""
-        rohde_schwarz.stop()
+    def test_turn_off_method(self, rohde_schwarz: SGS100A):
+        """Test turn_off method"""
+        rohde_schwarz.turn_off()
         rohde_schwarz.device.off.assert_called_once()  # type: ignore
 
     def test_reset_method(self, rohde_schwarz: SGS100A):

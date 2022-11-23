@@ -64,12 +64,6 @@ class SimulatedSystemControl(SystemControl):
             store_states=self.settings.store_states,
         )
 
-    def start(self):
-        """Start instrument."""
-
-    def setup(self, frequencies: list[float]):
-        """Setup instruments."""
-
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
 

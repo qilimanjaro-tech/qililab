@@ -66,12 +66,12 @@ class SGS100A(SignalGenerator):
         self.settings.frequency = value
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
+    def turn_on(self):
         """Start generating microwaves."""
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop generating microwaves."""
         self.device.off()
 

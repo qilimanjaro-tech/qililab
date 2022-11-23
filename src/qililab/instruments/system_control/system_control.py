@@ -28,14 +28,6 @@ class SystemControl(BusElement, ABC):
         self.settings = settings_class(**settings)
 
     @abstractmethod
-    def start(self):
-        """Start instrument."""
-
-    @abstractmethod
-    def setup(self, frequencies: List[float]):
-        """Set instrument settings."""
-
-    @abstractmethod
     def run(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ) -> List[Result] | None:

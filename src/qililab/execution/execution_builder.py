@@ -6,13 +6,16 @@ from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
+from qililab.typings.execution import ExecutionOptions
 from qililab.utils import Singleton
 
 
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_schedule: List[PulseSchedule]) -> Execution:
+    def build(
+        self, platform: Platform, pulse_schedule: List[PulseSchedule], execution_options: ExecutionOptions
+    ) -> Execution:
         """Build Execution class.
 
         Returns:
@@ -20,7 +23,7 @@ class ExecutionBuilder(metaclass=Singleton):
         """
         buses_execution = self._build_buses_execution(platform=platform, pulse_schedule_list=pulse_schedule)
 
-        return Execution(buses_execution=buses_execution, platform=platform)
+        return Execution(buses_execution=buses_execution, platform=platform, options=execution_options)
 
     def _build_buses_execution(self, platform: Platform, pulse_schedule_list: List[PulseSchedule]):
         """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.
@@ -40,4 +43,4 @@ class ExecutionBuilder(metaclass=Singleton):
                     continue
                 buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
-        return BusesExecution(buses=list(buses.values()), num_sequences=len(pulse_schedule_list))
+        return BusesExecution(buses=list(buses.values()), num_schedules=len(pulse_schedule_list))

@@ -22,17 +22,17 @@ class Results:
     """Results class."""
 
     software_average: int
-    num_sequences: int
+    num_schedules: int
     loops: List[Loop] | None = None
     shape: List[int] = field(default_factory=list)
     results: List[Result] = field(default_factory=list)
 
     def __post_init__(self):
-        """Add num_sequences to shape."""
+        """Add num_schedules to shape."""
         if not self.shape:
             self.shape = compute_shapes_from_loops(loops=self.loops)
-        if self.num_sequences > 1:
-            self.shape.append(self.num_sequences)
+        if self.num_schedules > 1:
+            self.shape.append(self.num_schedules)
         if self.software_average > 1:
             self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
@@ -120,7 +120,7 @@ class Results:
         """
         return {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.num_sequences,
+            EXPERIMENT.NUM_SEQUENCES: self.num_schedules,
             EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
