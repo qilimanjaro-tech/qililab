@@ -53,8 +53,9 @@ class SGS100A(SignalGenerator):
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
-        if self.frequency is not None:
-            self.device.frequency(self.frequency)
+        # self.start()
+        # if self.frequency is not None:
+        #     self.device.frequency(self.frequency)
 
     @SignalGenerator.frequency.setter  # type: ignore
     def frequency(self, value: float):

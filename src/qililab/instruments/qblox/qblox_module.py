@@ -7,17 +7,14 @@ from typing import List, Tuple
 
 import numpy as np
 
-"""
+
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.block import Block
-from qpysequence.instructions.control import Stop
-from qpysequence.instructions.real_time import Play, Wait
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
-from qpysequence.loop import Loop
-from qpysequence.program import Program
+from qpysequence.program import Program, Block, Loop
+from qpysequence.program.instructions import Play, Stop, Wait
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
-"""
+
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule, PulseShape
@@ -89,84 +86,84 @@ class QbloxModule(AWG):
             )
             self.upload(sequence=sequence, path=path)
 
-    # def _translate_pulse_bus_schedule(
-    #     self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    # ):
-    #     """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
+    def _translate_pulse_bus_schedule(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+    ):
+        """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
+
+        Returns:
+            Sequence: Qblox Sequence object containing the program and waveforms.
+        """
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        acquisitions = self._generate_acquisitions()
+        program = self._generate_program(
+            pulse_bus_schedule=pulse_bus_schedule,
+            waveforms=waveforms,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+        )
+        weights = self._generate_weights()
+        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+
+    def _generate_program(
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+    ):
+        """Generate Q1ASM program
 
     #     Args:
-    #         pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
+    #         pulse_sequence (PulseSequence): Pulse sequence.
+    #         waveforms (Waveforms): Waveforms.
 
-    #     Returns:
-    #         Sequence: Qblox Sequence object containing the program and waveforms.
-    #     """
-    #     waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-    #     acquisitions = self._generate_acquisitions()
-    #     program = self._generate_program(
-    #         pulse_bus_schedule=pulse_bus_schedule,
-    #         waveforms=waveforms,
-    #         nshots=nshots,
-    #         repetition_duration=repetition_duration,
-    #     )
-    #     weights = self._generate_weights()
-    #     return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        Returns:
+            Program: Q1ASM program.
+        """
+        # Define program's blocks
+        program = Program()
+        bin_loop = Loop(
+            name="binning", begin=0, end=int(self.num_bins[0])
+        )  # FIXME: get the channel instead of using the first
+        avg_loop = Loop(name="average", begin=0, end=nshots)
+        bin_loop.append_block(block=avg_loop, bot_position=1)
+        stop = Block(name="stop")
+        stop.append_component(Stop())
+        program.append_block(block=bin_loop)
+        program.append_block(block=stop)
+        timeline = pulse_bus_schedule.timeline
+        if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
 
-    # def _generate_program(
-    #     self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
-    # ):
-    #     """Generate Q1ASM program
+        for i, pulse_event in enumerate(timeline):
+            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+            wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
+            avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
+            avg_loop.append_component(
+                set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
+            )
+            avg_loop.append_component(
+                Play(
+                    waveform_0=waveform_pair.waveform_i.index,
+                    waveform_1=waveform_pair.waveform_q.index,
+                    wait_time=int(wait_time),
+                )
+            )
+        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
+        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+        return program
 
-    # #     Args:
-    # #         pulse_sequence (PulseSequence): Pulse sequence.
-    # #         waveforms (Waveforms): Waveforms.
+    def _generate_acquisitions(self) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
 
-    #     Returns:
-    #         Program: Q1ASM program.
-    #     """
-    #     # Define program's blocks
-    #     program = Program()
-    #     bin_loop = Loop(
-    #         name="binning", begin=0, end=int(self.num_bins[0])
-    #     )  # FIXME: get the channel instead of using the first
-    #     avg_loop = Loop(name="average", begin=0, end=nshots)
-    #     bin_loop.append_block(block=avg_loop, bot_position=1)
-    #     stop = Block(name="stop")
-    #     stop.append_component(Stop())
-    #     program.append_block(block=bin_loop)
-    #     program.append_block(block=stop)
-    #     timeline = pulse_bus_schedule.timeline
-    #     if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-    #         avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
-
-    #     for i, pulse_event in enumerate(timeline):
-    #         waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-    #         wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
-    #         avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
-    #         avg_loop.append_component(
-    #             set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
-    #         )
-    #         avg_loop.append_component(
-    #             Play(
-    #                 waveform_0=waveform_pair.waveform_i.index,
-    #                 waveform_1=waveform_pair.waveform_q.index,
-    #                 wait_time=int(wait_time),
-    #             )
-    #         )
-    #     self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
-    #     avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
-    #     return program
-
-    # def _generate_acquisitions(self) -> Acquisitions:
-    #     """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-    #     and index = 0.
-
-    #     Returns:
-    #         Acquisitions: Acquisitions object.
-    #     """
-    #     acquisitions = Acquisitions()
-    #     acquisitions.add(name="single", num_bins=1, index=0)
-    #     acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
-    #     return acquisitions
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
+        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -176,8 +173,8 @@ class QbloxModule(AWG):
         """
         return {}
 
-    # def _append_acquire_instruction(self, loop: Loop, register: str):
-    #     """Append an acquire instruction to the loop."""
+    def _append_acquire_instruction(self, loop: Loop, register: str):
+        """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
@@ -196,26 +193,25 @@ class QbloxModule(AWG):
                 f"the specified channel_id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
 
-        # if parameter.value == Parameter.Gain:
-        if parameter.value == 'gain': # FIXME: I made it work by using the string
+        if parameter.value == Parameter.GAIN.value:
             self._set_gain(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_I:
+        if parameter.value == Parameter.OFFSET_I.value:
             self._set_offset_i(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_Q:
+        if parameter.value == Parameter.OFFSET_Q.value:
             self._set_offset_q(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.FREQUENCIES:
+        if parameter.value == Parameter.FREQUENCIES.value:
             self._set_frequency(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.HARDWARE_MODULATION:
+        if parameter.value == Parameter.HARDWARE_MODULATION.value:
             self._set_hardware_modulation(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.SYNC_ENABLED:
+        if parameter.value == Parameter.SYNC_ENABLED.value:
             self._set_sync_enabled_one_channel(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.NUM_BINS:
+        if parameter.value == Parameter.NUM_BINS.value:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
         
@@ -344,18 +340,18 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    # def upload(self, sequence: Sequence, path: Path):
-    #     """Upload sequence to sequencer.
+    def upload(self, sequence: Sequence, path: Path):
+        """Upload sequence to sequencer.
 
-    #     Args:
-    #         sequence (Sequence): Sequence object containing the waveforms, weights,
-    #         acquisitions and program of the sequence.
-    #     """
-    #     file_path = str(path / f"{self.name.value}_sequence.yml")
-    #     with open(file=file_path, mode="w", encoding="utf-8") as file:
-    #         json.dump(obj=sequence.todict(), fp=file)
-    #     for seq_idx in range(self.num_sequencers):
-    #         self.device.sequencers[seq_idx].sequence(file_path)
+        Args:
+            sequence (Sequence): Sequence object containing the waveforms, weights,
+            acquisitions and program of the sequence.
+        """
+        file_path = str(path / f"{self.name.value}_sequence.yml")
+        with open(file=file_path, mode="w", encoding="utf-8") as file:
+            json.dump(obj=sequence.todict(), fp=file)
+        for seq_idx in range(self.num_sequencers):
+            self.device.sequencers[seq_idx].sequence(file_path)
 
     def _set_nco(self, channel_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

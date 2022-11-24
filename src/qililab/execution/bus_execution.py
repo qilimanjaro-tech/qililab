@@ -29,7 +29,7 @@ class BusExecution:
         # TODO: fix this options when a system_control can run without a pulse sequence
         if idx is None:
             return self.system_control.run(
-                pulse_sequence=None, nshots=nshots, repetition_duration=repetition_duration, path=path
+                pulse_bus_schedule=None, nshots=nshots, repetition_duration=repetition_duration, path=path
             )
         return self.system_control.run(
             pulse_bus_schedule=self.pulse_schedule[idx],

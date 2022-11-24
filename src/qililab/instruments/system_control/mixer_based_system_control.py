@@ -48,13 +48,13 @@ class MixerBasedSystemControl(SystemControl):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self, frequencies: List[float]):
+    def setup(self):
         """Setup instruments."""
-        min_freq = np.min(frequencies)
-        self.signal_generator.frequency = min_freq + self.awg.frequency
-        self.awg.frequencies = list(self.signal_generator.frequency - np.array(frequencies))
-        self.awg.setup()
-        self.signal_generator.setup()
+        # min_freq = np.min(frequencies)
+        # self.signal_generator.frequency = min_freq + self.awg.frequency
+        # self.awg.frequencies = list(self.signal_generator.frequency - np.array(frequencies))
+        # self.awg.setup()
+        # self.signal_generator.setup()
 
     def start(self):
         """Start/Turn on the instruments."""

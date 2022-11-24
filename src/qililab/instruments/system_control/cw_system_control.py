@@ -1,4 +1,5 @@
 """CWSystemControl class."""
+from abc import ABC, abstractmethod
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,20 +53,19 @@ class CWSystemControl(SystemControl):
         if parameter == Parameter.FREQUENCIES:
             self.settings.frequencies = value
             print('Doing something to change frequencies')
-            self.signal_generator.device.frequencies(value)
-        
+            # self.signal_generator.device.frequencies(value)
+            self.signal_generator.set_parameter(parameter=Parameter.FREQUENCY, value=value)
+
 
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
         print("created sysctrl CW")
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
-    def setup(self, frequencies: List[float]):
-        self.signal_generator.device.power(self.settings.power)
-        # self.signal_generator.device.power(self.settings.power)
-        self.signal_generator.device.frequencies(self.settings.frequencies)
+    def setup(self):
+        self.signal_generator.initial_setup()
         if self.settings.status:
-            self.signal_generator.device.on()
+            self.signal_generator.start()
             print('RS ON')
         print('CW bus setup')
 
@@ -75,7 +75,7 @@ class CWSystemControl(SystemControl):
         # print('[Heterodyne SysCtrl] Entered start')
         pass
 
-    def run(self, pulse_schedule: PulseSchedule | None, nshots: int, repetition_duration: int, path: Path):
+    def run(self, pulse_bus_schedule: PulseSchedule | None, nshots: int, repetition_duration: int, path: Path):
         pass
 
     @property
@@ -144,3 +144,11 @@ class CWSystemControl(SystemControl):
     def __str__(self):
         """String representation of the CWSystemControl class."""
         return f"{self.signal_generator}"
+       
+    @property
+    def awg_frequency(self) -> float:
+        """SystemControl 'awg_frequency' property."""
+
+    @property
+    def frequency(self) -> float:
+        """SystemControl 'frequency' property."""
