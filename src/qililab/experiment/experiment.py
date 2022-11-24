@@ -208,8 +208,6 @@ class Experiment:
         self.set_parameter(
             element=element,
             alias=loop.alias,
-            instrument=loop.instrument,
-            id_=loop.id_,
             parameter=loop.parameter,
             value=value,
             channel_id=loop.channel_id,
@@ -221,11 +219,7 @@ class Experiment:
 
     def _get_platform_element_from_one_loop(self, loop: Loop):
         """get platform element from one loop"""
-        return self.platform.get_element(
-            alias=loop.alias,
-            category=Category(loop.instrument.value) if loop.instrument is not None else None,
-            id_=loop.id_,
-        )
+        return self.platform.get_element(alias=loop.alias)
 
     def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
         """Execute pulse schedules.
@@ -249,9 +243,7 @@ class Experiment:
         self,
         parameter: Parameter,
         value: float,
-        alias: str | None = None,
-        instrument: Instrument | None = None,
-        id_: int | None = None,
+        alias: str,
         element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
@@ -263,12 +255,9 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        category = Category(instrument.value) if instrument is not None else None
         if element is None:
             self.platform.set_parameter(
                 alias=alias,
-                category=category,
-                id_=id_,
                 parameter=Parameter(parameter),
                 value=value,
                 channel_id=channel_id,
@@ -278,7 +267,7 @@ class Experiment:
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
-        if category == Category.PLATFORM or alias in ([Category.PLATFORM.value] + self.platform.gate_names):
+        if alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self.execution, self.schedules = self._build_execution(
                 sequence_list=self._initial_schedules, execution_options=self.options.execution_options
             )

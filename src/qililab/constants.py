@@ -107,6 +107,7 @@ class LOOP:
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
+    OPTIONS = "options"
 
 
 class PULSESEQUENCES:

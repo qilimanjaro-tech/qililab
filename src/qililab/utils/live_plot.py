@@ -234,10 +234,5 @@ class LivePlot:
         Returns:
             str: Plot label.
         """
-        instrument_name = (
-            loop.alias
-            if loop.alias is not None
-            else f"{loop.instrument.value if loop.instrument is not None else None} "
-            + f"{loop.id_ if loop.id_ is not None else None}"
-        )
+        instrument_name = loop.alias
         return f"{instrument_name}: {loop.parameter.value} "
