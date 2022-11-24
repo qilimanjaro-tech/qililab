@@ -1,8 +1,9 @@
 """QbloxResult class."""
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import numpy as np
+import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
@@ -43,8 +44,9 @@ class QbloxResult(Result):
         self.qblox_acquisitions = QbloxAcquisitionsBuilder.get(
             pulse_length=self.pulse_length, scope=self.scope, bins=self.bins
         )
+        self.data_dataframe_indices = self.qblox_acquisitions.data_dataframe_indices
 
-    def acquisitions(self) -> np.ndarray:
+    def acquisitions(self) -> pd.DataFrame:
         """Return acquisition values.
 
         Returns:

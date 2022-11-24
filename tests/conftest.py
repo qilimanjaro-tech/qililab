@@ -328,7 +328,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
         parameter=Parameter.FREQUENCY,
         start=3544000000,
         stop=3744000000,
-        num=2,
+        num=10,
     )
     experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
     mock_load.assert_called()
@@ -555,9 +555,9 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
                         "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
                     },
                     "bins": {
-                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
-                        "threshold": [0.5, 0.5, 0.5, 0.5],
-                        "avg_cnt": [1000, 1000, 1000, 1000],
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
                     },
                 },
             }
