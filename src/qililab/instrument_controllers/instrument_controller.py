@@ -162,13 +162,13 @@ class InstrumentController(BusElement, ABC):
     def turn_on(self):
         """Turn on an instrument."""
         for module in self.modules:
-            module.start()
+            module.turn_on()
 
     @CheckConnected
     def turn_off(self):
         """Turn off an instrument."""
         for module in self.modules:
-            module.stop()
+            module.turn_off()
 
     @CheckConnected
     def reset(self):
