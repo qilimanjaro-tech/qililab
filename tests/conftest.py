@@ -51,8 +51,10 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.remote_connection.remote_api import RemoteAPI
-from qililab.typings import Instrument, Parameter
+from qililab.typings import Parameter
+from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
+from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
 from .data import (
@@ -327,9 +329,11 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.FREQUENCY,
-        start=3544000000,
-        stop=3744000000,
-        num=2,
+        options=LoopOptions(
+            start=3544000000,
+            stop=3744000000,
+            num=10,
+        ),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(platform=platform, schedules=schedules, options=options)
@@ -351,9 +355,11 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.FREQUENCY,
-        start=3544000000,
-        stop=3744000000,
-        num=2,
+        options=LoopOptions(
+            start=3544000000,
+            stop=3744000000,
+            num=2,
+        ),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(platform=platform, schedules=schedules, options=options)
@@ -371,10 +377,22 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
             platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
-    loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(alias="platform", parameter=Parameter.DELAY_BEFORE_READOUT, start=40, stop=100, step=40, loop=loop3)
+    loop3 = Loop(
+        alias=InstrumentName.QBLOX_QCM.value,
+        parameter=Parameter.FREQUENCIES,
+        options=LoopOptions(start=0, stop=1, num=2),
+    )
+    loop2 = Loop(
+        alias="platform",
+        parameter=Parameter.DELAY_BEFORE_READOUT,
+        options=LoopOptions(start=40, stop=100, step=40),
+        loop=loop3,
+    )
     loop = Loop(
-        instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
+        alias=InstrumentName.ROHDE_SCHWARZ.value,
+        parameter=Parameter.FREQUENCIES,
+        options=LoopOptions(start=0, stop=1, num=2),
+        loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(platform=platform, schedules=schedules, options=options)
@@ -499,7 +517,7 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
 @pytest.fixture(name="loop")
 def fixture_loop() -> Loop:
     """Return Platform object."""
-    return Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1)
+    return Loop(alias="X", parameter=Parameter.AMPLITUDE, options=LoopOptions(start=0, stop=1))
 
 
 @pytest.fixture(
@@ -559,9 +577,9 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
                         "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
                     },
                     "bins": {
-                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
-                        "threshold": [0.5, 0.5, 0.5, 0.5],
-                        "avg_cnt": [1000, 1000, 1000, 1000],
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
                     },
                 },
             }

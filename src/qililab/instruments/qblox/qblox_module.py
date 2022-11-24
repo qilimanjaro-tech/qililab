@@ -121,10 +121,9 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        bin_loop = Loop(
-            name="binning", begin=0, end=int(self.num_bins[0])
-        )  # FIXME: get the channel instead of using the first
-        avg_loop = Loop(name="average", begin=0, end=nshots)
+        # FIXME: using first channel instead of the desired
+        bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins[0]), step=1)
+        avg_loop = Loop(name="average", begin=nshots)
         bin_loop.append_block(block=avg_loop, bot_position=1)
         stop = Block(name="stop")
         stop.append_component(Stop())

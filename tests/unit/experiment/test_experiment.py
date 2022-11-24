@@ -1,4 +1,5 @@
 """Tests for the Experiment class."""
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,7 +9,8 @@ from qibo.gates import M
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.typings import Instrument, Parameter
+from qililab.typings import Parameter
+from qililab.typings.enums import InstrumentName
 
 from ...conftest import mock_instruments
 
@@ -81,7 +83,7 @@ class TestExperiment:
 
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
-        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.FREQUENCIES, value=1e9)
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -101,7 +103,7 @@ class TestExperiment:
         experiment.platform.connect()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.FREQUENCIES, value=1e9)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
@@ -183,6 +185,8 @@ class TestSimulatedExecution:
 
         # Method under test
         results = simulated_experiment.execute()
+
+        time.sleep(0.3)
 
         # Assert simulator called
         mock_ssc_run.assert_called()
