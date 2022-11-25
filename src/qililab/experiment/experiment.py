@@ -97,7 +97,7 @@ class Experiment:
             Results: _description_
         """
         if loops is None or len(loops) <= 0:
-            # results.add(result=self._execute(path=path, plot=plot))
+            results.add(result=self._execute(path=path, plot=plot))
             return results
 
         self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
