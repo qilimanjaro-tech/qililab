@@ -278,8 +278,8 @@ class InstrumentName(Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
-    QBLOX_D5A = "qblox_D5a"
-    QBLOX_S4G = "qblox_S4g"
+    QBLOX_D5A = "D5a"
+    QBLOX_S4G = "S4g"
 
 
 class InstrumentControllerName(Enum):

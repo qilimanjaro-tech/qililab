@@ -1,10 +1,8 @@
 """VoltageSource class."""
-import string
-from abc import abstractmethod
+
 from dataclasses import dataclass
 from typing import List
 
-from qililab.constants import VOLTAGESOURCE
 from qililab.instruments.instrument import Instrument
 
 
@@ -20,11 +18,11 @@ class VoltageSource(Instrument):
                 Value range is (-40, 40).
         """
 
-        voltage: float
-        span: str
-        ramping_enabled: bool
-        ramp_rate: float
-        # TODO: Here a list of integers with available dacs
+        voltage: List[float]
+        span: List[str]
+        ramping_enabled: List[bool]
+        ramp_rate: List[float]
+        dacs: List[int]
 
     settings: VoltageSourceSettings
 
@@ -36,6 +34,15 @@ class VoltageSource(Instrument):
             float: settings.voltage.
         """
         return self.settings.voltage
+
+    @property
+    def dacs(self):
+        """CurrentSource 'dacs' property.
+
+        Returns:
+            int: settings.dacs
+        """
+        return self.settings.dacs
 
     @property
     def span(self):
@@ -64,11 +71,6 @@ class VoltageSource(Instrument):
         """
         return self.settings.ramp_rate
 
-    @abstractmethod
-    def start(self):
-        """Turn instrument on."""
-
     def to_dict(self):
         """Return a dict representation of the VoltageSource class."""
-        return {key: value for key, value in super().to_dict().items() if key != VOLTAGESOURCE.VOLTAGE}
-        # TODO: Ask why except VOLTAGE? (was frequency in signal generator)
+        return dict(super().to_dict().items())

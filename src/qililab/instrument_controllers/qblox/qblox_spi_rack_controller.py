@@ -34,7 +34,6 @@ class QbloxSPIRackController(MultiInstrumentController):
     number_available_modules = 12
     device: SPI_Rack
     modules: Sequence[QbloxD5a | QbloxS4g]
-    # TODO: ADD THIS INSTRUMENTS
 
     @dataclass
     class QbloxSPIRackControllerSettings(MultiInstrumentController.MultiInstrumentControllerSettings):
@@ -45,7 +44,6 @@ class QbloxSPIRackController(MultiInstrumentController):
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.USB
-            # self.connection.address = "dev/ttyACM0"
 
     settings: QbloxSPIRackControllerSettings
 
@@ -57,11 +55,14 @@ class QbloxSPIRackController(MultiInstrumentController):
         """Sets the initialized device to all attached modules,
         taking it from the Qblox Cluster device modules
         """
-        # TODO: do it in a way that is not hardcoded
-        self.device.add_spi_module(3, "D5a")
-        self.device.add_spi_module(7, "S4g")
-        self.modules[0].device = self.device.module3
-        self.modules[1].device = self.device.module7
+        # self.device.add_spi_module(3, "D5a")
+        # self.device.add_spi_module(7, "S4g")
+        # self.modules[0].device = self.device.module3
+        # self.modules[1].device = self.device.module7
+        for module, slot_id, reference in zip(self.modules, self.connected_modules_slot_ids, self.settings.modules):
+            # FIXME: use the instrument name instead of the alias (it requires to save the name)
+            self.device.add_spi_module(slot_id=slot_id - 1, module_type=reference.alias)
+            module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

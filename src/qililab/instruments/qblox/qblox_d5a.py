@@ -1,17 +1,17 @@
 """
 Class to interface with the voltage source Qblox D5a
 """
-import string
+
 from dataclasses import dataclass
 from time import sleep
-from typing import List
-from xmlrpc.client import Boolean
 
+from qililab.config import logger
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
-from qililab.typings import InstrumentName, Parameter
+from qililab.typings import InstrumentName
 from qililab.typings import QbloxD5a as QbloxD5aDriver
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -30,96 +30,73 @@ class QbloxD5a(VoltageSource):
     class QbloxD5aSettings(VoltageSource.VoltageSourceSettings):
         """Contains the settings of a specific signal generator."""
 
-        # dacs_settings = [{"index": 0, "voltage": 0, "ramping_enabled": True, "ramp_rate":0.01, "span":"range_bi_max",},
-        #                  {"index": 10, "voltage": 0, "ramping_enabled": True, "ramp_rate":0.01, "span":"range_bi_max",}]
-
     settings: QbloxD5aSettings
     device: QbloxD5aDriver
 
-    @Instrument.CheckDeviceInitialized
-    def setup(self):
-        """Set D5a voltage and other settings."""
-        self.device.dac0.span(self.span)
-        self.device.dac0.ramping_enabled(self.ramping_enabled)
-        self.device.dac0.ramp_rate(self.ramp_rate)
-        self.device.dac0.voltage(self.voltage)
-        while self.device.dac0.is_ramping():
+    def dac(self, dac_index: int):
+        """get channel associated to the specific dac
+
+        Args:
+            dac_index (int): channel index
+
+        Returns:
+            _type_: _description_
+        """
+        return getattr(self.device, f"dac{dac_index}")
+
+    def _channel_setup(self, dac_index: int) -> None:
+        """Setup for a specific dac channel
+
+        Args:
+            dac_index (int): dac specific index channel
+        """
+        channel = self.dac(dac_index=dac_index)
+        channel.ramping_enabled(self.ramping_enabled[dac_index])
+        channel.ramp_rate(self.ramp_rate[dac_index])
+        channel.span(self.span[dac_index])
+        channel.voltage(self.voltage[dac_index])
+        logger.debug("SPI voltage set to %f", channel.voltage())
+        while channel.is_ramping():
             sleep(0.1)
 
-        # for dac in self.dacs:
-        #     self.get_dac(dac["index"]).voltage(dac[Parameter.VOLTAGE])
-        #     self.get_dac(dac["index"]).ramping_enabled(dac[Parameter.RAMPING_ENABLED])
-        #     # self.get_dac(dac["index"]).ramp_rate(dac["ramp_rate"]) ####
-        #     # self.get_dac(dac["index"]).span(dac["span"]) ############################
-        #     while self.get_dac(dac["index"]).is_ramping():
-        #         sleep(0.1)
-        # TODO: Implement more dacs
+    @Instrument.CheckDeviceInitialized
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Set Qblox instrument calibration settings."""
 
-    # def get_dac(int) -> QbloxD5aDriver.Driver_D5aModule.D5aDacChannelNative:
-    # TODO: Hint return type
-
-    # def get_dac(self, dac_nr: int):
-    #     """Returns the dac object corresponding to the given dac channel
-
-    #     Args:
-    #         dac_nr (int): dac channel number
-
-    #     Returns:
-    #         QbloxD5aDriver.Driver_D5aModule.D5aDacChannelNative: dac channel object
-    #     """
-    #     if dac_nr == 0:
-    #         return self.device.dac0
-    #     if dac_nr == 1:
-    #         return self.device.dac1
-    #     if dac_nr == 2:
-    #         return self.device.dac2
-    #     if dac_nr == 3:
-    #         return self.device.dac3
-    #     if dac_nr == 4:
-    #         return self.device.dac4
-    #     if dac_nr == 5:
-    #         return self.device.dac5
-    #     if dac_nr == 6:
-    #         return self.device.dac6
-    #     if dac_nr == 7:
-    #         return self.device.dac7
-    #     if dac_nr == 8:
-    #         return self.device.dac8
-    #     if dac_nr == 9:
-    #         return self.device.dac9
-    #     if dac_nr == 10:
-    #         return self.device.dac10
-    #     if dac_nr == 11:
-    #         return self.device.dac11
-    #     if dac_nr == 12:
-    #         return self.device.dac12
-    #     if dac_nr == 13:
-    #         return self.device.dac13
-    #     if dac_nr == 14:
-    #         return self.device.dac14
-    #     if dac_nr == 15:
-    #         return self.device.dac15
-
-    # @property
-    # def dacs(self) -> List[dict]:
-    #     return self.settings.dacs_settings
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        if channel_id > 3:
+            raise ValueError(
+                f"the specified dac index:{channel_id} is out of range."
+                + " Number of dacs is 4 -> maximum channel_id should be 3."
+            )
+        if parameter.value == Parameter.VOLTAGE.value:
+            if not isinstance(value, float):
+                raise ValueError(f"value type must be a float. Current type is {type(value)}")
+            self.settings.voltage[channel_id] = value
+            channel = self.dac(dac_index=channel_id)
+            channel.voltage(self.voltage[channel_id])
+            return
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """performs an initial setup.
-        For this instrument it is the same as a regular setup"""
-        self.setup()
+        """performs an initial setup."""
+        for dac_index, voltage_value in enumerate(self.settings.voltage):
+            self.setup(parameter=Parameter.VOLTAGE, value=voltage_value, channel_id=dac_index)
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
+    def turn_on(self):
         """Dummy method."""
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop outputing voltage."""
-        # self.device.set_dacs_zero()
+        self.device.set_dacs_zero()
+        for dac_index in self.settings.dacs:
+            channel = self.dac(dac_index=dac_index)
+            logger.debug("Dac%d voltage resetted to  %f", dac_index, channel.voltage())
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
-        # self.device.set_dacs_zero()
+        self.device.set_dacs_zero()

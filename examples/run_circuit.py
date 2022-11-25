@@ -28,10 +28,15 @@ def run_circuit(connection: API | None = None):
     circuit.add(X(0))
     circuit.add(M(0))
 
+    # loop = Loop(
+    #     alias="D5a",
+    #     parameter=Parameter.VOLTAGE,
+    #     options=LoopOptions(start=1.0, stop=1.5, num=10, channel_id=0),
+    # )
     loop = Loop(
-        alias="QCM",
-        parameter=Parameter.FREQUENCIES,
-        options=LoopOptions(start=1.0e08, stop=1.5e08, num=10, channel_id=0),
+        alias="S4g",
+        parameter=Parameter.CURRENT,
+        options=LoopOptions(start=0.0, stop=1.5, num=10, channel_id=3),
     )
     # inner_loop = Loop(
     #     alias="bus_control",
