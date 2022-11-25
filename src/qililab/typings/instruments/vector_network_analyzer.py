@@ -151,7 +151,5 @@ class VectorNetworkAnalyzerDriver(Device):
         Args:
             continuous (bool): continuous flag
         """
-        if continuous:
-            self.driver.write(":INIT:CONT ON")
-        else:
-            self.driver.write(":INIT:CONT OFF")
+        command = ":INIT:CONT " + ("ON" if continuous else "OFF")
+        self.send_command(command=command, arg="")
