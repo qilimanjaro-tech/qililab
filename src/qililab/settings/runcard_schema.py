@@ -57,7 +57,7 @@ class RuncardSchema:
             connection: dict
             modules: List[dict]
 
-        chip: ChipSchema
+        chip: ChipSchema | None
         buses: List[BusSchema]
         instruments: List[dict]
         instrument_controllers: List[InstrumentControllerSchema]

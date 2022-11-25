@@ -1,8 +1,10 @@
 """__init__.py"""
+from .agilent import E5071B
 from .awg import AWG
 from .instrument import Instrument
 from .instruments import Instruments
 from .keithley import Keithley2600
+from .keysight import E5080B
 from .mini_circuits import Attenuator
 from .qblox.qblox_d5a import QbloxD5a
 from .qblox.qblox_qcm import QbloxQCM
