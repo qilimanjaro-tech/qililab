@@ -1,6 +1,7 @@
 """Qblox module class"""
 import itertools
 import json
+from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
@@ -54,8 +55,12 @@ class QbloxModule(AWG):
         """Initial setup"""
         self._map_outputs()
         for channel_id in range(self.num_sequencers):
-            self._set_sync_enabled_one_channel(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
+            self._set_sync_enabled(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
             self._set_nco(channel_id=channel_id)
+            self._set_offset_i(value=self.settings.offset_i[channel_id], channel_id=channel_id)
+            self._set_offset_q(value=self.settings.offset_q[channel_id], channel_id=channel_id)
+            self._set_gain_imbalance(value=self.settings.gain_imbalance[channel_id], channel_id=channel_id)
+            self._set_phase_imbalance(value=self.settings.phase_imbalance[channel_id], channel_id=channel_id)
 
     @property
     def module_type(self):
@@ -151,6 +156,7 @@ class QbloxModule(AWG):
         avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
         return program
 
+    @abstractmethod
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
@@ -158,12 +164,8 @@ class QbloxModule(AWG):
         Returns:
             Acquisitions: Acquisitions object.
         """
-        acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        # FIXME: using first channel instead of the desired
-        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
-        return acquisitions
 
+    @abstractmethod
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
 
@@ -172,6 +174,7 @@ class QbloxModule(AWG):
         """
         return {}
 
+    @abstractmethod
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
 
@@ -206,15 +209,21 @@ class QbloxModule(AWG):
             self._set_hardware_modulation(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.SYNC_ENABLED.value:
-            self._set_sync_enabled_one_channel(value=value, channel_id=channel_id)
+            self._set_sync_enabled(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.NUM_BINS.value:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
+        if parameter.value == Parameter.GAIN_IMBALANCE.value:
+            self._set_gain_imbalance(value=value, channel_id=channel_id)
+            return
+        if parameter.value == Parameter.PHASE_IMBALANCE.value:
+            self._set_phase_imbalance(value=value, channel_id=channel_id)
+            return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
-        """set sync enabled for the specific channel
+        """set num_bins for the specific channel
 
         Args:
             value (float | str | bool): value to update
@@ -229,7 +238,7 @@ class QbloxModule(AWG):
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
         self.settings.num_bins[channel_id] = int(value)
 
-    def _set_sync_enabled_one_channel(self, value: float | str | bool, channel_id: int):
+    def _set_sync_enabled(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
 
         Args:
@@ -288,6 +297,8 @@ class QbloxModule(AWG):
             raise ValueError(f"value must be a float. Current type: {type(value)}")
         self.settings.offset_q[channel_id] = value
         self.device.sequencers[channel_id].offset_awg_path1(value)
+        # FIXME: decide which one is the correct
+        # self.device.out1_offset(self.offset_q[0])
 
     def _set_offset_i(self, value: float | str | bool, channel_id: int):
         """set offset I
@@ -303,6 +314,8 @@ class QbloxModule(AWG):
             raise ValueError(f"value must be a float. Current type: {type(value)}")
         self.settings.offset_i[channel_id] = value
         self.device.sequencers[channel_id].offset_awg_path0(value)
+        # FIXME: decide which one is the correct
+        # self.device.out0_offset(self.offset_i[0])
 
     def _set_gain(self, value: float | str | bool, channel_id: int):
         """set gain
@@ -358,6 +371,36 @@ class QbloxModule(AWG):
         if self.settings.hardware_modulation[channel_id]:
             self._set_hardware_modulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
             self._set_frequency(value=self.settings.frequencies[channel_id], channel_id=channel_id)
+
+    def _set_gain_imbalance(self, value: float | str | bool, channel_id: int):
+        """Set I and Q gain imbalance of sequencer.
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.gain_imbalance[channel_id] = value
+        self.device.sequencers[channel_id].mixer_corr_gain_ratio(value)
+
+    def _set_phase_imbalance(self, value: float | str | bool, channel_id: int):
+        """Set I and Q phase imbalance of sequencer.
+
+         Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        if not isinstance(value, float):
+            raise ValueError(f"value must be a float. Current type: {type(value)}")
+        self.settings.gain_imbalance[channel_id] = value
+        self.device.sequencers[channel_id].mixer_corr_phase_offset_degree(value)
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""

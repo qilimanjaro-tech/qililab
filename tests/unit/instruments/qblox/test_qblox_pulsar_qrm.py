@@ -35,8 +35,10 @@ class TestQbloxQRM:
         qrm.device.scope_acq_avg_mode_en_path1.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
-        qrm.device.sequencer0.offset_awg_path0.assert_called()
-        qrm.device.sequencer0.offset_awg_path1.assert_called()
+        qrm.device.out0_offset.assert_called()
+        qrm.device.out1_offset.assert_called()
+        qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
+        qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
 
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
@@ -140,13 +142,13 @@ class TestQbloxQRM:
         """Test frequency property."""
         assert qrm_no_device.frequency == qrm_no_device.settings.frequencies[0]
 
-    def tests_epsilon_property(self, qrm_no_device: QbloxQRM):
-        """Test epsilon property."""
-        assert qrm_no_device.epsilon == qrm_no_device.settings.epsilon
+    def tests_gain_imbalance_property(self, qrm_no_device: QbloxQRM):
+        """Test gain_imbalance property."""
+        assert qrm_no_device.gain_imbalance == qrm_no_device.settings.gain_imbalance
 
-    def tests_delta_property(self, qrm_no_device: QbloxQRM):
-        """Test delta property."""
-        assert qrm_no_device.delta == qrm_no_device.settings.delta
+    def tests_phase_imbalance_property(self, qrm_no_device: QbloxQRM):
+        """Test phase_imbalance property."""
+        assert qrm_no_device.phase_imbalance == qrm_no_device.settings.phase_imbalance
 
     def tests_offset_i_property(self, qrm_no_device: QbloxQRM):
         """Test offset_i property."""

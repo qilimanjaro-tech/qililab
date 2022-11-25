@@ -19,7 +19,8 @@ class AWG(Instrument):
             num_sequencers (int): Number of sequencers
             frequencies (List[float]): Frequency for each sequencer
             gain (List[float]): Gain step used by the sequencer.
-            epsilon (List[float]): Amplitude added to the Q channel.
+            gain_imbalance (float): Amplitude added to the Q channel.
+            phase_imbalance (float): Dephasing.
             delta (List[float]): Dephasing.
             offset_i (List[float]): I offset (unitless). amplitude + offset should be in range [0 to 1].
             offset_q (List[float]): Q offset (unitless). amplitude + offset should be in range [0 to 1].
@@ -29,8 +30,8 @@ class AWG(Instrument):
         num_sequencers: int
         frequencies: List[float]
         gain: List[float]
-        epsilon: List[float]
-        delta: List[float]
+        gain_imbalance: List[float]
+        phase_imbalance: List[float]
         offset_i: List[float]
         offset_q: List[float]
         hardware_modulation: List[bool]
@@ -93,22 +94,22 @@ class AWG(Instrument):
         return self.settings.offset_q
 
     @property
-    def epsilon(self):
-        """QbloxPulsar 'epsilon' property.
+    def gain_imbalance(self):
+        """QbloxPulsar 'gain_imbalance' property.
 
         Returns:
-            float: settings.epsilon.
+            float: settings.gain_imbalance.
         """
-        return self.settings.epsilon
+        return self.settings.gain_imbalance
 
     @property
-    def delta(self):
-        """QbloxPulsar 'delta' property.
+    def phase_imbalance(self):
+        """QbloxPulsar 'phase_imbalance' property.
 
         Returns:
-            float: settings.delta.
+            float: settings.phase_imbalance.
         """
-        return self.settings.delta
+        return self.settings.phase_imbalance
 
     @property
     def frequencies(self):

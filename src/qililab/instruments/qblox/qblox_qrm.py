@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
@@ -49,7 +50,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
         scope_acquire_trigger_mode: List[AcquireTriggerMode]
         scope_hardware_averaging: List[bool]
-        sampling_rate: List[int]
+        sampling_rate: List[int]  # default sampling rate for Qblox is 1.e+09
         hardware_integration: List[bool]  # integration flag
         hardware_demodulation: List[bool]  # demodulation flag
         integration_length: List[int]
@@ -58,6 +59,19 @@ class QbloxQRM(QbloxModule, QubitReadout):
         acquisition_timeout: List[int]  # minutes
 
     settings: QbloxQRMSettings
+
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """Initial setup"""
+        super().initial_setup()
+        for channel_id in range(self.num_sequencers):
+            self._set_integration_length(value=self.settings.integration_length[channel_id], channel_id=channel_id)
+            self._set_acquisition_mode(
+                value=self.settings.scope_acquire_trigger_mode[channel_id], channel_id=channel_id
+            )
+            self._set_scope_hardware_averaging(
+                value=self.settings.scope_hardware_averaging[channel_id], channel_id=channel_id
+            )
 
     def run(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
@@ -92,13 +106,13 @@ class QbloxQRM(QbloxModule, QubitReadout):
             raise ValueError("channel not specified to update instrument")
         super().setup(parameter=parameter, value=value, channel_id=channel_id)
         if parameter.value == Parameter.HARDWARE_AVERAGE.value:
-            self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
+            self._set_scope_hardware_averaging(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.HARDWARE_DEMODULATION.value:
-            self._set_scope_hardware_averaging_one_channel(value=value, channel_id=channel_id)
+            self._set_hardware_demodulation(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.ACQUISITION_MODE.value:
-            self._set_acquisition_mode_one_channel(value=value, channel_id=channel_id)
+            self._set_acquisition_mode(value=value, channel_id=channel_id)
             return
         if parameter.value == Parameter.INTEGRATION_LENGTH.value:
             self._set_integration_length(value=value, channel_id=channel_id)
@@ -120,7 +134,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.settings.hardware_demodulation[channel_id] = value
         self.device.sequencers[channel_id].demod_en_acq(value)
 
-    def _set_acquisition_mode_one_channel(self, value: float | str | bool | AcquireTriggerMode, channel_id: int):
+    def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, channel_id: int):
         """set acquisition_mode for the specific channel
 
         Args:
@@ -152,7 +166,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.settings.integration_length[channel_id] = int(value)
         self.device.sequencers[channel_id].integration_length_acq(self.integration_length)
 
-    def _set_scope_hardware_averaging_one_channel(self, value: float | str | bool, channel_id: int):
+    def _set_scope_hardware_averaging(self, value: float | str | bool, channel_id: int):
         """set scope_hardware_averaging for the specific channel
 
         Args:
@@ -186,6 +200,12 @@ class QbloxQRM(QbloxModule, QubitReadout):
             "acquisition"
         ][self.data_name(sequencer=sequencer)]
 
+    def _set_nco(self, channel_id: int):
+        """Enable modulation/demodulation of pulses and setup NCO frequency."""
+        super()._set_nco(channel_id=channel_id)
+        if self.settings.hardware_demodulation[channel_id]:
+            self._set_hardware_demodulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
+
     @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
@@ -201,16 +221,32 @@ class QbloxQRM(QbloxModule, QubitReadout):
         # it needs to accept a result that contains both scope and bins instead of one or the other
         return QbloxResult(pulse_length=self.integration_length, bins=results)
 
-    def _set_nco(self, channel_id: int):
-        """Enable modulation of pulses and setup NCO frequency."""
-        super()._set_nco(channel_id=channel_id)
-        if self.settings.hardware_demodulation[channel_id]:
-            self.device.sequencers[channel_id].demod_en_acq(True)
-
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
+        # FIXME: scope_hardware_averaging it is a list now, it should return the desired channel
+        acquisition_idx = 0 if self.scope_hardware_averaging[0] else 1  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+
+    def _generate_acquisitions(self) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        and index = 0.
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        # FIXME: using first channel instead of the desired
+        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
+        return acquisitions
+
+    def _generate_weights(self) -> dict:
+        """Generate acquisition weights.
+
+        Returns:
+            dict: Acquisition weights.
+        """
+        return {}
 
     @property
     def scope_acquire_trigger_mode(self):

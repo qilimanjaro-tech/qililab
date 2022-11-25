@@ -107,8 +107,8 @@ class Galadriel:
         "num_bins": 100,
         "num_sequencers": 1,
         "gain": [1],
-        "epsilon": [0],
-        "delta": [0],
+        "gain_imbalance": [0],
+        "phase_imbalance": [0],
         "offset_i": [0],
         "offset_q": [0],
     }
@@ -150,22 +150,12 @@ class Galadriel:
         "acquisition_timeout": 1,
         "acquisition_delay_time": 100,
         "frequency": 20000000,
-        "num_sequencers": 1,
-        "gain": [
-            0.5,
-        ],
-        "epsilon": [
-            0,
-        ],
-        "delta": [
-            0,
-        ],
-        "offset_i": [
-            0,
-        ],
-        "offset_q": [
-            0,
-        ],
+        "num_sequencers": 2,
+        "gain": [0.5, 0.5],
+        "gain_imbalance": [0, 0],
+        "phase_imbalance": [0, 0],
+        "offset_i": [0, 0],
+        "offset_q": [0, 0],
     }
 
     rohde_schwarz_controller_0 = {

@@ -30,8 +30,10 @@ class TestQbloxQCM:
         qcm.setup()
         qcm.device.sequencer0.gain_awg_path0.assert_called()
         qcm.device.sequencer0.gain_awg_path1.assert_called()
-        qcm.device.sequencer0.offset_awg_path0.assert_called()
-        qcm.device.sequencer0.offset_awg_path1.assert_called()
+        qcm.device.out0_offset.assert_called()
+        qcm.device.out1_offset.assert_called()
+        qcm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
+        qcm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
