@@ -77,6 +77,7 @@ class QbloxD5a(VoltageSource):
             channel = self.dac(dac_index=channel_id)
             channel.voltage(self.voltage[channel_id])
             return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

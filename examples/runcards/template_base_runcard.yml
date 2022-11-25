@@ -144,6 +144,13 @@ schema:
       span: ["range_max_bi", "range_max_bi", "range_max_bi", "range_max_bi"]
       dacs: [0, 1, 2, 3]
 
+    - name: keysight_e5080b
+      alias: keysight_e5080b
+      id_: 0
+      category: vna
+      firmware: A.15.10.06
+      power: -60.0
+
   buses:
     - id_: 0
       category: bus
@@ -252,3 +259,15 @@ schema:
           slot_id: 4
         - current_source: S4g
           slot_id: 8
+    - name: keysight_e5080b_controller
+      id_: 0
+      alias: keysight_e5080b_controller
+      category: instrument_controller
+      subcategory: single_instrument
+      timeout: 10000
+      connection:
+        name: tcp_ip
+        address: 192.168.1.254
+      modules:
+        - vna: keysight_e5080b
+          slot_id: 0

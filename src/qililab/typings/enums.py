@@ -356,6 +356,16 @@ class Parameter(Enum):
     RAMPING_ENABLED = "ramping_enabled"
     RAMPING_RATE = "ramp_rate"
     SPAN = "span"
+    SCATTERING_PARAMETER = "scattering_parameter"
+    FREQUENCY_SPAN = "frequency_span"
+    FREQUENCY_CENTER = "frequency_center"
+    FREQUENCY_START = "frequency_start"
+    FREQUENCY_STOP = "frequency_stop"
+    IF_BANDWIDTH = "if_bandwidth"
+    AVERAGING_ENABLED = "averaging_enabled"
+    NUMBER_AVERAGES = "number_averages"
+    TRIGGER_MODE = "trigger_mode"
+    NUMBER_POINTS = "number_points"
 
 
 class ResultName(Enum):

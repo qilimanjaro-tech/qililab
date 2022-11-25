@@ -1,5 +1,4 @@
 """SignalGenerator class."""
-from abc import abstractmethod
 from dataclasses import dataclass, field
 
 from qililab.constants import SIGNALGENERATOR

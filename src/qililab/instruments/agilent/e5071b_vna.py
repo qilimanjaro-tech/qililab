@@ -19,3 +19,6 @@ class E5071B(VectorNetworkAnalyzer):
         """Contains the settings of a specific VectorNetworkAnalyzer"""
 
     settings: E5071BSettings
+
+    def initial_setup(self):
+        """Set initial instrument settings."""

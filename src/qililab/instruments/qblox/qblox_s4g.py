@@ -77,6 +77,7 @@ class QbloxS4g(CurrentSource):
             channel = self.dac(dac_index=channel_id)
             channel.current(self.current[channel_id])
             return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

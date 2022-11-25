@@ -37,6 +37,8 @@ class Attenuator(Instrument):
         if parameter.value == Parameter.ATTENUATION.value:
             self.settings.attenuation = value
             self.device.setup(attenuation=self.attenuation)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

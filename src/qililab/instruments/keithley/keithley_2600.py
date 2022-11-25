@@ -35,16 +35,24 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool):
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+    ):
         """Setup instrument."""
         if not isinstance(value, float):
             raise ValueError(f"Value must be a float. Current type is: {type(value)}")
         if parameter.value == Parameter.CURRENT.value:
             self.max_current = value
             self.device.smua.limiti(self.max_current)
+            return
         if parameter.value == Parameter.VOLTAGE.value:
             self.max_voltage = value
             self.device.smua.limitv(self.max_voltage)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -53,12 +61,12 @@ class Keithley2600(Instrument):
         self.device.smua.limitv(self.max_voltage)
 
     @Instrument.CheckDeviceInitialized
-    def turn_off(self):
-        """Turn off an instrument."""
-
-    @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Turn on an instrument."""
+
+    @Instrument.CheckDeviceInitialized
+    def turn_off(self):
+        """Turn off an instrument."""
 
     @Instrument.CheckDeviceInitialized
     def reset(self):

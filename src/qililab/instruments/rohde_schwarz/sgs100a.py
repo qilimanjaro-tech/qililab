@@ -45,9 +45,12 @@ class SGS100A(SignalGenerator):
         if parameter.value == Parameter.POWER.value:
             self.settings.power = value
             self.device.power(self.power)
+            return
         if parameter.value == Parameter.FREQUENCY.value:
             self.settings.frequency = value
             self.device.frequency(self.frequency)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
