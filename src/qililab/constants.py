@@ -12,6 +12,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
+
 # TODO: Distribute constants over different classes
 
 
@@ -107,6 +108,7 @@ class LOOP:
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
+    OPTIONS = "options"
 
 
 class PULSESEQUENCES:
@@ -172,6 +174,23 @@ class QBLOXRESULT:
     PULSE_LENGTH = "pulse_length"
     SCOPE = "scope"
     BINS = "bins"
+
+
+class RESULTSDATAFRAME:
+    SOFTWARE_AVG_INDEX = "software_avg_index"
+    SEQUENCE_INDEX = "sequence_index"
+    LOOP_INDEX = "loop_index_"
+    QUBIT_INDEX = "qubit_index"
+    RESULTS_INDEX = "results_index"
+    BINS_INDEX = "bins_index"
+    SCOPE_INDEX = "scope_index"
+    ACQUISITION_INDEX = "acquisition_index"
+    P0 = "p0"
+    P1 = "p1"
+    I = "i"  # noqa: E741
+    Q = "q"
+    AMPLITUDE = "amplitude"
+    PHASE = "phase"
 
 
 UNITS = {"frequency": "Hz"}

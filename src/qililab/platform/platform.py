@@ -58,33 +58,27 @@ class Platform:
             self.turn_off_instruments()
         self.instrument_controllers.disconnect()
 
-    def get_element(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+    def get_element(self, alias: str):
         """Get platform element.
 
         Args:
-            category (str): Category of element.
-            id_ (int): ID of element.
+            alias (str): Element alias to identify it.
 
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
-            category is not None and Category(category) == Category.PLATFORM
-        ):
+        if alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names):
             return self.settings
 
-        element = self.instruments.get_instrument(alias=alias, category=category, id_=id_)
+        element = self.instruments.get_instrument(alias=alias)
         if element is None:
-            element = self.instrument_controllers.get_instrument_controller(alias=alias, category=category, id_=id_)
+            element = self.instrument_controllers.get_instrument_controller(alias=alias)
         if element is None:
-            element = self.get_bus_by_alias(alias=alias, category=category, id_=id_)
+            element = self.get_bus_by_alias(alias=alias)
         if element is None:
-            if category is not None and id_ is not None:
-                element = self.chip.get_node_from_id(node_id=id_)
-            if alias is not None:
-                element = self.chip.get_node_from_alias(alias=alias)
+            element = self.chip.get_node_from_alias(alias=alias)
         if element is None:
-            raise ValueError(f"Could not find element with alias {alias}, category {category} and id {id_}.")
+            raise ValueError(f"Could not find element with alias {alias}.")
         return element
 
     def get_bus(self, port: int):
@@ -121,9 +115,7 @@ class Platform:
         self,
         parameter: Parameter,
         value: float,
-        alias: str | None = None,
-        category: Category | None = None,
-        id_: int | None = None,
+        alias: str,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.
@@ -134,15 +126,13 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if (alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names)) or (
-            category is not None and Category(category) == Category.PLATFORM
-        ):
+        if alias in ([Category.PLATFORM.value] + self.gate_names):
             if alias == Category.PLATFORM.value:
                 self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             else:
                 self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
-        element = self.get_element(alias=alias, category=category, id_=id_)
+        element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     @property

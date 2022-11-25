@@ -9,7 +9,7 @@ from qililab.result.acquisition import Acquisition
 
 
 @dataclass
-class QbloxBinAcquisition(Acquisition):
+class QbloxScopeAcquisition(Acquisition):
     """Qblox Bin Acquisition normalized"""
 
     def _create_acquisition(self) -> pd.DataFrame:
@@ -17,5 +17,5 @@ class QbloxBinAcquisition(Acquisition):
         a structure with i, q, amplitude, phase.
         """
         acquisition_dataframe = super()._create_acquisition()
-        acquisition_dataframe.index.rename(RESULTSDATAFRAME.BINS_INDEX, inplace=True)
+        acquisition_dataframe.index.rename(RESULTSDATAFRAME.SCOPE_INDEX, inplace=True)
         return acquisition_dataframe

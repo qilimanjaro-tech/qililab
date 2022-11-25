@@ -2,7 +2,9 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
 from qililab.result import Results
 
@@ -20,7 +22,7 @@ from ...conftest import mock_instruments
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
-    """Unit tests checking the the execution of a platform with instruments."""
+    """Unit tests checking the execution of a platform with instruments."""
 
     def test_execute_method_with_nested_loop(
         self,
@@ -38,14 +40,20 @@ class TestExecution:
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-        nested_experiment.settings.software_average = 5
+        nested_experiment.settings.software_average = 1
         results = nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
         assert isinstance(results, Results)
-        assert np.shape(results.acquisitions(mean=True))[2:5] == (2, 2, 2)
-        assert np.shape(results.probabilities(mean=True))[2:5] == (2, 2, 2)
+        acquisitions = results.acquisitions(mean=True)
+        assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
+        assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
+        assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
+        probabilities = results.probabilities(mean=True)
+        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
+        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
+        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
@@ -87,8 +95,8 @@ class TestExecution:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, np.ndarray)
-        assert isinstance(acquisitions, np.ndarray)
+        assert isinstance(probabilities, pd.DataFrame)
+        assert isinstance(acquisitions, pd.DataFrame)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()
@@ -124,8 +132,8 @@ class TestExecution:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, np.ndarray)
-        assert isinstance(acquisitions, np.ndarray)
+        assert isinstance(probabilities, pd.DataFrame)
+        assert isinstance(acquisitions, pd.DataFrame)
         mock_dump_0.assert_called()
         mock_dump_1.assert_called()
         mock_open_0.assert_called()

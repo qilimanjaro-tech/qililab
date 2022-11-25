@@ -2,6 +2,7 @@
 # with the exact version
 # example:
 # scipy==1.8.0
+pandas==1.5.2
 qibo>=0.1.6, <0.2
 PyYAML==6.0
 typeguard==2.13.3
@@ -12,6 +13,6 @@ qutip==4.7.0
 tqdm==4.64.1
 urllib3==1.26.12
 qiboconnection==0.6.0
-qpysequence @ git+https://github.com/qilimanjaro-tech/qpysequence.git@0.3.0
-qilimanjaro-qilisimulator-library @ git+https://github.com/qilimanjaro-tech/qilisimulator.git@0.1.2
+qpysequence@ git+https://github.com/qilimanjaro-tech/qpysequence.git@0.3.2
+qilimanjaro-qilisimulator-library@ git+https://github.com/qilimanjaro-tech/qilisimulator.git@0.1.2
 lmfit==1.0.3
