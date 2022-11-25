@@ -17,6 +17,8 @@ class Category(Enum):
         * resonator
         * node
         * instrument_controller
+        * voltage_source
+        * current_source
     """
 
     PLATFORM = "platform"
@@ -34,6 +36,8 @@ class Category(Enum):
     CHIP = "chip"
     NODE = "node"
     INSTRUMENT_CONTROLLER = "instrument_controller"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class Instrument(Enum):
@@ -46,6 +50,8 @@ class Instrument(Enum):
         * signal_generator
         * system_control
         * attenuator
+        * voltage_source
+        * current_source
     """
 
     PLATFORM = "platform"
@@ -53,6 +59,8 @@ class Instrument(Enum):
     SIGNAL_GENERATOR = "signal_generator"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class InstrumentControllerSubCategory(Enum):
@@ -258,6 +266,8 @@ class InstrumentName(Enum):
         * integrated_system_control
         * simulated_system_control
         * keithley_2600
+        * qblox_D5a
+        * qblox_S4g
     """
 
     QBLOX_QCM = "QCM"
@@ -268,6 +278,8 @@ class InstrumentName(Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_D5A = "qblox_D5a"
+    QBLOX_S4G = "qblox_S4g"
 
 
 class InstrumentControllerName(Enum):
@@ -287,6 +299,7 @@ class InstrumentControllerName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_SPIRACK = "qblox_spi_rack"
 
 
 class Parameter(Enum):
@@ -324,13 +337,16 @@ class Parameter(Enum):
     MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
-    CURRENT = "current"
-    VOLTAGE = "voltage"
     HARDWARE_MODULATION = "hardware_modulation"
     HARDWARE_DEMODULATION = "hardware_demodulation"
     HARDWARE_INTEGRATION = "hardware_integration"
     ACQUISITION_MODE = "acquisition_mode"
     FREQUENCIES = "frequencies"
+    VOLTAGE = "voltage"
+    CURRENT = "current"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMPING_RATE = "ramp_rate"
+    SPAN = "span"
 
 
 class ResultName(Enum):
@@ -369,6 +385,8 @@ class InstrumentTypeName(Enum):
         * SGS100A
         * Attenuator
         * Keithley2600
+        * QbloxD5a
+        * QbloxS4g
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -376,6 +394,8 @@ class InstrumentTypeName(Enum):
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"
     KEITHLEY2600 = "Keithley2600"
+    QBLOX_D5A = "QbloxD5a"
+    QBLOX_S4G = "QbloxS4g"
 
 
 class LivePlotTypes(Enum):

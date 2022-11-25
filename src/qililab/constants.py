@@ -37,6 +37,8 @@ class RUNCARD:
     INSTRUMENT_CONTROLLER = "instrument_controller"
     FIRMWARE = "firmware"
     GATES = "gates"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class PLATFORM:
@@ -46,6 +48,24 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+
+
+class CURRENTSOURCE:
+    """CurrentSource attribute names."""
+
+    CURRENT = "current"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
+
+
+class VOLTAGESOURCE:
+    """VoltageSource attribute names."""
+
+    VOLTAGE = "voltage"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
 
 
 class SIGNALGENERATOR:
@@ -177,6 +197,8 @@ class QBLOXRESULT:
 
 
 class RESULTSDATAFRAME:
+    """Results DataFrame Attributes"""
+
     SOFTWARE_AVG_INDEX = "software_avg_index"
     SEQUENCE_INDEX = "sequence_index"
     LOOP_INDEX = "loop_index_"
