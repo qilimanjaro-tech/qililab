@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - tii
+      - fix/qili-198-update-only-new-settings-to-instrument
   workflow_dispatch:
 
 jobs:
