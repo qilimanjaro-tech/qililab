@@ -111,6 +111,7 @@ class Galadriel:
         "delta": [0],
         "offset_i": [0],
         "offset_q": [0],
+        Parameter.HARDWARE_MODULATION.value: [False],
     }
 
     pulsar_controller_qrm_0 = {
@@ -142,14 +143,14 @@ class Galadriel:
         "scope_acquire_trigger_mode": "sequencer",
         "scope_hardware_averaging": True,
         "sampling_rate": 1000000000,
-        "integration": True,
+        Parameter.HARDWARE_MODULATION.value: [True],
         "integration_length": 2000,
         "integration_mode": "ssb",
         "sequence_timeout": 1,
         "num_bins": 100,
         "acquisition_timeout": 1,
         "acquisition_delay_time": 100,
-        "frequency": 20000000,
+        Parameter.FREQUENCIES.value: [20000000],
         "num_sequencers": 1,
         "gain": [
             0.5,
@@ -166,6 +167,8 @@ class Galadriel:
         "offset_q": [
             0,
         ],
+        Parameter.HARDWARE_DEMODULATION.value: [True],
+        Parameter.HARDWARE_INTEGRATION.value: [True],
     }
 
     rohde_schwarz_controller_0 = {
