@@ -347,6 +347,7 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "qubit",
         RUNCARD.CATEGORY: "qubit",
+        RUNCARD.ALIAS: "qubit",
         "pi_pulse_amplitude": 1,
         "pi_pulse_duration": 100,
         "pi_pulse_frequency": 100000000.0,

@@ -7,6 +7,7 @@ import pytest
 
 from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.typings.enums import Parameter
+from qililab.typings.loop import LoopOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
@@ -17,7 +18,7 @@ def fixture_create_one_loop() -> Loop:
     Returns:
         Loop: created loop
     """
-    return Loop(parameter=Parameter.FREQUENCY, start=0, stop=1, num=100)
+    return Loop(alias="X", parameter=Parameter.FREQUENCY, options=LoopOptions(start=0, stop=1, num=100))
 
 
 @pytest.fixture(name="another_loop")
@@ -26,7 +27,7 @@ def fixture_create_another_loop() -> Loop:
     Returns:
         Loop: created loop
     """
-    return Loop(parameter=Parameter.GAIN, start=0, stop=0.1, num=10)
+    return Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=0, stop=0.1, num=10))
 
 
 class TestLivePlot:
@@ -47,7 +48,7 @@ class TestLivePlot:
 
     def test_live_plot_ranges_with_two_loops(self, valid_remote_api: RemoteAPI, one_loop: Loop):
         """test live plot ranges with two loops"""
-        loop = Loop(parameter=Parameter.GAIN, start=1, stop=11, num=10, loop=one_loop)
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=1, stop=11, num=10), loop=one_loop)
         plot = LivePlot(remote_api=valid_remote_api, loops=[loop], num_schedules=1)
         for x_value in loop.range:
             for y_value in one_loop.range:
