@@ -19,6 +19,7 @@ class VectorNetworkAnalyzerDriver(Device):
     driver: pyvisa.Resource = field(init=False)
 
     def __post_init__(self):
+        """configure driver and connect to the resource"""
         resource_manager = pyvisa.ResourceManager("@py")
         self.driver = resource_manager.open_resource(f"TCPIP::{self.address}::INSTR")
         self.driver.timeout = self.timeout
@@ -64,7 +65,7 @@ class VectorNetworkAnalyzerDriver(Device):
         if upper_par == "?":
             return self.send_command(f"CALC1:PAR{trace}:DEF")
         scatter_param = VNAScatteringParameters(upper_par)
-        return self.send_command(f"CALC1:MEAS{trace}:PAR", upper_par)
+        return self.send_command(f"CALC1:MEAS{trace}:PAR", scatter_param.value)
 
     def autoscale(self):
         """autoscale"""
@@ -144,7 +145,12 @@ class VectorNetworkAnalyzerDriver(Device):
         self.timeout = value
         self.driver.timeout = self.timeout
 
-    def continuous(self, continuous):
+    def continuous(self, continuous: bool):
+        """set continuous mode
+
+        Args:
+            continuous (bool): continuous flag
+        """
         if continuous:
             self.driver.write(":INIT:CONT ON")
         else:
