@@ -19,6 +19,10 @@ class TimeDomainSystemControl(SystemControl):
         system_control_category = SystemControlCategory.TIME_DOMAIN
         awg: AWG
 
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories."""
+            return [Category.AWG.value]
+
     settings: TimeDomainSystemControlSettings
 
     @property

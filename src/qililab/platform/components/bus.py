@@ -1,4 +1,5 @@
 """Bus class."""
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import List
 
@@ -109,17 +110,19 @@ class Bus(FactoryElement):
         """
         return self.settings.bus_subcategory
 
-    # FIXME: each bus subcategory will redefine the instruments part
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
-        for name, value in self.settings:
+        for name, value in deepcopy(self.settings):
             instrument_object = None
             category = Category(name)
             if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
-                subcategory = value.get(RUNCARD.SUBCATEGORY)
-                if not isinstance(subcategory, str):
-                    raise ValueError("Invalid value for subcategory.")
-                instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
+                system_control_category = value.get(RUNCARD.SYSTEM_CONTROL_CATEGORY)
+                if not isinstance(system_control_category, str):
+                    raise ValueError(f"Invalid value for system_control_category: {system_control_category}")
+                system_control_subcategory = value.get(RUNCARD.SYSTEM_CONTROL_SUBCATEGORY)
+                if system_control_subcategory is not None and not isinstance(system_control_category, str):
+                    raise ValueError(f"Invalid value for system_control_subcategory: {system_control_subcategory}")
+                instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))(settings=value, instruments=instruments)
             if instrument_object is None:
                 raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
             setattr(self.settings, name, instrument_object)
@@ -128,7 +131,7 @@ class Bus(FactoryElement):
         """String representation of a bus. Prints a drawing of the bus elements."""
         return (
             f"Bus {self.id_} ({self.bus_category.value} {self.bus_subcategory.value}):  "
-            + f"----|{self.system_control}|--"
+            + f"----{self.system_control}---"
             + "".join(f"--|{target}|----" for target in self.targets)
         )
 
@@ -153,6 +156,7 @@ class Bus(FactoryElement):
         """Return a dict representation of the SchemaSettings class."""
         return {
             RUNCARD.ID: self.id_,
+            RUNCARD.NAME: self.name,
             RUNCARD.CATEGORY: self.category.value,
             RUNCARD.BUS_CATEGORY: self.bus_category.value,
             RUNCARD.BUS_SUBCATEGORY: self.bus_subcategory.value,

@@ -25,6 +25,10 @@ class ControlSystemControl(TimeDomainSystemControl):
         system_control_subcategory = SystemControlSubCategory.CONTROL
         signal_generator: SignalGenerator
 
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories."""
+            return super()._supported_instrument_categories() + [Category.SIGNAL_GENERATOR.value]
+
     settings: ControlSystemControlSettings
 
     @property

@@ -23,6 +23,10 @@ class MicroWaveBiasSystemControl(ContinuousSystemControl):
         system_control_subcategory = SystemControlSubCategory.MICROWAVE_BIAS
         signal_generator: SignalGenerator
 
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories."""
+            return [Category.SIGNAL_GENERATOR.value]
+
     settings: MicroWaveBiasSystemControlSettings
 
     @property

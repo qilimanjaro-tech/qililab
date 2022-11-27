@@ -23,6 +23,10 @@ class CurrentBiasSystemControl(ContinuousSystemControl):
         system_control_subcategory = SystemControlSubCategory.CURRENT_BIAS
         current_source: CurrentSource
 
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories."""
+            return [Category.CURRENT_SOURCE.value]
+
     settings: CurrentBiasSystemControlSettings
 
     @property

@@ -58,7 +58,6 @@ class Instrument(Enum):
     PLATFORM = "platform"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
-    SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
@@ -242,10 +241,10 @@ class BusSubCategory(Enum):
 
     BASEBAND = "baseband"
     CONTROL = "control"
-    TIME_DOMAIN_READOUT = "time_domain_readout"
+    TIME_DOMAIN_READOUT = "readout"
     CURRENT_BIAS = "current_bias"
     MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "continuous_readout"
+    CONTINUOUS_READOUT = "readout"
 
 
 class SystemControlCategory(Enum):
@@ -277,10 +276,10 @@ class SystemControlSubCategory(Enum):
 
     BASEBAND = "baseband"
     CONTROL = "control"
-    TIME_DOMAIN_READOUT = "time_domain_readout"
+    TIME_DOMAIN_READOUT = "readout"
     CURRENT_BIAS = "current_bias"
     MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "continuous_readout"
+    CONTINUOUS_READOUT = "readout"
 
 
 class NodeName(Enum):

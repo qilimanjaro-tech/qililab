@@ -9,18 +9,26 @@ from qililab.instruments.instruments import Instruments
 from qililab.platform.components import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings import SystemControlCategory, SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 
 
 class SystemControl(BusElement, ABC):
     """SystemControl class."""
 
-    @dataclass
+    name: SystemControlName
+
+    @dataclass(kw_only=True)
     class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
         system_control_category: SystemControlCategory
         system_control_subcategory: SystemControlSubCategory
+
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories.
+            Each specific System Control MUST define its own
+            """
+            return []
 
         def __iter__(self):
             """Iterate over Bus elements.
@@ -28,7 +36,9 @@ class SystemControl(BusElement, ABC):
             Yields:
                 Tuple[str, ]: a tuple of the instrument category and its alias
             """
-            yield from self.__dict__.items()
+            for name, value in self.__dict__.items():
+                if name in self._supported_instrument_categories():
+                    yield name, value
 
     settings: SystemControlSettings
 
@@ -130,6 +140,7 @@ class SystemControl(BusElement, ABC):
         """Return a dict representation of a SystemControl class."""
         return {
             RUNCARD.ID: self.id_,
+            RUNCARD.NAME: self.name,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SYSTEM_CONTROL_CATEGORY: self.settings.system_control_category.value,
             RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: self.settings.system_control_subcategory.value,

@@ -30,6 +30,10 @@ class TimeDomainReadoutSystemControl(BaseBandSystemControl, ControlSystemControl
         system_control_subcategory = SystemControlSubCategory.TIME_DOMAIN_READOUT
         awg: AWGReadout
 
+        def _supported_instrument_categories(self) -> list[str]:
+            """return a list of supported instrument categories."""
+            return [*set(super()._supported_instrument_categories())]
+
     settings: TimeDomainReadoutSystemControlSettings
 
     def __str__(self):
@@ -45,18 +49,13 @@ class TimeDomainReadoutSystemControl(BaseBandSystemControl, ControlSystemControl
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter in [Parameter.FREQUENCY, Parameter.POWER]:
-            super(ControlSystemControl, self).set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            ControlSystemControl.set_parameter(self, parameter=parameter, value=value, channel_id=channel_id)
         # the rest of parameters are assigned to the BaseBandSystemControl
-        super(BaseBandSystemControl, self).set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        BaseBandSystemControl.set_parameter(self, parameter=parameter, value=value, channel_id=channel_id)
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
-        return [
-            *set(
-                super(BaseBandSystemControl, self)._get_supported_instrument_categories()
-                + super(ControlSystemControl, self)._get_supported_instrument_categories()
-            )
-        ]
+        return [*set(super()._get_supported_instrument_categories())]
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument

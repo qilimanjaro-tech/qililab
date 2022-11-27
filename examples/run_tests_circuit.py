@@ -23,7 +23,7 @@ def run_circuit(connection: API | None = None):
     """Load the platform 'galadriel' from the DB."""
     platform = build_platform(name="template_base_runcard_soprano")
     print(platform)
-    print(platform.chip)
+    print(platform.schema)
 
     # circuit = Circuit(1)
     # circuit.add(X(0))
