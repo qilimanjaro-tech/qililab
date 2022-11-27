@@ -7,6 +7,7 @@ from qpysequence.program import Loop, Register
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_control import QubitControl
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import InstrumentName
 
 
@@ -44,3 +45,11 @@ class QbloxQCM(QbloxModule, QubitControl):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
+
+    def acquire_result(self) -> QbloxResult:
+        """Read the result from the AWG instrument
+
+        Returns:
+            QbloxResult: Acquired Qblox result
+        """
+        raise NotImplementedError

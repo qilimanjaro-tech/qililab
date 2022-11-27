@@ -2,7 +2,7 @@
 from dataclasses import asdict
 
 from qililab.constants import RUNCARD
-from qililab.platform.components.bus_element import dict_factory
+from qililab.platform.components.bus.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
@@ -82,10 +82,10 @@ class Platform:
         return element
 
     def get_bus(self, port: int):
-        """Find bus of type 'bus_subcategory' that contains the given qubits.
+        """Find bus associated with the specified port.
 
         Args:
-            qubit_ids (List[int]): List of qubit IDs.
+            port (int): port index of the chip
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.

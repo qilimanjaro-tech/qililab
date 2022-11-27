@@ -67,15 +67,23 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Run execution of a pulse sequence.
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
-            pulse_bus_schedule (PulseBusSchedule): Pulse sequence.
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
         """
         self._check_cached_values(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
+
+    def run(self):
+        """Run the uploaded program"""
         self.start_sequencer()
 
     def _check_cached_values(

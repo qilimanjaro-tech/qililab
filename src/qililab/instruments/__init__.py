@@ -11,11 +11,19 @@ from .qblox.qblox_qcm import QbloxQCM
 from .qblox.qblox_qrm import QbloxQRM
 from .qblox.qblox_s4g import QbloxS4g
 from .qubit_control import QubitControl
-from .qubit_readout import QubitReadout
+from .qubit_readout import AWGReadout
 from .rohde_schwarz.sgs100a import SGS100A
 from .signal_generator import SignalGenerator
-from .system_control.integrated_system_control import IntegratedSystemControl
-from .system_control.mixer_based_system_control import MixerBasedSystemControl
-from .system_control.simulated_system_control import SimulatedSystemControl
-from .system_control.system_control import SystemControl
+from .system_control import (
+    BaseBandSystemControl,
+    ContinuousReadoutSystemControl,
+    ContinuousSystemControl,
+    ControlSystemControl,
+    CurrentBiasSystemControl,
+    MicroWaveBiasSystemControl,
+    SimulatedSystemControl,
+    SystemControl,
+    TimeDomainReadoutSystemControl,
+    TimeDomainSystemControl,
+)
 from .utils import InstrumentFactory

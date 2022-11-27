@@ -2,11 +2,7 @@
 from dataclasses import asdict, dataclass
 from typing import List
 
-from qililab.chip.coupler import Coupler
-from qililab.chip.node import Node
-from qililab.chip.port import Port
-from qililab.chip.qubit import Qubit
-from qililab.chip.resonator import Resonator
+from qililab.chip import Coil, Coupler, Node, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
 from qililab.typings import Category
 from qililab.utils import Factory, dict_factory
@@ -38,7 +34,7 @@ class Chip:
             Qubit: Qubit node object.
         """
         for node in self.nodes:
-            if isinstance(node, Qubit) and node.qubit_idx == idx:
+            if isinstance(node, Qubit) and node.qubit_index == idx:
                 return node
         raise ValueError(f"Could not find qubit with idx {idx}.")
 
@@ -94,7 +90,7 @@ class Chip:
                 return adj_node
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
-    def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler]:
+    def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler | Coil]:
         """Get nodes connected to a given port.
 
         Args:
@@ -150,7 +146,7 @@ class Chip:
         adj_nodes = self._get_adjacent_nodes(node=node)
         for adj_node in adj_nodes:
             if isinstance(adj_node, Qubit):
-                return adj_node.qubit_idx
+                return adj_node.qubit_index
             if isinstance(adj_node, Resonator):
                 return self.get_qubit_idx_from_node(node=adj_node)
         raise ValueError(f"Could not find qubit connected to node with id {node.id_}")

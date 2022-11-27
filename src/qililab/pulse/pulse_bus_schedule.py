@@ -1,14 +1,13 @@
-"""BusPulses class."""
+"""PulseBusSchedule class."""
 from bisect import insort
 from dataclasses import dataclass, field
 from typing import List, Set
 
 import numpy as np
 
-from qililab.constants import PULSESEQUENCE, RUNCARD
+from qililab.constants import PULSESEQUENCE
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.typings import PulseName
 from qililab.utils import Waveforms
 
@@ -18,7 +17,7 @@ class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus. All pulses should have the same name
     (Pulse or ReadoutPulse) and have the same frequency."""
 
-    port: int
+    port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: List[PulseEvent] = field(default_factory=list)
     _pulses: Set[Pulse] = field(init=False, default_factory=set)
 

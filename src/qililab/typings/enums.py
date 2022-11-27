@@ -212,30 +212,75 @@ class PulseShapeSettingsName(Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
 
 
-class BusSubcategory(Enum):
-    """Bus types.
+class BusCategory(Enum):
+    """Bus categories.
 
     Args:
-        enum (str): Available types of Bus:
+        enum (str): Available categories of Bus:
+        * time_domain
+        * continuous
+        * simulated
+    """
+
+    TIME_DOMAIN = "time_domain"
+    CONTINUOUS = "continuous"
+    SIMULATED = "simulated"
+
+
+class BusSubCategory(Enum):
+    """Bus subcategories.
+
+    Args:
+        enum (str): Available subcategories of Bus:
+        * baseband
         * control
-        * readout
+        * time_domain_readout
+        * current_bias
+        * microwave_bias
+        * continuous_readout
     """
 
+    BASEBAND = "baseband"
     CONTROL = "control"
-    READOUT = "readout"
+    TIME_DOMAIN_READOUT = "time_domain_readout"
+    CURRENT_BIAS = "current_bias"
+    MICROWAVE_BIAS = "microwave_bias"
+    CONTINUOUS_READOUT = "continuous_readout"
 
 
-class SystemControlSubcategory(Enum):
-    """Bus element names. Contains names of bus elements that are not instruments.
+class SystemControlCategory(Enum):
+    """SystemControl categories.
 
     Args:
-        enum (str): Available bus element names:
-        * mixer_based_system_control
-        * simulated_system_control
+        enum (str): Available categories of SystemControl:
+        * time_domain
+        * continuous
     """
 
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    TIME_DOMAIN = "time_domain"
+    CONTINUOUS = "continuous"
+    SIMULATED = "simulated"
+
+
+class SystemControlSubCategory(Enum):
+    """SystemControl subcategories.
+
+    Args:
+        enum (str): Available subcategories of SystemControl:
+        * baseband
+        * control
+        * time_domain_readout
+        * current_bias
+        * microwave_bias
+        * continuous_readout
+    """
+
+    BASEBAND = "baseband"
+    CONTROL = "control"
+    TIME_DOMAIN_READOUT = "time_domain_readout"
+    CURRENT_BIAS = "current_bias"
+    MICROWAVE_BIAS = "microwave_bias"
+    CONTINUOUS_READOUT = "continuous_readout"
 
 
 class NodeName(Enum):
@@ -251,6 +296,7 @@ class NodeName(Enum):
     QUBIT = "qubit"
     RESONATOR = "resonator"
     COUPLER = "coupler"
+    COIL = "coil"
     PORT = "port"
 
 
@@ -379,6 +425,7 @@ class ResultName(Enum):
 
     QBLOX = "qblox"
     SIMULATOR = "simulator"
+    VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
 
 
 class ConnectionName(Enum):
@@ -460,3 +507,17 @@ class VNAScatteringParameters(Enum):
     S12 = "S12"
     S22 = "S22"
     S21 = "S21"
+
+
+class Node(Enum):
+    """Node elements
+
+    Args:
+        enum (str): Available elements of chip node:
+        * nodes
+        * frequency
+    """
+
+    NODES = "nodes"
+    FREQUENCY = "frequency"
+    QUBIT_INDEX = "qubit_index"

@@ -9,7 +9,7 @@ from qpysequence.program.instructions import Acquire
 
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.instruments.qubit_readout import QubitReadout
+from qililab.instruments.qubit_readout import AWGReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
 from qililab.result import QbloxResult
@@ -22,7 +22,7 @@ from qililab.typings.enums import (
 
 
 @InstrumentFactory.register
-class QbloxQRM(QbloxModule, QubitReadout):
+class QbloxQRM(QbloxModule, AWGReadout):
     """Qblox QRM class.
 
     Args:
@@ -33,7 +33,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
     _NUM_SEQUENCERS: int = 2
 
     @dataclass
-    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, QubitReadout.QubitReadoutSettings):
+    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, AWGReadout.AWGReadoutSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
@@ -73,16 +73,16 @@ class QbloxQRM(QbloxModule, QubitReadout):
                 value=self.settings.scope_hardware_averaging[channel_id], channel_id=channel_id
             )
 
-    def run(
+    def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
-    ) -> QbloxResult:
-        """Run execution of a pulse sequence. Return acquisition results.
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
-
-        Returns:
-            Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
         """
         if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
@@ -94,9 +94,16 @@ class QbloxQRM(QbloxModule, QubitReadout):
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=seq_idx, acquisitions=acquisition.to_dict()
                 )
-        super().run(
+        super().generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
+
+    def acquire_result(self) -> QbloxResult:
+        """Read the result from the AWG instrument
+
+        Returns:
+            QbloxResult: Acquired Qblox result
+        """
         return self.get_acquisitions()
 
     @Instrument.CheckDeviceInitialized

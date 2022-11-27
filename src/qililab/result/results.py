@@ -45,13 +45,13 @@ class Results:
         if self.loops is not None and isinstance(self.loops[0], dict):
             self.loops = [Loop(**loop) for loop in self.loops]
 
-    def add(self, result: List[Result]):
+    def add(self, result: Result):
         """Append an ExecutionResults object.
 
         Args:
-            result (List[Result]): List of Result objects.
+            result (Result): Result object.
         """
-        self.results += result
+        self.results.append(result)
 
     def _generate_new_probabilities_column_names(self):
         """Checks shape, num_sequence and software_average and returns with that the list of columns that should
@@ -266,7 +266,7 @@ class Results:
         """
         return {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.num_schedules,
+            EXPERIMENT.NUM_SCHEDULES: self.num_schedules,
             EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],

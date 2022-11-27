@@ -2,13 +2,15 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusSubcategory,
+    BusCategory,
+    BusSubCategory,
     Category,
     ConnectionName,
     GateName,
     Instrument,
     InstrumentName,
     IntegrationMode,
+    Node,
     NodeName,
     Parameter,
     PulseName,
@@ -16,7 +18,8 @@ from .enums import (
     ReferenceClock,
     ResultName,
     SchemaDrawOptions,
-    SystemControlSubcategory,
+    SystemControlCategory,
+    SystemControlSubCategory,
 )
 from .factory_element import FactoryElement
 from .instruments import (

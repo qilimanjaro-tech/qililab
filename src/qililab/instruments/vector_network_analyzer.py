@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument
+from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from qililab.typings.instruments.vector_network_analyzer import (
     VectorNetworkAnalyzerDriver,
@@ -57,7 +58,7 @@ class VectorNetworkAnalyzer(Instrument):
         if isinstance(value, int):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value} with type {type(parameter.value)}")
+        raise ValueError(f"Invalid Parameter: {parameter} with type {type(parameter)}")
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -66,14 +67,14 @@ class VectorNetworkAnalyzer(Instrument):
             parameter (Parameter): settings parameter to be updated
             value (str): new value
         """
-        if parameter.value == Parameter.SCATTERING_PARAMETER.value:
+        if parameter == Parameter.SCATTERING_PARAMETER:
             self.scattering_parameter = value
             return
-        if parameter.value == Parameter.TRIGGER_MODE.value:
+        if parameter == Parameter.TRIGGER_MODE:
             self.settings.trigger_mode = VNATriggerModes(value)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ValueError(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_bool(self, parameter: Parameter, value: bool):
         """Set instrument settings parameter to the corresponding value
@@ -82,11 +83,11 @@ class VectorNetworkAnalyzer(Instrument):
             parameter (Parameter): settings parameter to be updated
             value (bool): new value
         """
-        if parameter.value == Parameter.AVERAGING_ENABLED.value:
+        if parameter == Parameter.AVERAGING_ENABLED:
             self.averaging_enabled = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ValueError(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_float(
         self,
@@ -100,26 +101,26 @@ class VectorNetworkAnalyzer(Instrument):
             value (float): new value
         """
 
-        if parameter.value == Parameter.POWER.value:
+        if parameter == Parameter.POWER:
             self.power = value
             return
-        if parameter.value == Parameter.FREQUENCY_SPAN.value:
+        if parameter == Parameter.FREQUENCY_SPAN:
             self.frequency_span = value
             return
-        if parameter.value == Parameter.FREQUENCY_CENTER.value:
+        if parameter == Parameter.FREQUENCY_CENTER:
             self.frequency_center = value
             return
-        if parameter.value == Parameter.FREQUENCY_START.value:
+        if parameter == Parameter.FREQUENCY_START:
             self.frequency_start = value
             return
-        if parameter.value == Parameter.FREQUENCY_STOP.value:
+        if parameter == Parameter.FREQUENCY_STOP:
             self.frequency_stop = value
             return
-        if parameter.value == Parameter.IF_BANDWIDTH.value:
+        if parameter == Parameter.IF_BANDWIDTH:
             self.if_bandwidth = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ValueError(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_int(self, parameter: Parameter, value: int):
         """Set instrument settings parameter to the corresponding value
@@ -129,15 +130,15 @@ class VectorNetworkAnalyzer(Instrument):
             value (int): new value
         """
 
-        if parameter.value == Parameter.NUMBER_AVERAGES.value:
+        if parameter == Parameter.NUMBER_AVERAGES:
             self.number_averages = value
             return
 
-        if parameter.value == Parameter.NUMBER_POINTS.value:
+        if parameter == Parameter.NUMBER_POINTS:
             self.number_points = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ValueError(f"Invalid Parameter: {parameter}")
 
     @property
     def power(self):
@@ -161,7 +162,7 @@ class VectorNetworkAnalyzer(Instrument):
         Returns:
             float: settings.scattering_parameter.
         """
-        return self.settings.scattering_parameter.value
+        return self.settings.scattering_parameter
 
     @scattering_parameter.setter
     def scattering_parameter(self, value: str):
@@ -282,7 +283,7 @@ class VectorNetworkAnalyzer(Instrument):
         Returns:
             float: settings.trigger_mode.
         """
-        return self.settings.trigger_mode.value
+        return self.settings.trigger_mode
 
     @property
     def number_points(self):
@@ -355,3 +356,7 @@ class VectorNetworkAnalyzer(Instrument):
     def get_data(self):
         """get data from device"""
         return self.device.get_data()
+
+    def acquire_result(self):
+        """Convert the data received from the device to a Result object"""
+        return VNAResult(data=self.device.get_data())

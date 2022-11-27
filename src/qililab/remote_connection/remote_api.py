@@ -23,6 +23,17 @@ class RemoteAPI:
 
     def __enter__(self):
         """Code executed when starting a with statement.
+        Runs the block function only when it is not already blocked.
+        """
+        if not self._blocked_device:
+            self.block_remote_device()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Code executed when stopping a with statement."""
+        self.release_remote_device()
+
+    def block_remote_device(self):
+        """Block the remote API device
         If:
             1. there is a connection and,
             2. this control has not been overriden,
@@ -31,10 +42,6 @@ class RemoteAPI:
         if (self.connection is not None) and (not self.manual_override):
             self.connection.block_device_id(device_id=self.device_id)
             self._blocked_device = True
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Code executed when stopping a with statement."""
-        self.release_remote_device()
 
     def release_remote_device(self) -> None:
         """Release the remote API device when:

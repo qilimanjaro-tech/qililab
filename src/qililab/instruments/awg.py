@@ -39,12 +39,21 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Run execution of a pulse sequence.
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
         """
+
+    @abstractmethod
+    def run(self):
+        """Run the uploaded program"""
 
     @property
     def frequency(self):

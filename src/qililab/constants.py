@@ -40,6 +40,10 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    BUS_CATEGORY = "bus_category"
+    BUS_SUBCATEGORY = "bus_subcategory"
+    SYSTEM_CONTROL_CATEGORY = "system_control_category"
+    SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
 
 
 class PLATFORM:
@@ -84,14 +88,15 @@ class EXPERIMENT:
     REPETITION_DURATION = "repetition_duration"
     SHAPE = "shape"
     RESULTS = "results"
-    NUM_SEQUENCES = "num_sequences"
-    SEQUENCES = "sequences"
+    NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "execution_options"
     DEVICE_ID = "device_id"
     PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
+    CIRCUITS = "circuits"
+    PULSE_SCHEDULES = "pulse_schedules"
 
 
 class SCHEMA:

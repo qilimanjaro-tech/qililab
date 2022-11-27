@@ -1,5 +1,7 @@
 """ Experiment class."""
 import copy
+import itertools
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
@@ -8,8 +10,8 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import logger
-from qililab.constants import EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
-from qililab.execution import EXECUTION_BUILDER, Execution
+from qililab.constants import EXPERIMENT, RUNCARD
+from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
@@ -18,71 +20,142 @@ from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Instrument, Parameter
 from qililab.typings.execution import ExecutionOptions
 from qililab.typings.experiment import ExperimentOptions
-from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
-from qililab.utils.results_data_management import create_results_folder
-from qililab.utils.util_loops import compute_shapes_from_loops
 
 
+@dataclass
 class Experiment:
     """Experiment class"""
 
-    def __init__(
-        self,
-        schedules: List[Circuit | PulseSchedule] | Circuit | PulseSchedule,
-        platform: Platform,
-        options: ExperimentOptions = ExperimentOptions(),
-    ):
-        self.platform = copy.deepcopy(platform)
-        self.options = options
-        self.name = options.name
-        self.loops = options.loops
-        self.settings = options.settings
-        if not isinstance(schedules, list):
-            schedules = [schedules]
-        self._initial_schedules = schedules
-        self.remote_api = RemoteAPI(
-            connection=options.connection,
-            device_id=options.device_id,
-            manual_override=options.remote_device_manual_override,
+    platform: Platform
+    circuits: list[Circuit] = field(default_factory=list)
+    pulse_schedules: list[PulseSchedule] = field(default_factory=list)
+    options: ExperimentOptions = field(default=ExperimentOptions())
+    _results_path: Path = field(init=False)
+    _plot: LivePlot = field(init=False)
+    _results: Results = field(init=False)
+    _remote_api: RemoteAPI = field(init=False)
+    _execution: Execution = field(init=False)
+    _execution_preparation: ExecutionPreparation = field(init=False)
+    _schedules: list[PulseSchedule] = field(init=False)
+    _execution_ready: bool = field(init=False)
+
+    def __post_init__(self):
+        """prepares the Experiment class"""
+        self.platform = copy.deepcopy(self.platform)
+        self._remote_api = RemoteAPI(
+            connection=self.options.connection,
+            device_id=self.options.device_id,
+            manual_override=self.options.remote_device_manual_override,
         )
-        self.execution, self.schedules = self._build_execution(
-            sequence_list=self._initial_schedules, execution_options=options.execution_options
+        self._execution, self._schedules = self._build_execution(
+            schedules=self.circuits + self.pulse_schedules, execution_options=self.options.execution_options
         )
-        self.plot_y_label = options.plot_y_label
+        self._execution_preparation = ExecutionPreparation(remote_api=self._remote_api, options=self.options)
+
+    @property
+    def software_average(self):
+        """Experiment 'software_average' property.
+        Returns:
+            int: settings.software_average.
+        """
+        return self.options.settings.software_average
+
+    @property
+    def hardware_average(self):
+        """Experiment 'hardware_average' property.
+        Returns:
+            int: settings.hardware_average.
+        """
+        return self.options.settings.hardware_average
+
+    @property
+    def repetition_duration(self):
+        """Experiment 'repetition_duration' property.
+        Returns:
+            int: settings.repetition_duration.
+        """
+        return self.options.settings.repetition_duration
+
+    @property
+    def execution_ready(self):
+        """checks if execution has already been prepared"""
+        return self._execution_ready
+
+    def execution_finished(self):
+        """Finishes the execution"""
+        self._execution_ready = False
+
+    def prepare_execution_and_load_schedule(self, schedule_index_to_load: int = 0) -> None:
+        """Prepares the experiment with the following steps:
+          - Create results data files and Results object
+          - Serializes the Experiment information to a file
+          - Creates Live Plotting (if required)
+          - uploads the specified schedule to the AWGs (if buses admit that)
+
+        Args:
+            schedule_index_to_load (int, optional): specific schedule to load. Defaults to 0.
+        """
+        (
+            self._plot,
+            self._results,
+            self._results_path,
+            self._execution_ready,
+        ) = self._execution_preparation.prepare_execution_and_load_schedule(
+            execution=self._execution,
+            experiment_serialized=self.to_dict(),
+            schedule_index_to_load=schedule_index_to_load,
+        )
 
     def execute(self) -> Results:
         """Run execution."""
-        with self.remote_api:
-            path = create_results_folder(name=self.name)
-            self._create_results_file(path=path)
-            self._dump_experiment_data(path=path)
-            plot = LivePlot(
-                remote_api=self.remote_api,
-                loops=self.loops,
-                plot_y_label=self.plot_y_label,
-                num_schedules=self.execution.num_schedules,
-            )
-            results = Results(
-                software_average=self.software_average, num_schedules=self.execution.num_schedules, loops=self.loops
-            )
-            with self.execution:
-                try:
-                    results = self._recursive_loops(
-                        loops=self.loops,
-                        results=results,
-                        path=path,
-                        plot=plot,
-                    )
-                except KeyboardInterrupt as error:  # pylint: disable=broad-except
-                    self.remote_api.release_remote_device()
-                    logger.error("%s: %s", type(error).__name__, str(error))
-        return results
+        with self._remote_api:
+            if not self.execution_ready:
+                (
+                    self._plot,
+                    self._results,
+                    self._results_path,
+                    self._execution_ready,
+                ) = self._execution_preparation.prepare_execution(
+                    num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
+                )
 
-    def _recursive_loops(
-        self, loops: List[Loop] | None, results: Results, path: Path, plot: LivePlot, depth: int = 0
-    ) -> Results:
+            with self._execution:
+                self._execute_all_circuits_or_schedules()
+
+        return self._results
+
+    def _execute_all_circuits_or_schedules(self):
+        """runs the circuits (or schedules) passed as input times software average"""
+        try:
+            disable = self._execution.num_schedules == 1
+            for idx, _ in itertools.product(
+                tqdm(range(self._execution.num_schedules), desc="Sequences", leave=False, disable=disable),
+                range(self.software_average),
+            ):
+                self._execute_recursive_loops(
+                    results=self._results,
+                    schedule_index_to_load=idx,
+                    loops=self.options.loops,
+                    path=self._results_path,
+                    plot=self._plot,
+                )
+            self.execution_finished()
+        except KeyboardInterrupt as error:  # pylint: disable=broad-except
+            self.execution_finished()
+            self._remote_api.release_remote_device()
+            logger.error("%s: %s", type(error).__name__, str(error))
+
+    def _execute_recursive_loops(
+        self,
+        results: Results,
+        schedule_index_to_load: int,
+        loops: List[Loop] | None,
+        path: Path,
+        plot: LivePlot,
+        depth: int = 0,
+    ):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
@@ -92,18 +165,27 @@ class Experiment:
             path (Path): Path where the data is stored.
             plot (LivePlot): LivePlot class used for live plotting.
             depth (int): Depth of the recursive loop. Defaults to 0.
-
-        Returns:
-            Results: _description_
         """
         if loops is None or len(loops) <= 0:
-            results.add(result=self._execute(path=path, plot=plot))
-            return results
+            results.add(
+                self._generate_program_upload_and_execute(
+                    schedule_index_to_load=schedule_index_to_load, path=path, plot=plot
+                )
+            )
+            return
 
-        self._process_loops(results=results, loops=loops, depth=depth, path=path, plot=plot)
-        return results
+        self._process_loops(
+            results=results,
+            schedule_index_to_load=schedule_index_to_load,
+            loops=loops,
+            depth=depth,
+            path=path,
+            plot=plot,
+        )
 
-    def _process_loops(self, results: Results, loops: List[Loop], depth: int, path: Path, plot: LivePlot):
+    def _process_loops(
+        self, results: Results, schedule_index_to_load: int, loops: List[Loop], depth: int, path: Path, plot: LivePlot
+    ):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
 
         Args:
@@ -123,7 +205,8 @@ class Experiment:
                 self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
                 self._update_parameters_from_loops_filtering_external_parameters(values=values, loops=loops)
 
-                results = self._recursive_loops(
+                self._execute_recursive_loops(
+                    schedule_index_to_load=schedule_index_to_load,
                     loops=self._create_loops_from_inner_loops(loops=loops),
                     results=results,
                     path=path,
@@ -221,23 +304,25 @@ class Experiment:
         """get platform element from one loop"""
         return self.platform.get_element(alias=loop.alias)
 
-    def _execute(self, path: Path, plot: LivePlot = None) -> List[Result]:
-        """Execute pulse schedules.
+    def _generate_program_upload_and_execute(
+        self, schedule_index_to_load: int, path: Path, plot: LivePlot = None
+    ) -> Result:
+        """Execute one pulse schedule.
 
         Args:
             path (Path): Path to data folder.
             plot (LivePlot | None): Live plot
 
         Returns:
-            List[Result]: List of Result object for each pulse sequence.
+            Result: Result object for one program execution.
         """
-        return self.execution.run(
+        self._execution.generate_program_and_upload(
+            schedule_index_to_load=schedule_index_to_load,
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
-            software_average=self.software_average,
-            plot=plot,
             path=path,
         )
+        return self._execution.run(plot=plot, path=path)
 
     def set_parameter(
         self,
@@ -268,18 +353,9 @@ class Experiment:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
         if alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            self.execution, self.schedules = self._build_execution(
-                sequence_list=self._initial_schedules, execution_options=self.options.execution_options
+            self._execution, self._schedules = self._build_execution(
+                schedules=self.circuits + self.pulse_schedules, execution_options=self.options.execution_options
             )
-
-    @property
-    def parameters(self):
-        """Configurable parameters of the platform.
-
-        Returns:
-            str: JSON of the platform.
-        """
-        return str(self.platform)
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
@@ -290,10 +366,10 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.execution.draw(resolution=resolution, idx=idx)
+        return self._execution.draw(resolution=resolution, idx=idx)
 
     def _build_execution(
-        self, sequence_list: List[Circuit | PulseSchedule], execution_options: ExecutionOptions
+        self, schedules: List[Circuit | PulseSchedule], execution_options: ExecutionOptions
     ) -> Tuple[Execution, List[PulseSchedule]]:
         """Build Execution class.
 
@@ -301,66 +377,13 @@ class Experiment:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
             options (ExecutionOptions): Execution options
         """
-        if isinstance(sequence_list[0], Circuit):
+        if isinstance(schedules[0], Circuit):
             translator = CircuitToPulses(settings=self.platform.settings)
-            sequence_list = translator.translate(circuits=sequence_list, chip=self.platform.chip)
+            pulse_schedules = translator.translate(circuits=schedules, chip=self.platform.chip)
         execution = EXECUTION_BUILDER.build(
-            platform=self.platform, pulse_schedule=sequence_list, execution_options=execution_options
+            platform=self.platform, pulse_schedules=pulse_schedules, execution_options=execution_options
         )
-        return execution, sequence_list
-
-    def _create_results_file(self, path: Path):
-        """Create 'results.yml' file.
-
-        Args:
-            path (Path): Path to data folder.
-        """
-
-        data = {
-            EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.execution.num_schedules,
-            EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
-            EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
-            EXPERIMENT.RESULTS: None,
-        }
-        with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
-            yaml.dump(data=data, stream=results_file, sort_keys=False)
-
-    def _dump_experiment_data(self, path: Path):
-        """Dump experiment data.
-
-        Args:
-            path (Path): Path to data folder.
-        """
-        with open(file=path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
-
-    @property
-    def software_average(self):
-        """Experiment 'software_average' property.
-
-        Returns:
-            int: settings.software_average.
-        """
-        return self.settings.software_average
-
-    @property
-    def hardware_average(self):
-        """Experiment 'hardware_average' property.
-
-        Returns:
-            int: settings.hardware_average.
-        """
-        return self.settings.hardware_average
-
-    @property
-    def repetition_duration(self):
-        """Experiment 'repetition_duration' property.
-
-        Returns:
-            int: settings.repetition_duration.
-        """
-        return self.settings.repetition_duration
+        return execution, pulse_schedules
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -369,8 +392,9 @@ class Experiment:
             dict: Dictionary representation of the Experiment class.
         """
         return {
-            EXPERIMENT.SEQUENCES: [sequence.to_dict() for sequence in self.schedules],
             RUNCARD.PLATFORM: self.platform.to_dict(),
+            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
+            EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
 
@@ -381,11 +405,14 @@ class Experiment:
         Args:
             dictionary (dict): Dictionary description of an experiment.
         """
-        schedules = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.SEQUENCES]]
+
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
+        circuits = [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
+        pulse_schedules = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
         experiment_options = ExperimentOptions.from_dict(**dictionary[EXPERIMENT.OPTIONS])
         return Experiment(
-            schedules=schedules,
             platform=platform,
+            circuits=circuits,
+            pulse_schedules=pulse_schedules,
             options=experiment_options,
         )

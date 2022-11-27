@@ -1,24 +1,21 @@
-"""SimulatedSystemControl class."""
+"""Simulated SystemControl class."""
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
-from qililab.instruments.instruments import Instruments
 from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
-from qililab.typings.enums import Parameter, SystemControlSubcategory
+from qililab.typings import SystemControlCategory
+from qililab.typings.enums import Category, Parameter
 from qililab.utils.factory import Factory
 
 
 @Factory.register
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
-
-    name = SystemControlSubcategory.SIMULATED_SYSTEM_CONTROL
 
     @dataclass
     class SimulatedSystemControlSettings(SystemControl.SystemControlSettings):
@@ -43,6 +40,7 @@ class SimulatedSystemControl(SystemControl):
                 or only those at the end of each pulse (False)
         """
 
+        system_control_category = SystemControlCategory.SIMULATED
         # Note: DDBBElement already casts enums from value
         qubit: QubitName
         qubit_params: dict
@@ -54,8 +52,8 @@ class SimulatedSystemControl(SystemControl):
     settings: SimulatedSystemControlSettings
     _evo: Evolution
 
-    def __init__(self, settings: dict, instruments: Instruments):
-        super().__init__(settings=settings)
+    def __init__(self, settings: dict):
+        super().__init__(settings=settings, instruments=None)
         self._evo = Evolution(
             qubit_name=self.settings.qubit,
             qubit_params=self.settings.qubit_params,
@@ -64,8 +62,13 @@ class SimulatedSystemControl(SystemControl):
             store_states=self.settings.store_states,
         )
 
-    def _initialize_device(self):
-        """Initialize device attribute to the corresponding device class."""
+    def _get_supported_instrument_categories(self) -> list[Category]:
+        """get supported instrument categories"""
+        return []
+
+    def __str__(self):
+        """String representation of a Simulated SystemControl class."""
+        return "--"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set parameter for an instrument
@@ -76,57 +79,34 @@ class SimulatedSystemControl(SystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
 
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Run the given pulse sequence."""
+    def generate_program(self, pulse_bus_schedule: PulseBusSchedule, frequency: float | None = None):
+        """Translate a Pulse Bus Schedule to a simulated program
 
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            frequency (float | None): frequency to modulate the pulses. Optional
+        """
         resolution = self.settings.resolution
-        frequency = self.frequency
-        if pulse_bus_schedule.frequency is not None:
-            frequency = pulse_bus_schedule.frequency
 
+        waveform_frequency = pulse_bus_schedule.frequency if pulse_bus_schedule.frequency is not None else frequency
+        if waveform_frequency is None:
+            raise ValueError("frequency not defined.")
         # TODO: get pulses -> check
-        waveforms = pulse_bus_schedule.waveforms(frequency=frequency, resolution=resolution)
+        waveforms = pulse_bus_schedule.waveforms(frequency=waveform_frequency, resolution=resolution)
         i_waveform = np.array(waveforms.i)
         sequence = [i_waveform]
 
         # Init evolution pulse sequence
         self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
 
-        # Evolve
+    def run(self) -> None:
+        """Run the program"""
         self._evo.evolve()
 
-        # Store results
+    def acquire_result(self) -> SimulatorResult:
+        """Read the result from the AWG instrument
+
+        Returns:
+            Result: Acquired result
+        """
         return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
-
-    @property
-    def awg_frequency(self):
-        """SimulatedSystemControl 'awg_frequency' property.
-
-        Returns:
-            float: Normalized frequency of the applied pulses.
-        """
-        return 2e6  # simulator doesn't have an AWG frequency, but this is needed for the plotting of the pulses
-
-    @property
-    def frequency(self):
-        """SimulatedSystemControl 'frequency' property.
-
-        Returns:
-            float: qubit frequency
-        """
-        return self._evo.system.qubit.frequency
-
-    @frequency.setter
-    def frequency(self, target_freqs: list[float]):
-        """SimulatedSystemControl 'frequency' property setter.
-
-        Note:
-            - The property value is not actually changed.
-            - This serves as a bypass for the frequency setter used for physical qubits.
-        """
-
-    @property
-    def acquisition_delay_time(self):
-        """SystemControl 'acquisition_delay_time' property.
-        Delay (in ns) between the readout pulse and the acquisition."""
-        raise AttributeError("SimulatedSystemControl class doesn't have a 'acquisition_delay_time' property.")

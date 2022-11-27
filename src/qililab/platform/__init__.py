@@ -1,6 +1,6 @@
 """__init__.py"""
 from .components import BusElement
-from .components.bus import Bus
+from .components.bus import Bus, ContinuousBus, TimeDomainBus, TimeDomainReadoutBus
 from .components.buses import Buses
 from .components.schema import Schema
 from .platform import Platform

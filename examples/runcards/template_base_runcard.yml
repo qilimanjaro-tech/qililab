@@ -45,21 +45,28 @@ schema:
     nodes:
       - name: port
         id_: 0
-        nodes: [3]
+        nodes: [4]
       - name: port
         id_: 1
-        nodes: [2]
+        nodes: [3]
+      - name: port
+        id_: 2
+        nodes: [5]
       - name: resonator
         alias: resonator
-        id_: 2
+        id_: 3
         frequency: 7.3264369805783645e+09
-        nodes: [1, 3]
+        nodes: [1, 4]
       - name: qubit
         alias: qubit
-        id_: 3
+        id_: 4
         qubit_idx: 0
         frequency: 3.351e+09
-        nodes: [0, 2]
+        nodes: [0, 3]
+      - name: coil
+        alias: coil
+        id_: 5
+        nodes: [2]
   instruments:
     - name: QCM
       alias: QCM
