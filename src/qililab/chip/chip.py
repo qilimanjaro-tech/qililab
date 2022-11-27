@@ -2,18 +2,18 @@
 from dataclasses import asdict, dataclass
 from typing import List
 
-from qililab.chip import Coil, Coupler, Node, Port, Qubit, Resonator
+from qililab.chip.node import Node
+from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
+from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings import Category
 from qililab.utils import Factory, dict_factory
 
 
 @dataclass
-class Chip:
+class Chip(DDBBElement):
     """Chip representation as a graph."""
 
-    id_: int
-    category: Category
     nodes: List[Node]
 
     def __post_init__(self):
@@ -179,11 +179,11 @@ class Chip:
 
     def __str__(self):
         """String representation of the Chip class."""
-        string = ""
+        string = f"Chip {self.alias} with {self.num_qubits} qubits and {self.num_ports} ports: \n\n"
         for node in self.nodes:
             if isinstance(node, Port):
                 adj_nodes = self._get_adjacent_nodes(node=node)
-                string += f"Port {node.id_}: ----"
+                string += f" * Port {node.id_}: ----"
                 for adj_node in adj_nodes:
                     string += f"|{adj_node}|--"
                 string += "--\n"

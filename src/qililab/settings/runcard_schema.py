@@ -31,13 +31,23 @@ class RuncardSchema:
         class BusSchema:
             """Bus schema class."""
 
+            @dataclass
+            class SystemControlSchema:
+                """Bus schema class."""
+
+                id_: int
+                category: str
+                system_control_category: str
+                system_control_subcategory: str
+                alias: str | None = None
+
             id_: int
             category: str
-            subcategory: str
-            system_control: dict
+            bus_category: str
+            bus_subcategory: str
+            system_control: SystemControlSchema
             port: int
             alias: str | None = None
-            attenuator: dict | None = None
 
         @dataclass
         class ChipSchema:
@@ -46,6 +56,7 @@ class RuncardSchema:
             id_: int
             category: str
             nodes: List[dict]
+            alias: str | None = None
 
         @dataclass
         class InstrumentControllerSchema:
@@ -106,7 +117,7 @@ class RuncardSchema:
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = [self.GateSettings(**gate) for gate in self.gates]
+            self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
 
         def get_gate(self, name: str):
             """Get gate with the given name.

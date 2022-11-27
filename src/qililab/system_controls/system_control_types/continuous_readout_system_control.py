@@ -1,19 +1,21 @@
 """Continuous Readout SystemControl class."""
 from dataclasses import dataclass
 
-from qililab.instruments.system_control.continuous_system_control import (
-    ContinuousSystemControl,
-)
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.result import Result
+from qililab.system_controls.system_control_types.continuous_system_control import (
+    ContinuousSystemControl,
+)
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
 class ContinuousReadoutSystemControl(ContinuousSystemControl):
     """Continuous Readout  System Control class."""
+
+    name = SystemControlName.CONTINUOUS_READOUT_SYSTEM_CONTROL
 
     @dataclass
     class ContinuousReadoutSystemControlSettings(ContinuousSystemControl.ContinuousSystemControlSettings):

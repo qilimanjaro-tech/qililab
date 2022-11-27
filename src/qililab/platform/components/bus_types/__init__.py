@@ -1,6 +1,4 @@
 """ bus elements, categories and subcategories """
-from .bus import Bus
-from .bus_element import BusElement
 from .continuous_bus import ContinuousBus
 from .continuous_current_bias_bus import CurrentBiasBus
 from .continuous_microwave_bias_bus import MicroWaveBiasBus

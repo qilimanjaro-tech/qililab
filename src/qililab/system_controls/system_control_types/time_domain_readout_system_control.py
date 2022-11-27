@@ -2,21 +2,23 @@
 from dataclasses import dataclass
 
 from qililab.instruments.qubit_readout import AWGReadout
-from qililab.instruments.system_control.time_domain_baseband_system_control import (
+from qililab.result.result import Result
+from qililab.system_controls.system_control_types.time_domain_baseband_system_control import (
     BaseBandSystemControl,
 )
-from qililab.instruments.system_control.time_domain_control_system_control import (
+from qililab.system_controls.system_control_types.time_domain_control_system_control import (
     ControlSystemControl,
 )
-from qililab.result.result import Result
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
 class TimeDomainReadoutSystemControl(BaseBandSystemControl, ControlSystemControl):
     """TimeDomain Readout SystemControl class."""
+
+    name = SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL
 
     @dataclass
     class TimeDomainReadoutSystemControlSettings(

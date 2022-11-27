@@ -4,13 +4,16 @@ from typing import List
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
-from qililab.instruments import Instruments, SystemControl
+from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
+from qililab.system_controls import SystemControl
 from qililab.typings import BusCategory, BusSubCategory, Category, Node, Parameter
+from qililab.typings.enums import BusName
+from qililab.typings.factory_element import FactoryElement
 from qililab.utils import Factory
 
 
-class Bus:
+class Bus(FactoryElement):
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
@@ -19,6 +22,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
+    name: BusName
     targets: List[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass

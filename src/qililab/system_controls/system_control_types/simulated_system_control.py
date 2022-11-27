@@ -5,17 +5,19 @@ import numpy as np
 from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
-from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
+from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils.factory import Factory
 
 
 @Factory.register
 class SimulatedSystemControl(SystemControl):
     """SimulatedSystemControl class."""
+
+    name = SystemControlName.SIMULATED_SYSTEM_CONTROL
 
     @dataclass
     class SimulatedSystemControlSettings(SystemControl.SystemControlSettings):

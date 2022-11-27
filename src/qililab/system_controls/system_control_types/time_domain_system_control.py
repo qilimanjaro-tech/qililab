@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from qililab.instruments.awg import AWG
-from qililab.instruments.system_control.system_control import SystemControl
 from qililab.pulse import PulseBusSchedule
+from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
 from qililab.typings.enums import Category, Parameter
 

@@ -6,7 +6,7 @@ from typing import Callable, Type, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
-from qililab.platform.components.bus import BusElement
+from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device

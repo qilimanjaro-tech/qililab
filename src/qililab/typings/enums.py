@@ -309,9 +309,6 @@ class InstrumentName(Enum):
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
         * mini_circuits
-        * mixer_based_system_control
-        * integrated_system_control
-        * simulated_system_control
         * keithley_2600
         * qblox_D5a
         * qblox_S4g
@@ -322,9 +319,6 @@ class InstrumentName(Enum):
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
-    INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"
@@ -355,6 +349,50 @@ class InstrumentControllerName(Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
+
+
+class SystemControlName(Enum):
+    """System Control names.
+
+    Args:
+        enum (str): Available system control element names:
+        * time_domain_baseband_system_control
+        * time_domain_control_system_control
+        * time_domain_readout_system_control
+        * continuous_current_bias_system_control
+        * continuous_microwave_bias_system_control
+        * continuous_readout_system_control
+    """
+
+    TIME_DOMAIN_BASEBAND_SYSTEM_CONTROL = "time_domain_baseband_system_control"
+    TIME_DOMAIN_CONTROL_SYSTEM_CONTROL = "time_domain_control_system_control"
+    TIME_DOMAIN_READOUT_SYSTEM_CONTROL = "time_domain_readout_system_control"
+    CONTINUOUS_CURRENT_BIAS_SYSTEM_CONTROL = "continuous_current_bias_system_control"
+    CONTINUOUS_MICROWAVE_BIAS_SYSTEM_CONTROL = "continuous_microwave_bias_system_control"
+    CONTINUOUS_READOUT_SYSTEM_CONTROL = "continuous_readout_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class BusName(Enum):
+    """System Control names.
+
+    Args:
+        enum (str): Available bus element names:
+        * time_domain_baseband_bus
+        * time_domain_control_bus
+        * time_domain_readout_bus
+        * continuous_current_bias_bus
+        * continuous_microwave_bias_bus
+        * continuous_readout_bus
+    """
+
+    TIME_DOMAIN_BASEBAND_BUS = "time_domain_baseband_bus"
+    TIME_DOMAIN_CONTROL_BUS = "time_domain_control_bus"
+    TIME_DOMAIN_READOUT_BUS = "time_domain_readout_bus"
+    CONTINUOUS_CURRENT_BIAS_BUS = "continuous_current_bias_bus"
+    CONTINUOUS_MICROWAVE_BIAS_BUS = "continuous_microwave_bias_bus"
+    CONTINUOUS_READOUT_BUS = "continuous_readout_bus"
+    SIMULATED_BUS = "simulated_bus"
 
 
 class Parameter(Enum):

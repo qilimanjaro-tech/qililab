@@ -2,17 +2,19 @@
 from dataclasses import dataclass
 
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.system_control.time_domain_system_control import (
+from qililab.system_controls.system_control_types.time_domain_system_control import (
     TimeDomainSystemControl,
 )
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
 class BaseBandSystemControl(TimeDomainSystemControl):
     """BaseBand SystemControl class."""
+
+    name = SystemControlName.TIME_DOMAIN_BASEBAND_SYSTEM_CONTROL
 
     @dataclass
     class BaseBandSystemControlSettings(TimeDomainSystemControl.TimeDomainSystemControlSettings):

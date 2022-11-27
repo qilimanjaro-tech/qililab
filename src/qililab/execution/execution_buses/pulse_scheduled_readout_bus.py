@@ -2,10 +2,10 @@
 from dataclasses import dataclass, field
 
 from qililab.execution.execution_buses.pulse_scheduled_bus import PulseScheduledBus
-from qililab.instruments import TimeDomainReadoutSystemControl
-from qililab.platform import TimeDomainReadoutBus
+from qililab.platform.components.bus_types import TimeDomainReadoutBus
 from qililab.pulse import PulseBusSchedule
 from qililab.result.result import Result
+from qililab.system_controls.system_control_types import TimeDomainReadoutSystemControl
 
 
 @dataclass

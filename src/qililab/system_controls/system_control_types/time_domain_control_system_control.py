@@ -3,18 +3,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from qililab.instruments.signal_generator import SignalGenerator
-from qililab.instruments.system_control.time_domain_system_control import (
+from qililab.pulse import PulseBusSchedule
+from qililab.system_controls.system_control_types.time_domain_system_control import (
     TimeDomainSystemControl,
 )
-from qililab.pulse import PulseBusSchedule
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
 class ControlSystemControl(TimeDomainSystemControl):
     """Control SystemControl class."""
+
+    name = SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL
 
     @dataclass
     class ControlSystemControlSettings(TimeDomainSystemControl.TimeDomainSystemControlSettings):

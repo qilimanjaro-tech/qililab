@@ -8,8 +8,8 @@ from qililab.execution.execution_buses.pulse_scheduled_readout_bus import (
 )
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
-from qililab.platform.components.bus import (
-    Bus,
+from qililab.platform.components.bus import Bus
+from qililab.platform.components.bus_types import (
     ContinuousBus,
     TimeDomainBus,
     TimeDomainReadoutBus,

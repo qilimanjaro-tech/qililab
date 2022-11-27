@@ -2,13 +2,17 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import TimeDomainReadoutSystemControl
-from qililab.platform.components.bus import TimeDomainBus
-from qililab.typings.enums import BusSubCategory
+from qililab.platform.components.bus_types.time_domain_bus import TimeDomainBus
+from qililab.system_controls.system_control_types import TimeDomainReadoutSystemControl
+from qililab.typings.enums import BusName, BusSubCategory
+from qililab.utils import Factory
 
 
+@Factory.register
 class TimeDomainReadoutBus(TimeDomainBus):
     """Time Domain Readout Bus"""
+
+    name = BusName.TIME_DOMAIN_READOUT_BUS
 
     @dataclass
     class TimeDomainReadoutBusSettings(TimeDomainBus.TimeDomainBusSettings):

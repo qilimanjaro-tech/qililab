@@ -2,13 +2,17 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import MicroWaveBiasSystemControl
-from qililab.platform.components.bus import ContinuousBus
-from qililab.typings.enums import BusSubCategory
+from qililab.platform.components.bus_types.continuous_bus import ContinuousBus
+from qililab.system_controls.system_control_types import MicroWaveBiasSystemControl
+from qililab.typings.enums import BusName, BusSubCategory
+from qililab.utils import Factory
 
 
+@Factory.register
 class MicroWaveBiasBus(ContinuousBus):
     """Continuous MicroWave Bias Bus"""
+
+    name = BusName.CONTINUOUS_MICROWAVE_BIAS_BUS
 
     @dataclass
     class MicroWaveBiasBusSettings(ContinuousBus.ContinuousBusSettings):

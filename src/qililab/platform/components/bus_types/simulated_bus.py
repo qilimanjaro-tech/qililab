@@ -2,13 +2,17 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import SimulatedSystemControl
 from qililab.platform.components.bus import Bus
-from qililab.typings.enums import BusCategory
+from qililab.system_controls.system_control_types import SimulatedSystemControl
+from qililab.typings.enums import BusCategory, BusName
+from qililab.utils.factory import Factory
 
 
+@Factory.register
 class SimulatedBus(Bus):
     """Simulated Bus"""
+
+    name = BusName.SIMULATED_BUS
 
     @dataclass
     class SimulatedBusSettings(Bus.BusSettings):

@@ -2,7 +2,7 @@
 from dataclasses import asdict
 
 from qililab.constants import RUNCARD
-from qililab.platform.components.bus.bus_element import dict_factory
+from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter

@@ -2,17 +2,19 @@
 from dataclasses import dataclass
 
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.system_control.continuous_system_control import (
+from qililab.system_controls.system_control_types.continuous_system_control import (
     ContinuousSystemControl,
 )
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
 class CurrentBiasSystemControl(ContinuousSystemControl):
     """Continuous Current Bias System Control class."""
+
+    name = SystemControlName.CONTINUOUS_CURRENT_BIAS_SYSTEM_CONTROL
 
     @dataclass
     class CurrentBiasSystemControlSettings(ContinuousSystemControl.ContinuousSystemControlSettings):

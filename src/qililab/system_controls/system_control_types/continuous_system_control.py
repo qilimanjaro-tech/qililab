@@ -1,7 +1,7 @@
 """Continuous SystemControl class."""
 from dataclasses import dataclass
 
-from qililab.instruments.system_control.system_control import SystemControl
+from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
 
 

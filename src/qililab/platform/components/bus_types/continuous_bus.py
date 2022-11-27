@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import ContinuousSystemControl
 from qililab.platform.components.bus import Bus
+from qililab.system_controls.system_control_types import ContinuousSystemControl
 from qililab.typings.enums import BusCategory
 
 

@@ -2,13 +2,17 @@
 
 from dataclasses import dataclass
 
-from qililab.instruments import CurrentBiasSystemControl
-from qililab.platform.components.bus import ContinuousBus
-from qililab.typings.enums import BusSubCategory
+from qililab.platform.components.bus_types.continuous_bus import ContinuousBus
+from qililab.system_controls.system_control_types import CurrentBiasSystemControl
+from qililab.typings.enums import BusName, BusSubCategory
+from qililab.utils import Factory
 
 
+@Factory.register
 class CurrentBiasBus(ContinuousBus):
     """Continuous Current Bias Bus"""
+
+    name = BusName.CONTINUOUS_CURRENT_BIAS_BUS
 
     @dataclass
     class CurrentBiasBusSettings(ContinuousBus.ContinuousBusSettings):

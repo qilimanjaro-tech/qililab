@@ -2,9 +2,11 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from qililab.instruments import TimeDomainSystemControl
-from qililab.platform import TimeDomainBus
+from qililab.platform.components.bus_types import TimeDomainBus
 from qililab.pulse import PulseBusSchedule
+from qililab.system_controls.system_control_types.time_domain_system_control import (
+    TimeDomainSystemControl,
+)
 from qililab.typings import BusSubCategory
 from qililab.utils import Waveforms
 
