@@ -141,7 +141,7 @@ class Galadriel:
         "firmware": "0.7.0",
         Parameter.SYNC_ENABLED.value: [True],
         "scope_acquire_trigger_mode": "sequencer",
-        "scope_hardware_averaging": True,
+        "scope_hardware_averaging": [True],
         "sampling_rate": 1000000000,
         Parameter.HARDWARE_MODULATION.value: [True],
         "integration_length": 2000,
@@ -496,12 +496,12 @@ simulated_experiment_circuit.add(U2(0, 14, 25))
 
 results_two_loops = {
     "software_average": 1,
-    "num_sequences": 1,
+    "num_schedules": 1,
     "shape": [75, 100],
     "loops": [
         {
             "alias": "attenuator",
-            "instrument": None,
+            "previous": None,
             "id_": None,
             "parameter": "attenuation",
             "start": 15,
@@ -510,7 +510,7 @@ results_two_loops = {
             "step": 1,
             "loop": {
                 "alias": "rs_1",
-                "instrument": None,
+                "previous": None,
                 "id_": None,
                 "parameter": "frequency",
                 "start": 7342000000,
@@ -549,12 +549,12 @@ results_two_loops = {
 
 results_one_loops = {
     "software_average": 1,
-    "num_sequences": 1,
+    "num_schedules": 1,
     "shape": [100],
     "loops": [
         {
             "alias": "rs_1",
-            "instrument": None,
+            "previous": None,
             "id_": None,
             "parameter": "frequency",
             "start": 7342000000,
