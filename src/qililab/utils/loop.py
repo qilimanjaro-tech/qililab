@@ -1,32 +1,45 @@
 """Loop class."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
 
-from qililab.constants import LOOP
-from qililab.typings.enums import Parameter
-from qililab.typings.loop import LoopOptions
+from qililab.constants import LOOP, RUNCARD
+from qililab.typings.enums import Instrument, Parameter
 
 
 @dataclass
 class Loop:
     """Loop class."""
 
-    alias: str
     parameter: Parameter
-    options: LoopOptions
+    start: float
+    stop: float
+    alias: str | None = None
+    instrument: Instrument | None = None
+    id_: int | None = None
+    num: int | None = None
+    step: float | None = None
     loop: Loop | None = None
+    logarithmic: bool = False
+    channel_id: int | None = None
+    values: np.ndarray | None = None
     previous: Loop | None = field(compare=False, default=None)
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
+        if self.step is not None and self.num is not None:
+            raise ValueError("'step' and 'num' arguments cannot be used together.")
+        if self.logarithmic and self.num is None:
+            raise ValueError("'logarithmic' requires 'num' argument to be specified.")
         if self.loop is not None:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
             self.loop.previous = self
+        if isinstance(self.instrument, str):
+            self.instrument = Instrument(self.instrument)
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
 
@@ -40,9 +53,9 @@ class Loop:
         if self.values is not None:
             return self.values
         if self.logarithmic and self.num is not None:
-            return np.geomspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
+            return np.geomspace(start=self.start, stop=self.stop, num=self.num)
         if self.num is not None:
-            return np.linspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
+            return np.linspace(start=self.start, stop=self.stop, num=self.num)
         if self.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
 
@@ -119,47 +132,33 @@ class Loop:
             dict: Dictionary representation of the class.
         """
         return {
-            LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.OPTIONS: asdict(self.options),
+            LOOP.START: self.start,
+            LOOP.STOP: self.stop,
+            RUNCARD.ALIAS: self.alias,
+            RUNCARD.INSTRUMENT: self.instrument.value if self.instrument is not None else None,
+            RUNCARD.ID: self.id_,
+            LOOP.NUM: self.num,
+            LOOP.STEP: self.step,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            LOOP.LOGARITHMIC: self.logarithmic,
+            LOOP.CHANNEL_ID: self.channel_id,
+            LOOP.VALUES: list(self.values) if self.values is not None else None,
         }
 
-    @property
-    def start(self):
-        """returns 'start' options property."""
-        if self.options.start is None:
-            raise ValueError("'start' cannot be None")
-        return self.options.start
+    def to_array(self):
+        """returns the array of the loops"""
+        return self.ranges
 
-    @property
-    def stop(self):
-        """returns 'stop' options property."""
-        if self.options.stop is None:
-            raise ValueError("'stop' cannot be None")
-        return self.options.stop
-
-    @property
-    def num(self):
-        """returns 'num' options property."""
-        return self.options.num
-
-    @property
-    def step(self):
-        """returns 'step' options property."""
-        return self.options.step
-
-    @property
-    def logarithmic(self):
-        """returns 'logarithmic' options property."""
-        return self.options.logarithmic
-
-    @property
-    def channel_id(self):
-        """returns 'channel_id' options property."""
-        return self.options.channel_id
-
-    @property
-    def values(self):
-        """returns 'values' options property."""
-        return self.options.values
+    @classmethod
+    def from_array(cls, parameter: Parameter, alias: str, values: np.ndarray):
+        """Build a loop from specified values"""
+        if values is None or len(values) == 0:
+            raise ValueError("Values should be an array of at least one element")
+        return Loop(
+            parameter=parameter,
+            alias=alias,
+            start=values[0],
+            stop=values[-1],
+            values=values,
+        )
