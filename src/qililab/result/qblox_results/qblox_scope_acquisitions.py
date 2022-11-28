@@ -50,10 +50,10 @@ class QbloxScopeAcquisitions(Acquisitions):
         i_demod, q_demod = demodulate(i=i_values, q=q_values, frequency=frequency, phase_offset=phase_offset)
         common_out_of_range = self.scope.path0.out_of_range or self.scope.path1.out_of_range
         i_demod_pathdata = ScopeData.PathData(
-            data=i_demod, avg_cnt=self.scope.path0.avg_cnt, out_of_range=common_out_of_range
+            data=i_demod.tolist(), avg_cnt=self.scope.path0.avg_cnt, out_of_range=common_out_of_range
         )
         q_demod_pathdata = ScopeData.PathData(
-            data=q_demod, avg_cnt=self.scope.path1.avg_cnt, out_of_range=common_out_of_range
+            data=q_demod.tolist(), avg_cnt=self.scope.path1.avg_cnt, out_of_range=common_out_of_range
         )
         demod_scope_data = ScopeData(path0=i_demod_pathdata, path1=q_demod_pathdata)
         return QbloxScopeAcquisitions(scope=demod_scope_data, pulse_length=self.pulse_length)
