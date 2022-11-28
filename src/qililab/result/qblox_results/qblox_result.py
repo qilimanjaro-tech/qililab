@@ -51,7 +51,7 @@ class QbloxResult(Result):
             pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_bins_acquisitions)
-        self.data_dataframe_indices = self.qblox_acquisitions.data_dataframe_indices
+        self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
 
     def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
         """Returns the scope acquisitions demodulated in the given frequency with the given phase offset.
