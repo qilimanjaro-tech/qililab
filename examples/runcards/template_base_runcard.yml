@@ -91,6 +91,7 @@ schema:
       sync_enabled: true
       scope_acquire_trigger_mode: sequencer
       scope_hardware_averaging: false
+      scope_store_enabled: false
       sampling_rate: 1.e+09
       num_bins: 1
       integration: true

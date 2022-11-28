@@ -103,6 +103,10 @@ class TestQbloxQRM:
     def test_hardware_averaging_property(self, qrm_no_device: QbloxQRM):
         """Test hardware_averaging property."""
         assert qrm_no_device.scope_hardware_averaging == qrm_no_device.settings.scope_hardware_averaging
+        
+    def test_scope_store_enabled(self, qrm_no_device: QbloxQRM):
+        """Test scope_store_enabled property."""
+        assert qrm_no_device.scope_store_enabled == qrm_no_device.settings.scope_store_enabled
 
     def test_sampling_rate_property(self, qrm_no_device: QbloxQRM):
         """Test sampling_rate property."""

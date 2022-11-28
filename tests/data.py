@@ -141,6 +141,7 @@ class Galadriel:
         "sync_enabled": True,
         "scope_acquire_trigger_mode": "sequencer",
         "scope_hardware_averaging": True,
+        "scope_store_enabled": False,
         "sampling_rate": 1000000000,
         "integration": True,
         "integration_length": 2000,
