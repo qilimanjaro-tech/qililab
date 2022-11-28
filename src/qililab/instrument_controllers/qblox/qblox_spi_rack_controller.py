@@ -61,8 +61,8 @@ class QbloxSPIRackController(MultiInstrumentController):
         # self.modules[1].device = self.device.module7
         for module, slot_id, reference in zip(self.modules, self.connected_modules_slot_ids, self.settings.modules):
             # FIXME: use the instrument name instead of the alias (it requires to save the name)
-            self.device.add_spi_module(slot_id=slot_id - 1, module_type=reference.alias)
-            module.device = self.device.modules[slot_id - 1]  # slot_id represents the number displayed in the cluster
+            self.device.add_spi_module(slot_id=slot_id, module_type=reference.alias)
+            module.device = self.device.modules[slot_id]  # slot_id represents the number displayed in the cluster
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""
