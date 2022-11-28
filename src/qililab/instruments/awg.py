@@ -16,7 +16,7 @@ class AWG(Instrument):
         """Contains the settings of a AWG.
 
         Args:
-            num_sequencers (int): Number of sequencers
+            num_sequencers (int): Number of sequencers (physical I/Q pairs)
             frequencies (List[float]): Frequency for each sequencer
             gain (List[float]): Gain step used by the sequencer.
             gain_imbalance (float): Amplitude added to the Q channel.

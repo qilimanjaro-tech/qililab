@@ -30,7 +30,7 @@ class QbloxModule(AWG):
     """
 
     _MAX_BINS: int = 131072
-    _NUM_SEQUENCERS: int = 4
+    _NUM_SEQUENCERS: int = 2
     _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
@@ -201,31 +201,31 @@ class QbloxModule(AWG):
             raise ValueError(
                 f"the specified channel_id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
-        if parameter.value == Parameter.GAIN.value:
+        if parameter == Parameter.GAIN:
             self._set_gain(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_I.value:
+        if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.OFFSET_Q.value:
+        if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.FREQUENCIES.value:
+        if parameter == Parameter.FREQUENCIES:
             self._set_frequency(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.HARDWARE_MODULATION.value:
+        if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.SYNC_ENABLED.value:
+        if parameter == Parameter.SYNC_ENABLED:
             self._set_sync_enabled(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.NUM_BINS.value:
+        if parameter == Parameter.NUM_BINS:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.GAIN_IMBALANCE.value:
+        if parameter == Parameter.GAIN_IMBALANCE:
             self._set_gain_imbalance(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.PHASE_IMBALANCE.value:
+        if parameter == Parameter.PHASE_IMBALANCE:
             self._set_phase_imbalance(value=value, channel_id=channel_id)
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")

@@ -5,14 +5,13 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Register
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.instruments.qubit_control import QubitControl
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import InstrumentName
 
 
 @InstrumentFactory.register
-class QbloxQCM(QbloxModule, QubitControl):
+class QbloxQCM(QbloxModule):
     """Qblox QCM class.
 
     Args:
@@ -22,7 +21,7 @@ class QbloxQCM(QbloxModule, QubitControl):
     name = InstrumentName.QBLOX_QCM
 
     @dataclass
-    class QbloxQCMSettings(QbloxModule.QbloxModuleSettings, QubitControl.QubitControlSettings):
+    class QbloxQCMSettings(QbloxModule.QbloxModuleSettings):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxQCMSettings

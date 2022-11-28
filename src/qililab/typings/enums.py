@@ -19,6 +19,7 @@ class Category(Enum):
         * instrument_controller
         * voltage_source
         * current_source
+        * digital_analog_converter
     """
 
     PLATFORM = "platform"
@@ -39,6 +40,8 @@ class Category(Enum):
     INSTRUMENT_CONTROLLER = "instrument_controller"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    DAC = "digital_analog_converter"
+    AWG_DAC = "awg_dac"
 
 
 class Instrument(Enum):

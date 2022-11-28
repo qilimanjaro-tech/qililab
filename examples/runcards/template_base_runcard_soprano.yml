@@ -170,20 +170,36 @@ schema:
       id_: 0
       category: awg
       firmware: 0.7.0
-      num_sequencers: 4
-      num_bins: [1, 1, 1, 1]
-      frequencies: [1.e+08, 1.e+08, 1.e+08, 1.e+08]
-      gain: [1, 1, 1, 1]
-      gain_imbalance: [0, 0, 0, 0]
-      phase_imbalance: [0, 0, 0, 0]
-      offset_i: [0, 0, 0, 0]
-      offset_q: [0, 0, 0, 0]
-      hardware_modulation: [true, true, true, true]
-      sync_enabled: [true, true, true, true]
+      num_sequencers: 2
+      num_bins: [1, 1]
+      frequencies: [1.e+08, 1.e+08]
+      gain: [1, 1]
+      gain_imbalance: [0, 0]
+      phase_imbalance: [0, 0]
+      offset_i: [0, 0]
+      offset_q: [0, 0]
+      hardware_modulation: [true, true]
+      sync_enabled: [true, true]
 
     - name: QCM
       alias: QCM_1
       id_: 1
+      category: awg
+      firmware: 0.7.0
+      num_sequencers: 2
+      num_bins: [1, 1]
+      frequencies: [1.e+08, 1.e+08]
+      gain: [1, 1]
+      gain_imbalance: [0, 0]
+      phase_imbalance: [0, 0]
+      offset_i: [0, 0]
+      offset_q: [0, 0]
+      hardware_modulation: [true, true]
+      sync_enabled: [true, true]
+
+    - name: QCM
+      alias: QCM_2
+      id_: 2
       category: awg
       firmware: 0.7.0
       num_sequencers: 1
@@ -199,145 +215,94 @@ schema:
 
     - name: QRM
       alias: QRM_0
-      id_: 2
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 2
-      frequencies: [2.e+07, 2.e+07]
-      gain: [1, 1]
-      gain_imbalance: [0, 0]
-      phase_imbalance: [0, 0]
-      offset_i: [0, 0]
-      offset_q: [0, 0]
-      hardware_modulation: [true, true]
-      sync_enabled: [true, true]
-      num_bins: [1, 1]
-      scope_acquire_trigger_mode: [sequencer, sequencer]
-      scope_hardware_averaging: [false, false]
-      sampling_rate: [1.e+09, 1.e+09]
-      hardware_integration: [true, true]
-      hardware_demodulation: [true, true]
-      integration_length: [2000, 2000]
-      acquisition_delay_time: 100
-      integration_mode: [ssb, ssb]
-      sequence_timeout: [1, 1]
-      acquisition_timeout: [1, 1]
-
-    - name: QRM
-      alias: QRM_1
       id_: 3
-      category: awg
+      category: awg_dac
       firmware: 0.7.0
-      num_sequencers: 2
-      frequencies: [2.e+07, 2.e+07]
-      gain: [1, 1]
-      gain_imbalance: [0, 0]
-      phase_imbalance: [0, 0]
-      offset_i: [0, 0]
-      offset_q: [0, 0]
-      hardware_modulation: [true, true]
-      sync_enabled: [true, true]
-      num_bins: [1, 1]
-      scope_acquire_trigger_mode: [sequencer, sequencer]
-      scope_hardware_averaging: [false, false]
-      sampling_rate: [1.e+09, 1.e+09]
-      hardware_integration: [true, true]
-      hardware_demodulation: [true, true]
-      integration_length: [2000, 2000]
+      num_sequencers: 5
+      frequencies: [2.e+07, 2.e+07, 2.e+07, 2.e+07, 2.e+07]
+      gain: [1, 1, 1, 1, 1]
+      gain_imbalance: [0, 0, 0, 0, 0]
+      phase_imbalance: [0, 0, 0, 0, 0]
+      offset_i: [0, 0, 0, 0, 0]
+      offset_q: [0, 0, 0, 0, 0]
+      hardware_modulation: [true, true, true, true, true]
+      sync_enabled: [true, true, true, true, true]
+      num_bins: [1, 1, 1, 1, 1]
+      scope_acquire_trigger_mode:
+        [sequencer, sequencer, sequencer, sequencer, sequencer]
+      scope_hardware_averaging: [false, false, false, false, false]
+      sampling_rate: [1.e+09, 1.e+09, 1.e+09, 1.e+09, 1.e+09]
+      hardware_integration: [true, true, true, true, true]
+      hardware_demodulation: [true, true, true, true, true]
+      integration_length: [2000, 2000, 2000, 2000, 2000]
       acquisition_delay_time: 100
-      integration_mode: [ssb, ssb]
-      sequence_timeout: [1, 1]
-      acquisition_timeout: [1, 1]
-
-    - name: QRM
-      alias: QRM_2
-      id_: 4
-      category: awg
-      firmware: 0.7.0
-      num_sequencers: 1
-      frequencies: [2.e+07]
-      gain: [1]
-      gain_imbalance: [0]
-      phase_imbalance: [0]
-      offset_i: [0]
-      offset_q: [0]
-      hardware_modulation: [true]
-      sync_enabled: [true]
-      num_bins: [1]
-      scope_acquire_trigger_mode: [sequencer]
-      scope_hardware_averaging: [false]
-      sampling_rate: [1.e+09]
-      hardware_integration: [true]
-      hardware_demodulation: [true]
-      integration_length: [2000]
-      acquisition_delay_time: 100
-      integration_mode: [ssb]
-      sequence_timeout: [1]
-      acquisition_timeout: [1]
+      integration_mode: [ssb, ssb, ssb, ssb, ssb]
+      sequence_timeout: [1, 1, 1, 1, 1]
+      acquisition_timeout: [1, 1, 1, 1, 1]
 
     - name: rohde_schwarz
       alias: rs_0
-      id_: 5
+      id_: 4
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: rohde_schwarz
       alias: rs_1
-      id_: 6
+      id_: 5
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: rohde_schwarz
       alias: rs_2
-      id_: 7
+      id_: 6
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: rohde_schwarz
       alias: rs_3
-      id_: 8
+      id_: 7
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: rohde_schwarz
       alias: rs_4
-      id_: 9
+      id_: 8
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: rohde_schwarz
       alias: rs_5
-      id_: 10
+      id_: 9
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
 
     - name: S4g
       alias: S4g_0
-      id_: 11
+      id_: 10
       category: current_source
       firmware: None
       current: [0.0, 0.0, 0.0, 0.0]
       ramping_enabled: [true, true, true, true]
       ramp_rate: [0.0001, 0.0001, 0.0001, 0.0001]
       span: ["range_max_bi", "range_max_bi", "range_max_bi", "range_max_bi"]
-      dacs: [0, 1, 2, 3]
+      dacs: [1, 2, 3, 4]
 
     - name: S4g
       alias: S4g_1
-      id_: 12
+      id_: 11
       category: current_source
       firmware: None
-      current: [0.0, 0.0]
+      current: [0.0]
       ramping_enabled: [true, true]
       ramp_rate: [0.0001, 0.0001]
       span: ["range_max_bi", "range_max_bi"]
-      dacs: [0, 1]
+      dacs: [1]
 
   buses:
     - id_: 0
@@ -352,7 +317,7 @@ schema:
         category: system_control
         system_control_category: time_domain
         system_control_subcategory: control
-        awg: QCM_0
+        awg: QCM_1
         signal_generator: rs_2
       port: 2
 
@@ -361,7 +326,7 @@ schema:
       category: bus
       bus_category: time_domain
       bus_subcategory: readout
-      alias: feedline_bus_0
+      alias: feedline_input_output_bus
       system_control:
         id_: 1
         name: time_domain_readout_system_control
@@ -369,45 +334,11 @@ schema:
         system_control_category: time_domain
         system_control_subcategory: readout
         awg: QRM_0
+        awg_dac: QRM_0
         signal_generator: rs_5
-        current_source: S4g_1
       port: 3
 
     - id_: 2
-      name: time_domain_readout_bus
-      category: bus
-      bus_category: time_domain
-      bus_subcategory: readout
-      alias: feedline_bus_1
-      system_control:
-        id_: 2
-        name: time_domain_readout_system_control
-        category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: readout
-        awg: QRM_1
-        signal_generator: rs_5
-        current_source: S4g_1
-      port: 3
-
-    - id_: 3
-      name: time_domain_readout_bus
-      category: bus
-      bus_category: time_domain
-      bus_subcategory: readout
-      alias: feedline_bus_2
-      system_control:
-        id_: 3
-        name: time_domain_readout_system_control
-        category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: readout
-        awg: QRM_2
-        signal_generator: rs_5
-        current_source: S4g_1
-      port: 3
-
-    - id_: 4
       name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
@@ -422,7 +353,7 @@ schema:
         current_source: S4g_1
       port: 5
 
-    - id_: 5
+    - id_: 3
       name: time_domain_control_bus
       category: bus
       bus_category: time_domain
@@ -434,11 +365,11 @@ schema:
         category: system_control
         system_control_category: time_domain
         system_control_subcategory: control
-        awg: QCM_1
+        awg: QCM_2
         signal_generator: rs_4
       port: 6
 
-    - id_: 6
+    - id_: 4
       name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
@@ -453,7 +384,7 @@ schema:
         current_source: S4g_0
       port: 7
 
-    - id_: 7
+    - id_: 5
       name: time_domain_control_bus
       category: bus
       bus_category: time_domain
@@ -469,7 +400,7 @@ schema:
         signal_generator: rs_1
       port: 8
 
-    - id_: 8
+    - id_: 6
       name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
@@ -484,7 +415,7 @@ schema:
         current_source: S4g_0
       port: 9
 
-    - id_: 9
+    - id_: 7
       name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
@@ -499,7 +430,7 @@ schema:
         current_source: S4g_0
       port: 14
 
-    - id_: 10
+    - id_: 8
       name: time_domain_control_bus
       category: bus
       bus_category: time_domain
@@ -515,7 +446,7 @@ schema:
         signal_generator: rs_0
       port: 15
 
-    - id_: 11
+    - id_: 9
       name: time_domain_control_bus
       category: bus
       bus_category: time_domain
@@ -527,11 +458,11 @@ schema:
         category: system_control
         system_control_category: time_domain
         system_control_subcategory: control
-        awg: QCM_0
+        awg: QCM_1
         signal_generator: rs_3
       port: 17
 
-    - id_: 12
+    - id_: 10
       name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
@@ -561,12 +492,10 @@ schema:
           slot_id: 1
         - awg: QCM_1
           slot_id: 2
-        - awg: QRM_0
+        - awg: QCM_2
           slot_id: 3
-        - awg: QRM_1
+        - awg_dac: QRM_0
           slot_id: 4
-        - awg: QRM_2
-          slot_id: 5
 
     - name: rohde_schwarz
       id_: 2

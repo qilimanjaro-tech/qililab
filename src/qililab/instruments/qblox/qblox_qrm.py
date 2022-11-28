@@ -1,28 +1,22 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
+from qililab.instruments.digital_analog_converter import AWGDigitalAnalogConverter
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
-from qililab.instruments.qubit_readout import AWGReadout
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
 from qililab.result import QbloxResult
-from qililab.typings.enums import (
-    AcquireTriggerMode,
-    InstrumentName,
-    IntegrationMode,
-    Parameter,
-)
+from qililab.typings.enums import AcquireTriggerMode, InstrumentName
 
 
 @InstrumentFactory.register
-class QbloxQRM(QbloxModule, AWGReadout):
+class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
     """Qblox QRM class.
 
     Args:
@@ -30,33 +24,13 @@ class QbloxQRM(QbloxModule, AWGReadout):
     """
 
     name = InstrumentName.QBLOX_QRM
-    _NUM_SEQUENCERS: int = 2
+    _NUM_SEQUENCERS: int = 1
 
     @dataclass
-    class QbloxQRMSettings(QbloxModule.QbloxModuleSettings, AWGReadout.AWGReadoutSettings):
-        """Contains the settings of a specific pulsar.
-
-        Args:
-            acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
-            scope_hardware_averaging (bool): Enable/disable hardware averaging of the data during scope mode.
-            integration_length (int): Duration (in ns) of the integration.
-            integration_mode (str): Integration mode. Options are 'ssb'.
-            sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
-            If timeout is reached a TimeoutError is raised.
-            acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
-            If timeout is reached a TimeoutError is raised.
-            acquisition_name (str): Name of the acquisition saved in the sequencer.
-        """
-
-        scope_acquire_trigger_mode: List[AcquireTriggerMode]
-        scope_hardware_averaging: List[bool]
-        sampling_rate: List[int]  # default sampling rate for Qblox is 1.e+09
-        hardware_integration: List[bool]  # integration flag
-        hardware_demodulation: List[bool]  # demodulation flag
-        integration_length: List[int]
-        integration_mode: List[IntegrationMode]
-        sequence_timeout: List[int]  # minutes
-        acquisition_timeout: List[int]  # minutes
+    class QbloxQRMSettings(
+        QbloxModule.QbloxModuleSettings, AWGDigitalAnalogConverter.AWGDigitalAnalogConverterSettings
+    ):
+        """Contains the settings of a specific QRM."""
 
     settings: QbloxQRMSettings
 
@@ -106,86 +80,51 @@ class QbloxQRM(QbloxModule, AWGReadout):
         """
         return self.get_acquisitions()
 
-    @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
-        """set a specific parameter to the instrument"""
-        if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
-        super().setup(parameter=parameter, value=value, channel_id=channel_id)
-        if parameter.value == Parameter.HARDWARE_AVERAGE.value:
-            self._set_scope_hardware_averaging(value=value, channel_id=channel_id)
-            return
-        if parameter.value == Parameter.HARDWARE_DEMODULATION.value:
-            self._set_hardware_demodulation(value=value, channel_id=channel_id)
-            return
-        if parameter.value == Parameter.ACQUISITION_MODE.value:
-            self._set_acquisition_mode(value=value, channel_id=channel_id)
-            return
-        if parameter.value == Parameter.INTEGRATION_LENGTH.value:
-            self._set_integration_length(value=value, channel_id=channel_id)
-            return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
-
-    def _set_hardware_demodulation(self, value: float | str | bool, channel_id: int):
+    def _set_device_hardware_demodulation(self, value: bool, channel_id: int):
         """set hardware demodulation
 
         Args:
-            value (float | str | bool): value to update
+            value (bool): value to update
             channel_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.hardware_demodulation[channel_id] = value
         self.device.sequencers[channel_id].demod_en_acq(value)
 
-    def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, channel_id: int):
+    def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, channel_id: int):
         """set acquisition_mode for the specific channel
 
         Args:
-            value (float | str | bool): value to update
+            mode (AcquireTriggerMode): value to update
             channel_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not string
         """
-        if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
-            raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
-        self.settings.scope_acquire_trigger_mode[channel_id] = AcquireTriggerMode(value)
         self.device.scope_acq_sequencer_select(channel_id)
-        self.device.scope_acq_trigger_mode_path0(self.scope_acquire_trigger_mode[channel_id].value)
-        self.device.scope_acq_trigger_mode_path1(self.scope_acquire_trigger_mode[channel_id].value)
+        self.device.scope_acq_trigger_mode_path0(mode.value)
+        self.device.scope_acq_trigger_mode_path1(mode.value)
 
-    def _set_integration_length(self, value: int | float | str | bool, channel_id: int):
+    def _set_device_integration_length(self, value: int, channel_id: int):
         """set integration_length for the specific channel
 
         Args:
-            value (float | str | bool): value to update
+            value (int): value to update
             channel_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, int) and not isinstance(value, float):
-            raise ValueError(f"value must be a int or float. Current type: {type(value)}")
-        self.settings.integration_length[channel_id] = int(value)
-        self.device.sequencers[channel_id].integration_length_acq(self.integration_length)
+        self.device.sequencers[channel_id].integration_length_acq(value)
 
-    def _set_scope_hardware_averaging(self, value: float | str | bool, channel_id: int):
+    def _set_device_scope_hardware_averaging(self, value: bool, channel_id: int):
         """set scope_hardware_averaging for the specific channel
 
         Args:
-            value (float | str | bool): value to update
+            value (bool): value to update
             channel_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.scope_hardware_averaging[channel_id] = value
         self.device.scope_acq_sequencer_select(channel_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
@@ -254,87 +193,6 @@ class QbloxQRM(QbloxModule, AWGReadout):
             dict: Acquisition weights.
         """
         return {}
-
-    @property
-    def scope_acquire_trigger_mode(self):
-        """QbloxPulsarQRM 'acquire_trigger_mode' property.
-
-        Returns:
-            AcquireTriggerMode: settings.acquire_trigger_mode.
-        """
-        return self.settings.scope_acquire_trigger_mode
-
-    @property
-    def scope_hardware_averaging(self):
-        """QbloxPulsarQRM 'scope_hardware_averaging' property.
-
-        Returns:
-            bool: settings.scope_hardware_averaging.
-        """
-        return self.settings.scope_hardware_averaging
-
-    @property
-    def sampling_rate(self):
-        """QbloxPulsarQRM 'sampling_rate' property.
-
-        Returns:
-            int: settings.sampling_rate.
-        """
-        return self.settings.sampling_rate
-
-    @property
-    def integration_length(self):
-        """QbloxPulsarQRM 'integration_length' property.
-
-        Returns:
-            int: settings.integration_length.
-        """
-        return self.settings.integration_length
-
-    @property
-    def integration_mode(self):
-        """QbloxPulsarQRM 'integration_mode' property.
-
-        Returns:
-            IntegrationMode: settings.integration_mode.
-        """
-        return self.settings.integration_mode
-
-    @property
-    def sequence_timeout(self):
-        """QbloxPulsarQRM 'sequence_timeout' property.
-
-        Returns:
-            int: settings.sequence_timeout.
-        """
-        return self.settings.sequence_timeout
-
-    @property
-    def acquisition_timeout(self):
-        """QbloxPulsarQRM 'acquisition_timeout' property.
-
-        Returns:
-            int: settings.acquisition_timeout.
-        """
-        return self.settings.acquisition_timeout
-
-    @property
-    def final_wait_time(self) -> int:
-        """QbloxPulsarQRM 'final_wait_time' property.
-
-        Returns:
-            int: Final wait time.
-        """
-        return self.acquisition_delay_time
-
-    @property
-    def hardware_integration(self):
-        """QbloxPulsarQRM 'integration' property.
-
-        Returns:
-            bool: Integration flag.
-        """
-        return self.settings.hardware_integration
 
     def data_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'data_name' property:
