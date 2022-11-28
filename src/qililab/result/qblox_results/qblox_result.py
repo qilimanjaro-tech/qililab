@@ -1,10 +1,11 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
@@ -50,6 +51,7 @@ class QbloxResult(Result):
             pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_bins_acquisitions)
+        self.data_dataframe_indices = self.qblox_acquisitions.data_dataframe_indices
 
     def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
         """Returns the scope acquisitions demodulated in the given frequency with the given phase offset.
@@ -67,7 +69,7 @@ class QbloxResult(Result):
             raise ValueError("Scope acquisitions cannot be integrated because it doesn't exist.")
         return self.qblox_scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
 
-    def acquisitions(self) -> npt.NDArray[np.float32]:
+    def acquisitions(self) -> pd.DataFrame:
         """Return acquisition values.
 
         Returns:

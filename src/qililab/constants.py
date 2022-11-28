@@ -12,6 +12,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
+
 # TODO: Distribute constants over different classes
 
 
@@ -45,7 +46,6 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
-    MASTER_DRAG_COEFFICIENT = "master_drag_coefficient"
 
 
 class SIGNALGENERATOR:
@@ -109,7 +109,7 @@ class PULSESEQUENCES:
 class PULSESEQUENCE:
     """PulseSequence attribute names."""
 
-    PULSES = "pulses"
+    TIMELINE = "timeline"
     PORT = "port"
 
 
@@ -123,6 +123,18 @@ class PULSE:
     DURATION = "duration"
     PORT = "port"
     PULSE_SHAPE = "pulse_shape"
+
+
+class PULSESHAPE:
+    """PulseShape attribute names."""
+
+    NAME = "name"
+
+
+class PULSEEVENT:
+    """PulseEvent attribute names."""
+
+    PULSE = "pulse"
     START_TIME = "start_time"
 
 
@@ -152,6 +164,23 @@ class QBLOXRESULT:
     SCOPE = "scope"
     BINS = "bins"
     RAW = "raw"
+
+
+class RESULTSDATAFRAME:
+    SOFTWARE_AVG_INDEX = "software_avg_index"
+    SEQUENCE_INDEX = "sequence_index"
+    LOOP_INDEX = "loop_index_"
+    QUBIT_INDEX = "qubit_index"
+    RESULTS_INDEX = "results_index"
+    BINS_INDEX = "bins_index"
+    SCOPE_INDEX = "scope_index"
+    ACQUISITION_INDEX = "acquisition_index"
+    P0 = "p0"
+    P1 = "p1"
+    I = "i"  # noqa: E741
+    Q = "q"
+    AMPLITUDE = "amplitude"
+    PHASE = "phase"
 
 
 UNITS = {"frequency": "Hz"}

@@ -10,7 +10,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.qubit_readout import QubitReadout
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse import PulseSequence
+from qililab.pulse import PulseBusSchedule
 from qililab.result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, IntegrationMode
 
@@ -53,13 +53,15 @@ class QbloxQRM(QbloxModule, QubitReadout):
 
     settings: QbloxQRMSettings
 
-    def _check_cached_values(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path):
+    def _check_cached_values(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ):
         """check if values are already cached and upload if not cached"""
-        readout_pulse_duration = pulse_sequence.readout_pulse_duration
+        readout_pulse_duration = pulse_bus_schedule.readout_pulse_duration
         if self.integration_length != readout_pulse_duration:
             self._update_integration_length_with_readout_pulse_duration(readout_pulse_duration=readout_pulse_duration)
         super()._check_cached_values(
-            pulse_sequence=pulse_sequence,
+            pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
@@ -71,7 +73,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
         self.settings.integration_length = readout_pulse_duration
         self.setup()
 
-    def run(self, pulse_sequence: PulseSequence, nshots: int, repetition_duration: int, path: Path) -> QbloxResult:
+    def run(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> QbloxResult:
         """Run execution of a pulse sequence. Return acquisition results.
 
         Args:
@@ -80,7 +84,7 @@ class QbloxQRM(QbloxModule, QubitReadout):
         Returns:
             Dict: Returns a dict with the acquisitions for the QRM and None for the QCM.
         """
-        if (pulse_sequence, nshots, repetition_duration) == self._cache:
+        if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
             for seq_idx in range(self.num_sequencers):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
@@ -90,7 +94,9 @@ class QbloxQRM(QbloxModule, QubitReadout):
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=seq_idx, acquisitions=acquisition.to_dict()
                 )
-        super().run(pulse_sequence=pulse_sequence, nshots=nshots, repetition_duration=repetition_duration, path=path)
+        super().run(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+        )
         return self.get_acquisitions()
 
     @Instrument.CheckDeviceInitialized

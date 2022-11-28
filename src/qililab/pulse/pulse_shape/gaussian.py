@@ -9,12 +9,11 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 
     name = PulseShapeName.GAUSSIAN
-
     num_sigmas: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):

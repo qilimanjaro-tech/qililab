@@ -1,4 +1,5 @@
 """Tests for the Experiment class."""
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -183,6 +184,8 @@ class TestSimulatedExecution:
 
         # Method under test
         results = simulated_experiment.execute()
+
+        time.sleep(0.3)
 
         # Assert simulator called
         mock_ssc_run.assert_called()

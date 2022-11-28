@@ -1,5 +1,5 @@
 """PlatformSchema class."""
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.constants import PLATFORM
@@ -101,7 +101,6 @@ class RuncardSchema:
         delay_before_readout: int
         master_amplitude_gate: float
         master_duration_gate: int
-        master_drag_coefficient: float
         gates: List[GateSettings]
 
         def __post_init__(self):

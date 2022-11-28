@@ -1,11 +1,11 @@
 """ Acquisitions Result """
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
-import numpy as np
-import numpy.typing as npt
+import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisition import Acquisition
 
 
@@ -18,14 +18,18 @@ class Acquisitions:
     """
 
     _acquisitions: List[Acquisition] = field(init=False)
+    data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
-    def acquisitions(self) -> npt.NDArray[np.float32]:
+    def acquisitions(self) -> pd.DataFrame:
         """return the acquisitions with a structure
         I, Q, Amplitude, Phase
         """
-        return np.array([acquisition.acquisition for acquisition in self._acquisitions])
+        acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
+        return pd.concat(
+            acquisition_list, keys=range(len(acquisition_list)), names=[RESULTSDATAFRAME.ACQUISITION_INDEX]
+        )
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:

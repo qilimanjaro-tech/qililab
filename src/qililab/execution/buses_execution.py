@@ -1,6 +1,5 @@
 """BusesExecution class."""
 
-
 import itertools
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm.auto import tqdm
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.execution.bus_execution import BusExecution
 from qililab.result import Result
 from qililab.typings import BusSubcategory, yaml
@@ -65,8 +65,8 @@ class BusesExecution:
             if plot is not None:
                 probs = result.probabilities()
                 # get zero prob and converting to a float to plot the value
-                # the value is a numpy.float32, so it is needed to convert it to float
-                zero_prob = float(probs[0][0])
+                # is a numpy.float32, so it is needed to convert it to float
+                zero_prob = float(probs[RESULTSDATAFRAME.P0].iloc[0])
                 plot.send_points(value=zero_prob)
             with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
                 result_dict = result.to_dict()

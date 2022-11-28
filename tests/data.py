@@ -37,7 +37,6 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -61,7 +60,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -72,7 +71,7 @@ class Galadriel:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
@@ -151,12 +150,22 @@ class Galadriel:
         "acquisition_timeout": 1,
         "acquisition_delay_time": 100,
         "frequency": 20000000,
-        "num_sequencers": 2,
-        "gain": [0.5, 0.5],
-        "epsilon": [0, 0],
-        "delta": [0, 0],
-        "offset_i": [0, 0],
-        "offset_q": [0, 0],
+        "num_sequencers": 1,
+        "gain": [
+            0.5,
+        ],
+        "epsilon": [
+            0,
+        ],
+        "delta": [
+            0,
+        ],
+        "offset_i": [
+            0,
+        ],
+        "offset_q": [
+            0,
+        ],
     }
 
     rohde_schwarz_controller_0 = {
@@ -375,7 +384,6 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
-        PLATFORM.MASTER_DRAG_COEFFICIENT: 0,
         "gates": [
             {
                 "name": "M",
@@ -403,7 +411,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
             {
@@ -414,7 +422,7 @@ class FluxQubitSimulator:
                 "shape": {
                     "name": "drag",
                     "num_sigmas": 4,
-                    "drag_coefficient": PLATFORM.MASTER_DRAG_COEFFICIENT,
+                    "drag_coefficient": 0,
                 },
             },
         ],
@@ -589,14 +597,16 @@ experiment = {
         {
             "elements": [
                 {
-                    "pulses": [
+                    "timeline": [
                         {
-                            "name": "readout_pulse",
-                            "amplitude": 1,
-                            "frequency": 1e9,
-                            "phase": 0,
-                            "duration": 2000,
-                            "pulse_shape": {"name": "rectangular"},
+                            "pulse": {
+                                "name": "readout_pulse",
+                                "amplitude": 1,
+                                "frequency": 1e9,
+                                "phase": 0,
+                                "duration": 2000,
+                                "pulse_shape": {"name": "rectangular"},
+                            },
                             "start_time": 40,
                         }
                     ],

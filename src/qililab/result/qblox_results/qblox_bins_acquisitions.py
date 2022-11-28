@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 import numpy as np
-import numpy.typing as npt
+import pandas as pd
 
+from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.qblox_results.bin_data import BinData
 from qililab.result.qblox_results.qblox_bins_acquisition import QbloxBinAcquisition
@@ -25,6 +26,7 @@ class QbloxBinsAcquisitions(Acquisitions):
     def __post_init__(self):
         """Create acquisitions"""
         self._acquisitions = [self._build_bin_acquisition(bin_data=bin_data) for bin_data in self.bins]
+        self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def _build_bin_acquisition(self, bin_data: BinData):
         """build a bin acquisition"""
@@ -32,19 +34,15 @@ class QbloxBinsAcquisitions(Acquisitions):
         q_values = np.array(bin_data.integration.path1, dtype=np.float32)
         return QbloxBinAcquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
-        return [
-            (self._get_last_bin(one_acquisition=acq)[2], self._get_last_bin(one_acquisition=acq)[2])
-            for acq in acquisitions
-        ]
-
-    def _get_last_bin(self, one_acquisition: npt.NDArray[np.float32]) -> npt.NDArray:
-        """get last bin"""
-        # FIXME: Here we use -1 to get the last bin. Do we really want this?
-        return one_acquisition[-1] if one_acquisition.ndim > 1 else one_acquisition
+        probs_df = pd.DataFrame()
+        probs_df[RESULTSDATAFRAME.P0] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
+        probs_df[RESULTSDATAFRAME.P1] = acquisitions[RESULTSDATAFRAME.AMPLITUDE].values
+        probs_df.index.rename(RESULTSDATAFRAME.ACQUISITION_INDEX, inplace=True)
+        return probs_df.iloc[-1:]

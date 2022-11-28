@@ -42,9 +42,11 @@ from qililab.pulse import (
     Drag,
     Gaussian,
     Pulse,
-    PulseSequence,
-    PulseSequences,
+    PulseBusSchedule,
+    PulseEvent,
+    PulseSchedule,
     PulseShape,
+    ReadoutEvent,
     ReadoutPulse,
     Rectangular,
 )
@@ -284,16 +286,16 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
     return attenuator_controller.modules[0]
 
 
-@pytest.fixture(name="pulse_sequences", params=experiment_params)
-def fixture_pulses(platform: Platform) -> PulseSequences:
-    """Return Pulses instance."""
+@pytest.fixture(name="pulse_schedule", params=experiment_params)
+def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
+    """Return PulseSchedule instance."""
     return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
-@pytest.fixture(name="pulse_sequence")
-def fixture_pulse_sequence(pulse: Pulse) -> PulseSequence:
-    """Return PulseSequences instance."""
-    return PulseSequence(pulses=[pulse], port=0)
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
@@ -326,7 +328,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
         parameter=Parameter.FREQUENCY,
         start=3544000000,
         stop=3744000000,
-        num=2,
+        num=10,
     )
     experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
     mock_load.assert_called()
@@ -410,7 +412,30 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
+    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="readout_event")
+def fixture_readout_event() -> ReadoutEvent:
+    """Load ReadoutEvent.
+
+    Returns:
+        ReadoutEvent: Instance of the PulseEvent class.
+    """
+    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50)
+    return ReadoutEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="readout_pulse")
@@ -421,7 +446,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape, start_time=0)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="mixer_based_system_control")
@@ -530,9 +555,9 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
                         "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
                     },
                     "bins": {
-                        "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
-                        "threshold": [0.5, 0.5, 0.5, 0.5],
-                        "avg_cnt": [1000, 1000, 1000, 1000],
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
                     },
                 },
             }
