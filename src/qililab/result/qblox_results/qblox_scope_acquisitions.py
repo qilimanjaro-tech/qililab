@@ -34,6 +34,7 @@ class QbloxScopeAcquisitions(Acquisitions):
         """Create acquisitions"""
         i_values, q_values = self._iq_values()
         self._acquisitions = [Acquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)]
+        self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def demodulated(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
         """Returns a demodulated QbloxScopeAcquisitions object.
@@ -86,8 +87,7 @@ class QbloxScopeAcquisitions(Acquisitions):
     def _iq_values(self) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         i_values = np.array(self.scope.path0.data, dtype=np.float32)
         q_values = np.array(self.scope.path1.data, dtype=np.float32)
-        self._acquisitions = [Acquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)]
-        self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
+        return i_values, q_values
 
     def probabilities(self) -> pd.DataFrame:
         """Return probabilities of being in the ground and excited state.
