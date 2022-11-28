@@ -170,7 +170,7 @@ class HeterodyneSystemControl(SystemControl):
             self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
             # print(f"Heterodyne bus set gain to {self.settings.gain}")
 
-        else: 
+        # else: 
             # print("Gain is not set by Heterodyne bus")
 
         # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
