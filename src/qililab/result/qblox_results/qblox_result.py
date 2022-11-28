@@ -73,7 +73,7 @@ class QbloxResult(Result):
         """Return acquisition values.
 
         Returns:
-            NDArray[numpy.float32]: I, Q, amplitude and phase.
+            pd.DataFrame: I, Q, amplitude and phase.
         """
         return self.qblox_bins_acquisitions.acquisitions()
 
@@ -83,7 +83,7 @@ class QbloxResult(Result):
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
         integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> npt.NDArray[np.float32] | None:
+    ) -> QbloxScopeAcquisitions | None:
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
             return None
