@@ -161,9 +161,7 @@ class QBLOXRESULT:
     """Qblox Results attribute names."""
 
     PULSE_LENGTH = "pulse_length"
-    SCOPE = "scope"
-    BINS = "bins"
-    RAW = "raw"
+    QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
 class RESULTSDATAFRAME:

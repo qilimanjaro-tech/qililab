@@ -522,22 +522,50 @@ results_two_loops = {
         {
             "name": "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        },
+                        "path1": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        }
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                        }
                 }
             ],
         },
         {
             "name": "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        },
+                        "path1": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        }
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                        }
                 }
             ],
         },
@@ -565,22 +593,50 @@ results_one_loops = {
         {
             "name": "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        },
+                        "path1": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        }
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                        }
                 }
             ],
         },
         {
             "name": "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        },
+                        "path1": {
+                            "data": [],
+                            "out-of-range": False,
+                            "avg_cnt": 0
+                        }
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                        }
                 }
             ],
         },

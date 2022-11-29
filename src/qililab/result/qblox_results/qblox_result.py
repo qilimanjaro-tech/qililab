@@ -1,7 +1,7 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -50,7 +50,7 @@ class QbloxResult(Result):
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
             pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
         )
-        self._qblox_scope_acquisition_copy = deepcopy(self.qblox_bins_acquisitions)
+        self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
 
     def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
@@ -121,4 +121,5 @@ class QbloxResult(Result):
             QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
             if isinstance(self.pulse_length, np.number)
             else self.pulse_length,
-        } | {QBLOXRESULT.RAW: self.qblox_raw_results}
+            QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results
+        }
