@@ -121,5 +121,5 @@ class QbloxResult(Result):
             QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
             if isinstance(self.pulse_length, np.number)
             else self.pulse_length,
-            QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results
+            QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }
