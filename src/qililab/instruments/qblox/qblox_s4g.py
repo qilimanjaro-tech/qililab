@@ -4,6 +4,7 @@ Class to interface with the voltage source Qblox S4g
 from dataclasses import dataclass
 from time import sleep
 
+from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
@@ -53,20 +54,18 @@ class QbloxS4g(CurrentSource):
         channel.ramp_rate(self.ramp_rate[dac_index])
         channel.span(self.span[dac_index])
         channel.current(self.current[dac_index])
-        print(f"SPI current set to {channel.current()}")
+        logger.debug("SPI current set to %d", channel.current())
         while channel.is_ramping():
             sleep(0.1)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
-       
+
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
         if channel_id > 3:
-            raise ValueError(
-                f"the specified dac index:{channel_id} is out of range. Number of dacs is 3"
-            )
+            raise ValueError(f"the specified dac index:{channel_id} is out of range. Number of dacs is 3")
         if parameter.value == Parameter.CURRENT.value:
             channel = self.dac(dac_index=channel_id)
             channel.current(self.current[channel_id])
@@ -78,7 +77,6 @@ class QbloxS4g(CurrentSource):
         For this instrument it is the same as a regular setup"""
         for dac_index in self.settings.dacs:
             self.setup(Parameter.CURRENT, Parameter.CURRENT.value, dac_index)
-
 
     @Instrument.CheckDeviceInitialized
     def start(self):
