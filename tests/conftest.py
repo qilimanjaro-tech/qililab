@@ -3,13 +3,20 @@ import copy
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from dummy_qblox import DummyPulsar
+from qblox_instruments import PulsarType
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qiboconnection.api import API
 from qiboconnection.typings.connection import (
     ConnectionConfiguration,
     ConnectionEstablished,
 )
+from qpysequence import Sequence
+from qpysequence.acquisitions import Acquisitions
+from qpysequence.program import Program
+from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
@@ -53,6 +60,7 @@ from qililab.pulse import (
 from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
+from qililab.utils.signal_processing import modulate
 
 from .data import (
     FluxQubitSimulator,
@@ -62,6 +70,7 @@ from .data import (
     simulated_experiment_circuit,
 )
 from .side_effect import yaml_safe_load_side_effect
+from .utils import dummy_qrm_name_generator
 
 
 @pytest.fixture(name="platform")
@@ -191,6 +200,38 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
     # connect to instrument
     pulsar_controller_qrm.connect()
     return pulsar_controller_qrm.modules[0]
+
+
+@pytest.fixture(name="qrm_sequence")
+def fixture_qrm_sequence() -> Sequence:
+    """Returns an instance of Sequence with an empty program, a pair of waveforms (ones and zeros), a single
+    acquisition specification and without weights.
+
+    Returns:
+        Sequence: Sequence object.
+    """
+    program = Program()
+    waveforms = Waveforms()
+    waveforms.add_pair_from_complex(np.ones(1000))
+    acquisitions = Acquisitions()
+    acquisitions.add("single")
+    return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
+
+
+@pytest.fixture(name="dummy_qrm")
+def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
+    qrm = DummyPulsar(name=next(dummy_qrm_name_generator()), pulsar_type=PulsarType.PULSAR_QRM)
+    waveform_length = 1000
+    zeros = np.zeros(waveform_length, dtype=np.float32)
+    ones = np.ones(waveform_length, dtype=np.float32)
+    sim_in_0, sim_in_1 = modulate(i=ones, q=zeros, frequency=10e6, phase_offset=0.0)
+    filler = [0.0] * (16380 - waveform_length)
+    sim_in_0 = np.append(sim_in_0, filler)
+    sim_in_1 = np.append(sim_in_1, filler)
+    qrm.feed_input_data(input_path0=sim_in_0, input_path1=sim_in_1)
+    qrm.sequencers[0].sequence(qrm_sequence.todict())
+    qrm.sequencers[0].nco_freq(10e6)
+    return qrm
 
 
 @pytest.fixture(name="rohde_schwarz_controller")
