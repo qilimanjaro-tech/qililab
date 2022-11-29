@@ -23,6 +23,6 @@ def modulate(
     time = np.arange(len(i)) * 1e-9
     cosalpha = np.cos(2 * np.pi * frequency * time + phase_offset)
     sinalpha = np.sin(2 * np.pi * frequency * time + phase_offset)
-    mod_matrix = (1.0/np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
+    mod_matrix = (1.0 / np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
     i_mod, q_mod = np.transpose(np.einsum("abt,bt->ta", mod_matrix, [i, q]))
     return i_mod, q_mod

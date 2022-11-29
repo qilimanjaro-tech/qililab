@@ -10,8 +10,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.constants import RESULTSDATAFRAME
+from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.acquisition import Acquisition
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.qblox_results.scope_data import ScopeData
