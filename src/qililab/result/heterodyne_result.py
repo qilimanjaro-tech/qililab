@@ -16,8 +16,8 @@ class HeterodyneResult(Result):
     """Heterodyne Result class."""
 
     name: ResultName = ResultName.HETERODYNE
-    integrated_i: float = 0.0
-    integrated_q: float = 0.0
+    integrated_I: float = 0.0
+    integrated_Q: float = 0.0
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
@@ -25,7 +25,7 @@ class HeterodyneResult(Result):
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
-        return [(20 * np.log10(np.sqrt(self.integrated_i**2 + self.integrated_q**2)), 0.0)]
+        return [(20 * np.log10(np.sqrt(self.integrated_I**2 + self.integrated_Q**2)), 0.0)]
 
     def to_dict(self) -> dict:
         """
@@ -34,6 +34,6 @@ class HeterodyneResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            "integrated_I": float(self.integrated_i),
-            "integrated_Q": float(self.integrated_q),
+            "integrated_I": float(self.integrated_I),
+            "integrated_Q": float(self.integrated_Q),
         }
