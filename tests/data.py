@@ -502,23 +502,14 @@ results_two_loops = {
         {
             "alias": "attenuator",
             "previous": None,
-            "id_": None,
             "parameter": "attenuation",
-            "start": 15,
-            "stop": 90,
-            "num": None,
-            "step": 1,
-            "loop": {
-                "alias": "rs_1",
-                "previous": None,
-                "id_": None,
-                "parameter": "frequency",
+            "options": {
                 "start": 7342000000,
                 "stop": 7352000000,
                 "num": None,
                 "step": 100000,
-                "loop": None,
             },
+            "loop": None,
         }
     ],
     "results": [
@@ -555,12 +546,13 @@ results_one_loops = {
         {
             "alias": "rs_1",
             "previous": None,
-            "id_": None,
             "parameter": "frequency",
-            "start": 7342000000,
-            "stop": 7352000000,
-            "num": None,
-            "step": 100000,
+            "options": {
+                "start": 7342000000,
+                "stop": 7352000000,
+                "num": None,
+                "step": 100000,
+            },
             "loop": None,
         }
     ],
