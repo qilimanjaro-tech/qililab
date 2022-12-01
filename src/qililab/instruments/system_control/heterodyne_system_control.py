@@ -26,7 +26,7 @@ class HeterodyneSystemControl(SystemControl):
     """HeterodyneSystemControl class."""
 
     name = SystemControlSubcategory.HETERODYNE_SYSTEM_CONTROL
-
+ 
     @dataclass(kw_only=True)
     class HeterodyneSystemControlSettings(SystemControl.SystemControlSettings):
         """HeterodyneSystemControlSettings class."""
@@ -241,7 +241,7 @@ class HeterodyneSystemControl(SystemControl):
         # print(f"Actual gain in run: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(integrated_I,integrated_Q)
         
-        return HeterodyneResult(integrated_i=integrated_I, integrated_q=integrated_Q)
+        return HeterodyneResult(integrated_I=integrated_I, integrated_Q=integrated_Q)
 
     @property
     def awg_frequency(self):
