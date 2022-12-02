@@ -39,7 +39,8 @@ class LoopOptions:
             Raises:
                 ValueError: 'start' and 'stop' must be defined when no values are specified
             """
-            if ref.values is None and (ref.start is None or ref.stop is None):
+
+            if not isinstance(ref, dict) and ref.values is None and (ref.start is None or ref.stop is None):
                 raise ValueError("'start' and 'stop' must be defined when no values array are passed as an input.")
             return self._method(ref, *args, **kwargs)
 
