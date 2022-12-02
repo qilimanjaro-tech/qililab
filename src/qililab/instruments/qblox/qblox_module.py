@@ -363,16 +363,6 @@ class QbloxModule(AWG):
             acquisitions and program of the sequence.
         """
 
-        seq_prog = """
-        move    1000,R0   #Loop iterator.
-        loop:
-        play    0,1,4     #Play waveforms and wait 4ns.
-        acquire 0,0,7000 #Acquire waveforms and wait remaining duration of scope acquisition.
-        loop    R0,@loop  #Run until number of iterations is done.
-        stop              #Stop.orms and wait remaining duration of scope acquisition.
-        stop              #Stop.
-        """
-
         obj = {
             "waveforms": sequence._waveforms.to_dict() if waveforms is None else waveforms,
             "weights": sequence._weights,
@@ -380,8 +370,8 @@ class QbloxModule(AWG):
             "program": repr(sequence._program),
         }
 
-        print(obj["program"])
-        print(obj["acquisitions"])
+        # print(obj["program"])
+        # print(obj["acquisitions"])
         # print(obj["waveforms"])
 
         file_path = str(path / f"{self.name.value}_sequence.yml")
