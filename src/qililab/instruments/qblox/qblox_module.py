@@ -230,8 +230,6 @@ class QbloxModule(AWG):
             self._set_num_bins(value=value, channel_id=channel_id)
             return
 
-        print("Parameter did not change!")
-
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
 
@@ -380,8 +378,8 @@ class QbloxModule(AWG):
             "program": repr(sequence._program),
         }
 
-        print(obj["program"])
-        print(obj["acquisitions"])
+        # print(obj["program"])
+        # print(obj["acquisitions"])
         # print(obj["waveforms"])
 
         file_path = str(path / f"{self.name.value}_sequence.yml")
