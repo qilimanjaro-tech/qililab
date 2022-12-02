@@ -241,10 +241,12 @@ class HeterodyneSystemControl(SystemControl):
 
         # self.signal_generator.device.off()
         # Print status of sequencer.
-        print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
+        self.awg.device.get_sequencer_state(0)
+        # print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
-        print(self.awg.device.get_acquisition_state(0, 1))
+        self.awg.device.get_acquisition_state(0, 1)
+        # print(self.awg.device.get_acquisition_state(0, 1))
         # Move acquisition data from temporary memory to acquisition list.
         self.awg.device.store_scope_acquisition(0, "single")
         # Get acquisition list from instrument.
