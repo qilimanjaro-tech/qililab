@@ -17,7 +17,6 @@ from .signal_generator import SignalGenerator
 from .system_control.integrated_system_control import IntegratedSystemControl
 from .system_control.mixer_based_system_control import MixerBasedSystemControl
 from .system_control.heterodyne_system_control import HeterodyneSystemControl
-from .system_control.two_tone_system_control import TwoToneSystemControl
 from .system_control.vna_system_control import VNASystemControl
 from .system_control.cw_system_control import CWSystemControl
 from .system_control.simulated_system_control import SimulatedSystemControl
