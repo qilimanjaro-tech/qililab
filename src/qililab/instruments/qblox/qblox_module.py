@@ -7,10 +7,9 @@ from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
-
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
-from qpysequence.program import Program, Block, Loop
+from qpysequence.program import Block, Loop, Program
 from qpysequence.program.instructions import Play, Stop, Wait
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
@@ -76,18 +75,34 @@ class QbloxModule(AWG):
         self.start_sequencer()
 
     def _check_cached_values(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path, modI: npt.NDArray[np.float32] | None = None, modQ: npt.NDArray[np.float32] | None = None, waveforms: dict | None = None,
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        modI: npt.NDArray[np.float32] | None = None,
+        modQ: npt.NDArray[np.float32] | None = None,
+        waveforms: dict | None = None,
     ):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
             sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                pulse_bus_schedule=pulse_bus_schedule,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+                modI=modI,
+                modQ=modQ,
             )
             self.upload(sequence=sequence, path=path, waveforms=waveforms)
 
     def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, modI: npt.NDArray[np.float32] | None = None, modQ: npt.NDArray[np.float32] | None = None,
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        modI: npt.NDArray[np.float32] | None = None,
+        modQ: npt.NDArray[np.float32] | None = None,
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -106,20 +121,19 @@ class QbloxModule(AWG):
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
-        sequence = Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
-        return sequence
+        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
-    #     Args:
-    #         pulse_sequence (PulseSequence): Pulse sequence.
-    #         waveforms (Waveforms): Waveforms.
+        #     Args:
+        #         pulse_sequence (PulseSequence): Pulse sequence.
+        #         waveforms (Waveforms): Waveforms.
 
-        Returns:
-            Program: Q1ASM program.
+            Returns:
+                Program: Q1ASM program.
         """
         # Define program's blocks
         program = Program()
@@ -186,7 +200,7 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
-       
+
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
         if channel_id > self.num_sequencers - 1:
@@ -215,8 +229,8 @@ class QbloxModule(AWG):
         if parameter.value == Parameter.NUM_BINS.value:
             self._set_num_bins(value=value, channel_id=channel_id)
             return
-        
-        print('Parameter did not change!')
+
+        print("Parameter did not change!")
 
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
@@ -348,8 +362,8 @@ class QbloxModule(AWG):
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
-        
-        seq_prog = f"""
+
+        seq_prog = """
         move    1000,R0   #Loop iterator.
         loop:
         play    0,1,4     #Play waveforms and wait 4ns.
@@ -358,20 +372,20 @@ class QbloxModule(AWG):
         stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
-        
+
         obj = {
             "waveforms": sequence._waveforms.to_dict() if waveforms is None else waveforms,
             "weights": sequence._weights,
             "acquisitions": sequence._acquisitions.to_dict(),
             "program": repr(sequence._program),
         }
-        
+
         print(obj["program"])
         print(obj["acquisitions"])
         # print(obj["waveforms"])
-        
+
         file_path = str(path / f"{self.name.value}_sequence.yml")
-        with open(file=file_path, mode="w", encoding="utf-8") as file:    
+        with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=obj, fp=file)
 
         for seq_idx in range(self.num_sequencers):
@@ -393,7 +407,12 @@ class QbloxModule(AWG):
             self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
             self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, modI: npt.NDArray[np.float32] | None = None, modQ: npt.NDArray[np.float32] | None = None,):
+    def _generate_waveforms(
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        modI: npt.NDArray[np.float32] | None = None,
+        modQ: npt.NDArray[np.float32] | None = None,
+    ):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
