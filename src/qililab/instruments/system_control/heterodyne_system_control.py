@@ -171,9 +171,9 @@ class HeterodyneSystemControl(SystemControl):
         # loop    R1,@loop1
 
 
-        print(seq_prog)
+        # print(seq_prog)
 
-        print(f"Hardare averaging: {self.settings.shots}")
+        # print(f"Hardare averaging: {self.settings.shots}")
         # ## 1.4 Upload all
         # Add sequence to single dictionary and write to JSON file.
         sequence = {

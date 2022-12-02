@@ -66,7 +66,7 @@ class PulseEvent:
             PulseEvent: Loaded class.
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
-        print(dictionary)
+        # print(dictionary)
         pulse = (
             Pulse.from_dict(pulse_settings)
             if Pulse.name == PulseName(pulse_settings.pop(RUNCARD.NAME))
