@@ -53,8 +53,8 @@ class MixerBasedSystemControl(SystemControl):
         # min_freq = np.min(frequencies)
         # self.signal_generator.frequency = min_freq + self.awg.frequency
         # self.awg.frequencies = list(self.signal_generator.frequency - np.array(frequencies))
-        # self.awg.setup()
-        # self.signal_generator.setup()
+        self.awg.initial_setup()
+        self.signal_generator.initial_setup()
 
     def start(self):
         """Start/Turn on the instruments."""

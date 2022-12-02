@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Generator, List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import scipy.integrate as integ
 
 from qililab.constants import RUNCARD
@@ -38,6 +39,7 @@ class HeterodyneSystemControl(SystemControl):
         # LO: float
         gain: float = None
         shots: int = 1000
+        sequence_manual: bool = True
 
         def __iter__(
             self,
@@ -86,18 +88,57 @@ class HeterodyneSystemControl(SystemControl):
         I = np.ones(self.settings.pulse_length)  # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
         Q = np.zeros(self.settings.pulse_length)
 
-        modI, modQ = self.heterodyne_mixing(I, Q, self.settings.IF, dt)
-
-        waveforms = {
+        self.modI, self.modQ = self.heterodyne_mixing(I, Q, self.settings.IF, dt)
+        self.waveforms = {
             "modI": {
-                "data": list(modI),
+                "data": list(self.modI),
                 "index": 0,
             },
             "modQ": {
-                "data": list(modQ),
+                "data": list(self.modQ),
                 "index": 1,
             },
         }
+
+        # Generates a hardcoded sequence here in the Heterodyne
+        if self.settings.sequence_manual:
+            self._prepare_sequence_manually(self.modI, self.modQ, self.waveforms)  
+
+        # ## 1.5 Configurations
+        # Configure the sequencer to trigger the scope acquisition.
+        self.awg.device.scope_acq_sequencer_select(0)
+        self.awg.device.scope_acq_trigger_mode_path0("sequencer")
+        self.awg.device.scope_acq_trigger_mode_path1("sequencer")
+
+        # Map sequencer to specific outputs (but first disable all sequencer connections)
+        for sequencer in self.awg.device.sequencers:
+            for out in range(0, 2):
+                sequencer.set("channel_map_path{}_out{}_en".format(out % 2, out), False)
+        self.awg.device.sequencer0.channel_map_path0_out0_en(True)
+        self.awg.device.sequencer0.channel_map_path1_out1_en(True)
+        self.awg.device.sequencer0.mod_en_awg(False)
+
+        # enable hardware average
+        self.awg.device.scope_acq_avg_mode_en_path0(True)
+        self.awg.device.scope_acq_avg_mode_en_path1(True)
+        
+        # set gain
+        if self.settings.gain is not None:
+            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+
+    def _prepare_sequence_generic(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path, modI: npt.NDArray[np.float32] | None = None, modQ: npt.NDArray[np.float32] | None = None, waveforms: dict | None = None):
+        self.awg._check_cached_values(
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=self.settings.shots,
+            repetition_duration=repetition_duration,
+            path=path,
+            modI=modI,
+            modQ=modQ,
+            waveforms=waveforms,
+        )
+
+    def _prepare_sequence_manually(self, modI, modQ, waveforms):
 
         # ## 1.2. Set LO
         # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
@@ -145,29 +186,6 @@ class HeterodyneSystemControl(SystemControl):
             json.dump(sequence, file, indent=4)
             file.close()
         self.awg.device.sequencer0.sequence("sequence.json")
-
-        # ## 1.5 Configurations
-        # Configure the sequencer to trigger the scope acquisition.
-        self.awg.device.scope_acq_sequencer_select(0)
-        self.awg.device.scope_acq_trigger_mode_path0("sequencer")
-        self.awg.device.scope_acq_trigger_mode_path1("sequencer")
-
-        # Map sequencer to specific outputs (but first disable all sequencer connections)
-        for sequencer in self.awg.device.sequencers:
-            for out in range(0, 2):
-                sequencer.set("channel_map_path{}_out{}_en".format(out % 2, out), False)
-        self.awg.device.sequencer0.channel_map_path0_out0_en(True)
-        self.awg.device.sequencer0.channel_map_path1_out1_en(True)
-        self.awg.device.sequencer0.mod_en_awg(False)
-
-        # enable hardware average
-        self.awg.device.scope_acq_avg_mode_en_path0(True)
-        self.awg.device.scope_acq_avg_mode_en_path1(True)
-        
-        # set gain
-        if self.settings.gain is not None:
-            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
-            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
             # print(f"Heterodyne bus set gain to {self.settings.gain}")
 
         # else: 
@@ -176,8 +194,8 @@ class HeterodyneSystemControl(SystemControl):
         # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
 
     def start(self):
-        """Start/Turn on the instruments.
-        self.signal_generator.device.start()"""
+        """Start/Turn on the instruments. """
+        self.signal_generator.start()
 
     def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence.
@@ -189,10 +207,12 @@ class HeterodyneSystemControl(SystemControl):
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
-        )"""
-
+        )"""  
         
-        print()
+        # Creates a program in Qblox Module
+        if not self.settings.sequence_manual:
+            self._prepare_sequence_generic(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path, modI=self.modI, modQ=self.modQ, waveforms=self.waveforms)
+        
         # print('[Heterodyne SysCtrl] Entered run')
         # # 2. Running the Bus
         # ## 2.1 Arm & Run
@@ -200,17 +220,17 @@ class HeterodyneSystemControl(SystemControl):
         self.awg.device.arm_sequencer(0)
 
 
-        self.awg.device.start_sequencer()
+        self.awg.device.start_sequencer(0)
 
         # print(f"Path 0: {self.awg.device.sequencer0.gain_awg_path0()}")
         # print(f"Path 1: {self.awg.device.sequencer0.gain_awg_path1()}")
         
         # self.signal_generator.device.off()
         # Print status of sequencer.
-        # print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
+        print(f"Sequencer State: {self.awg.device.get_sequencer_state(0)}")
         # ## 2.2 Query data and plotting
         # Wait for the acquisition to finish with a timeout period of one minute.
-        self.awg.device.get_acquisition_state(0, 1)
+        print(self.awg.device.get_acquisition_state(0, 1))
         # Move acquisition data from temporary memory to acquisition list.
         self.awg.device.store_scope_acquisition(0, "single")
         # Get acquisition list from instrument.
