@@ -18,6 +18,8 @@ from qililab.typings.enums import (
     IntegrationMode,
     Parameter,
 )
+from qpysequence.program.instructions.real_time import Acquire
+from qpysequence.program.loop import Loop
 
 
 @InstrumentFactory.register
@@ -206,10 +208,10 @@ class QbloxQRM(QbloxModule, QubitReadout):
         if self.settings.hardware_demodulation[channel_id]:
             self.device.sequencers[channel_id].demod_en_acq(True)
 
-    # def _append_acquire_instruction(self, loop: Loop, register: str):
-    #     """Append an acquire instruction to the loop."""
-    #     acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
-    #     loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+    def _append_acquire_instruction(self, loop: Loop, register: str):
+        """Append an acquire instruction to the loop."""
+        acquisition_idx = 0 if self.scope_hardware_averaging else 1  # use binned acquisition if averaging is false
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=0, wait_time=self._MIN_WAIT_TIME))
 
     @property
     def scope_acquire_trigger_mode(self):
