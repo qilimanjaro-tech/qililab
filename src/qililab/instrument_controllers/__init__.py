@@ -7,6 +7,7 @@ from .mini_circuits import MiniCircuitsController
 from .multi_instrument_controller import MultiInstrumentController
 from .qblox import QbloxClusterController, QbloxPulsarController, QbloxSPIRackController
 from .rohde_schwarz import SGS100AController
+from .yokogawa import GS200Controller
 from .single_instrument_controller import SingleInstrumentController
 from .utils import InstrumentControllerFactory
 from .vector_network_analyzer import E5071BController, E5080BController

@@ -236,7 +236,6 @@ class SystemControlSubcategory(Enum):
         * simulated_system_control
         * heterodyne_system_control
         * cw_system_control
-        * two_tone_system_control
     """
 
     HETERODYNE_SYSTEM_CONTROL = "heterodyne_system_control"
@@ -244,7 +243,6 @@ class SystemControlSubcategory(Enum):
     VNA_SYSTEM_CONTROL = "vna_system_control"
     MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
-    TWO_TONE_SYSTEM_CONTROL = "two_tone_system_control"
 
 
 class NodeName(Enum):
@@ -283,6 +281,7 @@ class InstrumentName(Enum):
         * qblox_S4g
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa_gs200
 
     """
 
@@ -301,6 +300,7 @@ class InstrumentName(Enum):
     QBLOX_S4G = "qblox_S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    YOKOGAWA_GS200 = "yokogawa_gs200"
 
 
 class InstrumentControllerName(Enum):
@@ -325,6 +325,7 @@ class InstrumentControllerName(Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
+    YOKOGAWA = "yokogawa" 
 
 
 class Parameter(Enum):
@@ -414,6 +415,7 @@ class InstrumentTypeName(Enum):
         * Keithley2600
         * QbloxD5a
         * QbloxS4g
+        * YokogawaGS200
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -423,6 +425,7 @@ class InstrumentTypeName(Enum):
     KEITHLEY2600 = "Keithley2600"
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
+    YOKOGAWA_GS200 = "YokogawaGS200"
 
 
 class LivePlotTypes(Enum):

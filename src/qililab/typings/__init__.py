@@ -30,5 +30,6 @@ from .instruments import (
     QbloxS4g,
     QcmQrm,
     RohdeSchwarzSGS100A,
+    YokogawaGS200,
 )
 from .yaml_type import yaml
