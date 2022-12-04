@@ -63,7 +63,7 @@ class EXPERIMENT:
     REPETITION_DURATION = "repetition_duration"
     SHAPE = "shape"
     RESULTS = "results"
-    NUM_SEQUENCES = "num_sequences"
+    NUM_SCHEDULES = "num_schedules"
     SEQUENCES = "sequences"
     LOOPS = "loops"
     OPTIONS = "execution_options"

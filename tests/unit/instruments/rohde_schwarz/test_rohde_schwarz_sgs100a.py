@@ -1,6 +1,7 @@
 """Tests for the SGS100A class."""
 
 from qililab.instruments import SGS100A
+from qililab.typings.enums import Parameter
 
 
 class TestSGS100A:
@@ -8,7 +9,7 @@ class TestSGS100A:
 
     def test_setup_method(self, rohde_schwarz: SGS100A):
         """Test setup method"""
-        rohde_schwarz.setup()
+        rohde_schwarz.setup(parameter=Parameter.GAIN, value=1)
         rohde_schwarz.device.power.assert_called_with(rohde_schwarz.power)
 
     def test_initial_setup_method(self, rohde_schwarz: SGS100A):

@@ -266,7 +266,7 @@ class Results:
         """
         return {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.num_schedules,
+            EXPERIMENT.NUM_SCHEDULES: self.num_schedules,
             EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],
