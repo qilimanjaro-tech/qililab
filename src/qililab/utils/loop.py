@@ -23,6 +23,8 @@ class Loop:
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
+        if isinstance(self.options, dict):
+            self.options = LoopOptions(**self.options)  # pylint: disable=not-a-mapping
         if self.loop is not None:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
