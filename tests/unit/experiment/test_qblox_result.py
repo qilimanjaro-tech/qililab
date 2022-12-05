@@ -38,6 +38,7 @@ class TestsQbloxResult:
 
     def test_qblox_result_acquisitions_scope(self, qblox_result_scope: QbloxResult):
         acquisition = qblox_result_scope.acquisitions_scope()
+        assert acquisition is not None
         assert len(acquisition[0]) == QBLOXCONSTANTS.SCOPE_LENGTH
         assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
         time = np.arange(0, 1e-6, 1e-9)
@@ -53,18 +54,18 @@ class TestsQbloxResult:
         assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
         expected_i = [1.0 for _ in range(1000)]
         expected_q = [0.0 for _ in range(1000)]
-        expected_i = complete_array(expected_i, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
-        expected_q = complete_array(expected_q, 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
+        expected_i = complete_array(np.array(expected_i), 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
+        expected_q = complete_array(np.array(expected_q), 0.0, QBLOXCONSTANTS.SCOPE_LENGTH)
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=(expected_i, expected_q), tolerance=1e-5)
 
     def test_qblox_result_acquisitions_scope_integrated(self, qblox_result_scope: QbloxResult):
         acquisition = qblox_result_scope.acquisitions_scope(integrate=True, integration_range=(0, 1000))
         assert len(acquisition[0]) == 1
         assert len(acquisition[1]) == 1
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([0.0], [0.0]), tolerance=1e-5)
+        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=(np.array([0.0]), np.array([0.0])), tolerance=1e-5)
 
     def test_qblox_result_acquisitions_scope_demod_integrated(self, qblox_result_scope: QbloxResult):
         acquisition = qblox_result_scope.acquisitions_scope(
             demod_freq=10e6, integrate=True, integration_range=(0, 1000)
         )
-        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([1.0], [0.0]), tolerance=1e-5)
+        assert compare_pair_of_arrays(pair_a=acquisition, pair_b=(np.array([1.0]), np.array([0.0])), tolerance=1e-5)
