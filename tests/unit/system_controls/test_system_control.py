@@ -26,7 +26,10 @@ class TestSystemControl:
 
     def test_name_property(self, base_system_control: SystemControl):
         """Test name property."""
-        assert base_system_control.name == base_system_control.settings.subcategory
+        assert base_system_control.name.value == (
+            f"{base_system_control.system_control_category.value}_"
+            + f"{base_system_control.system_control_subcategory.value}_{base_system_control.category.value}"
+        )
 
     def test_id_property(self, base_system_control: SystemControl):
         """Test id property."""
