@@ -146,16 +146,16 @@ class AWGDigitalAnalogConverter(AWG):
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
         super().setup(parameter=parameter, value=value, channel_id=channel_id)
-        if parameter.value == Parameter.HARDWARE_AVERAGE.value:
+        if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.HARDWARE_DEMODULATION.value:
+        if parameter == Parameter.HARDWARE_DEMODULATION:
             self._set_hardware_demodulation(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.ACQUISITION_MODE.value:
+        if parameter == Parameter.SCOPE_ACQUIRE_TRIGGER_MODE:
             self._set_acquisition_mode(value=value, channel_id=channel_id)
             return
-        if parameter.value == Parameter.INTEGRATION_LENGTH.value:
+        if parameter == Parameter.INTEGRATION_LENGTH:
             self._set_integration_length(value=value, channel_id=channel_id)
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")

@@ -52,7 +52,6 @@ class Instrument(Enum):
         * platform
         * awg
         * signal_generator
-        * system_control
         * attenuator
         * voltage_source
         * current_source
@@ -436,7 +435,8 @@ class Parameter(Enum):
     HARDWARE_MODULATION = "hardware_modulation"
     HARDWARE_DEMODULATION = "hardware_demodulation"
     HARDWARE_INTEGRATION = "hardware_integration"
-    ACQUISITION_MODE = "acquisition_mode"
+    SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
+    SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
     IF = "intermediate_frequencies"
     VOLTAGE = "voltage"
     CURRENT = "current"
@@ -453,6 +453,11 @@ class Parameter(Enum):
     NUMBER_AVERAGES = "number_averages"
     TRIGGER_MODE = "trigger_mode"
     NUMBER_POINTS = "number_points"
+    NUM_SEQUENCERS = "num_sequencers"
+    INTEGRATION_MODE = "integration_mode"
+    ACQUISITION_TIMEOUT = "acquisition_timeout"
+    MAX_CURRENT = "max_current"
+    MAX_VOLTAGE = "max_voltage"
 
 
 class ResultName(Enum):

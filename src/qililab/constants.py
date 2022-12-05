@@ -114,8 +114,8 @@ class BUS:
     PORT = "port"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
-    SEQUENCES = "sequences"
-    NUM_SEQUENCES = "num_sequences"
+    SCHEDULES = "schedules"
+    NUM_SCHEDULES = "num_schedules"
     SHAPE = "shape"  # shape of the results
     RESULTS = "results"
 
