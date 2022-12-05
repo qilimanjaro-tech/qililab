@@ -68,8 +68,8 @@ class ControlSystemControl(TimeDomainSystemControl):
                 f"the specified channel_id:{channel_id} is out of range. "
                 + f"Number of sequencers is {self.awg.num_sequencers}"
             )
-        signal_generator_frequency = frequency - self.awg.frequencies[channel_id]
-        self.signal_generator.set_parameter(parameter=Parameter.FREQUENCY, value=signal_generator_frequency)
+        signal_generator_frequency = frequency - self.awg.intermediate_frequencies[channel_id]
+        self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=signal_generator_frequency)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """sets a parameter to a specific instrument
@@ -79,7 +79,7 @@ class ControlSystemControl(TimeDomainSystemControl):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter == Parameter.FREQUENCY:
+        if parameter == Parameter.LO_FREQUENCY:
             self._update_signal_generator_frequency(frequency=value, channel_id=channel_id)
             return
         if parameter == Parameter.POWER:

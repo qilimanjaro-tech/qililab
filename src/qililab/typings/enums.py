@@ -400,7 +400,8 @@ class BusName(Enum):
 class Parameter(Enum):
     """Parameter names."""
 
-    FREQUENCY = "frequency"
+    BUS_FREQUENCY = "frequency"
+    LO_FREQUENCY = "frequency"
     GAIN = "gain"
     DURATION = "duration"
     AMPLITUDE = "amplitude"
@@ -436,7 +437,7 @@ class Parameter(Enum):
     HARDWARE_DEMODULATION = "hardware_demodulation"
     HARDWARE_INTEGRATION = "hardware_integration"
     ACQUISITION_MODE = "acquisition_mode"
-    FREQUENCIES = "frequencies"
+    IF = "intermediate_frequencies"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"

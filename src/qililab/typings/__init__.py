@@ -21,6 +21,7 @@ from .enums import (
     SystemControlCategory,
     SystemControlSubCategory,
 )
+from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
 from .instruments import (
     Cluster,

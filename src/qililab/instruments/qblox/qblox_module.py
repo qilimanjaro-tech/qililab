@@ -210,7 +210,7 @@ class QbloxModule(AWG):
         if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, channel_id=channel_id)
             return
-        if parameter == Parameter.FREQUENCIES:
+        if parameter == Parameter.IF:
             self._set_frequency(value=value, channel_id=channel_id)
             return
         if parameter == Parameter.HARDWARE_MODULATION:
@@ -288,7 +288,7 @@ class QbloxModule(AWG):
         """
         if not isinstance(value, float):
             raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.frequencies[channel_id] = value
+        self.settings.intermediate_frequencies[channel_id] = value
         self.device.sequencers[channel_id].nco_freq(value)
 
     def _set_offset_q(self, value: float | str | bool, channel_id: int):
@@ -378,7 +378,7 @@ class QbloxModule(AWG):
         """Enable modulation of pulses and setup NCO frequency."""
         if self.settings.hardware_modulation[channel_id]:
             self._set_hardware_modulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
-            self._set_frequency(value=self.settings.frequencies[channel_id], channel_id=channel_id)
+            self._set_frequency(value=self.settings.intermediate_frequencies[channel_id], channel_id=channel_id)
 
     def _set_gain_imbalance(self, value: float | str | bool, channel_id: int):
         """Set I and Q gain imbalance of sequencer.

@@ -58,12 +58,12 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter in [
-            Parameter.FREQUENCY,
+            Parameter.LO_FREQUENCY,
             Parameter.POWER,
             Parameter.GAIN,
             Parameter.OFFSET_I,
             Parameter.OFFSET_Q,
-            Parameter.FREQUENCIES,
+            Parameter.IF,
             Parameter.HARDWARE_MODULATION,
             Parameter.SYNC_ENABLED,
             Parameter.NUM_BINS,

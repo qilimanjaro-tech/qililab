@@ -17,7 +17,7 @@ class AWG(Instrument):
 
         Args:
             num_sequencers (int): Number of sequencers (physical I/Q pairs)
-            frequencies (List[float]): Frequency for each sequencer
+            intermediate_frequencies (List[float]): Frequency for each sequencer
             gain (List[float]): Gain step used by the sequencer.
             gain_imbalance (float): Amplitude added to the Q channel.
             phase_imbalance (float): Dephasing.
@@ -28,7 +28,7 @@ class AWG(Instrument):
         """
 
         num_sequencers: int
-        frequencies: List[float]
+        intermediate_frequencies: List[float]
         gain: List[float]
         gain_imbalance: List[float]
         phase_imbalance: List[float]
@@ -64,7 +64,7 @@ class AWG(Instrument):
         """
         # FIXME: this must be deleted, as an AWG has a frequency for each channel.
         # Returning the first frequency for now.
-        return self.settings.frequencies[0]
+        return self.settings.intermediate_frequencies[0]
 
     @property
     def num_sequencers(self):
@@ -121,15 +121,10 @@ class AWG(Instrument):
         return self.settings.phase_imbalance
 
     @property
-    def frequencies(self):
-        """QbloxPulsar 'frequencies' property.
+    def intermediate_frequencies(self):
+        """QbloxPulsar 'intermediate_frequencies' property.
 
         Returns:
-            float: settings.frequencies.
+            float: settings.intermediate_frequencies.
         """
-        return self.settings.frequencies
-
-    @frequencies.setter
-    def frequencies(self, frequencies: List[float]):
-        """QbloxPulsar 'frequencies' property setter."""
-        self.settings.frequencies = frequencies
+        return self.settings.intermediate_frequencies

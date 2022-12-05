@@ -42,11 +42,11 @@ class SGS100A(SignalGenerator):
         """
         if not isinstance(value, float):
             raise ValueError(f"Value must be a float. Current type is: {type(value)}")
-        if parameter.value == Parameter.POWER.value:
+        if parameter == Parameter.POWER:
             self.settings.power = value
             self.device.power(self.power)
             return
-        if parameter.value == Parameter.FREQUENCY.value:
+        if parameter == Parameter.LO_FREQUENCY:
             self.settings.frequency = value
             self.device.frequency(self.frequency)
             return
@@ -58,15 +58,6 @@ class SGS100A(SignalGenerator):
         self.device.power(self.power)
         if self.frequency is not None:
             self.device.frequency(self.frequency)
-
-    @SignalGenerator.frequency.setter  # type: ignore
-    def frequency(self, value: float):
-        """Set R&A frequency.
-
-        Args:
-            value (float): Frequency in Hz.
-        """
-        self.settings.frequency = value
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
