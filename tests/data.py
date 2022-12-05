@@ -141,7 +141,7 @@ class Galadriel:
         "firmware": "0.7.0",
         Parameter.SYNC_ENABLED.value: [True],
         "scope_acquire_trigger_mode": "sequencer",
-        "scope_hardware_averaging": [True],
+        "scope_hardware_averaging": [True, False],
         "sampling_rate": 1000000000,
         Parameter.HARDWARE_MODULATION.value: [True],
         "integration_length": 2000,
@@ -503,7 +503,7 @@ results_two_loops = {
             "alias": "attenuator",
             "previous": None,
             "parameter": "attenuation",
-            "options": {
+            "execution_options": {
                 "start": 7342000000,
                 "stop": 7352000000,
                 "num": None,
@@ -547,7 +547,7 @@ results_one_loops = {
             "alias": "rs_1",
             "previous": None,
             "parameter": "frequency",
-            "options": {
+            "execution_options": {
                 "start": 7342000000,
                 "stop": 7352000000,
                 "num": None,

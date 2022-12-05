@@ -126,7 +126,9 @@ class TestQbloxQRM:
 
     def test_acquisition_name_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_name property."""
-        assert isinstance(qrm_no_device.acquisition_name, str)
+        sequencer = qrm_no_device.num_sequencers
+        acquisition_name = qrm_no_device.acquisition_name(sequencer=sequencer)
+        assert isinstance(acquisition_name, str)
 
     def tests_delay_time_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_delay_time property."""

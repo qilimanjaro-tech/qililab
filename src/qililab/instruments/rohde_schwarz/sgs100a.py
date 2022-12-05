@@ -42,10 +42,10 @@ class SGS100A(SignalGenerator):
         """
         if not isinstance(value, float):
             raise ValueError(f"Value must be a float. Current type is: {type(value)}")
-        if parameter.value == Parameter.POWER.value:
+        if parameter == Parameter.POWER:
             self.settings.power = value
             self.device.power(self.power)
-        if parameter.value == Parameter.FREQUENCY.value:
+        if parameter == Parameter.FREQUENCY:
             self.settings.frequency = value
             self.device.frequency(self.frequency)
 
