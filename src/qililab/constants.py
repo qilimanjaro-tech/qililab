@@ -203,3 +203,7 @@ UNIT_PREFIX = {
     1e21: "Z",  # zetta
     1e24: "Y",  # yotta
 }
+
+
+class QBLOXCONSTANTS:
+    SCOPE_LENGTH = 16380

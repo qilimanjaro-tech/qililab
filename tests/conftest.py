@@ -58,6 +58,7 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.remote_connection.remote_api import RemoteAPI
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings import Instrument, Parameter
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
@@ -220,7 +221,7 @@ def fixture_qrm_sequence() -> Sequence:
 
 @pytest.fixture(name="dummy_qrm")
 def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
-    qrm = DummyPulsar(name=next(dummy_qrm_name_generator()), pulsar_type=PulsarType.PULSAR_QRM)
+    qrm = DummyPulsar(name=next(dummy_qrm_name_generator), pulsar_type=PulsarType.PULSAR_QRM)
     waveform_length = 1000
     zeros = np.zeros(waveform_length, dtype=np.float32)
     ones = np.ones(waveform_length, dtype=np.float32)
@@ -231,7 +232,26 @@ def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
     qrm.feed_input_data(input_path0=sim_in_0, input_path1=sim_in_1)
     qrm.sequencers[0].sequence(qrm_sequence.todict())
     qrm.sequencers[0].nco_freq(10e6)
+    qrm.sequencers[0].demod_en_acq(True)
+    qrm.scope_acq_sequencer_select(0)
+    qrm.scope_acq_trigger_mode_path0("sequencer")
+    qrm.scope_acq_trigger_mode_path1("sequencer")
+    qrm.get_sequencer_state(0)
+    qrm.get_acquisition_state(0, 1)
     return qrm
+
+
+@pytest.fixture(name="qblox_result_noscope")
+def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
+
+
+@pytest.fixture(name="qblox_result_scope")
+def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
+    dummy_qrm.store_scope_acquisition(0, "single")
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
 
 
 @pytest.fixture(name="rohde_schwarz_controller")

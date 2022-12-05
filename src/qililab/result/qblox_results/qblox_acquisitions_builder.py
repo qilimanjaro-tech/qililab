@@ -33,4 +33,4 @@ class QbloxAcquisitionsBuilder:
         Returns:
             bool: True if scope data available, False otherwise.
         """
-        return bool(qblox_raw_results[0]["scope"]["path0"]["data"])
+        return any(qblox_raw_results[0]["scope"]["path0"]["data"])

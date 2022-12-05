@@ -73,7 +73,7 @@ class QbloxScopeAcquisitions(Acquisitions):
             QbloxScopeAcquisitions: integrated QbloxScopeAcquisitions object.
         """
         i_values, q_values = self._iq_values()
-        if len(i_values) <= integrate_from or len(i_values) <= integrate_to:
+        if len(i_values) <= integrate_from or len(i_values) < integrate_to:
             raise IndexError("Integration range is out of bounds.")
         if integrate_from >= integrate_to:
             raise IndexError("'integrate_from' must be smaller than 'integrate_to'.")

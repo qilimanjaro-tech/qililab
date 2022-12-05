@@ -63,11 +63,13 @@ class QbloxResult(Result):
         return self.qblox_scope_acquisitions.demodulated(frequency=frequency, phase_offset=phase_offset)
 
     def _integrated_scope(
-        self, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
+        self, scope_acquisitions=None, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
     ) -> QbloxScopeAcquisitions:
-        if self.qblox_scope_acquisitions is None:
+        if scope_acquisitions is None:
+            scope_acquisitions = self.qblox_scope_acquisitions
+        if scope_acquisitions is None:
             raise ValueError("Scope acquisitions cannot be integrated because it doesn't exist.")
-        return self.qblox_scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
+        return scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
 
     def acquisitions(self) -> pd.DataFrame:
         """Return acquisition values.
@@ -83,7 +85,7 @@ class QbloxResult(Result):
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
         integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> QbloxScopeAcquisitions | None:
+    ) -> Tuple[List[float], List[float]] | None:
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
             return None
@@ -91,8 +93,10 @@ class QbloxResult(Result):
             acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
         if integrate:
             integrate_from, integrate_to = integration_range
-            acquisitions = self._integrated_scope(integrate_from=integrate_from, integrate_to=integrate_to)
-        return acquisitions
+            acquisitions = self._integrated_scope(
+                scope_acquisitions=acquisitions, integrate_from=integrate_from, integrate_to=integrate_to
+            )
+        return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
