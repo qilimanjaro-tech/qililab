@@ -13,7 +13,8 @@ from qiboconnection.typings.connection import (
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution import BusesExecution, BusExecution
+from qililab.execution.execution_buses.pulse_scheduled_bus import PulseScheduledBus
+from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import (
     Keithley2600Controller,
@@ -27,15 +28,7 @@ from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
 from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
     SGS100AController,
 )
-from qililab.instruments import (
-    SGS100A,
-    Attenuator,
-    Keithley2600,
-    MixerBasedSystemControl,
-    QbloxQCM,
-    QbloxQRM,
-    SimulatedSystemControl,
-)
+from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
 from qililab.platform import Buses, Platform, Schema
 from qililab.pulse import (
     CircuitToPulses,
@@ -51,6 +44,12 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.remote_connection.remote_api import RemoteAPI
+from qililab.system_controls.system_control_types.simulated_system_control import (
+    SimulatedSystemControl,
+)
+from qililab.system_controls.system_control_types.time_domain_control_system_control import (
+    ControlSystemControl,
+)
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -309,13 +308,13 @@ def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, schedules = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    experiment = Experiment(platform=platform, schedules=schedules)
+    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
     mock_load.assert_called()
     return experiment
 
@@ -324,7 +323,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, schedules = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
@@ -332,7 +331,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
             mock_open.assert_called()
     loop = Loop(
         alias="rs_0",
-        parameter=Parameter.FREQUENCY,
+        parameter=Parameter.LO_FREQUENCY,
         options=LoopOptions(
             start=3544000000,
             stop=3744000000,
@@ -340,7 +339,9 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
         ),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(platform=platform, schedules=schedules, options=options)
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -349,7 +350,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, schedules = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
@@ -358,7 +359,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
             mock_open.assert_called()
     loop = Loop(
         alias="rs_0",
-        parameter=Parameter.FREQUENCY,
+        parameter=Parameter.LO_FREQUENCY,
         options=LoopOptions(
             start=3544000000,
             stop=3744000000,
@@ -366,7 +367,9 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
         ),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(platform=platform, schedules=schedules, options=options)
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -375,7 +378,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, schedules = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
@@ -383,8 +386,8 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
             mock_open.assert_called()
     loop3 = Loop(
         alias=InstrumentName.QBLOX_QCM.value,
-        parameter=Parameter.FREQUENCIES,
-        options=LoopOptions(start=0, stop=1, num=2),
+        parameter=Parameter.IF,
+        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
     )
     loop2 = Loop(
         alias="platform",
@@ -393,13 +396,15 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
         loop=loop3,
     )
     loop = Loop(
-        alias=InstrumentName.ROHDE_SCHWARZ.value,
-        parameter=Parameter.FREQUENCIES,
-        options=LoopOptions(start=0, stop=1, num=2),
+        alias=InstrumentName.QBLOX_QRM.value,
+        parameter=Parameter.GAIN,
+        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(platform=platform, schedules=schedules, options=options)
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -407,27 +412,27 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
     """Return Experiment object."""
-    return Experiment(platform=simulated_platform, schedules=simulated_experiment_circuit)
+    return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
-@pytest.fixture(name="buses_execution")
-def fixture_buses_execution(experiment: Experiment) -> BusesExecution:
-    """Load BusesExecution.
-
-    Returns:
-        BusesExecution: Instance of the BusesExecution class.
-    """
-    return experiment.execution.buses_execution
-
-
-@pytest.fixture(name="bus_execution")
-def fixture_bus_execution(buses_execution: BusesExecution) -> BusExecution:
-    """Load BusExecution.
+@pytest.fixture(name="execution_manager")
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+    """Load ExecutionManager.
 
     Returns:
-        BusExecution: Instance of the BusExecution class.
+        ExecutionManager: Instance of the ExecutionManager class.
     """
-    return buses_execution.buses[0]
+    return experiment._execution.execution_manager  # pylint: disable=protected-access
+
+
+@pytest.fixture(name="pulse_scheduled_bus")
+def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+    """Load PulseScheduledBus.
+
+    Returns:
+        PulseScheduledBus: Instance of the PulseScheduledBus class.
+    """
+    return execution_manager.pulse_scheduled_buses[0]
 
 
 @pytest.fixture(name="pulse")
@@ -475,12 +480,12 @@ def fixture_readout_pulse() -> ReadoutPulse:
     return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
 
 
-@pytest.fixture(name="mixer_based_system_control")
-def fixture_mixer_based_system_control(platform: Platform) -> MixerBasedSystemControl:
-    """Load SimulatedSystemControl.
+@pytest.fixture(name="time_domain_control_system_control")
+def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
+    """Load ControlSystemControl.
 
     Returns:
-        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
+        SimulatedSystemControl: Instance of the ControlSystemControl class.
     """
     return platform.buses[0].system_control
 
