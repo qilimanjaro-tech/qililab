@@ -169,8 +169,8 @@ class Galadriel:
         Parameter.INTEGRATION_MODE.value: [IntegrationMode.SSB.value],
         Parameter.SEQUENCE_TIMEOUT.value: [1],
         Parameter.ACQUISITION_TIMEOUT.value: [1],
-        Parameter.HARDWARE_INTEGRATION: [True],
-        Parameter.HARDWARE_DEMODULATION: [True],
+        Parameter.HARDWARE_INTEGRATION.value: [True],
+        Parameter.HARDWARE_DEMODULATION.value: [True],
     }
 
     rohde_schwarz_controller_0 = {
@@ -299,7 +299,7 @@ class Galadriel:
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
             {
-                RUNCARD.NAME: NodeName.PORT.value,
+                RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
                 RUNCARD.ALIAS: NodeName.PORT.value,
                 Node.FREQUENCY.value: 7.34730e09,
@@ -336,13 +336,14 @@ class Galadriel:
             NodeName.PORT.value: 0,
         },
         {
-            RUNCARD.ID: 0,
+            RUNCARD.ID: 1,
             RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS.value,
             RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
             RUNCARD.BUS_SUBCATEGORY: BusSubCategory.TIME_DOMAIN_READOUT.value,
             RUNCARD.ALIAS: "feedline_input_output_bus",
             Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 1,
                 RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL.value,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,

@@ -135,6 +135,10 @@ class Bus(FactoryElement):
             + "".join(f"--|{target}|----" for target in self.targets)
         )
 
+    def __eq__(self, other: object) -> bool:
+        """compare two Bus objects"""
+        return str(self) == str(other) if isinstance(other, Bus) else False
+
     @property
     def target_freqs(self):
         """Bus 'target_freqs' property.
