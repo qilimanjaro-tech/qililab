@@ -47,8 +47,9 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
     mock_open.assert_called_once()
     mock_os.assert_called()
     assert exp is not None
-    assert exp.loops is not None
-    assert isinstance(exp.loops[0], Loop)
+    assert exp.options is not None
+    assert exp.options.loops is not None
+    assert isinstance(exp.options.loops[0], Loop)
 
 
 @patch("qililab.utils.load_data.glob.glob", return_value=["one", "two"])

@@ -90,7 +90,8 @@ class EXPERIMENT:
     RESULTS = "results"
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
-    OPTIONS = "execution_options"
+    OPTIONS = "options"
+    EXECUTION_OPTIONS = "execution_options"
     DEVICE_ID = "device_id"
     PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
@@ -137,14 +138,14 @@ class LOOP:
     OPTIONS = "options"
 
 
-class PULSESEQUENCES:
-    """PulseSequenes attribute names."""
+class PULSESCHEDULES:
+    """Pulse Schedules attribute names."""
 
     ELEMENTS = "elements"
 
 
-class PULSESEQUENCE:
-    """PulseSequence attribute names."""
+class PULSEBUSSCHEDULE:
+    """PULSE BUS SCHEDULE attribute names."""
 
     TIMELINE = "timeline"
     PORT = "port"

@@ -12,6 +12,10 @@ from qililab.constants import (
     INSTRUMENTREFERENCE,
     LOOP,
     PLATFORM,
+    PULSE,
+    PULSEBUSSCHEDULE,
+    PULSEEVENT,
+    PULSESCHEDULES,
     RUNCARD,
     SCHEMA,
 )
@@ -29,6 +33,8 @@ from qililab.typings.enums import (
     Node,
     NodeName,
     Parameter,
+    PulseName,
+    PulseShapeName,
     ReferenceClock,
     SystemControlCategory,
     SystemControlName,
@@ -44,7 +50,7 @@ class Galadriel:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
-        RUNCARD.CATEGORY: "platform",
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
@@ -408,7 +414,7 @@ class FluxQubitSimulator:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
-        RUNCARD.CATEGORY: "platform",
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
@@ -635,80 +641,79 @@ results_one_loops = {
 }
 
 experiment = {
-    "platform": Galadriel.runcard,
-    "settings": {
-        "hardware_average": 1024,
-        EXPERIMENT.SOFTWARE_AVERAGE: 1,
-        "repetition_duration": 200000,
-    },
-    "sequences": [
-        {
-            "elements": [
-                {
-                    "timeline": [
-                        {
-                            "pulse": {
-                                RUNCARD.NAME: "readout_pulse",
-                                "amplitude": 1,
-                                Node.FREQUENCY.value: 1e9,
-                                "phase": 0,
-                                "duration": 2000,
-                                "pulse_shape": {RUNCARD.NAME: "rectangular"},
-                            },
-                            "start_time": 40,
-                        }
-                    ],
-                    NodeName.PORT.value: 1,
-                }
-            ],
-            "time": {"[0]": 2040},
-            "delay_between_pulses": 0,
-            "delay_before_readout": 40,
-        }
-    ],
-    EXPERIMENT.LOOPS: [
-        {
-            RUNCARD.ALIAS: "qblox_qrm",
-            LOOP.PARAMETER: Parameter.GAIN.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 0.1,
-                LOOP.STOP: 1,
-                LOOP.NUM: None,
-                LOOP.STEP: 0.3,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: 0,
-                LOOP.VALUES: None,
-            },
-            LOOP.LOOP: {
-                RUNCARD.ALIAS: "attenuator",
-                LOOP.PARAMETER: Parameter.ATTENUATION.value,
+    RUNCARD.PLATFORM: Galadriel.runcard,
+    EXPERIMENT.OPTIONS: {
+        EXPERIMENT.LOOPS: [
+            {
+                RUNCARD.ALIAS: "qblox_qrm",
+                LOOP.PARAMETER: Parameter.GAIN.value,
                 LOOP.OPTIONS: {
-                    LOOP.START: 15,
-                    LOOP.STOP: 90,
+                    LOOP.START: 0.1,
+                    LOOP.STOP: 1,
                     LOOP.NUM: None,
-                    LOOP.STEP: 1,
+                    LOOP.STEP: 0.3,
                     LOOP.LOGARITHMIC: False,
-                    LOOP.CHANNEL_ID: None,
+                    LOOP.CHANNEL_ID: 0,
                     LOOP.VALUES: None,
                 },
                 LOOP.LOOP: {
-                    RUNCARD.ALIAS: "rs_1",
-                    LOOP.PARAMETER: Node.FREQUENCY.value,
+                    RUNCARD.ALIAS: "attenuator",
+                    LOOP.PARAMETER: Parameter.ATTENUATION.value,
                     LOOP.OPTIONS: {
-                        LOOP.START: 7342000000,
-                        LOOP.STOP: 7352000000,
+                        LOOP.START: 15,
+                        LOOP.STOP: 90,
                         LOOP.NUM: None,
-                        LOOP.STEP: 100000,
+                        LOOP.STEP: 1,
                         LOOP.LOGARITHMIC: False,
                         LOOP.CHANNEL_ID: None,
                         LOOP.VALUES: None,
                     },
-                    LOOP.LOOP: None,
+                    LOOP.LOOP: {
+                        RUNCARD.ALIAS: "rs_1",
+                        LOOP.PARAMETER: Node.FREQUENCY.value,
+                        LOOP.OPTIONS: {
+                            LOOP.START: 7342000000,
+                            LOOP.STOP: 7352000000,
+                            LOOP.NUM: None,
+                            LOOP.STEP: 100000,
+                            LOOP.LOGARITHMIC: False,
+                            LOOP.CHANNEL_ID: None,
+                            LOOP.VALUES: None,
+                        },
+                        LOOP.LOOP: None,
+                    },
                 },
-            },
+            }
+        ],
+        RUNCARD.NAME: "punchout",
+        RUNCARD.SETTINGS: {
+            EXPERIMENT.HARDWARE_AVERAGE: 1024,
+            EXPERIMENT.SOFTWARE_AVERAGE: 1,
+            EXPERIMENT.REPETITION_DURATION: 200000,
+        },
+    },
+    EXPERIMENT.PULSE_SCHEDULES: [
+        {
+            PULSESCHEDULES.ELEMENTS: [
+                {
+                    PULSEBUSSCHEDULE.TIMELINE: [
+                        {
+                            PULSEEVENT.PULSE: {
+                                PULSE.NAME: PulseName.READOUT_PULSE.value,
+                                PULSE.AMPLITUDE: 1,
+                                PULSE.FREQUENCY: 1e9,
+                                PULSE.PHASE: 0,
+                                PULSE.DURATION: 2000,
+                                PULSE.PULSE_SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
+                            },
+                            PULSEEVENT.START_TIME: 40,
+                        }
+                    ],
+                    PULSEBUSSCHEDULE.PORT: 1,
+                }
+            ],
         }
     ],
-    RUNCARD.NAME: "punchout",
 }
 
 

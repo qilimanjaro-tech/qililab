@@ -50,7 +50,9 @@ class Experiment:
             manual_override=self.options.remote_device_manual_override,
         )
         self._execution, self._schedules = self._build_execution(
-            schedules=self.circuits + self.pulse_schedules, execution_options=self.options.execution_options
+            circuits=self.circuits,
+            pulse_schedules=self.pulse_schedules,
+            execution_options=self.options.execution_options,
         )
         self._execution_preparation = ExecutionPreparation(remote_api=self._remote_api, options=self.options)
 
@@ -354,7 +356,9 @@ class Experiment:
 
         if alias in ([Category.PLATFORM.value] + self.platform.gate_names):
             self._execution, self._schedules = self._build_execution(
-                schedules=self.circuits + self.pulse_schedules, execution_options=self.options.execution_options
+                circuits=self.circuits,
+                pulse_schedules=self.pulse_schedules,
+                execution_options=self.options.execution_options,
             )
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
@@ -369,7 +373,7 @@ class Experiment:
         return self._execution.draw(resolution=resolution, idx=idx)
 
     def _build_execution(
-        self, schedules: List[Circuit | PulseSchedule], execution_options: ExecutionOptions
+        self, circuits: list[Circuit], pulse_schedules: list[PulseSchedule], execution_options: ExecutionOptions
     ) -> Tuple[Execution, List[PulseSchedule]]:
         """Build Execution class.
 
@@ -377,11 +381,12 @@ class Experiment:
             sequence (Circuit | PulseSequence): Sequence of gates/pulses.
             options (ExecutionOptions): Execution options
         """
-        if isinstance(schedules[0], Circuit):
+        pulse_schedules_input = copy.deepcopy(pulse_schedules)
+        if circuits is not None and circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
-            pulse_schedules = translator.translate(circuits=schedules, chip=self.platform.chip)
+            pulse_schedules_input += translator.translate(circuits=circuits, chip=self.platform.chip)
         execution = EXECUTION_BUILDER.build(
-            platform=self.platform, pulse_schedules=pulse_schedules, execution_options=execution_options
+            platform=self.platform, pulse_schedules=pulse_schedules_input, execution_options=execution_options
         )
         return execution, pulse_schedules
 
@@ -407,9 +412,17 @@ class Experiment:
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        circuits = [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
-        pulse_schedules = [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
-        experiment_options = ExperimentOptions.from_dict(**dictionary[EXPERIMENT.OPTIONS])
+        circuits = (
+            [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
+            if EXPERIMENT.CIRCUITS in dictionary
+            else []
+        )
+        pulse_schedules = (
+            [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
+            if EXPERIMENT.PULSE_SCHEDULES in dictionary
+            else []
+        )
+        experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
         return Experiment(
             platform=platform,
             circuits=circuits,

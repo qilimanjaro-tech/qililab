@@ -5,7 +5,7 @@ from typing import List, Set
 
 import numpy as np
 
-from qililab.constants import PULSESEQUENCE
+from qililab.constants import PULSEBUSSCHEDULE
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.typings import PulseName
@@ -180,8 +180,8 @@ class PulseBusSchedule:
             dict: Dictionary representation of the class.
         """
         return {
-            PULSESEQUENCE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
-            PULSESEQUENCE.PORT: self.port,
+            PULSEBUSSCHEDULE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
+            PULSEBUSSCHEDULE.PORT: self.port,
         }
 
     @classmethod
@@ -194,6 +194,6 @@ class PulseBusSchedule:
         Returns:
             PulseSequence: Loaded class.
         """
-        timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSESEQUENCE.TIMELINE]]
-        port = dictionary[PULSESEQUENCE.PORT]
+        timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
+        port = dictionary[PULSEBUSSCHEDULE.PORT]
         return PulseBusSchedule(timeline=timeline, port=port)
