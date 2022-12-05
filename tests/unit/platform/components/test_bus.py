@@ -3,10 +3,10 @@ from types import NoneType
 
 import pytest
 
-from qililab.instruments import SystemControl
 from qililab.platform import Bus
+from qililab.system_controls import SystemControl
 
-from ....conftest import buses as load_buses
+from .aux_methods import buses as load_buses
 
 
 @pytest.mark.parametrize("bus", [load_buses().elements[0], load_buses().elements[1]])

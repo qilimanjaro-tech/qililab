@@ -12,7 +12,7 @@ from qililab.platform import Platform
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 
-from ...conftest import mock_instruments
+from .aux_methods import mock_instruments
 
 
 class TestExperiment:
@@ -73,7 +73,7 @@ class TestExperiment:
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
         circuit.add(M(0))
-        experiment = Experiment(schedules=circuit, platform=platform)
+        experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
@@ -83,7 +83,7 @@ class TestExperiment:
 
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
-        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.FREQUENCIES, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -103,7 +103,7 @@ class TestExperiment:
         experiment.platform.connect()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.FREQUENCIES, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""

@@ -44,6 +44,7 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.remote_connection.remote_api import RemoteAPI
+from qililab.system_controls.system_control import SystemControl
 from qililab.system_controls.system_control_types.simulated_system_control import (
     SimulatedSystemControl,
 )
@@ -480,12 +481,22 @@ def fixture_readout_pulse() -> ReadoutPulse:
     return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
 
 
+@pytest.fixture(name="base_system_control")
+def fixture_base_system_control(platform: Platform) -> SystemControl:
+    """Load SystemControl.
+
+    Returns:
+        SystemControl: Instance of the ControlSystemControl class.
+    """
+    return platform.buses[0].system_control
+
+
 @pytest.fixture(name="time_domain_control_system_control")
 def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
     """Load ControlSystemControl.
 
     Returns:
-        SimulatedSystemControl: Instance of the ControlSystemControl class.
+        ControlSystemControl: Instance of the ControlSystemControl class.
     """
     return platform.buses[0].system_control
 

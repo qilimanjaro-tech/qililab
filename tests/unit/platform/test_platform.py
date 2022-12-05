@@ -6,7 +6,7 @@ import pytest
 from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import AWG, AWGDigitalAnalogConverter, SignalGenerator
 from qililab.platform import Buses, Platform, Schema
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import InstrumentName
@@ -72,12 +72,12 @@ class TestPlatform:
     def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
         element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
-        assert isinstance(element, QubitControl)
+        assert isinstance(element, AWG)
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
         element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
-        assert isinstance(element, QubitReadout)
+        assert isinstance(element, AWGDigitalAnalogConverter)
 
     @patch("qililab.platform.platform_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

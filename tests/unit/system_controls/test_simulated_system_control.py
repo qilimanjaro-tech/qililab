@@ -1,0 +1,36 @@
+"""Tests for the SimulatedSystemControl class."""
+
+from pathlib import Path
+
+from qilisimulator.evolution import Evolution
+
+from qililab.pulse import PulseBusSchedule
+from qililab.result import SimulatorResult
+from qililab.system_controls.system_control_types import SimulatedSystemControl
+
+
+class TestSimulatedSystemControl:
+    """Unit tests checking the SimulatedSystemControl attributes and methods"""
+
+    def test_init(self, simulated_system_control: SimulatedSystemControl):
+        """Test initialization"""
+        assert isinstance(simulated_system_control.settings, SimulatedSystemControl.SimulatedSystemControlSettings)
+        assert isinstance(simulated_system_control._evo, Evolution)  # pylint: disable=protected-access
+
+    def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
+        """Test run method."""
+        result = simulated_system_control.run(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=2000, path=Path(__file__).parent
+        )
+        assert isinstance(result, SimulatorResult)
+
+    def test_frequency_property(self, simulated_system_control: SimulatedSystemControl):
+        """Test frequency property."""
+        assert (
+            simulated_system_control.frequency
+            == simulated_system_control._evo.system.qubit.frequency  # pylint: disable=protected-access
+        )
+
+    def test_name_property(self, simulated_system_control: SimulatedSystemControl):
+        """Test name property."""
+        assert simulated_system_control.name == simulated_system_control.settings.subcategory

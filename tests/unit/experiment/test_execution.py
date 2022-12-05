@@ -8,7 +8,7 @@ from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
 from qililab.result import Results
 
-from ...conftest import mock_instruments
+from .aux_methods import mock_instruments
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
