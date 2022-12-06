@@ -18,7 +18,7 @@ def fixture_create_one_loop() -> Loop:
     Returns:
         Loop: created loop
     """
-    return Loop(alias="X", parameter=Parameter.FREQUENCY, options=LoopOptions(start=0, stop=1, num=100))
+    return Loop(alias="rs_0", parameter=Parameter.LO_FREQUENCY, options=LoopOptions(start=0.2, stop=1.2, num=10))
 
 
 @pytest.fixture(name="another_loop")

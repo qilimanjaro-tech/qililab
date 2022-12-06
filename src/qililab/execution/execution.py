@@ -71,7 +71,7 @@ class Execution:
             path=path,
         )
 
-    def run(self, plot: LivePlot | None, path: Path) -> Result:
+    def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Run the given pulse sequence."""
         return self.execution_manager.run(plot=plot, path=path)
 

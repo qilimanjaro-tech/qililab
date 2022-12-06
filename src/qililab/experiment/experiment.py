@@ -174,11 +174,11 @@ class Experiment:
             depth (int): Depth of the recursive loop. Defaults to 0.
         """
         if loops is None or len(loops) <= 0:
-            results.add(
-                self._generate_program_upload_and_execute(
-                    schedule_index_to_load=schedule_index_to_load, path=path, plot=plot
-                )
+            result = self._generate_program_upload_and_execute(
+                schedule_index_to_load=schedule_index_to_load, path=path, plot=plot
             )
+            if result is not None:
+                results.add(result)
             return
 
         self._process_loops(
@@ -313,7 +313,7 @@ class Experiment:
 
     def _generate_program_upload_and_execute(
         self, schedule_index_to_load: int, path: Path, plot: LivePlot = None
-    ) -> Result:
+    ) -> Result | None:
         """Execute one pulse schedule.
 
         Args:
