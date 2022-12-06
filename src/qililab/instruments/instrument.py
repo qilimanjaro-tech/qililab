@@ -132,7 +132,7 @@ class Instrument(BusElement, ABC):
             Raises:
                 AttributeError: If device has not been initialized.
             """
-            if not hasattr(ref, "device") and (args is not None and not hasattr(args[0], "device")):
+            if not hasattr(ref, "device") and (not args or not hasattr(args[0], "device")):
                 raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 

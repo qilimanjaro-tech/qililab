@@ -1,7 +1,5 @@
 """Tests for the SimulatedSystemControl class."""
 
-from pathlib import Path
-
 from qilisimulator.evolution import Evolution
 
 from qililab.pulse import PulseBusSchedule

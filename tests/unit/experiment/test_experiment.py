@@ -171,11 +171,15 @@ class TestExperiment:
 @patch("qililab.execution.execution_preparation.open")
 @patch("qililab.utils.results_data_management.os.makedirs")
 @patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.execution.execution_manager.yaml.safe_dump")
+@patch("qililab.execution.execution_manager.open")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
     def test_execute(
         self,
+        mock_open_0: MagicMock,
+        mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
@@ -194,6 +198,8 @@ class TestSimulatedExecution:
         # Assert called functions
         mock_makedirs.assert_called()
         mock_open.assert_called()
+        mock_open_0.assert_called()
+        mock_dump.assert_called()
 
         # Test result
         with pytest.raises(ValueError):  # Result should be SimulatedResult

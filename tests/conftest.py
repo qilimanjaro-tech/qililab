@@ -13,7 +13,10 @@ from qiboconnection.typings.connection import (
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses.pulse_scheduled_bus import PulseScheduledBus
+from qililab.execution.execution_buses import (
+    PulseScheduledBus,
+    PulseScheduledReadoutBus,
+)
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import (
@@ -438,6 +441,16 @@ def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseSch
         PulseScheduledBus: Instance of the PulseScheduledBus class.
     """
     return execution_manager.pulse_scheduled_buses[0]
+
+
+@pytest.fixture(name="pulse_scheduled_readout_bus")
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledReadoutBus:
+    """Load PulseScheduledReadoutBus.
+
+    Returns:
+        PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
+    """
+    return execution_manager.pulse_scheduled_readout_buses[0]
 
 
 @pytest.fixture(name="pulse")
