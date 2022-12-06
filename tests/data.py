@@ -521,7 +521,6 @@ for platform in [Galadriel]:
     circuit.add(Y(0))
     circuit.add(RX(0, 23))
     circuit.add(RY(0, 15))
-    circuit.add(U2(0, 14, 25))
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
@@ -533,7 +532,6 @@ simulated_experiment_circuit.add(X(0))
 simulated_experiment_circuit.add(Y(0))
 simulated_experiment_circuit.add(RX(0, 23))
 simulated_experiment_circuit.add(RY(0, 15))
-simulated_experiment_circuit.add(U2(0, 14, 25))
 
 results_two_loops = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,

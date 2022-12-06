@@ -373,6 +373,7 @@ class QbloxModule(AWG):
             self._set_hardware_modulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
             self._set_frequency(value=self.settings.intermediate_frequencies[channel_id], channel_id=channel_id)
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_imbalance(self, value: float | str | bool, channel_id: int):
         """Set I and Q gain imbalance of sequencer.
 
@@ -383,11 +384,10 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.gain_imbalance[channel_id] = value
-        self.device.sequencers[channel_id].mixer_corr_gain_ratio(value)
+        self.settings.gain_imbalance[channel_id] = float(value)
+        self.device.sequencers[channel_id].mixer_corr_gain_ratio(float(value))
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_phase_imbalance(self, value: float | str | bool, channel_id: int):
         """Set I and Q phase imbalance of sequencer.
 
@@ -398,10 +398,8 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.gain_imbalance[channel_id] = value
-        self.device.sequencers[channel_id].mixer_corr_phase_offset_degree(value)
+        self.settings.gain_imbalance[channel_id] = float(value)
+        self.device.sequencers[channel_id].mixer_corr_phase_offset_degree(float(value))
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""

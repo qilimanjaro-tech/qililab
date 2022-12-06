@@ -33,6 +33,12 @@ class QbloxQCM(QbloxModule):
         Returns:
             Acquisitions: Acquisitions object.
         """
+        # FIXME: is it really necessary to generate acquisitions for a QCM??
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        # FIXME: using first channel instead of the desired
+        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
+        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.

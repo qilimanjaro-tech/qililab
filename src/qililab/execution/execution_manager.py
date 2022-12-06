@@ -65,11 +65,14 @@ class ExecutionManager:
                 path=path,
             )
 
-    def run(self, plot: LivePlot | None, path: Path) -> Result:
+    def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
         for bus in self.pulse_scheduled_buses:
             self._asynchronous_bus_run(bus=bus)
+
+        if not self.pulse_scheduled_readout_buses:
+            return None
 
         results = [
             self._run_acquire_and_process_async_result(plot, path, readout_bus)
@@ -78,7 +81,7 @@ class ExecutionManager:
         # FIXME: set multiple readout buses
         if len(results) > 1:
             logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if len(results) <= 1:
+        if len(results) <= 0:
             raise ValueError("No Results acquired")
         return results[0]
 

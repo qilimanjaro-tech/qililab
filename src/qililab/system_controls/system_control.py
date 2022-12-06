@@ -140,7 +140,7 @@ class SystemControl(BusElement, ABC):
         """Return a dict representation of a SystemControl class."""
         return {
             RUNCARD.ID: self.id_,
-            RUNCARD.NAME: self.name,
+            RUNCARD.NAME: self.name.value,
             RUNCARD.CATEGORY: self.settings.category.value,
             RUNCARD.SYSTEM_CONTROL_CATEGORY: self.settings.system_control_category.value,
             RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: self.settings.system_control_subcategory.value,

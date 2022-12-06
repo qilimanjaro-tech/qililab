@@ -160,7 +160,7 @@ class Bus(FactoryElement):
         """Return a dict representation of the SchemaSettings class."""
         return {
             RUNCARD.ID: self.id_,
-            RUNCARD.NAME: self.name,
+            RUNCARD.NAME: self.name.value,
             RUNCARD.CATEGORY: self.category.value,
             RUNCARD.BUS_CATEGORY: self.bus_category.value,
             RUNCARD.BUS_SUBCATEGORY: self.bus_subcategory.value,
