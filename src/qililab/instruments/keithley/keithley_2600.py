@@ -35,6 +35,7 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckDeviceInitialized
+    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
@@ -42,14 +43,12 @@ class Keithley2600(Instrument):
         channel_id: int | None = None,
     ):
         """Setup instrument."""
-        if not isinstance(value, float):
-            raise ValueError(f"Value must be a float. Current type is: {type(value)}")
-        if parameter == Parameter.CURRENT:
-            self.max_current = value
+        if parameter == Parameter.MAX_CURRENT:
+            self.max_current = float(value)
             self.device.smua.limiti(self.max_current)
             return
-        if parameter == Parameter.VOLTAGE:
-            self.max_voltage = value
+        if parameter == Parameter.MAX_VOLTAGE:
+            self.max_voltage = float(value)
             self.device.smua.limitv(self.max_voltage)
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")

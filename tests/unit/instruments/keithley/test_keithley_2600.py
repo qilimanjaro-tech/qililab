@@ -1,5 +1,8 @@
 """Tests for the Keithley2600 class."""
+import pytest
+
 from qililab.instruments import Keithley2600
+from qililab.typings import Parameter
 
 
 class TestKeithley2600:
@@ -13,9 +16,14 @@ class TestKeithley2600:
         """Test category property."""
         assert keithley_2600_no_device.category == keithley_2600_no_device.settings.category
 
-    def test_setup_method(self, keithley_2600: Keithley2600):
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.01), (Parameter.MAX_VOLTAGE, 19.0)])
+    def test_setup_method_current_parameter(self, parameter: Parameter, value: float, keithley_2600: Keithley2600):
         """Test setup method."""
-        keithley_2600.setup()
+        keithley_2600.setup(parameter=parameter, value=value)
+        if parameter == Parameter.CURRENT:
+            assert keithley_2600.settings.max_current == value
+        if parameter == Parameter.VOLTAGE:
+            assert keithley_2600.settings.max_voltage == value
 
     def test_initial_setup_method(self, keithley_2600: Keithley2600):
         """Test initial_setup method."""

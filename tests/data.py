@@ -3,7 +3,7 @@ import copy
 from typing import Dict, List, Type
 
 from qibo.core.circuit import Circuit
-from qibo.gates import RX, RY, U2, I, M, X, Y
+from qibo.gates import RX, RY, I, M, X, Y
 
 from qililab.constants import (
     CONNECTION,
