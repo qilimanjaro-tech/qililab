@@ -41,7 +41,7 @@ class TestPlatform:
     def test_get_element_method_unknown_raises_error(self, platform: Platform):
         """Test get_element method with unknown element."""
         with pytest.raises(ValueError):
-            platform.get_element(alias="Unknown")
+            platform.get_element(alias="ABC")
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
