@@ -42,11 +42,7 @@ class ControlSystemControl(TimeDomainSystemControl):
     @property
     def frequency(self):
         """SystemControl 'frequency' property."""
-        return (
-            self.signal_generator.frequency + self.awg.frequency
-            if self.signal_generator.frequency is not None
-            else None
-        )
+        return self.signal_generator.frequency + self.awg.frequency
 
     def __str__(self):
         """String representation of the ControlSystemControl class."""

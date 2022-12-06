@@ -122,7 +122,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.NUM_BINS.value: [1],
-        Parameter.IF.value: [100000000],
+        Parameter.IF.value: [100_000_000],
         Parameter.GAIN.value: [1],
         Parameter.GAIN_IMBALANCE.value: [0],
         Parameter.PHASE_IMBALANCE.value: [0],
@@ -159,7 +159,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.NUM_BINS.value: [1],
-        Parameter.IF.value: [100000000],
+        Parameter.IF.value: [100_000_000],
         Parameter.GAIN.value: [1],
         Parameter.GAIN_IMBALANCE.value: [0],
         Parameter.PHASE_IMBALANCE.value: [0],
@@ -204,6 +204,7 @@ class Galadriel:
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
     }
 
     rohde_schwarz_controller_1 = {
@@ -231,6 +232,7 @@ class Galadriel:
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 3.351e09,
     }
 
     attenuator_controller_0 = {
@@ -488,12 +490,14 @@ class FluxQubitSimulator:
                 RUNCARD.NAME: BusName.SIMULATED_BUS.value,
                 RUNCARD.CATEGORY: Category.BUS.value,
                 RUNCARD.BUS_CATEGORY: BusCategory.SIMULATED.value,
+                RUNCARD.BUS_SUBCATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.ALIAS: "simulated_bus",
                 Category.SYSTEM_CONTROL.value: {
                     RUNCARD.ID: 0,
                     RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL.value,
                     RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                     RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.SIMULATED.value,
+                    RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.SIMULATED.value,
                     RUNCARD.ALIAS: "simulated_system_control",
                     NodeName.QUBIT.value: "csfq4jj",
                     "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},

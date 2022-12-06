@@ -434,3 +434,13 @@ class Experiment:
             pulse_schedules=pulse_schedules,
             options=experiment_options,
         )
+
+    def __str__(self):
+        """String representation of an experiment."""
+        return (
+            f"Experiment {self.options.name}:\n"
+            + f"{str(self.platform)}\n"
+            + f"{str(self.circuits)}\n"
+            + f"{str(self.pulse_schedules)}\n"
+            + f"{str(self.options)}"
+        )

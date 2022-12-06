@@ -28,7 +28,6 @@ class LivePlot:
     plot_id: int = field(init=False)
     x_iterator_ranges: Iterator = field(init=False)
     y_iterator_ranges: Iterator = field(init=False)
-    ranges: List[Iterator] = field(init=False)
     plot_y_label: str | None = None
     title: InitVar[str] = ""
 

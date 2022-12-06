@@ -1,31 +1,40 @@
-"""Pulse Scheduled Bus class."""
+"""Simulated Pulse Scheduled Bus class."""
 from dataclasses import dataclass, field
 
-from qililab.execution.execution_buses.pulse_scheduled_bus import PulseScheduledBus
-from qililab.platform.components.bus_types import SimulatedBus, TimeDomainReadoutBus
+from qililab.execution.execution_buses.pulse_scheduled_readout_bus import (
+    PulseScheduledReadoutBus,
+)
+from qililab.platform.components.bus_types import SimulatedBus
 from qililab.pulse import PulseBusSchedule
 from qililab.result.result import Result
-from qililab.system_controls.system_control_types import (
-    SimulatedSystemControl,
-    TimeDomainReadoutSystemControl,
-)
+from qililab.system_controls.system_control_types import SimulatedSystemControl
 
 
 @dataclass
-class PulseScheduledReadoutBus(PulseScheduledBus):
-    """Pulse Scheduled Readout Bus class."""
+class SimulatedPulseScheduledReadoutBus(PulseScheduledReadoutBus):
+    """Simulated Pulse Scheduled Readout Bus class."""
 
-    bus: TimeDomainReadoutBus | SimulatedBus
+    bus: SimulatedBus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     @property
-    def system_control(self) -> TimeDomainReadoutSystemControl | SimulatedSystemControl:
+    def system_control(self) -> SimulatedSystemControl:
         """Pulse Scheduled Bus 'system_control' property.
 
         Returns:
             SystemControl: bus.system_control
         """
         return self.bus.system_control
+
+    def generate_program(self, schedule_index_to_load: int) -> None:
+        """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
+
+        Args:
+            schedule_index_to_load (int): specific schedule to load
+        """
+        self.system_control.generate_program(  # pylint: disable=no-member
+            pulse_bus_schedule=self.pulse_schedule[schedule_index_to_load], frequency=self.bus.frequency
+        )
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
@@ -45,7 +54,4 @@ class PulseScheduledReadoutBus(PulseScheduledBus):
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
         readout_schedule = self.pulse_schedule[idx]
-        return (
-            readout_schedule.timeline[-1].start
-            + self.system_control.acquisition_delay_time  # pylint: disable=no-member
-        )
+        return readout_schedule.timeline[-1].start

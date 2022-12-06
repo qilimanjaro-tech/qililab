@@ -11,6 +11,7 @@ from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
+from qililab.typings.experiment import ExperimentOptions, ExperimentSettings
 
 from .aux_methods import mock_instruments
 
@@ -24,23 +25,27 @@ class TestExperiment:
 
     def test_execution_attribute_instance(self, experiment: Experiment):
         """Test execution attribute instance."""
-        assert isinstance(experiment.execution, Execution)
+        assert isinstance(experiment._execution, Execution)  # pylint: disable=protected-access
 
-    def test_parameters_property(self, experiment: Experiment):
-        """Test parameters property."""
-        assert isinstance(experiment.parameters, str)
+    def test_options_property(self, experiment: Experiment):
+        """Test options property."""
+        assert isinstance(experiment.options, ExperimentOptions)
+
+    def test_settings_property(self, experiment: Experiment):
+        """Test settings property."""
+        assert isinstance(experiment.options.settings, ExperimentSettings)
 
     def test_software_average_property(self, experiment: Experiment):
         """Test software_average property."""
-        assert experiment.software_average == experiment.settings.software_average
+        assert experiment.software_average == experiment.options.settings.software_average
 
     def test_hardware_average_property(self, experiment: Experiment):
         """Test hardware_average property."""
-        assert experiment.hardware_average == experiment.settings.hardware_average
+        assert experiment.hardware_average == experiment.options.settings.hardware_average
 
     def test_repetition_duration_property(self, experiment: Experiment):
         """Test repetition_duration property."""
-        assert experiment.repetition_duration == experiment.settings.repetition_duration
+        assert experiment.repetition_duration == experiment.options.settings.repetition_duration
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method."""
@@ -66,8 +71,8 @@ class TestExperiment:
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
-        if experiment_all_platforms.loops is not None:
-            print(experiment_all_platforms.loops[0].num_loops)
+        if experiment_all_platforms.options.loops is not None:
+            print(experiment_all_platforms.options.loops[0].num_loops)
 
     def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""
@@ -79,7 +84,6 @@ class TestExperiment:
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method."""
         str(experiment_all_platforms)
-        str(experiment_all_platforms.settings)
 
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
@@ -164,11 +168,9 @@ class TestExperiment:
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
-@patch("qililab.execution.buses_execution.open")
-@patch("qililab.experiment.experiment.open")
+@patch("qililab.execution.execution_preparation.open")
 @patch("qililab.utils.results_data_management.os.makedirs")
-@patch("qililab.instruments.system_control.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
@@ -177,8 +179,6 @@ class TestSimulatedExecution:
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump: MagicMock,
         simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
@@ -194,8 +194,6 @@ class TestSimulatedExecution:
         # Assert called functions
         mock_makedirs.assert_called()
         mock_open.assert_called()
-        mock_open_1.assert_called()
-        mock_dump.assert_called()
 
         # Test result
         with pytest.raises(ValueError):  # Result should be SimulatedResult

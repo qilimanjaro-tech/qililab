@@ -114,6 +114,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 3.351e+09
 
     - name: rohde_schwarz
       alias: rs_1
@@ -121,6 +122,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 3.351e+09
 
     - name: mini_circuits
       alias: attenuator

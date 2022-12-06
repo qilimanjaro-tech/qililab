@@ -18,7 +18,7 @@ class SignalGenerator(Instrument):
         """
 
         power: float
-        frequency: float | None = field(default=None)
+        frequency: float
 
     settings: SignalGeneratorSettings
 
@@ -42,4 +42,4 @@ class SignalGenerator(Instrument):
 
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
-        return {key: value for key, value in super().to_dict().items() if key != SIGNALGENERATOR.FREQUENCY}
+        return dict(super().to_dict().items())

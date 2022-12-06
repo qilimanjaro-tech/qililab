@@ -1,15 +1,22 @@
 """Simulated SystemControl class."""
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
+from qililab.constants import RUNCARD
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
-from qililab.typings.enums import Category, Parameter, SystemControlName
+from qililab.typings.enums import (
+    Category,
+    Parameter,
+    SystemControlName,
+    SystemControlSubCategory,
+)
 from qililab.utils.factory import Factory
 
 
@@ -43,6 +50,7 @@ class SimulatedSystemControl(SystemControl):
         """
 
         system_control_category = SystemControlCategory.SIMULATED
+        system_control_subcategory = SystemControlSubCategory.SIMULATED
         # Note: DDBBElement already casts enums from value
         qubit: QubitName
         qubit_params: dict
@@ -112,3 +120,31 @@ class SimulatedSystemControl(SystemControl):
             Result: Acquired result
         """
         return SimulatorResult(psi0=self._evo.psi0, states=self._evo.states, times=self._evo.times)
+
+    def to_dict(self):
+        """Return a dict representation of a SystemControl class."""
+        return {
+            RUNCARD.ID: self.id_,
+            RUNCARD.NAME: self.name.value,
+            RUNCARD.CATEGORY: self.settings.category.value,
+            RUNCARD.SYSTEM_CONTROL_CATEGORY: self.settings.system_control_category.value,
+            RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: self.settings.system_control_subcategory.value,
+        }
+
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
+        """
+
+    @property
+    def acquisition_delay_time(self) -> int:
+        """SystemControl 'acquisition_delay_time' property.
+        Delay (in ns) between the readout pulse and the acquisition."""
+        return 0

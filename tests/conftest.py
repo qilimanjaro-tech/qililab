@@ -512,7 +512,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.instruments.system_control.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 

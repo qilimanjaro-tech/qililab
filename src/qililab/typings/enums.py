@@ -239,6 +239,7 @@ class BusSubCategory(Enum):
         * current_bias
         * microwave_bias
         * continuous_readout
+        * simulated
     """
 
     BASEBAND = "baseband"
@@ -247,6 +248,7 @@ class BusSubCategory(Enum):
     CURRENT_BIAS = "current_bias"
     MICROWAVE_BIAS = "microwave_bias"
     CONTINUOUS_READOUT = "readout"
+    SIMULATED = "simulated"
 
 
 class SystemControlCategory(Enum):
@@ -256,6 +258,7 @@ class SystemControlCategory(Enum):
         enum (str): Available categories of SystemControl:
         * time_domain
         * continuous
+        * simulated
     """
 
     TIME_DOMAIN = "time_domain"
@@ -274,6 +277,7 @@ class SystemControlSubCategory(Enum):
         * current_bias
         * microwave_bias
         * continuous_readout
+        * simulated
     """
 
     BASEBAND = "baseband"
@@ -282,6 +286,7 @@ class SystemControlSubCategory(Enum):
     CURRENT_BIAS = "current_bias"
     MICROWAVE_BIAS = "microwave_bias"
     CONTINUOUS_READOUT = "readout"
+    SIMULATED = "simulated"
 
 
 class NodeName(Enum):

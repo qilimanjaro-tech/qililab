@@ -85,3 +85,9 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             Result: Acquired result
         """
         return self.awg_dac.acquire_result()
+
+    @property
+    def acquisition_delay_time(self) -> int:
+        """SystemControl 'acquisition_delay_time' property.
+        Delay (in ns) between the readout pulse and the acquisition."""
+        return self.awg_dac.acquisition_delay_time

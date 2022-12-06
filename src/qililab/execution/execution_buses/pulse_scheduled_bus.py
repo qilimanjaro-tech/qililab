@@ -2,9 +2,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from qililab.platform.components.bus_types import TimeDomainBus
+from qililab.platform.components.bus_types import SimulatedBus, TimeDomainBus
 from qililab.pulse import PulseBusSchedule
-from qililab.system_controls.system_control_types.time_domain_system_control import (
+from qililab.system_controls.system_control_types import (
+    SimulatedSystemControl,
     TimeDomainSystemControl,
 )
 from qililab.typings import BusSubCategory
@@ -15,7 +16,7 @@ from qililab.utils import Waveforms
 class PulseScheduledBus:
     """Pulse Scheduled Bus class."""
 
-    bus: TimeDomainBus
+    bus: TimeDomainBus | SimulatedBus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     def generate_program_and_upload(
@@ -75,7 +76,7 @@ class PulseScheduledBus:
         return self.bus.port
 
     @property
-    def system_control(self) -> TimeDomainSystemControl:
+    def system_control(self) -> TimeDomainSystemControl | SimulatedSystemControl:
         """Pulse Scheduled Bus 'system_control' property.
 
         Returns:
