@@ -3,6 +3,7 @@ Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
 from time import sleep
+from typing import Any
 
 from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
@@ -69,21 +70,50 @@ class QbloxS4g(CurrentSource):
                 f"the specified dac index:{channel_id} is out of range."
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
-
-        if parameter.value == Parameter.CURRENT.value:
-            if not isinstance(value, float):
-                raise ValueError(f"value type must be a float. Current type is {type(value)}")
-            self.settings.current[channel_id] = value
-            channel = self.dac(dac_index=channel_id)
-            channel.current(self.current[channel_id])
+        channel = self.dac(dac_index=channel_id)
+        if parameter == Parameter.CURRENT:
+            self._set_current(value=value, channel_id=channel_id, channel=channel)
+            return
+        if parameter == Parameter.SPAN:
+            self._set_span(value=value, channel_id=channel_id, channel=channel)
+            return
+        if parameter == Parameter.RAMPING_ENABLED:
+            self._set_ramping_enabled(value=value, channel_id=channel_id, channel=channel)
+            return
+        if parameter == Parameter.RAMPING_RATE:
+            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
+        """Set the current"""
+        self.settings.current[channel_id] = float(value)
+        channel.current(self.current[channel_id])
+
+    @Instrument.CheckParameterValueString
+    def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
+        """Set the span"""
+        self.settings.span[channel_id] = str(value)
+        channel.span(self.span[channel_id])
+
+    @Instrument.CheckParameterValueBool
+    def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
+        """Set the ramping_enabled"""
+        self.settings.ramping_enabled[channel_id] = bool(value)
+        channel.ramping_enabled(self.ramping_enabled[channel_id])
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
+        """Set the ramp_rate"""
+        self.settings.ramp_rate[channel_id] = float(value)
+        channel.ramp_rate(self.ramp_rate[channel_id])
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        for dac_index, current_value in enumerate(self.settings.current):
-            self.setup(parameter=Parameter.CURRENT, value=current_value, channel_id=dac_index)
+        for dac_index in self.dacs:
+            self._channel_setup(dac_index=dac_index)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):

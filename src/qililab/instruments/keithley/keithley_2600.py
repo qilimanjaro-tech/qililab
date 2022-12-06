@@ -44,11 +44,11 @@ class Keithley2600(Instrument):
         """Setup instrument."""
         if not isinstance(value, float):
             raise ValueError(f"Value must be a float. Current type is: {type(value)}")
-        if parameter.value == Parameter.CURRENT.value:
+        if parameter == Parameter.CURRENT:
             self.max_current = value
             self.device.smua.limiti(self.max_current)
             return
-        if parameter.value == Parameter.VOLTAGE.value:
+        if parameter == Parameter.VOLTAGE:
             self.max_voltage = value
             self.device.smua.limitv(self.max_voltage)
             return

@@ -36,6 +36,84 @@ class Instrument(BusElement, ABC):
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
 
+    class CheckParameterValueString:
+        """Property used to check if the set parameter value is a string."""
+
+        def __init__(self, method: Callable):
+            self._method = method
+
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
+
+        def __call__(self, ref: "Instrument", *args, **kwargs):
+            """
+            Args:
+                method (Callable): Class method.
+
+            Raises:
+                ValueError: If value is neither a float or int.
+            """
+            if "value" not in kwargs:
+                raise ValueError("'value' not specified to update instrument settings.")
+            value = kwargs["value"]
+            if not isinstance(value, str):
+                raise ValueError(f"value must be a string. Current type: {type(value)}")
+            return self._method(ref, *args, **kwargs)
+
+    class CheckParameterValueBool:
+        """Property used to check if the set parameter value is a bool."""
+
+        def __init__(self, method: Callable):
+            self._method = method
+
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
+
+        def __call__(self, ref: "Instrument", *args, **kwargs):
+            """
+            Args:
+                method (Callable): Class method.
+
+            Raises:
+                ValueError: If value is neither a float or int.
+            """
+            if "value" not in kwargs:
+                raise ValueError("'value' not specified to update instrument settings.")
+            value = kwargs["value"]
+            if not isinstance(value, bool):
+                raise ValueError(f"value must be a bool. Current type: {type(value)}")
+            return self._method(ref, *args, **kwargs)
+
+    class CheckParameterValueFloatOrInt:
+        """Property used to check if the set parameter value is a float or int."""
+
+        def __init__(self, method: Callable):
+            self._method = method
+
+        def __get__(self, obj, objtype):
+            """Support instance methods."""
+            return partial(self.__call__, obj)
+
+        def __call__(self, ref: "Instrument", *args, **kwargs):
+            """
+            Args:
+                method (Callable): Class method.
+
+            Raises:
+                ValueError: If value is neither a float or int.
+            """
+            if "value" not in kwargs:
+                raise ValueError("'value' not specified to update instrument settings.")
+            value = kwargs["value"]
+            if not isinstance(value, float) and not isinstance(value, int):
+                raise ValueError(f"value must be a float or an int. Current type: {type(value)}")
+            if isinstance(value, int):
+                # setting a float as type as expected
+                kwargs["value"] = float(value)
+            return self._method(ref, *args, **kwargs)
+
     class CheckDeviceInitialized:
         """Property used to check if the device has been initialized."""
 

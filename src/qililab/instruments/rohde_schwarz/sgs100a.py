@@ -30,6 +30,7 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     @Instrument.CheckDeviceInitialized
+    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
@@ -40,14 +41,12 @@ class SGS100A(SignalGenerator):
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
-        if not isinstance(value, float):
-            raise ValueError(f"Value must be a float. Current type is: {type(value)}")
         if parameter == Parameter.POWER:
-            self.settings.power = value
+            self.settings.power = float(value)
             self.device.power(self.power)
             return
         if parameter == Parameter.LO_FREQUENCY:
-            self.settings.frequency = value
+            self.settings.frequency = float(value)
             self.device.frequency(self.frequency)
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")

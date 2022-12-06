@@ -13,7 +13,7 @@ class TestExecutionBuilder:
     def test_build_method(self, platform: Platform, pulse_schedule: PulseSchedule):
         """Test build method."""
         EXECUTION_BUILDER.build(
-            platform=platform, pulse_schedule=[pulse_schedule], execution_options=ExecutionOptions()
+            platform=platform, pulse_schedules=[pulse_schedule], execution_options=ExecutionOptions()
         )
 
     def test_build_method_with_wrong_pulse_bus_schedule(
@@ -23,5 +23,5 @@ class TestExecutionBuilder:
         pulse_schedule.add(pulse=pulse, start_time=0, port=1234)
         with pytest.raises(ValueError):
             EXECUTION_BUILDER.build(
-                platform=platform, pulse_schedule=[pulse_schedule], execution_options=ExecutionOptions()
+                platform=platform, pulse_schedules=[pulse_schedule], execution_options=ExecutionOptions()
             )

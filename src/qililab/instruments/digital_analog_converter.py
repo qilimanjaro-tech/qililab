@@ -205,6 +205,7 @@ class AWGDigitalAnalogConverter(AWG):
             ValueError: when value type is not float
         """
 
+    @Instrument.CheckParameterValueBool
     def _set_scope_hardware_averaging(self, value: float | str | bool, channel_id: int):
         """set scope_hardware_averaging for the specific channel
 
@@ -215,11 +216,10 @@ class AWGDigitalAnalogConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.scope_hardware_averaging[channel_id] = value
-        self._set_device_scope_hardware_averaging(value=value, channel_id=channel_id)
+        self.settings.scope_hardware_averaging[channel_id] = bool(value)
+        self._set_device_scope_hardware_averaging(value=bool(value), channel_id=channel_id)
 
+    @Instrument.CheckParameterValueBool
     def _set_hardware_demodulation(self, value: float | str | bool, channel_id: int):
         """set hardware demodulation
 
@@ -230,10 +230,8 @@ class AWGDigitalAnalogConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.hardware_demodulation[channel_id] = value
-        self._set_device_hardware_demodulation(value=value, channel_id=channel_id)
+        self.settings.hardware_demodulation[channel_id] = bool(value)
+        self._set_device_hardware_demodulation(value=bool(value), channel_id=channel_id)
 
     def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, channel_id: int):
         """set acquisition_mode for the specific channel
@@ -250,6 +248,7 @@ class AWGDigitalAnalogConverter(AWG):
         self.settings.scope_acquire_trigger_mode[channel_id] = AcquireTriggerMode(value)
         self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), channel_id=channel_id)
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_integration_length(self, value: int | float | str | bool, channel_id: int):
         """set integration_length for the specific channel
 
@@ -260,7 +259,5 @@ class AWGDigitalAnalogConverter(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, int) and not isinstance(value, float):
-            raise ValueError(f"value must be a int or float. Current type: {type(value)}")
         self.settings.integration_length[channel_id] = int(value)
         self._set_device_integration_length(value=int(value), channel_id=channel_id)

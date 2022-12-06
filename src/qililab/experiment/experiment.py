@@ -55,6 +55,7 @@ class Experiment:
             execution_options=self.options.execution_options,
         )
         self._execution_preparation = ExecutionPreparation(remote_api=self._remote_api, options=self.options)
+        self._execution_not_prepared()
 
     @property
     def software_average(self):
@@ -85,9 +86,13 @@ class Experiment:
         """checks if execution has already been prepared"""
         return self._execution_ready
 
+    def _execution_not_prepared(self):
+        """Sets the execution state to not be prepared"""
+        self._execution_ready = False
+
     def execution_finished(self):
         """Finishes the execution"""
-        self._execution_ready = False
+        self._execution_not_prepared()
 
     def prepare_execution_and_load_schedule(self, schedule_index_to_load: int = 0) -> None:
         """Prepares the experiment with the following steps:

@@ -230,6 +230,7 @@ class QbloxModule(AWG):
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, channel_id: int):
         """set num_bins for the specific channel
 
@@ -240,12 +241,11 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, float) or not isinstance(value, int):
-            raise ValueError(f"value must be a int or float. Current type: {type(value)}")
-        if value > self._MAX_BINS:
+        if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
         self.settings.num_bins[channel_id] = int(value)
 
+    @Instrument.CheckParameterValueBool
     def _set_sync_enabled(self, value: float | str | bool, channel_id: int):
         """set sync enabled for the specific channel
 
@@ -256,11 +256,10 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.sync_enabled[channel_id] = value
-        self.device.sequencers[channel_id].sync_en(value)
+        self.settings.sync_enabled[channel_id] = bool(value)
+        self.device.sequencers[channel_id].sync_en(bool(value))
 
+    @Instrument.CheckParameterValueBool
     def _set_hardware_modulation(self, value: float | str | bool, channel_id: int):
         """set hardware modulation
 
@@ -271,11 +270,10 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        if not isinstance(value, bool):
-            raise ValueError(f"value must be a bool. Current type: {type(value)}")
-        self.settings.hardware_modulation[channel_id] = value
-        self.device.sequencers[channel_id].mod_en_awg(value)
+        self.settings.hardware_modulation[channel_id] = bool(value)
+        self.device.sequencers[channel_id].mod_en_awg(bool(value))
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_frequency(self, value: float | str | bool, channel_id: int):
         """set frequency
 
@@ -286,11 +284,10 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.intermediate_frequencies[channel_id] = value
-        self.device.sequencers[channel_id].nco_freq(value)
+        self.settings.intermediate_frequencies[channel_id] = float(value)
+        self.device.sequencers[channel_id].nco_freq(float(value))
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_q(self, value: float | str | bool, channel_id: int):
         """set offset Q
 
@@ -301,13 +298,12 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.offset_q[channel_id] = value
-        self.device.sequencers[channel_id].offset_awg_path1(value)
+        self.settings.offset_q[channel_id] = float(value)
+        self.device.sequencers[channel_id].offset_awg_path1(float(value))
         # FIXME: decide which one is the correct
         # self.device.out1_offset(self.offset_q[0])
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, channel_id: int):
         """set offset I
 
@@ -318,13 +314,12 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.offset_i[channel_id] = value
-        self.device.sequencers[channel_id].offset_awg_path0(value)
+        self.settings.offset_i[channel_id] = float(value)
+        self.device.sequencers[channel_id].offset_awg_path0(float(value))
         # FIXME: decide which one is the correct
         # self.device.out0_offset(self.offset_i[0])
 
+    @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, channel_id: int):
         """set gain
 
@@ -335,11 +330,9 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        if not isinstance(value, float):
-            raise ValueError(f"value must be a float. Current type: {type(value)}")
-        self.settings.gain[channel_id] = value
-        self.device.sequencers[channel_id].gain_awg_path0(value)
-        self.device.sequencers[channel_id].gain_awg_path1(value)
+        self.settings.gain[channel_id] = float(value)
+        self.device.sequencers[channel_id].gain_awg_path0(float(value))
+        self.device.sequencers[channel_id].gain_awg_path1(float(value))
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):

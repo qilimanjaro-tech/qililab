@@ -22,7 +22,7 @@ class VoltageSource(Instrument):
         span: List[str]
         ramping_enabled: List[bool]
         ramp_rate: List[float]
-        dacs: List[int]
+        dacs: List[int]  # indices of the dacs to use
 
     settings: VoltageSourceSettings
 
