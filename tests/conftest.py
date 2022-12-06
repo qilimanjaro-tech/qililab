@@ -135,6 +135,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "set",
             "mixer_corr_phase_offset_degree",
             "mixer_corr_gain_ratio",
+            "offset_awg_path0",
+            "offset_awg_path1",
         ]
     )
     pulsar_controller_qcm.connect()
@@ -193,6 +195,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "set",
             "mixer_corr_phase_offset_degree",
             "mixer_corr_gain_ratio",
+            "offset_awg_path0",
+            "offset_awg_path1",
         ]
     )
     # connect to instrument

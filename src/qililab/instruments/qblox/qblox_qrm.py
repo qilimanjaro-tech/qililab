@@ -12,7 +12,7 @@ from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
 from qililab.result import QbloxResult
-from qililab.typings.enums import AcquireTriggerMode, InstrumentName
+from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
 @InstrumentFactory.register
@@ -45,6 +45,9 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
             )
             self._set_scope_hardware_averaging(
                 value=self.settings.scope_hardware_averaging[channel_id], channel_id=channel_id
+            )
+            self._set_hardware_demodulation(
+                value=self.settings.hardware_demodulation[channel_id], channel_id=channel_id
             )
 
     def generate_program_and_upload(
@@ -209,3 +212,11 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
             str: Name of the acquisition. Options are "single" or "binning".
         """
         return "single" if self.scope_hardware_averaging[sequencer] else "binning"
+
+    @Instrument.CheckDeviceInitialized
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """set a specific parameter to the instrument"""
+        try:
+            AWGDigitalAnalogConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+        except ValueError:
+            QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)

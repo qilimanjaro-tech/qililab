@@ -55,10 +55,12 @@ class QbloxModule(AWG):
         """Initial setup"""
         self._map_outputs()
         for channel_id in range(self.num_sequencers):
-            self._set_sync_enabled(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
             self._set_nco(channel_id=channel_id)
+            self._set_gain(value=self.settings.gain[channel_id], channel_id=channel_id)
             self._set_offset_i(value=self.settings.offset_i[channel_id], channel_id=channel_id)
             self._set_offset_q(value=self.settings.offset_q[channel_id], channel_id=channel_id)
+            self._set_hardware_modulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
+            self._set_sync_enabled(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
             self._set_gain_imbalance(value=self.settings.gain_imbalance[channel_id], channel_id=channel_id)
             self._set_phase_imbalance(value=self.settings.phase_imbalance[channel_id], channel_id=channel_id)
 
@@ -398,7 +400,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.settings.gain_imbalance[channel_id] = float(value)
+        self.settings.phase_imbalance[channel_id] = float(value)
         self.device.sequencers[channel_id].mixer_corr_phase_offset_degree(float(value))
 
     def _map_outputs(self):

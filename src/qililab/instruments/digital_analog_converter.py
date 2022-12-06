@@ -30,7 +30,7 @@ class AWGDigitalAnalogConverter(AWG):
 
         scope_acquire_trigger_mode: List[AcquireTriggerMode]
         scope_hardware_averaging: List[bool]
-        sampling_rate: List[int]  # default sampling rate for Qblox is 1.e+09
+        sampling_rate: List[float]  # default sampling rate for Qblox is 1.e+09
         hardware_integration: List[bool]  # integration flag
         hardware_demodulation: List[bool]  # demodulation flag
         integration_length: List[int]
@@ -142,9 +142,11 @@ class AWGDigitalAnalogConverter(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
+        if parameter == Parameter.ACQUISITION_DELAY_TIME:
+            self._set_acquisition_delaty_time(value=value)
+            return
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
-        super().setup(parameter=parameter, value=value, channel_id=channel_id)
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, channel_id=channel_id)
             return
@@ -157,6 +159,22 @@ class AWGDigitalAnalogConverter(AWG):
         if parameter == Parameter.INTEGRATION_LENGTH:
             self._set_integration_length(value=value, channel_id=channel_id)
             return
+        if parameter == Parameter.SAMPLING_RATE:
+            self._set_sampling_rate(value=value, channel_id=channel_id)
+            return
+        if parameter == Parameter.HARDWARE_INTEGRATION:
+            self._set_hardware_integration(value=value, channel_id=channel_id)
+            return
+        if parameter == Parameter.INTEGRATION_MODE:
+            self._set_integration_mode(value=value, channel_id=channel_id)
+            return
+        if parameter == Parameter.SEQUENCE_TIMEOUT:
+            self._set_sequence_timeout(value=value, channel_id=channel_id)
+            return
+        if parameter == Parameter.ACQUISITION_TIMEOUT:
+            self._set_acquisition_timeout(value=value, channel_id=channel_id)
+            return
+
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @abstractmethod
@@ -260,3 +278,82 @@ class AWGDigitalAnalogConverter(AWG):
         """
         self.settings.integration_length[channel_id] = int(value)
         self._set_device_integration_length(value=int(value), channel_id=channel_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_sampling_rate(self, value: int | float | str | bool, channel_id: int):
+        """set sampling_rate for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.settings.sampling_rate[channel_id] = float(value)
+
+    @Instrument.CheckParameterValueBool
+    def _set_hardware_integration(self, value: float | str | bool, channel_id: int):
+        """set hardware integration
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        self.settings.hardware_integration[channel_id] = bool(value)
+
+    def _set_integration_mode(self, value: float | str | bool | IntegrationMode, channel_id: int):
+        """set integration_mode for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not string
+        """
+        if isinstance(value, (IntegrationMode, str)):
+            self.settings.integration_mode[channel_id] = IntegrationMode(value)
+        else:
+            raise ValueError(f"value must be a string or IntegrationMode. Current type: {type(value)}")
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_sequence_timeout(self, value: int | float | str | bool, channel_id: int):
+        """set sequence_timeout for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        self.settings.sequence_timeout[channel_id] = int(value)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_acquisition_timeout(self, value: int | float | str | bool, channel_id: int):
+        """set acquisition_timeout for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        self.settings.acquisition_timeout[channel_id] = int(value)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_acquisition_delaty_time(self, value: int | float | str | bool):
+        """set acquisition_delaty_time for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        self.settings.acquisition_delay_time = int(value)
