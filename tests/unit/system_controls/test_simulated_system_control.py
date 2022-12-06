@@ -7,6 +7,7 @@ from qilisimulator.evolution import Evolution
 from qililab.pulse import PulseBusSchedule
 from qililab.result import SimulatorResult
 from qililab.system_controls.system_control_types import SimulatedSystemControl
+from qililab.typings.enums import SystemControlName
 
 
 class TestSimulatedSystemControl:
@@ -19,18 +20,11 @@ class TestSimulatedSystemControl:
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test run method."""
-        result = simulated_system_control.run(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=2000, path=Path(__file__).parent
-        )
+        simulated_system_control.generate_program(pulse_bus_schedule=pulse_bus_schedule, frequency=6.0e09)
+        simulated_system_control.run()
+        result = simulated_system_control.acquire_result()
         assert isinstance(result, SimulatorResult)
-
-    def test_frequency_property(self, simulated_system_control: SimulatedSystemControl):
-        """Test frequency property."""
-        assert (
-            simulated_system_control.frequency
-            == simulated_system_control._evo.system.qubit.frequency  # pylint: disable=protected-access
-        )
 
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""
-        assert simulated_system_control.name == simulated_system_control.settings.subcategory
+        assert simulated_system_control.name == SystemControlName.SIMULATED_SYSTEM_CONTROL
