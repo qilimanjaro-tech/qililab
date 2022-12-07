@@ -104,6 +104,7 @@ class TestsQbloxResult:
                 modulated at 10MHz.
         """
         acquisition = qblox_result_scope.acquisitions_scope(integrate=True, integration_range=(0, 1000))
+        assert acquisition is not None
         assert len(acquisition[0]) == 1
         assert len(acquisition[1]) == 1
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([0.0], [0.0]), tolerance=1e-5)
@@ -118,4 +119,5 @@ class TestsQbloxResult:
         acquisition = qblox_result_scope.acquisitions_scope(
             demod_freq=10e6, integrate=True, integration_range=(0, 1000)
         )
+        assert acquisition is not None
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([1.0], [0.0]), tolerance=1e-5)
