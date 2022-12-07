@@ -15,7 +15,8 @@ from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
-from qililab.result import Result, Results
+from qililab.result.result import Result
+from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Instrument, Parameter
 from qililab.typings.execution import ExecutionOptions

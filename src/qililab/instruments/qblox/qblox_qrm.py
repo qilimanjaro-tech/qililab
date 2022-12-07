@@ -11,7 +11,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
-from qililab.result import QbloxResult
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 

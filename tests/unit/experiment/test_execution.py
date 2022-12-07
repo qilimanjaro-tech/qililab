@@ -6,7 +6,7 @@ import pandas as pd
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
-from qililab.result import Results
+from qililab.result.results import Results
 
 from .aux_methods import mock_instruments
 

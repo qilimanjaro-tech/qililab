@@ -8,7 +8,7 @@ import yaml
 
 from qililab.constants import DATA, EXPERIMENT_FILENAME, RESULTS_FILENAME
 from qililab.experiment import Experiment
-from qililab.result import Results
+from qililab.result.results import Results
 
 
 def _get_last_created_path(folderpath: Path) -> Path:
@@ -29,7 +29,7 @@ def _get_last_created_experiment_path() -> Path:
     return _get_last_created_path(folderpath=last_daily_directory_path)
 
 
-def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
+def load(path: str | None = None, load_experiment: bool = False) -> Tuple[Experiment | None, Results | None]:
     """Load Experiment and Results from yaml data.
 
     Args:
@@ -40,7 +40,7 @@ def load(path: str | None = None) -> Tuple[Experiment | None, Results | None]:
     """
     parsed_path = Path(path) if isinstance(path, str) else _get_last_created_experiment_path()
     experiment, results = None, None
-    if os.path.exists(parsed_path / EXPERIMENT_FILENAME):
+    if load_experiment and os.path.exists(parsed_path / EXPERIMENT_FILENAME):
         with open(parsed_path / EXPERIMENT_FILENAME, mode="r", encoding="utf-8") as experiment_file:
             experiment = Experiment.from_dict(yaml.safe_load(stream=experiment_file))
 

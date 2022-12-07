@@ -9,7 +9,7 @@ from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments import QbloxQRM
-from qililab.result import QbloxResult
+from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
