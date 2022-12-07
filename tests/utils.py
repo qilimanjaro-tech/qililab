@@ -21,8 +21,8 @@ def name_generator(base: str):
 
 
 def compare_pair_of_arrays(
-    pair_a: Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]],
-    pair_b: Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]],
+    pair_a: Tuple[npt.NDArray[np.float32] | List[float], npt.NDArray[np.float32] | List[float]],
+    pair_b: Tuple[npt.NDArray[np.float32] | List[float], npt.NDArray[np.float32] | List[float]],
     tolerance: float,
 ) -> bool:
     path0_ok = all(np.isclose(pair_a[0], pair_b[0], atol=tolerance))
@@ -30,7 +30,10 @@ def compare_pair_of_arrays(
     return path0_ok and path1_ok
 
 
-def complete_array(array: npt.NDArray[np.float32], filler: float, final_length: int) -> npt.NDArray[np.float32]:
+def complete_array(
+    array: npt.NDArray[np.float32] | List[float], filler: float, final_length: int
+) -> npt.NDArray[np.float32]:
+    array = np.array(array) if isinstance(array, List) else array
     filler_list = np.ones(final_length - len(array)) * filler
     return np.append(array, filler_list)
 
