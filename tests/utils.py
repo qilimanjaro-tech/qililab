@@ -2,7 +2,6 @@
 from typing import List, Tuple
 
 import numpy as np
-import numpy.typing as npt
 
 
 def name_generator(base: str):

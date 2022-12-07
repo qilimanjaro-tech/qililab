@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from qililab.constants import QBLOXCONSTANTS
 from qililab.result.qblox_results.qblox_result import QbloxResult
