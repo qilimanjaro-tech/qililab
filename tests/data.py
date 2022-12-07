@@ -177,6 +177,7 @@ class Galadriel:
         Parameter.ACQUISITION_TIMEOUT.value: [1],
         Parameter.HARDWARE_INTEGRATION.value: [True],
         Parameter.HARDWARE_DEMODULATION.value: [True],
+        "scope_store_enabled": [False],
     }
 
     rohde_schwarz_controller_0 = {
@@ -574,22 +575,34 @@ results_two_loops = {
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
@@ -620,22 +633,34 @@ results_one_loops = {
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },

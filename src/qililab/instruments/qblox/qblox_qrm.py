@@ -164,11 +164,19 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
-        results = [self._acquire_result_one_sequencer(sequencer=sequencer) for sequencer in range(self.num_sequencers)]
+        for seq_idx in range(self.num_sequencers):
+            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout)
+            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout)
 
-        # FIXME: the results are created into a QbloxResult with always a bins structure
-        # it needs to accept a result that contains both scope and bins instead of one or the other
-        return QbloxResult(pulse_length=self.integration_length, bins=results)
+            if self.scope_store_enabled[seq_idx]:
+                self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name(sequencer=seq_idx))
+
+        results = [
+            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name(sequencer=seq_idx)]["acquisition"]
+            for seq_idx in range(self.num_sequencers)
+        ]
+
+        return QbloxResult(pulse_length=self.integration_length, qblox_raw_results=results)
 
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
@@ -197,11 +205,82 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
         """
         return {}
 
+    @property
+    def scope_store_enabled(self):
+        """QbloxPulsarQRM 'scope_store_enabled' property.
+
+
+        Returns:
+            bool: settings.scope_store_enabled."""
+        return self.settings.scope_store_enabled
+
+    @property
+    def sampling_rate(self):
+        """QbloxPulsarQRM 'sampling_rate' property.
+
+        Returns:
+            int: settings.sampling_rate.
+        """
+        return self.settings.sampling_rate
+
+    @property
+    def integration_length(self):
+        """QbloxPulsarQRM 'integration_length' property.
+
+        Returns:
+            int: settings.integration_length.
+        """
+        return self.settings.integration_length
+
+    @property
+    def integration_mode(self):
+        """QbloxPulsarQRM 'integration_mode' property.
+
+        Returns:
+            IntegrationMode: settings.integration_mode.
+        """
+        return self.settings.integration_mode
+
+    @property
+    def sequence_timeout(self):
+        """QbloxPulsarQRM 'sequence_timeout' property.
+
+        Returns:
+            int: settings.sequence_timeout.
+        """
+        return self.settings.sequence_timeout
+
+    @property
+    def acquisition_timeout(self):
+        """QbloxPulsarQRM 'acquisition_timeout' property.
+
+        Returns:
+            int: settings.acquisition_timeout.
+        """
+        return self.settings.acquisition_timeout
+
+    @property
+    def final_wait_time(self):
+        """QbloxPulsarQRM 'final_wait_time' property.
+
+        Returns:
+            int: Final wait time.
+        """
+        return self.acquisition_delay_time
+
+    @property
+    def integration(self):
+        """QbloxPulsarQRM 'integration' property.
+
+        Returns:
+            bool: Integration flag.
+        """
+        return self.settings.integration
+
     def data_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'data_name' property:
 
-        Returns:
-            str: Name of the data. Options are "bins" or "scope".
+        str: Name of the data. Options are "bins" or "scope".
         """
         return "bins" if self.hardware_integration[sequencer] else "scope"
 

@@ -37,6 +37,8 @@ class AWGDigitalAnalogConverter(AWG):
         integration_mode: List[IntegrationMode]
         sequence_timeout: List[int]  # minutes
         acquisition_timeout: List[int]  # minutes
+        scope_store_enabled: List[bool]
+        integration: List[bool]
         acquisition_delay_time: int  # ns
 
     settings: AWGDigitalAnalogConverterSettings

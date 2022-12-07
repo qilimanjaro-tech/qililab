@@ -45,9 +45,9 @@ class Acquisition:
         }
 
     def _create_acquisition(self) -> pd.DataFrame:
-        """transposes each of the acquired results arrays so that we have for each value
-        a structure with i, q, amplitude, phase.
-        For multiple values you may need to redefine this method
+        """Transposes each of the acquired results arrays so that we have for each value a structure with i, q,
+        amplitude, phase.
+        For multiple values you may need to redefine this method.
         """
 
         return pd.DataFrame(
