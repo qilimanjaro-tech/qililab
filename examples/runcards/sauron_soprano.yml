@@ -163,7 +163,7 @@ schema:
       id_: 1
       alias: cluster_controller_qrm_0
       category: instrument_controller
-      subcategory: single_instrument
+      subcategory: multiple_instruments
       reference_clock: internal
       connection:
         name: tcp_ip
