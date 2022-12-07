@@ -275,7 +275,7 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
         Returns:
             bool: Integration flag.
         """
-        return self.settings.integration
+        return self.settings.hardware_integration
 
     def data_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'data_name' property:

@@ -38,7 +38,6 @@ class AWGDigitalAnalogConverter(AWG):
         sequence_timeout: List[int]  # minutes
         acquisition_timeout: List[int]  # minutes
         scope_store_enabled: List[bool]
-        integration: List[bool]
         acquisition_delay_time: int  # ns
 
     settings: AWGDigitalAnalogConverterSettings
@@ -175,6 +174,9 @@ class AWGDigitalAnalogConverter(AWG):
             return
         if parameter == Parameter.ACQUISITION_TIMEOUT:
             self._set_acquisition_timeout(value=value, channel_id=channel_id)
+            return
+        if parameter == Parameter.SCOPE_STORE_ENABLED:
+            self._set_scope_store_enabled(value=value, channel_id=channel_id)
             return
 
         raise ValueError(f"Invalid Parameter: {parameter.value}")
@@ -359,3 +361,16 @@ class AWGDigitalAnalogConverter(AWG):
             ValueError: when value type is not float or int
         """
         self.settings.acquisition_delay_time = int(value)
+
+    @Instrument.CheckParameterValueBool
+    def _set_scope_store_enabled(self, value: float | str | bool, channel_id: int):
+        """set scope_store_enable
+
+        Args:
+            value (float | str | bool): value to update
+            channel_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        self.settings.scope_store_enabled[channel_id] = bool(value)

@@ -177,7 +177,7 @@ class Galadriel:
         Parameter.ACQUISITION_TIMEOUT.value: [1],
         Parameter.HARDWARE_INTEGRATION.value: [True],
         Parameter.HARDWARE_DEMODULATION.value: [True],
-        "scope_store_enabled": [False],
+        Parameter.SCOPE_STORE_ENABLED.value: [False],
     }
 
     rohde_schwarz_controller_0 = {

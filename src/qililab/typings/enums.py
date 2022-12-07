@@ -463,6 +463,7 @@ class Parameter(Enum):
     ACQUISITION_TIMEOUT = "acquisition_timeout"
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
+    SCOPE_STORE_ENABLED = "scope_store_enabled"
 
 
 class ResultName(Enum):
