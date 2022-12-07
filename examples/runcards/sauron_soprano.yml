@@ -81,6 +81,7 @@ schema:
       acquisition_timeout: [1]
       hardware_integration: [false]
       hardware_demodulation: [false]
+      scope_store_enabled: [false]
 
     - name: QCM
       alias: QCM
