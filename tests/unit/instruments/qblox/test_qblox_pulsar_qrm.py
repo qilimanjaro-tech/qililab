@@ -41,7 +41,7 @@ class TestQbloxQRM:
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
         qrm.turn_off()
-        qrm.device.turn_off_sequencer.assert_called()
+        qrm.device.stop_sequencer.assert_called()
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
