@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
@@ -65,9 +64,9 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
             for seq_idx in range(self.num_sequencers):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
-                    sequencer=seq_idx, name=self.acquisition_name
+                    sequencer=seq_idx, name=self.acquisition_name(sequencer=seq_idx)
                 )
-                acquisition = self._generate_acquisitions()
+                acquisition = self._generate_acquisitions(sequencer=seq_idx)
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=seq_idx, acquisitions=acquisition.to_dict()
                 )
@@ -165,8 +164,8 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
 
         """
         for seq_idx in range(self.num_sequencers):
-            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout)
-            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout)
+            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout[seq_idx])
+            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout[seq_idx])
 
             if self.scope_store_enabled[seq_idx]:
                 self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name(sequencer=seq_idx))
@@ -183,19 +182,6 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
         # FIXME: scope_hardware_averaging it is a list now, it should return the desired channel
         acquisition_idx = 0 if self.scope_hardware_averaging[0] else 1  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
-
-    def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-        and index = 0.
-
-        Returns:
-            Acquisitions: Acquisitions object.
-        """
-        acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        # FIXME: using first channel instead of the desired
-        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
-        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.

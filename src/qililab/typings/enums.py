@@ -404,7 +404,7 @@ class BusName(Enum):
 class Parameter(Enum):
     """Parameter names."""
 
-    BUS_FREQUENCY = "frequency"
+    BUS_FREQUENCY = "bus_frequency"
     LO_FREQUENCY = "frequency"
     GAIN = "gain"
     DURATION = "duration"

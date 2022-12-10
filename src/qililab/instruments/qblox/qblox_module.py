@@ -112,7 +112,9 @@ class QbloxModule(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        acquisitions = self._generate_acquisitions()
+        acquisitions = self._generate_acquisitions(
+            sequencer=0  # FIXME: determine the sequencer to use from the pulse bus schedule
+        )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
@@ -166,14 +168,18 @@ class QbloxModule(AWG):
         avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
         return program
 
-    @abstractmethod
-    def _generate_acquisitions(self) -> Acquisitions:
+    def _generate_acquisitions(self, sequencer: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
+        # FIXME: is it really necessary to generate acquisitions for a QCM??
+        acquisitions = Acquisitions()
+        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="binning", num_bins=int(self.num_bins[sequencer]) + 1, index=1)  # binned acquisition
+        return acquisitions
 
     @abstractmethod
     def _generate_weights(self) -> dict:

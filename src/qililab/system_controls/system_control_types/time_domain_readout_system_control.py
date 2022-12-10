@@ -1,7 +1,8 @@
 """Time Domain Readout SystemControl class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from qililab.instruments.digital_analog_converter import AWGDigitalAnalogConverter
+from qililab.instruments.instruments import Instruments
 from qililab.result.result import Result
 from qililab.system_controls.system_control_types.time_domain_control_system_control import (
     ControlSystemControl,
@@ -24,12 +25,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         """Time Domain Readout System Control settings class."""
 
         system_control_subcategory = SystemControlSubCategory.TIME_DOMAIN_READOUT
-        awg_dac: AWGDigitalAnalogConverter
-
-        def __post_init__(self):
-            """assign parent awg as the same as awg_dac"""
-            super().__post_init__()
-            self.awg_dac = self.awg
+        dac: AWGDigitalAnalogConverter | None = field(default=None)
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -37,13 +33,21 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
 
     settings: TimeDomainReadoutSystemControlSettings
 
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+        """assign parent awg as the same as dac when it is not defined (it is the same instrument as AWG)"""
+        super()._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        if self.awg_dac is None:
+            awg_instrument = instruments.get_instrument(alias=self.awg.alias)
+            self._check_for_a_valid_instrument(instrument=awg_instrument)
+            self.settings.dac = awg_instrument
+
     @property
     def awg_dac(self):
         """Readout System Control 'awg_dac' property.
         Returns:
             AWG: settings.awg_dac.
         """
-        return self.settings.awg_dac
+        return self.settings.dac
 
     def __str__(self):
         """String representation of the TimeDomainReadoutSystemControl class."""
@@ -58,6 +62,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter in [
+            Parameter.BUS_FREQUENCY,
             Parameter.LO_FREQUENCY,
             Parameter.POWER,
             Parameter.GAIN,
@@ -71,6 +76,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             Parameter.PHASE_IMBALANCE,
         ]:
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            return
         # the rest of parameters are assigned to the AWGDigitalAnalogConverter
         self.awg_dac.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 

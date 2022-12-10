@@ -8,6 +8,7 @@ from qiboconnection.api import API
 
 from qililab import Experiment, ExperimentOptions, ExperimentSettings, build_platform
 from qililab.typings.enums import Parameter
+from qililab.typings.execution import ExecutionOptions
 from qililab.typings.loop import LoopOptions
 from qililab.utils.loop import Loop
 
@@ -22,14 +23,16 @@ def run_circuit(connection: API | None = None):
     runcard_name = "sauron_soprano"
     platform = build_platform(name=runcard_name)
 
-    platform.connect_and_set_initial_setup(automatic_turn_on_instruments=True)
+    platform.connect_and_set_initial_setup(
+        connection=connection, device_id=SAURON_SOPRANO, automatic_turn_on_instruments=True
+    )
 
     circuit = Circuit(1)
-    circuit.add(X(0))
+    # circuit.add(X(0))
     circuit.add(M(0))
 
     lo_freq_loop = Loop(
-        alias="drive_line_bus",
+        alias="feedline_input_output_bus",
         parameter=Parameter.LO_FREQUENCY,
         options=LoopOptions(start=6.0e09, stop=6.5e09, num=10),
     )
@@ -40,14 +43,20 @@ def run_circuit(connection: API | None = None):
         software_average=1,
     )
 
+    execution_options = ExecutionOptions(
+        set_initial_setup=False,
+        automatic_connect_to_instruments=False,
+        automatic_disconnect_to_instruments=False,
+        automatic_turn_on_instruments=False,
+        automatic_turn_off_instruments=False,
+    )
+
     options = ExperimentOptions(
         loops=[lo_freq_loop],  # loops to run the experiment
         settings=settings,  # experiment settings
         connection=connection,  # remote connection for live plotting
         device_id=SAURON_SOPRANO,  # device identifier to block and release for remote executions
-        name="experiment_name",  # name of the experiment (it will be also used for the results folder name)
-        plot_y_label=None,  # plot y-axis label
-        remote_device_manual_override=False,  # whether to block the remote device manually
+        execution_options=execution_options,
     )
 
     sample_experiment = Experiment(
@@ -55,10 +64,12 @@ def run_circuit(connection: API | None = None):
         circuits=[circuit],  # circuits to run the experiment
         options=options,  # experiment options
     )
-
+    sample_experiment.set_parameter(parameter=Parameter.SYNC_ENABLED, value=False, alias="QRM", channel_id=0)
     results = sample_experiment.execute()
     print(results)
-    print(results.acquisitions())
+    # print(results.acquisitions())
+
+    platform.disconnect(automatic_turn_off_instruments=True)
 
 
 if __name__ == "__main__":
@@ -68,4 +79,5 @@ if __name__ == "__main__":
     # )
     # api = API(configuration=configuration)
     api = API()
+    # api.release_device(device_id=SAURON_SOPRANO)
     run_circuit(connection=api)

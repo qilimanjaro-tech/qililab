@@ -1,9 +1,13 @@
 """Platform class."""
 from dataclasses import asdict
 
+from qiboconnection.api import API
+
+from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
+from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
 from qililab.typings.yaml_type import yaml
@@ -24,39 +28,82 @@ class Platform:
     def __init__(self, runcard_schema: RuncardSchema):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
+        self._remote_api: RemoteAPI | None = None
+        self._connected_to_instruments: bool = False
+        self._initial_setup_applied: bool = False
+        self._instruments_turned_on: bool = False
 
-    def connect_and_set_initial_setup(self, automatic_turn_on_instruments: bool = False):
+    def connect_and_set_initial_setup(
+        self,
+        automatic_turn_on_instruments: bool = False,
+        connection: API | None = None,
+        device_id: int | None = None,
+        manual_override: bool = False,
+    ):
         """Connect and set initial setup of the instruments
 
         Args:
             automatic_turn_on_instruments (bool, optional): Turn on the instruments. Defaults to False.
         """
-        self.connect()
-        self.set_initial_setup()
+        self.connect(connection=connection, device_id=device_id, manual_override=manual_override)
         if automatic_turn_on_instruments:
             self.turn_on_instruments()
+        self.set_initial_setup()
 
-    def connect(self):
+    def connect(
+        self,
+        connection: API | None = None,
+        device_id: int | None = None,
+        manual_override: bool = False,
+    ):
         """Connect to the instrument controllers."""
+        if self._connected_to_instruments:
+            logger.info("Already connected to instruments")
+            return
+
+        self._remote_api = RemoteAPI(
+            connection=connection,
+            device_id=device_id,
+            manual_override=manual_override,
+        )
+        self._remote_api.block_remote_device()
         self.instrument_controllers.connect()
+        self._connected_to_instruments = True
 
     def set_initial_setup(self):
         """Set the initial setup of the instruments"""
+        if self._initial_setup_applied:
+            logger.info("Initial setup already applied to the instruments")
+            return
         self.instrument_controllers.initial_setup()
+        self._initial_setup_applied = True
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
+        if self._instruments_turned_on:
+            logger.info("Instruments already turned on")
+            return
         self.instrument_controllers.turn_on_instruments()
+        self._instruments_turned_on = True
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
         self.instrument_controllers.turn_off_instruments()
+        self._instruments_turned_on = False
+        logger.info("Instruments turned off")
 
     def disconnect(self, automatic_turn_off_instruments: bool = False):
         """Close connection to the instrument controllers."""
+        if not self._connected_to_instruments:
+            logger.info("Already disconnected from the instruments")
+            return
         if automatic_turn_off_instruments:
             self.turn_off_instruments()
         self.instrument_controllers.disconnect()
+        if self._remote_api is not None:
+            self._remote_api.release_remote_device()
+        self._connected_to_instruments = False
+        logger.info("Disconnected from instruments")
 
     def get_element(self, alias: str):
         """Get platform element.
@@ -215,6 +262,11 @@ class Platform:
             InstrumentControllers: List of all instrument controllers.
         """
         return self.schema.instrument_controllers
+
+    @property
+    def remote_api(self):
+        """Platform 'remote_api' property."""
+        return self._remote_api
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

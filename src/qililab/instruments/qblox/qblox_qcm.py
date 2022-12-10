@@ -1,7 +1,6 @@
 """Qblox QCM class"""
 from dataclasses import dataclass
 
-from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Register
 
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -25,20 +24,6 @@ class QbloxQCM(QbloxModule):
         """Contains the settings of a specific pulsar."""
 
     settings: QbloxQCMSettings
-
-    def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
-        and index = 0.
-
-        Returns:
-            Acquisitions: Acquisitions object.
-        """
-        # FIXME: is it really necessary to generate acquisitions for a QCM??
-        acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        # FIXME: using first channel instead of the desired
-        acquisitions.add(name="binning", num_bins=int(self.num_bins[0]) + 1, index=1)  # binned acquisition
-        return acquisitions
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.

@@ -48,7 +48,7 @@ class ControlSystemControl(TimeDomainSystemControl):
         """String representation of the ControlSystemControl class."""
         return f"{super().__str__()}-|{self.signal_generator}|-"
 
-    def _update_signal_generator_frequency(self, frequency: float | str | bool, channel_id: int | None = None):
+    def _update_bus_frequency(self, frequency: float | str | bool, channel_id: int | None = None):
         """update frequency to the signal generator and AWG
 
         Args:
@@ -75,8 +75,11 @@ class ControlSystemControl(TimeDomainSystemControl):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
+        if parameter == Parameter.BUS_FREQUENCY:
+            self._update_bus_frequency(frequency=value, channel_id=channel_id)
+            return
         if parameter == Parameter.LO_FREQUENCY:
-            self._update_signal_generator_frequency(frequency=value, channel_id=channel_id)
+            self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=value)
             return
         if parameter == Parameter.POWER:
             self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -102,7 +105,7 @@ class ControlSystemControl(TimeDomainSystemControl):
         """
         if pulse_bus_schedule.frequency is not None and pulse_bus_schedule.frequency != self.frequency:
             # FIXME: find the channel associated to the port of a pulse
-            self._update_signal_generator_frequency(frequency=pulse_bus_schedule.frequency, channel_id=0)
+            self._update_bus_frequency(frequency=pulse_bus_schedule.frequency, channel_id=0)
 
         return super().generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
