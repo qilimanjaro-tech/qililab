@@ -572,3 +572,9 @@ class Node(Enum):
     NODES = "nodes"
     FREQUENCY = "frequency"
     QUBIT_INDEX = "qubit_index"
+
+
+class CallbackOrder(Enum):
+
+    CALLBACK_AFTER = "after"
+    CALLBACK_BEFORE = "before"

@@ -6,6 +6,7 @@ from typing import Callable
 import numpy as np
 
 from qililab.constants import LOOP
+from qililab.typings.enums import CallbackOrder
 from qililab.typings.yaml_type import yaml
 
 
@@ -20,6 +21,9 @@ class LoopOptions:
     logarithmic: bool = False
     channel_id: int | None = None
     values: np.ndarray | None = None
+    callback: Callable | None = None
+    callback_order: CallbackOrder | None = None
+    callback_kwargs: dict | None = None
 
     class CheckStartStopDefined:
         """check start and stop to be defined when values is not specified."""
