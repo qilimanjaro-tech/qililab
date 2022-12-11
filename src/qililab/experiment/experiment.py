@@ -3,7 +3,7 @@ import copy
 import itertools
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 from qibo.core.circuit import Circuit
 from tqdm.auto import tqdm
@@ -17,7 +17,7 @@ from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
 from qililab.result import Result, Results
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Instrument, Parameter
+from qililab.typings.enums import CallbackOrder, Category, Instrument, Parameter
 from qililab.typings.execution import ExecutionOptions
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
@@ -294,14 +294,27 @@ class Experiment:
     def _update_parameter_from_loop(
         self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument
     ):
-        """update parameter from loop"""
-        self.set_parameter(
-            element=element,
-            alias=loop.alias,
-            parameter=loop.parameter,
-            value=value,
-            channel_id=loop.channel_id,
-        )
+
+        """update parameter from loop and calling a method each iteration"""
+        if loop.callback_order == CallbackOrder.CALLBACK_BEFORE:
+            loop.callback(**loop.callback_kwargs)
+            self.set_parameter(
+                element=element,
+                alias=loop.alias,
+                parameter=loop.parameter,
+                value=value,
+                channel_id=loop.channel_id,
+            )
+
+        if loop.callback_order == CallbackOrder.CALLBACK_AFTER:
+            self.set_parameter(
+                element=element,
+                alias=loop.alias,
+                parameter=loop.parameter,
+                value=value,
+                channel_id=loop.channel_id,
+            )
+            loop.callback(**loop.callback_kwargs)
 
     def _get_platform_elements_from_loops(self, loops: List[Loop]):
         """get platform elements from loops"""

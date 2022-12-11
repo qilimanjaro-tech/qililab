@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
 from qililab.constants import LOOP
-from qililab.typings.enums import Parameter
+from qililab.typings.enums import CallbackOrder, Parameter
 from qililab.typings.loop import LoopOptions
 
 
@@ -20,6 +20,9 @@ class Loop:
     options: LoopOptions
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
+    callback: Callable | None = None
+    callback_order: CallbackOrder | None = None
+    callback_kwargs: dict | None = None
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
