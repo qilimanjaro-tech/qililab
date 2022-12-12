@@ -153,7 +153,7 @@ class Galadriel:
 
     qblox_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.QBLOX_QRM.value,
+        RUNCARD.NAME: InstrumentName.QBLOX_QRM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
@@ -175,14 +175,13 @@ class Galadriel:
         Parameter.INTEGRATION_MODE.value: [IntegrationMode.SSB.value],
         Parameter.SEQUENCE_TIMEOUT.value: [1],
         Parameter.ACQUISITION_TIMEOUT.value: [1],
-        Parameter.HARDWARE_INTEGRATION.value: [True],
         Parameter.HARDWARE_DEMODULATION.value: [True],
         Parameter.SCOPE_STORE_ENABLED.value: [False],
     }
 
     rohde_schwarz_controller_0 = {
         RUNCARD.ID: 2,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -200,7 +199,7 @@ class Galadriel:
 
     rohde_schwarz_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_0",
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -210,7 +209,7 @@ class Galadriel:
 
     rohde_schwarz_controller_1 = {
         RUNCARD.ID: 3,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -228,7 +227,7 @@ class Galadriel:
 
     rohde_schwarz_1 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_1",
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -238,7 +237,7 @@ class Galadriel:
 
     attenuator_controller_0 = {
         RUNCARD.ID: 4,
-        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS.value,
+        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -256,7 +255,7 @@ class Galadriel:
 
     attenuator = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS.value,
+        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator",
         RUNCARD.CATEGORY: Category.ATTENUATOR.value,
         Parameter.ATTENUATION.value: 30,
@@ -265,7 +264,7 @@ class Galadriel:
 
     keithley_2600_controller_0 = {
         RUNCARD.ID: 5,
-        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600.value,
+        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -275,7 +274,7 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.DC_SOURCE.value: "keithley_2600",
+                Category.DC_SOURCE.value: InstrumentName.KEITHLEY2600.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -283,8 +282,8 @@ class Galadriel:
 
     keithley_2600 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.KEITHLEY2600.value,
-        RUNCARD.ALIAS: "keithley_2600",
+        RUNCARD.NAME: InstrumentName.KEITHLEY2600,
+        RUNCARD.ALIAS: InstrumentControllerName.KEITHLEY2600.value,
         RUNCARD.CATEGORY: Category.DC_SOURCE.value,
         RUNCARD.FIRMWARE: None,
         Parameter.MAX_CURRENT.value: 0.1,
@@ -328,14 +327,14 @@ class Galadriel:
     buses = [
         {
             RUNCARD.ID: 0,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_CONTROL_BUS.value,
+            RUNCARD.NAME: BusName.TIME_DOMAIN_CONTROL_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
             RUNCARD.BUS_SUBCATEGORY: BusSubCategory.CONTROL.value,
             RUNCARD.ALIAS: "drive_line_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL.value,
+                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.CONTROL.value,
@@ -346,18 +345,17 @@ class Galadriel:
         },
         {
             RUNCARD.ID: 1,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS.value,
+            RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
             RUNCARD.BUS_SUBCATEGORY: BusSubCategory.TIME_DOMAIN_READOUT.value,
             RUNCARD.ALIAS: "feedline_input_output_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 1,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL.value,
+                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.TIME_DOMAIN_READOUT.value,
-                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 Category.SIGNAL_GENERATOR.value: "rs_1",
             },
@@ -379,7 +377,7 @@ class Galadriel:
 
     qubit_0: dict = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.QUBIT.value,
+        RUNCARD.NAME: NodeName.QUBIT,
         RUNCARD.CATEGORY: NodeName.QUBIT.value,
         RUNCARD.ALIAS: NodeName.QUBIT.value,
         "pi_pulse_amplitude": 1,
@@ -392,7 +390,7 @@ class Galadriel:
 
     resonator_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.PORT.value,
+        RUNCARD.NAME: NodeName.PORT,
         RUNCARD.CATEGORY: NodeName.PORT.value,
         "qubits": [
             {
@@ -488,14 +486,14 @@ class FluxQubitSimulator:
         SCHEMA.BUSES: [
             {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: BusName.SIMULATED_BUS.value,
+                RUNCARD.NAME: BusName.SIMULATED_BUS,
                 RUNCARD.CATEGORY: Category.BUS.value,
                 RUNCARD.BUS_CATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.BUS_SUBCATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.ALIAS: "simulated_bus",
                 Category.SYSTEM_CONTROL.value: {
                     RUNCARD.ID: 0,
-                    RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL.value,
+                    RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL,
                     RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                     RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.SIMULATED.value,
                     RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.SIMULATED.value,

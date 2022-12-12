@@ -62,8 +62,6 @@ class TestQbloxQRM:
             (Parameter.SCOPE_HARDWARE_AVERAGING, True, 0),
             (Parameter.SCOPE_HARDWARE_AVERAGING, False, 0),
             (Parameter.SAMPLING_RATE, 0.09, 0),
-            (Parameter.HARDWARE_INTEGRATION, True, 0),
-            (Parameter.HARDWARE_INTEGRATION, False, 0),
             (Parameter.HARDWARE_DEMODULATION, True, 0),
             (Parameter.HARDWARE_DEMODULATION, False, 0),
             (Parameter.INTEGRATION_LENGTH, 100, 0),

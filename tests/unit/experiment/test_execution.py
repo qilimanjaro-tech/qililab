@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
@@ -158,15 +159,16 @@ class TestExecution:
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         mock_pulsar.return_value.get_acquisitions.side_effect = KeyboardInterrupt()
-        results = experiment.execute()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
-        assert isinstance(results, Results)
-        mock_open_0.assert_called()
-        mock_dump_0.assert_called()
-        mock_open_1.assert_called()
-        mock_dump_1.assert_not_called()
-        mock_open_2.assert_not_called()
-        mock_makedirs.assert_called()
+        with pytest.raises(KeyboardInterrupt):
+            results = experiment.execute()
+            mock_urllib.request.Request.assert_called()
+            mock_urllib.request.urlopen.assert_called()
+            mock_rs.assert_called()
+            mock_pulsar.assert_called()
+            assert isinstance(results, Results)
+            mock_open_0.assert_called()
+            mock_dump_0.assert_called()
+            mock_open_1.assert_called()
+            mock_dump_1.assert_not_called()
+            mock_open_2.assert_not_called()
+            mock_makedirs.assert_called()
