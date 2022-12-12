@@ -3,23 +3,19 @@ from dataclasses import dataclass, field
 
 from qiboconnection.api import API
 
-from qililab.constants import GALADRIEL_DEVICE_ID
-
 
 @dataclass
 class RemoteAPI:
     """Remote API class"""
 
     connection: API | None = field(default=None)
-    device_id: int | None = field(default=GALADRIEL_DEVICE_ID)
+    device_id: int | None = field(default=None)
     manual_override: bool = field(default=False)
     _blocked_device: bool = field(init=False)
 
     def __post_init__(self):
         """Post initial initialization"""
         self._blocked_device = False
-        if self.device_id is None:
-            self.device_id = GALADRIEL_DEVICE_ID
 
     def block_remote_device(self):
         """Block the remote API device
