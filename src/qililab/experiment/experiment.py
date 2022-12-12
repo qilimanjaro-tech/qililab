@@ -153,7 +153,13 @@ class Experiment:
                 )
             self.execution_finished()
 
-        except (AttributeError, ValueError, KeyboardInterrupt, KeyError) as error:  # pylint: disable=broad-except
+        except (
+            AttributeError,
+            ValueError,
+            KeyboardInterrupt,
+            KeyError,
+            TimeoutError,
+        ) as error:  # pylint: disable=broad-except
             self.execution_finished()
             logger.error("%s: %s", type(error).__name__, str(error))
             raise error

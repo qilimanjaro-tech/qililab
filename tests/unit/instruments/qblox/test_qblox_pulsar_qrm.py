@@ -110,8 +110,6 @@ class TestQbloxQRM:
             assert qrm.settings.integration_length[channel_id] == value
         if parameter == Parameter.SAMPLING_RATE:
             assert qrm.settings.sampling_rate[channel_id] == value
-        if parameter == Parameter.HARDWARE_INTEGRATION:
-            assert qrm.settings.hardware_integration[channel_id] == value
         if parameter == Parameter.INTEGRATION_MODE:
             assert qrm.settings.integration_mode[channel_id] == IntegrationMode(value)
         if parameter == Parameter.SEQUENCE_TIMEOUT:
@@ -214,10 +212,6 @@ class TestQbloxQRM:
     def test_acquisition_name_method(self, qrm_no_device: QbloxQRM):
         """Test acquisition_name method."""
         assert isinstance(qrm_no_device.acquisition_name(sequencer=0), str)
-
-    def test_data_name_method(self, qrm_no_device: QbloxQRM):
-        """Test data_name method."""
-        assert isinstance(qrm_no_device.data_name(sequencer=0), str)
 
     def tests_delay_time_property(self, qrm_no_device: QbloxQRM):
         """Test acquisition_delay_time property."""

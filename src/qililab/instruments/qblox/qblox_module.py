@@ -141,7 +141,7 @@ class QbloxModule(AWG):
         # FIXME: using first channel instead of the desired
         bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins[0]), step=1)
         avg_loop = Loop(name="average", begin=nshots)
-        bin_loop.append_block(block=avg_loop, bot_position=1)
+        bin_loop.append_block(block=avg_loop, bot_position=3)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=bin_loop)
@@ -164,7 +164,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
+        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
         avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
         return program
 

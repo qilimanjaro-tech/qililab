@@ -66,8 +66,8 @@ def run_circuit(connection: API | None = None):
     )
     sample_experiment.set_parameter(parameter=Parameter.SYNC_ENABLED, value=False, alias="QRM", channel_id=0)
     results = sample_experiment.execute()
-    print(results)
-    # print(results.acquisitions())
+    # print(results)
+    print(results.acquisitions())
 
     platform.disconnect(automatic_turn_off_instruments=True)
 

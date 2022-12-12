@@ -10,7 +10,7 @@ from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
 
 class AWGDigitalAnalogConverter(AWG):
-    """AWG with Digital To Analog Conversion (DAC) capabilities."""
+    """AWG with Digital To Analog Conversion (ADC) capabilities."""
 
     @dataclass
     class AWGDigitalAnalogConverterSettings(AWG.AWGSettings):
@@ -31,7 +31,6 @@ class AWGDigitalAnalogConverter(AWG):
         scope_acquire_trigger_mode: List[AcquireTriggerMode]
         scope_hardware_averaging: List[bool]
         sampling_rate: List[float]  # default sampling rate for Qblox is 1.e+09
-        hardware_integration: List[bool]  # integration flag
         hardware_demodulation: List[bool]  # demodulation flag
         integration_length: List[int]
         integration_mode: List[IntegrationMode]
@@ -123,15 +122,6 @@ class AWGDigitalAnalogConverter(AWG):
         """
         return self.acquisition_delay_time
 
-    @property
-    def hardware_integration(self):
-        """QbloxPulsarQRM 'integration' property.
-
-        Returns:
-            bool: Integration flag.
-        """
-        return self.settings.hardware_integration
-
     @abstractmethod
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
@@ -162,9 +152,6 @@ class AWGDigitalAnalogConverter(AWG):
             return
         if parameter == Parameter.SAMPLING_RATE:
             self._set_sampling_rate(value=value, channel_id=channel_id)
-            return
-        if parameter == Parameter.HARDWARE_INTEGRATION:
-            self._set_hardware_integration(value=value, channel_id=channel_id)
             return
         if parameter == Parameter.INTEGRATION_MODE:
             self._set_integration_mode(value=value, channel_id=channel_id)
@@ -295,19 +282,6 @@ class AWGDigitalAnalogConverter(AWG):
             ValueError: when value type is not float
         """
         self.settings.sampling_rate[channel_id] = float(value)
-
-    @Instrument.CheckParameterValueBool
-    def _set_hardware_integration(self, value: float | str | bool, channel_id: int):
-        """set hardware integration
-
-        Args:
-            value (float | str | bool): value to update
-            channel_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        self.settings.hardware_integration[channel_id] = bool(value)
 
     def _set_integration_mode(self, value: float | str | bool | IntegrationMode, channel_id: int):
         """set integration_mode for the specific channel

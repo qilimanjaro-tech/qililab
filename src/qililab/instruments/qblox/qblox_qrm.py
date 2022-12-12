@@ -5,6 +5,7 @@ from pathlib import Path
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
+from qililab.config import logger
 from qililab.instruments.digital_analog_converter import AWGDigitalAnalogConverter
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -131,23 +132,6 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
 
-    def _acquire_result_one_sequencer(self, sequencer: int):
-        """Acquire result for one sequencer
-
-        Args:
-            sequencer (int): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        self.device.get_sequencer_state(sequencer=sequencer, timeout=self.sequence_timeout)
-        self.device.get_acquisition_state(sequencer=sequencer, timeout=self.acquisition_timeout)
-        if not self.hardware_integration[sequencer]:
-            self.device.store_scope_acquisition(sequencer=sequencer, name=self.acquisition_name(sequencer=sequencer))
-        return self.device.get_acquisitions(sequencer=sequencer)[self.acquisition_name(sequencer=sequencer)][
-            "acquisition"
-        ][self.data_name(sequencer=sequencer)]
-
     def _set_nco(self, channel_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""
         super()._set_nco(channel_id=channel_id)
@@ -164,7 +148,8 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
 
         """
         for seq_idx in range(self.num_sequencers):
-            self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout[seq_idx])
+            flags = self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout[seq_idx])
+            logger.info("Sequencer flags: %s", flags)
             self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout[seq_idx])
 
             if self.scope_store_enabled[seq_idx]:
@@ -262,13 +247,6 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
             bool: Integration flag.
         """
         return self.settings.hardware_integration
-
-    def data_name(self, sequencer: int) -> str:
-        """QbloxPulsarQRM 'data_name' property:
-
-        str: Name of the data. Options are "bins" or "scope".
-        """
-        return "bins" if self.hardware_integration[sequencer] else "scope"
 
     def acquisition_name(self, sequencer: int) -> str:
         """QbloxPulsarQRM 'acquisition_name' property:
