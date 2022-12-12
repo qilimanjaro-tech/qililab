@@ -88,6 +88,7 @@ class ExecutionPreparation:
             loops=self.options.loops,
             plot_y_label=self.options.plot_y_label,
             num_schedules=num_schedules,
+            title=self.options.name,
         )
         results = Results(
             software_average=self.options.settings.software_average,
