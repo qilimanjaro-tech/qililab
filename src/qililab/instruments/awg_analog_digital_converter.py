@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.instruments.awg import AWG
+from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
 from qililab.instruments.instrument import Instrument
 from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
@@ -17,27 +18,10 @@ class AWGAnalogDigitalConverter(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
-            scope_hardware_averaging (bool): Enable/disable hardware averaging of the data during scope mode.
-            integration_length (int): Duration (in ns) of the integration.
-            integration_mode (str): Integration mode. Options are 'ssb'.
-            sequence_timeout (int): Time (in minutes) to wait for the sequence to finish.
-            If timeout is reached a TimeoutError is raised.
-            acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
-            If timeout is reached a TimeoutError is raised.
-            acquisition_name (str): Name of the acquisition saved in the sequencer.
+
         """
 
-        scope_acquire_trigger_mode: List[AcquireTriggerMode]
-        scope_hardware_averaging: List[bool]
-        sampling_rate: List[float]  # default sampling rate for Qblox is 1.e+09
-        hardware_demodulation: List[bool]  # demodulation flag
-        integration_length: List[int]
-        integration_mode: List[IntegrationMode]
-        sequence_timeout: List[int]  # minutes
-        acquisition_timeout: List[int]  # minutes
-        scope_store_enabled: List[bool]
-        acquisition_delay_time: int  # ns
+        awg_sequencers: list[AWGADCSequencer]
 
     settings: AWGAnalogDigitalConverterSettings
 

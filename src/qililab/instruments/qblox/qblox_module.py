@@ -31,7 +31,9 @@ class QbloxModule(AWG):
     """
 
     _MAX_BINS: int = 131072
-    _NUM_SEQUENCERS: int = 2
+    _NUM_MAX_SEQUENCERS: int = 6
+    _NUM_MAX_AWG_OUT_CHANNELS: int = 4
+    _NUM_MAX_AWG_IQ_CHANNELS = int(_NUM_MAX_AWG_OUT_CHANNELS / 2)
     _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
@@ -415,7 +417,7 @@ class QbloxModule(AWG):
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
+        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_MAX_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
 

@@ -6,7 +6,7 @@ from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
 from qililab.config import logger
-from qililab.instruments.analog_digital_converter import AWGAnalogDigitalConverter
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
@@ -24,7 +24,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """
 
     name = InstrumentName.QBLOX_QRM
-    _NUM_SEQUENCERS: int = 1
+    _NUM_MAX_SEQUENCERS: int = 6
+    _NUM_MAX_AWG_OUT_CHANNELS: int = 2
 
     @dataclass
     class QbloxQRMSettings(

@@ -1,7 +1,7 @@
 """Time Domain Readout SystemControl class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments.analog_digital_converter import AWGAnalogDigitalConverter
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instruments import Instruments
 from qililab.result.result import Result
 from qililab.system_controls.system_control_types.time_domain_control_system_control import (

@@ -62,25 +62,39 @@ schema:
       category: awg
       firmware: 0.7.0
       num_sequencers: 1
-      num_bins: [1]
-      intermediate_frequencies: [2.e+07]
-      gain: [0.5]
-      gain_imbalance: [0.5]
-      phase_imbalance: [0]
-      offset_i: [0]
-      offset_q: [0]
-      hardware_modulation: [true]
-      acquisition_delay_time: 100
-      sync_enabled: [true]
-      scope_acquire_trigger_mode: [sequencer]
-      scope_hardware_averaging: [true]
-      sampling_rate: [1.e+09]
-      integration_length: [2000]
-      integration_mode: [ssb]
-      sequence_timeout: [1]
-      acquisition_timeout: [1]
-      hardware_demodulation: [true]
-      scope_store_enabled: [false]
+      awg_sequencers:
+        - identifier: 0
+          path0:
+            output_channel: 0
+          path1:
+            output_channel: 1
+          num_bins: 1
+          intermediate_frequency: 2.e+07
+          gain: 0.5
+          gain_imbalance: 0.5
+          phase_imbalance: 0
+          offset_i: 0
+          offset_q: 0
+          hardware_modulation: true
+          acquisition_delay_time: 100
+          sync_enabled: true
+          scope_acquire_trigger_mode: sequencer
+          scope_hardware_averaging: true
+          sampling_rate: 1.e+09
+          integration_length: 2000
+          integration_mode: ssb
+          sequence_timeout: 1
+          acquisition_timeout: 1
+          hardware_demodulation: true
+          scope_store_enabled: false
+      awg_iq_channels:
+        - identifier: 0
+          i_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 0
+          q_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 1
 
     - name: QCM
       alias: QCM
@@ -88,15 +102,29 @@ schema:
       category: awg
       firmware: 0.7.0
       num_sequencers: 1
-      num_bins: [1]
-      intermediate_frequencies: [10.e+06]
-      gain: [1]
-      gain_imbalance: [0.5]
-      phase_imbalance: [0]
-      offset_i: [0]
-      offset_q: [0]
-      hardware_modulation: [true]
-      sync_enabled: [true]
+      awg_sequencers:
+        - identifier: 0
+          path0:
+            output_channel: 0
+          path1:
+            output_channel: 1
+          num_bins: 1
+          intermediate_frequency: 10.e+06
+          gain: 1
+          gain_imbalance: 0.5
+          phase_imbalance: 0
+          hardware_modulation: true
+          sync_enabled: true
+          offset_path0: 0
+          offset_path1: 0
+      awg_iq_channels:
+        - identifier: 0
+          i_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 0
+          q_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 1
 
     - name: rohde_schwarz
       alias: rs_1
