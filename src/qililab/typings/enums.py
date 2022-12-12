@@ -40,8 +40,7 @@ class Category(Enum):
     INSTRUMENT_CONTROLLER = "instrument_controller"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    DAC = "digital_analog_converter"
-    AWG_DAC = "awg_dac"
+    DAC = "dac"
 
 
 class Instrument(Enum):

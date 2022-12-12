@@ -29,29 +29,29 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
-            return super()._supported_instrument_categories() + [Category.AWG_DAC.value]
+            return super()._supported_instrument_categories() + [Category.DAC.value]
 
     settings: TimeDomainReadoutSystemControlSettings
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """assign parent awg as the same as dac when it is not defined (it is the same instrument as AWG)"""
         super()._replace_settings_dicts_with_instrument_objects(instruments=instruments)
-        if self.awg_dac is None:
+        if self.dac is None:
             awg_instrument = instruments.get_instrument(alias=self.awg.alias)
             self._check_for_a_valid_instrument(instrument=awg_instrument)
             self.settings.dac = awg_instrument
 
     @property
-    def awg_dac(self):
-        """Readout System Control 'awg_dac' property.
+    def dac(self):
+        """Readout System Control 'dac' property.
         Returns:
-            AWG: settings.awg_dac.
+            AWG: settings.dac.
         """
         return self.settings.dac
 
     def __str__(self):
         """String representation of the TimeDomainReadoutSystemControl class."""
-        return f"-|{self.signal_generator}|--|{self.awg_dac}|-"
+        return f"-|{self.signal_generator}|--|{self.dac}|-"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """sets a parameter to a specific instrument
@@ -78,11 +78,11 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
         # the rest of parameters are assigned to the AWGDigitalAnalogConverter
-        self.awg_dac.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        self.dac.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
-        return super()._get_supported_instrument_categories() + [Category.AWG_DAC]
+        return super()._get_supported_instrument_categories() + [Category.DAC]
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
@@ -90,10 +90,10 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         Returns:
             Result: Acquired result
         """
-        return self.awg_dac.acquire_result()
+        return self.dac.acquire_result()
 
     @property
     def acquisition_delay_time(self) -> int:
         """SystemControl 'acquisition_delay_time' property.
         Delay (in ns) between the readout pulse and the acquisition."""
-        return self.awg_dac.acquisition_delay_time
+        return self.dac.acquisition_delay_time

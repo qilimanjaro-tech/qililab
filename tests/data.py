@@ -145,7 +145,7 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.AWG_DAC.value: InstrumentName.QBLOX_QRM.value,
+                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -155,7 +155,7 @@ class Galadriel:
         RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.QBLOX_QRM.value,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
-        RUNCARD.CATEGORY: Category.AWG_DAC.value,
+        RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.NUM_BINS.value: [1],
@@ -358,7 +358,7 @@ class Galadriel:
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.TIME_DOMAIN_READOUT.value,
                 Category.AWG.value: InstrumentName.QBLOX_QRM.value,
-                Category.AWG_DAC.value: InstrumentName.QBLOX_QRM.value,
+                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 Category.SIGNAL_GENERATOR.value: "rs_1",
             },
             NodeName.PORT.value: 1,
