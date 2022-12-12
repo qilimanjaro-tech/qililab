@@ -263,7 +263,7 @@ class InstrumentController(BusElement, ABC):
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
         return {
-            RUNCARD.NAME: self.alias,
+            RUNCARD.NAME: self.name,
             RUNCARD.ID: self.id_,
             RUNCARD.ALIAS: self.alias,
             RUNCARD.CATEGORY: self.category.value,

@@ -97,7 +97,7 @@ class Galadriel:
 
     pulsar_controller_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -116,7 +116,7 @@ class Galadriel:
 
     qblox_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.QBLOX_QCM.value,
+        RUNCARD.NAME: InstrumentName.QBLOX_QCM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
@@ -134,7 +134,7 @@ class Galadriel:
 
     pulsar_controller_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,

@@ -40,7 +40,7 @@ class Category(Enum):
     INSTRUMENT_CONTROLLER = "instrument_controller"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    DAC = "dac"
+    ADC = "adc"
 
 
 class Instrument(Enum):

@@ -29,7 +29,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
-            return super()._supported_instrument_categories() + [Category.DAC.value]
+            return super()._supported_instrument_categories() + [Category.ADC.value]
 
     settings: TimeDomainReadoutSystemControlSettings
 
@@ -82,7 +82,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
-        return super()._get_supported_instrument_categories() + [Category.DAC]
+        return super()._get_supported_instrument_categories() + [Category.ADC]
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
