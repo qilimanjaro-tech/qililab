@@ -9,11 +9,11 @@ from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
 
-class AWGDigitalAnalogConverter(AWG):
+class AWGAnalogDigitalConverter(AWG):
     """AWG with Digital To Analog Conversion (ADC) capabilities."""
 
     @dataclass
-    class AWGDigitalAnalogConverterSettings(AWG.AWGSettings):
+    class AWGAnalogDigitalConverterSettings(AWG.AWGSettings):
         """Contains the settings of a specific pulsar.
 
         Args:
@@ -39,7 +39,7 @@ class AWGDigitalAnalogConverter(AWG):
         scope_store_enabled: List[bool]
         acquisition_delay_time: int  # ns
 
-    settings: AWGDigitalAnalogConverterSettings
+    settings: AWGAnalogDigitalConverterSettings
 
     @property
     def acquisition_delay_time(self):

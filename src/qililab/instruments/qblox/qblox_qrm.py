@@ -6,7 +6,7 @@ from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
 from qililab.config import logger
-from qililab.instruments.digital_analog_converter import AWGDigitalAnalogConverter
+from qililab.instruments.analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
@@ -16,7 +16,7 @@ from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
 @InstrumentFactory.register
-class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
+class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """Qblox QRM class.
 
     Args:
@@ -28,7 +28,7 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
 
     @dataclass
     class QbloxQRMSettings(
-        QbloxModule.QbloxModuleSettings, AWGDigitalAnalogConverter.AWGDigitalAnalogConverterSettings
+        QbloxModule.QbloxModuleSettings, AWGAnalogDigitalConverter.AWGAnalogDigitalConverterSettings
     ):
         """Contains the settings of a specific QRM."""
 
@@ -260,6 +260,6 @@ class QbloxQRM(QbloxModule, AWGDigitalAnalogConverter):
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
         try:
-            AWGDigitalAnalogConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+            AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ValueError:
             QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
