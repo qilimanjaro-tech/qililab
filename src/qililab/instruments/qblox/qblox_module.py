@@ -14,6 +14,7 @@ from qpysequence.program.instructions import Play, Stop, Wait
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule, PulseShape
@@ -369,6 +370,8 @@ class QbloxModule(AWG):
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
+        logger.info("Sequence program: \n %s", repr(sequence._program))
+
         file_path = str(path / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)

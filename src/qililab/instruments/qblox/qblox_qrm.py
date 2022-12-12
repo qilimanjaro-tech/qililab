@@ -149,7 +149,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         for seq_idx in range(self.num_sequencers):
             flags = self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout[seq_idx])
-            logger.info("Sequencer flags: %s", flags)
+            logger.info("Sequencer[%d] flags: \n%s", seq_idx, flags)
             self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout[seq_idx])
 
             if self.scope_store_enabled[seq_idx]:
