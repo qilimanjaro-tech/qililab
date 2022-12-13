@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.0 (2022-12-13)
+
+### Feat
+
+- [QILI-201] multibus support (#101)
+
 ## 0.9.2 (2022-11-17)
 
 ### Fix
