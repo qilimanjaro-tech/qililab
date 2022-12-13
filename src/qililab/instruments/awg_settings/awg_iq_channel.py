@@ -20,6 +20,13 @@ class AWGIQChannel:
     i_channel: AWGChannelMapping
     q_channel: AWGChannelMapping
 
+    def __post_init__(self):
+        """Build I and Q channels"""
+        if isinstance(self.i_channel, dict):
+            self.i_channel = AWGChannelMapping(**self.i_channel)  # pylint: disable=not-a-mapping
+        if isinstance(self.q_channel, dict):
+            self.q_channel = AWGChannelMapping(**self.q_channel)  # pylint: disable=not-a-mapping
+
     @property
     def sequencer_id_i_channel(self):
         """Return the sequencer identifier for the I Channel"""

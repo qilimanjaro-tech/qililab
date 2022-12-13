@@ -110,7 +110,8 @@ schema:
             output_channel: 1
           num_bins: 1
           intermediate_frequency: 10.e+06
-          gain: 1
+          gain_path0: 1
+          gain_path1: 1
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true

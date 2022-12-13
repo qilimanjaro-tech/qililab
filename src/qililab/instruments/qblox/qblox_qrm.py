@@ -39,16 +39,19 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
-        for channel_id in range(self.num_sequencers):
-            self._set_integration_length(value=self.settings.integration_length[channel_id], channel_id=channel_id)
+        for sequencer in self.awg_sequencers:
+            sequencer_id = sequencer.identifier
+            self._set_integration_length(
+                value=self.awg_sequencers[sequencer_id].integration_length, sequencer_id=sequencer_id
+            )
             self._set_acquisition_mode(
-                value=self.settings.scope_acquire_trigger_mode[channel_id], channel_id=channel_id
+                value=self.awg_sequencers[sequencer_id].scope_acquire_trigger_mode, sequencer_id=sequencer_id
             )
             self._set_scope_hardware_averaging(
-                value=self.settings.scope_hardware_averaging[channel_id], channel_id=channel_id
+                value=self.awg_sequencers[sequencer_id].scope_hardware_averaging, sequencer_id=sequencer_id
             )
             self._set_hardware_demodulation(
-                value=self.settings.hardware_demodulation[channel_id], channel_id=channel_id
+                value=self.awg_sequencers[sequencer_id].hardware_demodulation, sequencer_id=sequencer_id
             )
 
     def generate_program_and_upload(
@@ -64,13 +67,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            for seq_idx in range(self.num_sequencers):
+            for sequencer_id in range(self.num_sequencers):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
-                    sequencer=seq_idx, name=self.acquisition_name(sequencer=seq_idx)
+                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
                 )
-                acquisition = self._generate_acquisitions(sequencer=seq_idx)
+                acquisition = self._generate_acquisitions(sequencer=sequencer_id)
                 self.device._add_acquisitions(  # pylint: disable=protected-access
-                    sequencer=seq_idx, acquisitions=acquisition.to_dict()
+                    sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
         super().generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
@@ -84,60 +87,62 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         return self.get_acquisitions()
 
-    def _set_device_hardware_demodulation(self, value: bool, channel_id: int):
+    def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
 
         Args:
             value (bool): value to update
-            channel_id (int): sequencer to update the value
+            sequencer_id (int): sequencer to update the value
         """
-        self.device.sequencers[channel_id].demod_en_acq(value)
+        self.device.sequencers[sequencer_id].demod_en_acq(value)
 
-    def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, channel_id: int):
+    def _set_device_acquisition_mode(self, mode: AcquireTriggerMode, sequencer_id: int):
         """set acquisition_mode for the specific channel
 
         Args:
             mode (AcquireTriggerMode): value to update
-            channel_id (int): sequencer to update the value
+            sequencer_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not string
         """
-        self.device.scope_acq_sequencer_select(channel_id)
+        self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
 
-    def _set_device_integration_length(self, value: int, channel_id: int):
+    def _set_device_integration_length(self, value: int, sequencer_id: int):
         """set integration_length for the specific channel
 
         Args:
             value (int): value to update
-            channel_id (int): sequencer to update the value
+            sequencer_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not float
         """
-        self.device.sequencers[channel_id].integration_length_acq(value)
+        self.device.sequencers[sequencer_id].integration_length_acq(value)
 
-    def _set_device_scope_hardware_averaging(self, value: bool, channel_id: int):
+    def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
         """set scope_hardware_averaging for the specific channel
 
         Args:
             value (bool): value to update
-            channel_id (int): sequencer to update the value
+            sequencer_id (int): sequencer to update the value
 
         Raises:
             ValueError: when value type is not bool
         """
-        self.device.scope_acq_sequencer_select(channel_id)
+        self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
 
-    def _set_nco(self, channel_id: int):
+    def _set_nco(self, sequencer_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""
-        super()._set_nco(channel_id=channel_id)
-        if self.settings.hardware_demodulation[channel_id]:
-            self._set_hardware_demodulation(value=self.settings.hardware_modulation[channel_id], channel_id=channel_id)
+        super()._set_nco(sequencer_id=sequencer_id)
+        if self.awg_sequencers[sequencer_id].hardware_demodulation:
+            self._set_hardware_demodulation(
+                value=self.awg_sequencers[sequencer_id].hardware_modulation, sequencer_id=sequencer_id
+            )
 
     @Instrument.CheckDeviceInitialized
     def get_acquisitions(self) -> QbloxResult:
@@ -148,17 +153,22 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
-        for seq_idx in range(self.num_sequencers):
-            flags = self.device.get_sequencer_state(sequencer=seq_idx, timeout=self.sequence_timeout[seq_idx])
-            logger.info("Sequencer[%d] flags: \n%s", seq_idx, flags)
-            self.device.get_acquisition_state(sequencer=seq_idx, timeout=self.acquisition_timeout[seq_idx])
+        for sequencer in self.awg_sequencers:
+            sequencer_id = sequencer.identifier
+            flags = self.device.get_sequencer_state(sequencer=sequencer_id, timeout=sequencer.sequence_timeout)
+            logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
+            self.device.get_acquisition_state(sequencer=sequencer_id, timeout=sequencer.acquisition_timeout)
 
-            if self.scope_store_enabled[seq_idx]:
-                self.device.store_scope_acquisition(sequencer=0, name=self.acquisition_name(sequencer=seq_idx))
+            if sequencer.scope_store_enabled:
+                self.device.store_scope_acquisition(
+                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
+                )
 
         results = [
-            self.device.get_acquisitions(sequencer=seq_idx)[self.acquisition_name(sequencer=seq_idx)]["acquisition"]
-            for seq_idx in range(self.num_sequencers)
+            self.device.get_acquisitions(sequencer=sequencer.identifier)[
+                self.acquisition_name(sequencer_id=sequencer.identifier)
+            ]["acquisition"]
+            for sequencer in self.awg_sequencers
         ]
 
         return QbloxResult(pulse_length=self.integration_length, qblox_raw_results=results)
@@ -166,7 +176,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def _append_acquire_instruction(self, loop: Loop, register: Register):
         """Append an acquire instruction to the loop."""
         # FIXME: scope_hardware_averaging it is a list now, it should return the desired channel
-        acquisition_idx = 0 if self.scope_hardware_averaging[0] else 1  # use binned acquisition if averaging is false
+        acquisition_idx = (
+            0 if self.awg_sequencers[0].scope_hardware_averaging else 1
+        )  # use binned acquisition if averaging is false
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
@@ -178,84 +190,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         return {}
 
     @property
-    def scope_store_enabled(self):
-        """QbloxPulsarQRM 'scope_store_enabled' property.
-
-
-        Returns:
-            bool: settings.scope_store_enabled."""
-        return self.settings.scope_store_enabled
-
-    @property
-    def sampling_rate(self):
-        """QbloxPulsarQRM 'sampling_rate' property.
-
-        Returns:
-            int: settings.sampling_rate.
-        """
-        return self.settings.sampling_rate
-
-    @property
     def integration_length(self):
         """QbloxPulsarQRM 'integration_length' property.
-
         Returns:
             int: settings.integration_length.
         """
-        return self.settings.integration_length
+        # FIXME: only return the integration length of first sequencer
+        return self.awg_sequencers[0].integration_length
 
-    @property
-    def integration_mode(self):
-        """QbloxPulsarQRM 'integration_mode' property.
-
-        Returns:
-            IntegrationMode: settings.integration_mode.
-        """
-        return self.settings.integration_mode
-
-    @property
-    def sequence_timeout(self):
-        """QbloxPulsarQRM 'sequence_timeout' property.
-
-        Returns:
-            int: settings.sequence_timeout.
-        """
-        return self.settings.sequence_timeout
-
-    @property
-    def acquisition_timeout(self):
-        """QbloxPulsarQRM 'acquisition_timeout' property.
-
-        Returns:
-            int: settings.acquisition_timeout.
-        """
-        return self.settings.acquisition_timeout
-
-    @property
-    def final_wait_time(self):
-        """QbloxPulsarQRM 'final_wait_time' property.
-
-        Returns:
-            int: Final wait time.
-        """
-        return self.acquisition_delay_time
-
-    @property
-    def integration(self):
-        """QbloxPulsarQRM 'integration' property.
-
-        Returns:
-            bool: Integration flag.
-        """
-        return self.settings.hardware_integration
-
-    def acquisition_name(self, sequencer: int) -> str:
+    def acquisition_name(self, sequencer_id: int) -> str:
         """QbloxPulsarQRM 'acquisition_name' property:
 
         Returns:
             str: Name of the acquisition. Options are "single" or "binning".
         """
-        return "single" if self.scope_hardware_averaging[sequencer] else "binning"
+        return "single" if self.awg_sequencers[sequencer_id].scope_hardware_averaging else "binning"
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):

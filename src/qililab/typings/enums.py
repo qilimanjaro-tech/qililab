@@ -463,6 +463,10 @@ class Parameter(Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
+    GAIN_PATH0 = "gain_path0"
+    GAIN_PATH1 = "gain_path1"
+    OFFSET_PATH0 = "offset_path0"
+    OFFSET_PATH1 = "offset_path1"
 
 
 class ResultName(Enum):

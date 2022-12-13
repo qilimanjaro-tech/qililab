@@ -2,20 +2,12 @@
 
 
 from dataclasses import dataclass
-from enum import Enum
 
 from qililab.instruments.awg_settings.awg_output_channel import AWGOutputChannel
-
-
-class AWGSequencerPathIdentifier(Enum):
-    """AWG Sequence Path Identifier
-    Options:
-        PATH0 = 0
-        PATH1 = 1
-    """
-
-    PATH0 = 0
-    PATH1 = 1
+from qililab.instruments.awg_settings.typings import (
+    AWGSequencerPathIdentifier,
+    AWGSequencerPathTypes,
+)
 
 
 @dataclass
@@ -24,3 +16,10 @@ class AWGSequencerPath:
 
     path_id: AWGSequencerPathIdentifier
     output_channel: AWGOutputChannel
+
+    def __post_init__(self):
+        """Build AWGSequencerPath"""
+        if isinstance(self.path_id, int):
+            self.path_id = AWGSequencerPathIdentifier(self.path_id)
+        if isinstance(self.output_channel, int):
+            self.output_channel = AWGOutputChannel(self.output_channel)

@@ -1,11 +1,12 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
-from qililab.instruments.awg_settings.awg_output_channel import AWGOutputChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
 
@@ -23,7 +24,7 @@ class AWG(Instrument):
         """
 
         num_sequencers: int
-        awg_sequencers: list[AWGSequencer]
+        awg_sequencers: Sequence[AWGSequencer]
         awg_iq_channels: list[AWGIQChannel]
 
         def __post_init__(self):
@@ -37,11 +38,13 @@ class AWG(Instrument):
                     + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
                 )
             self.awg_sequencers = [
-                AWGSequencer.from_dict(sequencer) if isinstance(sequencer, dict) else sequencer
+                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
                 for sequencer in self.awg_sequencers
             ]
             self.awg_iq_channels = [
-                AWGIQChannel.from_dict(iq_channel) if isinstance(iq_channel, dict) else iq_channel
+                AWGIQChannel(**iq_channel)  # pylint: disable=not-a-mapping
+                if isinstance(iq_channel, dict)
+                else iq_channel
                 for iq_channel in self.awg_iq_channels
             ]
 
@@ -97,3 +100,53 @@ class AWG(Instrument):
             self.settings.awg_sequencers[sequencer.identifier].intermediate_frequency
             for sequencer in self.awg_sequencers
         ]
+
+    def get_sequencer_path_id_mapped_to_i_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
+        """get sequencer path id mapped to i channel of sequencer Id
+
+        Args:
+            sequencer_id (int): sequencer identifier
+
+        Returns:
+            AWGSequencerPathIdentifier: path identifier
+        """
+        path_identifier: list[AWGSequencerPathIdentifier] = list(
+            filter(
+                None,
+                [
+                    iq_channel.sequencer_path_i_channel
+                    for iq_channel in self.awg_iq_channels
+                    if iq_channel.sequencer_id_i_channel == sequencer_id
+                ],
+            )
+        )
+        if len(path_identifier) <= 0:
+            raise ValueError(f"No I Channel mapped to the sequencer with id: {sequencer_id}")
+        if len(path_identifier) > 1:
+            raise ValueError(f"More than one I Channel mapped to the sequencer with id: {sequencer_id}")
+        return path_identifier[0]
+
+    def get_sequencer_path_id_mapped_to_q_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
+        """get sequencer path id mapped to q channel of sequencer Id
+
+        Args:
+            sequencer_id (int): sequencer identifier
+
+        Returns:
+            AWGSequencerPathIdentifier: path identifier
+        """
+        path_identifier: list[AWGSequencerPathIdentifier] = list(
+            filter(
+                None,
+                [
+                    iq_channel.sequencer_path_q_channel
+                    for iq_channel in self.awg_iq_channels
+                    if iq_channel.sequencer_id_q_channel == sequencer_id
+                ],
+            )
+        )
+        if len(path_identifier) <= 0:
+            raise ValueError(f"No Q Channel mapped to the sequencer with id: {sequencer_id}")
+        if len(path_identifier) > 1:
+            raise ValueError(f"More than one Q Channel mapped to the sequencer with id: {sequencer_id}")
+        return path_identifier[0]

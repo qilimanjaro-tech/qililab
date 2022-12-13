@@ -3,14 +3,14 @@
 
 from dataclasses import dataclass
 
+from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode
-
-from .awg_sequencer import AWGSequencer
+from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass
 class AWGADCSequencer(AWGSequencer):
-    """AWG Sequencer
+    """AWG ADC Sequencer
 
     Args:
         acquire_trigger_mode (str): Set scope acquisition trigger mode. Options are 'sequencer' or 'level'.
@@ -34,3 +34,7 @@ class AWGADCSequencer(AWGSequencer):
     acquisition_timeout: int  # minutes
     scope_store_enabled: bool
     acquisition_delay_time: int  # ns
+
+    def __post_init__(self):
+        """Cast all enum attributes to its corresponding Enum class."""
+        cast_enum_fields(obj=self)
