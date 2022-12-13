@@ -23,9 +23,9 @@ def run_circuit(connection: API | None = None):
     runcard_name = "sauron_soprano"
     platform = build_platform(name=runcard_name)
 
-    platform.connect_and_set_initial_setup(
-        connection=connection, device_id=SAURON_SOPRANO, automatic_turn_on_instruments=True
-    )
+    # platform.connect_and_set_initial_setup(
+    #     connection=connection, device_id=SAURON_SOPRANO, automatic_turn_on_instruments=True
+    # )
 
     circuit = Circuit(1)
     # circuit.add(X(0))
@@ -39,16 +39,16 @@ def run_circuit(connection: API | None = None):
 
     settings = ExperimentSettings(
         hardware_average=1000,
-        repetition_duration=200_000,
+        repetition_duration=20_000,
         software_average=1,
     )
 
     execution_options = ExecutionOptions(
-        set_initial_setup=False,
-        automatic_connect_to_instruments=False,
-        automatic_disconnect_to_instruments=False,
-        automatic_turn_on_instruments=False,
-        automatic_turn_off_instruments=False,
+        set_initial_setup=True,
+        automatic_connect_to_instruments=True,
+        automatic_disconnect_to_instruments=True,
+        automatic_turn_on_instruments=True,
+        automatic_turn_off_instruments=True,
     )
 
     options = ExperimentOptions(
@@ -57,6 +57,7 @@ def run_circuit(connection: API | None = None):
         connection=connection,  # remote connection for live plotting
         device_id=SAURON_SOPRANO,  # device identifier to block and release for remote executions
         execution_options=execution_options,
+        name="my test experiment",
     )
 
     sample_experiment = Experiment(
@@ -69,7 +70,7 @@ def run_circuit(connection: API | None = None):
     # print(results)
     print(results.acquisitions())
 
-    platform.disconnect(automatic_turn_off_instruments=True)
+    # platform.disconnect(automatic_turn_off_instruments=True)
 
 
 if __name__ == "__main__":
@@ -79,5 +80,5 @@ if __name__ == "__main__":
     # )
     # api = API(configuration=configuration)
     api = API()
-    # api.release_device(device_id=SAURON_SOPRANO)
+    api.release_device(device_id=SAURON_SOPRANO)
     run_circuit(connection=api)
