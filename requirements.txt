@@ -15,5 +15,4 @@ urllib3==1.26.12
 qiboconnection==0.6.0
 qpysequence@ git+https://github.com/qilimanjaro-tech/qpysequence.git@0.3.2
 qilimanjaro-qilisimulator-library@ git+https://github.com/qilimanjaro-tech/qilisimulator.git@0.1.2
-dummy-qblox@ git+https://github.com/qilimanjaro-tech/qililab-tools.git@0.2.1#subdirectory=services/dummy_qblox
 lmfit==1.0.3
