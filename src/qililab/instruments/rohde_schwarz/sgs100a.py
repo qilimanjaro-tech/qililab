@@ -7,6 +7,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -29,37 +30,40 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    @Instrument.CheckParameterValueFloatOrInt
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+    ):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
         """
-        self.device.power(self.power)
-        if self.frequency is not None:
+        if parameter == Parameter.POWER:
+            self.settings.power = float(value)
+            self.device.power(self.power)
+            return
+        if parameter == Parameter.LO_FREQUENCY:
+            self.settings.frequency = float(value)
             self.device.frequency(self.frequency)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
-        """performs an initial setup.
-        For this instrument it is the same as a regular setup"""
-        self.setup()
-
-    @SignalGenerator.frequency.setter  # type: ignore
-    def frequency(self, value: float):
-        """Set R&A frequency.
-
-        Args:
-            value (float): Frequency in Hz.
-        """
-        self.settings.frequency = value
+        """performs an initial setup"""
+        self.device.power(self.power)
+        self.device.frequency(self.frequency)
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
+    def turn_on(self):
         """Start generating microwaves."""
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop generating microwaves."""
         self.device.off()
 

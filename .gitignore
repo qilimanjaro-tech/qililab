@@ -133,3 +133,4 @@ data/
 _build
 
 .qibo_configuration
+tmp.*

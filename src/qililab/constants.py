@@ -12,6 +12,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
+DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
 # TODO: Distribute constants over different classes
 
@@ -37,6 +38,12 @@ class RUNCARD:
     INSTRUMENT_CONTROLLER = "instrument_controller"
     FIRMWARE = "firmware"
     GATES = "gates"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
+    BUS_CATEGORY = "bus_category"
+    BUS_SUBCATEGORY = "bus_subcategory"
+    SYSTEM_CONTROL_CATEGORY = "system_control_category"
+    SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
 
 
 class PLATFORM:
@@ -46,6 +53,24 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+
+
+class CURRENTSOURCE:
+    """CurrentSource attribute names."""
+
+    CURRENT = "current"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
+
+
+class VOLTAGESOURCE:
+    """VoltageSource attribute names."""
+
+    VOLTAGE = "voltage"
+    SPAN = "span"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMP_RATE = "ramp_rate"
 
 
 class SIGNALGENERATOR:
@@ -63,9 +88,16 @@ class EXPERIMENT:
     REPETITION_DURATION = "repetition_duration"
     SHAPE = "shape"
     RESULTS = "results"
-    NUM_SEQUENCES = "num_sequences"
-    SEQUENCES = "sequences"
+    NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
+    OPTIONS = "options"
+    EXECUTION_OPTIONS = "execution_options"
+    DEVICE_ID = "device_id"
+    PLOT_Y_LABEL = "plot_y_label"
+    REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
+    CONNECTION = "connection"
+    CIRCUITS = "circuits"
+    PULSE_SCHEDULES = "pulse_schedules"
 
 
 class SCHEMA:
@@ -83,8 +115,8 @@ class BUS:
     PORT = "port"
     SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
-    SEQUENCES = "sequences"
-    NUM_SEQUENCES = "num_sequences"
+    SCHEDULES = "schedules"
+    NUM_SCHEDULES = "num_schedules"
     SHAPE = "shape"  # shape of the results
     RESULTS = "results"
 
@@ -96,18 +128,24 @@ class LOOP:
     PARAMETER = "parameter"
     START = "start"
     STOP = "stop"
+    ALIAS = "alias"
     NUM = "num"
     STEP = "step"
+    LOGARITHMIC = "logarithmic"
+    CHANNEL_ID = "channel_id"
+    PREVIOUS = "previous"
+    VALUES = "values"
+    OPTIONS = "options"
 
 
-class PULSESEQUENCES:
-    """PulseSequenes attribute names."""
+class PULSESCHEDULES:
+    """Pulse Schedules attribute names."""
 
     ELEMENTS = "elements"
 
 
-class PULSESEQUENCE:
-    """PulseSequence attribute names."""
+class PULSEBUSSCHEDULE:
+    """PULSE BUS SCHEDULE attribute names."""
 
     TIMELINE = "timeline"
     PORT = "port"
@@ -161,11 +199,12 @@ class QBLOXRESULT:
     """Qblox Results attribute names."""
 
     PULSE_LENGTH = "pulse_length"
-    SCOPE = "scope"
-    BINS = "bins"
+    QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
 class RESULTSDATAFRAME:
+    """Results DataFrame Attributes"""
+
     SOFTWARE_AVG_INDEX = "software_avg_index"
     SEQUENCE_INDEX = "sequence_index"
     LOOP_INDEX = "loop_index_"
@@ -204,3 +243,9 @@ UNIT_PREFIX = {
     1e21: "Z",  # zetta
     1e24: "Y",  # yotta
 }
+
+
+class QBLOXCONSTANTS:
+    """Qblox Constants"""
+
+    SCOPE_LENGTH = 16380

@@ -17,6 +17,9 @@ class Category(Enum):
         * resonator
         * node
         * instrument_controller
+        * voltage_source
+        * current_source
+        * digital_analog_converter
     """
 
     PLATFORM = "platform"
@@ -31,9 +34,13 @@ class Category(Enum):
     EXPERIMENT = "experiment"
     ATTENUATOR = "attenuator"
     DC_SOURCE = "dc_source"
+    VNA = "vna"
     CHIP = "chip"
     NODE = "node"
     INSTRUMENT_CONTROLLER = "instrument_controller"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
+    ADC = "adc"
 
 
 class Instrument(Enum):
@@ -44,15 +51,17 @@ class Instrument(Enum):
         * platform
         * awg
         * signal_generator
-        * system_control
         * attenuator
+        * voltage_source
+        * current_source
     """
 
     PLATFORM = "platform"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
-    SYSTEM_CONTROL = "system_control"
     ATTENUATOR = "attenuator"
+    VOLTAGE_SOURCE = "voltage_source"
+    CURRENT_SOURCE = "current_source"
 
 
 class InstrumentControllerSubCategory(Enum):
@@ -203,30 +212,80 @@ class PulseShapeSettingsName(Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
 
 
-class BusSubcategory(Enum):
-    """Bus types.
+class BusCategory(Enum):
+    """Bus categories.
 
     Args:
-        enum (str): Available types of Bus:
+        enum (str): Available categories of Bus:
+        * time_domain
+        * continuous
+        * simulated
+    """
+
+    TIME_DOMAIN = "time_domain"
+    CONTINUOUS = "continuous"
+    SIMULATED = "simulated"
+
+
+class BusSubCategory(Enum):
+    """Bus subcategories.
+
+    Args:
+        enum (str): Available subcategories of Bus:
+        * baseband
         * control
-        * readout
+        * time_domain_readout
+        * current_bias
+        * microwave_bias
+        * continuous_readout
+        * simulated
     """
 
+    BASEBAND = "baseband"
     CONTROL = "control"
-    READOUT = "readout"
+    TIME_DOMAIN_READOUT = "readout"
+    CURRENT_BIAS = "current_bias"
+    MICROWAVE_BIAS = "microwave_bias"
+    CONTINUOUS_READOUT = "readout"
+    SIMULATED = "simulated"
 
 
-class SystemControlSubcategory(Enum):
-    """Bus element names. Contains names of bus elements that are not instruments.
+class SystemControlCategory(Enum):
+    """SystemControl categories.
 
     Args:
-        enum (str): Available bus element names:
-        * mixer_based_system_control
-        * simulated_system_control
+        enum (str): Available categories of SystemControl:
+        * time_domain
+        * continuous
+        * simulated
     """
 
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+    TIME_DOMAIN = "time_domain"
+    CONTINUOUS = "continuous"
+    SIMULATED = "simulated"
+
+
+class SystemControlSubCategory(Enum):
+    """SystemControl subcategories.
+
+    Args:
+        enum (str): Available subcategories of SystemControl:
+        * baseband
+        * control
+        * time_domain_readout
+        * current_bias
+        * microwave_bias
+        * continuous_readout
+        * simulated
+    """
+
+    BASEBAND = "baseband"
+    CONTROL = "control"
+    TIME_DOMAIN_READOUT = "readout"
+    CURRENT_BIAS = "current_bias"
+    MICROWAVE_BIAS = "microwave_bias"
+    CONTINUOUS_READOUT = "readout"
+    SIMULATED = "simulated"
 
 
 class NodeName(Enum):
@@ -242,6 +301,7 @@ class NodeName(Enum):
     QUBIT = "qubit"
     RESONATOR = "resonator"
     COUPLER = "coupler"
+    COIL = "coil"
     PORT = "port"
 
 
@@ -254,20 +314,22 @@ class InstrumentName(Enum):
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
         * mini_circuits
-        * mixer_based_system_control
-        * integrated_system_control
-        * simulated_system_control
         * keithley_2600
+        * qblox_D5a
+        * qblox_S4g
+        * keysight_e5080b
+        * agilent_e5071B
     """
 
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
     ROHDE_SCHWARZ = "rohde_schwarz"
-    MIXER_BASED_SYSTEM_CONTROL = "mixer_based_system_control"
-    INTEGRATED_SYSTEM_CONTROL = "integrated_system_control"
-    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_D5A = "D5a"
+    QBLOX_S4G = "S4g"
+    KEYSIGHT_E5080B = "keysight_e5080b"
+    AGILENT_E5071B = "agilent_e5071B"
 
 
 class InstrumentControllerName(Enum):
@@ -280,6 +342,8 @@ class InstrumentControllerName(Enum):
         * rohde_schwarz
         * mini_circuits
         * keithley_2600
+        * keysight_e5080b
+        * agilent_e5071B
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -287,12 +351,60 @@ class InstrumentControllerName(Enum):
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
+    QBLOX_SPIRACK = "qblox_spi_rack"
+    KEYSIGHT_E5080B = "keysight_e5080b_controller"
+    AGILENT_E5071B = "agilent_e5071B_controller"
+
+
+class SystemControlName(Enum):
+    """System Control names.
+
+    Args:
+        enum (str): Available system control element names:
+        * time_domain_baseband_system_control
+        * time_domain_control_system_control
+        * time_domain_readout_system_control
+        * continuous_current_bias_system_control
+        * continuous_microwave_bias_system_control
+        * continuous_readout_system_control
+    """
+
+    TIME_DOMAIN_BASEBAND_SYSTEM_CONTROL = "time_domain_baseband_system_control"
+    TIME_DOMAIN_CONTROL_SYSTEM_CONTROL = "time_domain_control_system_control"
+    TIME_DOMAIN_READOUT_SYSTEM_CONTROL = "time_domain_readout_system_control"
+    CONTINUOUS_CURRENT_BIAS_SYSTEM_CONTROL = "continuous_current_bias_system_control"
+    CONTINUOUS_MICROWAVE_BIAS_SYSTEM_CONTROL = "continuous_microwave_bias_system_control"
+    CONTINUOUS_READOUT_SYSTEM_CONTROL = "continuous_readout_system_control"
+    SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
+
+
+class BusName(Enum):
+    """System Control names.
+
+    Args:
+        enum (str): Available bus element names:
+        * time_domain_baseband_bus
+        * time_domain_control_bus
+        * time_domain_readout_bus
+        * continuous_current_bias_bus
+        * continuous_microwave_bias_bus
+        * continuous_readout_bus
+    """
+
+    TIME_DOMAIN_BASEBAND_BUS = "time_domain_baseband_bus"
+    TIME_DOMAIN_CONTROL_BUS = "time_domain_control_bus"
+    TIME_DOMAIN_READOUT_BUS = "time_domain_readout_bus"
+    CONTINUOUS_CURRENT_BIAS_BUS = "continuous_current_bias_bus"
+    CONTINUOUS_MICROWAVE_BIAS_BUS = "continuous_microwave_bias_bus"
+    CONTINUOUS_READOUT_BUS = "continuous_readout_bus"
+    SIMULATED_BUS = "simulated_bus"
 
 
 class Parameter(Enum):
     """Parameter names."""
 
-    FREQUENCY = "frequency"
+    BUS_FREQUENCY = "bus_frequency"
+    LO_FREQUENCY = "frequency"
     GAIN = "gain"
     DURATION = "duration"
     AMPLITUDE = "amplitude"
@@ -306,8 +418,8 @@ class Parameter(Enum):
     SEQUENCER = "sequencer"
     SYNC_ENABLED = "sync_enabled"
     POWER = "power"
-    EPSILON = "epsilon"
-    DELTA = "delta"
+    GAIN_IMBALANCE = "gain_imbalance"
+    PHASE_IMBALANCE = "phase_imbalance"
     OFFSET_I = "offset_i"
     OFFSET_Q = "offset_q"
     SAMPLING_RATE = "sampling_rate"
@@ -324,6 +436,33 @@ class Parameter(Enum):
     MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
+    HARDWARE_MODULATION = "hardware_modulation"
+    HARDWARE_DEMODULATION = "hardware_demodulation"
+    HARDWARE_INTEGRATION = "hardware_integration"
+    SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
+    SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
+    IF = "intermediate_frequencies"
+    VOLTAGE = "voltage"
+    CURRENT = "current"
+    RAMPING_ENABLED = "ramping_enabled"
+    RAMPING_RATE = "ramp_rate"
+    SPAN = "span"
+    SCATTERING_PARAMETER = "scattering_parameter"
+    FREQUENCY_SPAN = "frequency_span"
+    FREQUENCY_CENTER = "frequency_center"
+    FREQUENCY_START = "frequency_start"
+    FREQUENCY_STOP = "frequency_stop"
+    IF_BANDWIDTH = "if_bandwidth"
+    AVERAGING_ENABLED = "averaging_enabled"
+    NUMBER_AVERAGES = "number_averages"
+    TRIGGER_MODE = "trigger_mode"
+    NUMBER_POINTS = "number_points"
+    NUM_SEQUENCERS = "num_sequencers"
+    INTEGRATION_MODE = "integration_mode"
+    ACQUISITION_TIMEOUT = "acquisition_timeout"
+    MAX_CURRENT = "max_current"
+    MAX_VOLTAGE = "max_voltage"
+    SCOPE_STORE_ENABLED = "scope_store_enabled"
 
 
 class ResultName(Enum):
@@ -337,6 +476,7 @@ class ResultName(Enum):
 
     QBLOX = "qblox"
     SIMULATOR = "simulator"
+    VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
 
 
 class ConnectionName(Enum):
@@ -362,6 +502,8 @@ class InstrumentTypeName(Enum):
         * SGS100A
         * Attenuator
         * Keithley2600
+        * QbloxD5a
+        * QbloxS4g
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -369,6 +511,8 @@ class InstrumentTypeName(Enum):
     ROHDE_SCHWARZ = "SGS100A"
     MINI_CIRCUITS = "Attenuator"
     KEITHLEY2600 = "Keithley2600"
+    QBLOX_D5A = "QbloxD5a"
+    QBLOX_S4G = "QbloxS4g"
 
 
 class LivePlotTypes(Enum):
@@ -384,3 +528,47 @@ class LivePlotTypes(Enum):
     LINES = "LINES"
     SCATTER = "SCATTER"
     HEATMAP = "HEATMAP"
+
+
+class VNATriggerModes(Enum):
+    """Vector Network Analyzers Trigger Modes
+
+    Args:
+        enum (str): Available types of trigger modes:
+        * INT
+        * BUS
+    """
+
+    INT = "INT"
+    BUS = "BUS"
+
+
+class VNAScatteringParameters(Enum):
+    """Vector Network Analyzers Scattering Parameters
+
+    Args:
+        enum (str): Available types of scattering parameters:
+        * S11
+        * S12
+        * S22
+        * S21
+    """
+
+    S11 = "S11"
+    S12 = "S12"
+    S22 = "S22"
+    S21 = "S21"
+
+
+class Node(Enum):
+    """Node elements
+
+    Args:
+        enum (str): Available elements of chip node:
+        * nodes
+        * frequency
+    """
+
+    NODES = "nodes"
+    FREQUENCY = "frequency"
+    QUBIT_INDEX = "qubit_index"

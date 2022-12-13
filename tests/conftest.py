@@ -3,17 +3,28 @@ import copy
 from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from dummy_qblox import DummyPulsar
+from qblox_instruments import PulsarType
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qiboconnection.api import API
 from qiboconnection.typings.connection import (
     ConnectionConfiguration,
     ConnectionEstablished,
 )
+from qpysequence import Sequence
+from qpysequence.acquisitions import Acquisitions
+from qpysequence.program import Program
+from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution import BusesExecution, BusExecution
+from qililab.execution.execution_buses import (
+    PulseScheduledBus,
+    PulseScheduledReadoutBus,
+)
+from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import (
     Keithley2600Controller,
@@ -27,16 +38,8 @@ from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
 from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
     SGS100AController,
 )
-from qililab.instruments import (
-    SGS100A,
-    Attenuator,
-    Keithley2600,
-    MixerBasedSystemControl,
-    QbloxQCM,
-    QbloxQRM,
-    SimulatedSystemControl,
-)
-from qililab.platform import Buses, Platform, Schema
+from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
+from qililab.platform import Platform, Schema
 from qililab.pulse import (
     CircuitToPulses,
     Drag,
@@ -51,8 +54,20 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.remote_connection.remote_api import RemoteAPI
-from qililab.typings import Instrument, Parameter
+from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.system_controls.system_control import SystemControl
+from qililab.system_controls.system_control_types.simulated_system_control import (
+    SimulatedSystemControl,
+)
+from qililab.system_controls.system_control_types.time_domain_control_system_control import (
+    ControlSystemControl,
+)
+from qililab.typings import Parameter
+from qililab.typings.enums import InstrumentName
+from qililab.typings.experiment import ExperimentOptions
+from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
+from qililab.utils.signal_processing import modulate
 
 from .data import (
     FluxQubitSimulator,
@@ -62,6 +77,7 @@ from .data import (
     simulated_experiment_circuit,
 )
 from .side_effect import yaml_safe_load_side_effect
+from .utils import dummy_qrm_name_generator
 
 
 @pytest.fixture(name="platform")
@@ -106,6 +122,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "out0_offset",
+            "out1_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
@@ -128,6 +146,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
             "offset_awg_path0",
             "offset_awg_path1",
         ]
@@ -162,11 +182,14 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "out0_offset",
+            "out1_offset",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
+            "get_acquisitions",
         ]
     )
     mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
@@ -184,6 +207,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "demod_en_acq",
             "integration_length_acq",
             "set",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
             "offset_awg_path0",
             "offset_awg_path1",
         ]
@@ -191,6 +216,81 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
     # connect to instrument
     pulsar_controller_qrm.connect()
     return pulsar_controller_qrm.modules[0]
+
+
+@pytest.fixture(name="qrm_sequence")
+def fixture_qrm_sequence() -> Sequence:
+    """Returns an instance of Sequence with an empty program, a pair of waveforms (ones and zeros), a single
+    acquisition specification and without weights.
+
+    Returns:
+        Sequence: Sequence object.
+    """
+    program = Program()
+    waveforms = Waveforms()
+    waveforms.add_pair_from_complex(np.ones(1000))
+    acquisitions = Acquisitions()
+    acquisitions.add("single")
+    return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
+
+
+@pytest.fixture(name="dummy_qrm")
+def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
+    """dummy QRM
+
+    Args:
+        qrm_sequence (Sequence): _description_
+
+    Returns:
+        DummyPulsar: _description_
+    """
+    qrm = DummyPulsar(name=next(dummy_qrm_name_generator), pulsar_type=PulsarType.PULSAR_QRM)
+    waveform_length = 1000
+    zeros = np.zeros(waveform_length, dtype=np.float32)
+    ones = np.ones(waveform_length, dtype=np.float32)
+    sim_in_0, sim_in_1 = modulate(i=ones, q=zeros, frequency=10e6, phase_offset=0.0)
+    filler = [0.0] * (16380 - waveform_length)
+    sim_in_0 = np.append(sim_in_0, filler)
+    sim_in_1 = np.append(sim_in_1, filler)
+    qrm.feed_input_data(input_path0=sim_in_0, input_path1=sim_in_1)
+    qrm.sequencers[0].sequence(qrm_sequence.todict())
+    qrm.sequencers[0].nco_freq(10e6)
+    qrm.sequencers[0].demod_en_acq(True)
+    qrm.scope_acq_sequencer_select(0)
+    qrm.scope_acq_trigger_mode_path0("sequencer")
+    qrm.scope_acq_trigger_mode_path1("sequencer")
+    qrm.get_sequencer_state(0)
+    qrm.get_acquisition_state(0, 1)
+    return qrm
+
+
+@pytest.fixture(name="qblox_result_noscope")
+def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
+    """fixture_qblox_result_noscope
+
+    Args:
+        dummy_qrm (DummyPulsar): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
+
+
+@pytest.fixture(name="qblox_result_scope")
+def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
+    """fixture_qblox_result_scope
+
+    Args:
+        dummy_qrm (DummyPulsar): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dummy_qrm.store_scope_acquisition(0, "single")
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
 
 
 @pytest.fixture(name="rohde_schwarz_controller")
@@ -302,13 +402,13 @@ def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    experiment = Experiment(platform=platform, sequences=sequences)
+    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
     mock_load.assert_called()
     return experiment
 
@@ -317,7 +417,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
@@ -325,12 +425,17 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
             mock_open.assert_called()
     loop = Loop(
         alias="rs_0",
-        parameter=Parameter.FREQUENCY,
-        start=3544000000,
-        stop=3744000000,
-        num=10,
+        parameter=Parameter.LO_FREQUENCY,
+        options=LoopOptions(
+            start=3544000000,
+            stop=3744000000,
+            num=10,
+        ),
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -339,7 +444,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
@@ -348,12 +453,17 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
             mock_open.assert_called()
     loop = Loop(
         alias="rs_0",
-        parameter=Parameter.FREQUENCY,
-        start=3544000000,
-        stop=3744000000,
-        num=2,
+        parameter=Parameter.LO_FREQUENCY,
+        options=LoopOptions(
+            start=3544000000,
+            stop=3744000000,
+            num=2,
+        ),
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -362,18 +472,33 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     """Return Experiment object."""
-    runcard, sequences = request.param  # type: ignore
+    runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
-    loop3 = Loop(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2)
-    loop2 = Loop(alias="platform", parameter=Parameter.DELAY_BEFORE_READOUT, start=40, stop=100, step=40, loop=loop3)
-    loop = Loop(
-        instrument=Instrument.SIGNAL_GENERATOR, id_=0, parameter=Parameter.FREQUENCY, start=0, stop=1, num=2, loop=loop2
+    loop3 = Loop(
+        alias=InstrumentName.QBLOX_QCM.value,
+        parameter=Parameter.IF,
+        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
     )
-    experiment = Experiment(platform=platform, sequences=sequences, loops=[loop])
+    loop2 = Loop(
+        alias="platform",
+        parameter=Parameter.DELAY_BEFORE_READOUT,
+        options=LoopOptions(start=40, stop=100, step=40),
+        loop=loop3,
+    )
+    loop = Loop(
+        alias=InstrumentName.QBLOX_QRM.value,
+        parameter=Parameter.GAIN,
+        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
+        loop=loop2,
+    )
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
     mock_load.assert_called()
     return experiment
 
@@ -381,27 +506,37 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
     """Return Experiment object."""
-    return Experiment(platform=simulated_platform, sequences=simulated_experiment_circuit)
+    return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
-@pytest.fixture(name="buses_execution")
-def fixture_buses_execution(experiment: Experiment) -> BusesExecution:
-    """Load BusesExecution.
-
-    Returns:
-        BusesExecution: Instance of the BusesExecution class.
-    """
-    return experiment.execution.buses_execution
-
-
-@pytest.fixture(name="bus_execution")
-def fixture_bus_execution(buses_execution: BusesExecution) -> BusExecution:
-    """Load BusExecution.
+@pytest.fixture(name="execution_manager")
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+    """Load ExecutionManager.
 
     Returns:
-        BusExecution: Instance of the BusExecution class.
+        ExecutionManager: Instance of the ExecutionManager class.
     """
-    return buses_execution.buses[0]
+    return experiment._execution.execution_manager  # pylint: disable=protected-access
+
+
+@pytest.fixture(name="pulse_scheduled_bus")
+def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+    """Load PulseScheduledBus.
+
+    Returns:
+        PulseScheduledBus: Instance of the PulseScheduledBus class.
+    """
+    return execution_manager.pulse_scheduled_buses[0]
+
+
+@pytest.fixture(name="pulse_scheduled_readout_bus")
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledReadoutBus:
+    """Load PulseScheduledReadoutBus.
+
+    Returns:
+        PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
+    """
+    return execution_manager.pulse_scheduled_readout_buses[0]
 
 
 @pytest.fixture(name="pulse")
@@ -449,12 +584,22 @@ def fixture_readout_pulse() -> ReadoutPulse:
     return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
 
 
-@pytest.fixture(name="mixer_based_system_control")
-def fixture_mixer_based_system_control(platform: Platform) -> MixerBasedSystemControl:
-    """Load SimulatedSystemControl.
+@pytest.fixture(name="base_system_control")
+def fixture_base_system_control(platform: Platform) -> SystemControl:
+    """Load SystemControl.
 
     Returns:
-        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
+        SystemControl: Instance of the ControlSystemControl class.
+    """
+    return platform.buses[0].system_control
+
+
+@pytest.fixture(name="time_domain_control_system_control")
+def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
+    """Load ControlSystemControl.
+
+    Returns:
+        ControlSystemControl: Instance of the ControlSystemControl class.
     """
     return platform.buses[0].system_control
 
@@ -470,7 +615,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.instruments.system_control.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 
@@ -495,7 +640,7 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
 @pytest.fixture(name="loop")
 def fixture_loop() -> Loop:
     """Return Platform object."""
-    return Loop(alias="X", parameter=Parameter.AMPLITUDE, start=0, stop=1)
+    return Loop(alias="X", parameter=Parameter.AMPLITUDE, options=LoopOptions(start=0, stop=1))
 
 
 @pytest.fixture(
@@ -524,77 +669,6 @@ def platform_yaml() -> Platform:
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
-
-
-def buses() -> Buses:
-    """Load Buses.
-
-    Returns:
-        Buses: Instance of the Buses class.
-    """
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return platform.buses
-
-
-def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: MagicMock):
-    """Mock dynamically created attributes."""
-    mock_rs_instance = mock_rs.return_value
-    mock_rs_instance.mock_add_spec(["power", "frequency"])
-    mock_pulsar_instance = mock_pulsar.return_value
-    mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
-        {
-            "single": {
-                "index": 0,
-                "acquisition": {
-                    "scope": {
-                        "path0": {"data": [1, 1, 1, 1, 1, 1, 1, 1], "out-of-range": False, "avg_cnt": 1000},
-                        "path1": {"data": [0, 0, 0, 0, 0, 0, 0, 0], "out-of-range": False, "avg_cnt": 1000},
-                    },
-                    "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
-                    },
-                },
-            }
-        }
-    )
-    mock_pulsar_instance.mock_add_spec(
-        [
-            "reference_source",
-            "sequencer0",
-            "scope_acq_avg_mode_en_path0",
-            "scope_acq_avg_mode_en_path1",
-            "scope_acq_trigger_mode_path0",
-            "scope_acq_trigger_mode_path1",
-            "sequencers",
-            "scope_acq_sequencer_select",
-        ]
-    )
-    mock_pulsar_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "offset_awg_path0",
-            "offset_awg_path1",
-        ]
-    )
-    mock_keithley_instance = mock_keithley.return_value
-    mock_keithley_instance.smua = MagicMock(KeithleyChannel)
-    mock_keithley_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
 
 
 @pytest.fixture(scope="session", name="mocked_connection_configuration")

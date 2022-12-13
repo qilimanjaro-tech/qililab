@@ -7,6 +7,7 @@ import numpy as np
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Keithley2600Driver
+from qililab.typings.enums import Parameter
 
 
 @InstrumentFactory.register
@@ -34,24 +35,37 @@ class Keithley2600(Instrument):
     device: Keithley2600Driver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    @Instrument.CheckParameterValueFloatOrInt
+    def setup(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,
+    ):
         """Setup instrument."""
+        if parameter == Parameter.MAX_CURRENT:
+            self.max_current = float(value)
+            self.device.smua.limiti(self.max_current)
+            return
+        if parameter == Parameter.MAX_VOLTAGE:
+            self.max_voltage = float(value)
+            self.device.smua.limitv(self.max_voltage)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
+
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """performs an initial setup"""
         self.device.smua.limiti(self.max_current)
         self.device.smua.limitv(self.max_voltage)
 
     @Instrument.CheckDeviceInitialized
-    def initial_setup(self):
-        """performs an initial setup.
-        For this instrument it is the same as a regular setup"""
-        self.setup()
+    def turn_on(self):
+        """Turn on an instrument."""
 
     @Instrument.CheckDeviceInitialized
-    def start(self):
-        """Start generating microwaves."""
-
-    @Instrument.CheckDeviceInitialized
-    def stop(self):
-        """Stop generating microwaves."""
+    def turn_off(self):
+        """Turn off an instrument."""
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
@@ -85,7 +99,7 @@ class Keithley2600(Instrument):
         return self.settings.max_current
 
     @max_current.setter
-    def max_current(self, value):
+    def max_current(self, value: float):
         """Keithley2600 'max_current' setter property.
 
         Args:
@@ -104,7 +118,7 @@ class Keithley2600(Instrument):
         return self.settings.max_voltage
 
     @max_voltage.setter
-    def max_voltage(self, value):
+    def max_voltage(self, value: float):
         """Keithley2600 'max_voltage' setter property.
 
         Args:

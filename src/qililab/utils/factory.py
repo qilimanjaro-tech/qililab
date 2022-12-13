@@ -1,4 +1,5 @@
 """Class used as hashtable to load the class corresponding to a given category"""
+from enum import Enum
 from typing import Dict, Type, TypeVar
 
 from qililab.typings.factory_element import FactoryElement
@@ -22,6 +23,6 @@ class Factory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str):
+    def get(cls, name: str | Enum):
         """Return class attribute."""
-        return cls.handlers[name]
+        return cls.handlers[name.value] if isinstance(name, Enum) else cls.handlers[name]

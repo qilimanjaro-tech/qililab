@@ -1,6 +1,6 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
@@ -16,38 +16,44 @@ class AWG(Instrument):
         """Contains the settings of a AWG.
 
         Args:
-            frequency (float): Intermediate frequency (IF).
-            gain (float): Gain step used by the sequencer.
-            offset_i (float): I offset (unitless). amplitude + offset should be in range [0 to 1].
-            offset_q (float): Q offset (unitless). amplitude + offset should be in range [0 to 1].
-            epsilon (float): Amplitude added to the Q channel.
-            delta (float): Dephasing.
+            num_sequencers (int): Number of sequencers (physical I/Q pairs)
+            intermediate_frequencies (List[float]): Frequency for each sequencer
+            gain (List[float]): Gain step used by the sequencer.
+            gain_imbalance (float): Amplitude added to the Q channel.
+            phase_imbalance (float): Dephasing.
+            delta (List[float]): Dephasing.
+            offset_i (List[float]): I offset (unitless). amplitude + offset should be in range [0 to 1].
+            offset_q (List[float]): Q offset (unitless). amplitude + offset should be in range [0 to 1].
+            hardware_modulation (List[bool]): Flag to determine if the modulation of a specific channel is performed by the device
         """
 
-        frequency: float
         num_sequencers: int
+        intermediate_frequencies: List[float]
         gain: List[float]
-        epsilon: List[float]
-        delta: List[float]
+        gain_imbalance: List[float]
+        phase_imbalance: List[float]
         offset_i: List[float]
         offset_q: List[float]
-        multiplexing_frequencies: List[float] = field(default_factory=list)
-
-        def __post_init__(self):
-            """Set the multiplexing_frequencies to the intermediate frequency by default."""
-            super().__post_init__()
-            if not self.multiplexing_frequencies:
-                self.multiplexing_frequencies = [self.frequency]
+        hardware_modulation: List[bool]
 
     settings: AWGSettings
 
     @abstractmethod
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Run execution of a pulse sequence.
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
         """
+
+    @abstractmethod
+    def run(self):
+        """Run the uploaded program"""
 
     @property
     def frequency(self):
@@ -56,7 +62,9 @@ class AWG(Instrument):
         Returns:
             float: settings.frequency.
         """
-        return self.settings.frequency
+        # FIXME: this must be deleted, as an AWG has a frequency for each channel.
+        # Returning the first frequency for now.
+        return self.settings.intermediate_frequencies[0]
 
     @property
     def num_sequencers(self):
@@ -95,33 +103,28 @@ class AWG(Instrument):
         return self.settings.offset_q
 
     @property
-    def epsilon(self):
-        """QbloxPulsar 'epsilon' property.
+    def gain_imbalance(self):
+        """QbloxPulsar 'gain_imbalance' property.
 
         Returns:
-            float: settings.epsilon.
+            float: settings.gain_imbalance.
         """
-        return self.settings.epsilon
+        return self.settings.gain_imbalance
 
     @property
-    def delta(self):
-        """QbloxPulsar 'delta' property.
+    def phase_imbalance(self):
+        """QbloxPulsar 'phase_imbalance' property.
 
         Returns:
-            float: settings.delta.
+            float: settings.phase_imbalance.
         """
-        return self.settings.delta
+        return self.settings.phase_imbalance
 
     @property
-    def multiplexing_frequencies(self):
-        """QbloxPulsar 'multiplexing_frequencies' property.
+    def intermediate_frequencies(self):
+        """QbloxPulsar 'intermediate_frequencies' property.
 
         Returns:
-            float: settings.multiplexing_frequencies.
+            float: settings.intermediate_frequencies.
         """
-        return self.settings.multiplexing_frequencies
-
-    @multiplexing_frequencies.setter
-    def multiplexing_frequencies(self, frequencies: List[float]):
-        """QbloxPulsar 'multiplexing_frequencies' property setter."""
-        self.settings.multiplexing_frequencies = frequencies
+        return self.settings.intermediate_frequencies

@@ -1,16 +1,20 @@
 """Bus class."""
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import List
 
-from qililab.chip import Chip, Coupler, Qubit, Resonator
+from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
-from qililab.instruments import Attenuator, Instruments, SystemControl
+from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
-from qililab.typings import BusSubcategory, Category
+from qililab.system_controls import SystemControl
+from qililab.typings import BusCategory, BusSubCategory, Category, Node, Parameter
+from qililab.typings.enums import BusName
+from qililab.typings.factory_element import FactoryElement
 from qililab.utils import Factory
 
 
-class Bus:
+class Bus(FactoryElement):
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
@@ -19,22 +23,24 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    targets: List[Qubit | Resonator | Coupler]  # port target (or targets in case of multiple resonators)
+    name: BusName
+    targets: List[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
     class BusSettings(DDBBElement):
         """Bus settings.
 
         Args:
-            subcategory (BusSubcategory): Bus subcategory. Options are "readout" and "control".
+            bus_category (BusCategory): Bus category.
+            bus_subcategory (BusSubCategory): Bus subcategory
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (int): Chip's port where bus is connected.
         """
 
-        subcategory: BusSubcategory
+        bus_category: BusCategory
+        bus_subcategory: BusSubCategory
         system_control: SystemControl
         port: int
-        attenuator: Attenuator | None = None
 
         def __iter__(self):
             """Iterate over Bus elements.
@@ -43,7 +49,7 @@ class Bus:
                 Tuple[str, ]: _description_
             """
             for name, value in self.__dict__.items():
-                if name in [Category.SYSTEM_CONTROL.value, Category.ATTENUATOR.value] and value is not None:
+                if name == Category.SYSTEM_CONTROL.value and value is not None:
                     yield name, value
 
     settings: BusSettings
@@ -78,35 +84,45 @@ class Bus:
         return self.settings.port
 
     @property
-    def attenuator(self) -> Attenuator | None:
-        """Bus 'attenuator' property.
+    def category(self):
+        """Bus 'category' property.
 
         Returns:
-            List[int]: settings.attenuator.
+            str: settings.category.
         """
-        return self.settings.attenuator
+        return self.settings.category
 
     @property
-    def subcategory(self) -> BusSubcategory:
+    def bus_category(self) -> BusCategory:
+        """Bus 'bus_category' property.
+
+        Returns:
+            BusCategory: Category of the bus.
+        """
+        return self.settings.bus_category
+
+    @property
+    def bus_subcategory(self) -> BusSubCategory:
         """Bus 'subcategory' property.
 
         Returns:
-            BusSubcategory: Subcategory of the bus. Options are "control" or "readout".
+            BusSubCategory: Subcategory of the bus
         """
-        return self.settings.subcategory
+        return self.settings.bus_subcategory
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
-        for name, value in self.settings:
+        for name, value in deepcopy(self.settings):
             instrument_object = None
             category = Category(name)
             if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
-                subcategory = value.get(RUNCARD.SUBCATEGORY)
-                if not isinstance(subcategory, str):
-                    raise ValueError("Invalid value for subcategory.")
-                instrument_object = Factory.get(name=subcategory)(settings=value, instruments=instruments)
-            if category == Category.ATTENUATOR and isinstance(value, str):
-                instrument_object = instruments.get_instrument(alias=value)
+                system_control_category = value.get(RUNCARD.SYSTEM_CONTROL_CATEGORY)
+                if not isinstance(system_control_category, str):
+                    raise ValueError(f"Invalid value for system_control_category: {system_control_category}")
+                system_control_subcategory = value.get(RUNCARD.SYSTEM_CONTROL_SUBCATEGORY)
+                if system_control_subcategory is not None and not isinstance(system_control_category, str):
+                    raise ValueError(f"Invalid value for system_control_subcategory: {system_control_subcategory}")
+                instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))(settings=value, instruments=instruments)
             if instrument_object is None:
                 raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
             setattr(self.settings, name, instrument_object)
@@ -114,20 +130,27 @@ class Bus:
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
         return (
-            f"Bus {self.id_} ({self.subcategory.value}):  "
-            + f"----|{self.system_control}|--"
-            + (f"--|{self.attenuator.alias}|--" if self.attenuator is not None else "")
+            f"Bus {self.id_} ({self.bus_category.value} {self.bus_subcategory.value}):  "
+            + f"----{self.system_control}---"
             + "".join(f"--|{target}|----" for target in self.targets)
         )
+
+    def __eq__(self, other: object) -> bool:
+        """compare two Bus objects"""
+        return str(self) == str(other) if isinstance(other, Bus) else False
 
     @property
     def target_freqs(self):
         """Bus 'target_freqs' property.
 
         Returns:
-            List[float]: Frequencies of the nodes targetted by the bus.
+            List[float]: Frequencies of the nodes that have frequencies
         """
-        return [target.frequency for target in self.targets]
+        return list(
+            filter(
+                None, [target.frequency if hasattr(target, Node.FREQUENCY.value) else None for target in self.targets]
+            )
+        )
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
@@ -135,13 +158,22 @@ class Bus:
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
-        return (
-            {
-                RUNCARD.ID: self.id_,
-                RUNCARD.CATEGORY: self.settings.category.value,
-                RUNCARD.SUBCATEGORY: self.subcategory.value,
-                RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
-            }
-            | ({RUNCARD.ATTENUATOR: self.attenuator.alias} if self.attenuator is not None else {})
-            | {BUS.PORT: self.port}
-        )
+        return {
+            RUNCARD.ID: self.id_,
+            RUNCARD.NAME: self.name.value,
+            RUNCARD.CATEGORY: self.category.value,
+            RUNCARD.BUS_CATEGORY: self.bus_category.value,
+            RUNCARD.BUS_SUBCATEGORY: self.bus_subcategory.value,
+            RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
+            BUS.PORT: self.port,
+        }
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """_summary_
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+        """
+        self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)

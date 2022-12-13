@@ -1,11 +1,11 @@
 """Execution class."""
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
-from qililab.execution.buses_execution import BusesExecution
+from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.result import Result
+from qililab.typings.execution import ExecutionOptions
 from qililab.utils import LivePlot
 
 
@@ -13,46 +13,71 @@ from qililab.utils import LivePlot
 class Execution:
     """Execution class."""
 
-    buses_execution: BusesExecution
+    execution_manager: ExecutionManager
     platform: Platform
+    options: ExecutionOptions
 
     def __enter__(self):
         """Code executed when starting a with statement."""
-        self.connect()
-        self.setup()
-        self.start()
+        self.connect_setup_and_turn_on_if_needed()
+
+    def connect_setup_and_turn_on_if_needed(self):
+        """connect, setup, and turn on if needed."""
+        if self.options.automatic_connect_to_instruments:
+            self.connect()
+        if self.options.set_initial_setup:
+            self.set_initial_setup()
+        if self.options.automatic_turn_on_instruments:
+            self.turn_on_instruments()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Code executed when stopping a with statement."""
-        self.close()
+        if self.options.automatic_turn_off_instruments:
+            self.turn_off_instruments()
+        if self.options.automatic_disconnect_to_instruments:
+            self.disconnect()
 
     def connect(self):
         """Connect to the instruments."""
         self.platform.connect()
 
-    def setup(self):
+    def set_initial_setup(self):
         """Setup instruments with experiment settings."""
-        self.buses_execution.setup()
+        self.platform.set_initial_setup()
 
-    def start(self):
+    def turn_off_instruments(self):
         """Start/Turn on the instruments."""
-        self.buses_execution.start()
+        self.platform.turn_off_instruments()
 
-    def run(
-        self, nshots: int, repetition_duration: int, software_average: int, plot: LivePlot | None, path: Path
-    ) -> List[Result]:
-        """Run the given pulse sequence."""
-        return self.buses_execution.run(
+    def turn_on_instruments(self):
+        """Start/Turn on the instruments."""
+        self.platform.turn_on_instruments()
+
+    def generate_program_and_upload(
+        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
+
+        Args:
+            schedule_index_to_load (int): specific schedule to load
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): maximum window for the duration of one hardware repetition
+            path (Path): path to save the program to upload
+        """
+        return self.execution_manager.generate_program_and_upload(
+            schedule_index_to_load=schedule_index_to_load,
             nshots=nshots,
             repetition_duration=repetition_duration,
-            software_average=software_average,
-            plot=plot,
             path=path,
         )
 
-    def close(self):
-        """Close connection to the instruments."""
-        self.platform.close()
+    def run(self, plot: LivePlot | None, path: Path) -> Result | None:
+        """Run the given pulse sequence."""
+        return self.execution_manager.run(plot=plot, path=path)
+
+    def disconnect(self):
+        """Disconnect from the instruments."""
+        self.platform.disconnect()
 
     def draw(self, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
@@ -63,13 +88,13 @@ class Execution:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self.buses_execution.draw(resolution=resolution, idx=idx)
+        return self.execution_manager.draw(resolution=resolution, idx=idx)
 
     @property
-    def num_sequences(self):
-        """Execution 'num_sequences' property.
+    def num_schedules(self):
+        """Execution 'num_schedules' property.
 
         Returns:
             int: Number of sequences played.
         """
-        return self.buses_execution.num_sequences
+        return self.execution_manager.num_schedules

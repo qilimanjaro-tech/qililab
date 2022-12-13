@@ -68,8 +68,8 @@ schema:
     num_bins: 1
     num_sequencers: 1
     gain: [1]
-    epsilon: [0]
-    delta: [0]
+    gain_imbalance: [0]
+    phase_imbalance: [0]
     offset_i: [0]
     offset_q: [0]
     sync_enabled: true
@@ -81,14 +81,15 @@ schema:
     frequency: 2.e+07
     num_sequencers: 1
     gain: [1]
-    epsilon: [0]
-    delta: [0]
+    gain_imbalance: [0]
+    phase_imbalance: [0]
     offset_i: [0]
     offset_q: [0]
     acquisition_delay_time: 100
     sync_enabled: true
     scope_acquire_trigger_mode: sequencer
     scope_hardware_averaging: false
+    scope_store_enabled: false
     sampling_rate: 1.e+09
     num_bins: 1
     integration: true

@@ -6,10 +6,10 @@ import pytest
 from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.instruments import QubitControl, QubitReadout, SignalGenerator
+from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Buses, Platform, Schema
 from qililab.settings import RuncardSchema
-from qililab.typings import Category
+from qililab.typings.enums import InstrumentName
 
 from ...conftest import platform_db, platform_yaml
 
@@ -41,7 +41,7 @@ class TestPlatform:
     def test_get_element_method_unknown_raises_error(self, platform: Platform):
         """Test get_element method with unknown element."""
         with pytest.raises(ValueError):
-            platform.get_element(category=Category.AWG, id_=6)
+            platform.get_element(alias="ABC")
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -61,23 +61,23 @@ class TestPlatform:
 
     def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
-        element = platform.get_element(category=Category.SIGNAL_GENERATOR, id_=0)
+        element = platform.get_element(alias="rs_0")
         assert isinstance(element, SignalGenerator)
 
     def test_qubit_0_instance(self, platform: Platform):
         """Test qubit 1 instance."""
-        element = platform.get_element(category=Category.NODE, id_=3)
+        element = platform.get_element(alias="qubit")
         assert isinstance(element, Qubit)
 
     def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        element = platform.get_element(category=Category.AWG, id_=0)
-        assert isinstance(element, QubitControl)
+        element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
+        assert isinstance(element, AWG)
 
     def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element = platform.get_element(category=Category.AWG, id_=1)
-        assert isinstance(element, QubitReadout)
+        element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
+        assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.platform.platform_manager.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):

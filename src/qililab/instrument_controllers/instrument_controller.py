@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, List, Sequence, Type, get_type_hints
 
+from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_connections.connection import Connection
 from qililab.instruments.instrument import Instrument
@@ -65,7 +66,7 @@ class InstrumentController(BusElement, ABC):
     device: Device  # a subtype of device must be specified by the subclass
     number_available_modules: int  # to be set by child classes
     modules: Sequence[Instrument]
-    connected_modules_slot_ids: List[int]
+    connected_modules_slot_ids: List[int]  # slot_id represents the number displayed in the cluster
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""
@@ -145,7 +146,12 @@ class InstrumentController(BusElement, ABC):
         self.device = None
         self._release_device_to_all_modules()
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool):
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        channel_id: int | None = None,  # pylint: disable=unused-argument
+    ):
         """updates the reset settings for the controller"""
         if parameter is not Parameter.RESET:
             raise ValueError("Reset is the only property that can be set for an Instrument Controller.")
@@ -154,34 +160,43 @@ class InstrumentController(BusElement, ABC):
         self.settings.reset = value
 
     @CheckConnected
-    def stop(self):
-        """Stop instrument."""
+    def turn_on(self):
+        """Turn on an instrument."""
         for module in self.modules:
-            module.stop()
+            logger.info("Turn on instrument %s.", module.alias or module.name.value)
+            module.turn_on()
+
+    @CheckConnected
+    def turn_off(self):
+        """Turn off an instrument."""
+        for module in self.modules:
+            logger.info("Turn off instrument %s.", module.alias or module.name.value)
+            module.turn_off()
 
     @CheckConnected
     def reset(self):
         """Reset instrument."""
         for module in self.modules:
+            logger.info("Reset instrument %s.", module.alias or module.name.value)
             module.reset()
 
     @CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         for module in self.modules:
+            logger.info("Initial setup to instrument %s.", module.alias or module.name.value)
+
             module.initial_setup()
 
     def connect(self):
-        """Establishes the connection with the instrument, performs the initial setup and resets it."""
+        """Establishes the connection with the instrument and performs a reset (if necessary)."""
         self._initialize_device_and_set_to_all_modules()
         self.connection.connect(device=self.device, device_name=str(self))
         if self.settings.reset:
             self.reset()
-        self.initial_setup()
 
-    def close(self):
-        """Stops all modules, resets them, close the connection to the instrument and releases the device."""
-        self.stop()
+    def disconnect(self):
+        """Resets the devices (if needed), close the connection to the instrument and releases the device."""
         if self.settings.reset:
             self.reset()
         self.connection.close()
@@ -248,7 +263,7 @@ class InstrumentController(BusElement, ABC):
     def to_dict(self):
         """Return a dict representation of the InstrumentReference class."""
         return {
-            RUNCARD.NAME: self.name.value,
+            RUNCARD.NAME: self.name,
             RUNCARD.ID: self.id_,
             RUNCARD.ALIAS: self.alias,
             RUNCARD.CATEGORY: self.category.value,

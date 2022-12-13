@@ -23,7 +23,7 @@ class Results:
     """Results class."""
 
     software_average: int
-    num_sequences: int
+    num_schedules: int
     loops: List[Loop] | None = None
     shape: List[int] = field(default_factory=list)
     results: List[Result] = field(default_factory=list)
@@ -31,11 +31,11 @@ class Results:
     _data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self):
-        """Add num_sequences to shape."""
+        """Add num_schedules to shape."""
         if not self.shape:
             self.shape = compute_shapes_from_loops(loops=self.loops)
-        if self.num_sequences > 1:
-            self.shape.append(self.num_sequences)
+        if self.num_schedules > 1:
+            self.shape.append(self.num_schedules)
         if self.software_average > 1:
             self.shape.append(self.software_average)
         if self.results and isinstance(self.results[0], dict):
@@ -45,13 +45,13 @@ class Results:
         if self.loops is not None and isinstance(self.loops[0], dict):
             self.loops = [Loop(**loop) for loop in self.loops]
 
-    def add(self, result: List[Result]):
+    def add(self, result: Result):
         """Append an ExecutionResults object.
 
         Args:
-            result (List[Result]): List of Result objects.
+            result (Result): Result object.
         """
-        self.results += result
+        self.results.append(result)
 
     def _generate_new_probabilities_column_names(self):
         """Checks shape, num_sequence and software_average and returns with that the list of columns that should
@@ -59,7 +59,7 @@ class Results:
         new_columns = [RESULTSDATAFRAME.QUBIT_INDEX] + [
             f"{RESULTSDATAFRAME.LOOP_INDEX}{i}" for i in range(len(compute_shapes_from_loops(loops=self.loops)))
         ]
-        if self.num_sequences > 1:
+        if self.num_schedules > 1:
             new_columns.append(RESULTSDATAFRAME.SEQUENCE_INDEX)
         if self.software_average > 1:
             new_columns.append(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX)
@@ -171,7 +171,7 @@ class Results:
         new_columns = [
             f"{RESULTSDATAFRAME.LOOP_INDEX}{i}" for i in range(len(compute_shapes_from_loops(loops=self.loops)))
         ]
-        if self.num_sequences > 1:
+        if self.num_schedules > 1:
             new_columns.append(RESULTSDATAFRAME.SEQUENCE_INDEX)
         if self.software_average > 1:
             new_columns.append(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX)
@@ -266,7 +266,7 @@ class Results:
         """
         return {
             EXPERIMENT.SOFTWARE_AVERAGE: self.software_average,
-            EXPERIMENT.NUM_SEQUENCES: self.num_sequences,
+            EXPERIMENT.NUM_SCHEDULES: self.num_schedules,
             EXPERIMENT.SHAPE: [] if self.loops is None else compute_shapes_from_loops(loops=self.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             EXPERIMENT.RESULTS: [result.to_dict() for result in self.results],

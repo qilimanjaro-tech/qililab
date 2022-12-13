@@ -2,6 +2,7 @@
 from dataclasses import dataclass, fields
 from enum import Enum
 from types import NoneType
+from typing import Any
 
 from qililab.typings import Category, Parameter
 
@@ -27,12 +28,47 @@ class DDBBElement:
             if isinstance(field.type, type) and issubclass(field.type, Enum):
                 setattr(self, field.name, field.type(getattr(self, field.name)))
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool):
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Cast the new value to its corresponding type and set the new attribute."""
-        param = parameter.value
-        attr_type = type(getattr(self, param))
+        param: str = parameter.value
+        attribute = getattr(self, param)
+
+        if isinstance(attribute, list):
+            self._set_parameter_to_attribute_list(value=value, attributes=attribute, channel_id=channel_id)
+            return
+        self._set_parameter_to_attribute(parameter_name=param, value=value, attribute=attribute)
+
+    def _set_parameter_to_attribute(self, value: float | str | bool, parameter_name: str, attribute: Any):
+        """Set the parameter value to its corresponding attribute
+        Args:
+            value (float | str | bool): _description_
+            parameter_name (str): _description_
+            attribute (Any): _description_
+        """
+        attr_type = type(attribute)
         if attr_type == int:  # FIXME: Depending on how we define de value, python thinks it is an int
             attr_type = float
         if attr_type != NoneType:
             value = attr_type(value)
-        setattr(self, param, value)
+        setattr(self, parameter_name, value)
+
+    def _set_parameter_to_attribute_list(
+        self,
+        value: float | str | bool,
+        attributes: list[float | str | bool],
+        channel_id: int | None,
+    ):
+        """Set the parameter value to its corresponding attribute list element
+        Args:
+            value (float | str | bool): _description_
+            attribute (list[float  |  str  |  bool]): _description_
+            channel_id (int | None): _description_
+        """
+        if channel_id is None:
+            raise ValueError("No list index specified when updating a list of parameters.")
+        if len(attributes) <= channel_id:
+            raise ValueError(
+                "Index out of bounds: Trying to update a list of parameters with length "
+                + f"{len(attributes)} at position {channel_id}"
+            )
+        attributes[channel_id] = value

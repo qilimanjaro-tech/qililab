@@ -9,9 +9,11 @@ from qibo.gates import M
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.typings import Instrument, Parameter
+from qililab.typings import Parameter
+from qililab.typings.enums import InstrumentName
+from qililab.typings.experiment import ExperimentOptions, ExperimentSettings
 
-from ...conftest import mock_instruments
+from .aux_methods import mock_instruments
 
 
 class TestExperiment:
@@ -23,23 +25,27 @@ class TestExperiment:
 
     def test_execution_attribute_instance(self, experiment: Experiment):
         """Test execution attribute instance."""
-        assert isinstance(experiment.execution, Execution)
+        assert isinstance(experiment._execution, Execution)  # pylint: disable=protected-access
 
-    def test_parameters_property(self, experiment: Experiment):
-        """Test parameters property."""
-        assert isinstance(experiment.parameters, str)
+    def test_options_property(self, experiment: Experiment):
+        """Test options property."""
+        assert isinstance(experiment.options, ExperimentOptions)
+
+    def test_settings_property(self, experiment: Experiment):
+        """Test settings property."""
+        assert isinstance(experiment.options.settings, ExperimentSettings)
 
     def test_software_average_property(self, experiment: Experiment):
         """Test software_average property."""
-        assert experiment.software_average == experiment.settings.software_average
+        assert experiment.software_average == experiment.options.settings.software_average
 
     def test_hardware_average_property(self, experiment: Experiment):
         """Test hardware_average property."""
-        assert experiment.hardware_average == experiment.settings.hardware_average
+        assert experiment.hardware_average == experiment.options.settings.hardware_average
 
     def test_repetition_duration_property(self, experiment: Experiment):
         """Test repetition_duration property."""
-        assert experiment.repetition_duration == experiment.settings.repetition_duration
+        assert experiment.repetition_duration == experiment.options.settings.repetition_duration
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method."""
@@ -65,24 +71,23 @@ class TestExperiment:
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
-        if experiment_all_platforms.loops is not None:
-            print(experiment_all_platforms.loops[0].num_loops)
+        if experiment_all_platforms.options.loops is not None:
+            print(experiment_all_platforms.options.loops[0].num_loops)
 
     def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
         circuit.add(M(0))
-        experiment = Experiment(sequences=circuit, platform=platform)
+        experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method."""
         str(experiment_all_platforms)
-        str(experiment_all_platforms.settings)
 
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
-        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
@@ -102,7 +107,7 @@ class TestExperiment:
         experiment.platform.connect()
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        experiment.set_parameter(instrument=Instrument.AWG, id_=0, parameter=Parameter.FREQUENCY, value=1e9)
+        experiment.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
@@ -137,7 +142,7 @@ class TestExperiment:
         # add dynamically created attributes
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment.platform.connect()
-        experiment.platform.close()
+        experiment.platform.disconnect()
         mock_reset.assert_called()
         assert mock_reset.call_count == 12
 
@@ -159,25 +164,25 @@ class TestExperiment:
         # add dynamically created attributes
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         experiment_reset.platform.connect()
-        experiment_reset.platform.close()
+        experiment_reset.platform.disconnect()
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
-@patch("qililab.execution.buses_execution.open")
-@patch("qililab.experiment.experiment.open")
+@patch("qililab.execution.execution_preparation.open")
 @patch("qililab.utils.results_data_management.os.makedirs")
-@patch("qililab.instruments.system_control.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.execution.execution_manager.yaml.safe_dump")
+@patch("qililab.execution.execution_manager.open")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
     def test_execute(
         self,
+        mock_open_0: MagicMock,
+        mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
         mock_open: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump: MagicMock,
         simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
@@ -193,7 +198,7 @@ class TestSimulatedExecution:
         # Assert called functions
         mock_makedirs.assert_called()
         mock_open.assert_called()
-        mock_open_1.assert_called()
+        mock_open_0.assert_called()
         mock_dump.assert_called()
 
         # Test result
