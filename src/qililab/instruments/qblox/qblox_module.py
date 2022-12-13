@@ -142,7 +142,7 @@ class QbloxModule(AWG):
         # FIXME: using first channel instead of the desired
         bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins[0]), step=1)
         avg_loop = Loop(name="average", begin=nshots)
-        bin_loop.append_block(block=avg_loop, bot_position=3)
+        bin_loop.append_component(component=avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=bin_loop)
