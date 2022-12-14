@@ -166,7 +166,9 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
-        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+        wait_time = repetition_duration - avg_loop.duration_iter
+        if wait_time > self._MIN_WAIT_TIME:
+            avg_loop.append_component(long_wait(wait_time=wait_time))
         return program
 
     def _generate_acquisitions(self, sequencer: int) -> Acquisitions:
