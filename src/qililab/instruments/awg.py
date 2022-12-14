@@ -84,12 +84,15 @@ class AWG(Instrument):
     def run(self):
         """Run the uploaded program"""
 
-    @property
-    def frequency(self):
+    def frequency(self, sequencer_id: int | None = None, port_id: int | None = None):
         """AWG 'frequency' property."""
-        # FIXME: this must be deleted, as an AWG has a frequency for each channel.
-        # Returning the first frequency for now.
-        return self.intermediate_frequencies[0]
+        if sequencer_id is None and port_id is None:
+            raise ValueError("one of 'sequencer_id' or 'port_id' must be defined.")
+        if port_id is not None:
+            sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=port_id)
+        if sequencer_id is None:
+            raise ValueError("'sequencer_id' must be defined.")
+        return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
 
     @property
     def num_sequencers(self):
@@ -143,7 +146,7 @@ class AWG(Instrument):
         Returns:
             AWGSequencerPathIdentifier: path identifier
         """
-        path_identifier: list[AWGSequencerPathIdentifier] = [
+        path_identifier = [
             iq_channel.sequencer_path_i_channel
             for iq_channel in self.awg_iq_channels
             if iq_channel.sequencer_id_i_channel == sequencer_id
@@ -165,11 +168,12 @@ class AWG(Instrument):
         Returns:
             _type_: _description_
         """
-        if len(path_identifier) <= 0:
-            raise ValueError(f"No I Channel mapped to the sequencer with id: {sequencer_id}")
-        if len(path_identifier) > 1:
-            raise ValueError(f"More than one I Channel mapped to the sequencer with id: {sequencer_id}")
-        return path_identifier[0]
+        return self._check_only_one_element_or_raise_error(
+            path_identifier,
+            "No I Channel mapped to the sequencer with id: ",
+            sequencer_id,
+            "More than one I Channel mapped to the sequencer with id: ",
+        )
 
     def get_sequencer_path_id_mapped_to_q_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
         """get sequencer path id mapped to q channel of sequencer Id
@@ -191,3 +195,72 @@ class AWG(Instrument):
     def to_dict(self):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
+
+    def get_sequencer_id_from_chip_port_id(self, chip_port_id: int) -> int:
+        """Get sequencer id from the chip port identifier
+
+        Args:
+            chip_port_id (int): chip port identifier
+
+        Returns:
+            int: sequencer identifier
+        """
+        sequencer_identifiers = [
+            sequencer.identifier for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id
+        ]
+
+        return self._check_only_one_element_or_raise_error(
+            sequencer_identifiers,
+            "No sequencer found mapped to the chip port with id: ",
+            chip_port_id,
+            "More than one sequencer mapped to the chip port with id: ",
+        )
+
+    def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
+        """Get sequencer from the sequencer identifier
+
+        Args:
+            sequencer_id (int): sequencer identifier
+
+        Returns:
+            AWGSequencer: sequencer associated with the sequencer_id
+        """
+        sequencer_identifiers = [
+            sequencer.identifier for sequencer in self.awg_sequencers if sequencer.identifier == sequencer_id
+        ]
+
+        sequencer_identifier = self._check_only_one_element_or_raise_error(
+            sequencer_identifiers,
+            "No sequencer found with id: ",
+            sequencer_id,
+            "More than one sequencer found with id: ",
+        )
+        return self.awg_sequencers[sequencer_identifier]
+
+    def _check_only_one_element_or_raise_error(
+        self,
+        elements: Sequence[int | AWGSequencerPathIdentifier],
+        error_text_no_element: str,
+        value: int,
+        error_text_more_elements: str,
+    ):
+        """check only one element is in the list or raise an error
+
+        Args:
+            elements (list[int  |  AWGSequencerPathIdentifier]): _description_
+            error_text_no_element (str): text to print when there is no elements
+            value (int): value to print in the errors
+            error_text_more_elements (str): text to print when there are more elements
+
+        Raises:
+            ValueError: error_text_no_element
+            ValueError: error_text_more_elements
+
+        Returns:
+            int or AWGSequencerPathIdentifier: int or AWGSequencerPathIdentifier
+        """
+        if len(elements) <= 0:
+            raise ValueError(f"{error_text_no_element}{value}")
+        if len(elements) > 1:
+            raise ValueError(f"{error_text_more_elements}{value}")
+        return elements[0]

@@ -131,6 +131,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
                 AWGSequencerTypes.PATH0.value: {
                     AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
                 },
@@ -194,6 +195,7 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 1,
                 AWGSequencerTypes.PATH0.value: {
                     AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
                 },

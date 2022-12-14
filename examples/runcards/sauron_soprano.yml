@@ -65,6 +65,7 @@ schema:
       acquisition_delay_time: 100
       awg_sequencers:
         - identifier: 0
+          chip_port_id: 1
           path0:
             output_channel: 0
           path1:
@@ -73,7 +74,7 @@ schema:
           intermediate_frequency: 2.e+07
           gain_path0: 1
           gain_path1: 1
-          gain_imbalance: 0.5
+          gain_imbalance: 1
           phase_imbalance: 0
           offset_path0: 0
           offset_path1: 0
@@ -105,6 +106,7 @@ schema:
       num_sequencers: 1
       awg_sequencers:
         - identifier: 0
+          chip_port_id: 0
           path0:
             output_channel: 0
           path1:

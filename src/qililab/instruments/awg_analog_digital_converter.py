@@ -1,7 +1,7 @@
 """ AWG with Digital To Analog Conversion (DAC) capabilities."""
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, cast
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
@@ -129,7 +129,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].scope_hardware_averaging = bool(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
         self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueBool
@@ -143,7 +143,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].hardware_demodulation = bool(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).hardware_demodulation = bool(value)
         self._set_device_hardware_demodulation(value=bool(value), sequencer_id=sequencer_id)
 
     def _set_acquisition_mode(self, value: float | str | bool | AcquireTriggerMode, sequencer_id: int):
@@ -158,7 +158,7 @@ class AWGAnalogDigitalConverter(AWG):
         """
         if not isinstance(value, AcquireTriggerMode) and not isinstance(value, str):
             raise ValueError(f"value must be a string or AcquireTriggerMode. Current type: {type(value)}")
-        self.awg_sequencers[sequencer_id].scope_acquire_trigger_mode = AcquireTriggerMode(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_acquire_trigger_mode = AcquireTriggerMode(value)
         self._set_device_acquisition_mode(mode=AcquireTriggerMode(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -172,7 +172,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].integration_length = int(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).integration_length = int(value)
         self._set_device_integration_length(value=int(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -186,7 +186,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].sampling_rate = float(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).sampling_rate = float(value)
 
     def _set_integration_mode(self, value: float | str | bool | IntegrationMode, sequencer_id: int):
         """set integration_mode for the specific channel
@@ -199,7 +199,7 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not string
         """
         if isinstance(value, (IntegrationMode, str)):
-            self.awg_sequencers[sequencer_id].integration_mode = IntegrationMode(value)
+            cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).integration_mode = IntegrationMode(value)
         else:
             raise ValueError(f"value must be a string or IntegrationMode. Current type: {type(value)}")
 
@@ -214,7 +214,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.awg_sequencers[sequencer_id].sequence_timeout = int(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).sequence_timeout = int(value)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_acquisition_timeout(self, value: int | float | str | bool, sequencer_id: int):
@@ -227,7 +227,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.awg_sequencers[sequencer_id].acquisition_timeout = int(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).acquisition_timeout = int(value)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_acquisition_delay_time(self, value: int | float | str | bool):
@@ -252,7 +252,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].scope_store_enabled = bool(value)
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_store_enabled = bool(value)
 
     @property
     def acquisition_delay_time(self):

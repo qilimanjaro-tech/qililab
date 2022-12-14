@@ -33,7 +33,7 @@ class QbloxQCM(QbloxModule):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register):
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def acquire_result(self) -> QbloxResult:

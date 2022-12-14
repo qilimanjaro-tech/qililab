@@ -33,10 +33,9 @@ class TimeDomainSystemControl(SystemControl):
         """
         return self.settings.awg
 
-    @property
-    def frequency(self):
+    def frequency(self, port_id: int):
         """SystemControl 'frequency' property."""
-        return self.awg.frequency
+        return self.awg.frequency(port_id=port_id)
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""

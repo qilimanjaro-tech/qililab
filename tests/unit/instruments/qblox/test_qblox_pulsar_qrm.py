@@ -190,7 +190,7 @@ class TestQbloxQRM:
 
     def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""
-        assert qrm_no_device.integration_length == qrm_no_device.awg_sequencers[0].integration_length
+        assert qrm_no_device.integration_length(0) == qrm_no_device.awg_sequencers[0].integration_length
 
     def test_acquisition_name_method(self, qrm_no_device: QbloxQRM):
         """Test acquisition_name method."""
@@ -202,4 +202,4 @@ class TestQbloxQRM:
 
     def tests_frequency_property(self, qrm_no_device: QbloxQRM):
         """Test frequency property."""
-        assert qrm_no_device.frequency == qrm_no_device.awg_sequencers[0].intermediate_frequency
+        assert qrm_no_device.frequency(0) == qrm_no_device.awg_sequencers[0].intermediate_frequency

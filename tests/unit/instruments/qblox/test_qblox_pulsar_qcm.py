@@ -122,4 +122,4 @@ class TestQbloxQCM:
 
     def test_frequency_property(self, qcm_no_device: QbloxQCM):
         """Test frequency property."""
-        assert qcm_no_device.frequency == qcm_no_device.awg_sequencers[0].intermediate_frequency
+        assert qcm_no_device.frequency(0) == qcm_no_device.awg_sequencers[0].intermediate_frequency

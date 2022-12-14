@@ -19,6 +19,7 @@ class AWGSequencerTypes(Enum):
     INTERMEDIATE_FREQUENCY = "intermediate_frequency"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    CHIP_PORT_ID = "chip_port_id"
 
 
 class AWGSequencerPathIdentifier(Enum):

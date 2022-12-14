@@ -150,7 +150,7 @@ class QbloxModule(AWG):
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(
-            sequencer=0  # FIXME: determine the sequencer to use from the pulse bus schedule
+            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
@@ -173,11 +173,14 @@ class QbloxModule(AWG):
         Returns:
             Program: Q1ASM program.
         """
+        sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Define program's blocks
         program = Program()
-        # FIXME: using first channel instead of the desired
         bin_loop = Loop(
-            name="binning", begin=0, end=int(cast(AWGQbloxSequencer, self.awg_sequencers[0]).num_bins), step=1
+            name="binning",
+            begin=0,
+            end=int(cast(AWGQbloxSequencer, self.get_sequencer(sequencer_id)).num_bins),
+            step=1,
         )
         avg_loop = Loop(name="average", begin=nshots)
         bin_loop.append_component(component=avg_loop)
@@ -203,13 +206,13 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register)
+        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register, sequencer_id=sequencer_id)
         wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
         return program
 
-    def _generate_acquisitions(self, sequencer: int) -> Acquisitions:
+    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
@@ -220,7 +223,9 @@ class QbloxModule(AWG):
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
         acquisitions.add(
-            name="binning", num_bins=int(cast(AWGQbloxSequencer, self.awg_sequencers[sequencer]).num_bins) + 1, index=1
+            name="binning",
+            num_bins=int(cast(AWGQbloxSequencer, self.get_sequencer(sequencer_id)).num_bins) + 1,
+            index=1,
         )  # binned acquisition
         return acquisitions
 
@@ -234,7 +239,7 @@ class QbloxModule(AWG):
         return {}
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register):
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):

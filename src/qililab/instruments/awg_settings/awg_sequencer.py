@@ -17,6 +17,8 @@ class AWGSequencer:
 
     Args:
         identifier (int): The identifier of the sequencer
+        chip_port_id (int | None): Port identifier of the chip where a specific sequencer is connected to.
+                                    By default, using the first sequencer
         path0 (AWGOutputChannel): AWG output channel associated with the path 0 sequencer
         path1 (AWGOutputChannel): AWG output channel associated with the path 1 sequencer
         intermediate_frequency (float): Frequency for each sequencer
@@ -30,6 +32,7 @@ class AWGSequencer:
     """
 
     identifier: int
+    chip_port_id: int | None
     path0: AWGSequencerPath | None
     path1: AWGSequencerPath | None
     intermediate_frequency: float
