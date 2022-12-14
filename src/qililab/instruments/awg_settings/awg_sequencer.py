@@ -1,10 +1,14 @@
 """ AWG Sequencer """
 
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPath
-from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier
+from qililab.instruments.awg_settings.typings import (
+    AWGSequencerPathIdentifier,
+    AWGSequencerTypes,
+)
+from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
@@ -61,3 +65,15 @@ class AWGSequencer:
         if self.path1 is None:
             raise ValueError("path1 is not defined")
         return self.path1.output_channel.identifier
+
+    def to_dict(self):
+        """Return a dict representation of an AWG Sequencer."""
+        result = asdict(self, dict_factory=dict_factory)
+        if isinstance(self.path0, dict) and isinstance(self.path1, dict):
+            return result
+        result.pop(AWGSequencerTypes.PATH0.value)
+        result.pop(AWGSequencerTypes.PATH1.value)
+        return result | {
+            AWGSequencerTypes.PATH0.value: self.path0.to_dict() if self.path0 is not None else None,
+            AWGSequencerTypes.PATH1.value: self.path1.to_dict() if self.path1 is not None else None,
+        }

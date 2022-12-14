@@ -1,14 +1,20 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Sequence
 
+from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
-from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier
+from qililab.instruments.awg_settings.typings import (
+    AWGSequencerPathIdentifier,
+    AWGTypes,
+)
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
+from qililab.typings.enums import Parameter
+from qililab.utils.asdict_factory import dict_factory
 
 
 class AWG(Instrument):
@@ -47,6 +53,17 @@ class AWG(Instrument):
                 else iq_channel
                 for iq_channel in self.awg_iq_channels
             ]
+
+        def to_dict(self):
+            """Return a dict representation of an AWG instrument."""
+            result = asdict(self, dict_factory=dict_factory)
+            result.pop(AWGTypes.AWG_SEQUENCERS.value)
+            result.pop(AWGTypes.AWG_IQ_CHANNELS.value)
+
+            return result | {
+                AWGTypes.AWG_SEQUENCERS.value: [sequencer.to_dict() for sequencer in self.awg_sequencers],
+                AWGTypes.AWG_IQ_CHANNELS.value: [iq_channel.to_dict() for iq_channel in self.awg_iq_channels],
+            }
 
     settings: AWGSettings
 
@@ -150,3 +167,7 @@ class AWG(Instrument):
         if len(path_identifier) > 1:
             raise ValueError(f"More than one Q Channel mapped to the sequencer with id: {sequencer_id}")
         return path_identifier[0]
+
+    def to_dict(self):
+        """Return a dict representation of an AWG instrument."""
+        return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()

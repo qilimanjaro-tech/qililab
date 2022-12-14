@@ -3,6 +3,13 @@
 from enum import Enum
 
 
+class AWGTypes(Enum):
+    """Typings from AWG Types"""
+
+    AWG_SEQUENCERS = "awg_sequencers"
+    AWG_IQ_CHANNELS = "awg_iq_channels"
+
+
 class AWGSequencerTypes(Enum):
     """Types from AWG Sequencer Types"""
 

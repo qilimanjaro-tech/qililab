@@ -4,14 +4,14 @@ import json
 from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, Stop, Wait
-from qpysequence.sequence import Sequence
+from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
@@ -158,7 +158,7 @@ class QbloxModule(AWG):
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
-        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
@@ -469,7 +469,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: Sequence, path: Path):
+    def upload(self, sequence: QpySequence, path: Path):
         """Upload sequence to sequencer.
 
         Args:

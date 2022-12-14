@@ -21,9 +21,9 @@ os.environ["DATA"] = str(Path(__file__).parent / "data")
 
 def run_circuit(connection: API | None = None):
     """Load the platform 'galadriel' from the DB."""
-    platform = build_platform(name="template_base_runcard_soprano")
+    platform = build_platform(name="sauron_soprano")
     print(platform)
-    print(platform.schema)
+    # print(platform.schema)
 
     # circuit = Circuit(1)
     # circuit.add(X(0))

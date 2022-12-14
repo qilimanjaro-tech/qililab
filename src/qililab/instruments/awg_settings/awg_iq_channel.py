@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 
 from qililab.instruments.awg_settings.awg_channel_mapping import AWGChannelMapping
+from qililab.instruments.awg_settings.typings import AWGIQChannelTypes
 
 
 @dataclass
@@ -46,3 +47,16 @@ class AWGIQChannel:
     def sequencer_path_q_channel(self) -> int:
         """Return the sequencer path identifier for the Q Channel"""
         return self.q_channel.awg_sequencer_path_identifier.value
+
+    def to_dict(self):
+        """Return a dict representation of an AWG IQ Channel."""
+
+        return {
+            AWGIQChannelTypes.IDENTIFIER.value: self.identifier,
+            AWGIQChannelTypes.I_CHANNEL.value: self.i_channel
+            if isinstance(self.i_channel, dict)
+            else self.i_channel.to_dict(),
+            AWGIQChannelTypes.Q_CHANNEL.value: self.q_channel
+            if isinstance(self.q_channel, dict)
+            else self.q_channel.to_dict(),
+        }

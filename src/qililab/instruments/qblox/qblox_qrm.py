@@ -1,12 +1,16 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
+from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import (
+    AWGQbloxADCSequencer,
+)
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
@@ -24,14 +28,38 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """
 
     name = InstrumentName.QBLOX_QRM
-    _NUM_MAX_SEQUENCERS: int = 6
-    _NUM_MAX_AWG_OUT_CHANNELS: int = 2
 
     @dataclass
     class QbloxQRMSettings(
         QbloxModule.QbloxModuleSettings, AWGAnalogDigitalConverter.AWGAnalogDigitalConverterSettings
     ):
         """Contains the settings of a specific QRM."""
+
+        awg_sequencers: Sequence[AWGQbloxADCSequencer]
+
+        def __post_init__(self):
+            """build AWGQbloxADCSequencer"""
+            if (
+                self.num_sequencers <= 0
+                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
+            ):
+                raise ValueError(
+                    "The number of sequencers must be greater than 0 and less or equal than "
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"  # pylint: disable=protected-access
+                )
+            if len(self.awg_sequencers) != self.num_sequencers:
+                raise ValueError(
+                    f"The number of sequencers: {self.num_sequencers} does not match"
+                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
+                )
+
+            self.awg_sequencers = [
+                AWGQbloxADCSequencer(**sequencer)
+                if isinstance(sequencer, dict)
+                else sequencer  # pylint: disable=not-a-mapping
+                for sequencer in self.awg_sequencers
+            ]
+            super().__post_init__()
 
     settings: QbloxQRMSettings
 

@@ -23,3 +23,7 @@ class AWGSequencerPath:
             self.path_id = AWGSequencerPathIdentifier(self.path_id)
         if isinstance(self.output_channel, int):
             self.output_channel = AWGOutputChannel(self.output_channel)
+
+    def to_dict(self):
+        """Return a dict representation of an AWG Sequencer Path."""
+        return {AWGSequencerPathTypes.OUTPUT_CHANNEL.value: self.output_channel.identifier}
