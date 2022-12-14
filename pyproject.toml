@@ -46,7 +46,7 @@ use_parentheses = true
 ensure_newline_before_comments = true
 
 [tool.commitizen]
-version = "0.10.0"
+version = "0.10.1"
 version_files = [
     "src/qililab/config/version.py",
     "pyproject.toml:version"
