@@ -4,7 +4,7 @@ import json
 from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -97,7 +97,7 @@ class QbloxModule(AWG):
             self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
-            self._set_sync_enabled(value=sequencer.sync_enabled, sequencer_id=sequencer_id)
+            self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
@@ -176,7 +176,9 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         # FIXME: using first channel instead of the desired
-        bin_loop = Loop(name="binning", begin=0, end=int(self.awg_sequencers[0].num_bins), step=1)
+        bin_loop = Loop(
+            name="binning", begin=0, end=int(cast(AWGQbloxSequencer, self.awg_sequencers[0]).num_bins), step=1
+        )
         avg_loop = Loop(name="average", begin=nshots)
         bin_loop.append_component(component=avg_loop)
         stop = Block(name="stop")
@@ -216,7 +218,7 @@ class QbloxModule(AWG):
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
         acquisitions.add(
-            name="binning", num_bins=int(self.awg_sequencers[sequencer].num_bins) + 1, index=1
+            name="binning", num_bins=int(cast(AWGQbloxSequencer, self.awg_sequencers[sequencer]).num_bins) + 1, index=1
         )  # binned acquisition
         return acquisitions
 
@@ -302,7 +304,7 @@ class QbloxModule(AWG):
         """
         if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
-        self.awg_sequencers[sequencer_id].num_bins = int(value)
+        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
 
     @Instrument.CheckParameterValueBool
     def _set_sync_enabled(self, value: float | str | bool, sequencer_id: int):
@@ -315,7 +317,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].sync_enabled = bool(value)
+        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).sync_enabled = bool(value)
         self.device.sequencers[sequencer_id].sync_en(bool(value))
 
     @Instrument.CheckParameterValueBool
