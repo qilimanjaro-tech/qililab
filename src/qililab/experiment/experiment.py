@@ -159,6 +159,7 @@ class Experiment:
             KeyboardInterrupt,
             KeyError,
             TimeoutError,
+            TypeError,
         ) as error:  # pylint: disable=broad-except
             self.execution_finished()
             logger.error("%s: %s", type(error).__name__, str(error))
