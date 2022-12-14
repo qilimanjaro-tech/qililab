@@ -1,7 +1,7 @@
 """__init__.py"""
 from .agilent import E5071B
-from .analog_digital_converter import AWGAnalogDigitalConverter
 from .awg import AWG
+from .awg_analog_digital_converter import AWGAnalogDigitalConverter
 from .instrument import Instrument
 from .instruments import Instruments
 from .keithley import Keithley2600

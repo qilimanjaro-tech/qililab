@@ -22,4 +22,4 @@ class TimeDomainBus(Bus):
     @property
     def frequency(self):
         """TimeDomain System Control 'frequency' property."""
-        return self.settings.system_control.frequency  # pylint: disable=no-member
+        return self.settings.system_control.frequency(port_id=self.port)  # pylint: disable=no-member

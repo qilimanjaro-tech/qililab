@@ -441,7 +441,7 @@ class Parameter(Enum):
     HARDWARE_INTEGRATION = "hardware_integration"
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
-    IF = "intermediate_frequencies"
+    IF = "intermediate_frequency"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
@@ -463,6 +463,10 @@ class Parameter(Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
+    GAIN_PATH0 = "gain_path0"
+    GAIN_PATH1 = "gain_path1"
+    OFFSET_PATH0 = "offset_path0"
+    OFFSET_PATH1 = "offset_path1"
 
 
 class ResultName(Enum):

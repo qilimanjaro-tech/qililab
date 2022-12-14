@@ -48,4 +48,6 @@ class SimulatedBus(Bus):
     @property
     def frequency(self):
         """Simulated 'frequency' property."""
-        return self.target_freqs[0]  # FIXME: adapt to the correct target frequency
+        if self.target_freqs[0] is None:
+            raise ValueError("No target frequency found")
+        return float(self.target_freqs[0])  # FIXME: adapt to the correct target frequency

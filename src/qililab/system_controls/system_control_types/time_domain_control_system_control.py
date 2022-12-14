@@ -39,16 +39,17 @@ class ControlSystemControl(TimeDomainSystemControl):
         """
         return self.settings.signal_generator
 
-    @property
-    def frequency(self):
+    def frequency(self, port_id: int):
         """SystemControl 'frequency' property."""
-        return self.signal_generator.frequency + self.awg.frequency
+        return self.signal_generator.frequency + self.awg.frequency(port_id=port_id)
 
     def __str__(self):
         """String representation of the ControlSystemControl class."""
         return f"{super().__str__()}-|{self.signal_generator}|-"
 
-    def _update_bus_frequency(self, frequency: float | str | bool, channel_id: int | None = None):
+    def _update_bus_frequency(
+        self, frequency: float | str | bool, channel_id: int | None = None, port_id: int | None = None
+    ):
         """update frequency to the signal generator and AWG
 
         Args:
@@ -57,14 +58,8 @@ class ControlSystemControl(TimeDomainSystemControl):
         """
         if not isinstance(frequency, float):
             raise ValueError(f"value must be a float. Current type: {type(frequency)}")
-        if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
-        if channel_id > self.awg.num_sequencers - 1:
-            raise ValueError(
-                f"the specified channel_id:{channel_id} is out of range. "
-                + f"Number of sequencers is {self.awg.num_sequencers}"
-            )
-        signal_generator_frequency = frequency - self.awg.intermediate_frequencies[channel_id]
+
+        signal_generator_frequency = frequency - self.awg.frequency(channel_id=channel_id, port_id=port_id)
         self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=signal_generator_frequency)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -103,9 +98,10 @@ class ControlSystemControl(TimeDomainSystemControl):
             repetition_duration (int): repetitition duration
             path (Path): path to save the program to upload
         """
-        if pulse_bus_schedule.frequency is not None and pulse_bus_schedule.frequency != self.frequency:
-            # FIXME: find the channel associated to the port of a pulse
-            self._update_bus_frequency(frequency=pulse_bus_schedule.frequency, channel_id=0)
+        if pulse_bus_schedule.frequency is not None and pulse_bus_schedule.frequency != self.frequency(
+            port_id=pulse_bus_schedule.port
+        ):
+            self._update_bus_frequency(frequency=pulse_bus_schedule.frequency, port_id=pulse_bus_schedule.port)
 
         return super().generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,

@@ -1,11 +1,19 @@
 """QubitControl class."""
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List
+from typing import Sequence
 
+from qililab.constants import RUNCARD
+from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
+from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
+from qililab.instruments.awg_settings.typings import (
+    AWGSequencerPathIdentifier,
+    AWGTypes,
+)
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
+from qililab.utils.asdict_factory import dict_factory
 
 
 class AWG(Instrument):
@@ -17,24 +25,45 @@ class AWG(Instrument):
 
         Args:
             num_sequencers (int): Number of sequencers (physical I/Q pairs)
-            intermediate_frequencies (List[float]): Frequency for each sequencer
-            gain (List[float]): Gain step used by the sequencer.
-            gain_imbalance (float): Amplitude added to the Q channel.
-            phase_imbalance (float): Dephasing.
-            delta (List[float]): Dephasing.
-            offset_i (List[float]): I offset (unitless). amplitude + offset should be in range [0 to 1].
-            offset_q (List[float]): Q offset (unitless). amplitude + offset should be in range [0 to 1].
-            hardware_modulation (List[bool]): Flag to determine if the modulation of a specific channel is performed by the device
+            awg_sequencers (Sequence[AWGSequencer]): Properties of each AWG sequencer
+            awg_iq_channels (list[AWGIQChannel]): Properties of each AWG IQ channel
         """
 
         num_sequencers: int
-        intermediate_frequencies: List[float]
-        gain: List[float]
-        gain_imbalance: List[float]
-        phase_imbalance: List[float]
-        offset_i: List[float]
-        offset_q: List[float]
-        hardware_modulation: List[bool]
+        awg_sequencers: Sequence[AWGSequencer]
+        awg_iq_channels: list[AWGIQChannel]
+
+        def __post_init__(self):
+            """build AWGSequencers and IQ channels"""
+            super().__post_init__()
+            if self.num_sequencers <= 0:
+                raise ValueError(f"The number of sequencers must be greater than 0. Received: {self.num_sequencers}")
+            if len(self.awg_sequencers) != self.num_sequencers:
+                raise ValueError(
+                    f"The number of sequencers: {self.num_sequencers} does not match"
+                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
+                )
+            self.awg_sequencers = [
+                AWGSequencer(**sequencer) if isinstance(sequencer, dict) else sequencer  # pylint: disable=not-a-mapping
+                for sequencer in self.awg_sequencers
+            ]
+            self.awg_iq_channels = [
+                AWGIQChannel(**iq_channel)  # pylint: disable=not-a-mapping
+                if isinstance(iq_channel, dict)
+                else iq_channel
+                for iq_channel in self.awg_iq_channels
+            ]
+
+        def to_dict(self):
+            """Return a dict representation of an AWG instrument."""
+            result = asdict(self, dict_factory=dict_factory)
+            result.pop(AWGTypes.AWG_SEQUENCERS.value)
+            result.pop(AWGTypes.AWG_IQ_CHANNELS.value)
+
+            return result | {
+                AWGTypes.AWG_SEQUENCERS.value: [sequencer.to_dict() for sequencer in self.awg_sequencers],
+                AWGTypes.AWG_IQ_CHANNELS.value: [iq_channel.to_dict() for iq_channel in self.awg_iq_channels],
+            }
 
     settings: AWGSettings
 
@@ -55,76 +84,183 @@ class AWG(Instrument):
     def run(self):
         """Run the uploaded program"""
 
-    @property
-    def frequency(self):
-        """QbloxPulsar 'frequency' property.
-
-        Returns:
-            float: settings.frequency.
-        """
-        # FIXME: this must be deleted, as an AWG has a frequency for each channel.
-        # Returning the first frequency for now.
-        return self.settings.intermediate_frequencies[0]
+    def frequency(self, sequencer_id: int | None = None, port_id: int | None = None):
+        """AWG 'frequency' property."""
+        if sequencer_id is None and port_id is None:
+            raise ValueError("one of 'sequencer_id' or 'port_id' must be defined.")
+        if port_id is not None:
+            sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=port_id)
+        if sequencer_id is None:
+            raise ValueError("'sequencer_id' must be defined.")
+        return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
 
     @property
     def num_sequencers(self):
-        """QbloxPulsar 'sequencer' property.
+        """Number of sequencers in the AWG
 
         Returns:
-            int: settings.sequencer.
+            int: number of sequencers
         """
         return self.settings.num_sequencers
 
     @property
-    def gain(self):
-        """QbloxPulsar 'gain' property.
-
-        Returns:
-            float: settings.gain.
-        """
-        return self.settings.gain
+    def awg_sequencers(self):
+        """AWG 'awg_sequencers' property."""
+        return self.settings.awg_sequencers
 
     @property
-    def offset_i(self):
-        """QbloxPulsar 'offset_i' property.
-
-        Returns:
-            float: settings.offset_i
-        """
-        return self.settings.offset_i
-
-    @property
-    def offset_q(self):
-        """QbloxPulsar 'offset_q' property.
-
-        Returns:
-            float: settings.offset_q.
-        """
-        return self.settings.offset_q
-
-    @property
-    def gain_imbalance(self):
-        """QbloxPulsar 'gain_imbalance' property.
-
-        Returns:
-            float: settings.gain_imbalance.
-        """
-        return self.settings.gain_imbalance
-
-    @property
-    def phase_imbalance(self):
-        """QbloxPulsar 'phase_imbalance' property.
-
-        Returns:
-            float: settings.phase_imbalance.
-        """
-        return self.settings.phase_imbalance
+    def awg_iq_channels(self):
+        """AWG 'awg_iq_channels' property."""
+        return self.settings.awg_iq_channels
 
     @property
     def intermediate_frequencies(self):
-        """QbloxPulsar 'intermediate_frequencies' property.
+        """AWG 'intermediate_frequencies' property."""
+        return [
+            self.settings.awg_sequencers[sequencer.identifier].intermediate_frequency
+            for sequencer in self.awg_sequencers
+        ]
+
+    def offset_i(self, sequencer_id: int):
+        """AWG 'offset_i' property."""
+
+        path_id = self.get_sequencer_path_id_mapped_to_i_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH0:
+            return self.awg_sequencers[sequencer_id].offset_path0
+        return self.awg_sequencers[sequencer_id].offset_path1
+
+    def offset_q(self, sequencer_id: int):
+        """AWG 'offset_q' property."""
+
+        path_id = self.get_sequencer_path_id_mapped_to_q_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH1:
+            return self.awg_sequencers[sequencer_id].offset_path1
+        return self.awg_sequencers[sequencer_id].offset_path0
+
+    def get_sequencer_path_id_mapped_to_i_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
+        """get sequencer path id mapped to i channel of sequencer Id
+
+        Args:
+            sequencer_id (int): sequencer identifier
 
         Returns:
-            float: settings.intermediate_frequencies.
+            AWGSequencerPathIdentifier: path identifier
         """
-        return self.settings.intermediate_frequencies
+        path_identifier = [
+            iq_channel.sequencer_path_i_channel
+            for iq_channel in self.awg_iq_channels
+            if iq_channel.sequencer_id_i_channel == sequencer_id
+        ]
+
+        return self._check_path_identifier_results(sequencer_id, path_identifier)
+
+    def _check_path_identifier_results(self, sequencer_id: int, path_identifier: list[AWGSequencerPathIdentifier]):
+        """check that the list of path identifiers has only one element
+
+        Args:
+            sequencer_id (int): sequencer identifier
+            path_identifier (list[AWGSequencerPathIdentifier]): path identifier list
+
+        Raises:
+            ValueError: No I/Q Channel mapped to the sequencer with id
+            ValueError: More than one I/Q Channel mapped to the sequencer with id
+
+        Returns:
+            _type_: _description_
+        """
+        return self._check_only_one_element_or_raise_error(
+            path_identifier,
+            "No I Channel mapped to the sequencer with id: ",
+            sequencer_id,
+            "More than one I Channel mapped to the sequencer with id: ",
+        )
+
+    def get_sequencer_path_id_mapped_to_q_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
+        """get sequencer path id mapped to q channel of sequencer Id
+
+        Args:
+            sequencer_id (int): sequencer identifier
+
+        Returns:
+            AWGSequencerPathIdentifier: path identifier
+        """
+        path_identifier: list[AWGSequencerPathIdentifier] = [
+            iq_channel.sequencer_path_q_channel
+            for iq_channel in self.awg_iq_channels
+            if iq_channel.sequencer_id_q_channel == sequencer_id
+        ]
+
+        return self._check_path_identifier_results(sequencer_id, path_identifier)
+
+    def to_dict(self):
+        """Return a dict representation of an AWG instrument."""
+        return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
+
+    def get_sequencer_id_from_chip_port_id(self, chip_port_id: int) -> int:
+        """Get sequencer id from the chip port identifier
+
+        Args:
+            chip_port_id (int): chip port identifier
+
+        Returns:
+            int: sequencer identifier
+        """
+        sequencer_identifiers = [
+            sequencer.identifier for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id
+        ]
+
+        return self._check_only_one_element_or_raise_error(
+            sequencer_identifiers,
+            "No sequencer found mapped to the chip port with id: ",
+            chip_port_id,
+            "More than one sequencer mapped to the chip port with id: ",
+        )
+
+    def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
+        """Get sequencer from the sequencer identifier
+
+        Args:
+            sequencer_id (int): sequencer identifier
+
+        Returns:
+            AWGSequencer: sequencer associated with the sequencer_id
+        """
+        sequencer_identifiers = [
+            sequencer.identifier for sequencer in self.awg_sequencers if sequencer.identifier == sequencer_id
+        ]
+
+        sequencer_identifier = self._check_only_one_element_or_raise_error(
+            sequencer_identifiers,
+            "No sequencer found with id: ",
+            sequencer_id,
+            "More than one sequencer found with id: ",
+        )
+        return self.awg_sequencers[sequencer_identifier]
+
+    def _check_only_one_element_or_raise_error(
+        self,
+        elements: Sequence[int | AWGSequencerPathIdentifier],
+        error_text_no_element: str,
+        value: int,
+        error_text_more_elements: str,
+    ):
+        """check only one element is in the list or raise an error
+
+        Args:
+            elements (list[int  |  AWGSequencerPathIdentifier]): _description_
+            error_text_no_element (str): text to print when there is no elements
+            value (int): value to print in the errors
+            error_text_more_elements (str): text to print when there are more elements
+
+        Raises:
+            ValueError: error_text_no_element
+            ValueError: error_text_more_elements
+
+        Returns:
+            int or AWGSequencerPathIdentifier: int or AWGSequencerPathIdentifier
+        """
+        if len(elements) <= 0:
+            raise ValueError(f"{error_text_no_element}{value}")
+        if len(elements) > 1:
+            raise ValueError(f"{error_text_more_elements}{value}")
+        return elements[0]
