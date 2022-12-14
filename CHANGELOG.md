@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.2 (2022-12-14)
+
+### Refactor
+
+- [qili-243] sequence class (#104)
+
 ## 0.10.1 (2022-12-14)
 
 ### Fix
