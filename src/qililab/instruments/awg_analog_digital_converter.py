@@ -18,9 +18,11 @@ class AWGAnalogDigitalConverter(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-
+            acquisition_delay_time (str): Time specified before starting the acquisition
+            awg_sequencers (Sequence[AWGADCSequencer]): Properties of each AWG ADC sequencer
         """
 
+        acquisition_delay_time: int  # ns
         awg_sequencers: Sequence[AWGADCSequencer]
 
     settings: AWGAnalogDigitalConverterSettings
@@ -36,11 +38,11 @@ class AWGAnalogDigitalConverter(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
+        if parameter == Parameter.ACQUISITION_DELAY_TIME:
+            self._set_acquisition_delay_time(value=value)
+            return
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
-        if parameter == Parameter.ACQUISITION_DELAY_TIME:
-            self._set_acquisition_delay_time(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
             return
@@ -228,7 +230,7 @@ class AWGAnalogDigitalConverter(AWG):
         self.awg_sequencers[sequencer_id].acquisition_timeout = int(value)
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_acquisition_delay_time(self, value: int | float | str | bool, sequencer_id: int):
+    def _set_acquisition_delay_time(self, value: int | float | str | bool):
         """set acquisition_delaty_time for the specific channel
 
         Args:
@@ -237,7 +239,7 @@ class AWGAnalogDigitalConverter(AWG):
         Raises:
             ValueError: when value type is not float or int
         """
-        self.awg_sequencers[sequencer_id].acquisition_delay_time = int(value)
+        self.settings.acquisition_delay_time = int(value)
 
     @Instrument.CheckParameterValueBool
     def _set_scope_store_enabled(self, value: float | str | bool, sequencer_id: int):
@@ -251,3 +253,11 @@ class AWGAnalogDigitalConverter(AWG):
             ValueError: when value type is not bool
         """
         self.awg_sequencers[sequencer_id].scope_store_enabled = bool(value)
+
+    @property
+    def acquisition_delay_time(self):
+        """AWG 'delay_before_readout' property.
+        Returns:
+            int: settings.delay_before_readout.
+        """
+        return self.settings.acquisition_delay_time

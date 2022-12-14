@@ -13,7 +13,6 @@ from qililab.instruments.awg_settings.typings import (
 )
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
-from qililab.typings.enums import Parameter
 from qililab.utils.asdict_factory import dict_factory
 
 
@@ -26,7 +25,8 @@ class AWG(Instrument):
 
         Args:
             num_sequencers (int): Number of sequencers (physical I/Q pairs)
-            sequencers (list[AWGSequencer]): Properties of each AWG sequencer
+            awg_sequencers (Sequence[AWGSequencer]): Properties of each AWG sequencer
+            awg_iq_channels (list[AWGIQChannel]): Properties of each AWG IQ channel
         """
 
         num_sequencers: int
@@ -118,6 +118,22 @@ class AWG(Instrument):
             for sequencer in self.awg_sequencers
         ]
 
+    def offset_i(self, sequencer_id: int):
+        """AWG 'offset_i' property."""
+
+        path_id = self.get_sequencer_path_id_mapped_to_i_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH0:
+            return self.awg_sequencers[sequencer_id].offset_path0
+        return self.awg_sequencers[sequencer_id].offset_path1
+
+    def offset_q(self, sequencer_id: int):
+        """AWG 'offset_q' property."""
+
+        path_id = self.get_sequencer_path_id_mapped_to_q_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH1:
+            return self.awg_sequencers[sequencer_id].offset_path1
+        return self.awg_sequencers[sequencer_id].offset_path0
+
     def get_sequencer_path_id_mapped_to_i_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
         """get sequencer path id mapped to i channel of sequencer Id
 
@@ -127,16 +143,28 @@ class AWG(Instrument):
         Returns:
             AWGSequencerPathIdentifier: path identifier
         """
-        path_identifier: list[AWGSequencerPathIdentifier] = list(
-            filter(
-                None,
-                [
-                    iq_channel.sequencer_path_i_channel
-                    for iq_channel in self.awg_iq_channels
-                    if iq_channel.sequencer_id_i_channel == sequencer_id
-                ],
-            )
-        )
+        path_identifier: list[AWGSequencerPathIdentifier] = [
+            iq_channel.sequencer_path_i_channel
+            for iq_channel in self.awg_iq_channels
+            if iq_channel.sequencer_id_i_channel == sequencer_id
+        ]
+
+        return self._check_path_identifier_results(sequencer_id, path_identifier)
+
+    def _check_path_identifier_results(self, sequencer_id: int, path_identifier: list[AWGSequencerPathIdentifier]):
+        """check that the list of path identifiers has only one element
+
+        Args:
+            sequencer_id (int): sequencer identifier
+            path_identifier (list[AWGSequencerPathIdentifier]): path identifier list
+
+        Raises:
+            ValueError: No I/Q Channel mapped to the sequencer with id
+            ValueError: More than one I/Q Channel mapped to the sequencer with id
+
+        Returns:
+            _type_: _description_
+        """
         if len(path_identifier) <= 0:
             raise ValueError(f"No I Channel mapped to the sequencer with id: {sequencer_id}")
         if len(path_identifier) > 1:
@@ -152,21 +180,13 @@ class AWG(Instrument):
         Returns:
             AWGSequencerPathIdentifier: path identifier
         """
-        path_identifier: list[AWGSequencerPathIdentifier] = list(
-            filter(
-                None,
-                [
-                    iq_channel.sequencer_path_q_channel
-                    for iq_channel in self.awg_iq_channels
-                    if iq_channel.sequencer_id_q_channel == sequencer_id
-                ],
-            )
-        )
-        if len(path_identifier) <= 0:
-            raise ValueError(f"No Q Channel mapped to the sequencer with id: {sequencer_id}")
-        if len(path_identifier) > 1:
-            raise ValueError(f"More than one Q Channel mapped to the sequencer with id: {sequencer_id}")
-        return path_identifier[0]
+        path_identifier: list[AWGSequencerPathIdentifier] = [
+            iq_channel.sequencer_path_q_channel
+            for iq_channel in self.awg_iq_channels
+            if iq_channel.sequencer_id_q_channel == sequencer_id
+        ]
+
+        return self._check_path_identifier_results(sequencer_id, path_identifier)
 
     def to_dict(self):
         """Return a dict representation of an AWG instrument."""

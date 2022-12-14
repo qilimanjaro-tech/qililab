@@ -69,18 +69,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         super().initial_setup()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
-            self._set_integration_length(
-                value=self.awg_sequencers[sequencer_id].integration_length, sequencer_id=sequencer_id
-            )
-            self._set_acquisition_mode(
-                value=self.awg_sequencers[sequencer_id].scope_acquire_trigger_mode, sequencer_id=sequencer_id
-            )
-            self._set_scope_hardware_averaging(
-                value=self.awg_sequencers[sequencer_id].scope_hardware_averaging, sequencer_id=sequencer_id
-            )
-            self._set_hardware_demodulation(
-                value=self.awg_sequencers[sequencer_id].hardware_demodulation, sequencer_id=sequencer_id
-            )
+            self._set_integration_length(value=sequencer.integration_length, sequencer_id=sequencer_id)
+            self._set_acquisition_mode(value=sequencer.scope_acquire_trigger_mode, sequencer_id=sequencer_id)
+            self._set_scope_hardware_averaging(value=sequencer.scope_hardware_averaging, sequencer_id=sequencer_id)
+            self._set_hardware_demodulation(value=sequencer.hardware_demodulation, sequencer_id=sequencer_id)
 
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path

@@ -92,13 +92,14 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             self._set_nco(sequencer_id=sequencer_id)
-            self._set_gain(value=sequencer.gain[sequencer_id], sequencer_id=sequencer_id)
-            self._set_offset_i(value=sequencer.offset_i[sequencer_id], sequencer_id=sequencer_id)
-            self._set_offset_q(value=sequencer.offset_q[sequencer_id], sequencer_id=sequencer_id)
-            self._set_hardware_modulation(value=sequencer.hardware_modulation[sequencer_id], sequencer_id=sequencer_id)
-            self._set_sync_enabled(value=sequencer.sync_enabled[sequencer_id], sequencer_id=sequencer_id)
-            self._set_gain_imbalance(value=sequencer.gain_imbalance[sequencer_id], sequencer_id=sequencer_id)
-            self._set_phase_imbalance(value=sequencer.phase_imbalance[sequencer_id], sequencer_id=sequencer_id)
+            self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
+            self._set_gain_path1(value=sequencer.gain_path0, sequencer_id=sequencer_id)
+            self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
+            self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
+            self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
+            self._set_sync_enabled(value=sequencer.sync_enabled, sequencer_id=sequencer_id)
+            self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
+            self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
     @property
     def module_type(self):
@@ -418,7 +419,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].gain_path0[sequencer_id] = float(value)
+        self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -432,7 +433,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].gain_path1[sequencer_id] = float(value)
+        self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt

@@ -21,7 +21,6 @@ class AWGADCSequencer(AWGSequencer):
         If timeout is reached a TimeoutError is raised.
         acquisition_timeout (int): Time (in minutes) to wait for the acquisition to finish.
         If timeout is reached a TimeoutError is raised.
-        acquisition_name (str): Name of the acquisition saved in the sequencer.
     """
 
     scope_acquire_trigger_mode: AcquireTriggerMode
@@ -33,8 +32,8 @@ class AWGADCSequencer(AWGSequencer):
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
     scope_store_enabled: bool
-    acquisition_delay_time: int  # ns
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
+        super().__post_init__()
         cast_enum_fields(obj=self)

@@ -62,6 +62,7 @@ schema:
       category: awg
       firmware: 0.7.0
       num_sequencers: 1
+      acquisition_delay_time: 100
       awg_sequencers:
         - identifier: 0
           path0:
@@ -77,7 +78,6 @@ schema:
           offset_path0: 0
           offset_path1: 0
           hardware_modulation: true
-          acquisition_delay_time: 100
           sync_enabled: true
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true

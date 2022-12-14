@@ -441,7 +441,7 @@ class Parameter(Enum):
     HARDWARE_INTEGRATION = "hardware_integration"
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
-    IF = "intermediate_frequencies"
+    IF = "intermediate_frequency"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
