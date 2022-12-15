@@ -575,6 +575,13 @@ class Node(Enum):
 
 
 class CallbackOrder(Enum):
+    """Callback order of method
 
-    CALLBACK_AFTER = "after"
-    CALLBACK_BEFORE = "before"
+    Args:
+        enum (str): Order of calling method with respect to set_paramter method:
+        * after
+        * before
+    """
+
+    AFTER_SET_PARAMETER = "after_set_parameter"
+    BEFORE_SET_PARAMETER = "before_set_parameter"

@@ -20,9 +20,6 @@ class Loop:
     options: LoopOptions
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
-    callback: Callable | None = None
-    callback_order: CallbackOrder | None = None
-    callback_kwargs: dict | None = None
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
@@ -168,3 +165,18 @@ class Loop:
     def values(self):
         """returns 'values' options property."""
         return self.options.values
+
+    @property
+    def callback(self):
+        """returns 'callback' options property"""
+        return self.options.callback
+
+    @property
+    def callback_order(self):
+        """returns 'callback_order' options property"""
+        return self.options.callback_order
+
+    @property
+    def callback_kwargs(self):
+        """returns 'callback_kwargs' options property"""
+        return self.options.callback_kwargs

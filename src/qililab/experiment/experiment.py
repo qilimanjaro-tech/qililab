@@ -296,17 +296,8 @@ class Experiment:
     ):
 
         """update parameter from loop and calling a method each iteration"""
-        if loop.callback_order == CallbackOrder.CALLBACK_BEFORE:
-            loop.callback(**loop.callback_kwargs)
-            self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
-            )
 
-        if loop.callback_order == CallbackOrder.CALLBACK_AFTER:
+        if loop.callback is None:
             self.set_parameter(
                 element=element,
                 alias=loop.alias,
@@ -314,7 +305,18 @@ class Experiment:
                 value=value,
                 channel_id=loop.channel_id,
             )
-            loop.callback(**loop.callback_kwargs)
+        elif loop.callback is not None and loop.callback_order is None:
+            raise ValueError("'Callback_order' must be defined when callback method is passed")
+        else:
+            self.execute_callback_if_defined_before(loop=loop)
+            self.set_parameter(
+                element=element,
+                alias=loop.alias,
+                parameter=loop.parameter,
+                value=value,
+                channel_id=loop.channel_id,
+            )
+            self.execute_callback_if_defined_after(loop=loop)
 
     def _get_platform_elements_from_loops(self, loops: List[Loop]):
         """get platform elements from loops"""
@@ -378,6 +380,26 @@ class Experiment:
                 pulse_schedules=self.pulse_schedules,
                 execution_options=self.options.execution_options,
             )
+
+    def execute_callback_if_defined_before(self, loop: Loop):
+        """execute callback method before set_parameter
+
+        Args:
+            loop (Loop): Loop class containing the info of callback properties
+        """
+
+        if loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
+            loop.callback(**loop.callback_kwargs)
+
+    def execute_callback_if_defined_after(self, loop: Loop):
+        """execute callback method before set_parameter
+
+        Args:
+            loop (Loop): Loop class containing the info of callback properties
+        """
+
+        if loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
+            loop.callback(**loop.callback_kwargs)
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
