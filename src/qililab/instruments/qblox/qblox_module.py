@@ -1,21 +1,28 @@
 """Qblox module class"""
 import itertools
 import json
+from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, Stop, Wait
-from qpysequence.sequence import Sequence
+from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.config import logger
 from qililab.instruments.awg import AWG
+from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
+from qililab.instruments.awg_settings.awg_sequencer_path import (
+    AWGSequencerPathIdentifier,
+)
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
 
@@ -28,7 +35,9 @@ class QbloxModule(AWG):
     """
 
     _MAX_BINS: int = 131072
-    _NUM_SEQUENCERS: int = 4
+    _NUM_MAX_SEQUENCERS: int = 6
+    _NUM_MAX_AWG_OUT_CHANNELS: int = 4
+    _NUM_MAX_AWG_IQ_CHANNELS = int(_NUM_MAX_AWG_OUT_CHANNELS / 2)
     _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
@@ -36,13 +45,40 @@ class QbloxModule(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            reference_clock (str): Clock to use for reference. Options are 'internal' or 'external'.
-            sequencer (int): Index of the sequencer to use.
-            sync_enabled (bool): Enable synchronization over multiple instruments.
+            sync_enabled (List[bool]): Enable synchronization over multiple instruments for each sequencer.
+            num_bins (int): Number of bins
         """
 
-        sync_enabled: bool
-        num_bins: int
+        awg_sequencers: Sequence[AWGQbloxSequencer]
+
+        def __post_init__(self):
+            """build AWGQbloxSequencer"""
+            if (
+                self.num_sequencers <= 0
+                or self.num_sequencers > QbloxModule._NUM_MAX_SEQUENCERS  # pylint: disable=protected-access
+            ):
+                raise ValueError(
+                    "The number of sequencers must be greater than 0 and less or equal than "
+                    + f"{QbloxModule._NUM_MAX_SEQUENCERS}. Received: {self.num_sequencers}"  # pylint: disable=protected-access
+                )
+            if len(self.awg_sequencers) != self.num_sequencers:
+                raise ValueError(
+                    f"The number of sequencers: {self.num_sequencers} does not match"
+                    + f" the number of AWG Sequencers settings specified: {len(self.awg_sequencers)}"
+                )
+
+            self.awg_sequencers = [
+                AWGQbloxSequencer(**sequencer)
+                if isinstance(sequencer, dict)
+                else sequencer  # pylint: disable=not-a-mapping
+                for sequencer in self.awg_sequencers
+            ]
+            super().__post_init__()
+            if len(self.awg_iq_channels) > QbloxModule._NUM_MAX_AWG_IQ_CHANNELS:  # pylint: disable=protected-access
+                raise ValueError(
+                    "The number of AWG IQ channels must be less or equal than "
+                    + f"{QbloxModule._NUM_MAX_AWG_IQ_CHANNELS}. Received: {len(self.awg_iq_channels)}"  # pylint: disable=protected-access
+                )
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -52,24 +88,41 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
-        self._set_sync_enabled()
         self._map_outputs()
-        self._set_nco()
+        for sequencer in self.awg_sequencers:
+            sequencer_id = sequencer.identifier
+            self._set_nco(sequencer_id=sequencer_id)
+            self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
+            self._set_gain_path1(value=sequencer.gain_path0, sequencer_id=sequencer_id)
+            self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
+            self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
+            self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
+            self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
+            self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
+            self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
-        """Run execution of a pulse sequence.
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+    ) -> None:
+        """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
-            pulse_bus_schedule (PulseBusSchedule): Pulse sequence.
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetitition duration
+            path (Path): path to save the program to upload
         """
         self._check_cached_values(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
         )
+
+    def run(self):
+        """Run the uploaded program"""
         self.start_sequencer()
 
     def _check_cached_values(
@@ -81,6 +134,7 @@ class QbloxModule(AWG):
             sequence = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
+            # FIXME: Qblox supports to set it directly to the device instead of using a file
             self.upload(sequence=sequence, path=path)
 
     def _translate_pulse_bus_schedule(
@@ -95,7 +149,9 @@ class QbloxModule(AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        acquisitions = self._generate_acquisitions()
+        acquisitions = self._generate_acquisitions(
+            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
@@ -103,7 +159,7 @@ class QbloxModule(AWG):
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
-        return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
@@ -117,11 +173,17 @@ class QbloxModule(AWG):
         Returns:
             Program: Q1ASM program.
         """
+        sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Define program's blocks
         program = Program()
-        bin_loop = Loop(name="binning", begin=0, end=int(self.num_bins), step=1)
+        bin_loop = Loop(
+            name="binning",
+            begin=0,
+            end=int(cast(AWGQbloxSequencer, self.get_sequencer(sequencer_id)).num_bins),
+            step=1,
+        )
         avg_loop = Loop(name="average", begin=nshots)
-        bin_loop.append_block(block=avg_loop, bot_position=1)
+        bin_loop.append_component(component=avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=bin_loop)
@@ -144,22 +206,30 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
-        avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
+        self._append_acquire_instruction(loop=avg_loop, register=bin_loop.counter_register, sequencer_id=sequencer_id)
+        wait_time = repetition_duration - avg_loop.duration_iter
+        if wait_time > self._MIN_WAIT_TIME:
+            avg_loop.append_component(long_wait(wait_time=wait_time))
         return program
 
-    def _generate_acquisitions(self) -> Acquisitions:
+    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
+        # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="binning", num_bins=int(self.num_bins) + 1, index=1)  # binned acquisition
+        acquisitions.add(
+            name="binning",
+            num_bins=int(cast(AWGQbloxSequencer, self.get_sequencer(sequencer_id)).num_bins) + 1,
+            index=1,
+        )  # binned acquisition
         return acquisitions
 
+    @abstractmethod
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
 
@@ -168,27 +238,236 @@ class QbloxModule(AWG):
         """
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register):
+    @abstractmethod
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
-        for seq_idx in range(self.num_sequencers):
-            self.device.arm_sequencer(sequencer=seq_idx)
-            self.device.start_sequencer(sequencer=seq_idx)
+        for sequencer in self.awg_sequencers:
+            self.device.arm_sequencer(sequencer=sequencer.identifier)
+            self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
-    def setup(self):
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
-        self._set_nco()
-        self._set_gains()
-        self._set_offsets()
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
+        if channel_id > self.num_sequencers - 1:
+            raise ValueError(
+                f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
+            )
+        if parameter == Parameter.GAIN:
+            self._set_gain(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.GAIN_PATH0:
+            self._set_gain_path0(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.GAIN_PATH1:
+            self._set_gain_path1(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.OFFSET_PATH0:
+            self._set_offset_path0(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.OFFSET_PATH1:
+            self._set_offset_path1(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.OFFSET_I:
+            self._set_offset_i(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.OFFSET_Q:
+            self._set_offset_q(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.IF:
+            self._set_frequency(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.HARDWARE_MODULATION:
+            self._set_hardware_modulation(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.SYNC_ENABLED:
+            self._set_sync_enabled(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.NUM_BINS:
+            self._set_num_bins(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.GAIN_IMBALANCE:
+            self._set_gain_imbalance(value=value, sequencer_id=channel_id)
+            return
+        if parameter == Parameter.PHASE_IMBALANCE:
+            self._set_phase_imbalance(value=value, sequencer_id=channel_id)
+            return
+        raise ValueError(f"Invalid Parameter: {parameter.value}")
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_num_bins(self, value: float | str | bool, sequencer_id: int):
+        """set num_bins for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        if int(value) > self._MAX_BINS:
+            raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
+        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
+
+    @Instrument.CheckParameterValueBool
+    def _set_sync_enabled(self, value: float | str | bool, sequencer_id: int):
+        """set sync enabled for the specific channel
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).sync_enabled = bool(value)
+        self.device.sequencers[sequencer_id].sync_en(bool(value))
+
+    @Instrument.CheckParameterValueBool
+    def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
+        """set hardware modulation
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not bool
+        """
+        self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
+        self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_frequency(self, value: float | str | bool, sequencer_id: int):
+        """set frequency
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].intermediate_frequency = float(value)
+        self.device.sequencers[sequencer_id].nco_freq(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_path0(self, value: float | str | bool, sequencer_id: int):
+        """set offset path0
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].offset_path0 = float(value)
+        self.device.sequencers[sequencer_id].offset_awg_path0(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
+        """set offset path1
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].offset_path1 = float(value)
+        self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
+        """set offset I
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        path_id = self.get_sequencer_path_id_mapped_to_i_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH0:
+            self._set_offset_path0(value=value, sequencer_id=sequencer_id)
+            return
+        self._set_offset_path1(value=value, sequencer_id=sequencer_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
+        """set offset Q
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        path_id = self.get_sequencer_path_id_mapped_to_q_channel(sequencer_id=sequencer_id)
+        if path_id == AWGSequencerPathIdentifier.PATH1:
+            self._set_offset_path1(value=value, sequencer_id=sequencer_id)
+            return
+        self._set_offset_path0(value=value, sequencer_id=sequencer_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_gain_path0(self, value: float | str | bool, sequencer_id: int):
+        """set gain path0
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].gain_path0 = float(value)
+        self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):
+        """set gain path1
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].gain_path1 = float(value)
+        self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_gain(self, value: float | str | bool, sequencer_id: int):
+        """set gain
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self._set_gain_path0(value=value, sequencer_id=sequencer_id)
+        self._set_gain_path1(value=value, sequencer_id=sequencer_id)
 
     @Instrument.CheckDeviceInitialized
-    def stop(self):
+    def turn_off(self):
         """Stop the QBlox sequencer from sending pulses."""
         for seq_idx in range(self.num_sequencers):
             self.device.stop_sequencer(sequencer=seq_idx)
+
+    @Instrument.CheckDeviceInitialized
+    def turn_on(self):
+        """Turn on an instrument."""
 
     def clear_cache(self):
         """Empty cache."""
@@ -200,52 +479,76 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: Sequence, path: Path):
+    def upload(self, sequence: QpySequence, path: Path):
         """Upload sequence to sequencer.
 
         Args:
             sequence (Sequence): Sequence object containing the waveforms, weights,
             acquisitions and program of the sequence.
         """
+        logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+
         file_path = str(path / f"{self.name.value}_sequence.yml")
         with open(file=file_path, mode="w", encoding="utf-8") as file:
             json.dump(obj=sequence.todict(), fp=file)
         for seq_idx in range(self.num_sequencers):
             self.device.sequencers[seq_idx].sequence(file_path)
 
-    def _set_gains(self):
-        """Set gain of sequencer for all paths."""
-        for seq_idx, gain in enumerate(self.gain):
-            self.device.sequencers[seq_idx].gain_awg_path0(gain)
-            self.device.sequencers[seq_idx].gain_awg_path1(gain)
-
-    def _set_offsets(self):
-        """Set I and Q offsets of sequencer."""
-        for seq_idx, (offset_i, offset_q) in enumerate(zip(self.offset_i, self.offset_q)):
-            self.device.sequencers[seq_idx].offset_awg_path0(offset_i)
-            self.device.sequencers[seq_idx].offset_awg_path1(offset_q)
-
-    def _set_nco(self):
+    def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        for seq_idx, frequency in enumerate(self.multiplexing_frequencies):
-            self.device.sequencers[seq_idx].mod_en_awg(True)
-            self.device.sequencers[seq_idx].nco_freq(frequency)
+        if self.awg_sequencers[sequencer_id].hardware_modulation:
+            self._set_hardware_modulation(
+                value=self.awg_sequencers[sequencer_id].hardware_modulation, sequencer_id=sequencer_id
+            )
+            self._set_frequency(
+                value=self.awg_sequencers[sequencer_id].intermediate_frequency, sequencer_id=sequencer_id
+            )
 
-    def _set_sync_enabled(self):
-        """Enable/disable synchronization over multiple instruments."""
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sync_en(self.sync_enabled)
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_gain_imbalance(self, value: float | str | bool, sequencer_id: int):
+        """Set I and Q gain imbalance of sequencer.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+
+        self.awg_sequencers[sequencer_id].gain_imbalance = float(value)
+        self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_phase_imbalance(self, value: float | str | bool, sequencer_id: int):
+        """Set I and Q phase imbalance of sequencer.
+
+         Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
+        self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
-        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_SEQUENCERS)):
+        for sequencer, out in itertools.product(self.device.sequencers, range(self._NUM_MAX_SEQUENCERS)):
             if hasattr(sequencer, f"channel_map_path{out % 2}_out{out}_en"):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
 
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].channel_map_path0_out0_en(True)
-            self.device.sequencers[seq_idx].channel_map_path1_out1_en(True)
+        for sequencer in self.awg_sequencers:
+            if sequencer.path0 is not None:
+                self.device.sequencers[sequencer.identifier].set(
+                    f"channel_map_path0_out{sequencer.out_id_path0}_en", True
+                )
+            if sequencer.path1 is not None:
+                self.device.sequencers[sequencer.identifier].set(
+                    f"channel_map_path1_out{sequencer.out_id_path1}_en", True
+                )
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
@@ -269,15 +572,6 @@ class QbloxModule(AWG):
         return waveforms
 
     @property
-    def sync_enabled(self):
-        """QbloxPulsar 'sync_enabled' property.
-
-        Returns:
-            bool: settings.sync_enabled.
-        """
-        return self.settings.sync_enabled
-
-    @property
     def final_wait_time(self) -> int:
         """QbloxPulsar 'final_wait_time' property.
 
@@ -285,12 +579,3 @@ class QbloxModule(AWG):
             int: Final wait time.
         """
         return self._MIN_WAIT_TIME
-
-    @property
-    def num_bins(self) -> int:
-        """QbloxPulsar 'num_bins' property.
-
-        Returns:
-            int: Number of bins used.
-        """
-        return self.settings.num_bins

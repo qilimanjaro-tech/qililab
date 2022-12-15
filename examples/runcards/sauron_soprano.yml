@@ -1,0 +1,241 @@
+settings:
+  id_: 0
+  category: platform
+  name: sauron_cluster
+  delay_between_pulses: 0
+  delay_before_readout: 40
+  master_amplitude_gate: 1
+  master_duration_gate: 20
+  gates:
+    - name: M
+      amplitude: 1
+      phase: 0
+      duration: 6000
+      shape:
+        name: rectangular
+    - name: I
+      amplitude: 0
+      phase: 0
+      duration: master_duration_gate
+      shape:
+        name: rectangular
+    - name: X
+      amplitude: master_amplitude_gate
+      phase: 0
+      duration: master_duration_gate
+      shape:
+        name: gaussian
+        num_sigmas: 4
+    - name: Y
+      amplitude: master_amplitude_gate
+      phase: 1.5707963267948966 # pi / 2
+      duration: master_duration_gate
+      shape:
+        name: drag
+        num_sigmas: 4
+schema:
+  chip:
+    id_: 0
+    category: chip
+    nodes:
+      - name: port
+        id_: 0
+        nodes: [3]
+      - name: port
+        id_: 1
+        nodes: [2]
+      - name: resonator
+        alias: resonator
+        id_: 2
+        frequency: 8.0726e+09
+        nodes: [1, 3]
+      - name: qubit
+        alias: qubit
+        id_: 3
+        qubit_index: 0
+        frequency: 6.5328e+09
+        nodes: [0, 2]
+  instruments:
+    - name: QRM
+      alias: QRM
+      id_: 1
+      category: awg
+      firmware: 0.7.0
+      num_sequencers: 1
+      acquisition_delay_time: 100
+      awg_sequencers:
+        - identifier: 0
+          chip_port_id: 1
+          path0:
+            output_channel: 0
+          path1:
+            output_channel: 1
+          num_bins: 1
+          intermediate_frequency: 2.e+07
+          gain_path0: 1
+          gain_path1: 1
+          gain_imbalance: 1
+          phase_imbalance: 0
+          offset_path0: 0
+          offset_path1: 0
+          hardware_modulation: true
+          sync_enabled: true
+          scope_acquire_trigger_mode: sequencer
+          scope_hardware_averaging: true
+          sampling_rate: 1.e+09
+          integration_length: 2000
+          integration_mode: ssb
+          sequence_timeout: 1
+          acquisition_timeout: 1
+          hardware_demodulation: true
+          scope_store_enabled: false
+      awg_iq_channels:
+        - identifier: 0
+          i_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 0
+          q_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 1
+
+    - name: QCM
+      alias: QCM
+      id_: 1
+      category: awg
+      firmware: 0.7.0
+      num_sequencers: 1
+      awg_sequencers:
+        - identifier: 0
+          chip_port_id: 0
+          path0:
+            output_channel: 0
+          path1:
+            output_channel: 1
+          num_bins: 1
+          intermediate_frequency: 10.e+06
+          gain_path0: 1
+          gain_path1: 1
+          gain_imbalance: 0.5
+          phase_imbalance: 0
+          hardware_modulation: true
+          sync_enabled: true
+          offset_path0: 0
+          offset_path1: 0
+      awg_iq_channels:
+        - identifier: 0
+          i_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 0
+          q_channel:
+            awg_sequencer_identifier: 0
+            awg_sequencer_path_identifier: 1
+
+    - name: rohde_schwarz
+      alias: rs_1
+      id_: 0
+      category: signal_generator
+      firmware: 4.2.76.0-4.30.046.295
+      power: 16
+      frequency: 8.0726e+09
+
+    - name: rohde_schwarz
+      alias: rs_2
+      id_: 1
+      category: signal_generator
+      firmware: 4.2.76.0-4.30.046.295
+      power: 13
+      frequency: 6.53392e+09
+
+    # - name: S4g
+    #   alias: S4g
+    #   id_: 0
+    #   category: current_source
+    #   firmware: None
+    #   current: [0.0113]
+    #   ramping_enabled: [true]
+    #   ramp_rate: [0.0001]
+    #   span: [range_max_bi]
+    #   dacs: [0]
+
+  buses:
+    - id_: 0
+      name: time_domain_control_bus
+      category: bus
+      bus_category: time_domain
+      bus_subcategory: control
+      alias: drive_line_bus
+      system_control:
+        id_: 0
+        name: time_domain_control_system_control
+        category: system_control
+        system_control_category: time_domain
+        system_control_subcategory: control
+        awg: QCM
+        signal_generator: rs_2
+      port: 0
+    - id_: 1
+      name: time_domain_readout_bus
+      category: bus
+      bus_category: time_domain
+      bus_subcategory: readout
+      alias: feedline_input_output_bus
+      system_control:
+        id_: 1
+        name: time_domain_readout_system_control
+        category: system_control
+        system_control_category: time_domain
+        system_control_subcategory: readout
+        awg: QRM
+        signal_generator: rs_1
+      port: 1
+  instrument_controllers:
+    - name: qblox_cluster
+      id_: 1
+      alias: cluster_controller_0
+      category: instrument_controller
+      subcategory: multiple_instruments
+      reference_clock: internal
+      connection:
+        name: tcp_ip
+        address: 192.168.1.2
+      modules:
+        - awg: QRM
+          slot_id: 6
+        - awg: QCM
+          slot_id: 4
+
+    - name: rohde_schwarz
+      id_: 2
+      alias: rohde_schwarz_controller_0
+      category: instrument_controller
+      subcategory: single_instrument
+      connection:
+        name: tcp_ip
+        address: 192.168.1.13
+      modules:
+        - signal_generator: rs_1
+          slot_id: 0
+
+    - name: rohde_schwarz
+      id_: 3
+      alias: rohde_schwarz_controller_1
+      category: instrument_controller
+      subcategory: single_instrument
+      connection:
+        name: tcp_ip
+        address: 192.168.1.14
+      modules:
+        - signal_generator: rs_2
+          slot_id: 0
+
+    # - name: qblox_spi_rack
+    #   id_: 0
+    #   alias: qblox_spi_rack
+    #   category: instrument_controller
+    #   subcategory: multiple_instruments
+    #   connection:
+    #     name: usb
+    #     address: /dev/ttyACM0
+    #   modules:
+    #     - current_source: S4g
+    #       slot_id: 7

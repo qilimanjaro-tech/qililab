@@ -2,13 +2,15 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusSubcategory,
+    BusCategory,
+    BusSubCategory,
     Category,
     ConnectionName,
     GateName,
     Instrument,
     InstrumentName,
     IntegrationMode,
+    Node,
     NodeName,
     Parameter,
     PulseName,
@@ -16,15 +18,20 @@ from .enums import (
     ReferenceClock,
     ResultName,
     SchemaDrawOptions,
-    SystemControlSubcategory,
+    SystemControlCategory,
+    SystemControlSubCategory,
 )
+from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
 from .instruments import (
     Cluster,
     Device,
+    E5080BDriver,
     Keithley2600Driver,
     MiniCircuitsDriver,
     Pulsar,
+    QbloxD5a,
+    QbloxS4g,
     QcmQrm,
     RohdeSchwarzSGS100A,
 )

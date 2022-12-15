@@ -3,21 +3,22 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
-from qililab.result import Results
+from qililab.result.results import Results
 
-from ...conftest import mock_instruments
+from .aux_methods import mock_instruments
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.execution.buses_execution.yaml.safe_dump")
-@patch("qililab.execution.buses_execution.open")
-@patch("qililab.experiment.experiment.open")
+@patch("qililab.execution.execution_preparation.yaml.safe_dump")
+@patch("qililab.execution.execution_manager.open")
+@patch("qililab.execution.execution_preparation.open")
 @patch("qililab.utils.results_data_management.os.makedirs")
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
@@ -40,7 +41,7 @@ class TestExecution:
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-        nested_experiment.settings.software_average = 1
+        nested_experiment.options.settings.software_average = 1
         results = nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
         mock_urllib.request.Request.assert_called()
@@ -64,9 +65,9 @@ class TestExecution:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.loops[0].range,  # type: ignore
-                    nested_experiment.loops[0].loop.range,  # type: ignore
-                    nested_experiment.loops[0].loop.loop.range,  # type: ignore
+                    nested_experiment.options.loops[0].range,  # type: ignore
+                    nested_experiment.options.loops[0].loop.range,  # type: ignore
+                    nested_experiment.options.loops[0].loop.loop.range,  # type: ignore
                 ]
             )
         ).all()
@@ -158,15 +159,16 @@ class TestExecution:
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         mock_pulsar.return_value.get_acquisitions.side_effect = KeyboardInterrupt()
-        results = experiment.execute()
-        mock_urllib.request.Request.assert_called()
-        mock_urllib.request.urlopen.assert_called()
-        mock_rs.assert_called()
-        mock_pulsar.assert_called()
-        assert isinstance(results, Results)
-        mock_open_0.assert_called()
-        mock_dump_0.assert_called()
-        mock_open_1.assert_called()
-        mock_dump_1.assert_not_called()
-        mock_open_2.assert_not_called()
-        mock_makedirs.assert_called()
+        with pytest.raises(KeyboardInterrupt):
+            results = experiment.execute()
+            mock_urllib.request.Request.assert_called()
+            mock_urllib.request.urlopen.assert_called()
+            mock_rs.assert_called()
+            mock_pulsar.assert_called()
+            assert isinstance(results, Results)
+            mock_open_0.assert_called()
+            mock_dump_0.assert_called()
+            mock_open_1.assert_called()
+            mock_dump_1.assert_not_called()
+            mock_open_2.assert_not_called()
+            mock_makedirs.assert_called()

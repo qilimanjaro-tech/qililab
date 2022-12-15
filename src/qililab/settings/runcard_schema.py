@@ -31,12 +31,25 @@ class RuncardSchema:
         class BusSchema:
             """Bus schema class."""
 
+            @dataclass
+            class SystemControlSchema:
+                """Bus schema class."""
+
+                id_: int
+                name: str
+                category: str
+                system_control_category: str
+                system_control_subcategory: str
+                alias: str | None = None
+
             id_: int
+            name: str
             category: str
-            subcategory: str
-            system_control: dict
+            bus_category: str
+            bus_subcategory: str
+            system_control: SystemControlSchema
             port: int
-            attenuator: dict | None = None
+            alias: str | None = None
 
         @dataclass
         class ChipSchema:
@@ -45,6 +58,7 @@ class RuncardSchema:
             id_: int
             category: str
             nodes: List[dict]
+            alias: str | None = None
 
         @dataclass
         class InstrumentControllerSchema:
@@ -56,13 +70,13 @@ class RuncardSchema:
             connection: dict
             modules: List[dict]
 
-        chip: ChipSchema
+        chip: ChipSchema | None
         buses: List[BusSchema]
         instruments: List[dict]
         instrument_controllers: List[InstrumentControllerSchema]
 
         def __post_init__(self):
-            self.buses = [self.BusSchema(**bus) for bus in self.buses]
+            self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
 
     @nested_dataclass
     class PlatformSettings(DDBBElement):
@@ -105,7 +119,7 @@ class RuncardSchema:
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = [self.GateSettings(**gate) for gate in self.gates]
+            self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
 
         def get_gate(self, name: str):
             """Get gate with the given name.
@@ -129,10 +143,16 @@ class RuncardSchema:
             """
             return [gate.name for gate in self.gates]
 
-        def set_parameter(self, parameter: Parameter, value: float | str | bool, alias: str | None = None):
+        def set_parameter(
+            self,
+            parameter: Parameter,
+            value: float | str | bool,
+            channel_id: int | None = None,
+            alias: str | None = None,
+        ):
             """Cast the new value to its corresponding type and set the new attribute."""
             if alias is None or alias == Category.PLATFORM.value:
-                super().set_parameter(parameter=parameter, value=value)
+                super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
             param = parameter.value
             settings = self.get_gate(name=alias)

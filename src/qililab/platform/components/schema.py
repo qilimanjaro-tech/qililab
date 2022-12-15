@@ -8,8 +8,8 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.platform.components.bus import Bus
 from qililab.platform.components.buses import Buses
+from qililab.utils.factory import Factory
 
 
 class Schema:
@@ -17,11 +17,28 @@ class Schema:
 
     def __init__(self, buses: List[dict], instruments: List[dict], chip: dict, instrument_controllers: List[dict]):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
-        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=instruments))
-        self.chip = Chip(**chip)
-        self.buses = Buses(elements=[Bus(settings=bus, instruments=self.instruments, chip=self.chip) for bus in buses])
-        self.instrument_controllers = InstrumentControllers(
-            elements=self._load_instrument_controllers(instrument_controllers_dict=instrument_controllers)
+        self.instruments = (
+            Instruments(elements=self._load_instruments(instruments_dict=instruments))
+            if instruments is not None
+            else None
+        )
+        self.chip = Chip(**chip) if chip is not None else None
+        self.buses = (
+            Buses(
+                elements=[
+                    Factory.get(name=bus.pop(RUNCARD.NAME))(settings=bus, instruments=self.instruments, chip=self.chip)
+                    for bus in buses
+                ]
+            )
+            if buses is not None
+            else None
+        )
+        self.instrument_controllers = (
+            InstrumentControllers(
+                elements=self._load_instrument_controllers(instrument_controllers_dict=instrument_controllers)
+            )
+            if instrument_controllers is not None
+            else None
         )
 
     def __str__(self):
@@ -61,8 +78,10 @@ class Schema:
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
         return {
-            SCHEMA.CHIP: self.chip.to_dict(),
-            SCHEMA.INSTRUMENTS: self.instruments.to_dict(),
-            SCHEMA.BUSES: self.buses.to_dict(),
-            SCHEMA.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict(),
+            SCHEMA.CHIP: self.chip.to_dict() if self.chip is not None else None,
+            SCHEMA.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None,
+            SCHEMA.BUSES: self.buses.to_dict() if self.buses is not None else None,
+            SCHEMA.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
+            if self.instrument_controllers is not None
+            else None,
         }

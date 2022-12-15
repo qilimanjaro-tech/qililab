@@ -1,43 +1,166 @@
 """ExecutionBuilder class"""
 from typing import Dict, List
 
-from qililab.execution.bus_execution import BusExecution
-from qililab.execution.buses_execution import BusesExecution
 from qililab.execution.execution import Execution
+from qililab.execution.execution_buses import (
+    PulseScheduledBus,
+    PulseScheduledReadoutBus,
+    SimulatedPulseScheduledReadoutBus,
+)
+from qililab.execution.execution_manager import ExecutionManager
+from qililab.execution.simulated_execution_manager import SimulatedExecutionManager
 from qililab.platform import Platform
+from qililab.platform.components.bus import Bus
+from qililab.platform.components.bus_types import (
+    ContinuousBus,
+    TimeDomainBus,
+    TimeDomainReadoutBus,
+)
+from qililab.platform.components.bus_types.simulated_bus import SimulatedBus
 from qililab.pulse import PulseSchedule
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
+from qililab.typings.execution import ExecutionOptions
 from qililab.utils import Singleton
 
 
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_schedule: List[PulseSchedule]) -> Execution:
+    def build(
+        self, platform: Platform, pulse_schedules: List[PulseSchedule], execution_options: ExecutionOptions
+    ) -> Execution:
         """Build Execution class.
 
         Returns:
             Execution: Execution object.
         """
-        buses_execution = self._build_buses_execution(platform=platform, pulse_schedule_list=pulse_schedule)
 
-        return Execution(buses_execution=buses_execution, platform=platform)
+        return Execution(
+            execution_manager=self._build_execution_manager(platform=platform, pulse_schedules=pulse_schedules),
+            platform=platform,
+            options=execution_options,
+        )
 
-    def _build_buses_execution(self, platform: Platform, pulse_schedule_list: List[PulseSchedule]):
-        """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusesExecution class.
+    def _build_execution_manager(self, platform: Platform, pulse_schedules: List[PulseSchedule]):
+        """Loop over pulses in PulseSequence, classify them by bus index and instantiate a Pulse Scheduled Bus class.
 
         Returns:
-            BusesExecution: BusesExecution object.
+            ExecutionManager: ExecutionManager object.
         """
-        buses: Dict[int, BusExecution] = {}
-        for pulse_schedule in pulse_schedule_list:
-            for pulse_bus_schedule in pulse_schedule:
-                port = pulse_bus_schedule.port
-                bus_idx, bus = platform.get_bus(port=port)
+        control_pulse_schedule_buses: Dict[int, PulseScheduledBus] = {}
+        readout_pulse_schedule_buses: Dict[int, PulseScheduledReadoutBus] = {}
+        simulated_pulse_schedule_buses: Dict[int, SimulatedPulseScheduledReadoutBus] = {}
+        for pulse_schedule in pulse_schedules:
+            for pulse_bus_schedule in pulse_schedule.elements:
+                port, bus_idx, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
                 if bus is None:
                     raise ValueError(f"There is no bus connected to port {port}.")
-                if bus_idx not in buses:
-                    buses[bus_idx] = BusExecution(bus=bus, pulse_schedule=[pulse_bus_schedule])
-                    continue
-                buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
-        return BusesExecution(buses=list(buses.values()), num_sequences=len(pulse_schedule_list))
+                if self._is_time_domain_readout_bus(bus):
+                    self._add_readout_pulse_bus_schedule(
+                        bus=bus,
+                        bus_idx=bus_idx,
+                        readout_pulse_schedule_buses=readout_pulse_schedule_buses,
+                        pulse_bus_schedule=pulse_bus_schedule,
+                    )
+                    continue
+
+                if self._is_time_domain_bus(bus):
+                    self._add_control_pulse_bus_schedule(
+                        bus=bus,
+                        bus_idx=bus_idx,
+                        control_pulse_schedule_buses=control_pulse_schedule_buses,
+                        pulse_bus_schedule=pulse_bus_schedule,
+                    )
+                    continue
+
+                if self._is_simulated_readout_bus(bus):
+                    self._add_simulated_readout_pulse_bus_schedule(
+                        bus=bus,
+                        bus_idx=bus_idx,
+                        simulated_readout_pulse_schedule_buses=simulated_pulse_schedule_buses,
+                        pulse_bus_schedule=pulse_bus_schedule,
+                    )
+                    continue
+
+        continuous_buses = self._get_continuous_buses(platform=platform)
+        if list(simulated_pulse_schedule_buses.values()):
+            return SimulatedExecutionManager(
+                num_schedules=len(pulse_schedules),
+                simulated_pulse_scheduled_buses=list(simulated_pulse_schedule_buses.values()),
+            )
+        return ExecutionManager(
+            pulse_scheduled_buses=list(control_pulse_schedule_buses.values()),
+            pulse_scheduled_readout_buses=list(readout_pulse_schedule_buses.values()),
+            continuous_buses=continuous_buses,
+            num_schedules=len(pulse_schedules),
+        )
+
+    def _is_simulated_readout_bus(self, bus: Bus):
+        """check if the given bus is a simualted readout one"""
+        return isinstance(bus, SimulatedBus)
+
+    def _is_time_domain_readout_bus(self, bus: Bus):
+        """check if the given bus is a time domain readout one"""
+        return isinstance(bus, TimeDomainReadoutBus)
+
+    def _is_time_domain_bus(self, bus: Bus):
+        """check if the given bus is a time domain one"""
+        return isinstance(bus, TimeDomainBus)
+
+    def _add_simulated_readout_pulse_bus_schedule(
+        self,
+        bus: SimulatedBus,
+        bus_idx: int,
+        simulated_readout_pulse_schedule_buses: Dict[int, SimulatedPulseScheduledReadoutBus],
+        pulse_bus_schedule: PulseBusSchedule,
+    ):
+        """add a new simulatd pulse scheduled readout bus associated to the pulse bus schedule"""
+        if bus_idx not in simulated_readout_pulse_schedule_buses:
+            simulated_readout_pulse_schedule_buses[bus_idx] = SimulatedPulseScheduledReadoutBus(
+                bus=bus, pulse_schedule=[pulse_bus_schedule]
+            )
+            return
+        simulated_readout_pulse_schedule_buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
+
+    def _add_readout_pulse_bus_schedule(
+        self,
+        bus: TimeDomainReadoutBus,
+        bus_idx: int,
+        readout_pulse_schedule_buses: Dict[int, PulseScheduledReadoutBus],
+        pulse_bus_schedule: PulseBusSchedule,
+    ):
+        """add a new pulse scheduled readout bus associated to the pulse bus schedule"""
+        if bus_idx not in readout_pulse_schedule_buses:
+            readout_pulse_schedule_buses[bus_idx] = PulseScheduledReadoutBus(
+                bus=bus, pulse_schedule=[pulse_bus_schedule]
+            )
+            return
+        readout_pulse_schedule_buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
+
+    def _add_control_pulse_bus_schedule(
+        self,
+        bus: TimeDomainBus,
+        bus_idx: int,
+        control_pulse_schedule_buses: Dict[int, PulseScheduledBus],
+        pulse_bus_schedule: PulseBusSchedule,
+    ):
+        """add a new pulse scheduled control bus associated to the pulse bus schedule"""
+        if bus_idx not in control_pulse_schedule_buses:
+            control_pulse_schedule_buses[bus_idx] = PulseScheduledBus(bus=bus, pulse_schedule=[pulse_bus_schedule])
+            return
+        control_pulse_schedule_buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
+
+    def _get_bus_info_from_pulse_bus_schedule_port(self, platform: Platform, pulse_bus_schedule: PulseBusSchedule):
+        """get the bus information that it is connected to the port in the pulse bus schedule"""
+        port = pulse_bus_schedule.port
+        bus_idx, bus = platform.get_bus(port=port)
+        return port, bus_idx, bus
+
+    def _get_continuous_buses(self, platform: Platform):
+        """get the continuous buses from the platform"""
+        return [bus for bus in platform.buses if isinstance(bus, ContinuousBus)]
+
+    def _get_simulated_buses(self, platform: Platform):
+        """get the simulated buses from the platform"""
+        return [bus for bus in platform.buses if isinstance(bus, SimulatedBus)]

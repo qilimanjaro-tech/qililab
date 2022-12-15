@@ -1,7 +1,7 @@
 settings:
   id_: 0
   category: platform
-  name: galadriel_master
+  name: multiple_sequencers
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -45,65 +45,76 @@ schema:
     nodes:
       - name: port
         id_: 0
-        nodes: [3]
+        nodes: [4]
       - name: port
         id_: 1
-        nodes: [2]
+        nodes: [3]
+      - name: port
+        id_: 2
+        nodes: [5]
       - name: resonator
         alias: resonator
-        id_: 2
+        id_: 3
         frequency: 7.3264369805783645e+09
-        nodes: [1, 3]
+        nodes: [1, 4]
       - name: qubit
         alias: qubit
-        id_: 3
+        id_: 4
         qubit_idx: 0
         frequency: 3.351e+09
-        nodes: [0, 2]
+        nodes: [0, 3]
+      - name: coil
+        alias: coil
+        id_: 5
+        nodes: [2]
   instruments:
     - name: QCM
       alias: QCM
       id_: 0
       category: awg
       firmware: 0.7.0
-      frequency: 1.e+08
-      num_bins: 1
       num_sequencers: 1
+      num_bins: [1]
+      intermediate_frequencies: [1.e+08]
       gain: [1]
-      epsilon: [0]
-      delta: [0]
+      gain_imbalance: [0]
+      phase_imbalance: [0]
       offset_i: [0]
       offset_q: [0]
-      sync_enabled: true
+      hardware_modulation: [true]
+      sync_enabled: [true]
     - name: QRM
       alias: QRM
       id_: 1
       category: awg
       firmware: 0.7.0
-      frequency: 2.e+07
       num_sequencers: 1
+      intermediate_frequencies: [2.e+07]
       gain: [1]
-      epsilon: [0]
-      delta: [0]
+      gain_imbalance: [0]
+      phase_imbalance: [0]
       offset_i: [0]
       offset_q: [0]
+      hardware_modulation: [true]
+      sync_enabled: [true]
+      num_bins: [1]
+      scope_acquire_trigger_mode: [sequencer]
+      scope_hardware_averaging: [false]
+      sampling_rate: [1.e+09]
+      hardware_integration: [true]
+      hardware_demodulation: [true]
+      integration_length: [2000]
       acquisition_delay_time: 100
-      sync_enabled: true
-      scope_acquire_trigger_mode: sequencer
-      scope_hardware_averaging: false
-      sampling_rate: 1.e+09
-      num_bins: 1
-      integration: true
-      integration_length: 2000
-      integration_mode: ssb
-      sequence_timeout: 1
-      acquisition_timeout: 1
+      integration_mode: [ssb]
+      sequence_timeout: [1]
+      acquisition_timeout: [1]
     - name: rohde_schwarz
       alias: rs_0
       id_: 0
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 3.351e+09
 
     - name: rohde_schwarz
       alias: rs_1
@@ -111,6 +122,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 3.351e+09
 
     - name: mini_circuits
       alias: attenuator
@@ -118,10 +130,41 @@ schema:
       category: attenuator
       firmware: None
       attenuation: 32
+
+    - name: D5a
+      alias: D5a
+      id_: 0
+      category: voltage_source
+      firmware: None
+      voltage: [1, 1, 1, 1]
+      ramping_enabled: [true, true, true, true]
+      ramp_rate: [0.0001, 0.0001, 0.0001, 0.0001]
+      span: ["range_8V_bi", "range_8V_bi", "range_8V_bi", "range_8V_bi"]
+      dacs: [0, 1, 2, 3]
+
+    - name: S4g
+      alias: S4g
+      id_: 0
+      category: current_source
+      firmware: None
+      current: [0.0, 0.0, 0.0, 0.0]
+      ramping_enabled: [true, true, true, true]
+      ramp_rate: [0.0001, 0.0001, 0.0001, 0.0001]
+      span: ["range_max_bi", "range_max_bi", "range_max_bi", "range_max_bi"]
+      dacs: [0, 1, 2, 3]
+
+    - name: keysight_e5080b
+      alias: keysight_e5080b
+      id_: 0
+      category: vna
+      firmware: A.15.10.06
+      power: -60.0
+
   buses:
     - id_: 0
       category: bus
       subcategory: control
+      alias: bus_control
       system_control:
         id_: 0
         category: system_control
@@ -129,9 +172,10 @@ schema:
         awg: QCM
         signal_generator: rs_0
       port: 0
-    - id_: 0
+    - id_: 1
       category: bus
       subcategory: readout
+      alias: bus_readout
       system_control:
         id_: 1
         category: system_control
@@ -141,6 +185,19 @@ schema:
       attenuator: attenuator
       port: 1
   instrument_controllers:
+    - name: qblox_cluster
+      id_: 1
+      alias: cluster_controller_qrm_0
+      category: instrument_controller
+      subcategory: single_instrument
+      reference_clock: internal
+      connection:
+        name: tcp_ip
+        address: 192.168.1.2
+      modules:
+        - awg: QRM
+          slot_id: 6
+
     - name: qblox_pulsar
       id_: 0
       alias: pulsar_controller_qcm_0
@@ -152,7 +209,7 @@ schema:
         address: 192.168.0.3
       modules:
         - awg: QCM
-          slot_id: 0
+          slot_id: 1
     - name: qblox_pulsar
       id_: 1
       alias: pulsar_controller_qrm_0
@@ -164,7 +221,7 @@ schema:
         address: 192.168.0.4
       modules:
         - awg: QRM
-          slot_id: 0
+          slot_id: 1
     - name: rohde_schwarz
       id_: 2
       alias: rohde_schwarz_controller_0
@@ -175,7 +232,7 @@ schema:
         address: 192.168.0.10
       modules:
         - signal_generator: rs_0
-          slot_id: 0
+          slot_id: 1
     - name: rohde_schwarz
       id_: 3
       alias: rohde_schwarz_controller_1
@@ -186,7 +243,7 @@ schema:
         address: 192.168.0.7
       modules:
         - signal_generator: rs_1
-          slot_id: 0
+          slot_id: 1
     - name: mini_circuits
       id_: 4
       alias: attenuator_controller_0
@@ -197,4 +254,29 @@ schema:
         address: 192.168.0.222
       modules:
         - attenuator: attenuator
+          slot_id: 1
+    - name: qblox_spi_rack
+      id_: 0
+      alias: qblox_spi_rack
+      category: instrument_controller
+      subcategory: multiple_instruments
+      connection:
+        name: usb
+        address: /dev/ttyACM0
+      modules:
+        - voltage_source: D5a
+          slot_id: 4
+        - current_source: S4g
+          slot_id: 8
+    - name: keysight_e5080b_controller
+      id_: 0
+      alias: keysight_e5080b_controller
+      category: instrument_controller
+      subcategory: single_instrument
+      timeout: 10000
+      connection:
+        name: tcp_ip
+        address: 192.168.1.254
+      modules:
+        - vna: keysight_e5080b
           slot_id: 0

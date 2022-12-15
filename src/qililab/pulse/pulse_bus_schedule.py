@@ -1,14 +1,13 @@
-"""BusPulses class."""
+"""PulseBusSchedule class."""
 from bisect import insort
 from dataclasses import dataclass, field
 from typing import List, Set
 
 import numpy as np
 
-from qililab.constants import PULSESEQUENCE, RUNCARD
+from qililab.constants import PULSEBUSSCHEDULE
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.typings import PulseName
 from qililab.utils import Waveforms
 
@@ -18,7 +17,7 @@ class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus. All pulses should have the same name
     (Pulse or ReadoutPulse) and have the same frequency."""
 
-    port: int
+    port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: List[PulseEvent] = field(default_factory=list)
     _pulses: Set[Pulse] = field(init=False, default_factory=set)
 
@@ -181,8 +180,8 @@ class PulseBusSchedule:
             dict: Dictionary representation of the class.
         """
         return {
-            PULSESEQUENCE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
-            PULSESEQUENCE.PORT: self.port,
+            PULSEBUSSCHEDULE.TIMELINE: [pulse_event.to_dict() for pulse_event in self.timeline],
+            PULSEBUSSCHEDULE.PORT: self.port,
         }
 
     @classmethod
@@ -195,6 +194,6 @@ class PulseBusSchedule:
         Returns:
             PulseSequence: Loaded class.
         """
-        timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSESEQUENCE.TIMELINE]]
-        port = dictionary[PULSESEQUENCE.PORT]
+        timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
+        port = dictionary[PULSEBUSSCHEDULE.PORT]
         return PulseBusSchedule(timeline=timeline, port=port)

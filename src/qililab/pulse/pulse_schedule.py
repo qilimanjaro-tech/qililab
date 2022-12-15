@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from qililab.constants import PULSESEQUENCES
+from qililab.constants import PULSESCHEDULES
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
@@ -47,7 +47,7 @@ class PulseSchedule:
         Returns:
             dict: Dictionary representation of the class.
         """
-        return {PULSESEQUENCES.ELEMENTS: [pulse_sequence.to_dict() for pulse_sequence in self.elements]}
+        return {PULSESCHEDULES.ELEMENTS: [pulse_sequence.to_dict() for pulse_sequence in self.elements]}
 
     @classmethod
     def from_dict(cls, dictionary: dict):
@@ -59,7 +59,7 @@ class PulseSchedule:
         Returns:
             PulseSequence: Class instance.
         """
-        elements = [PulseBusSchedule.from_dict(dictionary=settings) for settings in dictionary[PULSESEQUENCES.ELEMENTS]]
+        elements = [PulseBusSchedule.from_dict(dictionary=settings) for settings in dictionary[PULSESCHEDULES.ELEMENTS]]
 
         return PulseSchedule(elements=elements)
 

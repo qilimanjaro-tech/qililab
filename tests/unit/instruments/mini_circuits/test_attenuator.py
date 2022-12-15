@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.instruments import Attenuator
+from qililab.typings.enums import Parameter
 
 
 class TestAttenuator:
@@ -24,11 +25,13 @@ class TestAttenuator:
         assert attenuator.attenuation == attenuator.settings.attenuation
 
     @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
-    def test_setup_method(self, mock_urllib: MagicMock, attenuator: Attenuator):
+    @pytest.mark.parametrize("parameter, value", [(Parameter.ATTENUATION, 0.01)])
+    def test_setup_method(self, mock_urllib: MagicMock, attenuator: Attenuator, parameter: Parameter, value: float):
         """Test setup method."""
-        attenuator.setup()
+        attenuator.setup(parameter=parameter, value=value)
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
+        assert attenuator.settings.attenuation == value
 
     @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
     def test_initial_setup_method(self, mock_urllib: MagicMock, attenuator: Attenuator):
@@ -37,13 +40,13 @@ class TestAttenuator:
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
 
-    def test_start_method(self, attenuator: Attenuator):
-        """Test start method."""
-        attenuator.start()
+    def test_turn_on_method(self, attenuator: Attenuator):
+        """Test turn_on method."""
+        attenuator.turn_on()
 
-    def test_stop_method(self, attenuator: Attenuator):
-        """Test stop method."""
-        attenuator.stop()
+    def test_turn_off_method(self, attenuator: Attenuator):
+        """Test turn_off method."""
+        attenuator.turn_off()
 
     def test_reset_method(self, attenuator: Attenuator):
         """Test reset method."""
@@ -55,5 +58,5 @@ class TestAttenuator:
         mock_urllib.error.URLError = urllib.error.URLError  # type: ignore
         mock_urllib.request.urlopen.side_effect = urllib.error.URLError(reason="")  # type: ignore
         with pytest.raises(ValueError):
-            attenuator.setup()
+            attenuator.initial_setup()
         mock_urllib.request.urlopen.assert_called()
