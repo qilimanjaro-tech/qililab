@@ -295,17 +295,9 @@ class Experiment:
         self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument
     ):
 
-        """update parameter from loop and calling a method each iteration"""
+        """update parameter from loop and call a method each iteration"""
 
-        if loop.callback is None:
-            self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
-            )
-        elif loop.callback is not None and loop.callback_order is None:
+        if loop.callback is not None and loop.callback_order is None:
             raise ValueError("'Callback_order' must be defined when callback method is passed")
         else:
             self.execute_callback_if_defined_before(loop=loop)
@@ -388,7 +380,7 @@ class Experiment:
             loop (Loop): Loop class containing the info of callback properties
         """
 
-        if loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
+        if loop.callback is not None and loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
             loop.callback(**loop.callback_kwargs)
 
     def execute_callback_if_defined_after(self, loop: Loop):
@@ -398,7 +390,7 @@ class Experiment:
             loop (Loop): Loop class containing the info of callback properties
         """
 
-        if loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
+        if loop.callback is not None and loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
             loop.callback(**loop.callback_kwargs)
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
