@@ -9,7 +9,7 @@ from qibo.core.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.config import logger
+from qililab.config import __version__, logger
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
 from qililab.platform.platform import Platform
@@ -40,6 +40,7 @@ class Experiment:
     _execution_preparation: ExecutionPreparation = field(init=False)
     _schedules: list[PulseSchedule] = field(init=False)
     _execution_ready: bool = field(init=False)
+    _remote_saved_experiment_id: int = field(init=False)
 
     def __post_init__(self):
         """prepares the Experiment class"""
@@ -134,7 +135,24 @@ class Experiment:
         with self._execution:
             self._execute_all_circuits_or_schedules()
 
+        if self.options.remote_save:
+            self.remote_save_experiment()
+
         return self._results
+
+    def remote_save_experiment(self):
+        """sends the remote save_experiment request using the provided remote connection"""
+        self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
+            name=self.options.name,
+            descitpion=self.options.description,
+            experiment_dict=self.to_dict(),
+            results_dict=self._results.to_dict(),
+            device_id=self.options.device_id,
+            user_id=self._remote_api.connection.user_id,
+            qililab_version=__version__,
+            favourite=False,
+        )
+        return self._remote_saved_experiment_id
 
     def _execute_all_circuits_or_schedules(self):
         """runs the circuits (or schedules) passed as input times software average"""
