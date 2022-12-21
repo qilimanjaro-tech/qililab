@@ -1,2 +1,2 @@
 """__init__.py"""
-from .data_unavaible import DataUnavailable
+from .data_unavailable import DataUnavailable
