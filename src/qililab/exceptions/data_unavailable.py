@@ -9,12 +9,4 @@ class DataUnavailable(Exception):
     """
 
     def __init__(self, message: str | None):
-        self.message = "Requesting data not available" if message is None else message
-
-    def __str__(self):
-        """Return a string representation of the exception.
-
-        Returns:
-            str: Error message.
-        """
-        return self.message
+        super().__init__("Requesting data not available" if message is None else message)
