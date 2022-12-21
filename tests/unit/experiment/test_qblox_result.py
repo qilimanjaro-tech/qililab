@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from qililab.constants import QBLOXCONSTANTS
+from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
 from ...utils import compare_pair_of_arrays, complete_array
@@ -54,7 +54,14 @@ class TestsQbloxResult:
             qblox_result_noscope (QbloxResult): QbloxResult instance.
         """
         acquisitions = qblox_result_noscope.acquisitions()
-        assert acquisitions.keys().tolist() == ["i", "q", "amplitude", "phase"]
+        assert acquisitions.keys().tolist() == [
+            RESULTSDATAFRAME.ACQUISITION_INDEX,
+            RESULTSDATAFRAME.BINS_INDEX,
+            "i",
+            "q",
+            "amplitude",
+            "phase",
+        ]
         assert np.isclose(acquisitions["i"].iloc[0], 1.0, 1e-10)
         assert np.isclose(acquisitions["q"].iloc[0], 0.0, 1e-10)
         assert np.isclose(acquisitions["amplitude"].iloc[0], 1.0, 1e-10)

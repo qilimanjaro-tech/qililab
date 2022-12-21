@@ -724,6 +724,29 @@ results_one_loops = {
     ],
 }
 
+results_one_loops_empty = {
+    EXPERIMENT.SOFTWARE_AVERAGE: 1,
+    EXPERIMENT.NUM_SCHEDULES: 1,
+    EXPERIMENT.SHAPE: [100],
+    EXPERIMENT.LOOPS: [
+        {
+            RUNCARD.ALIAS: "rs_1",
+            LOOP.PARAMETER: Node.FREQUENCY.value,
+            LOOP.OPTIONS: {
+                LOOP.START: 7342000000,
+                LOOP.STOP: 7352000000,
+                LOOP.NUM: None,
+                LOOP.STEP: 100000,
+                LOOP.LOGARITHMIC: False,
+                LOOP.CHANNEL_ID: None,
+                LOOP.VALUES: None,
+            },
+            LOOP.LOOP: None,
+        }
+    ],
+    EXPERIMENT.RESULTS: [],
+}
+
 experiment = {
     RUNCARD.PLATFORM: Galadriel.runcard,
     EXPERIMENT.OPTIONS: {
