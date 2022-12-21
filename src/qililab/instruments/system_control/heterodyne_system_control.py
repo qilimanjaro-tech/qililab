@@ -166,10 +166,12 @@ class HeterodyneSystemControl(SystemControl):
         seq_prog = f"""
         move    {self.settings.shots},R0   #Loop iterator.
         loop:
+        wait_sync   600
         play    0,1,4     #Play waveforms and wait 4ns.
         acquire 0,0,7000 #Acquire waveforms and wait remaining duration of scope acquisition.
+        wait_sync   4
+        wait    10000
         loop    R0,@loop  #Run until number of iterations is done.
-        stop              #Stop.orms and wait remaining duration of scope acquisition.
         stop              #Stop.
         """
 

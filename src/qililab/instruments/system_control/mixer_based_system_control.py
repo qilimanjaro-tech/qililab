@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, List, Tuple
 
+import json
 import numpy as np
 
 from qililab.constants import RUNCARD
@@ -15,7 +16,7 @@ from qililab.pulse import PulseBusSchedule
 from qililab.typings import Category, SystemControlSubcategory
 from qililab.typings.enums import Parameter
 from qililab.utils import Factory
-
+from scipy.signal.windows import gaussian
 
 @Factory.register
 class MixerBasedSystemControl(SystemControl):
@@ -29,7 +30,12 @@ class MixerBasedSystemControl(SystemControl):
 
         awg: AWG
         signal_generator: SignalGenerator
-
+        pulse_length: int = 100
+        sequence_manual: bool = True
+        gain: float = None
+        IF: float = 0.01
+        shots: int = 1000
+        
         def __iter__(
             self,
         ) -> Generator[Tuple[str, SignalGenerator | AWG | int], None, None]:
@@ -47,14 +53,101 @@ class MixerBasedSystemControl(SystemControl):
     def __init__(self, settings: dict, instruments: Instruments):
         super().__init__(settings=settings)
         self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+    
+    def heterodyne_mixing(self, I, Q, fLO, dt):
+        # This function should probably go to utilities. I also need a better name for it
+        N = I.shape[0]
+
+        time = np.linspace(0, N * dt, N)
+
+        cos = np.cos(2 * np.pi * fLO * time)
+        sin = np.sin(2 * np.pi * fLO * time)
+
+        modI = cos * I + sin * Q
+        modQ = -sin * I + cos * Q
+
+        return modI, modQ
+
 
     def setup(self):
         """Setup instruments."""
-        # min_freq = np.min(frequencies)
-        # self.signal_generator.frequency = min_freq + self.awg.frequency
-        # self.awg.frequencies = list(self.signal_generator.frequency - np.array(frequencies))
-        self.awg.initial_setup()
-        self.signal_generator.initial_setup()
+       
+       # New code :
+        dt = 1  # one nanosecond for GS/s resolution
+
+        I = np.array(gaussian(self.settings.pulse_length,10)) # + scipy.signal.gaussian(waveform_length, std=0.12 * waveform_length)
+        Q = np.zeros(self.settings.pulse_length)
+
+        self.modI, self.modQ = self.heterodyne_mixing(I, Q, self.settings.IF, dt)
+        self.waveforms = {
+            "modI": {
+                "data": list(self.modI),
+                "index": 0,
+            },
+            "modQ": {
+                "data": list(self.modQ),
+                "index": 1,
+            },
+        }
+        
+        # Generates a hardcoded sequence here in the Heterodyne
+        if self.settings.sequence_manual:
+            self._prepare_sequence_manually(self.modI, self.modQ, self.waveforms)
+
+       
+
+        # Map sequencer to specific outputs (but first disable all sequencer connections)
+        for sequencer in self.awg.device.sequencers:
+            for out in range(0, 2):
+                sequencer.set("channel_map_path{}_out{}_en".format(out % 2, out), False)
+        self.awg.device.sequencer0.channel_map_path0_out0_en(True)
+        self.awg.device.sequencer0.channel_map_path1_out1_en(True)
+        self.awg.device.sequencer0.mod_en_awg(False)
+
+        # set gain
+        if self.settings.gain is not None:
+            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+            print(f'gain set to {self.settings.gain}')
+            
+            
+    def _prepare_sequence_manually(self, modI, modQ, waveforms):
+
+        # ## 1.2. Set LO
+        # set LO power in dBm (Marki mixer requires 13dBm + 3dBm from the splitter)
+        # self.signal_generator.device.power(16) # This does not need to be hardcoded here. The runcard initiates it correctly
+        self.signal_generator.device.on()
+
+
+        seq_prog = f"""
+        move    {self.settings.shots},R0   #Loop iterator.
+        loop:
+        wait_sync   4
+        play    0,1,7000     #Play waveforms and wait 7000ns.
+        wait_sync   4
+        wait    8000
+        loop    R0,@loop  #Run until number of iterations is done.
+        stop              #Stop.
+        """
+        
+        # ## 1.4 Upload all
+        # Add sequence to single dictionary and write to JSON file.
+        sequence = {
+            "waveforms": waveforms,
+            "weights": {},
+            "acquisitions": {},
+            "program": seq_prog,
+        }
+        with open("sequence.json", "w", encoding="utf-8") as file:
+            json.dump(sequence, file, indent=4)
+            file.close()
+        self.awg.device.sequencer0.sequence("sequence.json")
+        # print(f"Heterodyne bus set gain to {self.settings.gain}")
+
+        # else:
+        # print("Gain is not set by Heterodyne bus")
+
+        # print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
 
     def start(self):
         """Start/Turn on the instruments."""
@@ -62,15 +155,17 @@ class MixerBasedSystemControl(SystemControl):
 
     def run(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path):
         """Change the SignalGenerator frequency if needed and run the given pulse sequence."""
-        if pulse_bus_schedule.frequency is not None and pulse_bus_schedule.frequency != self.frequency:
-            # FIXME: find the channel associated to the port of a pulse
-            self._update_frequency(frequency=pulse_bus_schedule.frequency, channel_id=0)
-        return self.awg.run(
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            path=path,
-        )
+       
+        # set gain
+        if self.settings.gain is not None:
+            self.awg.device.sequencer0.gain_awg_path0(self.settings.gain)
+            self.awg.device.sequencer0.gain_awg_path1(self.settings.gain)
+            print(f'gain set to {self.settings.gain}')
+            
+        print(f"Actual gain: {self.awg.device.sequencer0.gain_awg_path0()}")
+        self.awg.device.arm_sequencer(0)
+
+        self.awg.device.start_sequencer(0)
 
     def _update_frequency(self, frequency: float, channel_id: int | None = None):
         """update frequency to the signal generator and AWG

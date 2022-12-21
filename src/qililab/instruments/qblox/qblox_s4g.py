@@ -76,8 +76,8 @@ class QbloxS4g(CurrentSource):
         """performs an initial setup.
         For this instrument it is the same as a regular setup"""
         for dac_index in self.settings.dacs:
-            self.setup(Parameter.CURRENT, Parameter.CURRENT.value, dac_index)
-
+            # self.setup(Parameter.CURRENT, Parameter.CURRENT.value, dac_index)
+            self._channel_setup(dac_index=dac_index)
     @Instrument.CheckDeviceInitialized
     def start(self):
         """Dummy method."""

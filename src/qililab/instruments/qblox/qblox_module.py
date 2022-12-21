@@ -164,7 +164,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
+        # self._append_acquire_instruction(loop=avg_loop, register=avg_loop.counter_register)
         avg_loop.append_block(long_wait(wait_time=repetition_duration - avg_loop.duration_iter), bot_position=1)
         return program
 
