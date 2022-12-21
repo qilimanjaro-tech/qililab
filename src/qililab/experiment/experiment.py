@@ -381,7 +381,7 @@ class Experiment:
         """
 
         if loop.callback is not None and loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
-            loop.callback(**loop.callback_kwargs)
+            return loop.callback(**loop.callback_kwargs)
 
     def execute_callback_if_defined_after(self, loop: Loop):
         """execute callback method before set_parameter
@@ -391,7 +391,7 @@ class Experiment:
         """
 
         if loop.callback is not None and loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
-            loop.callback(**loop.callback_kwargs)
+            return loop.callback(**loop.callback_kwargs)
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
