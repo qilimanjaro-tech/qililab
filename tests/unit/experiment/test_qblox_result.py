@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-
 from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
 from qililab.exceptions.data_unavailable import DataUnavailable
 from qililab.result.qblox_results.qblox_result import QbloxResult
@@ -135,3 +134,14 @@ class TestsQbloxResult:
         """
         with pytest.raises(DataUnavailable):
             qblox_result_noscope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
+
+    def test_qblox_result_scoped_no_raises_DataUnavailable(self, qblox_result_scope: QbloxResult):
+        """Tests if DataUnavailable exception is not raised
+
+        Args:
+            qblox_result_scope (QbloxResult): QbloxResult instance with scope available.
+        """
+        try:
+            qblox_result_scope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
+        except DataUnavailable as exc:
+            assert False, f"acquisitions_scope raised an exception {exc}"
