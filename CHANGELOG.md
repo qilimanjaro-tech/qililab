@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.10.3 (2022-12-21)
+
+### Fix
+
+- **Results**: fixed no-results dataframe generation (#109)
+
 ## 0.10.2 (2022-12-14)
 
 ### Refactor
