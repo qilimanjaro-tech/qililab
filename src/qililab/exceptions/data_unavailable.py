@@ -8,7 +8,7 @@ class DataUnavailable(Exception):
         message (str): Optional message to be displayed
     """
 
-    def __init__(self, message=None):
+    def __init__(self, message: str | None):
         self.message = "Requesting data not available" if message is None else message
 
     def __str__(self):

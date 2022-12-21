@@ -8,6 +8,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
+from qililab.exceptions import DataUnavailable
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
     QbloxAcquisitionsBuilder,
@@ -107,12 +108,15 @@ class QbloxResult(Result):
             integrate (bool, optional): _description_. Defaults to False.
             integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
 
+        Raises:
+            DataUnavailable: Scope data is not available since it was not stored for this acquisition.
+
         Returns:
-            Tuple[List[float], List[float]] | None: _description_
+            Tuple[List[float], List[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
-            return None
+            raise DataUnavailable("Scope data is not available since it was not stored for this acquisition.")
         if demod_freq != 0.0:
             acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
         if integrate:

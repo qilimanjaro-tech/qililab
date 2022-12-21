@@ -2,8 +2,10 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from qililab.constants import QBLOXCONSTANTS
+from qililab.exceptions.data_unavailable import DataUnavailable
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
 from ...utils import compare_pair_of_arrays, complete_array
@@ -68,7 +70,6 @@ class TestsQbloxResult:
                 modulated at 10MHz.
         """
         acquisition = qblox_result_scope.acquisitions_scope()
-        assert acquisition is not None
         assert len(acquisition[0]) == QBLOXCONSTANTS.SCOPE_LENGTH
         assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
         time = np.arange(0, 1e-6, 1e-9)
@@ -86,7 +87,6 @@ class TestsQbloxResult:
                 modulated at 10MHz.
         """
         acquisition = qblox_result_scope.acquisitions_scope(demod_freq=10e6)
-        assert acquisition is not None
         assert len(acquisition[0]) == QBLOXCONSTANTS.SCOPE_LENGTH
         assert len(acquisition[1]) == QBLOXCONSTANTS.SCOPE_LENGTH
         expected_i = [1.0 for _ in range(1000)]
@@ -103,7 +103,6 @@ class TestsQbloxResult:
                 modulated at 10MHz.
         """
         acquisition = qblox_result_scope.acquisitions_scope(integrate=True, integration_range=(0, 1000))
-        assert acquisition is not None
         assert len(acquisition[0]) == 1
         assert len(acquisition[1]) == 1
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([0.0], [0.0]), tolerance=1e-5)
@@ -118,5 +117,13 @@ class TestsQbloxResult:
         acquisition = qblox_result_scope.acquisitions_scope(
             demod_freq=10e6, integrate=True, integration_range=(0, 1000)
         )
-        assert acquisition is not None
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([1.0], [0.0]), tolerance=1e-5)
+
+    def test_qblox_result_noscoped_raises_DataUnavailable(self, qblox_result_noscope: QbloxResult):
+        """Tests if DataUnavailable exception is raised
+
+        Args:
+            qblox_result_noscope (QbloxResult): QbloxResult instance with no scope available.
+        """
+        with pytest.raises(DataUnavailable):
+            qblox_result_noscope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
