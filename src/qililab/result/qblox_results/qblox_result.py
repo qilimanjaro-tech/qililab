@@ -99,7 +99,7 @@ class QbloxResult(Result):
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
         integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[List[float], List[float]] | None:
+    ) -> Tuple[List[float], List[float]]:
         """Acquisitions Scope
 
         Args:
