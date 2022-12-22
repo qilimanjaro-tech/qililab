@@ -54,9 +54,13 @@ class QbloxModule(AWG):
     def initial_setup(self):
         """Initial setup"""
         self._map_outputs()
+        
         for channel_id in range(self.num_sequencers):
             self._set_sync_enabled_one_channel(value=self.settings.sync_enabled[channel_id], channel_id=channel_id)
             self._set_nco(channel_id=channel_id)
+
+        self._set_gain(value=self.settings.gain[0], channel_id=0)
+        
 
     @property
     def module_type(self):
