@@ -18,4 +18,5 @@ class QbloxBinAcquisition(Acquisition):
         """
         acquisition_dataframe = super()._create_acquisition()
         acquisition_dataframe.index.rename(RESULTSDATAFRAME.BINS_INDEX, inplace=True)
+        acquisition_dataframe.reset_index(inplace=True)
         return acquisition_dataframe

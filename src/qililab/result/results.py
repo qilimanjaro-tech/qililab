@@ -10,6 +10,7 @@ from qililab.constants import EXPERIMENT, RESULTSDATAFRAME, RUNCARD
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
+from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import (
@@ -65,19 +66,22 @@ class Results:
             new_columns.append(RESULTSDATAFRAME.SOFTWARE_AVG_INDEX)
         return new_columns
 
+    def _build_empty_probabilities_dataframe(self):
+        """Builds an empty probabilities dataframe, with the minimal number of columns (p0 and p1) and nans as values"""
+        probability_columns = [RESULTSDATAFRAME.P0, RESULTSDATAFRAME.P1]
+        return pd.DataFrame(
+            [[np.nan] * len(probability_columns)], columns=pd.Index(probability_columns).transpose(), index=[0]
+        ).reset_index(drop=True)
+
     def _concatenate_probabilities_dataframes(self):
         """Concatenates the probabilities dataframes from all the results"""
         result_probabilities_list = [
-            result.probabilities()
-            if result is not None
-            else pd.DataFrame([]).reindex_like(self.results[0].probabilities())
+            result.probabilities() if result is not None else self._build_empty_probabilities_dataframe()
             for result in self.results
         ]
-        return pd.concat(
-            result_probabilities_list,
-            keys=range(len(result_probabilities_list)),
-            names=[RESULTSDATAFRAME.RESULTS_INDEX],
-        ).reset_index()
+        return concatenate_creating_new_name_index(
+            dataframe_list=result_probabilities_list, new_index_name=RESULTSDATAFRAME.RESULTS_INDEX
+        )
 
     def _add_meaningful_probabilities_indices(self, result_probabilities_dataframe: pd.DataFrame) -> pd.DataFrame:
         """Add to the dataframe columns that are relevant indices, computable from the `result_index`, as:
@@ -85,7 +89,7 @@ class Results:
         old_columns = result_probabilities_dataframe.columns
         self._computed_dataframe_indices = self._generate_new_probabilities_column_names()
 
-        num_qbits = len(self.results[0].probabilities())
+        num_qbits = max(len(self.results[0].probabilities()) if self.results[0] else 0, 1)
 
         result_probabilities_dataframe[self._computed_dataframe_indices] = result_probabilities_dataframe.apply(
             lambda row: coordinate_decompose(
@@ -151,19 +155,28 @@ class Results:
         """
 
         result_dataframes = [result.to_dataframe() for result in self.results]
-        return pd.concat(result_dataframes, keys=range(len(result_dataframes)), names=["result_index"])
+        return concatenate_creating_new_name_index(dataframe_list=result_dataframes, new_index_name="result_index")
+
+    def _build_empty_result_dataframe(self):
+        """Builds an empty result dataframe, with the minimal number of columns and nans as values"""
+        return pd.DataFrame(
+            [[np.nan] * len(self._data_dataframe_indices)],
+            columns=pd.Index(self._data_dataframe_indices).transpose(),
+            index=[0],
+        ).reset_index(drop=True)
 
     def _concatenate_acquisition_dataframes(self):
         """Concatenates the acquisitions from all the results"""
+        self._data_dataframe_indices = set().union(
+            *[result.data_dataframe_indices for result in self.results if result is not None]
+        )
         result_acquisition_list = [
-            result.acquisitions()
-            if result is not None
-            else pd.DataFrame([]).reindex_like(self.results[0].acquisitions())
+            result.acquisitions().reset_index(drop=True) if result is not None else self._build_empty_result_dataframe()
             for result in self.results
         ]
-        return pd.concat(
-            result_acquisition_list, keys=range(len(result_acquisition_list)), names=[RESULTSDATAFRAME.RESULTS_INDEX]
-        ).reset_index()
+        return concatenate_creating_new_name_index(
+            dataframe_list=result_acquisition_list, new_index_name=RESULTSDATAFRAME.RESULTS_INDEX
+        )
 
     def _generate_new_acquisition_column_names(self):
         """Checks shape, num_sequence and software_average and returns with that the list of columns that should
@@ -182,7 +195,9 @@ class Results:
         `loop_index_n` (in case more than one loop is defined), `sequence_index`"""
         old_columns = result_acquisition_dataframe.columns
         self._computed_dataframe_indices = self._generate_new_acquisition_column_names()
-        self._data_dataframe_indices = set().union(*[result.data_dataframe_indices for result in self.results])
+        self._data_dataframe_indices = set().union(
+            *[result.data_dataframe_indices for result in self.results if result is not None]
+        )
 
         result_acquisition_dataframe[self._computed_dataframe_indices] = result_acquisition_dataframe.apply(
             lambda row: coordinate_decompose(
