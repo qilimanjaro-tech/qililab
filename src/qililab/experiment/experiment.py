@@ -142,17 +142,19 @@ class Experiment:
 
     def remote_save_experiment(self):
         """sends the remote save_experiment request using the provided remote connection"""
-        self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
-            name=self.options.name,
-            descitpion=self.options.description,
-            experiment_dict=self.to_dict(),
-            results_dict=self._results.to_dict(),
-            device_id=self.options.device_id,
-            user_id=self._remote_api.connection.user_id,
-            qililab_version=__version__,
-            favourite=False,
-        )
-        return self._remote_saved_experiment_id
+        if self._remote_api.connection is not None:
+            logger.debug("Sending experiment and results to remote database.")
+            self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
+                name=self.options.name,
+                descitpion=self.options.description,
+                experiment_dict=self.to_dict(),
+                results_dict=self._results.to_dict(),
+                device_id=self.options.device_id,
+                user_id=self._remote_api.connection.user_id,
+                qililab_version=__version__,
+                favourite=False,
+            )
+            return self._remote_saved_experiment_id
 
     def _execute_all_circuits_or_schedules(self):
         """runs the circuits (or schedules) passed as input times software average"""
