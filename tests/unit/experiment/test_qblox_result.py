@@ -126,7 +126,7 @@ class TestsQbloxResult:
         )
         assert compare_pair_of_arrays(pair_a=acquisition, pair_b=([1.0], [0.0]), tolerance=1e-5)
 
-    def test_qblox_result_noscoped_raises_DataUnavailable(self, qblox_result_noscope: QbloxResult):
+    def test_qblox_result_noscoped_raises_data_unavailable(self, qblox_result_noscope: QbloxResult):
         """Tests if DataUnavailable exception is raised
 
         Args:
@@ -135,7 +135,7 @@ class TestsQbloxResult:
         with pytest.raises(DataUnavailable):
             qblox_result_noscope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
 
-    def test_qblox_result_scoped_no_raises_DataUnavailable(self, qblox_result_scope: QbloxResult):
+    def test_qblox_result_scoped_no_raises_data_unavailable(self, qblox_result_scope: QbloxResult):
         """Tests if DataUnavailable exception is not raised
 
         Args:
