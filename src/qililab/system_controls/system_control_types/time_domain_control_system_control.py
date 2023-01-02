@@ -79,6 +79,10 @@ class ControlSystemControl(TimeDomainSystemControl):
         if parameter == Parameter.POWER:
             self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
+        if parameter == Parameter.DRAG_COEFFICIENT:
+            # regenerate waveforms with new drag coefficient
+            # upload waveforms
+            return
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
