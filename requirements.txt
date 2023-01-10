@@ -6,7 +6,7 @@ pandas==1.5.2
 qibo>=0.1.6, <0.2
 PyYAML==6.0
 typeguard==2.13.3
-qblox-instruments==0.7.0
+qblox-instruments==0.8.1
 qcodes==0.34.1
 PyVISA-py==0.5.2
 qutip==4.7.0
