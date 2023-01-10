@@ -685,7 +685,8 @@ def fixture_create_mocked_connection_established(
     return ConnectionEstablished(
         **asdict(mocked_connection_configuration),
         authorisation_access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3O"
-        + "DkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        + "DkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.Sf"
+        + "lKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
         api_path="/api/v1",
     )
 
@@ -707,7 +708,7 @@ def fixture_create_mocked_api_connection(mocked_connection_established: Connecti
 
 
 @pytest.fixture(name="mocked_remote_api")
-def fixtuer_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
+def fixture_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
     """Create a mocked remote api connection
     Returns:
         RemoteAPI: Remote API mocked connection
@@ -716,7 +717,7 @@ def fixtuer_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
 
 
 @pytest.fixture(name="valid_remote_api")
-def fixtuer_create_valid_remote_api() -> RemoteAPI:
+def fixture_create_valid_remote_api() -> RemoteAPI:
     """Create a valid remote api connection
     Returns:
         RemoteAPI: Remote API connection
@@ -729,7 +730,7 @@ def fixtuer_create_valid_remote_api() -> RemoteAPI:
 
 
 @pytest.fixture(name="second_valid_remote_api")
-def fixtuer_create_second_valid_remote_api() -> RemoteAPI:
+def fixture_create_second_valid_remote_api() -> RemoteAPI:
     """Create a valid remote api connection
     Returns:
         RemoteAPI: Remote API connection
