@@ -22,12 +22,22 @@ class MicroWaveBiasSystemControl(ContinuousSystemControl):
 
         system_control_subcategory = SystemControlSubCategory.MICROWAVE_BIAS
         signal_generator: SignalGenerator
+        power: float
+        frequency: float
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
             return [Category.SIGNAL_GENERATOR.value]
 
     settings: MicroWaveBiasSystemControlSettings
+
+    # def setup(self):
+    #     """
+    #     Setup preparation previous to CW experiment with a CW bus.
+    #     It uses the values for frequency and power stored in the settings.
+    #     """
+    #     self.set_parameter(parameter=Parameter.FREQUENCY_CENTER,value=self.settings.frequency)
+    #     self.set_parameter(parameter=Parameter.POWER,value=self.settings.power)
 
     @property
     def signal_generator(self):
