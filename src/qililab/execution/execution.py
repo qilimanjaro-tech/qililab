@@ -1,6 +1,7 @@
 """Execution class."""
 from dataclasses import dataclass
 from pathlib import Path
+from qililab.execution import execution_manager
 
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
@@ -70,6 +71,10 @@ class Execution:
             repetition_duration=repetition_duration,
             path=path,
         )
+        
+    def setup(self) -> None:
+        """This calls the setup of the execution manager"""
+        self.execution_manager.setup()
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Run the given pulse sequence."""
