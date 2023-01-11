@@ -195,7 +195,7 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else self.final_wait_time
-            avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
+            # avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
             avg_loop.append_component(
                 set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
             )
