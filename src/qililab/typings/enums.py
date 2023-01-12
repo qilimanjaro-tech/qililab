@@ -2,7 +2,7 @@
 from enum import Enum
 
 
-class Category(Enum):
+class Category(str, Enum):
     """Category of settings.
 
     Args:
@@ -43,7 +43,7 @@ class Category(Enum):
     ADC = "adc"
 
 
-class Instrument(Enum):
+class Instrument(str, Enum):
     """Instrument.
 
     Args:
@@ -64,7 +64,7 @@ class Instrument(Enum):
     CURRENT_SOURCE = "current_source"
 
 
-class InstrumentControllerSubCategory(Enum):
+class InstrumentControllerSubCategory(str, Enum):
     """Instrument Controller subcategory types.
 
     Args:
@@ -77,7 +77,7 @@ class InstrumentControllerSubCategory(Enum):
     MULTI = "multiple_instruments"
 
 
-class ReferenceClock(Enum):
+class ReferenceClock(str, Enum):
     """Qblox reference clock.
 
     Args:
@@ -90,7 +90,7 @@ class ReferenceClock(Enum):
     EXTERNAL = "external"
 
 
-class AcquireTriggerMode(Enum):
+class AcquireTriggerMode(str, Enum):
     """Qblox acquire trigger mode.
 
     Args:
@@ -103,7 +103,7 @@ class AcquireTriggerMode(Enum):
     LEVEL = "level"
 
 
-class IntegrationMode(Enum):
+class IntegrationMode(str, Enum):
     """Qblox integration mode.
 
     Args:
@@ -114,7 +114,7 @@ class IntegrationMode(Enum):
     SSB = "ssb"
 
 
-class GateName(Enum):
+class GateName(str, Enum):
     """Gate names.
 
     Args:
@@ -137,7 +137,7 @@ class GateName(Enum):
     M = "M"
 
 
-class MasterGateSettingsName(Enum):
+class MasterGateSettingsName(str, Enum):
     """Master Gate Settings names.
     Args:
         enum (str): Available types of master gate settings names:
@@ -149,7 +149,7 @@ class MasterGateSettingsName(Enum):
     MASTER_DURATION_GATE = "master_duration_gate"
 
 
-class AcquisitionName(Enum):
+class AcquisitionName(str, Enum):
     """Acquisition names.
 
     Args:
@@ -161,7 +161,7 @@ class AcquisitionName(Enum):
     LARGE = "large"
 
 
-class SchemaDrawOptions(Enum):
+class SchemaDrawOptions(str, Enum):
     """Schema draw options.
 
     Args:
@@ -174,7 +174,7 @@ class SchemaDrawOptions(Enum):
     FILE = "file"
 
 
-class PulseName(Enum):
+class PulseName(str, Enum):
     """Pulse names.
 
     Args:
@@ -187,7 +187,7 @@ class PulseName(Enum):
     READOUT_PULSE = "readout_pulse"
 
 
-class PulseShapeName(Enum):
+class PulseShapeName(str, Enum):
     """Pulse shape options.
 
     Args:
@@ -200,7 +200,7 @@ class PulseShapeName(Enum):
     RECTANGULAR = "rectangular"
 
 
-class PulseShapeSettingsName(Enum):
+class PulseShapeSettingsName(str, Enum):
     """Pulse Shape Settings names.
     Args:
         enum (str): Available types of pulse shape settings names:
@@ -212,7 +212,7 @@ class PulseShapeSettingsName(Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
 
 
-class BusCategory(Enum):
+class BusCategory(str, Enum):
     """Bus categories.
 
     Args:
@@ -227,7 +227,7 @@ class BusCategory(Enum):
     SIMULATED = "simulated"
 
 
-class BusSubCategory(Enum):
+class BusSubCategory(str, Enum):
     """Bus subcategories.
 
     Args:
@@ -250,7 +250,7 @@ class BusSubCategory(Enum):
     SIMULATED = "simulated"
 
 
-class SystemControlCategory(Enum):
+class SystemControlCategory(str, Enum):
     """SystemControl categories.
 
     Args:
@@ -265,7 +265,7 @@ class SystemControlCategory(Enum):
     SIMULATED = "simulated"
 
 
-class SystemControlSubCategory(Enum):
+class SystemControlSubCategory(str, Enum):
     """SystemControl subcategories.
 
     Args:
@@ -288,7 +288,7 @@ class SystemControlSubCategory(Enum):
     SIMULATED = "simulated"
 
 
-class NodeName(Enum):
+class NodeName(str, Enum):
     """Node names.
 
     Args:
@@ -305,7 +305,7 @@ class NodeName(Enum):
     PORT = "port"
 
 
-class InstrumentName(Enum):
+class InstrumentName(str, Enum):
     """Instrument names.
 
     Args:
@@ -332,7 +332,7 @@ class InstrumentName(Enum):
     AGILENT_E5071B = "agilent_e5071B"
 
 
-class InstrumentControllerName(Enum):
+class InstrumentControllerName(str, Enum):
     """Instrument Controller names.
 
     Args:
@@ -356,7 +356,7 @@ class InstrumentControllerName(Enum):
     AGILENT_E5071B = "agilent_e5071B_controller"
 
 
-class SystemControlName(Enum):
+class SystemControlName(str, Enum):
     """System Control names.
 
     Args:
@@ -378,7 +378,7 @@ class SystemControlName(Enum):
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
 
 
-class BusName(Enum):
+class BusName(str, Enum):
     """System Control names.
 
     Args:
@@ -400,7 +400,7 @@ class BusName(Enum):
     SIMULATED_BUS = "simulated_bus"
 
 
-class Parameter(Enum):
+class Parameter(str, Enum):
     """Parameter names."""
 
     BUS_FREQUENCY = "bus_frequency"
@@ -469,7 +469,7 @@ class Parameter(Enum):
     OFFSET_PATH1 = "offset_path1"
 
 
-class ResultName(Enum):
+class ResultName(str, Enum):
     """Result names.
 
     Args:
@@ -483,7 +483,7 @@ class ResultName(Enum):
     VECTOR_NETWORK_ANALYZER = "vector_network_analyzer"
 
 
-class ConnectionName(Enum):
+class ConnectionName(str, Enum):
     """Connection names.
 
     Args:
@@ -496,7 +496,7 @@ class ConnectionName(Enum):
     USB = "usb"
 
 
-class InstrumentTypeName(Enum):
+class InstrumentTypeName(str, Enum):
     """Instrument Type names (the name of the class).
 
     Args:
@@ -519,7 +519,7 @@ class InstrumentTypeName(Enum):
     QBLOX_S4G = "QbloxS4g"
 
 
-class LivePlotTypes(Enum):
+class LivePlotTypes(str, Enum):
     """Live Plot Types.
 
     Args:
@@ -534,7 +534,7 @@ class LivePlotTypes(Enum):
     HEATMAP = "HEATMAP"
 
 
-class VNATriggerModes(Enum):
+class VNATriggerModes(str, Enum):
     """Vector Network Analyzers Trigger Modes
 
     Args:
@@ -547,7 +547,7 @@ class VNATriggerModes(Enum):
     BUS = "BUS"
 
 
-class VNAScatteringParameters(Enum):
+class VNAScatteringParameters(str, Enum):
     """Vector Network Analyzers Scattering Parameters
 
     Args:
@@ -564,7 +564,7 @@ class VNAScatteringParameters(Enum):
     S21 = "S21"
 
 
-class Node(Enum):
+class Node(str, Enum):
     """Node elements
 
     Args:
