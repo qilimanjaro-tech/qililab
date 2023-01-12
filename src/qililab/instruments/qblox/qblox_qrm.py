@@ -207,12 +207,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         # FIXME: using the integration length of the first sequencer
         return QbloxResult(pulse_length=self.integration_length(sequencer_id=0), qblox_raw_results=results)
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int, readout_duration: int):
         """Append an acquire instruction to the loop."""
         acquisition_idx = (
             0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
         )  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=readout_duration))
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.

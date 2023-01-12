@@ -11,7 +11,7 @@ from tomlkit import value
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, Stop, Wait
+from qpysequence.program.instructions import Play, Stop, Wait, WaitSync, ResetPh
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
@@ -125,9 +125,13 @@ class QbloxModule(AWG):
 
     def run(self):
         """Run the uploaded program"""
+        for sequencer in self.awg_sequencers:
+            sequencer_id = sequencer.identifier
+            self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
+        # print(self.device.sequencers[0].mod_en_awg(bool(value)))
         self.start_sequencer()
 
-    def _check_cached_values(
+    def _check_cached_values( 
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ):
         """check if values are already cached and upload if not cached"""
@@ -178,6 +182,7 @@ class QbloxModule(AWG):
         sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Define program's blocks
         program = Program()
+        # program.append_component(WaitSync(4))
         avg_loop = Loop(name="average", begin=nshots)
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -194,6 +199,7 @@ class QbloxModule(AWG):
             # avg_loop.append_component(
             #     set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
             # )
+            avg_loop.append_component(ResetPh())
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -201,10 +207,12 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
-        wait_time = repetition_duration
+        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id, readout_duration=8000)
+        wait_time = repetition_duration - 8000
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
+            
+        print(program)
         return program
 
     def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
@@ -234,7 +242,7 @@ class QbloxModule(AWG):
         return {}
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int, readout_duration):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
@@ -252,8 +260,8 @@ class QbloxModule(AWG):
             raise ValueError(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
-        if parameter == Parameter.GAIN:
-            self._set_gain(value=value, sequencer_id=channel_id)
+        # if parameter == Parameter.GAIN:
+        #     self._set_gain(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.GAIN_PATH0:
             self._set_gain_path0(value=value, sequencer_id=channel_id)
@@ -333,7 +341,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
+        # self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
         self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -425,7 +433,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-        
+        print(self.device.sequencers[sequencer_id].gain_awg_path0())
     @Instrument.CheckParameterValueBool
     def _set_hardware_average(self, value: bool, sequencer_id: int):
         """Set Hardware averaging ON/OFF
@@ -439,6 +447,7 @@ class QbloxModule(AWG):
         """
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
+        # print(self.device.scope_acq_avg_mode_en_path0())
       
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -454,6 +463,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
+        print(self.device.sequencers[sequencer_id].gain_awg_path1())
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
