@@ -1,10 +1,10 @@
 """ Test Results """
-
+import pandas as pd
 import pytest
 
 from qililab import Results
 
-from ...data import results_one_loops, results_two_loops
+from ...data import results_one_loops, results_one_loops_empty, results_two_loops
 
 
 class TestsResults:
@@ -21,3 +21,17 @@ class TestsResults:
         """Tests to_dict() serialization of results gives the intended dictionary."""
         results_final = Results.from_dict(results_dict).to_dict()
         assert results_final == results_dict
+
+    @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops, results_one_loops_empty])
+    def test_acquisitions_method(self, results_dict: dict):
+        """Tests to_dataframe() serialization of results gives a valid dataframe."""
+        results = Results.from_dict(results_dict)
+        acquisitions_df = results.acquisitions()
+        assert isinstance(acquisitions_df, pd.DataFrame)
+
+    @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops, results_one_loops_empty])
+    def test_probabilities_method(self, results_dict: dict):
+        """Tests to_dataframe() serialization of results gives a valid dataframe."""
+        results = Results.from_dict(results_dict)
+        probabilities_df = results.probabilities()
+        assert isinstance(probabilities_df, pd.DataFrame)

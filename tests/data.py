@@ -19,6 +19,13 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
+from qililab.instruments.awg_settings.typings import (
+    AWGChannelMappingTypes,
+    AWGIQChannelTypes,
+    AWGSequencerPathTypes,
+    AWGSequencerTypes,
+    AWGTypes,
+)
 from qililab.typings.enums import (
     AcquireTriggerMode,
     BusCategory,
@@ -97,7 +104,7 @@ class Galadriel:
 
     pulsar_controller_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -116,25 +123,51 @@ class Galadriel:
 
     qblox_qcm_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.QBLOX_QCM.value,
+        RUNCARD.NAME: InstrumentName.QBLOX_QCM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
-        Parameter.NUM_BINS.value: [1],
-        Parameter.IF.value: [100_000_000],
-        Parameter.GAIN.value: [1],
-        Parameter.GAIN_IMBALANCE.value: [0],
-        Parameter.PHASE_IMBALANCE.value: [0],
-        Parameter.OFFSET_I.value: [0],
-        Parameter.OFFSET_Q.value: [0],
-        Parameter.HARDWARE_MODULATION.value: [False],
-        Parameter.SYNC_ENABLED.value: [True],
+        AWGTypes.AWG_SEQUENCERS.value: [
+            {
+                AWGSequencerTypes.IDENTIFIER.value: 0,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
+                AWGSequencerTypes.PATH0.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
+                },
+                AWGSequencerTypes.PATH1.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
+                },
+                Parameter.NUM_BINS.value: 1,
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_PATH0.value: 1,
+                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_PATH0.value: 0,
+                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SYNC_ENABLED.value: True,
+            }
+        ],
+        AWGTypes.AWG_IQ_CHANNELS.value: [
+            {
+                AWGIQChannelTypes.IDENTIFIER.value: 0,
+                AWGIQChannelTypes.I_CHANNEL.value: {
+                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
+                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
+                },
+                AWGIQChannelTypes.Q_CHANNEL.value: {
+                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
+                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
+                },
+            },
+        ],
     }
 
     pulsar_controller_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR.value,
+        RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -145,7 +178,7 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.AWG_DAC.value: InstrumentName.QBLOX_QRM.value,
+                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -153,35 +186,61 @@ class Galadriel:
 
     qblox_qrm_0 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.QBLOX_QRM.value,
+        RUNCARD.NAME: InstrumentName.QBLOX_QRM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
-        RUNCARD.CATEGORY: Category.AWG_DAC.value,
+        RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
-        Parameter.NUM_BINS.value: [1],
-        Parameter.IF.value: [100_000_000],
-        Parameter.GAIN.value: [1],
-        Parameter.GAIN_IMBALANCE.value: [0],
-        Parameter.PHASE_IMBALANCE.value: [0],
-        Parameter.OFFSET_I.value: [0],
-        Parameter.OFFSET_Q.value: [0],
-        Parameter.HARDWARE_MODULATION.value: [False],
-        Parameter.SYNC_ENABLED.value: [True],
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
-        Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: [AcquireTriggerMode.SEQUENCER.value],
-        Parameter.SCOPE_HARDWARE_AVERAGING.value: [True],
-        Parameter.SAMPLING_RATE.value: [1.0e09],
-        Parameter.INTEGRATION_LENGTH.value: [2_000],
-        Parameter.INTEGRATION_MODE.value: [IntegrationMode.SSB.value],
-        Parameter.SEQUENCE_TIMEOUT.value: [1],
-        Parameter.ACQUISITION_TIMEOUT.value: [1],
-        Parameter.HARDWARE_INTEGRATION.value: [True],
-        Parameter.HARDWARE_DEMODULATION.value: [True],
+        AWGTypes.AWG_SEQUENCERS.value: [
+            {
+                AWGSequencerTypes.IDENTIFIER.value: 0,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                AWGSequencerTypes.PATH0.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
+                },
+                AWGSequencerTypes.PATH1.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
+                },
+                Parameter.NUM_BINS.value: 1,
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_PATH0.value: 1,
+                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_PATH0.value: 0,
+                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SYNC_ENABLED.value: True,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: False,
+            }
+        ],
+        AWGTypes.AWG_IQ_CHANNELS.value: [
+            {
+                AWGIQChannelTypes.IDENTIFIER.value: 0,
+                AWGIQChannelTypes.I_CHANNEL.value: {
+                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
+                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
+                },
+                AWGIQChannelTypes.Q_CHANNEL.value: {
+                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
+                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
+                },
+            },
+        ],
     }
 
     rohde_schwarz_controller_0 = {
         RUNCARD.ID: 2,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -199,7 +258,7 @@ class Galadriel:
 
     rohde_schwarz_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_0",
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -209,7 +268,7 @@ class Galadriel:
 
     rohde_schwarz_controller_1 = {
         RUNCARD.ID: 3,
-        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -227,7 +286,7 @@ class Galadriel:
 
     rohde_schwarz_1 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ.value,
+        RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_1",
         RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -237,7 +296,7 @@ class Galadriel:
 
     attenuator_controller_0 = {
         RUNCARD.ID: 4,
-        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS.value,
+        RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -255,7 +314,7 @@ class Galadriel:
 
     attenuator = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS.value,
+        RUNCARD.NAME: InstrumentName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator",
         RUNCARD.CATEGORY: Category.ATTENUATOR.value,
         Parameter.ATTENUATION.value: 30,
@@ -264,7 +323,7 @@ class Galadriel:
 
     keithley_2600_controller_0 = {
         RUNCARD.ID: 5,
-        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600.value,
+        RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
@@ -274,7 +333,7 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.DC_SOURCE.value: "keithley_2600",
+                Category.DC_SOURCE.value: InstrumentName.KEITHLEY2600.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -282,8 +341,8 @@ class Galadriel:
 
     keithley_2600 = {
         RUNCARD.ID: 1,
-        RUNCARD.NAME: InstrumentName.KEITHLEY2600.value,
-        RUNCARD.ALIAS: "keithley_2600",
+        RUNCARD.NAME: InstrumentName.KEITHLEY2600,
+        RUNCARD.ALIAS: InstrumentControllerName.KEITHLEY2600.value,
         RUNCARD.CATEGORY: Category.DC_SOURCE.value,
         RUNCARD.FIRMWARE: None,
         Parameter.MAX_CURRENT.value: 0.1,
@@ -327,14 +386,14 @@ class Galadriel:
     buses = [
         {
             RUNCARD.ID: 0,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_CONTROL_BUS.value,
+            RUNCARD.NAME: BusName.TIME_DOMAIN_CONTROL_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
             RUNCARD.BUS_SUBCATEGORY: BusSubCategory.CONTROL.value,
             RUNCARD.ALIAS: "drive_line_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL.value,
+                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.CONTROL.value,
@@ -345,19 +404,18 @@ class Galadriel:
         },
         {
             RUNCARD.ID: 1,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS.value,
+            RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
             RUNCARD.BUS_SUBCATEGORY: BusSubCategory.TIME_DOMAIN_READOUT.value,
             RUNCARD.ALIAS: "feedline_input_output_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 1,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL.value,
+                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.TIME_DOMAIN_READOUT.value,
                 Category.AWG.value: InstrumentName.QBLOX_QRM.value,
-                Category.AWG_DAC.value: InstrumentName.QBLOX_QRM.value,
                 Category.SIGNAL_GENERATOR.value: "rs_1",
             },
             NodeName.PORT.value: 1,
@@ -378,7 +436,7 @@ class Galadriel:
 
     qubit_0: dict = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.QUBIT.value,
+        RUNCARD.NAME: NodeName.QUBIT,
         RUNCARD.CATEGORY: NodeName.QUBIT.value,
         RUNCARD.ALIAS: NodeName.QUBIT.value,
         "pi_pulse_amplitude": 1,
@@ -391,7 +449,7 @@ class Galadriel:
 
     resonator_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.PORT.value,
+        RUNCARD.NAME: NodeName.PORT,
         RUNCARD.CATEGORY: NodeName.PORT.value,
         "qubits": [
             {
@@ -487,14 +545,14 @@ class FluxQubitSimulator:
         SCHEMA.BUSES: [
             {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: BusName.SIMULATED_BUS.value,
+                RUNCARD.NAME: BusName.SIMULATED_BUS,
                 RUNCARD.CATEGORY: Category.BUS.value,
                 RUNCARD.BUS_CATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.BUS_SUBCATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.ALIAS: "simulated_bus",
                 Category.SYSTEM_CONTROL.value: {
                     RUNCARD.ID: 0,
-                    RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL.value,
+                    RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL,
                     RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                     RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.SIMULATED.value,
                     RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.SIMULATED.value,
@@ -574,22 +632,34 @@ results_two_loops = {
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
@@ -620,26 +690,61 @@ results_one_loops = {
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                    "threshold": [0.48046875],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
+                        "threshold": [0.48046875],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
         {
             RUNCARD.NAME: "qblox",
             "pulse_length": 8000,
-            "bins": [
+            "qblox_raw_results": [
                 {
-                    "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                    "threshold": [0.4599609375],
-                    "avg_cnt": [1024],
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                    },
                 }
             ],
         },
     ],
+}
+
+results_one_loops_empty = {
+    EXPERIMENT.SOFTWARE_AVERAGE: 1,
+    EXPERIMENT.NUM_SCHEDULES: 1,
+    EXPERIMENT.SHAPE: [100],
+    EXPERIMENT.LOOPS: [
+        {
+            RUNCARD.ALIAS: "rs_1",
+            LOOP.PARAMETER: Node.FREQUENCY.value,
+            LOOP.OPTIONS: {
+                LOOP.START: 7342000000,
+                LOOP.STOP: 7352000000,
+                LOOP.NUM: None,
+                LOOP.STEP: 100000,
+                LOOP.LOGARITHMIC: False,
+                LOOP.CHANNEL_ID: None,
+                LOOP.VALUES: None,
+            },
+            LOOP.LOOP: None,
+        }
+    ],
+    EXPERIMENT.RESULTS: [],
 }
 
 experiment = {

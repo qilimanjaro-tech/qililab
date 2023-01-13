@@ -149,13 +149,16 @@ class Instrument(BusElement, ABC):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        if not hasattr(self, "device"):
+            raise ValueError(
+                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+            )
         if channel_id is None:
-            logger.info("Setting parameter: %s to value: %f", parameter.value, value)
+            logger.debug("Setting parameter: %s to value: %f", parameter.value, value)
         if channel_id is not None:
-            logger.info("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
-        if hasattr(self, "device"):
-            self.setup(parameter=parameter, value=value, channel_id=channel_id)
+            logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
+
+        self.setup(parameter=parameter, value=value, channel_id=channel_id)
 
     @CheckDeviceInitialized
     @abstractmethod

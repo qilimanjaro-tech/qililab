@@ -1,4 +1,5 @@
 """InstrumentFactory class."""
+from enum import Enum
 from typing import Dict, Type, TypeVar
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
@@ -22,6 +23,6 @@ class InstrumentControllerFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> Type[InstrumentController]:
+    def get(cls, name: str | Enum) -> Type[InstrumentController]:
         """Return class attribute."""
-        return cls.handlers[name]
+        return cls.handlers[name.value] if isinstance(name, Enum) else cls.handlers[name]

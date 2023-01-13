@@ -1,10 +1,10 @@
 """Settings class."""
-from dataclasses import dataclass, fields
-from enum import Enum
+from dataclasses import dataclass
 from types import NoneType
 from typing import Any
 
 from qililab.typings import Category, Parameter
+from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass(kw_only=True)
@@ -24,9 +24,7 @@ class DDBBElement:
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
-        for field in fields(self):
-            if isinstance(field.type, type) and issubclass(field.type, Enum):
-                setattr(self, field.name, field.type(getattr(self, field.name)))
+        cast_enum_fields(obj=self)
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Cast the new value to its corresponding type and set the new attribute."""

@@ -40,8 +40,7 @@ class Category(Enum):
     INSTRUMENT_CONTROLLER = "instrument_controller"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    DAC = "digital_analog_converter"
-    AWG_DAC = "awg_dac"
+    ADC = "adc"
 
 
 class Instrument(Enum):
@@ -404,7 +403,7 @@ class BusName(Enum):
 class Parameter(Enum):
     """Parameter names."""
 
-    BUS_FREQUENCY = "frequency"
+    BUS_FREQUENCY = "bus_frequency"
     LO_FREQUENCY = "frequency"
     GAIN = "gain"
     DURATION = "duration"
@@ -442,7 +441,7 @@ class Parameter(Enum):
     HARDWARE_INTEGRATION = "hardware_integration"
     SCOPE_ACQUIRE_TRIGGER_MODE = "scope_acquire_trigger_mode"
     SCOPE_HARDWARE_AVERAGING = "scope_hardware_averaging"
-    IF = "intermediate_frequencies"
+    IF = "intermediate_frequency"
     VOLTAGE = "voltage"
     CURRENT = "current"
     RAMPING_ENABLED = "ramping_enabled"
@@ -463,6 +462,11 @@ class Parameter(Enum):
     ACQUISITION_TIMEOUT = "acquisition_timeout"
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
+    SCOPE_STORE_ENABLED = "scope_store_enabled"
+    GAIN_PATH0 = "gain_path0"
+    GAIN_PATH1 = "gain_path1"
+    OFFSET_PATH0 = "offset_path0"
+    OFFSET_PATH1 = "offset_path1"
 
 
 class ResultName(Enum):

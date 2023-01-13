@@ -239,6 +239,7 @@ schema:
       integration_mode: [ssb, ssb, ssb, ssb, ssb]
       sequence_timeout: [1, 1, 1, 1, 1]
       acquisition_timeout: [1, 1, 1, 1, 1]
+      scope_store_enabled: [false, false, false, false, false]
 
     - name: rohde_schwarz
       alias: rs_0
@@ -246,6 +247,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: rohde_schwarz
       alias: rs_1
@@ -253,6 +255,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: rohde_schwarz
       alias: rs_2
@@ -260,6 +263,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: rohde_schwarz
       alias: rs_3
@@ -267,6 +271,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: rohde_schwarz
       alias: rs_4
@@ -274,6 +279,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: rohde_schwarz
       alias: rs_5
@@ -281,6 +287,7 @@ schema:
       category: signal_generator
       firmware: 4.30.046.295
       power: 15
+      frequency: 6.53392e+09
 
     - name: S4g
       alias: S4g_0

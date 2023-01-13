@@ -40,6 +40,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
             "scope_acq_trigger_mode_path1",
             "sequencers",
             "scope_acq_sequencer_select",
+            "get_acquisitions",
         ]
     )
     mock_pulsar_instance.sequencer0.mock_add_spec(

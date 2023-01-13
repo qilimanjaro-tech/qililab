@@ -14,7 +14,7 @@ from ..data import experiment, results_one_loops, results_two_loops
 @patch("qililab.utils.load_data.yaml.safe_load", return_value=deepcopy(results_two_loops))
 def test_load_results_two_loops(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Results class."""
-    _, result = load(path="")
+    _, result = load(path="", load_experiment=True)
     mock_load.assert_called_once()
     mock_open.assert_called_once()
     mock_os.assert_called()
@@ -28,7 +28,7 @@ def test_load_results_two_loops(mock_load: MagicMock, mock_open: MagicMock, mock
 @patch("qililab.utils.load_data.yaml.safe_load", return_value=deepcopy(results_one_loops))
 def test_load_results_one_loop(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Results class."""
-    _, result = load(path="")
+    _, result = load(path="", load_experiment=True)
     mock_load.assert_called_once()
     mock_open.assert_called_once()
     mock_os.assert_called()
@@ -42,7 +42,7 @@ def test_load_results_one_loop(mock_load: MagicMock, mock_open: MagicMock, mock_
 @patch("qililab.utils.load_data.yaml.safe_load", return_value=experiment)
 def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Experiment class."""
-    exp, _ = load(path="")
+    exp, _ = load(path="", load_experiment=True)
     mock_load.assert_called_once()
     mock_open.assert_called_once()
     mock_os.assert_called()
@@ -56,7 +56,7 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
 @patch("qililab.utils.load_data.os.path.getctime", return_value=0)
 def test_load_without_path(mock_cttime: MagicMock, mock_glob: MagicMock):
     """Test load without path."""
-    exp, results = load()
+    exp, results = load(load_experiment=True)
     mock_cttime.assert_called()
     mock_glob.assert_called()
     assert exp is None

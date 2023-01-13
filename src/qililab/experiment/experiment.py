@@ -15,7 +15,8 @@ from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.remote_connection import RemoteAPI
-from qililab.result import Result, Results
+from qililab.result.result import Result
+from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import CallbackOrder, Category, Instrument, Parameter
 from qililab.typings.execution import ExecutionOptions
@@ -35,7 +36,6 @@ class Experiment:
     _results_path: Path = field(init=False)
     _plot: LivePlot = field(init=False)
     _results: Results = field(init=False)
-    _remote_api: RemoteAPI = field(init=False)
     _execution: Execution = field(init=False)
     _execution_preparation: ExecutionPreparation = field(init=False)
     _schedules: list[PulseSchedule] = field(init=False)
@@ -43,11 +43,14 @@ class Experiment:
 
     def __post_init__(self):
         """prepares the Experiment class"""
-        self.platform = copy.deepcopy(self.platform)
-        self._remote_api = RemoteAPI(
-            connection=self.options.connection,
-            device_id=self.options.device_id,
-            manual_override=self.options.remote_device_manual_override,
+        self._remote_api = (
+            RemoteAPI(
+                connection=self.options.connection,
+                device_id=self.options.device_id,
+                manual_override=self.options.remote_device_manual_override,
+            )
+            if self.platform.remote_api is None
+            else self.platform.remote_api
         )
         self._execution, self._schedules = self._build_execution(
             circuits=self.circuits,
@@ -93,6 +96,7 @@ class Experiment:
     def execution_finished(self):
         """Finishes the execution"""
         self._execution_not_prepared()
+        self._remote_api.release_remote_device()
 
     def prepare_execution_and_load_schedule(self, schedule_index_to_load: int = 0) -> None:
         """Prepares the experiment with the following steps:
@@ -117,19 +121,18 @@ class Experiment:
 
     def execute(self) -> Results:
         """Run execution."""
-        with self._remote_api:
-            if not self.execution_ready:
-                (
-                    self._plot,
-                    self._results,
-                    self._results_path,
-                    self._execution_ready,
-                ) = self._execution_preparation.prepare_execution(
-                    num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
-                )
+        if not self.execution_ready:
+            (
+                self._plot,
+                self._results,
+                self._results_path,
+                self._execution_ready,
+            ) = self._execution_preparation.prepare_execution(
+                num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
+            )
 
-            with self._execution:
-                self._execute_all_circuits_or_schedules()
+        with self._execution:
+            self._execute_all_circuits_or_schedules()
 
         return self._results
 
@@ -149,10 +152,18 @@ class Experiment:
                     plot=self._plot,
                 )
             self.execution_finished()
-        except KeyboardInterrupt as error:  # pylint: disable=broad-except
+
+        except (
+            AttributeError,
+            ValueError,
+            KeyboardInterrupt,
+            KeyError,
+            TimeoutError,
+            TypeError,
+        ) as error:  # pylint: disable=broad-except
             self.execution_finished()
-            self._remote_api.release_remote_device()
             logger.error("%s: %s", type(error).__name__, str(error))
+            raise error
 
     def _execute_recursive_loops(
         self,
@@ -299,16 +310,15 @@ class Experiment:
 
         if loop.callback is not None and loop.callback_order is None:
             raise ValueError("'Callback_order' must be defined when callback method is passed")
-        else:
-            self.execute_callback_if_defined_before(loop=loop)
-            self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
-            )
-            self.execute_callback_if_defined_after(loop=loop)
+        self.execute_callback_if_defined_before(loop=loop)
+        self.set_parameter(
+            element=element,
+            alias=loop.alias,
+            parameter=loop.parameter,
+            value=value,
+            channel_id=loop.channel_id,
+        )
+        self.execute_callback_if_defined_after(loop=loop)
 
     def _get_platform_elements_from_loops(self, loops: List[Loop]):
         """get platform elements from loops"""

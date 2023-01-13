@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable, List, Sequence, Type, get_type_hints
 
+from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_connections.connection import Connection
 from qililab.instruments.instrument import Instrument
@@ -162,24 +163,29 @@ class InstrumentController(BusElement, ABC):
     def turn_on(self):
         """Turn on an instrument."""
         for module in self.modules:
+            logger.info("Turn on instrument %s.", module.alias or module.name.value)
             module.turn_on()
 
     @CheckConnected
     def turn_off(self):
         """Turn off an instrument."""
         for module in self.modules:
+            logger.info("Turn off instrument %s.", module.alias or module.name.value)
             module.turn_off()
 
     @CheckConnected
     def reset(self):
         """Reset instrument."""
         for module in self.modules:
+            logger.info("Reset instrument %s.", module.alias or module.name.value)
             module.reset()
 
     @CheckConnected
     def initial_setup(self):
         """Initial setup of the instrument."""
         for module in self.modules:
+            logger.info("Initial setup to instrument %s.", module.alias or module.name.value)
+
             module.initial_setup()
 
     def connect(self):

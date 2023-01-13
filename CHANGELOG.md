@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## 0.11.0 (2023-01-12)
+
+### Feat
+
+- custom exceptions
+
+## 0.10.3 (2022-12-21)
+
+### Fix
+
+- **Results**: fixed no-results dataframe generation (#109)
+
+## 0.10.2 (2022-12-14)
+
+### Refactor
+
+- [qili-243] sequence class (#104)
+
+## 0.10.1 (2022-12-14)
+
+### Fix
+
+- negative-wait (#106)
+
+## 0.10.0 (2022-12-13)
+
+### Feat
+
+- [QILI-201] multibus support (#101)
+
 ## 0.9.2 (2022-11-17)
 
 ### Fix

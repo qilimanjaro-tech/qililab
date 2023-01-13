@@ -2,6 +2,7 @@
 from typing import Dict, Type, TypeVar
 
 from qililab.instruments.instrument import Instrument
+from qililab.typings.enums import InstrumentName
 
 Element = TypeVar("Element", bound=Instrument)
 
@@ -22,6 +23,6 @@ class InstrumentFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str) -> Type[Instrument]:
+    def get(cls, name: str | InstrumentName) -> Type[Instrument]:
         """Return class attribute."""
-        return cls.handlers[name]
+        return cls.handlers[name.value] if isinstance(name, InstrumentName) else cls.handlers[name]

@@ -3,34 +3,19 @@ from dataclasses import dataclass, field
 
 from qiboconnection.api import API
 
-from qililab.constants import GALADRIEL_DEVICE_ID
-
 
 @dataclass
 class RemoteAPI:
     """Remote API class"""
 
     connection: API | None = field(default=None)
-    device_id: int | None = field(default=GALADRIEL_DEVICE_ID)
-    manual_override: bool = False
+    device_id: int | None = field(default=None)
+    manual_override: bool = field(default=False)
     _blocked_device: bool = field(init=False)
 
     def __post_init__(self):
         """Post initial initialization"""
         self._blocked_device = False
-        if self.device_id is None:
-            self.device_id = GALADRIEL_DEVICE_ID
-
-    def __enter__(self):
-        """Code executed when starting a with statement.
-        Runs the block function only when it is not already blocked.
-        """
-        if not self._blocked_device:
-            self.block_remote_device()
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Code executed when stopping a with statement."""
-        self.release_remote_device()
 
     def block_remote_device(self):
         """Block the remote API device
@@ -39,7 +24,7 @@ class RemoteAPI:
             2. this control has not been overriden,
         Then it blocks the device.
         """
-        if (self.connection is not None) and (not self.manual_override):
+        if (self.connection is not None) and (not self.manual_override) and not self._blocked_device:
             self.connection.block_device_id(device_id=self.device_id)
             self._blocked_device = True
 

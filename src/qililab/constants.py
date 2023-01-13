@@ -199,8 +199,7 @@ class QBLOXRESULT:
     """Qblox Results attribute names."""
 
     PULSE_LENGTH = "pulse_length"
-    SCOPE = "scope"
-    BINS = "bins"
+    QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
 class RESULTSDATAFRAME:
@@ -244,3 +243,9 @@ UNIT_PREFIX = {
     1e21: "Z",  # zetta
     1e24: "Y",  # yotta
 }
+
+
+class QBLOXCONSTANTS:
+    """Qblox Constants"""
+
+    SCOPE_LENGTH = 16380

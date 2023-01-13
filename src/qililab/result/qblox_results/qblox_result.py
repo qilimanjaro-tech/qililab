@@ -1,11 +1,15 @@
 """QbloxResult class."""
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
+from qililab.exceptions import DataUnavailable
+from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.qblox_results.qblox_acquisitions_builder import (
     QbloxAcquisitionsBuilder,
 )
@@ -35,24 +39,92 @@ class QbloxResult(Result):
 
     name = ResultName.QBLOX
     pulse_length: int | np.number
-    scope: dict | None = None
-    bins: List[dict] | None = None
-    qblox_acquisitions: QbloxScopeAcquisitions | QbloxBinsAcquisitions = field(init=False)
+    qblox_raw_results: List[dict]
+    qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
+    qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
     def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
-        self.qblox_acquisitions = QbloxAcquisitionsBuilder.get(
-            pulse_length=self.pulse_length, scope=self.scope, bins=self.bins
+        self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
+            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
         )
-        self.data_dataframe_indices = self.qblox_acquisitions.data_dataframe_indices
+        self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
+            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+        )
+        self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
+        self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
+
+    def _demodulated_scope(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
+        """Returns the scope acquisitions demodulated in the given frequency with the given phase offset.
+
+        Returns:
+            QbloxScopeAcquisitions: demodulated scope acquisitions."""
+        if self.qblox_scope_acquisitions is None:
+            raise ValueError("Scope acquisitions cannot be demodulated because it doesn't exist.")
+        return self.qblox_scope_acquisitions.demodulated(frequency=frequency, phase_offset=phase_offset)
+
+    def _integrated_scope(
+        self, scope_acquisitions=None, integrate_from: int = 0, integrate_to: int = SCOPE_ACQ_MAX_DURATION
+    ) -> QbloxScopeAcquisitions:
+        """Integrated Scope
+
+        Args:
+            scope_acquisitions (_type_, optional): _description_. Defaults to None.
+            integrate_from (int, optional): _description_. Defaults to 0.
+            integrate_to (int, optional): _description_. Defaults to SCOPE_ACQ_MAX_DURATION.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            QbloxScopeAcquisitions: _description_
+        """
+        if scope_acquisitions is None:
+            scope_acquisitions = self.qblox_scope_acquisitions
+        if scope_acquisitions is None:
+            raise ValueError("Scope acquisitions cannot be integrated because it doesn't exist.")
+        return scope_acquisitions.integrated(integrate_from=integrate_from, integrate_to=integrate_to)
 
     def acquisitions(self) -> pd.DataFrame:
         """Return acquisition values.
 
         Returns:
-            Tuple[float]: I, Q, amplitude and phase.
+            pd.DataFrame: I, Q, amplitude and phase.
         """
-        return self.qblox_acquisitions.acquisitions()
+        return self.qblox_bins_acquisitions.acquisitions()
+
+    def acquisitions_scope(
+        self,
+        demod_freq: float = 0.0,
+        demod_phase_offset: float = 0.0,
+        integrate: bool = False,
+        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> Tuple[List[float], List[float]]:
+        """Acquisitions Scope
+
+        Args:
+            demod_freq (float, optional): _description_. Defaults to 0.0.
+            demod_phase_offset (float, optional): _description_. Defaults to 0.0.
+            integrate (bool, optional): _description_. Defaults to False.
+            integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
+
+        Raises:
+            DataUnavailable: Scope data is not available since it was not stored for this acquisition.
+
+        Returns:
+            Tuple[List[float], List[float]]
+        """
+        acquisitions = self.qblox_scope_acquisitions
+        if acquisitions is None:
+            raise DataUnavailable("Scope data is not available since it was not stored for this acquisition.")
+        if demod_freq != 0.0:
+            acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
+        if integrate:
+            integrate_from, integrate_to = integration_range
+            acquisitions = self._integrated_scope(
+                scope_acquisitions=acquisitions, integrate_from=integrate_from, integrate_to=integrate_to
+            )
+        return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
     def probabilities(self) -> List[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
@@ -60,7 +132,7 @@ class QbloxResult(Result):
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
-        return self.qblox_acquisitions.probabilities()
+        return self.qblox_bins_acquisitions.probabilities()
 
     @property
     def shape(self) -> List[int]:
@@ -76,33 +148,10 @@ class QbloxResult(Result):
         Returns:
             dict: Dictionary containing all the class information.
         """
-
-        results_dict: dict[str, str | int | dict | List[dict]] = {
+        return {
             RUNCARD.NAME: self.name.value,
             QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
             if isinstance(self.pulse_length, np.number)
             else self.pulse_length,
+            QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }
-
-        if self.scope is not None:
-            results_dict |= {
-                QBLOXRESULT.SCOPE: self.scope,
-            }
-        if self.bins is not None:
-            results_dict |= {
-                QBLOXRESULT.BINS: self.bins,
-            }
-        return results_dict
-
-    def __eq__(self, other: object) -> bool:
-        """compare two Qblox Results"""
-        return (
-            (
-                self.name == other.name
-                and self.pulse_length == other.pulse_length
-                and self.scope == other.scope
-                and self.bins == other.bins
-            )
-            if isinstance(other, QbloxResult)
-            else False
-        )
