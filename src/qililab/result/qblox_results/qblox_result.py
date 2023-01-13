@@ -114,7 +114,7 @@ class QbloxResult(Result):
         if acquisitions is None:
             return None
         if demod_freq != 0.0:
-            acquisitions = self._demodulated_scope(frequency=demod_freq, phase_offset=demod_phase_offset)
+            acquisitions = self._demodulated_scope(frequency=-demod_freq, phase_offset=demod_phase_offset)
         if integrate:
             integrate_from, integrate_to = integration_range
             acquisitions = self._integrated_scope(
