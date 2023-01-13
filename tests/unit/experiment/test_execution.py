@@ -56,7 +56,7 @@ class TestExecution:
         nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
 
-        nested_experiment._remote_api.connection.save_experiment.assert_called()
+        mocked_remote_connection.save_experiment.assert_called()
         assert nested_experiment._remote_saved_experiment_id == saved_experiment_id
 
         mock_urllib.request.Request.assert_called()
