@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.11.0 (2023-01-12)
+
+### Feat
+
+- custom exceptions
+
 ## 0.10.3 (2022-12-21)
 
 ### Fix
