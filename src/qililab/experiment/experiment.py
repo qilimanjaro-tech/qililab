@@ -146,10 +146,10 @@ class Experiment:
             logger.debug("Sending experiment and results to remote database.")
             self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
                 name=self.options.name,
-                descitpion=self.options.description,
+                description=self.options.description,
                 experiment_dict=self.to_dict(),
                 results_dict=self._results.to_dict(),
-                device_id=self.options.device_id,
+                device_id=self._remote_api.device_id,
                 user_id=self._remote_api.connection.user_id,
                 qililab_version=__version__,
                 favourite=False,
