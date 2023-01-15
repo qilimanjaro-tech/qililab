@@ -402,9 +402,6 @@ class Experiment:
 
         if loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
             loop.callback(**loop.callback_kwargs)
-        
-    def set_callback(self, loop:Loop):
-        loop.callback = callback
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
