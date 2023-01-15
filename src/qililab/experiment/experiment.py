@@ -296,7 +296,7 @@ class Experiment:
         values: List[float],
         loops: List[Loop],
     ):
-        """update paramaters from loops"""
+        """update parameters from loops"""
         elements = self._get_platform_elements_from_loops(loops=loops)
 
         for value, loop, element in zip(values, loops, elements):
@@ -390,8 +390,8 @@ class Experiment:
             loop (Loop): Loop class containing the info of callback properties
         """
 
-        if loop.callback is not None and loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
-            return loop.callback(**loop.callback_kwargs)
+        if loop.callback_order == CallbackOrder.BEFORE_SET_PARAMETER:
+            loop.callback(**loop.callback_kwargs)
 
     def execute_callback_if_defined_after(self, loop: Loop):
         """execute callback method before set_parameter
@@ -400,8 +400,11 @@ class Experiment:
             loop (Loop): Loop class containing the info of callback properties
         """
 
-        if loop.callback is not None and loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
-            return loop.callback(**loop.callback_kwargs)
+        if loop.callback_order == CallbackOrder.AFTER_SET_PARAMETER:
+            loop.callback(**loop.callback_kwargs)
+        
+    def set_callback(self, loop:Loop):
+        loop.callback = callback
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
