@@ -93,7 +93,7 @@ class QbloxModule(AWG):
             sequencer_id = sequencer.identifier
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
-            self._set_gain_path1(value=sequencer.gain_path0, sequencer_id=sequencer_id)
+            self._set_gain_path1(value=sequencer.gain_path1, sequencer_id=sequencer_id)
             self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
