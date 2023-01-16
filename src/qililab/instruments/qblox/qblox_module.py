@@ -11,7 +11,7 @@ from tomlkit import value
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, Stop, Wait, WaitSync, ResetPh
+from qpysequence.program.instructions import Play, Stop, Wait, WaitSync, ResetPh, SetPh
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
