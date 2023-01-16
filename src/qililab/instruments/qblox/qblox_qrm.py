@@ -212,7 +212,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         acquisition_idx = (
             0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
         )  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=readout_duration))
+        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.

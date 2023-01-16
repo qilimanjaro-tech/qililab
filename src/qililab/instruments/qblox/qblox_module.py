@@ -208,7 +208,7 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id, readout_duration=8000)
-        wait_time = repetition_duration - 8000
+        wait_time = repetition_duration 
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
             
@@ -260,8 +260,8 @@ class QbloxModule(AWG):
             raise ValueError(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
             )
-        # if parameter == Parameter.GAIN:
-        #     self._set_gain(value=value, sequencer_id=channel_id)
+        if parameter == Parameter.GAIN:
+            self._set_gain(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.GAIN_PATH0:
             self._set_gain_path0(value=value, sequencer_id=channel_id)
