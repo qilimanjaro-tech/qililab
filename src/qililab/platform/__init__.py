@@ -29,13 +29,15 @@ def build_platform(name: str, database: bool = False, remote_api: RemoteAPI | No
     return PLATFORM_MANAGER_YAML.build(platform_name=name)
 
 
-def save_platform(platform: Platform, database: bool = False):
+def save_platform(platform: Platform, database: bool = False, remote_api: RemoteAPI = None, description: str = ""):
     """Save platform.
 
     Args:
-        platform (Platform): Platform name.
+        platform (Platform): Platform instance.
         database (bool, optional): If True, save platform to database. Defaults to False.
+        remote_api (RemoteAPI, optional): If database, connection with which accessing the database.
+        description (str): Short informative description
     """
     if database:
-        raise NotImplementedError
+        PLATFORM_MANAGER_DB.dump(platform=platform, remote_api=remote_api, description=description)
     return PLATFORM_MANAGER_YAML.dump(platform=platform)

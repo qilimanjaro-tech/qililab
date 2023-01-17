@@ -1,4 +1,5 @@
 """PlatformManagerYAML class."""
+
 import os
 
 import yaml
@@ -26,6 +27,20 @@ class PlatformManagerYAML(PlatformManager):
         platform_settings = self._load_platform_settings(platform_name=platform_name)
         platform_schema = RuncardSchema(**platform_settings)
         return Platform(runcard_schema=platform_schema)
+
+    def dump(self, platform: Platform):
+        """Dump all platform information into a YAML file.
+
+        Args:
+            platform (Platform): Platform to dump.
+        """
+
+        runcards_path = os.environ.get(RUNCARDS, None)
+        if runcards_path is None:
+            raise ValueError("Environment variable RUNCARDS is not set.")
+        file_path = f"{runcards_path}/{platform.name}.yml"
+        with open(file=file_path, mode="w", encoding="utf-8") as file:
+            yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
     def _load_platform_settings(self, platform_name: str) -> dict:
         """Load platform and schema settings.

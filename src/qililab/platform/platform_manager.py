@@ -1,11 +1,8 @@
 """Platform Manager"""
-import os
+
 from abc import ABC, abstractmethod
 
-from qililab.config import logger
-from qililab.constants import RUNCARDS
 from qililab.platform.platform import Platform
-from qililab.typings import yaml
 from qililab.utils import SingletonABC
 
 
@@ -23,17 +20,11 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         """
 
     def dump(self, platform: Platform):
-        """Dump all platform information into a YAML file.
+        """Save all platform information.
 
         Args:
-            platform (Platform): Platform to dump.
+            platform (Platform): Platform to save.
         """
-        runcards_path = os.environ.get(RUNCARDS, None)
-        if runcards_path is None:
-            raise ValueError("Environment variable RUNCARDS is not set.")
-        file_path = f"{runcards_path}/{platform.name}.yml"
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            yaml.dump(data=platform.to_dict(), stream=file, sort_keys=False)
 
     @abstractmethod
     def _load_platform_settings(self, platform_name: str) -> dict:
