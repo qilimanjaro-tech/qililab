@@ -9,7 +9,7 @@ from qibo.core.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.config import logger
+from qililab.config import __version__, logger
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
 from qililab.platform.platform import Platform
@@ -40,6 +40,7 @@ class Experiment:
     _execution_preparation: ExecutionPreparation = field(init=False)
     _schedules: list[PulseSchedule] = field(init=False)
     _execution_ready: bool = field(init=False)
+    _remote_saved_experiment_id: int = field(init=False)
 
     def __post_init__(self):
         """prepares the Experiment class"""
@@ -134,7 +135,26 @@ class Experiment:
         with self._execution:
             self._execute_all_circuits_or_schedules()
 
+        if self.options.remote_save:
+            self.remote_save_experiment()
+
         return self._results
+
+    def remote_save_experiment(self):
+        """sends the remote save_experiment request using the provided remote connection"""
+        if self._remote_api.connection is not None:
+            logger.debug("Sending experiment and results to remote database.")
+            self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
+                name=self.options.name,
+                description=self.options.description,
+                experiment_dict=self.to_dict(),
+                results_dict=self._results.to_dict(),
+                device_id=self._remote_api.device_id,
+                user_id=self._remote_api.connection.user_id,
+                qililab_version=__version__,
+                favourite=False,
+            )
+            return self._remote_saved_experiment_id
 
     def _execute_all_circuits_or_schedules(self):
         """runs the circuits (or schedules) passed as input times software average"""
@@ -177,7 +197,7 @@ class Experiment:
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
-            loop (Loop | None): Loop class containing the the info of a Platform element and one of its parameters and
+            loop (Loop | None): Loop class containing the info of a Platform element and one of its parameters and
             the parameter values to loop over.
             results (Results): Results class containing all the execution results.
             path (Path): Path where the data is stored.
@@ -208,7 +228,7 @@ class Experiment:
 
         Args:
             results (Results): Results class containing all the execution results.
-            loops (List[Loop]): Loop class containing the the info of one or more Platform element and the
+            loops (List[Loop]): Loop class containing the info of one or more Platform element and the
             parameter values to loop over.
             depth (int): Depth of the recursive loop.
             path (Path): Path where the data is stored.
@@ -239,7 +259,7 @@ class Experiment:
         pbar.update()
 
     def _set_parameter_text_and_value(self, value: float, loop: Loop):
-        """set paramater text and value to print on terminal TQDM iterations"""
+        """set parameter text and value to print on terminal TQDM iterations"""
         parameter_text = (
             loop.alias if loop.parameter == Parameter.EXTERNAL and loop.alias is not None else loop.parameter.value
         )
@@ -259,7 +279,7 @@ class Experiment:
         loops: List[Loop],
     ):
         """Update parameters from loops filtering those loops that relates to external variables
-        not associated to neither platform, instrument, or gates settings
+        not associated to neither platform, instrument, nor gates settings
         """
         filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
             values=values,
@@ -268,7 +288,7 @@ class Experiment:
         self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
 
     def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
-        """filter loops and values removing those with external paramaters"""
+        """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
         filtered_loops = loops.copy()
@@ -285,7 +305,7 @@ class Experiment:
     def _filter_loop_value_when_parameters_is_external(
         self, filtered_loops: List[Loop], filtered_values: List[float], idx: int, loop: Loop
     ):
-        """filter loop value when parameters is external"""
+        """filter loop value when parameters are external"""
         if loop.parameter == Parameter.EXTERNAL:
             filtered_loops.pop(idx)
             filtered_values.pop(idx)
@@ -296,7 +316,7 @@ class Experiment:
         values: List[float],
         loops: List[Loop],
     ):
-        """update paramaters from loops"""
+        """update parameters from loops"""
         elements = self._get_platform_elements_from_loops(loops=loops)
 
         for value, loop, element in zip(values, loops, elements):
