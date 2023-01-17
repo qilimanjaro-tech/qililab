@@ -10,6 +10,7 @@ from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
+from qililab.utils.signal_processing import modulate
 
 
 @dataclass(unsafe_hash=True, eq=True)
@@ -41,12 +42,11 @@ class Pulse:
             Waveforms: I and Q modulated waveforms.
         """
         envelope = self.envelope(resolution=resolution)
-        envelopes = [np.real(envelope), np.imag(envelope)]
-        time = np.arange(self.duration / resolution) * 1e-9 * resolution + start_time * 1e-9
-        cosalpha = np.cos(2 * np.pi * frequency * time + self.phase)
-        sinalpha = np.sin(2 * np.pi * frequency * time + self.phase)
-        mod_matrix = (1.0 / np.sqrt(2)) * np.array([[cosalpha, -sinalpha], [sinalpha, cosalpha]])
-        imod, qmod = np.transpose(np.einsum("abt,bt->ta", mod_matrix, envelopes))
+        i = np.real(envelope)
+        q = np.imag(envelope)
+        # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
+        phase_offset = self.phase + 2 * np.pi * frequency * start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=frequency, phase_offset=phase_offset)
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
