@@ -128,7 +128,12 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
-        # print(self.device.sequencers[0].mod_en_awg(bool(value)))
+        self.device.sequencers[0].mod_en_awg(bool(value))
+        # print(f'Hardware modulation: {self.device.sequencers[0].mod_en_awg()}')
+        self.device.scope_acq_avg_mode_en_path0(True)
+        self.device.scope_acq_avg_mode_en_path1(True)
+        # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')
+        
         self.start_sequencer()
 
     def _check_cached_values( 
