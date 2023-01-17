@@ -96,6 +96,49 @@ def fixture_schema(platform: Platform) -> Schema:
     return platform.schema
 
 
+@pytest.fixture(name="qblox_module")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+def fixture_qblox_module(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
+    """Return connected instance of QbloxModule class"""
+    # add dynamically created attributes
+    mock_instance = mock_pulsar.return_value
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "out0_offset",
+            "out1_offset",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "scope_acq_sequencer_select",
+        ]
+    )
+    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencer0.mock_add_spec(
+        [
+            "set",
+            "sequence",
+            "mod_en_awg",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "offset_awg_path0",
+            "offset_awg_path1",
+            "sync_en",
+            "mixer_corr_gain_ratio",
+            "mixer_corr_phase_offset_degree",
+        ]
+    )
+    pulsar_controller_qcm.connect()
+    return pulsar_controller_qcm.modules[0]
+
+
 @pytest.fixture(name="pulsar_controller_qcm")
 def fixture_pulsar_controller_qcm(platform: Platform):
     """Return an instance of QbloxPulsarController class"""
