@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.12.0 (2023-01-17)
+
+### Feat
+
+- Update qblox and qpysequence
+
 ## 0.11.0 (2023-01-12)
 
 ### Feat
