@@ -30,7 +30,7 @@ class TestPlatform:
         mocked_remote_connection.save_runcard.return_value = 0
         remote_api = RemoteAPI(connection=mocked_remote_connection, device_id=0)
         save_platform(platform=platform, database=True, remote_api=remote_api, description="TEST")
-        remote_api.connection.save_runcard.assert_called()
+        remote_api.connection.save_runcard.assert_called()  # type: ignore
 
     @patch("qililab.remote_connection.remote_api.RemoteAPI.connection")
     @patch("yaml.safe_load")
