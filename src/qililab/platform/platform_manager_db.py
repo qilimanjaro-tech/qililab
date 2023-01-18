@@ -49,6 +49,7 @@ class PlatformManagerDB(PlatformManager):
             description (str): Informative text about the runcard
         """
 
+        # type: ignore
         remote_api.connection.save_runcard(
             name=platform.name,
             description=description,
@@ -70,4 +71,4 @@ class PlatformManagerDB(PlatformManager):
             dict: Dictionary with platform and schema settings.
         """
 
-        return remote_api.connection.get_runcard(runcard_name=platform_name).runcard
+        return remote_api.connection.get_runcard(runcard_name=platform_name).runcard  # type: ignore
