@@ -313,6 +313,7 @@ class InstrumentName(str, Enum):
         * QCM -> Exactly as Qblox InstrumentType
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
+        * erasynth_plus_plus
         * mini_circuits
         * keithley_2600
         * qblox_D5a
@@ -324,6 +325,7 @@ class InstrumentName(str, Enum):
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
     ROHDE_SCHWARZ = "rohde_schwarz"
+    ERASYNTH = "erasynth"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"

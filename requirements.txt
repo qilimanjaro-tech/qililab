@@ -8,6 +8,7 @@ PyYAML==6.0
 typeguard==2.13.3
 qblox-instruments==0.8.1
 qcodes==0.34.1
+qcodes_contrib_drivers==0.18.0
 PyVISA-py==0.5.2
 qutip==4.7.0
 tqdm==4.64.1
