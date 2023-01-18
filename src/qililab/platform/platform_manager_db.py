@@ -15,7 +15,7 @@ def _require_remote_api(func):
 
         if "remote_api" not in kwargs or kwargs["remote_api"] is None:
             raise ValueError("Cannot operate with RUNCARD in database without a provided remote_api")
-        func(*args, **kwargs)
+        return func(*args, **kwargs)
 
     return wrapper
 
