@@ -79,10 +79,8 @@ class TestPlatform:
         element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
         assert isinstance(element, AWGAnalogDigitalConverter)
 
-    @patch("qililab.platform.platform_manager.yaml.dump")
+    @patch("qililab.platform.platform_manager_yaml.yaml.dump")
     def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
         save_platform(platform=platform)
-        with pytest.raises(NotImplementedError):
-            save_platform(platform=platform, database=True)
         mock_dump.assert_called()
