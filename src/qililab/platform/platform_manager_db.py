@@ -49,13 +49,12 @@ class PlatformManagerDB(PlatformManager):
             description (str): Informative text about the runcard
         """
 
-        # type: ignore
-        remote_api.connection.save_runcard(
+        remote_api.connection.save_runcard(  # type: ignore
             name=platform.name,
             description=description,
             runcard_dict=platform.to_dict(),
-            device_id=remote_api.device_id,
-            user_id=remote_api.connection.user_id,
+            device_id=remote_api.device_id,  # type: ignore
+            user_id=remote_api.connection.user_id,  # type: ignore
             qililab_version=__version__,
         )
 
