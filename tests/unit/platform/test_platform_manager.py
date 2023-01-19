@@ -65,4 +65,4 @@ class TestPlatformManager:
 
         save_platform(platform=platform, database=True, remote_api=remote_api, description="TEST")
 
-        remote_api.connection.save_runcard.assert_called()
+        remote_api.connection.save_runcard.assert_called()  # type: ignore
