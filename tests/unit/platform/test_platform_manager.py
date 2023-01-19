@@ -1,4 +1,4 @@
-"""Tests for PlatformManagerYAML class."""
+"""Tests for PlatformManager class."""
 import datetime
 from unittest.mock import MagicMock, patch
 
@@ -29,7 +29,7 @@ class TestPlatformManager:
     @patch("qililab.platform.platform_manager_yaml.yaml.dump")
     def test_dump_local_method(self, mock_dump: MagicMock):
         """Test dump method from YAML file."""
-        platform = Platform(RuncardSchema(**Galadriel.runcard))
+        platform = Platform(runcard_schema=RuncardSchema(**Galadriel.runcard))
 
         save_platform(platform=platform, database=False)
 
@@ -59,7 +59,7 @@ class TestPlatformManager:
     @patch("qililab.remote_connection.remote_api.RemoteAPI.connection")
     def test_dump_remote_method(self, mocked_remote_connection: MagicMock):
         """Test dump method to DB."""
-        platform = Platform(RuncardSchema(**Galadriel.runcard))
+        platform = Platform(runcard_schema=RuncardSchema(**Galadriel.runcard))
         mocked_remote_connection.save_runcard.return_value = 0
         remote_api = RemoteAPI(connection=mocked_remote_connection, device_id=0)
 
