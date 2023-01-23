@@ -64,21 +64,21 @@ class ExecutionManager:
                 repetition_duration=repetition_duration,
                 path=path,
             )
-           
+
     def setup(self):
         """
         Calls setup of each bus. Where the sequence will be generated
         """
-        self.pulse_scheduled_buses.setup()
-        
-    def traspile_circuit_to_buses(self): # should take care of coordination (wait between gates and sync sequencers)
-        """ 
-        Function that converts input circuit for n qubits into m circuits one for each bus 
-        
+        for bus in self.pulse_scheduled_buses:
+            bus.setup()
+
+    def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
+        """
+        Function that converts input circuit for n qubits into m circuits one for each bus
+
         Args: n qubit circuit
-              metadata on how qubits are mapped to buses 
-              
-        Output: m circuits, one for each bus.   
+              metadata on how qubits are mapped to buses
+        Output: m circuits, one for each bus.
         """
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
