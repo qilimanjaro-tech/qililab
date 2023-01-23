@@ -71,7 +71,7 @@ class Execution:
             repetition_duration=repetition_duration,
             path=path,
         )
-        
+
     def setup(self) -> None:
         """This calls the setup of the execution manager"""
         self.execution_manager.setup()
