@@ -1,0 +1,120 @@
+"""Run circuit experiment"""
+import numpy as np
+import matplotlib.pyplot as plt
+import h5py
+
+import os
+from pathlib import Path
+
+from qibo.core.circuit import Circuit
+from qibo.gates import M
+
+from qiboconnection.api import API
+
+from qililab import build_platform
+from qililab.experiment import Experiment
+from qililab.typings import Parameter, ExperimentOptions, ExperimentSettings
+from qililab.utils import Loop
+from qililab.typings.loop import LoopOptions
+from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.config import logger
+
+logger.setLevel(30)
+
+os.environ["RUNCARDS"] ="./runcards"
+os.environ["DATA"] = "/home/jupytershared/data"
+
+
+def run_and_plot(title: str, frequency_start: float, frequency_stop: float, frequency_num: int, 
+                 current_start: float | None, current_stop: float | None, current_num: float | None,
+                 attenuation_fixed: float, current_fixed: float):
+
+    """Load the platform 'flux_spectroscopy' from the DB."""
+    platform = build_platform(name="spectroscopy_vs_flux")
+    platform.connect_and_set_initial_setup(automatic_turn_on_instruments=True, device_id=15)
+
+    # Define Circuit to execute
+    circuit = Circuit(1)
+    circuit.add(M(0))
+
+    frequency_loop_options = LoopOptions(start=frequency_start, stop=frequency_stop, num=frequency_num)
+    frequency_loop = Loop(alias="rs_1", parameter=Parameter.LO_FREQUENCY, options=frequency_loop_options)
+    
+    if current_start is not None:
+        current_loop_options = LoopOptions(start=current_start, stop=current_stop, num=current_num, channel_id=0)
+        current_loop = Loop(alias='S4g', parameter=Parameter.CURRENT, options=current_loop_options, loop=frequency_loop)
+
+    if current_start is not None:
+        loop = current_loop
+    else: loop = frequency_loop
+
+    # Instantiate Experiment class
+    experiment_options = ExperimentOptions(
+        loops=[loop],
+        name=f"{title}",
+        # connection=connection,
+        # device_id=15,
+        settings=ExperimentSettings(repetition_duration=10000,hardware_average=10000)
+    )
+
+    flux_spectro = Experiment(
+        platform=platform,
+        circuits=[circuit],
+        options=experiment_options,
+        # plot_y_label='S21',
+        # plot_y_label="Voltage",
+    )  # if you don't want to define any settings just remove settings=settings.
+
+    flux_spectro.set_parameter(alias="M", parameter=Parameter.DURATION, value=8000)
+
+    gain = 1.0
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_PATH0, value=gain, channel_id=0)
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_PATH1, value=gain, channel_id=0)
+
+    if_freq = 2e7
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.IF, value=if_freq, channel_id=0)
+
+    store_scope = False
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.SCOPE_STORE_ENABLED, value=store_scope, channel_id=0)
+
+    flux_spectro.set_parameter(alias='attenuator', parameter=Parameter.ATTENUATION, value=attenuation_fixed)
+    
+    flux_spectro.set_parameter(alias="S4g", parameter=Parameter.SPAN, value="range_max_bi", channel_id=0)
+    flux_spectro.set_parameter(alias="S4g", parameter=Parameter.CURRENT, value=current_fixed, channel_id=0)
+    
+    results = flux_spectro.execute()
+    
+    qblox_results: QbloxResult = results
+    acquisitions = qblox_results.acquisitions()
+    i = acquisitions['i']
+    q = acquisitions['q']
+    frequency = np.linspace(start=frequency_loop.start, stop=frequency_loop.stop, num=frequency_loop.num)*1e-9
+    
+    if current_start is not None:
+        current = np.linspace(start=current_loop.start, stop=current_loop.stop, num=current_loop.num)
+
+        i = np.array(i)
+        q = np.array(q)
+        I = i.reshape(([current_loop.num,frequency_loop.num]))
+        Q = q.reshape(([current_loop.num,frequency_loop.num]))
+        S21 = 20*np.log10(I**2+Q**2)
+
+        plt.figure(figsize=(9,7))
+        plt.pcolor(frequency, current, S21, cmap='Greens')
+        plt.colorbar(label='|S21|')
+        plt.xlabel('Frequency [GHz]')
+        plt.ylabel('Current [A]')
+        plt.title(f'{title}')
+        
+        plt.savefig(f'/home/pjamet/plots/{title}.png')
+        
+    else:
+        S21 = 20*np.log10(i**2+q**2)
+        plt.figure(figsize=(9,7))
+        plt.plot(frequency, S21)
+        plt.xlabel('Frequency [GHz]')
+        plt.ylabel('|S21|')
+        plt.title(f'{title}')
+        
+        plt.savefig(f'/home/pjamet/plots/{title}.png')
+        
