@@ -14,6 +14,7 @@ DEFAULT_PLOT_Y_LABEL = "Sequence idx"
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+
 # TODO: Distribute constants over different classes
 
 
@@ -98,6 +99,8 @@ class EXPERIMENT:
     CONNECTION = "connection"
     CIRCUITS = "circuits"
     PULSE_SCHEDULES = "pulse_schedules"
+    REMOTE_SAVE = "remote_save"
+    DESCRIPTION = "description"
 
 
 class SCHEMA:

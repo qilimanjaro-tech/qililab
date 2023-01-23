@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## 0.14.0 (2023-01-17)
+
+### Feat
+
+- **Experiment**: added remote experiment saving (#112)
+
+## 0.13.0 (2023-01-17)
+
+### Feat
+
+- **enums**: transform them to string enums (#125)
+
+### Fix
+
+- remove hardcoded modulation from Pulse (#127)
+
+## 0.12.0 (2023-01-17)
+
+### Feat
+
+- Update qblox and qpysequence
+
+## 0.11.0 (2023-01-12)
+
+### Feat
+
+- custom exceptions
+
 ## 0.10.3 (2022-12-21)
 
 ### Fix

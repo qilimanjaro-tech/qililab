@@ -38,6 +38,8 @@ class ExperimentOptions:
     plot_y_label: str | None = None
     remote_device_manual_override: bool = field(default=False)
     execution_options: ExecutionOptions = ExecutionOptions()
+    remote_save: bool = True
+    description: str = ""
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -54,6 +56,8 @@ class ExperimentOptions:
             EXPERIMENT.PLOT_Y_LABEL: self.plot_y_label,
             EXPERIMENT.REMOTE_DEVICE_MANUAL_OVERRIDE: self.remote_device_manual_override,
             EXPERIMENT.EXECUTION_OPTIONS: asdict(self.execution_options),
+            EXPERIMENT.REMOTE_SAVE: self.remote_save,
+            EXPERIMENT.DESCRIPTION: self.description,
         }
 
     @classmethod
@@ -79,4 +83,6 @@ class ExperimentOptions:
             execution_options=ExecutionOptions(**dictionary[EXPERIMENT.EXECUTION_OPTIONS])
             if EXPERIMENT.EXECUTION_OPTIONS in dictionary
             else ExecutionOptions(),
+            remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
+            description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )
