@@ -100,8 +100,8 @@ class QbloxModule(AWG):
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
-            # self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
-            # self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+            self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
+            self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
     @property
     def module_type(self):
@@ -345,7 +345,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        # self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
+        self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
         self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -437,7 +437,6 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-        print(self.device.sequencers[sequencer_id].gain_awg_path0())
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_average(self, value: bool, sequencer_id: int):
@@ -452,7 +451,6 @@ class QbloxModule(AWG):
         """
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
-        # print(self.device.scope_acq_avg_mode_en_path0())
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):
@@ -467,7 +465,6 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-        print(self.device.sequencers[sequencer_id].gain_awg_path1())
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):

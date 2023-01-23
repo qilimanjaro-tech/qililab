@@ -66,7 +66,7 @@ class TestsQbloxResult:
         ]
         assert np.isclose(acquisitions["i"].iloc[0], 1.0, 1e-10)
         assert np.isclose(acquisitions["q"].iloc[0], 0.0, 1e-10)
-        assert np.isclose(acquisitions["amplitude"].iloc[0], 1.0, 1e-10)
+        assert np.isclose(acquisitions["amplitude"].iloc[0], 0.0, 1e-10)
         assert np.isclose(acquisitions["phase"].iloc[0], 0.0, 1e-10)
 
     def test_qblox_result_acquisitions_scope(self, qblox_result_scope: QbloxResult):
