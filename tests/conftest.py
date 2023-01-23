@@ -26,6 +26,9 @@ from qililab.execution.execution_buses import (
 )
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
+from qililab.instrument_controllers.era.erasynthplusplus_controller import (
+    EraSynthPlusPlusController,
+)
 from qililab.instrument_controllers.keithley.keithley_2600_controller import (
     Keithley2600Controller,
 )
@@ -38,7 +41,14 @@ from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
 from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
     SGS100AController,
 )
-from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
+from qililab.instruments import (
+    SGS100A,
+    Attenuator,
+    EraSynthPlusPlus,
+    Keithley2600,
+    QbloxQCM,
+    QbloxQRM,
+)
 from qililab.platform import Platform, Schema
 from qililab.pulse import (
     CircuitToPulses,
@@ -318,6 +328,33 @@ def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AC
     mock_instance.mock_add_spec(["power", "frequency"])
     rohde_schwarz_controller.connect()
     return rohde_schwarz_controller.modules[0]
+
+
+@pytest.fixture(name="era_controller")
+def fixture_era_controller(platform: Platform):
+    """Return an instance of EraSynthPlusPlus controller class"""
+    settings = copy.deepcopy(Galadriel.erasynth_controller_0)
+    settings.pop("name")
+    return EraSynthPlusPlusController(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="era_no_device")
+def fixture_era_no_device():
+    """Return an instance of EraSynthPlusPlus class"""
+    settings = copy.deepcopy(Galadriel.erasynth_0)
+    settings.pop("name")
+    return EraSynthPlusPlus(settings=settings)
+
+
+@pytest.fixture(name="era")
+@patch("qililab.instrument_controllers.era.erasynthplusplus_controller.EraSynthPlusPlus", autospec=True)
+def fixture_era(mock_rs: MagicMock, erasynth_controller: EraSynthPlusPlusController):
+    """Return connected instance of EraSynthPlusPlus class"""
+    # add dynamically created attributes
+    mock_instance = mock_rs.return_value
+    mock_instance.mock_add_spec(["power", "frequency"])
+    erasynth_controller.connect()
+    return erasynth_controller.modules[0]
 
 
 @pytest.fixture(name="keithley_2600_controller")

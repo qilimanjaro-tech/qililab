@@ -1,5 +1,5 @@
 """
-Class to interface with the local oscillator RohdeSchwarz SGS100A
+Class to interface with the local oscillator EraSynthPlusPlus
 """
 from dataclasses import dataclass
 
