@@ -1,7 +1,7 @@
 settings:
   id_: 0
   category: platform
-  name: spectroscopy_vs_flux
+  name: sauron
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -12,7 +12,7 @@ settings:
       phase: 0
       duration: 6000
       shape:
-        name: rectangular 
+        name: rectangular
 schema:
   chip:
     id_: 0
@@ -59,6 +59,7 @@ schema:
           offset_path0: 0
           offset_path1: 0
           hardware_modulation: true
+          hardware_average: true
           sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
@@ -69,7 +70,6 @@ schema:
           acquisition_timeout: 1
           hardware_demodulation: true
           scope_store_enabled: true
-          hardware_average: true
       awg_iq_channels:
         - identifier: 0
           i_channel:

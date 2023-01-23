@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
-from tomlkit import value
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, Stop, Wait, WaitSync, ResetPh, SetPh
+from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
+from tomlkit import value
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -132,10 +132,10 @@ class QbloxModule(AWG):
         # print(f'Hardware modulation: {self.device.sequencers[0].mod_en_awg()}')
         self.device.scope_acq_avg_mode_en_path0(True)
         self.device.scope_acq_avg_mode_en_path1(True)
-        # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')       
+        # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')
         self.start_sequencer()
 
-    def _check_cached_values( 
+    def _check_cached_values(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ):
         """check if values are already cached and upload if not cached"""
@@ -211,11 +211,11 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id, readout_duration=8000)
-        wait_time = repetition_duration 
+        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
+        wait_time = repetition_duration
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
-            
+
         print(program)
         return program
 
@@ -246,7 +246,7 @@ class QbloxModule(AWG):
         return {}
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int, readout_duration):
+    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
@@ -438,6 +438,7 @@ class QbloxModule(AWG):
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
         print(self.device.sequencers[sequencer_id].gain_awg_path0())
+
     @Instrument.CheckParameterValueBool
     def _set_hardware_average(self, value: bool, sequencer_id: int):
         """Set Hardware averaging ON/OFF
@@ -452,7 +453,6 @@ class QbloxModule(AWG):
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
         # print(self.device.scope_acq_avg_mode_en_path0())
-      
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):

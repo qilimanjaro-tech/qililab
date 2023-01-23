@@ -23,5 +23,5 @@ class TestPlatformManagerYAML:
 
     def test_build_method(self):
         """Test build method loading from YAML."""
-        platform = build_platform(name="galadriel", database=False)
+        platform = build_platform(name="sauron", database=False)
         assert isinstance(platform, Platform)

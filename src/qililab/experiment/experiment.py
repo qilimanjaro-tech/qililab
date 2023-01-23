@@ -133,9 +133,9 @@ class Experiment:
             )
 
         with self._execution:
-            # self._execution.setup() # beware it is not yet implemented                   
+            # self._execution.setup() # beware it is not yet implemented
             # generate_waveforms should be contained in that CALL
-            self._execute_all_circuits_or_schedules()# This is a loop that will trigger the awg to start the already uploaded programs
+            self._execute_all_circuits_or_schedules()  # This is a loop that will trigger the awg to start the already uploaded programs
 
         if self.options.remote_save:
             self.remote_save_experiment()
@@ -363,11 +363,11 @@ class Experiment:
             path=path,
         )
         return self._execution.run(plot=plot, path=path)
-    
+
     def set_parameter(
         self,
         parameter: Parameter,
-        value: float,
+        value: float | str | bool,
         alias: str,
         element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
