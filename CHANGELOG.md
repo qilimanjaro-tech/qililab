@@ -38,7 +38,7 @@
 
 ### Refactor
 
-- [qili-243] sequence class (#104)
+- \[qili-243\] sequence class (#104)
 
 ## 0.10.1 (2022-12-14)
 
@@ -50,7 +50,7 @@
 
 ### Feat
 
-- [QILI-201] multibus support (#101)
+- \[QILI-201\] multibus support (#101)
 
 ## 0.9.2 (2022-11-17)
 

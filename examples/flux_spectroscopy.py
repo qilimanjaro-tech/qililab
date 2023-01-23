@@ -65,11 +65,7 @@ def run_and_plot(
     )
 
     flux_spectro = Experiment(
-        platform=platform,
-        circuits=[circuit],
-        options=experiment_options,
-        # plot_y_label='S21',
-        # plot_y_label="Voltage",
+        platform=platform, circuits=[circuit], options=experiment_options
     )  # if you don't want to define any settings just remove settings=settings.
 
     flux_spectro.set_parameter(alias="M", parameter=Parameter.DURATION, value=8000)
@@ -111,9 +107,6 @@ def run_and_plot(
         plt.xlabel("Frequency [GHz]")
         plt.ylabel("Current [A]")
         plt.title(f"{title}")
-
-        # plt.savefig(f"/home/pjamet/plots/{title}.png")
-
     else:
         S21 = 20 * np.log10(i_np**2 + q_np**2)
         plt.figure(figsize=(9, 7))
@@ -121,5 +114,3 @@ def run_and_plot(
         plt.xlabel("Frequency [GHz]")
         plt.ylabel("|S21|")
         plt.title(f"{title}")
-
-        # plt.savefig(f"/home/pjamet/plots/{title}.png")
