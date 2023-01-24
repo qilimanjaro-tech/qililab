@@ -420,7 +420,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+            platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -448,7 +448,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="galadriel")
+            platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -475,7 +475,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+            platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     loop3 = Loop(
@@ -665,7 +665,7 @@ def platform_yaml() -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="galadriel")
+            platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     return platform

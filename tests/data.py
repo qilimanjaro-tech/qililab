@@ -147,6 +147,7 @@ class Galadriel:
                 Parameter.OFFSET_PATH0.value: 0,
                 Parameter.OFFSET_PATH1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.HARDWARE_AVERAGE.value: True,
                 Parameter.SYNC_ENABLED.value: True,
             }
         ],
@@ -211,6 +212,7 @@ class Galadriel:
                 Parameter.OFFSET_PATH0.value: 0,
                 Parameter.OFFSET_PATH1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.HARDWARE_AVERAGE.value: True,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,

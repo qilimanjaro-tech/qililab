@@ -39,6 +39,7 @@ class AWGSequencer:
     gain_imbalance: float | None
     phase_imbalance: float | None
     hardware_modulation: bool
+    hardware_average: bool
     gain_path0: float
     gain_path1: float
     offset_path0: float

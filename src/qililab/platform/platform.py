@@ -161,7 +161,7 @@ class Platform:
     def set_parameter(
         self,
         parameter: Parameter,
-        value: float,
+        value: float | str | bool,
         alias: str,
         channel_id: int | None = None,
     ):

@@ -71,6 +71,10 @@ class Execution:
             path=path,
         )
 
+    def setup(self) -> None:
+        """This calls the setup of the execution manager"""
+        self.execution_manager.setup()
+
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Run the given pulse sequence."""
         return self.execution_manager.run(plot=plot, path=path)

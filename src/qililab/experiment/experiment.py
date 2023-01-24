@@ -365,7 +365,7 @@ class Experiment:
     def set_parameter(
         self,
         parameter: Parameter,
-        value: float,
+        value: float | str | bool,
         alias: str,
         element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
