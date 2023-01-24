@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.15.0 (2023-01-24)
+
+### Feat
+
+- Experimentally validated & debugged Spectroscopy  (#134)
+
 ## 0.14.0 (2023-01-17)
 
 ### Feat
