@@ -13,7 +13,6 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
-from tomlkit import value
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -99,7 +98,6 @@ class QbloxModule(AWG):
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
-            self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
             # self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             # self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
@@ -125,14 +123,14 @@ class QbloxModule(AWG):
 
     def run(self):
         """Run the uploaded program"""
-        for sequencer in self.awg_sequencers:
-            sequencer_id = sequencer.identifier
-            self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
-        self.device.sequencers[0].mod_en_awg(bool(value))
-        # print(f'Hardware modulation: {self.device.sequencers[0].mod_en_awg()}')
-        self.device.scope_acq_avg_mode_en_path0(True)
-        self.device.scope_acq_avg_mode_en_path1(True)
-        # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')
+        # for sequencer in self.awg_sequencers:
+        #     sequencer_id = sequencer.identifier
+        #     self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
+        # self.device.sequencers[0].mod_en_awg(bool(value))
+        # # print(f'Hardware modulation: {self.device.sequencers[0].mod_en_awg()}')
+        # self.device.scope_acq_avg_mode_en_path0(True)
+        # self.device.scope_acq_avg_mode_en_path1(True)
+        # # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')
         self.start_sequencer()
 
     def _check_cached_values(
@@ -212,7 +210,7 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
-        wait_time = repetition_duration
+        wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
