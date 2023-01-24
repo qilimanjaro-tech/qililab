@@ -90,7 +90,6 @@ class QbloxS4g(CurrentSource):
         """Set the current"""
         self.settings.current[channel_id] = float(value)
         channel.current(self.current[channel_id])
-        print(f"current set to {channel.current()}")
 
     @Instrument.CheckParameterValueString
     def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):

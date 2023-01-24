@@ -31,14 +31,6 @@ class MicroWaveBiasSystemControl(ContinuousSystemControl):
 
     settings: MicroWaveBiasSystemControlSettings
 
-    # def setup(self):
-    #     """
-    #     Setup preparation previous to CW experiment with a CW bus.
-    #     It uses the values for frequency and power stored in the settings.
-    #     """
-    #     self.set_parameter(parameter=Parameter.FREQUENCY_CENTER,value=self.settings.frequency)
-    #     self.set_parameter(parameter=Parameter.POWER,value=self.settings.power)
-
     @property
     def signal_generator(self):
         """Bus 'signal_generator' property.

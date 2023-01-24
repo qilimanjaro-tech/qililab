@@ -13,7 +13,6 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
-from tomlkit import value
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -125,14 +124,6 @@ class QbloxModule(AWG):
 
     def run(self):
         """Run the uploaded program"""
-        for sequencer in self.awg_sequencers:
-            sequencer_id = sequencer.identifier
-            self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
-        self.device.sequencers[0].mod_en_awg(bool(value))
-        # print(f'Hardware modulation: {self.device.sequencers[0].mod_en_awg()}')
-        self.device.scope_acq_avg_mode_en_path0(True)
-        self.device.scope_acq_avg_mode_en_path1(True)
-        # print(f'Hardware averaging: {self.device.scope_acq_avg_mode_en_path1()}')
         self.start_sequencer()
 
     def _check_cached_values(
@@ -186,7 +177,6 @@ class QbloxModule(AWG):
         sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Define program's blocks
         program = Program()
-        # program.append_component(WaitSync(4))
         avg_loop = Loop(name="average", begin=nshots)
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -199,10 +189,6 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            # avg_loop.append_component(set_phase_rad(rads=pulse_event.pulse.phase))
-            # avg_loop.append_component(
-            #     set_awg_gain_relative(gain_0=pulse_event.pulse.amplitude, gain_1=pulse_event.pulse.amplitude)
-            # )
             avg_loop.append_component(ResetPh())
             avg_loop.append_component(
                 Play(
@@ -216,7 +202,7 @@ class QbloxModule(AWG):
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
-        print(program)
+        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
     def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
@@ -229,11 +215,6 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        # acquisitions.add(
-        #     name="binning",
-        #     num_bins=int(cast(AWGQbloxSequencer, self.get_sequencer(sequencer_id)).num_bins) + 1,
-        #     index=1,
-        # )  # binned acquisition
         return acquisitions
 
     @abstractmethod
