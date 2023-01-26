@@ -1,7 +1,7 @@
 """ Acquisition Result """
 
 from dataclasses import dataclass, field
-from typing import List, Set
+from typing import Set
 
 import numpy as np
 import numpy.typing as npt
@@ -81,7 +81,7 @@ class Acquisition:
         Returns:
             NDArray[numpy.float]: amplitude
         """
-        return 20*np.log10(np.sqrt(i_normalized**2 + q_normalized**2))
+        return 20 * np.log10(np.sqrt(i_normalized**2 + q_normalized**2))
 
     def _phases(self, i_normalized: npt.NDArray[np.float32], q_normalized: npt.NDArray[np.float32]):
         """Computes the phases of a given I and Q data

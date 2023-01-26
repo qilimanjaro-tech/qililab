@@ -1,7 +1,6 @@
 """Execution class."""
 from dataclasses import dataclass
 from pathlib import Path
-from qililab.execution import execution_manager
 
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform

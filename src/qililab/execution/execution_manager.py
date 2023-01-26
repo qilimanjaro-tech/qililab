@@ -69,7 +69,8 @@ class ExecutionManager:
         """
         Calls setup of each bus. Where the sequence will be generated
         """
-        # self.pulse_scheduled_buses.setup()
+        for bus in self.pulse_scheduled_buses:
+            bus.setup()
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
         """
@@ -77,7 +78,6 @@ class ExecutionManager:
 
         Args: n qubit circuit
               metadata on how qubits are mapped to buses
-
         Output: m circuits, one for each bus.
         """
 
