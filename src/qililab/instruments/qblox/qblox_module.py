@@ -98,7 +98,6 @@ class QbloxModule(AWG):
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
-            self._set_hardware_average(value=sequencer.hardware_average, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
@@ -418,20 +417,6 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-
-    @Instrument.CheckParameterValueBool
-    def _set_hardware_average(self, value: bool, sequencer_id: int):
-        """Set Hardware averaging ON/OFF
-
-        Args:
-            value (bool) : True=ON, False=OFF
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        self.device.scope_acq_avg_mode_en_path0(value)
-        self.device.scope_acq_avg_mode_en_path1(value)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):

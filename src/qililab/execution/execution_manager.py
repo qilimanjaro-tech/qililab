@@ -84,8 +84,9 @@ class ExecutionManager:
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
+        # FIXME: run in parallel
         for bus in self.pulse_scheduled_buses:
-            self._asynchronous_bus_run(bus=bus)
+            bus.run()
 
         if not self.pulse_scheduled_readout_buses:
             return None
