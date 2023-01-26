@@ -435,7 +435,6 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-        print(self.device.sequencers[sequencer_id].gain_awg_path0())
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_average(self, value: bool, sequencer_id: int):
@@ -465,7 +464,6 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-        print(self.device.sequencers[sequencer_id].gain_awg_path1())
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
