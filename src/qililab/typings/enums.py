@@ -428,7 +428,6 @@ class Parameter(str, Enum):
     ACQUISITION_DELAY_TIME = "acquisition_delay_time"
     ATTENUATION = "attenuation"
     REPETITION_DURATION = "repetition_duration"
-    HARDWARE_AVERAGE = "hardware_average"
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
