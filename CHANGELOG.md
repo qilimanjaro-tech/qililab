@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.15.1 (2023-01-26)
+
+### Fix
+
+- Duplicate hardware_average property & bus.run() in parallel error (#136)
+
 ## 0.15.0 (2023-01-24)
 
 ### Feat
