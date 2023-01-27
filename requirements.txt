@@ -2,8 +2,8 @@
 # with the exact version
 # example:
 # scipy==1.8.0
-pandas==1.5.2
-qibo>=0.1.6, <0.2
+pandas==1.5.3
+qibo>=0.1.7, <0.2
 PyYAML==6.0
 typeguard==2.13.3
 qblox-instruments==0.8.1
