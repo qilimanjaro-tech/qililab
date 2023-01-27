@@ -27,7 +27,7 @@ class EraSynthPlusPlusController(SingleInstrumentController):
         settings (EraSynthPlusPlusSettings): Settings of the instrument.
     """
 
-    name = InstrumentControllerName.ROHDE_SCHWARZ
+    name = InstrumentControllerName.ERASYNTH
     device: QCoDeSEraSynthPlusPlus
     modules: Sequence[EraSynthPlusPlus]
 

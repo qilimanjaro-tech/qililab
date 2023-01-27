@@ -347,14 +347,14 @@ def fixture_era_no_device():
 
 
 @pytest.fixture(name="era")
-@patch("qililab.instrument_controllers.era.erasynthplusplus_controller.EraSynthPlusPlus", autospec=True)
-def fixture_era(mock_rs: MagicMock, erasynth_controller: EraSynthPlusPlusController):
+@patch("qililab.instrument_controllers.era.erasynthplusplus_controller.QCoDeSEraSynthPlusPlus", autospec=True)
+def fixture_era(mock_era: MagicMock, era_controller: EraSynthPlusPlusController):
     """Return connected instance of EraSynthPlusPlus class"""
     # add dynamically created attributes
-    mock_instance = mock_rs.return_value
+    mock_instance = mock_era.return_value
     mock_instance.mock_add_spec(["power", "frequency"])
-    erasynth_controller.connect()
-    return erasynth_controller.modules[0]
+    era_controller.connect()
+    return era_controller.modules[0]
 
 
 @pytest.fixture(name="keithley_2600_controller")
