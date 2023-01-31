@@ -2,8 +2,8 @@
 import copy
 from typing import Dict, List, Type
 
-from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, I, M, X, Y
+from qibo.models.circuit import Circuit
 
 from qililab.constants import (
     CONNECTION,

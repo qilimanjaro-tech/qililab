@@ -1,8 +1,8 @@
 """Run circuit experiment"""
 import matplotlib.pyplot as plt
 import numpy as np
-from qibo.core.circuit import Circuit
 from qibo.gates import RX, RY, I
+from qibo.models.circuit import Circuit
 
 from qililab import Experiment, build_platform
 
@@ -41,7 +41,7 @@ def run_allxy():
         circuit.add(gate_pair[1])
         circuits.append(circuit)
 
-    experiment = Experiment(platform=platform, sequences=circuits)
+    experiment = Experiment(platform=platform, circuits=circuits)
     results = experiment.execute()
 
     x_ticks = np.linspace(-1, 1, 10)

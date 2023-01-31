@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, Type
 
 import numpy as np
-from qibo.abstractions.gates import Gate
+from qibo.gates import Gate
 
 from qililab.typings import GateName
 from qililab.typings.enums import MasterGateSettingsName

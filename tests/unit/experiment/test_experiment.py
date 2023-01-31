@@ -3,8 +3,8 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qibo.core.circuit import Circuit
 from qibo.gates import M
+from qibo.models.circuit import Circuit
 
 from qililab.execution import Execution
 from qililab.experiment import Experiment

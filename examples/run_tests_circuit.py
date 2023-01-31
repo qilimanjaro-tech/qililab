@@ -2,8 +2,8 @@
 import os
 from pathlib import Path
 
-from qibo.core.circuit import Circuit
 from qibo.gates import M, X
+from qibo.models.circuit import Circuit
 from qiboconnection.api import API
 from qiboconnection.connection import ConnectionConfiguration
 

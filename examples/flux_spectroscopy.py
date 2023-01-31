@@ -5,8 +5,8 @@ from pathlib import Path
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from qibo.core.circuit import Circuit
 from qibo.gates import M
+from qibo.models.circuit import Circuit
 from qiboconnection.api import API
 
 from qililab import build_platform

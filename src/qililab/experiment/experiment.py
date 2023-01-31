@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
-from qibo.core.circuit import Circuit
+from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node

@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 
 import numpy as np
-from qibo.core.circuit import Circuit
 from qibo.gates import RX
+from qibo.models.circuit import Circuit
 
 from qililab import Experiment, build_platform
 
@@ -21,7 +21,7 @@ def run_rabi_simulator():
         circuit = Circuit(1)
         circuit.add(RX(0, angle))
         circuits.append(circuit)
-    experiment = Experiment(platform=platform, sequences=circuits)
+    experiment = Experiment(platform=platform, circuits=circuits)
     _ = experiment.execute()
     print("success")
 
