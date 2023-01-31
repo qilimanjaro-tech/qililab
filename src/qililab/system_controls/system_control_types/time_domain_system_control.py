@@ -76,3 +76,7 @@ class TimeDomainSystemControl(SystemControl):
     def run(self) -> None:
         """Run the uploaded program"""
         return self.awg.run()
+
+    def setup(self) -> None:
+        """Applies the bus setup"""
+        # return self.setup()

@@ -43,6 +43,7 @@ class PulseScheduledBus:
 
     def setup(self):
         """Generates the sequence for each bus and uploads it to the sequencer"""
+        return self.system_control.setup()
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
@@ -51,7 +52,6 @@ class PulseScheduledBus:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-
         self.pulse_schedule.append(pulse_bus_schedule)
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:

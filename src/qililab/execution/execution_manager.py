@@ -85,6 +85,7 @@ class ExecutionManager:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
         # FIXME: run in parallel
         for bus in self.pulse_scheduled_buses:
+            bus.setup()
             bus.run()
         if not self.pulse_scheduled_readout_buses:
             return None
