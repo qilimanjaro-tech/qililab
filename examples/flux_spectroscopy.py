@@ -34,7 +34,6 @@ def run_and_plot(
     attenuation_fixed: float,
     current_fixed: float,
 ):
-
     """Load the platform 'flux_spectroscopy' from the DB."""
     platform = build_platform(name="sauron")
     platform.connect_and_set_initial_setup(automatic_turn_on_instruments=True, device_id=15)

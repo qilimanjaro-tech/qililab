@@ -23,5 +23,4 @@ def run_circuit(connection: API | None = None):
 
 
 if __name__ == "__main__":
-
     run_circuit()
