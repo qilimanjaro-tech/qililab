@@ -5,8 +5,8 @@ from pathlib import Path
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from qibo.core.circuit import Circuit
 from qibo.gates import M
+from qibo.models.circuit import Circuit
 from qiboconnection.api import API
 
 from qililab import build_platform
@@ -34,7 +34,6 @@ def run_and_plot(
     attenuation_fixed: float,
     current_fixed: float,
 ):
-
     """Load the platform 'flux_spectroscopy' from the DB."""
     platform = build_platform(name="sauron")
     platform.connect_and_set_initial_setup(automatic_turn_on_instruments=True, device_id=15)

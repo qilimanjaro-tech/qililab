@@ -14,7 +14,7 @@ def run(connection: API | None = None):
     """Load the platform 'sauron' from the DB."""
     platform = build_platform(name="sauron_vna")
     platform.connect()
-    platform.close()
+    platform.disconnect()
 
 
 if __name__ == "__main__":

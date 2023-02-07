@@ -3,8 +3,8 @@ from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
 import numpy as np
-from qibo.abstractions.gates import Gate
-from qibo.core.circuit import Circuit
+from qibo.gates import Gate, M
+from qibo.models.circuit import Circuit
 
 from qililab.chip import Chip, Node
 from qililab.constants import RUNCARD
@@ -44,8 +44,11 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: Dict[int, int] = {}  # restart time
-            control_gates = list(circuit.queue)
-            readout_gate = circuit.measurement_gate
+            readout_gates = circuit.gates_of_type(M)
+            control_gates = [
+                gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
+            ]
+            _, readout_gate = readout_gates[0] if len(readout_gates) > 0 else (None, None)
             for gate in control_gates:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:

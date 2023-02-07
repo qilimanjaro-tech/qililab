@@ -2,8 +2,8 @@
 import os
 from pathlib import Path
 
-from qibo.core.circuit import Circuit
 from qibo.gates import M
+from qibo.models.circuit import Circuit
 from qiboconnection.api import API
 
 from qililab import build_platform
@@ -23,5 +23,4 @@ def run_circuit(connection: API | None = None):
 
 
 if __name__ == "__main__":
-
     run_circuit()

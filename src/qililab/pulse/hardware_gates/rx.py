@@ -31,7 +31,7 @@ class RX(HardwareGate):
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )
-        theta = gate.parameters
+        (theta,) = gate.parameters
         theta = cls.normalize_angle(angle=theta)
         amplitude = (np.abs(theta) / np.pi) * x_params.amplitude
         phase = x_params.phase if theta >= 0 else x_params.phase + np.pi

@@ -31,7 +31,7 @@ class RY(HardwareGate):
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )
-        theta = gate.parameters
+        (theta,) = gate.parameters
         theta = cls.normalize_angle(angle=theta)
         amplitude = (np.abs(theta) / np.pi) * y_params.amplitude
         phase = y_params.phase if theta >= 0 else y_params.phase + np.pi

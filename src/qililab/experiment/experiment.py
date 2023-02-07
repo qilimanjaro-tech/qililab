@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
-from qibo.core.circuit import Circuit
+from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
@@ -343,7 +343,7 @@ class Experiment:
         return self.platform.get_element(alias=loop.alias)
 
     def _generate_program_upload_and_execute(
-        self, schedule_index_to_load: int, path: Path, plot: LivePlot = None
+        self, schedule_index_to_load: int, path: Path, plot: LivePlot | None = None
     ) -> Result | None:
         """Execute one pulse schedule.
 

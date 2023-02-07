@@ -10,7 +10,6 @@ def nested_dict_to_path_tuples(dict_obj: dict) -> Generator:
     """
 
     for key, value in dict_obj.items():
-
         if isinstance(value, dict):
             # If value is dict then iterate over all its values
             for pair in nested_dict_to_path_tuples(value):

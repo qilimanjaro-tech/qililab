@@ -1,7 +1,7 @@
 """PulsedGateFactory class."""
 from typing import Dict, Type
 
-from qibo.abstractions.gates import Gate
+from qibo.gates import Gate
 
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 
