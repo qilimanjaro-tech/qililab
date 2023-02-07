@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.16.0 (2023-02-07)
+
+### Feat
+
+- updates to Qibo v0.1.11, fixes breaking changes (#139)
+
 ## 0.15.1 (2023-01-26)
 
 ### Fix
