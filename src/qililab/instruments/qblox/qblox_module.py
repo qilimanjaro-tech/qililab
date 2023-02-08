@@ -98,8 +98,8 @@ class QbloxModule(AWG):
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
-            self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
-            self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+            # self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
+            # self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
     @property
     def module_type(self):
@@ -197,7 +197,7 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
-        wait_time = repetition_duration
+        wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
