@@ -49,6 +49,13 @@ class SGS100A(SignalGenerator):
             self.settings.frequency = float(value)
             self.device.frequency(self.frequency)
             return
+        if parameter == Parameter.RF_ON:
+            self.settings.rf_on = bool(value)
+            if bool(value):
+                self.device.on()
+            if not bool(value):
+                self.device.off()
+            return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
