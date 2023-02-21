@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from qililab.instruments.awg import AWG
+from qililab.instruments.signal_generator import SignalGenerator
 from qililab.pulse import PulseBusSchedule
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
@@ -18,6 +19,7 @@ class TimeDomainSystemControl(SystemControl):
 
         system_control_category = SystemControlCategory.TIME_DOMAIN
         awg: AWG
+        signal_generator: SignalGenerator
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -76,3 +78,8 @@ class TimeDomainSystemControl(SystemControl):
     def run(self) -> None:
         """Run the uploaded program"""
         return self.awg.run()
+      
+    def setup(self) -> None:
+        """Prepare the bus before starting the sequencer"""
+        self.awg.setup()
+        self.signal_generator.setup()
