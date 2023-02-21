@@ -8,6 +8,15 @@ Welcome to qililab's documentation!
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
+   :caption: Getting Started
+
+   Contents/Pre
+   Contents/Inst
+   Contents/Ver
+
+.. toctree::
+   :maxdepth: 2
    :caption: Contents:
 
    modules
