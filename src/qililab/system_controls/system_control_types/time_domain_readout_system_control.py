@@ -7,6 +7,7 @@ from qililab.result.result import Result
 from qililab.system_controls.system_control_types.time_domain_control_system_control import (
     ControlSystemControl,
 )
+from qililab.instruments.signal_generator import SignalGenerator
 from qililab.typings import SystemControlSubCategory
 from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
@@ -25,6 +26,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         """Time Domain Readout System Control settings class."""
 
         system_control_subcategory = SystemControlSubCategory.TIME_DOMAIN_READOUT
+        hardware_demodulation: bool
         adc: AWGAnalogDigitalConverter | None = field(default=None)
 
         def _supported_instrument_categories(self) -> list[str]:
@@ -61,28 +63,34 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter in [
-            Parameter.BUS_FREQUENCY,
-            Parameter.LO_FREQUENCY,
-            Parameter.POWER,
-            Parameter.GAIN,
-            Parameter.GAIN_PATH0,
-            Parameter.GAIN_PATH1,
-            Parameter.OFFSET_I,
-            Parameter.OFFSET_Q,
-            Parameter.OFFSET_PATH0,
-            Parameter.OFFSET_PATH1,
-            Parameter.IF,
-            Parameter.HARDWARE_MODULATION,
-            Parameter.SYNC_ENABLED,
-            Parameter.NUM_BINS,
-            Parameter.GAIN_IMBALANCE,
-            Parameter.PHASE_IMBALANCE,
-        ]:
+        if parameter == Parameter.IF:
+            self.settings.IF = float(value)
+            # first setup the IF that the DEMODULATION WILL USE
+            if self.settings.hardware_demodulation:
+                sequencer_id = self.settings.sequencer_id
+                self.adc.device.sequencers[sequencer_id].nco_freq(float(value))
+            # second setup the IF inside the matrioska (AWG)
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
-        # the rest of parameters are assigned to the AWGDigitalAnalogConverter
-        self.adc.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        if parameter == Parameter.HARDWARE_DEMODULATION:
+            sequencer_id = self.settings.sequencer_id
+            self.settings.hardware_demodulation = bool(value)
+            self.adc.device.sequencers[sequencer_id].demod_en_acq(bool(value))
+            return
+        if parameter == Parameter.ACQUISITION_DELAY_TIME:
+            return
+        if parameter == Parameter.INTEGRATION_LENGTH:
+            return
+        if parameter == Parameter.INTEGRATION_WEIGHT_I_1:
+            return
+        if parameter == Parameter.INTEGRATION_WEIGHT_I_2:
+            return
+        if parameter == Parameter.INTEGRATION_WEIGHT_Q_1:
+            return
+        if parameter == Parameter.INTEGRATION_WEIGHT_Q_2:
+            return
+        super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        return
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
@@ -101,3 +109,16 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         """SystemControl 'acquisition_delay_time' property.
         Delay (in ns) between the readout pulse and the acquisition."""
         return self.adc.acquisition_delay_time
+
+    def setup(self):
+        # In this layer we handle Digitization (ADC) settings
+        # 1. Settings
+        
+        # all the sequence-related pars (bins, average, etc are handled in parent class awg)
+        super().setup()
+        # 2. Sequence
+        # might have been uploaded above depending on how we organize the brain sequencing
+        # 3. Waveforms
+        # here it is relevant to set up the waveforms
+        # self.awg.setup()
+        # self.signal_generator.setup()

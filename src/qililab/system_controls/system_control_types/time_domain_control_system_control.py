@@ -82,6 +82,7 @@ class ControlSystemControl(TimeDomainSystemControl):
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        return
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
@@ -109,3 +110,13 @@ class ControlSystemControl(TimeDomainSystemControl):
             repetition_duration=repetition_duration,
             path=path,
         )
+
+    def setup(self):
+        # In this layer we handle Signal Generator settings
+        # 1. Settings
+        super().setup()
+        # 2. Sequence
+        
+        # 3. Waveforms
+        # self.awg.setup()
+        # self.signal_generator.setup()

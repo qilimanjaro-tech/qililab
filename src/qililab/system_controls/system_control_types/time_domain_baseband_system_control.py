@@ -20,8 +20,8 @@ class BaseBandSystemControl(TimeDomainSystemControl):
     class BaseBandSystemControlSettings(TimeDomainSystemControl.TimeDomainSystemControlSettings):
         """Time Domain BaseBand System Control settings class."""
 
-        system_control_subcategory = SystemControlSubCategory.BASEBAND
         current_source: CurrentSource
+        system_control_subcategory = SystemControlSubCategory.BASEBAND
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
