@@ -9,7 +9,7 @@ from qililab.typings.yaml_type import yaml
 class ExecutionOptions:
     """Execution Options"""
 
-    set_initial_setup: bool = field(default=True)
+    set_initial_setup: bool = field(default=False)
     automatic_connect_to_instruments: bool = field(default=True)
     automatic_disconnect_to_instruments: bool = field(default=True)
     automatic_turn_on_instruments: bool = field(default=False)
