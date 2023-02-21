@@ -94,6 +94,7 @@ class QbloxModule(AWG):
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
             self._set_gain_path1(value=sequencer.gain_path1, sequencer_id=sequencer_id)
+            print('Initial setup was called')
             self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
@@ -123,6 +124,8 @@ class QbloxModule(AWG):
 
     def run(self):
         """Run the uploaded program"""
+        print(f'{self.device}: gain path 0 before run: {self.device.sequencer0.gain_awg_path0()}')
+        print(f'{self.device}: gain path 1 before run: {self.device.sequencer0.gain_awg_path1()} \n ')
         self.start_sequencer()
 
     def _check_cached_values(
@@ -246,12 +249,15 @@ class QbloxModule(AWG):
             )
         if parameter == Parameter.GAIN:
             self._set_gain(value=value, sequencer_id=channel_id)
+            # print('Who set this gain?')
             return
         if parameter == Parameter.GAIN_PATH0:
             self._set_gain_path0(value=value, sequencer_id=channel_id)
+            # print('Who set this gain?')
             return
         if parameter == Parameter.GAIN_PATH1:
             self._set_gain_path1(value=value, sequencer_id=channel_id)
+            # print('Who set this gain?')
             return
         if parameter == Parameter.OFFSET_PATH0:
             self._set_offset_path0(value=value, sequencer_id=channel_id)
@@ -417,6 +423,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
+        print(f'gain path0 set to {self.device.sequencers[sequencer_id].gain_awg_path0()}')
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):
@@ -431,6 +438,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
+        print(f'gain path1 set to {self.device.sequencers[sequencer_id].gain_awg_path1()}')
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
@@ -445,6 +453,7 @@ class QbloxModule(AWG):
         """
         self._set_gain_path0(value=value, sequencer_id=sequencer_id)
         self._set_gain_path1(value=value, sequencer_id=sequencer_id)
+        # print('_set_gain was called')
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
