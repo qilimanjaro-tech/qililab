@@ -12,8 +12,8 @@ Welcome to qililab's documentation!
    :caption: Getting Started
 
    GettingStarted/Pre
-   GettingS/Inst
-   GettingS/Ver
+   GettingStarted/Inst
+   GettingStarted/Ver
 
 .. toctree::
    :maxdepth: 2
