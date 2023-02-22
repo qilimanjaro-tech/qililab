@@ -76,9 +76,11 @@ class ControlSystemControl(TimeDomainSystemControl):
             self._update_bus_frequency(frequency=value, channel_id=channel_id)
             return
         if parameter == Parameter.LO_FREQUENCY:
+            self.settings.LO_frequency = float(value)
             self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=value)
             return
         if parameter == Parameter.POWER:
+            self.settings.power = float(value)
             self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
 
