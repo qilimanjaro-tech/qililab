@@ -99,8 +99,8 @@ class QbloxModule(AWG):
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
-            # self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
-            # self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+            self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
+            self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
     @property
     def module_type(self):
@@ -124,8 +124,8 @@ class QbloxModule(AWG):
 
     def run(self):
         """Run the uploaded program"""
-        print(f'{self.device}: gain path 0 before run: {self.device.sequencer0.gain_awg_path0()}')
-        print(f'{self.device}: gain path 1 before run: {self.device.sequencer0.gain_awg_path1()} \n ')
+        # print(f'{self.device}: gain path 0 before run: {self.device.sequencer0.gain_awg_path0()}')
+        # print(f'{self.device}: gain path 1 before run: {self.device.sequencer0.gain_awg_path1()} \n ')
         self.start_sequencer()
 
     def _check_cached_values(
@@ -514,6 +514,7 @@ class QbloxModule(AWG):
 
         self.awg_sequencers[sequencer_id].gain_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
+        print(f' \n Gain Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_gain_ratio()} \n')
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_phase_imbalance(self, value: float | str | bool, sequencer_id: int):
@@ -528,6 +529,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
+        print(f' \n Phase Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree()} \n')
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
