@@ -63,8 +63,6 @@ class TimeDomainSystemControl(SystemControl):
             sequencer_id = self.settings.sequencer_id
             self.awg.device.sequencers[sequencer_id].gain_awg_path0(float(value))
             self.awg.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-            print(f'BUS SETUP set gain path0 to {self.awg.device.sequencers[sequencer_id].gain_awg_path0()}')
-            print(f'BUS SETUP set gain path1 to {self.awg.device.sequencers[sequencer_id].gain_awg_path1()}')
             return
         if parameter == Parameter.IF:
             self.settings.IF = float(value)
