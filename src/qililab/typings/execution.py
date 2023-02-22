@@ -14,6 +14,7 @@ class ExecutionOptions:
     automatic_disconnect_to_instruments: bool = field(default=True)
     automatic_turn_on_instruments: bool = field(default=False)
     automatic_turn_off_instruments: bool = field(default=False)
+    apply_bus_setup: bool = field(default=True)
 
     def __str__(self):
         """Returns a string representation of the execution otions."""
