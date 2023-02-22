@@ -24,6 +24,8 @@ class ControlSystemControl(TimeDomainSystemControl):
 
         system_control_subcategory = SystemControlSubCategory.CONTROL
         signal_generator: SignalGenerator
+        LO_frequency: float
+        power: float
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -113,10 +115,13 @@ class ControlSystemControl(TimeDomainSystemControl):
 
     def setup(self):
         # In this layer we handle Signal Generator settings
+        self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.LO_frequency))
+        print(f'SETUP SG: LO={self.settings.LO_frequency}')
+        self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
+        print(f'SETUP SG: power={self.settings.power}')
         # 1. Settings
         super().setup()
         # 2. Sequence
-        
         # 3. Waveforms
         # self.awg.setup()
         # self.signal_generator.setup()
