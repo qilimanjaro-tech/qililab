@@ -103,8 +103,7 @@ class TimeDomainSystemControl(SystemControl):
 
     def setup(self) -> None:
         # In this layer we handle Pulse generation (AWG) settings
-        
         """Prepare the bus before starting the sequencer"""
-        self.set_parameter(parameter=Parameter.GAIN,
-                           value=self.settings.gain)
-        
+        self.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain)
+        self.set_parameter(parameter=Parameter.IF, value=self.settings.IF)
+        # self.set_parameter(parameter=)

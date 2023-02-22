@@ -113,7 +113,6 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
     def setup(self):
         # In this layer we handle Digitization (ADC) settings
         # 1. Settings
-        
         # all the sequence-related pars (bins, average, etc are handled in parent class awg)
         super().setup()
         # 2. Sequence
