@@ -8,7 +8,6 @@
 
 |
 |
-|
 
 Qilimanjaro Qililab documentation
 ===================================
