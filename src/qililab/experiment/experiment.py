@@ -133,8 +133,9 @@ class Experiment:
             )
 
         with self._execution:
-            self._execution.setup()
-            print('setup DONE')
+            if self.options.execution_options.apply_bus_setup:
+                self._execution.setup()
+                print('BUS SETUP DONE')
             self._execute_all_circuits_or_schedules()
 
         if self.options.remote_save:
