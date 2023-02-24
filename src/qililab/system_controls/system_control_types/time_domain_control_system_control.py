@@ -26,6 +26,7 @@ class ControlSystemControl(TimeDomainSystemControl):
         signal_generator: SignalGenerator
         LO_frequency: float
         power: float
+        rf_on: bool
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -83,6 +84,10 @@ class ControlSystemControl(TimeDomainSystemControl):
             self.settings.power = float(value)
             self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
+        if parameter == Parameter.RF_ON:
+            self.settings.rf_on = bool(value)
+            self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            return
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -121,6 +126,8 @@ class ControlSystemControl(TimeDomainSystemControl):
         print(f'SETUP SG: LO={self.settings.LO_frequency}')
         self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
         print(f'SETUP SG: power={self.settings.power}')
+        self.set_parameter(parameter=Parameter.RF_ON, value=self.settings.rf_on)
+        print(f'SETUP SG: RF={self.settings.rf_on}')
         # 1. Settings
         super().setup()
         # 2. Sequence
