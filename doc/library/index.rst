@@ -19,8 +19,7 @@ In this page you can find the documentation of the qililab package implemented i
 
 
 .. toctree::
-   :maxdepth: 2
-   :hidden:
+   :maxdepth: 4
    :caption: Getting Started
 
    GettingStarted/Pre
@@ -28,15 +27,15 @@ In this page you can find the documentation of the qililab package implemented i
    GettingStarted/Ver
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Documentation:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Examples:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: API Reference:
 
    ApiReferences/modules
