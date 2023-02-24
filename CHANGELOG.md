@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.16.1 (2023-02-24)
+
+### Fix
+
+- Platform should be stateful for connections (#143)
+
 ## 0.16.0 (2023-02-07)
 
 ### Feat
