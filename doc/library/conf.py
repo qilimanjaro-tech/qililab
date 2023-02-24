@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "qililab"
-copyright = "2022, Qilimanjaro"
+project = "Qililab Docs"
+copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
 
 # The full version, including alpha/beta/rc tags
@@ -58,6 +58,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
+html_logo = "img/qili_logo_long.png"
+html_title = "Qilisimulator"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

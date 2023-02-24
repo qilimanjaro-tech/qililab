@@ -3,8 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to qililab's documentation!
+.. image:: img/qili_deg.png
+   :align: center
+
+|
+|
+|
+
+Qilimanjaro Qililab documentation
 ===================================
+
+In this page you can find the documentation of the qililab package implemented in python.
+
+.. warning:: 🚧Documentation under construction🚧
+
 
 .. toctree::
    :maxdepth: 2
@@ -17,9 +29,17 @@ Welcome to qililab's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Documentation:
 
-   modules
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference:
+
+   ApiReferences/modules
 
 
 Indices and tables
