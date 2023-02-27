@@ -237,8 +237,6 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             self.device.arm_sequencer(sequencer=sequencer.identifier)
             self.device.start_sequencer(sequencer=sequencer.identifier)
-            print(self.device.get_sequencer_state(sequencer=sequencer.identifier))
-            print(self.device.get_system_state())
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
