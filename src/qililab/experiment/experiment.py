@@ -129,7 +129,7 @@ class Experiment:
                 self._results_path,
                 self._execution_ready,
             ) = self._execution_preparation.prepare_execution(
-                num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
+                num_schedules=self._execution.num_schedules, experiment_serialized=dict()
             )
 
         with self._execution:

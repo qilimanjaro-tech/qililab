@@ -77,7 +77,7 @@ schema:
       alias: QRM
       id_: 0
       category: awg
-      firmware: 0.7.0
+      firmware: 0.8.1
       num_sequencers: 1
       acquisition_delay_time: 100
       awg_sequencers:
