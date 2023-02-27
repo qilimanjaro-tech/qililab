@@ -6,6 +6,8 @@ import pytest
 from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.instrument_connections import Connection
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Buses, Platform, Schema
 from qililab.settings import RuncardSchema
@@ -86,3 +88,15 @@ class TestPlatform:
         with pytest.raises(NotImplementedError):
             save_platform(platform=platform, database=True)
         mock_dump.assert_called()
+
+    def test_turn_on_instruments(self, platform: Platform):
+        """Test turn_on_instruments method"""
+        with patch.object(InstrumentController, "CheckConnected", return_value=True):
+            with patch.object(Connection, "CheckConnected", return_value=True):
+                platform.turn_on_instruments()
+                assert platform._instruments_turned_on is True
+
+    def test_turn_off_instruments(self, platform: Platform):
+        """Test turn_off_instruments method"""
+        platform.turn_off_instruments()
+        assert platform._instruments_turned_on is False

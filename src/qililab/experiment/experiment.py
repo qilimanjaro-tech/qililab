@@ -378,6 +378,18 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = circuit.get_parameters()
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self._execution, self._schedules = self._build_execution(
+                circuits=self.circuits,
+                pulse_schedules=self.pulse_schedules,
+                execution_options=self.options.execution_options,
+            )
+            return
+
         if element is None:
             self.platform.set_parameter(
                 alias=alias,

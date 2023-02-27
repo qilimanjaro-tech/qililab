@@ -466,6 +466,7 @@ class Parameter(str, Enum):
     GAIN_PATH1 = "gain_path1"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    GATE_PARAMETER = "gate_parameter"
 
 
 class ResultName(str, Enum):
