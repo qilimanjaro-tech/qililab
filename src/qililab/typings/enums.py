@@ -467,10 +467,11 @@ class Parameter(str, Enum):
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
     RF_ON = "rf_on"
-    INTEGRATION_WEIGHT_I_1 = 'integration_weight_I_1'
-    INTEGRATION_WEIGHT_I_2 = 'integration_weight_I_2'
-    INTEGRATION_WEIGHT_Q_1 = 'integration_weight_Q_1'
-    INTEGRATION_WEIGHT_Q_2 = 'integration_weight_Q_2'
+    INTEGRATION_WEIGHT_I_1 = "integration_weight_I_1"
+    INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
+    INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
+    INTEGRATION_WEIGHT_Q_2 = "integration_weight_Q_2"
+    GATE_PARAMETER = "gate_parameter"
 
 
 class ResultName(str, Enum):

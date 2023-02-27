@@ -94,7 +94,7 @@ class QbloxModule(AWG):
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
             self._set_gain_path1(value=sequencer.gain_path1, sequencer_id=sequencer_id)
-            print('Initial setup was called')
+            print("Initial setup was called")
             self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
             self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
@@ -237,6 +237,8 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             self.device.arm_sequencer(sequencer=sequencer.identifier)
             self.device.start_sequencer(sequencer=sequencer.identifier)
+            print(self.device.get_sequencer_state(sequencer=sequencer.identifier))
+            print(self.device.get_system_state())
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -423,7 +425,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path0 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-        print(f'gain path0 set to {self.device.sequencers[sequencer_id].gain_awg_path0()}')
+        print(f"gain path0 set to {self.device.sequencers[sequencer_id].gain_awg_path0()}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):
@@ -438,7 +440,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].gain_path1 = float(value)
         self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-        print(f'gain path1 set to {self.device.sequencers[sequencer_id].gain_awg_path1()}')
+        print(f"gain path1 set to {self.device.sequencers[sequencer_id].gain_awg_path1()}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
@@ -514,7 +516,7 @@ class QbloxModule(AWG):
 
         self.awg_sequencers[sequencer_id].gain_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
-        print(f' \n Gain Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_gain_ratio()} \n')
+        print(f" \n Gain Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_gain_ratio()} \n")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_phase_imbalance(self, value: float | str | bool, sequencer_id: int):
@@ -529,7 +531,7 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
-        print(f' \n Phase Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree()} \n')
+        print(f" \n Phase Imbalance set to {self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree()} \n")
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""

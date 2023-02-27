@@ -58,7 +58,7 @@ class Platform:
     ):
         """Connect to the instrument controllers."""
         if self._connected_to_instruments:
-            logger.info("Already connected to instruments")
+            logger.info("Already connected to the instruments")
             return
 
         self._remote_api = RemoteAPI(
@@ -69,6 +69,7 @@ class Platform:
         self._remote_api.block_remote_device()
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
+        logger.info("Connected to the instruments")
 
     def set_initial_setup(self):
         """Set the initial setup of the instruments"""
@@ -77,6 +78,7 @@ class Platform:
             return
         self.instrument_controllers.initial_setup()
         self._initial_setup_applied = True
+        logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
@@ -85,9 +87,13 @@ class Platform:
             return
         self.instrument_controllers.turn_on_instruments()
         self._instruments_turned_on = True
+        logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
+        if not self._instruments_turned_on:
+            logger.info("Instruments already turned off")
+            return
         self.instrument_controllers.turn_off_instruments()
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
@@ -124,8 +130,8 @@ class Platform:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
             element = self.chip.get_node_from_alias(alias=alias)
-        if element is None:
-            raise ValueError(f"Could not find element with alias {alias}.")
+        # if element is None:
+        #     raise ValueError(f"Could not find element with alias {alias}.")
         return element
 
     def get_bus(self, port: int):

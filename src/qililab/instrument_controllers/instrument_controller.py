@@ -185,7 +185,6 @@ class InstrumentController(BusElement, ABC):
         """Initial setup of the instrument."""
         for module in self.modules:
             logger.info("Initial setup to instrument %s.", module.alias or module.name.value)
-
             module.initial_setup()
 
     def connect(self):

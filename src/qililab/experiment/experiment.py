@@ -129,13 +129,13 @@ class Experiment:
                 self._results_path,
                 self._execution_ready,
             ) = self._execution_preparation.prepare_execution(
-                num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
+                num_schedules=self._execution.num_schedules, experiment_serialized=dict()
             )
 
         with self._execution:
             if self.options.execution_options.apply_bus_setup:
                 self._execution.setup()
-                print('BUS SETUP DONE')
+                print("BUS SETUP DONE")
             self._execute_all_circuits_or_schedules()
 
         if self.options.remote_save:
@@ -386,6 +386,18 @@ class Experiment:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = circuit.get_parameters()
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self._execution, self._schedules = self._build_execution(
+                circuits=self.circuits,
+                pulse_schedules=self.pulse_schedules,
+                execution_options=self.options.execution_options,
+            )
+            return
+
         if element is None:
             self.platform.set_parameter(
                 alias=alias,
