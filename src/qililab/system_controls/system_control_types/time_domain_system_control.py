@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from qililab.instruments.awg import AWG
-from qililab.instruments.signal_generator import SignalGenerator
 from qililab.pulse import PulseBusSchedule
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
@@ -19,10 +18,6 @@ class TimeDomainSystemControl(SystemControl):
 
         system_control_category = SystemControlCategory.TIME_DOMAIN
         awg: AWG
-        intermediate_frequency: float
-        gain: float
-        sequencer_id: int
-        hardware_modulation: bool
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -58,23 +53,7 @@ class TimeDomainSystemControl(SystemControl):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        if parameter == Parameter.GAIN:
-            self.settings.gain = float(value)
-            sequencer_id = self.settings.sequencer_id
-            self.awg.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-            self.awg.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-            return
-        if parameter == Parameter.IF:
-            self.settings.intermediate_frequency = float(value)
-            if self.settings.hardware_modulation:
-                sequencer_id = self.settings.sequencer_id
-                self.awg.device.sequencers[sequencer_id].nco_freq(float(value))
-            return
-        if parameter == Parameter.HARDWARE_MODULATION:
-            sequencer_id = self.settings.sequencer_id
-            self.settings.hardware_modulation = bool(value)
-            self.awg.device.sequencers[sequencer_id].mod_en_acq(bool(value))
-            return
+        self.awg.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
@@ -97,10 +76,3 @@ class TimeDomainSystemControl(SystemControl):
     def run(self) -> None:
         """Run the uploaded program"""
         return self.awg.run()
-
-    def setup(self) -> None:
-        # In this layer we handle Pulse generation (AWG) settings
-        """Prepare the bus before starting the sequencer"""
-        self.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain)
-        self.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency)
-        self.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation)

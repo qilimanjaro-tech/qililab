@@ -24,9 +24,6 @@ class ControlSystemControl(TimeDomainSystemControl):
 
         system_control_subcategory = SystemControlSubCategory.CONTROL
         signal_generator: SignalGenerator
-        frequency: float
-        power: float
-        rf_on: bool
 
         def _supported_instrument_categories(self) -> list[str]:
             """return a list of supported instrument categories."""
@@ -77,21 +74,14 @@ class ControlSystemControl(TimeDomainSystemControl):
             self._update_bus_frequency(frequency=value, channel_id=channel_id)
             return
         if parameter == Parameter.LO_FREQUENCY:
-            self.settings.frequency = float(value)
             self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=value)
             return
         if parameter == Parameter.POWER:
-            self.settings.power = float(value)
-            self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            return
-        if parameter == Parameter.RF_ON:
-            self.settings.rf_on = bool(value)
             self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-        return
 
     def _get_supported_instrument_categories(self) -> list[Category]:
         """get supported instrument categories"""
@@ -119,15 +109,3 @@ class ControlSystemControl(TimeDomainSystemControl):
             repetition_duration=repetition_duration,
             path=path,
         )
-
-    def setup(self):
-        # In this layer we handle Signal Generator settings
-        self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.frequency))
-        self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
-        self.set_parameter(parameter=Parameter.RF_ON, value=self.settings.rf_on)
-        # 1. Settings
-        super().setup()
-        # 2. Sequence
-        # 3. Waveforms
-        # self.awg.setup()
-        # self.signal_generator.setup()

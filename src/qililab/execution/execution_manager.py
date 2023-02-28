@@ -71,8 +71,6 @@ class ExecutionManager:
         """
         for bus in self.pulse_scheduled_buses:
             bus.setup()
-        for bus in self.pulse_scheduled_readout_buses:
-            bus.setup()
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
         """

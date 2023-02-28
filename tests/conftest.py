@@ -475,7 +475,7 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop3 = Loop(

@@ -40,7 +40,6 @@ class SGS100A(SignalGenerator):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
-        Toggle RF on/off.
         """
         if parameter == Parameter.POWER:
             self.settings.power = float(value)
@@ -49,13 +48,6 @@ class SGS100A(SignalGenerator):
         if parameter == Parameter.LO_FREQUENCY:
             self.settings.frequency = float(value)
             self.device.frequency(self.frequency)
-            return
-        if parameter == Parameter.RF_ON:
-            self.settings.rf_on = bool(value)
-            if bool(value):
-                self.device.on()
-            if not bool(value):
-                self.device.off()
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 

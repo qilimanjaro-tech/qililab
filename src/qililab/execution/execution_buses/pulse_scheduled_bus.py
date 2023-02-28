@@ -42,8 +42,7 @@ class PulseScheduledBus:
         return self.system_control.run()  # pylint: disable=no-member
 
     def setup(self):
-        """Applies setup for each bus and uploads it to the sequencer"""
-        return self.system_control.setup()
+        """Generates the sequence for each bus and uploads it to the sequencer"""
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.

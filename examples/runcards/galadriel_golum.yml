@@ -222,7 +222,7 @@ schema:
         rf_on: true
         sequencer_id: 0
         hardware_modulation: False
-        hardware_demodulation: False
+        # hardware_demodulation: False
       port: 100
     - id_: 5
       name: time_domain_control_bus
