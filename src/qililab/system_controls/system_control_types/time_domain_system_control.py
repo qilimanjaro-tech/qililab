@@ -76,7 +76,7 @@ class TimeDomainSystemControl(SystemControl):
             self.settings.hardware_modulation = bool(value)
             self.awg.device.sequencers[sequencer_id].mod_en_acq(bool(value))
             return
-        
+
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ) -> None:
