@@ -64,7 +64,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter == Parameter.IF:
-            self.settings.IF = float(value)
+            self.settings.intermediate_frequency = float(value)
             # first setup the IF that the DEMODULATION WILL USE
             if self.settings.hardware_demodulation:
                 sequencer_id = self.settings.sequencer_id
