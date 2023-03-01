@@ -323,7 +323,7 @@ class Experiment:
             self._update_parameter_from_loop(value=value, loop=loop, element=element)
 
     def _update_parameter_from_loop(
-        self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument
+        self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument | None
     ):
         """update parameter from loop"""
         # print(f'LOOP set parameter: {loop.parameter} to value: {value}')
@@ -341,7 +341,11 @@ class Experiment:
 
     def _get_platform_element_from_one_loop(self, loop: Loop):
         """get platform element from one loop"""
-        return self.platform.get_element(alias=loop.alias)
+        try:
+            element = self.platform.get_element(alias=loop.alias)
+            return element
+        except Exception:
+            return None
 
     def _generate_program_upload_and_execute(
         self, schedule_index_to_load: int, path: Path, plot: LivePlot | None = None

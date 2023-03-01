@@ -130,8 +130,8 @@ class Platform:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
             element = self.chip.get_node_from_alias(alias=alias)
-        # if element is None:
-        #     raise ValueError(f"Could not find element with alias {alias}.")
+        if element is None:
+            raise ValueError(f"Could not find element with alias {alias}.")
         return element
 
     def get_bus(self, port: int):
