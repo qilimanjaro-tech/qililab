@@ -23,11 +23,13 @@ In this page you can find the documentation of the qililab package implemented i
 
    GettingStarted/Pre
    GettingStarted/Inst
-   GettingStarted/HelloW
+   notebooks/hello_world
 
 .. toctree::
    :maxdepth: 4
    :caption: Documentation:
+
+   Documentation/runcards
 
 .. toctree::
    :maxdepth: 4
