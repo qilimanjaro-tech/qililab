@@ -23,7 +23,7 @@ In this page you can find the documentation of the qililab package implemented i
 
    GettingStarted/Pre
    GettingStarted/Inst
-   GettingStarted/Ver
+   GettingStarted/HelloW
 
 .. toctree::
    :maxdepth: 4

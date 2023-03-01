@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
+    "nbsphinx",
     "sphinx.ext.intersphinx",
     "recommonmark",
 ]

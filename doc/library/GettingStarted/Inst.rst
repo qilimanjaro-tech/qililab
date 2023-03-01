@@ -83,3 +83,42 @@ This command will install the library of the directory we are currently in (in o
 Compute ``pip freeze`` to verify all the libraries are being installed properly.
 
 Congratulations, you have succesfully installed **qililab**
+
+Verification
+===============
+Let's make sure everything we have done is correct.
+Launch python and import qililab
+::
+
+    python
+
+::
+
+    import qililab
+
+Verify what version of qililab is installed
+::
+
+    qililab.__verison__
+
+And exit python
+
+:: 
+
+    exit()
+
+As a last verification let's run a simple program using *Jupyter Notebook*.
+Enter de folder of examples:
+::
+
+    cd examples
+
+And launch Jupyter Notebook
+
+::
+
+    jupyter notebook
+
+A browser is opened with the folder *examples* of our repository.
+
+Open the *example_using_soprano* and follow the indications.
