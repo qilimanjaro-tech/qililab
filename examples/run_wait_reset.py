@@ -19,7 +19,7 @@ logger.setLevel(30)
 # Define Circuit to execute
 circuit = Circuit(1)
 circuit.add(X(0))
-circuit.add(Wait(0, n=100))
+circuit.add(Wait(0, t=100))
 circuit.add(M(0))
 
 loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, options=LoopOptions(start=0, stop=400, step=12))
