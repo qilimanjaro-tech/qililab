@@ -264,6 +264,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
     }
 
     rohde_schwarz_controller_1 = {
@@ -292,6 +293,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
+        Parameter.RF_ON.value: True,
     }
 
     attenuator_controller_0 = {

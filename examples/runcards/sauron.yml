@@ -115,14 +115,6 @@ schema:
         system_control_subcategory: readout
         awg: QRM
         signal_generator: rs_1
-        IF: 20e6
-        gain: .1
-        LO_frequency: 8e9
-        power: 16
-        rf_on: true
-        sequencer_id: 0
-        hardware_modulation: False
-        # hardware_demodulation: False
       port: 1
   instrument_controllers:
     - name: qblox_cluster

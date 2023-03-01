@@ -133,8 +133,6 @@ class Experiment:
             )
 
         with self._execution:
-            # if self.options.execution_options.apply_bus_setup:
-            #     self._execution.setup()
             self._execute_all_circuits_or_schedules()
 
         if self.options.remote_save:
@@ -453,7 +451,7 @@ class Experiment:
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
+            # EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
             EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }

@@ -215,14 +215,6 @@ schema:
         system_control_subcategory: readout
         awg: QRM
         signal_generator: rs_1
-        IF: 20e6
-        gain: .1
-        LO_frequency: 8e9
-        power: 16
-        rf_on: true
-        sequencer_id: 0
-        hardware_modulation: False
-        # hardware_demodulation: False
       port: 100
     - id_: 5
       name: time_domain_control_bus
@@ -238,13 +230,6 @@ schema:
         system_control_subcategory: control
         awg: QCM
         signal_generator: rs_2
-        IF: 100e6
-        gain: .5
-        LO_frequency: 6e9
-        power: 13
-        rf_on: true
-        sequencer_id: 0
-        hardware_modulation: true
       port: 12
     # - id_: 5
     #   name: time_domain_control_bus

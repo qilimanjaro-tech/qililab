@@ -19,6 +19,7 @@ class SignalGenerator(Instrument):
 
         power: float
         frequency: float
+        rf_on: bool
 
     settings: SignalGeneratorSettings
 
@@ -39,6 +40,14 @@ class SignalGenerator(Instrument):
             float: settings.frequency.
         """
         return self.settings.frequency
+
+    @property
+    def rf_on(self):
+        """SignalGenerator 'rf_on' property.
+        Returns:
+            float: settings.rf_on.
+        """
+        return self.settings.rf_on
 
     def to_dict(self):
         """Return a dict representation of the SignalGenerator class."""
