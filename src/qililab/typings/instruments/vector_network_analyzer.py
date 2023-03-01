@@ -111,18 +111,9 @@ class VectorNetworkAnalyzerDriver(Device):
         self.driver.write(":INIT:IMM; *WAI")
         self.driver.write("CALC:MEAS:DATA:SDATA?")
         serialized_data = self.driver.read_raw()
-        i_0 = serialized_data.find(b"#")
-        number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
-        number_bytes = int(serialized_data[i_0 + 2 : i_0 + 2 + number_digits])
-        number_data = int(number_bytes / 4)
-        number_points = int(number_data / 2)
-        v_data = np.frombuffer(
-            serialized_data[(i_0 + 2 + number_digits) : (i_0 + 2 + number_digits + number_bytes)],
-            dtype=">f",
-            count=number_data,
-        )
-        # data is in I_0,Q0,I1,Q1,I2,Q2,.. format, convert to complex
-        measurementsend_commandplex = v_data.reshape((number_points, 2))
+        float_data = np.array(str(serialized_data)[3:-3].split(','), dtype=float)
+        number_points = int(float_data.shape[0] / 2)
+        measurementsend_commandplex = float_data.reshape((number_points, 2))
         return measurementsend_commandplex[:, 0] + 1j * measurementsend_commandplex[:, 1]
 
     def read(self) -> str:
