@@ -455,7 +455,7 @@ class Experiment:
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            # EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
+            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
             EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
