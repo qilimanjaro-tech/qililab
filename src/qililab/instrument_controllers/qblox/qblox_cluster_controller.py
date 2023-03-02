@@ -59,5 +59,4 @@ class QbloxClusterController(MultiInstrumentController, QbloxController):
     @QbloxController.CheckConnected
     def _set_reference_source(self):
         """Set reference source. Options are 'internal' or 'external'"""
-        print(f"set ref from cluster to {self.reference_clock.value}")
         self.device.reference_source(self.reference_clock.value)
