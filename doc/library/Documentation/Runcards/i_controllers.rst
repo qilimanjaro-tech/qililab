@@ -1,6 +1,6 @@
 Instrument Controllers
 +++++++++++++++++++++++++
-Que son
+Que son i els settings generals
 
 Tipo1
 ---------
