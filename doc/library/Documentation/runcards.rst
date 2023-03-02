@@ -1,7 +1,7 @@
 Runcards
 ==============
 
-Runcards are a convinent method to tell qililab our experimental setup.
+Runcards are a convenient method to tell qililab our experimental setup.
 
 They are files in format ``.yml`` that are imported as dictionaries on qililab, here is an esquematic example of a runcard.
 
