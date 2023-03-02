@@ -4,7 +4,7 @@ Runcards
 Introduction
 +++++++++++++++++
 
-:doc:`../notebooks/hello_world`
+introcuccion loque sea
 
 Simple example
 +++++++++++++++++
