@@ -3,10 +3,10 @@ Runcards
 
 Runcards are a convinent method to tell qililab our experimental setup.
 
-They are files in format '.yml' that are imported as dictionaries on qililab, here is an esquematic example of a runcard.
+They are files in format ``.yml`` that are imported as dictionaries on qililab, here is an esquematic example of a runcard.
 
 .. note::
-    The example below is an esquematic representation of a basic runcard, wherever it is `...` should go more lines of code that refers to the settings of each part of the runcard.
+    The example below is an esquematic representation of a basic runcard, wherever it is ``...`` : should go more lines of code that refers to the settings of each part of the runcard.
 
 Example of a runcard:
 
