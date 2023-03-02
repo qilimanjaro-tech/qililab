@@ -20,7 +20,7 @@ In this page you can find the documentation of the qililab package implemented i
 .. toctree::
    :maxdepth: 4
    :titlesonly:
-   :caption: Getting Started
+   :caption: Getting Started:
 
    GettingStarted/Pre
    GettingStarted/Inst
@@ -29,10 +29,11 @@ In this page you can find the documentation of the qililab package implemented i
 .. toctree::
    :maxdepth: 4
    :titlesonly:
-   :caption: Documentation:
+   :caption: Runcards:
 
-   Documentation/runcards
-      Dcumentation/rundards/structrue
+   Runcards/introduction
+   Runcards/settings
+   Runcards/schema
 
 .. toctree::
    :maxdepth: 4

@@ -1,4 +1,4 @@
-Structure
+Introduction
 ==========
 introcuccion loque sea
 
