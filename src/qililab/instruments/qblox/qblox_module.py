@@ -8,7 +8,7 @@ from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
+from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
@@ -187,11 +187,11 @@ class QbloxModule(AWG):
         timeline = pulse_bus_schedule.timeline
         if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
-
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            avg_loop.append_component(ResetPh())
+            phase = int(pulse_event.pulse.phase * 1e9 / 360)
+            avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
