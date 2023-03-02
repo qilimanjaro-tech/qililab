@@ -24,7 +24,7 @@ class ControlSystemControl(TimeDomainSystemControl):
 
         system_control_subcategory = SystemControlSubCategory.CONTROL
         signal_generator: SignalGenerator
-        frequency: float
+        LO_frequency: float
         power: float
         rf_on: bool
 
@@ -77,7 +77,7 @@ class ControlSystemControl(TimeDomainSystemControl):
             self._update_bus_frequency(frequency=value, channel_id=channel_id)
             return
         if parameter == Parameter.LO_FREQUENCY:
-            self.settings.frequency = float(value)
+            self.settings.LO_frequency = float(value)
             self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=value)
             return
         if parameter == Parameter.POWER:
@@ -122,7 +122,7 @@ class ControlSystemControl(TimeDomainSystemControl):
 
     def setup(self):
         # In this layer we handle Signal Generator settings
-        self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.frequency))
+        self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.LO_frequency))
         self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
         self.set_parameter(parameter=Parameter.RF_ON, value=self.settings.rf_on)
         # 1. Settings
