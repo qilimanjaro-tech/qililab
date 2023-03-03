@@ -74,6 +74,9 @@ class VectorNetworkAnalyzerDriver(Device):
     def if_bandwidth(self, band):
         self.driver.write("SENS%i:BWID %i" % (1, band))
 
+    def get_freqs(self):
+        return np.array(self.driver.query_binary_values("SENS:X?"))
+
     def scattering_parameter(self, par: str = "?", trace: int = 1):
         """set scattering parameter"""
         if not isinstance(par, str):
