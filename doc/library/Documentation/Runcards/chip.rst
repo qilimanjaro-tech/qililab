@@ -1,23 +1,221 @@
 Chip 
 +++++++++++
-explicacio sobre que es lo del chip
-
-Parts
---------
-llista amb explicació de cada setting
+On these part of the runcard we determinate the architecture of our chip and how it is connected to the different ports.
+So, via text, we describe the different elements of our chip and how are they connected.
 
 Simple example
 ----------------
-codi amb una imatge al costat per veure visualment que significa
+Here is a very simple example of a chip explained on the runcard format:
 
-Explicació de l'esquema
+::
+
+      chip:
+        id_: 0
+        category: chip
+        alias: "advanced"
+        nodes:
+        - name: port
+            id_: 0
+            nodes: [3]
+        - name: port
+            id_: 1
+            nodes: [2]
+        - name: resonator
+            alias: resonator
+            id_: 2
+            frequency: 8.0726e+09
+            nodes: [1, 3]
+        - name: qubit
+            alias: qubit
+            id_: 3
+            qubit_index: 0
+            frequency: 6.5328e+09
+            nodes: [0, 2]
+
+Wich represents the next diagram:
+
+.. image:: ../../img/Simple_Chip.png
+    :align: center
+
+On these example we have a qubit, a ressonator and the two ports from were we manipulate them.
+As you can recall every component has an id from wich we refer to. Nodes indicate what is connected to what, for example, in our simple case, ``id_ : 2`` wich is a ressonator is connected to ``nodes : [1, 3]``.
+That means that our resonator is connected to a port ``id_ : 1`` and to the qubit ``id_ : 3``.
 
 Advanced example
 --------------------
-codi amb una imatge al costat per veure visualment que significa
 
-Explicació de l'esquema
+.. raw:: html
+    
+   <div style="height: 500px; overflow: auto;">
+    <div class="highlight-defalut notraslate">
+            <div class="highlight">
+                <pre>
+                    <span class="n">
+    chip:
+        id_: 0
+        category: chip
+        alias: "advanced"
+        nodes:
+        - name: port
+            id_: 1
+            nodes: []
+        - name: port
+            id_: 2
+            alias: drive_line_q2
+            nodes: [32]
+        - name: port
+            id_: 3
+            alias: feedline_input
+            nodes: [26, 24, 23, 27, 20, 22, 21, 25]
+        - name: port
+            id_: 4
+            nodes: []
+        - name: port
+            id_: 5
+            alias: flux_bias_line_q4
+            nodes: [34]
+        - name: port
+            id_: 6
+            alias: drive_line_q4
+            nodes: [34]
+        - name: port
+            id_: 7
+            alias: flux_bias_line_q2
+            nodes: [32]
+        - name: port
+            id_: 8
+            alias: drive_line_q1
+            nodes: [31]
+        - name: port
+            id_: 9
+            alias: flux_bias_line_q1
+            nodes: [31]
+        - name: port
+            id_: 10
+            nodes: []
+        - name: port
+            id_: 11
+            alias: feedline_output
+            nodes: [25, 21, 22, 20, 27, 23, 24, 26]
+        - name: port
+            id_: 12
+            nodes: []
+        - name: port
+            id_: 13
+            nodes: []
+        - name: port
+            id_: 14
+            alias: flux_bias_line_q0
+            nodes: [30]
+        - name: port
+            id_: 15
+            alias: drive_line_q0
+            nodes: [30]
+        - name: port
+            id_: 16
+            nodes: []
+        - name: port
+            id_: 17
+            alias: drive_line_q3
+            nodes: [33]
+        - name: port
+            id_: 18
+            alias: flux_bias_line_q3
+            nodes: [33]
 
-Movidas extra
+        - name: resonator
+            alias: resonator_q0
+            id_: 20
+            frequency: 7.4e+09
+            nodes: [30, 3, 11]
+        - name: resonator
+            alias: resonator_q1
+            id_: 21
+            frequency: 7.6e+09
+            nodes: [31, 3, 11]
+        - name: resonator
+            alias: resonator_q2
+            id_: 22
+            frequency: 7.8e+09
+            nodes: [32, 3, 11]
+        - name: resonator
+            alias: resonator_q3
+            id_: 23
+            frequency: 8.0e+09
+            nodes: [33, 3, 11]
+        - name: resonator
+            alias: resonator_q4
+            id_: 24
+            frequency: 8.2e+09
+            nodes: [34, 3, 11]
+        - name: resonator
+            alias: resonator_q5
+            id_: 25
+            frequency: 7.2e+09
+            nodes: [35, 3, 11]
+        - name: resonator
+            alias: resonator_q6
+            id_: 26
+            frequency: 7.3e+09
+            nodes: [36, 3, 11]
+        - name: resonator
+            alias: resonator_isolated
+            id_: 27
+            frequency: 7.1e+09
+            nodes: [3, 11]
+
+        - name: qubit
+            alias: qubit_0
+            id_: 30
+            qubit_index: 0
+            frequency: 4.658e+09
+            nodes: [14, 15, 20, 32]
+        - name: qubit
+            alias: qubit_1
+            id_: 31
+            qubit_index: 1
+            frequency: 4.728e+09
+            nodes: [8, 9, 21, 32]
+        - name: qubit
+            alias: qubit_2
+            id_: 32
+            qubit_index: 2
+            frequency: 5.269e+09
+            nodes: [2, 7, 22, 30, 31, 33, 34]
+        - name: qubit
+            alias: qubit_3
+            id_: 33
+            qubit_index: 3
+            frequency: 6.264e+09
+            nodes: [17, 18, 20, 32]
+        - name: qubit
+            alias: qubit_4
+            id_: 34
+            qubit_index: 4
+            frequency: 6.208e+09
+            nodes: [5, 6, 24, 32]
+        - name: qubit
+            alias: qubit_5
+            id_: 35
+            qubit_index: 5
+            frequency: 4.581e+09
+            nodes: [25]
+        - name: qubit
+            alias: qubit_6
+            id_: 36
+            qubit_index: 6
+            frequency: 4.672e+09
+            nodes: [26]
+                    </span>
+                </pre>
+            </div>
+        </div>
+       
+   </div>
+
+.. image:: ../../img/advanced_chip.png
+    :align: center
+
+Parts
 --------------
 Aqui anirien mes parts tecniques, nose si fa falta.
