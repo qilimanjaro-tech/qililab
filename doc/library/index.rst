@@ -36,7 +36,9 @@ In this page you can find the documentation of the qililab package implemented i
 .. toctree::
    :maxdepth: 4
    :hidden:
-   :caption: Examples:
+   :caption: Tutorials:
+
+   notebooks/spectroscopy_demo
 
 .. toctree::
    :maxdepth: 4
