@@ -28,6 +28,7 @@ class VectorNetworkAnalyzerDriver(Device):
         """Set initial preset"""
         self.driver.write("FORM:DATA REAL,32")
         self.driver.write("*CLS")
+        # this resets the device!
         self.driver.write("SYST:PRES; *OPC?")
 
     def reset(self):
@@ -36,7 +37,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""
-        return self.driver.write(f"{command} {arg}")  # type: ignore
+        return self.driver.write(f"{command} {arg} *WAI")  # type: ignore
 
     def output(self, arg="?"):
         """Turns RF output power on/off
@@ -52,10 +53,26 @@ class VectorNetworkAnalyzerDriver(Device):
         """close an instrument."""
         self.output(arg="OFF")
 
-    def freq_npoints(self, points="?", channel: str = ""):
-        """Set/Query number of points"""
-        com_str = f":SENS{channel}:SWE:POIN"
-        return int(self.send_command(command=com_str, arg=points))
+    def npoints(self, npoints):
+        self.driver.write(":SENS1:SWE:POIN %i" % (npoints))
+
+    def power(self, power, port=1):
+        self.driver.write("SOUR%i:POW%i %.1f" % (1, port, power))
+
+    def freq_center(self, cf):
+        self.driver.write("SENS%i:FREQ:CENT %f" % (1, cf))
+
+    def freq_span(self, span):
+        self.driver.write("SENS%i:FREQ:SPAN %i" % (1, span))
+
+    def freq_start(self, val):
+        self.driver.write("SENS%i:FREQ:STAR %f" % (1, val))
+
+    def freq_stop(self, val):
+        self.driver.write("SENS%i:FREQ:STOP %f" % (1, val))
+
+    def if_bandwidth(self, band):
+        self.driver.write("SENS%i:BWID %i" % (1, band))
 
     def scattering_parameter(self, par: str = "?", trace: int = 1):
         """set scattering parameter"""
@@ -71,85 +88,51 @@ class VectorNetworkAnalyzerDriver(Device):
         """autoscale"""
         self.driver.write("DISP:WIND:TRAC:Y:AUTO")
 
-    def freq_start(self, freq: str = "?", channel: str = ""):
-        """Set/query start frequency"""
-        com_str = f":SENS{channel}:FREQ:STAR"
-        return float(self.send_command(command=com_str, arg=freq))
-
-    def freq_stop(self, freq: str = "?", channel: str = ""):
-        """Set/query stop frequency"""
-        com_str = f":SENS{channel}:FREQ:STOP"
-        return float(self.send_command(command=com_str, arg=freq))
-
-    def freq_center(self, freq: str = "?", channel: str = ""):
-        """Set/query center frequency in Hz"""
-        com_str = f":SENS{channel}:FREQ:CENT"
-        return float(self.send_command(command=com_str, arg=freq))
-
-    def freq_span(self, freq: str = "?", channel: str = ""):
-        """Set/query span in Hz"""
-        com_str = f":SENS{channel}:FREQ:SPAN"
-        return float(self.send_command(command=com_str, arg=freq))
-
-    def power(self, power: str = "?", channel: str = ""):
-        """Set or read current power"""
-        com_str = f":SOUR{channel}:POW:LEV:IMM:AMPL"
-        return float(self.send_command(command=com_str, arg=power))
-
-    def if_bandwidth(self, bandwidth: str = "?", channel: str = ""):
-        """Set/query IF Bandwidth for specified channel"""
-        com_str = f":SENS{channel}:BAND:RES"
-        return self.send_command(command=com_str, arg=bandwidth)
-
-    def electrical_delay(self, time: str):
-        """Set electrical delay in 1
-        example input: time = '100E-9' for 100ns"""
-        self.driver.write(f"CALC:MEAS:CORR:EDEL:TIME {time}")  # type: ignore
-
-    def get_data(self):  # sourcery skip: simplify-division
-        """get data"""
-        self.driver.write(":INIT:CONT OFF")
-        self.driver.write(":INIT:IMM; *WAI")
-        self.driver.write("CALC:MEAS:DATA:SDATA?")
-        serialized_data = self.driver.read_raw()
-        i_0 = serialized_data.find(b"#")
-        number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
-        number_bytes = int(serialized_data[i_0 + 2 : i_0 + 2 + number_digits])
-        number_data = int(number_bytes / 4)
-        number_points = int(number_data / 2)
-        v_data = np.frombuffer(
-            serialized_data[(i_0 + 2 + number_digits) : (i_0 + 2 + number_digits + number_bytes)],
-            dtype=">f",
-            count=number_data,
-        )
-        # data is in I_0,Q0,I1,Q1,I2,Q2,.. format, convert to complex
-        measurementsend_commandplex = v_data.reshape((number_points, 2))
-        return measurementsend_commandplex[:, 0] + 1j * measurementsend_commandplex[:, 1]
-
-    def read(self) -> str:
-        """read the channel data"""
-        return self.driver.read()  # type: ignore
-
-    def average_state(self, state="?", channel=""):
-        """Sets/query averaging state"""
-        com_str = f":SENS{channel}:AVER:STAT"
-        return self.send_command(command=com_str, arg=state)
-
-    def average_count(self, count="?", channel=""):
-        """Set/query number of averages"""
-        com_str = f":SENS{channel}:AVER:COUN"
-        return int(self.send_command(command=com_str, arg=count))
-
     def set_timeout(self, value: float):
         """set timeout in mili seconds"""
         self.timeout = value
         self.driver.timeout = self.timeout
 
-    def continuous(self, continuous: bool):
-        """set continuous mode
-
-        Args:
-            continuous (bool): continuous flag
+    def get_tracedata(self, channel=1, trace=1):
         """
-        command = ":INIT:CONT " + ("ON" if continuous else "OFF")
-        self.send_command(command=command, arg="")
+        Get the data of the current trace
+        """
+
+    def set_sweep_mode(self, mode, channel=1):
+        """
+        select the sweep mode from 'hold', 'cont', single' and "group"
+        single means only one single trace, not all the averages even if averages
+            larger than 1 and Average==True
+        """
+        mode = mode.lower()
+        if mode == "hold":
+            self.driver.write("SENS%i:SWE:MODE HOLD" % channel)
+        elif mode == "cont":
+            self.driver.write("SENS%i:SWE:MODE CONT" % channel)
+        elif mode == "single":
+            self.driver.write("SENS%i:SWE:MODE SING" % channel)
+        elif mode == "group":
+            self.driver.write("SENS%i:SWE:MODE GRO" % channel)
+        else:
+            print("invalid mode")
+
+    def ready(self):
+        """
+        This is a proxy function, returning True when the VNA is on HOLD after finishing the required number of averages .
+        """
+        try:  # the VNA sometimes throws an error here, we just ignore it
+            return self.get_sweep_mode() == "HOLD"
+        except Exception:
+            return False
+
+    def get_sweep_mode(self, channel=1):
+        return str(self.driver.query(":SENS%i:SWE:MODE?" % channel)).rstrip()
+
+    def release(self):
+        self.set_sweep_mode("cont")
+
+    def get_trace(self):
+        self.set_sweep_mode("group")
+        while not self.ready():
+            pass
+        return self.get_tracedata()
