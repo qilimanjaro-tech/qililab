@@ -97,6 +97,14 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         Get the data of the current trace
         """
+        self.driver.write("FORM:DATA REAL,32")
+        self.driver.write("FORM:BORD SWAPPED")  # SWAPPED
+        data = self.driver.query_binary_values("CALC%i:MEAS%i:DATA:SDAT?" % (1, 1))
+        data_size = np.size(data)
+        datareal = np.array(data[0:data_size:2])
+        dataimag = np.array(data[1:data_size:2])
+
+        return datareal + 1j * dataimag
 
     def set_sweep_mode(self, mode, channel=1):
         """
