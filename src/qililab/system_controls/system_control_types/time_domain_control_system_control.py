@@ -123,11 +123,8 @@ class ControlSystemControl(TimeDomainSystemControl):
     def setup(self):
         # In this layer we handle Signal Generator settings
         self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.LO_frequency))
-        print(f'SETUP SG: LO={self.settings.LO_frequency}')
         self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
-        print(f'SETUP SG: power={self.settings.power}')
         self.set_parameter(parameter=Parameter.RF_ON, value=self.settings.rf_on)
-        print(f'SETUP SG: RF={self.settings.rf_on}')
         # 1. Settings
         super().setup()
         # 2. Sequence

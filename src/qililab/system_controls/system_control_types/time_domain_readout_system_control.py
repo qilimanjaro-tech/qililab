@@ -3,11 +3,11 @@ from dataclasses import dataclass, field
 
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.instruments import Instruments
+from qililab.instruments.signal_generator import SignalGenerator
 from qililab.result.result import Result
 from qililab.system_controls.system_control_types.time_domain_control_system_control import (
     ControlSystemControl,
 )
-from qililab.instruments.signal_generator import SignalGenerator
 from qililab.typings import SystemControlSubCategory
 from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
@@ -64,7 +64,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter == Parameter.IF:
-            self.settings.IF = float(value)
+            self.settings.intermediate_frequency = float(value)
             # first setup the IF that the DEMODULATION WILL USE
             if self.settings.hardware_demodulation:
                 sequencer_id = self.settings.sequencer_id
@@ -114,8 +114,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         # In this layer we handle Digitization (ADC) settings
         # 1. Settings
         # all the sequence-related pars (bins, average, etc are handled in parent class awg)
-        
-        
+
         super().setup()
         # 2. Sequence
         # might have been uploaded above depending on how we organize the brain sequencing

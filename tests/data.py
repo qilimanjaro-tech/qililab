@@ -264,6 +264,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
+        Parameter.RF_ON.value: True,
     }
 
     rohde_schwarz_controller_1 = {
@@ -292,6 +293,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
+        Parameter.RF_ON.value: True,
     }
 
     attenuator_controller_0 = {
@@ -399,6 +401,13 @@ class Galadriel:
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.CONTROL.value,
                 Category.AWG.value: InstrumentName.QBLOX_QCM.value,
                 Category.SIGNAL_GENERATOR.value: "rs_0",
+                Parameter.LO_FREQUENCY.value: 8e6,
+                Parameter.POWER.value: 10,
+                Parameter.RF_ON.value: True,
+                Parameter.IF.value: 100e6,
+                Parameter.GAIN.value: 0.1,
+                Parameter.HARDWARE_MODULATION.value: True,
+                "sequencer_id": 0,
             },
             NodeName.PORT.value: 0,
         },
@@ -417,6 +426,14 @@ class Galadriel:
                 RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.TIME_DOMAIN_READOUT.value,
                 Category.AWG.value: InstrumentName.QBLOX_QRM.value,
                 Category.SIGNAL_GENERATOR.value: "rs_1",
+                Parameter.LO_FREQUENCY.value: 8e6,
+                Parameter.POWER.value: 10,
+                Parameter.RF_ON.value: True,
+                Parameter.IF.value: 100e6,
+                Parameter.GAIN.value: 0.1,
+                Parameter.HARDWARE_MODULATION.value: True,
+                "sequencer_id": 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
             },
             NodeName.PORT.value: 1,
         },

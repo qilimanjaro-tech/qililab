@@ -19,7 +19,7 @@ class TimeDomainSystemControl(SystemControl):
 
         system_control_category = SystemControlCategory.TIME_DOMAIN
         awg: AWG
-        IF: float
+        intermediate_frequency: float
         gain: float
         sequencer_id: int
         hardware_modulation: bool
@@ -67,8 +67,7 @@ class TimeDomainSystemControl(SystemControl):
             self.awg.setup(parameter=parameter, channel_id=channel_id, value=value)
             return
         if parameter == Parameter.IF:
-            self.settings.IF = float(value)
-            # first setup the IF that the DEMODULATION WILL USE
+            self.settings.intermediate_frequency = float(value)
             if self.settings.hardware_modulation:
                 sequencer_id = self.settings.sequencer_id
                 self.awg.device.sequencers[sequencer_id].nco_freq(float(value))
@@ -78,7 +77,7 @@ class TimeDomainSystemControl(SystemControl):
             self.settings.hardware_modulation = bool(value)
             self.awg.device.sequencers[sequencer_id].mod_en_acq(bool(value))
             return
-        
+
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
     ) -> None:
@@ -105,5 +104,5 @@ class TimeDomainSystemControl(SystemControl):
         # In this layer we handle Pulse generation (AWG) settings
         """Prepare the bus before starting the sequencer"""
         self.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain)
-        self.set_parameter(parameter=Parameter.IF, value=self.settings.IF)
-        # self.set_parameter(parameter=)
+        self.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency)
+        self.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation)

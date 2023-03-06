@@ -40,7 +40,7 @@ class SignalGenerator(Instrument):
             float: settings.frequency.
         """
         return self.settings.frequency
-   
+
     @property
     def rf_on(self):
         """SignalGenerator 'rf_on' property.
