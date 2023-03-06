@@ -3,11 +3,13 @@ Instruments
 On these part of the runcard we determinate the instruments at our disposal and the characteristics of each of them.
 There are different types of instruments and a number of spects have to be determinated via the runcard.
 
+Below there are some examples for the different instruments implemented in qililab.
+
 Rohde Schwarz
 ---------
 ::
 
-  - name: QCM
+  - name: rohde_schwarz
     alias: rs_3
     id_: 7
     category: signal_generator
@@ -19,7 +21,7 @@ S4g
 ---------
 ::
 
-    - name: S4g
+  - name: S4g
     alias: S4g_0
     id_: 10
     category: current_source
@@ -55,30 +57,30 @@ QRM
 ::
 
 
-    - name: QRM
-      alias: QRM_0
-      id_: 3
-      category: awg_dac
-      firmware: 0.7.0
-      num_sequencers: 5
-      intermediate_frequencies: [2.e+07, 2.e+07, 2.e+07, 2.e+07, 2.e+07]
-      gain: [1, 1, 1, 1, 1]
-      gain_imbalance: [0, 0, 0, 0, 0]
-      phase_imbalance: [0, 0, 0, 0, 0]
-      offset_i: [0, 0, 0, 0, 0]
-      offset_q: [0, 0, 0, 0, 0]
-      hardware_modulation: [true, true, true, true, true]
-      sync_enabled: [true, true, true, true, true]
-      num_bins: [1, 1, 1, 1, 1]
-      scope_acquire_trigger_mode:
-        [sequencer, sequencer, sequencer, sequencer, sequencer]
-      scope_hardware_averaging: [false, false, false, false, false]
-      sampling_rate: [1.e+09, 1.e+09, 1.e+09, 1.e+09, 1.e+09]
-      hardware_integration: [true, true, true, true, true]
-      hardware_demodulation: [true, true, true, true, true]
-      integration_length: [2000, 2000, 2000, 2000, 2000]
-      acquisition_delay_time: 100
-      integration_mode: [ssb, ssb, ssb, ssb, ssb]
-      sequence_timeout: [1, 1, 1, 1, 1]
-      acquisition_timeout: [1, 1, 1, 1, 1]
-      scope_store_enabled: [false, false, false, false, false]
+  - name: QRM
+    alias: QRM_0
+    id_: 3
+    category: awg_dac
+    firmware: 0.7.0
+    num_sequencers: 5
+    intermediate_frequencies: [2.e+07, 2.e+07, 2.e+07, 2.e+07, 2.e+07]
+    gain: [1, 1, 1, 1, 1]
+    gain_imbalance: [0, 0, 0, 0, 0]
+    phase_imbalance: [0, 0, 0, 0, 0]
+    offset_i: [0, 0, 0, 0, 0]
+    offset_q: [0, 0, 0, 0, 0]
+    hardware_modulation: [true, true, true, true, true]
+    sync_enabled: [true, true, true, true, true]
+    num_bins: [1, 1, 1, 1, 1]
+    scope_acquire_trigger_mode:
+      [sequencer, sequencer, sequencer, sequencer, sequencer]
+    scope_hardware_averaging: [false, false, false, false, false]
+    sampling_rate: [1.e+09, 1.e+09, 1.e+09, 1.e+09, 1.e+09]
+    hardware_integration: [true, true, true, true, true]
+    hardware_demodulation: [true, true, true, true, true]
+    integration_length: [2000, 2000, 2000, 2000, 2000]
+    acquisition_delay_time: 100
+    integration_mode: [ssb, ssb, ssb, ssb, ssb]
+    sequence_timeout: [1, 1, 1, 1, 1]
+    acquisition_timeout: [1, 1, 1, 1, 1]
+    scope_store_enabled: [false, false, false, false, false]
