@@ -1,11 +1,11 @@
 Chip 
 +++++++++++
-On these part of the runcard we determinate the architecture of our chip and how it is connected to the different ports.
+On this part of the runcard, we determinate the architecture of our chip and how it is connected to the different ports.
 So, via text, we describe the different elements of our chip and how are they connected.
 
 Simple example
 ----------------
-Here is a very simple example of a chip explained on the runcard format:
+Here is a very simple example of a chip explained in the runcard format:
 
 ::
 
@@ -32,14 +32,14 @@ Here is a very simple example of a chip explained on the runcard format:
             frequency: 6.5328e+09
             nodes: [0, 2]
 
-Wich represents the next diagram:
+Which is represented in the next diagram:
 
 .. image:: ../../img/Simple_Chip.png
     :align: center
 
-On these example we have a qubit, a ressonator and the two ports from were we manipulate them.
-As you can recall every component has an id from wich we refer to. Nodes indicate what is connected to what, for example, in our simple case, ``id_ : 2`` wich is a ressonator is connected to ``nodes : [1, 3]``.
-That means that our resonator is connected to a port ``id_ : 1`` and to the qubit ``id_ : 3``.
+In this example, we have a qubit, a resonator, and the two ports from where we manipulate them.
+As you can recall every component has an id from which we refer to. Nodes indicate what is connected to what, for example, in our simple case, ``id_ : 2``which is a resonator is connected to ``nodes : [1, 3]``.
+That means that our resonator is connected to the port ``id_ : 1`` and the qubit ``id_ : 3``.
 
 Advanced example
 --------------------

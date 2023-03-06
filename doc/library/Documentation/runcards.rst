@@ -3,10 +3,10 @@ Runcards
 
 Runcards are a convenient method to tell qililab our experimental setup.
 
-They are files in format ``.yml`` that are imported as dictionaries on qililab, here is an esquematic example of a runcard.
+They are files in the format ``.yml`` that are imported as dictionaries on qililab, here is a schematic example of a runcard.
 
 .. note::
-    The example below is an esquematic representation of a basic runcard, wherever it is ``...`` : should go more lines of code that refers to the settings of each part of the runcard.
+    The example below is a schematic representation of a basic runcard, wherever it is ``...`` : should go more lines of code that refer to the settings of each part of the runcard.
 
 Example of a runcard:
 
@@ -44,11 +44,11 @@ Example of a runcard:
             ...
 
 
-As shown in the example every runcard have a *settings* section and a *schema* section (according to the indentation).
+As shown in the example every runcard has a *settings* section and a *schema* section (according to the indentation).
 
-The *settings* refer to general setting of the platform you want to create and the *schema* refers to the elements and how are they connectet in the circuit.
+The *settings* refer to the general setting of the platform you want to create and the *schema* refers to the elements and how are they connected in the circuit.
 
-In order to see in more detail each part of a runcard, checkout:
+To see in more detail each part of a runcard, check out:
 
 * :doc:`Settings<Runcards/settings>`
 * Schema:

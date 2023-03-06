@@ -1,7 +1,7 @@
 Settings
 ==========
 As said, the settings section contains the main settings of the runcard. In our case, the platform we want to work with.
-Here is a complete settings secction of a simple runcard:
+Here is an example of a complete settings section of a simple runcard:
 
 ::
 
@@ -21,18 +21,18 @@ Here is a complete settings secction of a simple runcard:
         shape:
             name: rectangular
 
-There are several settings that have to be addresed in order to create a platform:
+Several settings have to be addressed to create a platform:
 
 * ``id_`` : no ho se
 * ``category`` : 
-* ``name`` : the name with which the platform is going to be referd as
+* ``name`` : the name with which the platform is going to be referred as
 * ``delay_between_pulses`` : the minimum delay between pulses
 * ``delay_before_readout`` : the minimum delay before readout
 * ``master_amplitude_gate`` : the default amplitude to work with
 * ``master_duration_gate`` : the default duration of gates
 * ``gates`` : the type of gates implemented
 
-    * ``name`` : the name with which the gate is going to be referd as
+    * ``name`` : the name with which the gate is going to be referred as
     * ``amplitude`` : the amplitude of the pulse
     * ``phase`` : the phase of the pulse
     * ``duration`` : the duration of the pulse

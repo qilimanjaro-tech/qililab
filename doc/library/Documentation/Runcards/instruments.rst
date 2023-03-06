@@ -1,9 +1,9 @@
 Instruments
 ++++++++++++
-On these part of the runcard we determinate the instruments at our disposal and the characteristics of each of them.
-There are different types of instruments and a number of spects have to be determinated via the runcard.
+On this part of the runcard we determine the instruments at our disposal and the characteristics of each of them.
+There are different types of instruments and some specs have to be determined via the runcard.
 
-Below there are some examples for the different instruments implemented in qililab.
+Below there are some examples of the different instruments implemented in qililab.
 
 Rohde Schwarz
 ---------
@@ -55,7 +55,6 @@ QCM
 QRM
 -------
 ::
-
 
   - name: QRM
     alias: QRM_0
