@@ -63,8 +63,7 @@ class TimeDomainSystemControl(SystemControl):
             sequencer_id = self.settings.sequencer_id
             self.awg.device.sequencers[sequencer_id].gain_awg_path0(float(value))
             self.awg.device.sequencers[sequencer_id].gain_awg_path1(float(value))
-            
-            self.awg.setup(parameter=parameter, channel_id=channel_id, value=value)
+            # self.awg.setup(parameter=parameter, channel_id=channel_id, value=value)
             return
         if parameter == Parameter.IF:
             self.settings.intermediate_frequency = float(value)
@@ -103,6 +102,6 @@ class TimeDomainSystemControl(SystemControl):
     def setup(self) -> None:
         # In this layer we handle Pulse generation (AWG) settings
         """Prepare the bus before starting the sequencer"""
-        self.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain)
-        self.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency)
-        self.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation)
+        self.awg.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain)
+        self.awg.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency)
+        self.awg.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation)
