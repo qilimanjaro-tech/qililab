@@ -79,7 +79,16 @@ class AWG(Instrument):
             repetition_duration (int): repetitition duration
             path (Path): path to save the program to upload
         """
+    @abstractmethod
+    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Set a parameter of the AWG.
 
+        Args:
+            parameter (Parameter): the parameter to set
+            value (float | str | bool): the value to set the parameter to
+            channel_id (int | None): the channel to set the parameter to
+        """
+    
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
@@ -93,7 +102,8 @@ class AWG(Instrument):
         if sequencer_id is None:
             raise ValueError("'sequencer_id' must be defined.")
         return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
-
+    
+    
     @property
     def num_sequencers(self):
         """Number of sequencers in the AWG

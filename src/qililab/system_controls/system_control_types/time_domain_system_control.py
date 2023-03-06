@@ -63,6 +63,8 @@ class TimeDomainSystemControl(SystemControl):
             sequencer_id = self.settings.sequencer_id
             self.awg.device.sequencers[sequencer_id].gain_awg_path0(float(value))
             self.awg.device.sequencers[sequencer_id].gain_awg_path1(float(value))
+            
+            self.awg.setup(parameter=parameter, channel_id=channel_id, value=value)
             return
         if parameter == Parameter.IF:
             self.settings.IF = float(value)
