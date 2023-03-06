@@ -102,4 +102,4 @@ class TimeDomainSystemControl(SystemControl):
         """Prepare the bus before starting the sequencer"""
         self.awg.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain, channel_id=self.settings.sequencer_id)
         self.awg.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency, channel_id=self.settings.sequencer_id)
-        self.awg.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation, channel_id=self.settings.sequencer_id)
+        

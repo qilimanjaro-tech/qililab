@@ -114,7 +114,7 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         # In this layer we handle Digitization (ADC) settings
         # 1. Settings
         # all the sequence-related pars (bins, average, etc are handled in parent class awg)
-
+        self.adc.set_parameter(parameter=Parameter.HARDWARE_DEMODULATION, value=self.settings.hardware_modulation, channel_id=self.settings.sequencer_id)
         super().setup()
         # 2. Sequence
         # might have been uploaded above depending on how we organize the brain sequencing
