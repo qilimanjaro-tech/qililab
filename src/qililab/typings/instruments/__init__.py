@@ -2,6 +2,7 @@
 from .agilent_e5071b import E5071BDriver
 from .cluster import Cluster
 from .device import Device
+from .erasynthplusplus import EraSynthPlusPlus
 from .keithley_2600 import Keithley2600Driver
 from .keysight_e5080b import E5080BDriver
 from .mini_circuits import MiniCircuitsDriver

@@ -27,6 +27,7 @@ from .instruments import (
     Cluster,
     Device,
     E5080BDriver,
+    EraSynthPlusPlus,
     Keithley2600Driver,
     MiniCircuitsDriver,
     Pulsar,

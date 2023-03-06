@@ -294,6 +294,62 @@ class Galadriel:
         Parameter.LO_FREQUENCY.value: 3.351e09,
     }
 
+    erasynth_controller_0 = {
+        RUNCARD.ID: 2,
+        RUNCARD.NAME: InstrumentControllerName.ERASYNTH,
+        RUNCARD.ALIAS: "erasynth_controller_0",
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.SIGNAL_GENERATOR.value: "era_0",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    erasynth_0 = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.ERASYNTH,
+        RUNCARD.ALIAS: "era_0",
+        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
+        RUNCARD.FIRMWARE: "",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 7.24730e09,
+    }
+
+    erasynth_controller_1 = {
+        RUNCARD.ID: 3,
+        RUNCARD.NAME: InstrumentControllerName.ERASYNTH,
+        RUNCARD.ALIAS: "erasynth_controller_1",
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.USB.value,
+            CONNECTION.ADDRESS: "",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.SIGNAL_GENERATOR.value: "era_1",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    erasynth_1 = {
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: InstrumentName.ERASYNTH,
+        RUNCARD.ALIAS: "era_1",
+        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
+        RUNCARD.FIRMWARE: "",
+        Parameter.POWER.value: 15,
+        Parameter.LO_FREQUENCY.value: 3.351e09,
+    }
+
     attenuator_controller_0 = {
         RUNCARD.ID: 4,
         RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
