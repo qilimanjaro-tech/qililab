@@ -1,6 +1,6 @@
 Buses
 +++++++++++++++++++++++++
-Que son
+Que son, teoricament aixo ho explica l'Albert Solana
 
 Tipo1
 ---------
