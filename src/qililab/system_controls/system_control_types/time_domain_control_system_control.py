@@ -122,10 +122,10 @@ class ControlSystemControl(TimeDomainSystemControl):
 
     def setup(self):
         # In this layer we handle Signal Generator settings
-        self.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.LO_frequency))
-        self.set_parameter(parameter=Parameter.POWER, value=self.settings.power)
-        self.set_parameter(parameter=Parameter.RF_ON, value=self.settings.rf_on)
-        # 1. Settings
+        self.signal_generator.set_parameter(parameter=Parameter.LO_FREQUENCY, value=float(self.settings.LO_frequency))
+        self.signal_generator.set_parameter(Parameter.POWER, value=self.settings.power)
+        self.signal_generator.set_parameter(Parameter.RF_ON, value=self.settings.rf_on)
+                # 1. Settings
         super().setup()
         # 2. Sequence
         # 3. Waveforms
