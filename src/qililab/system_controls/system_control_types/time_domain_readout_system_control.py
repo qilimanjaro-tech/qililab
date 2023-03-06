@@ -67,15 +67,15 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             self.settings.intermediate_frequency = float(value)
             # first setup the IF that the DEMODULATION WILL USE
             if self.settings.hardware_demodulation:
-                sequencer_id = self.settings.sequencer_id
-                self.adc.device.sequencers[sequencer_id].nco_freq(float(value))
+                channel_id = self.settings.sequencer_id
+                self.adc.set_parameter(parameter=parameter,value=value, channel_id=channel_id)
             # second setup the IF inside the matrioska (AWG)
             super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
             return
         if parameter == Parameter.HARDWARE_DEMODULATION:
-            sequencer_id = self.settings.sequencer_id
+            channel_id = self.settings.sequencer_id
             self.settings.hardware_demodulation = bool(value)
-            self.adc.device.sequencers[sequencer_id].demod_en_acq(bool(value))
+            self.adc.set_parameter(parameter=parameter,value=value, channel_id=channel_id)
             return
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             return
