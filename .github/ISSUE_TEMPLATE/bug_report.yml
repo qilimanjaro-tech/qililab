@@ -40,13 +40,13 @@ body:
     attributes:
       label: Source code
       description: Please include a minimal non-working example, or any other code related to the issue, here. This will be automatically formatted into code, so no need for backticks.
-      render: shell
+      render: Shell
   - type: textarea
     id: tracebacks
     attributes:
       label: Tracebacks
       description: Please include the error tracebacks related to the issue here. This will be automatically formatted into code, so no need for backticks.
-      render: shell
+      render: Shell
   - type: checkboxes
     id: terms
     attributes:
