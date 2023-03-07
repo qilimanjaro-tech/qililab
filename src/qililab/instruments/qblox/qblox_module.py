@@ -13,6 +13,7 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync, SetAwgGain
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
+from qpysequence.utils.constants import AWG_MAX_GAIN
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -187,7 +188,7 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            gain = int(pulse_event.pulse.amplitude*32767)
+            gain = int(pulse_event.pulse.amplitude*AWG_MAX_GAIN)
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int(pulse_event.pulse.phase * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
