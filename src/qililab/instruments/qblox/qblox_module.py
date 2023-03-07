@@ -187,8 +187,8 @@ class QbloxModule(AWG):
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            gain = float(pulse_event.pulse.amplitude*32768)
-            avg_loop.append_component(SetAwgGain(gain, gain))
+            gain = int(pulse_event.pulse.amplitude*32767)
+            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int(pulse_event.pulse.phase * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
