@@ -66,7 +66,7 @@ Advanced example
         - name: port
             id_: 3
             alias: feedline_input
-            nodes: [26, 24, 23, 27, 20, 22, 21, 25]
+            nodes: [24, 23, 20, 22, 21]
         - name: port
             id_: 4
             nodes: []
@@ -96,7 +96,7 @@ Advanced example
         - name: port
             id_: 11
             alias: feedline_output
-            nodes: [25, 21, 22, 20, 27, 23, 24, 26]
+            nodes: [21, 22, 20, 23, 24]
         - name: port
             id_: 12
             nodes: []
@@ -148,21 +148,6 @@ Advanced example
             id_: 24
             frequency: 8.2e+09
             nodes: [34, 3, 11]
-        - name: resonator
-            alias: resonator_q5
-            id_: 25
-            frequency: 7.2e+09
-            nodes: [35, 3, 11]
-        - name: resonator
-            alias: resonator_q6
-            id_: 26
-            frequency: 7.3e+09
-            nodes: [36, 3, 11]
-        - name: resonator
-            alias: resonator_isolated
-            id_: 27
-            frequency: 7.1e+09
-            nodes: [3, 11]
 
         - name: qubit
             alias: qubit_0
@@ -194,18 +179,6 @@ Advanced example
             qubit_index: 4
             frequency: 6.208e+09
             nodes: [5, 6, 24, 32]
-        - name: qubit
-            alias: qubit_5
-            id_: 35
-            qubit_index: 5
-            frequency: 4.581e+09
-            nodes: [25]
-        - name: qubit
-            alias: qubit_6
-            id_: 36
-            qubit_index: 6
-            frequency: 4.672e+09
-            nodes: [26]
                     </span>
                 </pre>
             </div>
