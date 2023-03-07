@@ -1,10 +1,9 @@
 name: Feature request
 description: Suggest a new feature
-labels: "enhancement :sparkles:"
+labels: ["enhancement"]
 
 body:
   - type: markdown
-    id: description
     attributes:
       value: |
         ## Before posting a feature request

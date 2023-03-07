@@ -1,11 +1,10 @@
 name: Bug report
 description: File a bug report
 title: "[BUG]"
-labels: "bug :bug:"
+labels: ["bug"]
 
 body:
   - type: markdown
-    id: description
     attributes:
       value: |
         ## Before posting a bug report
