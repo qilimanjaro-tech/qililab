@@ -1,22 +1,16 @@
 # pylint: disable=no-member
 
-from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from tkinter.messagebox import NO
-from typing import ClassVar, List, Tuple
-from webbrowser import Opera
+from typing import Tuple
 
-import matplotlib.pyplot as plt
 import rustworkx as rx
-from isort import file
 from rustworkx.visit import BFSVisitor, DFSVisitor, PruneSearch
-from rustworkx.visualization import graphviz_draw, mpl_draw
+from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import Node, OperationNode, StartNode
 from qililab.circuit.operations import Operation
 from qililab.typings.enums import OperationMultiplicity
-from qililab.typings.factory_element import FactoryElement
-from qililab.utils import dict_factory
 
 
 @dataclass
