@@ -25,6 +25,7 @@ In this page you can find the documentation of the qililab package implemented i
    GettingStarted/Pre
    GettingStarted/Inst
    notebooks/hello_world
+   GettingStarted/HelloW
 
 .. toctree::
    :maxdepth: 4
@@ -39,6 +40,7 @@ In this page you can find the documentation of the qililab package implemented i
    :caption: Tutorials:
 
    notebooks/spectroscopy_demo
+   Tutorials/res_spectroscopy
 
 .. toctree::
    :maxdepth: 4
