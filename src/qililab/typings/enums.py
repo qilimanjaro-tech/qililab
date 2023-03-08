@@ -575,3 +575,9 @@ class Node(str, Enum):
     NODES = "nodes"
     FREQUENCY = "frequency"
     QUBIT_INDEX = "qubit_index"
+
+
+class OperationMultiplicity(str, Enum):
+    PARALLEL = "parallel"
+    MULTIPLEXED = "multiplexed"
+    CONTROLLED = "controlled"
