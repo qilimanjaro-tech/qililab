@@ -39,8 +39,12 @@ Which is represented in the next diagram:
 |
 
 In this example, we have a qubit, a resonator, and the two ports from where we manipulate them.
+The ``nodes:`` section is an `adjacency list <https://en.wikipedia.org/wiki/Adjacency_list>`_ that represent the connections between the elements of the chip. So ``nodes:`` is an unordered list that represent the graph equivalent to the chip.
+
 As you can recall every component has an id from which we refer to. Nodes indicate what is connected to what, for example, in our simple case, ``id_ : 2``which is a resonator is connected to ``nodes : [1, 3]``.
 That means that our resonator is connected to the port ``id_ : 1`` and the qubit ``id_ : 3``.
+
+
 
 Advanced example
 --------------------
@@ -191,7 +195,3 @@ Advanced example
 
 .. image:: ../../img/advanced_chip.png
     :align: center
-
-Parts
---------------
-Aqui anirien mes parts tecniques, nose si fa falta.
