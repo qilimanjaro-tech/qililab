@@ -195,3 +195,5 @@ Advanced example
 
 .. image:: ../../img/advanced_chip.png
     :align: center
+
+|
