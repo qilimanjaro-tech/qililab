@@ -36,6 +36,7 @@ Which is represented in the next diagram:
 
 .. image:: ../../img/Simple_Chip.png
     :align: center
+|
 
 In this example, we have a qubit, a resonator, and the two ports from where we manipulate them.
 As you can recall every component has an id from which we refer to. Nodes indicate what is connected to what, for example, in our simple case, ``id_ : 2``which is a resonator is connected to ``nodes : [1, 3]``.
@@ -185,6 +186,8 @@ Advanced example
         </div>
        
    </div>
+
+|
 
 .. image:: ../../img/advanced_chip.png
     :align: center
