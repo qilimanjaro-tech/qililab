@@ -2,9 +2,9 @@ from qililab.circuit import Circuit
 from qililab.circuit.operations import R180, Measure, Rxy, Wait, X
 
 circuit = Circuit(3)
-circuit.add(0, Rxy(phi=90, theta=0))
-circuit.add(0, Rxy(phi=45, theta=0))
-circuit.add(1, R180(theta=0))
+circuit.add(0, Rxy(theta=0, phi=90))
+circuit.add(0, Rxy(theta=0, phi=45))
+circuit.add(1, R180(phi=0))
 circuit.add((0, 1), Wait(t=400))
 circuit.add(0, X())
 circuit.add(2, X())

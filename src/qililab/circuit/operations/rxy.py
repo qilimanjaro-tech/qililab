@@ -9,12 +9,12 @@ class Rxy(Operation):
     """Operation representing a rotation around XY axis
 
     Args:
-        phi (float): phi angle in degrees
         theta (float): theta angle in degrees
+        phi (float): phi angle in degrees
     """
 
-    phi: float
     theta: float
+    phi: float
 
     def __post_init__(self):
         self._name = "Rxy"
@@ -24,24 +24,24 @@ class Rxy(Operation):
 
 @dataclass
 class R180(Rxy):
-    phi: float = field(init=False)
-    theta: float
+    theta: float = field(init=False)
+    phi: float
 
     def __post_init__(self):
-        self.phi = 180
+        self.theta = 180
         self._name = "R180"
         self._multiplicity = OperationMultiplicity.PARALLEL
-        self._parameters = {"theta": self.theta}
+        self._parameters = {"phi": self.phi}
 
 
 @dataclass
 class X(R180):
-    phi: float = field(init=False)
     theta: float = field(init=False)
+    phi: float = field(init=False)
 
     def __post_init__(self):
-        self.phi = 180
-        self.theta = 0
+        self.theta = 180
+        self.phi = 0
         self._name = "X"
         self._multiplicity = OperationMultiplicity.PARALLEL
         self._parameters = {}

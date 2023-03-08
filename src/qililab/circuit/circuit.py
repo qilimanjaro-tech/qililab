@@ -23,24 +23,24 @@ class Circuit:
         self.graph = rx.PyDiGraph(multigraph=True)
         self.start_node = self._add_start_node()
 
-    def add(self, qubits: int | Tuple[int, ...], operation: Operation):
+    def add(self, qubits: int | Tuple[int, ...], operation: Operation, alias: str | None = None):
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
         if operation._multiplicity == OperationMultiplicity.PARALLEL:
-            self._add_parallel_operation(qubits=qubits, operation=operation)
+            self._add_parallel_operation(qubits=qubits, operation=operation, alias=alias)
         elif operation._multiplicity == OperationMultiplicity.MULTIPLEXED:
-            self._add_multiplexed_operation(qubits=qubits, operation=operation)
+            self._add_multiplexed_operation(qubits=qubits, operation=operation, alias=alias)
 
     @property
     def depth(self) -> int:
         return len(rx.layers(self.graph, [self.start_node.index])) - 1
 
-    def _add_parallel_operation(self, qubits: Tuple[int, ...], operation: Operation):
+    def _add_parallel_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
         for qubit in qubits:
             _, last_operation_node = self._last_operation_of_qubit(qubit=qubit)
             new_operation_node = self._add_operation_node(qubits=(qubit,), operation=operation)
             self.graph.add_edge(last_operation_node.index, new_operation_node.index, None)
 
-    def _add_multiplexed_operation(self, qubits: Tuple[int, ...], operation: Operation):
+    def _add_multiplexed_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
         new_operation_node = self._add_operation_node(qubits=qubits, operation=operation)
         last_operation_nodes = []
         for qubit in qubits:
@@ -53,17 +53,20 @@ class Circuit:
         else:
             self.graph.add_edge(self.start_node.index, new_operation_node.index, None)
 
-    def _add_operation_node(self, qubits: Tuple[int, ...], operation: Operation) -> OperationNode:
+    def _add_operation_node(
+        self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None
+    ) -> OperationNode:
         """Add an operation node to circuit's graph
 
         Args:
             qubits (Tuple[int]): Tuple of qubits indices
             operation (Operation): The operation
+            alias (str | None): Optional alias
 
         Returns:
             OperationNode: The operation node added
         """
-        index = self.graph.add_node(OperationNode(operation=operation, qubits=qubits))
+        index = self.graph.add_node(OperationNode(operation=operation, qubits=qubits, alias=alias))
         self.graph[index].index = index
         return self.graph[index]
 
