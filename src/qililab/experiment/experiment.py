@@ -326,7 +326,6 @@ class Experiment:
         self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument | None
     ):
         """update parameter from loop"""
-        # print(f'LOOP set parameter: {loop.parameter} to value: {value}')
         self.set_parameter(
             element=element,
             alias=loop.alias,
