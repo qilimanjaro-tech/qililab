@@ -1,21 +1,23 @@
 # Release dev (development release)
 
-## New features since last release
+This document contains the changes of the current release.
+
+### New features since last release
 
 - Added new ChangeLog!
   [#170](https://github.com/qilimanjaro-tech/qililab/pull/170)
 
-## Improvements
+### Improvements
 
-## Breaking changes
+### Breaking changes
 
-## Deprecations
+### Deprecations
 
-## Documentation
+### Documentation
 
-## Bug fixes
+### Bug fixes
 
-## Contributors
+### Contributors
 
 This release contains contributions from (in alphabetical order):
 
