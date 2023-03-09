@@ -3,7 +3,7 @@
 ## New features since last release
 
 - Added new ChangeLog!
-  \[#\]
+  [#170](https://github.com/qilimanjaro-tech/qililab/pull/170)
 
 ## Improvements
 
