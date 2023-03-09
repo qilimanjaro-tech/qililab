@@ -21,4 +21,4 @@ jobs:
             * A link back to this PR.
             * Your name (or GitHub username) in the contributors section.
         env:
-          GITHUB_TOKEN: "${{ secrets.CUSTOM_GITHUB_TOKEN }}"
+          GITHUB_TOKEN: "${{ secrets.CHANGELOG_REMINDER_TOKEN }}"
