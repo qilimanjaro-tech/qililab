@@ -12,7 +12,7 @@ Here is a very simple example of a chip explained in the runcard format:
       chip:
         id_: 0
         category: chip
-        alias: "advanced"
+        alias: "simple"
         nodes:
         - name: port
             id_: 0
