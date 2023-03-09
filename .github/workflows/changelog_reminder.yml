@@ -16,7 +16,7 @@ jobs:
           changelog_regex: "changelog-dev.md"
           customPrMessage: |
             Hello. You may have forgotten to update the changelog!
-            Please edit [`changelog-dev.md`](/qilimanjaro-tech/qililab/tree/main/changelog-dev.md) with:
+            Please edit [`changelog-dev.md`](/qilimanjaro-tech/qililab/tree/main/doc/releases/changelog-dev.md) with:
             * A one-to-two sentence description of the change. You may include a small working example for new features.
             * A link back to this PR.
             * Your name (or GitHub username) in the contributors section.
