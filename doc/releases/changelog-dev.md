@@ -16,9 +16,3 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
-
-### Contributors
-
-This release contains contributions from (in alphabetical order):
-
-- Albert Mitjans Coma
