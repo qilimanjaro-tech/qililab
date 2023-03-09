@@ -14,3 +14,5 @@ jobs:
         with:
           project-url: https://github.com/orgs/qilimanjaro-tech/projects/1
           github-token: ${{ secrets.PROJECT_TOKEN }}
+          labeled: bug, enhancement
+          label-operator: OR
