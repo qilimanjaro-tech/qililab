@@ -74,7 +74,7 @@ class Circuit:
         """Add the entry point of circuit's graph. Should be called only once on Circuit's `__post_init__()`
 
         Returns:
-            StartNode: The start node added
+            EntryNode: The entry node added
         """
         index = self.graph.add_node(EntryNode())
         self.graph[index].index = index
