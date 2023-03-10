@@ -4,7 +4,7 @@ from qililab.circuit.nodes.node import Node
 
 
 @dataclass
-class StartNode(Node):
+class EntryNode(Node):
     """Node representing the entry point of the circuit graph"""
 
     ...
