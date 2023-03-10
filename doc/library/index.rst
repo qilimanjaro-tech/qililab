@@ -18,33 +18,31 @@ In this page you can find the documentation of the qililab package implemented i
 
 
 .. toctree::
-   :maxdepth: 4
-   :hidden:
+   :maxdepth: 1
    :caption: Getting Started:
 
    GettingStarted/Pre
    GettingStarted/Inst
    notebooks/hello_world
    GettingStarted/HelloW
+   GettingStarted/Lab_connection
+   GettingStarted/HelloL
 
 .. toctree::
-   :maxdepth: 4
-   :hidden:
+   :maxdepth: 1
    :caption: Documentation:
 
    Documentation/runcards
 
 .. toctree::
-   :maxdepth: 4
-   :hidden:
+   :maxdepth: 1
    :caption: Tutorials:
 
    notebooks/spectroscopy_demo
    Tutorials/res_spectroscopy
 
 .. toctree::
-   :maxdepth: 4
-   :hidden:
+   :maxdepth: 1
    :caption: API Reference:
 
    ApiReferences/qililab

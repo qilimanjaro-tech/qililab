@@ -74,7 +74,7 @@ In this part of the code we set the experiment parameters of the spectroscopy an
     current_stop = -0.03
     current_num = 21
 
-Load the runcard
+Platform
 ---------------------
 
 ::

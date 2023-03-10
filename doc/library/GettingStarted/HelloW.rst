@@ -4,6 +4,8 @@ Hello World
 These notebook is our Hello World, is a very simple program to veify that everithing is going according to plan.
 
 The program consist of creating a platform from where experiments may be performed.
+This tutorial can be performed entierly in any computer. Although, for any experiment to be performed it must be run in a computer connected to the instruments.
+This is accomplished via ``qiboconnection`` explained in the following page :doc:`Hello Lab<HelloL>`.
 
 ::
 
