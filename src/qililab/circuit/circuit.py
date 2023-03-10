@@ -2,7 +2,7 @@
 
 from dataclasses import asdict, dataclass, field
 from tkinter.messagebox import NO
-from typing import Tuple
+from typing import List, Tuple
 
 import rustworkx as rx
 from rustworkx.visit import BFSVisitor, DFSVisitor, PruneSearch
@@ -96,6 +96,9 @@ class Circuit:
                 if qubit in operation.qubits:
                     layer_index, last_operation = index, operation
         return layer_index, last_operation
+
+    def get_operation_layers(self) -> List[List[OperationNode]]:
+        return rx.layers(self.graph, [self.entry_node.index])[1:]
 
     def draw(self, filename: str | None = None):
         def node_attr(node):

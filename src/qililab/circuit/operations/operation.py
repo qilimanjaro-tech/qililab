@@ -31,11 +31,11 @@ class Operation(ABC):
         return self._parameters
 
     @property
-    def parameter_names(self) -> Tuple:
+    def parameter_names(self) -> Tuple[str, ...]:
         return tuple(self._parameters.keys())
 
     @property
-    def parameter_values(self) -> Tuple:
+    def parameter_values(self) -> Tuple[ParameterValue, ...]:
         return tuple(self._parameters.values())
 
     def has_parameters(self) -> bool:
