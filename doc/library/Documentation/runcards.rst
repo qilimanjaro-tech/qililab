@@ -8,9 +8,8 @@ They are files in the format ``.yml`` that are imported as dictionaries on qilil
 .. note::
     The example below is a schematic representation of a basic runcard, wherever it is ``...`` : should go more lines of code that refer to the settings of each part of the runcard.
 
-Example of a runcard:
-
 .. code-block:: python
+    :caption: Runcard Scheme
 
     settings:
     id_: 0
