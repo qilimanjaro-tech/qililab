@@ -19,7 +19,7 @@ class Drag(PulseShape):
     num_sigmas: float
     drag_coefficient: float
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, tau=0.0, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.
 
         Args:

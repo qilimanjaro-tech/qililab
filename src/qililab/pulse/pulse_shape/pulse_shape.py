@@ -14,7 +14,7 @@ class PulseShape(FactoryElement):
 
     name: PulseShapeName = field(init=False)
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, duration: int, amplitude: float, tau: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
         Args:

@@ -16,7 +16,7 @@ class Gaussian(PulseShape):
     name = PulseShapeName.GAUSSIAN
     num_sigmas: float
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, tau=0.0, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
 
         Args:
