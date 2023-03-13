@@ -15,7 +15,7 @@ class Rectangular(PulseShape):
 
     name: PulseShapeName = PulseShapeName.RECTANGULAR
 
-    def envelope(self, duration: int, amplitude: float, tau=0.0, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
 
         Args:

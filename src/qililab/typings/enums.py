@@ -211,6 +211,7 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
+    TAU = "tau"
 
 
 class BusCategory(str, Enum):
