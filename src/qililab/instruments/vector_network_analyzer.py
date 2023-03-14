@@ -258,8 +258,7 @@ class VectorNetworkAnalyzer(Instrument):
     def averaging_enabled(self, value: bool):
         """sets the averaging enabled"""
         self.settings.averaging_enabled = value
-        # TODO: verify the exact driver method to call
-        # self.device.average_state(state=str(self.settings.averaging_enabled))
+        self.device.average_state(state=str(self.settings.averaging_enabled))
 
     @property
     def number_averages(self):
