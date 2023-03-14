@@ -39,7 +39,10 @@ class SystemControl(BusElement, ABC):
     def __init__(self, settings: dict, instruments: Instruments | None = None):
         settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
-        self.instruments = self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        if instruments is not None:
+            self.instruments = self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        else:
+            self.instruments = Instruments([])
 
     @property
     def id_(self):
@@ -121,7 +124,7 @@ class SystemControl(BusElement, ABC):
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.instruments)
+        return iter(self.settings)
 
     def __getitem__(self, index):
         """Redirect __getitem__ magic method."""
