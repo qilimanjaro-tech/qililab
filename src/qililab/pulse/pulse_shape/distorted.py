@@ -30,14 +30,16 @@ class Distorted(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
         ysig = amplitude * np.ones(round(duration / resolution))
+        
         k = 2 * self.tau
         a = [1, -1]
         b = [(k + 1) / k, -(k - 1) / k]
         
-        test = signal.lfilter(b, a, ysig)/(a[0]**(duration / resolution) * b[0]**(duration / resolution)+0.1)
+        ycorr = signal.lfilter(b, a, ysig)
+        norm = np.amax(np.abs(ycorr))
+        ycorr = ycorr/norm
 
-        print(b[0]**(duration / resolution))
-        return signal.lfilter(b, a, ysig)/(a[0]**(duration / resolution) * b[0]**(duration / resolution)+0.1)
+        return ycorr
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
