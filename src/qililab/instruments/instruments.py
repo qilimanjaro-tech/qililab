@@ -1,11 +1,12 @@
 """Instruments class"""
 from dataclasses import dataclass
-from typing import List
+from typing import Iterable, List
 
 import yaml
 
 from qililab.instruments.instrument import Instrument
 from qililab.typings.enums import Category
+from qililab.utils import PrettyDict
 
 
 @dataclass
@@ -40,3 +41,33 @@ class Instruments:
     def _short_dict(self):
         """Return a dict representation of the Instruments class discarding all static elements."""
         return [instrument.short_dict() for instrument in self.elements]
+
+    def __iter__(self) -> Iterable[Instrument]:
+        """Returns an iterable over the instruments.
+
+        Returns:
+            Iterable: iterable over the instruments.
+        """
+        return iter(self.elements)
+
+    def __getitem__(self, index) -> Instrument:
+        """Redirects the __getitem__ dunder method to the instruments list.
+
+        Args:
+            index (int): instrument index
+
+        Returns:
+            Instrument: instrument object
+        """
+        return self.elements[index]
+
+    @property
+    def parameters(self):
+        """Returns a dictionary with the instrument parameters.
+
+        Returns:
+            dict: instrument parameter dictionary
+        """
+        return PrettyDict(
+            {instrument.alias: dict(instrument.parameters) for instrument in self.elements}, sort_keys=False
+        )

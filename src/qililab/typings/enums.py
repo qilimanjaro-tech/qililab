@@ -403,6 +403,22 @@ class BusName(str, Enum):
 class Parameter(str, Enum):
     """Parameter names."""
 
+    @classmethod
+    def contains(cls, key: str) -> bool:
+        """Returns True if key is in the Enum class.
+
+        Args:
+            key (str): Parameter name.
+
+        Returns:
+            bool: True if key in Enum, False otherwise.
+        """
+        try:
+            cls(key)
+        except ValueError:
+            return False
+        return True
+
     BUS_FREQUENCY = "bus_frequency"
     LO_FREQUENCY = "frequency"
     GAIN = "gain"

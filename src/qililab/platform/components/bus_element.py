@@ -1,10 +1,7 @@
 """BusElement class"""
-from dataclasses import asdict
-
 from qililab.constants import RUNCARD
 from qililab.settings import DDBBElement
 from qililab.typings.factory_element import FactoryElement
-from qililab.utils import dict_factory
 
 
 class BusElement(FactoryElement):
@@ -14,7 +11,7 @@ class BusElement(FactoryElement):
 
     def to_dict(self):
         """Return a dict representation of the BusElement class."""
-        return {RUNCARD.NAME: self.name.value} | asdict(self.settings, dict_factory=dict_factory)
+        return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
     def short_dict(self):
         """Return a dict representation of the BusElement class discarding all static elements."""

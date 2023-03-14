@@ -5,7 +5,6 @@ from qiboconnection.api import API
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
-from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
 from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.settings import RuncardSchema
@@ -276,7 +275,7 @@ class Platform:
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {RUNCARD.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
+        platform_dict = {RUNCARD.SETTINGS: self.settings.to_dict()}
         schema_dict = {RUNCARD.SCHEMA: self.schema.to_dict()}
         return platform_dict | schema_dict
 

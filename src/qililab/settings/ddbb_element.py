@@ -1,9 +1,10 @@
 """Settings class."""
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from types import NoneType
 from typing import Any
 
 from qililab.typings import Category, Parameter
+from qililab.utils import dict_factory
 from qililab.utils.castings import cast_enum_fields
 
 
@@ -70,3 +71,7 @@ class DDBBElement:
                 + f"{len(attributes)} at position {channel_id}"
             )
         attributes[channel_id] = value
+
+    def to_dict(self):
+        """Return a dict representation of the BusElement class."""
+        return asdict(self, dict_factory=dict_factory)

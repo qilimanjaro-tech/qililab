@@ -177,3 +177,12 @@ class Bus(FactoryElement):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    @property
+    def parameters(self):
+        """Returns a dictionary with the bus parameters.
+
+        Returns:
+            dict: instrument parameter dictionary
+        """
+        return self.system_control.parameters

@@ -10,6 +10,7 @@ from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
+from qililab.utils import PrettyDict
 
 
 class Instrument(BusElement, ABC):
@@ -32,6 +33,15 @@ class Instrument(BusElement, ABC):
         """
 
         firmware: str
+
+        @property
+        def parameters(self):
+            """Returns a dictionary with the instrument parameters.
+
+            Returns:
+                dict: instrument parameter dictionary
+            """
+            return PrettyDict({name: value for name, value in self.to_dict().items() if Parameter.contains(name)})
 
     settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
@@ -226,6 +236,15 @@ class Instrument(BusElement, ABC):
             str: settings.firmware.
         """
         return self.settings.firmware
+
+    @property
+    def parameters(self):
+        """Returns a dictionary with the instrument parameters.
+
+        Returns:
+            dict: instrument parameter dictionary
+        """
+        return self.settings.parameters
 
     def __str__(self):
         """String representation of an instrument."""

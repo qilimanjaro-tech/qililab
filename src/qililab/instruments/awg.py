@@ -13,7 +13,8 @@ from qililab.instruments.awg_settings.typings import (
 )
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
-from qililab.utils.asdict_factory import dict_factory
+from qililab.typings import Parameter
+from qililab.utils import PrettyDict, dict_factory
 
 
 class AWG(Instrument):
@@ -64,6 +65,19 @@ class AWG(Instrument):
                 AWGTypes.AWG_SEQUENCERS.value: [sequencer.to_dict() for sequencer in self.awg_sequencers],
                 AWGTypes.AWG_IQ_CHANNELS.value: [iq_channel.to_dict() for iq_channel in self.awg_iq_channels],
             }
+
+        @property
+        def parameters(self):
+            params = super().parameters
+            return PrettyDict(
+                params
+                | {
+                    "awg_sequencers": [
+                        {name: value for name, value in sequencer.to_dict().items() if Parameter.contains(name)}
+                        for sequencer in self.awg_sequencers
+                    ]
+                }
+            )
 
     settings: AWGSettings
 
