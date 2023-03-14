@@ -25,10 +25,6 @@ class MicroWaveBiasSystemControl(ContinuousSystemControl):
         power: float
         frequency: float
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return [Category.SIGNAL_GENERATOR.value]
-
     settings: MicroWaveBiasSystemControlSettings
 
     @property
@@ -52,7 +48,3 @@ class MicroWaveBiasSystemControl(ContinuousSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         self.signal_generator.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return [Category.SIGNAL_GENERATOR]

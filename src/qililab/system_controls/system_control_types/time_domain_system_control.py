@@ -19,10 +19,6 @@ class TimeDomainSystemControl(SystemControl):
         system_control_category = SystemControlCategory.TIME_DOMAIN
         awg: AWG
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return [Category.AWG.value]
-
     settings: TimeDomainSystemControlSettings
 
     @property
@@ -36,10 +32,6 @@ class TimeDomainSystemControl(SystemControl):
     def frequency(self, port_id: int):
         """SystemControl 'frequency' property."""
         return self.awg.frequency(port_id=port_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return [Category.AWG]
 
     def __str__(self):
         """String representation of the TimeDomainSystemControl class."""

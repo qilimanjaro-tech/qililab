@@ -9,7 +9,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.platform.components import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings import SystemControlCategory, SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter, SystemControlName
+from qililab.typings.enums import Parameter, SystemControlName
 
 
 class SystemControl(BusElement, ABC):
@@ -24,20 +24,14 @@ class SystemControl(BusElement, ABC):
         system_control_category: SystemControlCategory
         system_control_subcategory: SystemControlSubCategory
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories.
-            Each specific System Control MUST define its own
-            """
-            return []
-
         def __iter__(self):
-            """Iterate over Bus elements.
+            """Iterate over Bus instruments.
 
             Yields:
                 Tuple[str, ]: a tuple of the instrument category and its alias
             """
             for name, value in self.__dict__.items():
-                if name in self._supported_instrument_categories():
+                if name not in {"id_", "category", "alias", "system_control_category", "system_control_subcategory"}:
                     yield name, value
 
     settings: SystemControlSettings
@@ -45,8 +39,8 @@ class SystemControl(BusElement, ABC):
     def __init__(self, settings: dict, instruments: Instruments | None = None):
         settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
-        if instruments is not None:
-            self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self.instruments = instruments or Instruments([])
+        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     @property
     def id_(self):
@@ -84,15 +78,6 @@ class SystemControl(BusElement, ABC):
         """
         return self.settings.system_control_subcategory
 
-    @property
-    def supported_instrument_categories(self):
-        """get supported instrument categories"""
-        return self._get_supported_instrument_categories()
-
-    @abstractmethod
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-
     @abstractmethod
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """sets a parameter to a specific instrument
@@ -120,21 +105,25 @@ class SystemControl(BusElement, ABC):
         Raises:
             ValueError: when the instrument is not valid
         """
-        if instrument.category not in self.supported_instrument_categories:
-            supported_list_values = ",".join([item.value for item in self.supported_instrument_categories])
-            raise ValueError(
-                "Not supported instrument category for this system control. "
-                + f"supported categories are: {supported_list_values} and "
-                + f"the category given is: {instrument.category.value}"
-            )
+        if not hasattr(self.settings, instrument.category.value):
+            raise ValueError(f"Instrument {instrument.name.value} not supported for system control {self.name.value}.")
 
     @abstractmethod
     def __str__(self):
         """String representation of a SystemControl class."""
 
+    @property
+    def parameters(self):
+        """Notebook representation of a SystemControl class."""
+        return self.instruments.parameters
+
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return self.settings.__iter__()
+        return iter(self.instruments)
+
+    def __getitem__(self, index):
+        """Redirect __getitem__ magic method."""
+        return self.instruments[index]
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""

@@ -24,10 +24,6 @@ class ContinuousReadoutSystemControl(ContinuousSystemControl):
         system_control_subcategory = SystemControlSubCategory.CONTINUOUS_READOUT
         vector_network_analyzer = VectorNetworkAnalyzer
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return [Category.VNA.value]
-
     settings: ContinuousReadoutSystemControlSettings
 
     @property
@@ -37,10 +33,6 @@ class ContinuousReadoutSystemControl(ContinuousSystemControl):
             VectorNetworkAnalyzer: settings.vector_network_analyzer
         """
         return self.settings.vector_network_analyzer
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return [Category.VNA]
 
     def __str__(self):
         """String representation of the ContinuousReadoutSystemControlSettings class."""

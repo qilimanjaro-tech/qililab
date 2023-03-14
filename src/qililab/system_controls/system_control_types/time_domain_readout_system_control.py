@@ -27,10 +27,6 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
         system_control_subcategory = SystemControlSubCategory.TIME_DOMAIN_READOUT
         adc: AWGAnalogDigitalConverter | None = field(default=None)
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return super()._supported_instrument_categories() + [Category.ADC.value]
-
     settings: TimeDomainReadoutSystemControlSettings
 
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
@@ -83,10 +79,6 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
             return
         # the rest of parameters are assigned to the AWGDigitalAnalogConverter
         self.adc.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return super()._get_supported_instrument_categories() + [Category.ADC]
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument

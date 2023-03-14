@@ -23,10 +23,6 @@ class BaseBandSystemControl(TimeDomainSystemControl):
         system_control_subcategory = SystemControlSubCategory.BASEBAND
         current_source: CurrentSource
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return super()._supported_instrument_categories() + [Category.CURRENT_SOURCE.value]
-
     settings: BaseBandSystemControlSettings
 
     @property
@@ -55,7 +51,3 @@ class BaseBandSystemControl(TimeDomainSystemControl):
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return super()._get_supported_instrument_categories() + [Category.CURRENT_SOURCE]

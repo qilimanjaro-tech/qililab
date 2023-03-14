@@ -23,10 +23,6 @@ class CurrentBiasSystemControl(ContinuousSystemControl):
         system_control_subcategory = SystemControlSubCategory.CURRENT_BIAS
         current_source: CurrentSource
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return [Category.CURRENT_SOURCE.value]
-
     settings: CurrentBiasSystemControlSettings
 
     @property
@@ -50,7 +46,3 @@ class CurrentBiasSystemControl(ContinuousSystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         self.current_source.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return [Category.CURRENT_SOURCE]

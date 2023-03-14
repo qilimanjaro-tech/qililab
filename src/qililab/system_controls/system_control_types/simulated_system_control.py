@@ -11,12 +11,7 @@ from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
-from qililab.typings.enums import (
-    Category,
-    Parameter,
-    SystemControlName,
-    SystemControlSubCategory,
-)
+from qililab.typings.enums import Parameter, SystemControlName, SystemControlSubCategory
 from qililab.utils.factory import Factory
 
 
@@ -71,10 +66,6 @@ class SimulatedSystemControl(SystemControl):
             port_params=self.settings.drive_params,
             store_states=self.settings.store_states,
         )
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return []
 
     def __str__(self):
         """String representation of a Simulated SystemControl class."""

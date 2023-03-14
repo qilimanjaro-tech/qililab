@@ -25,10 +25,6 @@ class ControlSystemControl(TimeDomainSystemControl):
         system_control_subcategory = SystemControlSubCategory.CONTROL
         signal_generator: SignalGenerator
 
-        def _supported_instrument_categories(self) -> list[str]:
-            """return a list of supported instrument categories."""
-            return super()._supported_instrument_categories() + [Category.SIGNAL_GENERATOR.value]
-
     settings: ControlSystemControlSettings
 
     @property
@@ -82,10 +78,6 @@ class ControlSystemControl(TimeDomainSystemControl):
 
         # the rest of parameters are assigned to the TimeDomainSystemControl
         super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_supported_instrument_categories(self) -> list[Category]:
-        """get supported instrument categories"""
-        return super()._get_supported_instrument_categories() + [Category.SIGNAL_GENERATOR]
 
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
