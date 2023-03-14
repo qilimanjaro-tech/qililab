@@ -39,8 +39,7 @@ class SystemControl(BusElement, ABC):
     def __init__(self, settings: dict, instruments: Instruments | None = None):
         settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
-        self.instruments = instruments or Instruments([])
-        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self.instruments = self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
 
     @property
     def id_(self):
@@ -88,13 +87,16 @@ class SystemControl(BusElement, ABC):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
 
-    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments) -> Instruments:
         """Replace dictionaries from settings into its respective instrument classes."""
+        instrument_instances = []
         for name, value in self.settings:
             if isinstance(value, str):
                 instrument_object = instruments.get_instrument(alias=value)
                 self._check_for_a_valid_instrument(instrument=instrument_object)
                 setattr(self.settings, name, instrument_object)
+                instrument_instances.append(instrument_object)
+        return Instruments(instrument_instances)
 
     def _check_for_a_valid_instrument(self, instrument: Instrument):
         """check if the built instrument is a valid one for this specific SystemControl

@@ -8,7 +8,7 @@ from qililab.system_controls.system_control_types.time_domain_control_system_con
     ControlSystemControl,
 )
 from qililab.typings import SystemControlSubCategory
-from qililab.typings.enums import Category, Parameter, SystemControlName
+from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
 
 
@@ -29,13 +29,15 @@ class TimeDomainReadoutSystemControl(ControlSystemControl):
 
     settings: TimeDomainReadoutSystemControlSettings
 
-    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments) -> Instruments:
         """assign parent awg as the same as adc when it is not defined (it is the same instrument as AWG)"""
-        super()._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        instrument_instances = super()._replace_settings_dicts_with_instrument_objects(instruments=instruments).elements
         if self.adc is None:
             awg_instrument = instruments.get_instrument(alias=self.awg.alias)
             self._check_for_a_valid_instrument(instrument=awg_instrument)
             self.settings.adc = awg_instrument
+            instrument_instances.append(awg_instrument)
+        return Instruments(instrument_instances)
 
     @property
     def adc(self):
