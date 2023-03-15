@@ -6,7 +6,7 @@ import numpy as np
 import pyvisa
 
 from qililab.constants import DEFAULT_TIMEOUT
-from qililab.typings.enums import VNAScatteringParameters
+from qililab.typings.enums import VNAScatteringParameters, VNASweepModes
 from qililab.typings.instruments.device import Device
 
 
@@ -60,7 +60,7 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         Clears the average buffer
         """
-        self.driver.write(f":SENS{channel}:AVER:CLE")
+        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
     def average_count(self, count, channel=1):
         """
@@ -69,8 +69,8 @@ class VectorNetworkAnalyzerDriver(Device):
             count (str) : Number of averages
         """
         self.avg_count = int(count)
-        self.driver.write(f"SENS{channel}:AVER:COUN {count}")
-        self.driver.write(f":SENS{channel}:AVER:CLE")
+        self.send_command(f"SENS{channel}:AVER:COUN", count)
+        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
     def freq_npoints(self, points):
         """
@@ -80,7 +80,7 @@ class VectorNetworkAnalyzerDriver(Device):
             npoints (int)
                 Number of Points
         """
-        self.driver.write(f":SENS1:SWE:POIN {points}")
+        self.send_command(":SENS1:SWE:POIN", points)
 
     def power(self, power, channel=1, port=1):
         """
@@ -89,7 +89,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             power (float) : Power in dBm
         """
-        self.driver.write(f"SOUR{channel}:POW{port} {power:.1f}")
+        self.send_command(f"SOUR{channel}:POW{port}", f"{power:.1f}")
 
     def freq_center(self, freq, channel=1):
         """
@@ -98,7 +98,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             cf (float) : Center Frequency in Hz
         """
-        self.driver.write(f"SENS{channel}:FREQ:CENT {freq}")
+        self.send_command(f"SENS{channel}:FREQ:CENT", freq)
 
     def freq_span(self, freq, channel=1):
         """
@@ -107,7 +107,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             span (str) : Span in KHz
         """
-        self.driver.write(f"SENS{channel}:FREQ:SPAN {freq}")
+        self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
 
     def freq_start(self, freq, channel=1):
         """
@@ -116,7 +116,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             val (str) : Frequency in Hz
         """
-        self.driver.write(f"SENS{channel}:FREQ:STAR {freq}")
+        self.send_command(f"SENS{channel}:FREQ:STAR", freq)
 
     def freq_stop(self, freq, channel=1):
         """
@@ -125,7 +125,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             val (str) : Stop Frequency in Hz
         """
-        self.driver.write(f"SENS{channel}:FREQ:STOP {freq}")
+        self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
     def if_bandwidth(self, bandwidth, channel=1):
         """
@@ -134,7 +134,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             band (float) : Bandwidth in Hz
         """
-        self.driver.write(f"SENS{channel}:BWID {bandwidth}")
+        self.send_command(f"SENS{channel}:BWID", bandwidth)
 
     def get_freqs(self):
         """Retrun freqpoints"""
@@ -177,17 +177,17 @@ class VectorNetworkAnalyzerDriver(Device):
         single means only one single trace, not all the averages even if averages
             larger than 1 and Average==True
         """
-        mode = mode.lower()
-        if mode == "hold":
-            self.driver.write(f"SENS{channel}:SWE:MODE HOLD")
-        elif mode == "cont":
-            self.driver.write(f"SENS{channel}:SWE:MODE CONT")
-        elif mode == "single":
-            self.driver.write(f"SENS{channel}:SWE:MODE SING")
-        elif mode == "group":
-            self.driver.write(f"SENS{channel}:SWE:MODE GRO")
-        else:
-            print("invalid mode")
+        if not isinstance(mode, str):
+            raise ValueError("MODEEXC: Mode must be a string")
+        lower_mode = mode.lower()
+        sweep_mode = VNASweepModes(lower_mode)
+        return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.value)
+
+    def get_sweep_mode(self, channel=1):
+        """
+        Return the current sweep mode
+        """
+        return str(self.driver.query(f":SENS{channel}:SWE:MODE?")).rstrip()
 
     def ready(self):
         """
@@ -198,12 +198,6 @@ class VectorNetworkAnalyzerDriver(Device):
             return self.get_sweep_mode() == "HOLD"
         except Exception:
             return False
-
-    def get_sweep_mode(self, channel=1):
-        """
-        Return the current sweep mode
-        """
-        return str(self.driver.query(f":SENS{channel}:SWE:MODE?")).rstrip()
 
     def release(self):
         """
@@ -216,7 +210,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set electrical delay in channel 1
         example input: etime = '100E-9' for 100ns
         """
-        self.driver.write(f"SENS1:CORR:EXT:PORT1:TIME {etime:.12f}")
+        self.send_command("SENS1:CORR:EXT:PORT1:TIME", f"{etime:.12f}")
 
     def average_state(self, state, channel=1):
         """
@@ -224,10 +218,10 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         if state in ["True", "1"]:
             self.avg_state = True
-            self.driver.write(f"SENS{channel}:AVER:STAT ON")
+            self.send_command(f"SENS{channel}:AVER:STAT", "ON")
         elif state in ["False", "0"]:
             self.avg_state = False
-            self.driver.write(f"SENS{channel}:AVER:STAT OFF")
+            self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
         else:
             raise ValueError("average state can only set True or False")
 
@@ -237,7 +231,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             count (str) : Count number
         """
-        self.driver.write(f"SENS{channel}:SWE:GRO:COUN {count}")
+        self.send_command(f"SENS{channel}:SWE:GRO:COUN", count)
 
     def pre_measurement(self):
         """
