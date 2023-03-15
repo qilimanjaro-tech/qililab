@@ -21,6 +21,7 @@ from .enums import (
     SystemControlCategory,
     SystemControlSubCategory,
 )
+from .execution import ExecutionOptions
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
 from .instruments import (
@@ -35,4 +36,5 @@ from .instruments import (
     QcmQrm,
     RohdeSchwarzSGS100A,
 )
+from .loop import LoopOptions
 from .yaml_type import yaml
