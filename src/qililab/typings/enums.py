@@ -563,6 +563,23 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Modes
+
+    Args:
+        enum (str): Available types of sweeping modes:
+        * hold
+        * cont
+        * single
+        * group
+    """
+
+    HOLD = "hold"
+    CONT = "cont"
+    SINGLE = "single"
+    GROUP = "group"
+
+
 class Node(str, Enum):
     """Node elements
 
