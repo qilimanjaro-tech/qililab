@@ -105,7 +105,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set Span
 
         Input:
-            span (float) : Span in KHz
+            span (str) : Span in KHz
         """
         self.driver.write(f"SENS{channel}:FREQ:SPAN {freq}")
 
@@ -114,7 +114,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set Start frequency
 
         Input:
-            val (float) : Frequency in Hz
+            val (str) : Frequency in Hz
         """
         self.driver.write(f"SENS{channel}:FREQ:STAR {freq}")
 
@@ -123,7 +123,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set Stop frequency
 
         Input:
-            val (float) : Stop Frequency in Hz
+            val (str) : Stop Frequency in Hz
         """
         self.driver.write(f"SENS{channel}:FREQ:STOP {freq}")
 
@@ -259,24 +259,22 @@ class VectorNetworkAnalyzerDriver(Device):
         self.set_sweep_mode("group")
 
     def wait_until_ready(self, period=0.25):
-        """
-        Waiting function to wait until VNA is ready
-        """
-        mustend = time.time() + self.timeout
-        while time.time() < mustend:
+        """Waiting function to wait until VNA is ready"""
+        timelimit = time.time() + self.timeout
+        while time.time() < timelimit:
             if self.ready():
                 return True
             time.sleep(period)
         return False
 
     def read_trace(self):
-        """
-        Return trace data
-        """
+        """Return trace data"""
         self.pre_measurement()
         self.start_measurement()
         if self.wait_until_ready():
-            return self.get_tracedata()
+            trace = self.get_tracedata()
+            self.release()
+            return trace
         raise TimeoutError("Timeout waiting for trace data")
 
     def read(self):
