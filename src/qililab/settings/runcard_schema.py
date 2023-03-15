@@ -157,11 +157,9 @@ class RuncardSchema:
             param = parameter.value
             settings = self.get_gate(name=alias)
             if not hasattr(settings, param):
-                settings = settings.shape
-            attr_type = type(getattr(settings, param))
-            if attr_type == int:
-                attr_type = float
-            setattr(settings, param, value)
+                settings.shape[param] = value
+            else:
+                setattr(settings, param, value)
 
     settings: PlatformSettings
     schema: Schema
