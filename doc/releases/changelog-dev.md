@@ -17,5 +17,5 @@ This document contains the changes of the current release.
 
 ### Bug fixes
 
-- The `qibo` version has been fixed to `0.1.10` to allow installation on Mac laptops.
+- The `qibo` version has been downgraded to `0.1.10` to allow installation on Mac laptops.
   [#185](https://github.com/qilimanjaro-tech/qililab/pull/185)
