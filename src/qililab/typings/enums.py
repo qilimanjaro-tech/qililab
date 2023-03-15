@@ -581,3 +581,31 @@ class OperationMultiplicity(str, Enum):
     PARALLEL = "parallel"
     MULTIPLEXED = "multiplexed"
     CONTROLLED = "controlled"
+
+
+class OperationName(str, Enum):
+    """Operation names.
+
+    Args:
+        enum (str): Available types of operation names:
+        * RXY
+        * R180
+        * X
+        * WAIT
+        * RESET
+        * MEASURE
+        * BARRIER
+    """
+
+    RXY = "Rxy"  # noqa: E741
+    R180 = "R180"
+    X = "X"
+    WAIT = "Wait"
+    RESET = "Reset"
+    MEASURE = "Measure"
+    BARRIER = "Barrier"
+    PARKING = "Parking"
+    PULSE = "Pulse"
+    GAUSSIAN = "Gaussian"
+    DRAG = "DRAG"
+    SQUARE = "SQUARE"

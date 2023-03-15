@@ -25,9 +25,9 @@ class Circuit:
 
     def add(self, qubits: int | Tuple[int, ...], operation: Operation, alias: str | None = None):
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
-        if operation._multiplicity == OperationMultiplicity.PARALLEL:
+        if operation.multiplicity == OperationMultiplicity.PARALLEL:
             self._add_parallel_operation(qubits=qubits, operation=operation, alias=alias)
-        elif operation._multiplicity == OperationMultiplicity.MULTIPLEXED:
+        elif operation.multiplicity == OperationMultiplicity.MULTIPLEXED:
             self._add_multiplexed_operation(qubits=qubits, operation=operation, alias=alias)
 
     @property

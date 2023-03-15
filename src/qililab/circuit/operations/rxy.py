@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from qililab.circuit.operations.operation import Operation
+from qililab.typings import OperationName
 from qililab.typings.enums import OperationMultiplicity
 
 
@@ -17,9 +18,9 @@ class Rxy(Operation):
     phi: float
 
     def __post_init__(self):
-        self._name = "Rxy"
-        self._multiplicity = OperationMultiplicity.PARALLEL
-        self._parameters = {"phi": self.phi, "theta": self.theta}
+        self.name = OperationName.RXY
+        self.multiplicity = OperationMultiplicity.PARALLEL
+        self.parameters = {"phi": self.phi, "theta": self.theta}
 
 
 @dataclass
@@ -29,9 +30,9 @@ class R180(Rxy):
 
     def __post_init__(self):
         self.theta = 180
-        self._name = "R180"
-        self._multiplicity = OperationMultiplicity.PARALLEL
-        self._parameters = {"phi": self.phi}
+        self.name = OperationName.R180
+        self.multiplicity = OperationMultiplicity.PARALLEL
+        self.parameters = {"phi": self.phi}
 
 
 @dataclass
@@ -42,6 +43,6 @@ class X(R180):
     def __post_init__(self):
         self.theta = 180
         self.phi = 0
-        self._name = "X"
-        self._multiplicity = OperationMultiplicity.PARALLEL
-        self._parameters = {}
+        self.name = OperationName.X
+        self.multiplicity = OperationMultiplicity.PARALLEL
+        self.parameters = {}

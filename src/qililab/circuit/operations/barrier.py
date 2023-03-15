@@ -5,10 +5,10 @@ from qililab.typings.enums import OperationMultiplicity, OperationName
 
 
 @dataclass
-class Measure(Operation):
-    """Operation representing a measurement."""
+class Barrier(Operation):
+    """Operation representing a time constraint (forced synchronization)."""
 
     def __post_init__(self):
-        self.name = OperationName.MEASURE
+        self.name = OperationName.BARRIER
         self.multiplicity = OperationMultiplicity.MULTIPLEXED
         self.parameters = {}

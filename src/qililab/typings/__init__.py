@@ -12,6 +12,7 @@ from .enums import (
     IntegrationMode,
     Node,
     NodeName,
+    OperationName,
     Parameter,
     PulseName,
     PulseShapeName,
