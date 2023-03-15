@@ -62,68 +62,68 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
-    def average_count(self, count, channel=1):
+    def average_count(self, count: str, channel=1):
         """
         Set number of averages
         Input:
             count (str) : Number of averages
         """
-        self.avg_count = int(count)
+        self.avg_count = count
         self.send_command(f"SENS{channel}:AVER:COUN", count)
         self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
-    def freq_npoints(self, points):
+    def freq_npoints(self, points: str):
         """
         Set Number of Points for sweep
 
         Input:
-            npoints (int)
+            points (str)
                 Number of Points
         """
         self.send_command(":SENS1:SWE:POIN", points)
 
-    def power(self, power, channel=1, port=1):
+    def power(self, power: str, channel=1, port=1):
         """
         Set probe power
 
         Input:
-            power (float) : Power in dBm
+            power (str) : Power in dBm
         """
         self.send_command(f"SOUR{channel}:POW{port}", f"{power:.1f}")
 
-    def freq_center(self, freq, channel=1):
+    def freq_center(self, freq: str, channel=1):
         """
         Set the center frequency
 
         Input:
-            cf (float) : Center Frequency in Hz
+            freq (str) : Center Frequency in Hz
         """
         self.send_command(f"SENS{channel}:FREQ:CENT", freq)
 
-    def freq_span(self, freq, channel=1):
+    def freq_span(self, freq: str, channel=1):
         """
         Set Span
 
         Input:
-            span (str) : Span in KHz
+            freq (str) : Span in KHz
         """
         self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
 
-    def freq_start(self, freq, channel=1):
+    def freq_start(self, freq: str, channel=1):
         """
         Set Start frequency
 
         Input:
-            val (str) : Frequency in Hz
+            freq (str) : Frequency in Hz
         """
         self.send_command(f"SENS{channel}:FREQ:STAR", freq)
 
-    def freq_stop(self, freq, channel=1):
+    def freq_stop(self, freq: str, channel=1):
         """
         Set Stop frequency
 
         Input:
-            val (str) : Stop Frequency in Hz
+            freq (str) : Stop Frequency in Hz
         """
         self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
@@ -132,7 +132,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set Bandwidth
 
         Input:
-            band (float) : Bandwidth in Hz
+            bandwidth (str) : Bandwidth in Hz
         """
         self.send_command(f"SENS{channel}:BWID", bandwidth)
 
@@ -171,17 +171,29 @@ class VectorNetworkAnalyzerDriver(Device):
 
         return datareal + 1j * dataimag
 
-    def set_sweep_mode(self, mode, channel=1):
+    def set_sweep_mode(self, mode: str, channel=1):
         """
-        Select the sweep mode from 'hold', 'cont', single' and "group"
-        single means only one single trace, not all the averages even if averages
-            larger than 1 and Average==True
+        Set the sweep mode
+
+        Input:
+            mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
-        if not isinstance(mode, str):
-            raise ValueError("MODEEXC: Mode must be a string")
-        lower_mode = mode.lower()
-        sweep_mode = VNASweepModes(lower_mode)
-        return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.value)
+        # if not isinstance(mode, str):
+        #     raise ValueError("MODEEXC: Mode must be a string")
+        # lower_mode = mode.lower()
+        # sweep_mode = VNASweepModes(lower_mode)
+        # return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.name)
+        mode = mode.lower()
+        if mode == "hold":
+            self.send_command(f"SENS{channel}:SWE:MODE HOLD", "")
+        elif mode == "cont":
+            self.send_command(f"SENS{channel}:SWE:MODE CONT", "")
+        elif mode == "single":
+            self.send_command(f"SENS{channel}:SWE:MODE SING", "")
+        elif mode == "group":
+            self.send_command(f"SENS{channel}:SWE:MODE GRO", "")
+        else:
+            print("invalid mode")
 
     def get_sweep_mode(self, channel=1):
         """
@@ -208,7 +220,10 @@ class VectorNetworkAnalyzerDriver(Device):
     def electrical_delay(self, etime):  # MP 04/2017
         """
         Set electrical delay in channel 1
-        example input: etime = '100E-9' for 100ns
+
+        Input:
+            etime (str) : Electrical delay in ns
+                example: etime = '100E-9' for 100ns
         """
         self.send_command("SENS1:CORR:EXT:PORT1:TIME", f"{etime:.12f}")
 
