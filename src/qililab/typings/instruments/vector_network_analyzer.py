@@ -1,4 +1,5 @@
 """Vector Network Analyzer generic PyVisa driver"""
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -15,6 +16,8 @@ class VectorNetworkAnalyzerDriver(Device):
 
     name: str
     address: str
+    avg_state: str
+    avg_count: str
     timeout: float = DEFAULT_TIMEOUT
     driver: pyvisa.Resource = field(init=False)
 
@@ -53,12 +56,19 @@ class VectorNetworkAnalyzerDriver(Device):
         """close an instrument."""
         self.output(arg="OFF")
 
+    def average_clear(self, channel=1):
+        """
+        Clears the average buffer
+        """
+        self.driver.write(f":SENS{channel}:AVER:CLE")
+
     def average_count(self, count, channel=1):
         """
         Set number of averages
         Input:
-            count (int) : Number of averages
+            count (str) : Number of averages
         """
+        self.avg_count = int(count)
         self.driver.write(f"SENS{channel}:AVER:COUN {count}")
         self.driver.write(f":SENS{channel}:AVER:CLE")
 
@@ -156,9 +166,8 @@ class VectorNetworkAnalyzerDriver(Device):
         self.driver.write("FORM:DATA REAL,32")
         self.driver.write("FORM:BORD SWAPPED")  # SWAPPED
         data = self.driver.query_binary_values(f"CALC{channel}:MEAS{trace}:DATA:SDAT?")
-        data_size = np.size(data)
-        datareal = np.array(data[0:data_size:2])
-        dataimag = np.array(data[1:data_size:2])
+        datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
+        dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
         return datareal + 1j * dataimag
 
@@ -202,32 +211,73 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         self.set_sweep_mode("cont")
 
-    def electrical_delay(self, time):  # MP 04/2017
+    def electrical_delay(self, etime):  # MP 04/2017
         """
         Set electrical delay in channel 1
-        example input: time = '100E-9' for 100ns
+        example input: etime = '100E-9' for 100ns
         """
-        self.driver.write(f"SENS1:CORR:EXT:PORT1:TIME {time:.12f}")
+        self.driver.write(f"SENS1:CORR:EXT:PORT1:TIME {etime:.12f}")
 
     def average_state(self, state, channel=1):
         """
         Set status of Average
         """
         if state in ["True", "1"]:
+            self.avg_state = True
             self.driver.write(f"SENS{channel}:AVER:STAT ON")
         elif state in ["False", "0"]:
+            self.avg_state = False
             self.driver.write(f"SENS{channel}:AVER:STAT OFF")
         else:
             raise ValueError("average state can only set True or False")
 
-    def get_trace(self):
+    def set_count(self, count: str, channel=1):
+        """
+        Sets the trigger count (groups)
+        Input:
+            count (str) : Count number
+        """
+        self.driver.write(f"SENS{channel}:SWE:GRO:COUN {count}")
+
+    def pre_measurement(self):
+        """
+        Set everything needed for the measurement
+        Averaging has to be enabled.
+        Trigger count is set to number of averages
+        """
+        if not self.avg_state:
+            self.average_state(state="True")
+            self.average_count(count="1")
+        self.set_count(self.avg_count)
+
+    def start_measurement(self):
+        """
+        This function is called at the beginning of each single measurement in the spectroscopy script.
+        Also, the averages need to be reset.
+        """
+        self.average_clear()
+        self.set_sweep_mode("group")
+
+    def wait_until_ready(self, period=0.25):
+        """
+        Waiting function to wait until VNA is ready
+        """
+        mustend = time.time() + self.timeout
+        while time.time() < mustend:
+            if self.ready():
+                return True
+            time.sleep(period)
+        return False
+
+    def read_trace(self):
         """
         Return trace data
         """
-        self.set_sweep_mode("group")
-        while not self.ready():
-            pass
-        return self.get_tracedata()
+        self.pre_measurement()
+        self.start_measurement()
+        if self.wait_until_ready():
+            return self.get_tracedata()
+        raise TimeoutError("Timeout waiting for trace data")
 
     def read(self):
         """read directly from the device"""

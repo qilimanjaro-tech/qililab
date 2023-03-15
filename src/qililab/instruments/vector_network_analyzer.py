@@ -350,7 +350,7 @@ class VectorNetworkAnalyzer(Instrument):
     def electrical_delay(self, time: str):
         """Set electrical delay in 1
         example input: time = '100E-9' for 100ns"""
-        self.device.electrical_delay(time=time)
+        self.device.electrical_delay(etime=time)
 
     def get_data(self):
         """get data from device"""
