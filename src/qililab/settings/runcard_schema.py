@@ -60,23 +60,15 @@ class RuncardSchema:
             nodes: List[dict]
             alias: str | None = None
 
-        @dataclass
-        class InstrumentControllerSchema:
-            """Instrument Controller schema class."""
-
-            id_: int
-            category: str
-            subcategory: str
-            connection: dict
-            modules: List[dict]
-
         chip: ChipSchema | None
         buses: List[BusSchema]
         instruments: List[dict]
-        instrument_controllers: List[InstrumentControllerSchema]
+        instrument_controllers: List[dict]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
+            if isinstance(self.chip, dict):
+                self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
     class PlatformSettings(DDBBElement):
@@ -157,11 +149,9 @@ class RuncardSchema:
             param = parameter.value
             settings = self.get_gate(name=alias)
             if not hasattr(settings, param):
-                settings = settings.shape
-            attr_type = type(getattr(settings, param))
-            if attr_type == int:
-                attr_type = float
-            setattr(settings, param, value)
+                settings.shape[param] = value
+            else:
+                setattr(settings, param, value)
 
     settings: PlatformSettings
     schema: Schema
