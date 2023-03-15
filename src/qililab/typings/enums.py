@@ -576,8 +576,8 @@ class VNASweepModes(str, Enum):
 
     HOLD = "hold"
     CONT = "cont"
-    SINGLE = "single"
-    GROUP = "group"
+    SING = "single"
+    GRO = "group"
 
 
 class Node(str, Enum):
