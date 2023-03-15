@@ -9,6 +9,9 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
+  [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
+
 ### Breaking changes
 
 ### Deprecations
@@ -16,3 +19,6 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- Fix bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
+  [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
