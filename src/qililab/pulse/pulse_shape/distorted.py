@@ -1,4 +1,4 @@
-"""Rectangular pulse shape."""
+"""Distorted pulse shape."""
 from dataclasses import dataclass
 
 import numpy as np
@@ -37,6 +37,7 @@ class Distorted(PulseShape):
         
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr))
+        #norm = a[0]**(duration / resolution) * b[0]**(duration / resolution) 
         ycorr = ycorr/norm
 
         return ycorr
