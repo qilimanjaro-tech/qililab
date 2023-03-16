@@ -16,8 +16,8 @@ class VectorNetworkAnalyzerDriver(Device):
 
     name: str
     address: str
-    avg_state: str
-    avg_count: str
+    avg_state: str = "False"
+    avg_count: str = "1"
     timeout: float = DEFAULT_TIMEOUT
     driver: pyvisa.Resource = field(init=False)
 
@@ -40,7 +40,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""
-        return self.driver.write(f"{command} {arg} *WAI")  # type: ignore
+        return self.driver.write(f"{command} {arg}")  # type: ignore
 
     def output(self, arg="?"):
         """Turns RF output power on/off
@@ -137,7 +137,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.send_command(f"SENS{channel}:BWID", bandwidth)
 
     def get_freqs(self):
-        """Retrun freqpoints"""
+        """Return freqpoints"""
         return np.array(self.driver.query_binary_values("SENS:X?"))
 
     def scattering_parameter(self, par: str = "?", trace: int = 1):
@@ -277,7 +277,10 @@ class VectorNetworkAnalyzerDriver(Device):
         return False
 
     def read_trace(self):
-        """Return trace data"""
+        """
+        Return trace data.
+        It already releases the VNA after finishing the required number of averages.
+        """
         self.pre_measurement()
         self.start_measurement()
         if self.wait_until_ready():

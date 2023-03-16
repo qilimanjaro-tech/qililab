@@ -352,6 +352,14 @@ class VectorNetworkAnalyzer(Instrument):
         example input: time = '100E-9' for 100ns"""
         self.device.electrical_delay(etime=time)
 
+    def average_clear(self, channel=1):
+        """clears the average buffer"""
+        self.device.average_clear(channel=1)
+
+    def get_frequencies(self):
+        """return freqpoints"""
+        return self.device.get_freqs()
+
     def get_data(self):
         """get data from device"""
         return self.device.get_data()
