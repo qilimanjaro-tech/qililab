@@ -16,7 +16,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     name: str
     address: str
-    avg_state: str = "False"
+    avg_state: bool = False
     avg_count: str = "1"
     timeout: float = DEFAULT_TIMEOUT
     driver: pyvisa.Resource = field(init=False)
