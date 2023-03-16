@@ -30,6 +30,7 @@ class Experiment:
     results: Results
     results_path: Path
     _plot: LivePlot
+    _remote_id: int
 
     def __init__(
         self,
@@ -42,12 +43,11 @@ class Experiment:
         self.circuits = circuits or []
         self.pulse_schedules = pulse_schedules or []
         self.options = options
-        self._remote_id = None  # id of the experiment saved in the database
 
     def connect(self):
         """Connects to the instruments and blocks the device."""
         self.platform.connect(
-            connections=self.options.connection,
+            connection=self.options.connection,
             device_id=self.options.device_id,
             manual_override=self.options.remote_device_manual_override,
         )
@@ -134,7 +134,7 @@ class Experiment:
             ValueError: if connection is not specified
         """
         if self.options.connection is None:
-            raise ValueError("Cannot save experiment and results to the database when connection is not specified.")
+            return
 
         logger.debug("Sending experiment and results to remote database.")
         self._remote_id = self.options.connection.save_experiment(

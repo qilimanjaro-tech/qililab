@@ -25,7 +25,9 @@ class TestExperiment:
 
     def test_execution_attribute_instance(self, experiment: Experiment):
         """Test execution attribute instance."""
-        assert isinstance(experiment._execution, Execution)  # pylint: disable=protected-access
+        assert not hasattr(experiment, "execution")
+        experiment.build_execution()
+        assert isinstance(experiment.execution, Execution)
 
     def test_options_property(self, experiment: Experiment):
         """Test options property."""
@@ -66,7 +68,8 @@ class TestExperiment:
         assert isinstance(experiment_2, Experiment)
 
     def test_draw_method(self, experiment_all_platforms: Experiment):
-        """Test draw metho."""
+        """Test draw method."""
+        experiment_all_platforms.build_execution()
         experiment_all_platforms.draw()
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
@@ -79,6 +82,7 @@ class TestExperiment:
         circuit = Circuit(1)
         circuit.add(M(0))
         experiment = Experiment(circuits=[circuit], platform=platform)
+        experiment.build_execution()
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
@@ -171,8 +175,8 @@ class TestExperiment:
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.execution.execution_preparation.open")
-@patch("qililab.utils.results_data_management.os.makedirs")
+@patch("qililab.experiment.prepare_results.open")
+@patch("qililab.experiment.prepare_results.os.makedirs")
 @patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
 @patch("qililab.execution.execution_manager.yaml.safe_dump")
 @patch("qililab.execution.execution_manager.open")

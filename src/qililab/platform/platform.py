@@ -21,9 +21,6 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    settings: RuncardSchema.PlatformSettings
-    schema: Schema
-
     def __init__(self, runcard_schema: RuncardSchema):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
@@ -48,7 +45,7 @@ class Platform:
             self.turn_on_instruments()
         self.set_initial_setup()
 
-    def connect(self, connection: API, device_id: int, manual_override=False):
+    def connect(self, connection: API | None = None, device_id: int | None = None, manual_override=False):
         """Blocks the given device and connects to the instruments.
 
         Args:
@@ -61,7 +58,7 @@ class Platform:
             logger.info("Already connected to the instruments")
             return
 
-        if not manual_override:
+        if connection is not None and not manual_override:
             connection.block_device_id(device_id=device_id)
 
         self.instrument_controllers.connect()
@@ -95,7 +92,9 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(self, connection: API, device_id: int, automatic_turn_off_instruments: bool = False):
+    def disconnect(
+        self, connection: API | None = None, device_id: int | None = None, automatic_turn_off_instruments: bool = False
+    ):
         """Close connection to the instrument controllers."""
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
@@ -103,7 +102,8 @@ class Platform:
         if automatic_turn_off_instruments:
             self.turn_off_instruments()
         self.instrument_controllers.disconnect()
-        connection.release_device(device_id=device_id)
+        if connection is not None:
+            connection.release_device(device_id=device_id)
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -117,7 +117,7 @@ class Platform:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if alias is not None:
-            if alias == [Category.PLATFORM.value]:
+            if alias == Category.PLATFORM.value:
                 return self.settings
             if alias in self.gate_names:
                 return self.settings.get_gate(name=alias)
@@ -128,9 +128,10 @@ class Platform:
         if element is None:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
-            element = self.chip.get_node_from_alias(alias=alias)
-        if element is None:
-            raise ValueError(f"Could not find element with alias {alias}.")
+            try:
+                element = self.chip.get_node_from_alias(alias=alias)
+            except ValueError as error:
+                raise ValueError(f"Could not find element with alias {alias}.") from error
         return element
 
     def get_bus(self, port: int):

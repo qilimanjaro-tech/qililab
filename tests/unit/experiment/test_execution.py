@@ -7,7 +7,6 @@ import pytest
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.experiment import Experiment
-from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.result.results import Results
 
 from .aux_methods import mock_instruments
@@ -17,16 +16,16 @@ from .aux_methods import mock_instruments
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.execution.execution_preparation.yaml.safe_dump")
+@patch("qililab.experiment.prepare_results.yaml.safe_dump")
 @patch("qililab.execution.execution_manager.open")
-@patch("qililab.execution.execution_preparation.open")
-@patch("qililab.utils.results_data_management.os.makedirs")
+@patch("qililab.experiment.prepare_results.open")
+@patch("qililab.experiment.prepare_results.os.makedirs")
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
     """Unit tests checking the execution of a platform with instruments."""
 
-    @patch("qililab.remote_connection.remote_api.RemoteAPI.connection")
+    @patch("qililab.typings.experiment.ExperimentOptions.connection")
     def test_execute_with_remote_save(
         self,
         mocked_remote_connection: MagicMock,
@@ -52,12 +51,12 @@ class TestExecution:
         nested_experiment.options.remote_save = True
         nested_experiment.options.name = "TEST"
         nested_experiment.options.description = "TEST desc"
-        nested_experiment._remote_api = RemoteAPI(connection=mocked_remote_connection, device_id=0)
+        nested_experiment.options.connection = mocked_remote_connection
         nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
 
         mocked_remote_connection.save_experiment.assert_called()
-        assert nested_experiment._remote_saved_experiment_id == saved_experiment_id
+        assert nested_experiment._remote_id == saved_experiment_id
 
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
