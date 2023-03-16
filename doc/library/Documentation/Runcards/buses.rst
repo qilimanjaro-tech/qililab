@@ -1,12 +1,15 @@
 Buses
 +++++++++++++++++++++++++
-Describes **a line** with all required equipment necessary to communicate from the measurement **PC to a target** (Qubit, Resonator or Coupler) **via a chip port**.
+Describes an abstraction of **a physical line** with all required equipment necessary to communicate from the measurement **PC to a target** (Qubit, Resonator or Coupler) **via a chip port**.
 
-Each specific Bus type has only one specific **System Control** type
+Each bus is a collection of instuments connected to a given port and stores the schedule of pulses that will be send to a port.
+Each specific Bus type has only one specific **System Control** type.
+
+There are two main groups in regard to the nature of the bus:
 
 Time Domain
 **************
-This type of buses uses pulses uploaded to an **AWG** to run an experiment. There are the following types:
+These type of buses, are **sequencies** of pusles in contrast to the :ref:`continous buses <cont>`, time domain must be time aware as they have to be able to generate a sequence of an specific order and timing.
 
 Baseband Bus
 ---------------
@@ -70,9 +73,11 @@ The system control contains an **AWG**, a **Signal Generator** and an **ADC**
     signal_generator: rs_1
     port: 100
 
+.. _cont:
+
 Continous
 ***********
-No pulses required, just the system control is turned on and setup with the desired parameters.
+This type of buses doesn't require any pulse sequence, just the system control is turned on and setup with the desired parameters. There is no time awareness it is always on.
 
 Current bias Bus
 --------------------
@@ -104,6 +109,7 @@ The system control contains a **VNA**
 
 Simulated
 *****************
+Only ment for simulation
 ::
 
   - id_: 0
