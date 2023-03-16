@@ -13,14 +13,16 @@ Baseband Bus
 The system control contains an **AWG** and a **Current Source**
 
 Control Bus
----------
+-------------
 The system control contains an **AWG** and a **Signal Generator**
 |
 
 .. image:: ../../img/control_bus.png
     :align: center
 
+
 |
+
 ::
 
   - id_: 5
@@ -40,14 +42,16 @@ The system control contains an **AWG** and a **Signal Generator**
     port: 12
 
 Readout Bus
----------
+---------------
 The system control contains an **AWG**, a **Signal Generator** and an **ADC**
 |
 
 .. image:: ../../img/readout_bus.png
     :align: center
 
+
 |
+
 ::
 
   - id_: 1
