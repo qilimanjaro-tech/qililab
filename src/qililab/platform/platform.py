@@ -7,7 +7,6 @@ from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
 from qililab.typings.yaml_type import yaml
@@ -28,7 +27,6 @@ class Platform:
     def __init__(self, runcard_schema: RuncardSchema):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
-        self._remote_api: RemoteAPI | None = None
         self._connected_to_instruments: bool = False
         self._initial_setup_applied: bool = False
         self._instruments_turned_on: bool = False
@@ -50,23 +48,22 @@ class Platform:
             self.turn_on_instruments()
         self.set_initial_setup()
 
-    def connect(
-        self,
-        connection: API | None = None,
-        device_id: int | None = None,
-        manual_override: bool = False,
-    ):
-        """Connect to the instrument controllers."""
+    def connect(self, connection: API, device_id: int, manual_override=False):
+        """Blocks the given device and connects to the instruments.
+
+        Args:
+            connection (API): qiboconnection's ``API`` class
+            device_id (int): id of the device
+            manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
+                current execution. Defaults to False.
+        """
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
             return
 
-        self._remote_api = RemoteAPI(
-            connection=connection,
-            device_id=device_id,
-            manual_override=manual_override,
-        )
-        self._remote_api.block_remote_device()
+        if not manual_override:
+            connection.block_device_id(device_id=device_id)
+
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
@@ -98,7 +95,7 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(self, automatic_turn_off_instruments: bool = False):
+    def disconnect(self, connection: API, device_id: int, automatic_turn_off_instruments: bool = False):
         """Close connection to the instrument controllers."""
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
@@ -106,8 +103,7 @@ class Platform:
         if automatic_turn_off_instruments:
             self.turn_off_instruments()
         self.instrument_controllers.disconnect()
-        if self._remote_api is not None:
-            self._remote_api.release_remote_device()
+        connection.release_device(device_id=device_id)
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -120,8 +116,11 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names):
-            return self.settings
+        if alias is not None:
+            if alias == [Category.PLATFORM.value]:
+                return self.settings
+            if alias in self.gate_names:
+                return self.settings.get_gate(name=alias)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -268,11 +267,6 @@ class Platform:
             InstrumentControllers: List of all instrument controllers.
         """
         return self.schema.instrument_controllers
-
-    @property
-    def remote_api(self):
-        """Platform 'remote_api' property."""
-        return self._remote_api
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

@@ -5,11 +5,10 @@ from itertools import count
 from typing import Callable, Iterator, List
 
 import numpy as np
-from qiboconnection.api import API as Connection
+from qiboconnection.api import API
 
 from qililab.config import logger
 from qililab.constants import DEFAULT_PLOT_Y_LABEL
-from qililab.remote_connection import RemoteAPI
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import (
@@ -22,7 +21,7 @@ from qililab.utils.util_loops import (
 class LivePlot:
     """Plot class."""
 
-    remote_api: RemoteAPI
+    connection: API
     num_schedules: int
     loops: List[Loop] | None = None
     plot_id: int = field(init=False)
@@ -96,7 +95,7 @@ class LivePlot:
             x_label (str): Label of the x axis.
             y_label (str): Label of the y axis.
         """
-        return self.connection().create_liveplot(
+        return self.connection.create_liveplot(
             title=title,
             x_label=self.x_label,
             y_label=self.y_label,
@@ -115,12 +114,12 @@ class LivePlot:
         """
         if self.plot_type in [LivePlotTypes.SCATTER, LivePlotTypes.LINES]:
             x_value = next(self.x_iterator_ranges)
-            self.connection().send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
+            self.connection.send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
             return
         if self.plot_type == LivePlotTypes.HEATMAP:
             x_value = next(self.x_iterator_ranges)
             y_value = next(self.y_iterator_ranges)
-            self.connection().send_plot_points(
+            self.connection.send_plot_points(
                 plot_id=self.plot_id,
                 x=float(x_value),
                 y=float(y_value),
@@ -218,11 +217,6 @@ class LivePlot:
                 minimum_outer_loop_range_length = len(loop.outer_loop_range)
                 index += 1
         return self.label(loop=self.loops[index].loops[-1])
-
-    @CheckRemoteApiInitialized
-    def connection(self) -> Connection:
-        """Return the Remote API Connection if it is created"""
-        return self.remote_api.connection
 
     def label(self, loop: Loop) -> str:
         """Return plot label from loop object.

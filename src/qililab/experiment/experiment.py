@@ -1,7 +1,5 @@
 """ Experiment class."""
-import copy
 import itertools
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple
 
@@ -11,281 +9,227 @@ from tqdm.auto import tqdm
 from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import EXPERIMENT, RUNCARD
-from qililab.execution import EXECUTION_BUILDER, Execution, ExecutionPreparation
+from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
-from qililab.remote_connection import RemoteAPI
 from qililab.result.result import Result
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Instrument, Parameter
-from qililab.typings.execution import ExecutionOptions
+from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
+from .prepare_results import prepare_results
 
-@dataclass
+
 class Experiment:
     """Experiment class"""
 
-    platform: Platform
-    circuits: list[Circuit] = field(default_factory=list)
-    pulse_schedules: list[PulseSchedule] = field(default_factory=list)
-    options: ExperimentOptions = field(default=ExperimentOptions())
-    _results_path: Path = field(init=False)
-    _plot: LivePlot = field(init=False)
-    _results: Results = field(init=False)
-    _execution: Execution = field(init=False)
-    _execution_preparation: ExecutionPreparation = field(init=False)
-    _schedules: list[PulseSchedule] = field(init=False)
-    _execution_ready: bool = field(init=False)
-    _remote_saved_experiment_id: int = field(init=False)
+    execution: Execution
+    results: Results
+    results_path: Path
+    _plot: LivePlot
 
-    def __post_init__(self):
-        """prepares the Experiment class"""
-        self._remote_api = (
-            RemoteAPI(
-                connection=self.options.connection,
-                device_id=self.options.device_id,
-                manual_override=self.options.remote_device_manual_override,
-            )
-            if self.platform.remote_api is None
-            else self.platform.remote_api
+    def __init__(
+        self,
+        platform: Platform,
+        circuits: List[Circuit] | None = None,
+        pulse_schedules: List[PulseSchedule] | None = None,
+        options: ExperimentOptions = ExperimentOptions(),
+    ):
+        self.platform = platform
+        self.circuits = circuits or []
+        self.pulse_schedules = pulse_schedules or []
+        self.options = options
+        self._remote_id = None  # id of the experiment saved in the database
+
+    def connect(self):
+        """Connects to the instruments and blocks the device."""
+        self.platform.connect(
+            connections=self.options.connection,
+            device_id=self.options.device_id,
+            manual_override=self.options.remote_device_manual_override,
         )
-        self._execution, self._schedules = self._build_execution(
-            circuits=self.circuits,
+
+    def initial_setup(self):
+        """Configure each instrument with the values defined in the runcard."""
+        self.platform.set_initial_setup()
+
+    def build_execution(self):
+        """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class and
+        generates the live plotting.
+
+        Args:
+            sequence (Circuit | PulseSequence): Sequence of gates/pulses.
+            options (ExecutionOptions): Execution options
+        """
+        # Translate circuits into pulses if needed
+        if self.circuits:
+            translator = CircuitToPulses(settings=self.platform.settings)
+            self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
+        # Build ``Execution`` class
+        self.execution = EXECUTION_BUILDER.build(
+            platform=self.platform,
             pulse_schedules=self.pulse_schedules,
             execution_options=self.options.execution_options,
         )
-        self._execution_preparation = ExecutionPreparation(remote_api=self._remote_api, options=self.options)
-        self._execution_not_prepared()
-
-    @property
-    def software_average(self):
-        """Experiment 'software_average' property.
-        Returns:
-            int: settings.software_average.
-        """
-        return self.options.settings.software_average
-
-    @property
-    def hardware_average(self):
-        """Experiment 'hardware_average' property.
-        Returns:
-            int: settings.hardware_average.
-        """
-        return self.options.settings.hardware_average
-
-    @property
-    def repetition_duration(self):
-        """Experiment 'repetition_duration' property.
-        Returns:
-            int: settings.repetition_duration.
-        """
-        return self.options.settings.repetition_duration
-
-    @property
-    def execution_ready(self):
-        """checks if execution has already been prepared"""
-        return self._execution_ready
-
-    def _execution_not_prepared(self):
-        """Sets the execution state to not be prepared"""
-        self._execution_ready = False
-
-    def execution_finished(self):
-        """Finishes the execution"""
-        self._execution_not_prepared()
-        self._remote_api.release_remote_device()
-
-    def prepare_execution_and_load_schedule(self, schedule_index_to_load: int = 0) -> None:
-        """Prepares the experiment with the following steps:
-          - Create results data files and Results object
-          - Serializes the Experiment information to a file
-          - Creates Live Plotting (if required)
-          - uploads the specified schedule to the AWGs (if buses admit that)
-
-        Args:
-            schedule_index_to_load (int, optional): specific schedule to load. Defaults to 0.
-        """
-        (
-            self._plot,
-            self._results,
-            self._results_path,
-            self._execution_ready,
-        ) = self._execution_preparation.prepare_execution_and_load_schedule(
-            execution=self._execution,
-            experiment_serialized=self.to_dict(),
-            schedule_index_to_load=schedule_index_to_load,
+        # Generate live plotting
+        self._plot = LivePlot(
+            connection=self.options.connection,
+            loops=self.options.loops,
+            plot_y_label=self.options.plot_y_label,
+            num_schedules=self.execution.num_schedules,
+            title=self.options.name,
         )
+        # Prepares the results
+        self.results, self.results_path = prepare_results(self.options, self.execution.num_schedules, self.to_dict())
+
+    def turn_on_instruments(self):
+        """Turn on instruments."""
+        self.execution.turn_on_instruments()
+
+    def turn_off_instruments(self):
+        """Turn off instruments."""
+        self.execution.turn_off_instruments()
+
+    def disconnect(self):
+        """Disconnects from the instruments and releases the device."""
+        self.platform.disconnect(self.options.connection, self.options.device_id)
 
     def execute(self) -> Results:
-        """Run execution."""
-        if not self.execution_ready:
-            (
-                self._plot,
-                self._results,
-                self._results_path,
-                self._execution_ready,
-            ) = self._execution_preparation.prepare_execution(
-                num_schedules=self._execution.num_schedules, experiment_serialized=self.to_dict()
-            )
+        """Runs the whole execution pipeline, which includes the following steps:
 
-        with self._execution:
-            self._execute_all_circuits_or_schedules()
+            * Connect to the instruments.
+            * Apply settings of the runcard to the instruments.
+            * Translate circuit into pulses and create the ``Execution`` class.
+            * Turn on instruments.
+            * Create the results files & class and connect to live plotting.
+            * Runs the experiment.
+            * Turn off instruments.
+            * Disconnect from the instruments.
+            * Save experiment and results remotely if asked.
+            * Return results.
+
+        Returns:
+            Results: execution results
+        """
+        self.connect()
+        self.initial_setup()
+        self.build_execution()
+        self.turn_on_instruments()
+        self.run()
+        self.turn_off_instruments()
+        self.disconnect()
 
         if self.options.remote_save:
             self.remote_save_experiment()
 
-        return self._results
+        return self.results
 
-    def remote_save_experiment(self):
-        """sends the remote save_experiment request using the provided remote connection"""
-        if self._remote_api.connection is not None:
-            logger.debug("Sending experiment and results to remote database.")
-            self._remote_saved_experiment_id = self._remote_api.connection.save_experiment(
-                name=self.options.name,
-                description=self.options.description,
-                experiment_dict=self.to_dict(),
-                results_dict=self._results.to_dict(),
-                device_id=self._remote_api.device_id,
-                user_id=self._remote_api.connection.user_id,
-                qililab_version=__version__,
-                favourite=False,
-            )
-            return self._remote_saved_experiment_id
+    def remote_save_experiment(self) -> None:
+        """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
 
-    def _execute_all_circuits_or_schedules(self):
-        """runs the circuits (or schedules) passed as input times software average"""
-        try:
-            disable = self._execution.num_schedules == 1
-            for idx, _ in itertools.product(
-                tqdm(range(self._execution.num_schedules), desc="Sequences", leave=False, disable=disable),
-                range(self.software_average),
-            ):
-                self._execute_recursive_loops(
-                    results=self._results,
-                    schedule_index_to_load=idx,
-                    loops=self.options.loops,
-                    path=self._results_path,
-                    plot=self._plot,
-                )
-            self.execution_finished()
+        Raises:
+            ValueError: if connection is not specified
+        """
+        if self.options.connection is None:
+            raise ValueError("Cannot save experiment and results to the database when connection is not specified.")
 
-        except (
-            AttributeError,
-            ValueError,
-            KeyboardInterrupt,
-            KeyError,
-            TimeoutError,
-            TypeError,
-        ) as error:  # pylint: disable=broad-except
-            self.execution_finished()
-            logger.error("%s: %s", type(error).__name__, str(error))
-            raise error
+        logger.debug("Sending experiment and results to remote database.")
+        self._remote_id = self.options.connection.save_experiment(
+            name=self.options.name,
+            description=self.options.description,
+            experiment_dict=self.to_dict(),
+            results_dict=self.results.to_dict(),
+            device_id=self.options.device_id,
+            user_id=self.options.connection.user_id,
+            qililab_version=__version__,
+            favorite=False,
+        )
 
-    def _execute_recursive_loops(
-        self,
-        results: Results,
-        schedule_index_to_load: int,
-        loops: List[Loop] | None,
-        path: Path,
-        plot: LivePlot,
-        depth: int = 0,
-    ):
+    def run(self):
+        """This method is responsible for:
+        * Looping over all the given circuits, loops and/or software averages. And for each loop:
+            * Generating and uploading the program corresponding to the circuit.
+            * Executing the circuit.
+            * Saving the results to the ``results.yml`` file.
+            * Sending the data to the live plotting (if needed).
+            * Save the results to the ``results`` attribute.
+        """
+        num_schedules = self.execution.num_schedules
+        for idx, _ in itertools.product(
+            tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
+            range(self.software_average),
+        ):
+            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+
+    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
-            loop (Loop | None): Loop class containing the info of a Platform element and one of its parameters and
-            the parameter values to loop over.
-            results (Results): Results class containing all the execution results.
-            path (Path): Path where the data is stored.
-            plot (LivePlot): LivePlot class used for live plotting.
-            depth (int): Depth of the recursive loop. Defaults to 0.
+            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            parameter values to loop over.
+            idx (int): index of the loop
+            depth (int): depth of the recursive loop.
         """
-        if loops is None or len(loops) <= 0:
-            result = self._generate_program_upload_and_execute(
-                schedule_index_to_load=schedule_index_to_load, path=path, plot=plot
-            )
+        if loops is None or len(loops) == 0:
+            result = self._generate_program_upload_and_execute(idx=idx)
             if result is not None:
-                results.add(result)
+                self.results.add(result)
             return
 
-        self._process_loops(
-            results=results,
-            schedule_index_to_load=schedule_index_to_load,
-            loops=loops,
-            depth=depth,
-            path=path,
-            plot=plot,
-        )
+        self._process_loops(loops=loops, idx=idx, depth=depth)
 
-    def _process_loops(
-        self, results: Results, schedule_index_to_load: int, loops: List[Loop], depth: int, path: Path, plot: LivePlot
-    ):
+    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
+        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
+        executes it and returns the results.
+
+        Args:
+            idx (int): loop index to execute
+
+        Returns:
+            Result: Result object for one program execution.
+        """
+        self.execution.generate_program_and_upload(
+            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, path=self.results_path
+        )
+        return self.execution.run(plot=self._plot, path=self.results_path)
+
+    def _process_loops(self, loops: List[Loop], idx: int, depth: int):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
 
         Args:
-            results (Results): Results class containing all the execution results.
-            loops (List[Loop]): Loop class containing the info of one or more Platform element and the
+            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            depth (int): Depth of the recursive loop.
-            path (Path): Path where the data is stored.
-            plot (LivePlot): LivePlot class used for live plotting.
+            idx (int): index of the loop
+            depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
 
-        with tqdm(total=self.get_minimum_length_loop(loops=loops), position=depth, leave=is_the_top_loop) as pbar:
+        with tqdm(total=min(len(loop.range) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
             loop_ranges = [loop.range for loop in loops]
 
             for values in zip(*loop_ranges):
                 self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
-                self._update_parameters_from_loops_filtering_external_parameters(values=values, loops=loops)
-
-                self._execute_recursive_loops(
-                    schedule_index_to_load=schedule_index_to_load,
-                    loops=self._create_loops_from_inner_loops(loops=loops),
-                    results=results,
-                    path=path,
-                    plot=plot,
-                    depth=depth + 1,
+                filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
+                    values=values,
+                    loops=loops,
                 )
+                self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
+                inner_loops = list(filter(None, [loop.loop for loop in loops]))
+                self._execute_recursive_loops(idx=idx, loops=inner_loops, depth=depth + 1)
 
     def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
         """Updates TQDM bar"""
-        description = [self._set_parameter_text_and_value(value, loop) for value, loop in zip(values, loops)]
+        description = []
+        for value, loop in zip(values, loops):
+            parameter_text = (
+                loop.alias if loop.parameter == Parameter.EXTERNAL and loop.alias is not None else loop.parameter.value
+            )
+            description.append(f"{parameter_text}: {value}")
         pbar.set_description(" | ".join(description))
         pbar.update()
-
-    def _set_parameter_text_and_value(self, value: float, loop: Loop):
-        """set parameter text and value to print on terminal TQDM iterations"""
-        parameter_text = (
-            loop.alias if loop.parameter == Parameter.EXTERNAL and loop.alias is not None else loop.parameter.value
-        )
-        return f"{parameter_text}: {value}"
-
-    def get_minimum_length_loop(self, loops: List[Loop]):
-        """return the minimum length from all loops"""
-        return min(len(loop.range) for loop in loops)
-
-    def _create_loops_from_inner_loops(self, loops: List[Loop]):
-        """create sequence of loops from inner loops (if exist)"""
-        return list(filter(None, [loop.loop for loop in loops]))
-
-    def _update_parameters_from_loops_filtering_external_parameters(
-        self,
-        values: Tuple[float],
-        loops: List[Loop],
-    ):
-        """Update parameters from loops filtering those loops that relates to external variables
-        not associated to neither platform, instrument, nor gates settings
-        """
-        filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
-            values=values,
-            loops=loops,
-        )
-        self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
 
     def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
         """filter loops and values removing those with external parameters"""
@@ -294,73 +238,24 @@ class Experiment:
         filtered_loops = loops.copy()
         filtered_values = list(values).copy()
         for idx, loop in enumerate(filtered_loops):
-            filtered_loops, filtered_values = self._filter_loop_value_when_parameters_is_external(
-                filtered_loops=filtered_loops,
-                filtered_values=filtered_values,
-                idx=idx,
-                loop=loop,
-            )
+            if loop.parameter == Parameter.EXTERNAL:
+                filtered_loops.pop(idx)
+                filtered_values.pop(idx)
+
         return filtered_loops, filtered_values
 
-    def _filter_loop_value_when_parameters_is_external(
-        self, filtered_loops: List[Loop], filtered_values: List[float], idx: int, loop: Loop
-    ):
-        """filter loop value when parameters are external"""
-        if loop.parameter == Parameter.EXTERNAL:
-            filtered_loops.pop(idx)
-            filtered_values.pop(idx)
-        return filtered_loops, filtered_values
-
-    def _update_parameters_from_loops(
-        self,
-        values: List[float],
-        loops: List[Loop],
-    ):
+    def _update_parameters_from_loops(self, values: List[float], loops: List[Loop]):
         """update parameters from loops"""
-        elements = self._get_platform_elements_from_loops(loops=loops)
+        elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 
         for value, loop, element in zip(values, loops, elements):
-            self._update_parameter_from_loop(value=value, loop=loop, element=element)
-
-    def _update_parameter_from_loop(
-        self, value: float, loop: Loop, element: RuncardSchema.PlatformSettings | Node | Instrument
-    ):
-        """update parameter from loop"""
-        self.set_parameter(
-            element=element,
-            alias=loop.alias,
-            parameter=loop.parameter,
-            value=value,
-            channel_id=loop.channel_id,
-        )
-
-    def _get_platform_elements_from_loops(self, loops: List[Loop]):
-        """get platform elements from loops"""
-        return [self._get_platform_element_from_one_loop(loop=loop) for loop in loops]
-
-    def _get_platform_element_from_one_loop(self, loop: Loop):
-        """get platform element from one loop"""
-        return self.platform.get_element(alias=loop.alias)
-
-    def _generate_program_upload_and_execute(
-        self, schedule_index_to_load: int, path: Path, plot: LivePlot | None = None
-    ) -> Result | None:
-        """Execute one pulse schedule.
-
-        Args:
-            path (Path): Path to data folder.
-            plot (LivePlot | None): Live plot
-
-        Returns:
-            Result: Result object for one program execution.
-        """
-        self._execution.generate_program_and_upload(
-            schedule_index_to_load=schedule_index_to_load,
-            nshots=self.hardware_average,
-            repetition_duration=self.repetition_duration,
-            path=path,
-        )
-        return self._execution.run(plot=plot, path=path)
+            self.set_parameter(
+                element=element,
+                alias=loop.alias,
+                parameter=loop.parameter,
+                value=value,
+                channel_id=loop.channel_id,
+            )
 
     def set_parameter(
         self,
@@ -373,10 +268,10 @@ class Experiment:
         """Set parameter of a platform element.
 
         Args:
-            category (str): Category of the element.
-            id_ (int): ID of the element.
-            parameter (str): Name of the parameter to change.
-            value (float): New value.
+            parameter (Parameter): name of the parameter to change
+            value (float): new value
+            alias (str): alias of the element that contains the given parameter
+            channel_id (int | None): channel id
         """
         if element is None:
             self.platform.set_parameter(
@@ -390,13 +285,6 @@ class Experiment:
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
-        if alias in ([Category.PLATFORM.value] + self.platform.gate_names):
-            self._execution, self._schedules = self._build_execution(
-                circuits=self.circuits,
-                pulse_schedules=self.pulse_schedules,
-                execution_options=self.options.execution_options,
-            )
-
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
 
@@ -406,25 +294,7 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        return self._execution.draw(resolution=resolution, idx=idx)
-
-    def _build_execution(
-        self, circuits: list[Circuit], pulse_schedules: list[PulseSchedule], execution_options: ExecutionOptions
-    ) -> Tuple[Execution, List[PulseSchedule]]:
-        """Build Execution class.
-
-        Args:
-            sequence (Circuit | PulseSequence): Sequence of gates/pulses.
-            options (ExecutionOptions): Execution options
-        """
-        pulse_schedules_input = copy.deepcopy(pulse_schedules)
-        if circuits is not None and circuits:
-            translator = CircuitToPulses(settings=self.platform.settings)
-            pulse_schedules_input += translator.translate(circuits=circuits, chip=self.platform.chip)
-        execution = EXECUTION_BUILDER.build(
-            platform=self.platform, pulse_schedules=pulse_schedules_input, execution_options=execution_options
-        )
-        return execution, pulse_schedules
+        return self.execution.draw(resolution=resolution, idx=idx)
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -475,3 +345,27 @@ class Experiment:
             + f"{str(self.pulse_schedules)}\n"
             + f"{str(self.options)}"
         )
+
+    @property
+    def software_average(self):
+        """Experiment 'software_average' property.
+        Returns:
+            int: settings.software_average.
+        """
+        return self.options.settings.software_average
+
+    @property
+    def hardware_average(self):
+        """Experiment 'hardware_average' property.
+        Returns:
+            int: settings.hardware_average.
+        """
+        return self.options.settings.hardware_average
+
+    @property
+    def repetition_duration(self):
+        """Experiment 'repetition_duration' property.
+        Returns:
+            int: settings.repetition_duration.
+        """
+        return self.options.settings.repetition_duration
