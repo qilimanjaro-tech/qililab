@@ -57,6 +57,7 @@ class Galadriel:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
+        RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
@@ -361,6 +362,7 @@ class Galadriel:
 
     chip = {
         RUNCARD.ID: 0,
+        RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
         Node.NODES.value: [
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
