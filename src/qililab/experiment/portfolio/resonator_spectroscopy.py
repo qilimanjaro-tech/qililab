@@ -13,6 +13,7 @@ class ResonatorSpectroscopy:
     """Class used to run a resonator spectroscopy experiment on the bus with the given alias."""
 
     def __init__(self, platform: Platform, bus_alias: str, connection: API | None = None, device_id=9):
+        # TODO: Should we make a copy of the platform to avoid changing parameters of other experiments?
         self.platform = platform
         self.bus_alias = bus_alias
         self.connection = connection
@@ -29,9 +30,50 @@ class ResonatorSpectroscopy:
         """Configure each instrument with the values defined in the runcard."""
         self.platform.set_initial_setup()
 
-    def execute(self, alias: str, loop_options: LoopOptions, repetition_duration=10000, hardware_average=10000):
+    def bus_setup(self, parameters: dict) -> None:
+        """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
+
+            * Parameter.GAIN_PATH0
+            * Parameter.GAIN_PATH1
+            * Parameter.IF
+            * Parameter.INTEGRATION_LENGTH
+            * Parameter.SCOPE_STORE_ENABLED
+
+        Args:
+            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+
+        Raises:
+            ValueError: if a given parameter could not be set
+        """
+        bus = self.platform.get_bus_by_alias(self.bus_alias)
+
+        for parameter, value in parameters.items():
+            bus.set_parameter(parameter=parameter, value=value)
+
+    def measurement_setup(self, parameters: dict) -> None:
+        """Method used to change parameters of the measurement gate used in the experiment. Some possible gate
+        parameters are:
+
+            * Parameter.AMPLITUDE
+            * Parameter.DURATION
+            * Parameter.PHASE
+
+        Args:
+            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+
+        Raises:
+            ValueError: if a given parameter could not be set
+        """
+        for parameter, value in parameters.items():
+            self.platform.set_parameter(alias="M", parameter=parameter, value=value)
+
+    def generate_program_and_upload(self) -> None:
+        """This method generates the assembly program of the experiment and uploads it into the corresponding
+        instruments."""
+
+    def execute(self, loop_options: LoopOptions, repetition_duration=10000, hardware_average=10000):
         # Define loop
-        frequency_loop = Loop(parameter=Parameter.LO_FREQUENCY, alias=alias, options=loop_options)
+        frequency_loop = Loop(alias=self.bus_alias, parameter=Parameter.LO_FREQUENCY, options=loop_options)
 
         experiment_options = ExperimentOptions(
             name="Resonator Spectroscopy",
@@ -42,22 +84,4 @@ class ResonatorSpectroscopy:
         )
 
         experiment = Experiment(platform=self.platform, circuits=[self.circuit], options=experiment_options)
-        return experiment
-
-    def setup(self):
-        m_amplitude = 1.0
-        m_duration = 8000
-        qrm_gain = 1.0
-        qrm_if_frequency = 2e7
-        qrm_integration_length = 8000
-        qrm_scope_store_enabled = False
-
-        bus = self.platform.get_bus_by_alias(self.bus_alias)
-
-        self.platform.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=m_amplitude)
-        self.platform.set_parameter(alias="M", parameter=Parameter.DURATION, value=m_duration)
-        bus.set_parameter(parameter=Parameter.GAIN_PATH0, value=qrm_gain, channel_id=0)
-        bus.set_parameter(parameter=Parameter.GAIN_PATH1, value=qrm_gain, channel_id=0)
-        bus.set_parameter(parameter=Parameter.IF, value=qrm_if_frequency, channel_id=0)
-        bus.set_parameter(parameter=Parameter.INTEGRATION_LENGTH, value=qrm_integration_length)
-        bus.set_parameter(parameter=Parameter.SCOPE_STORE_ENABLED, value=qrm_scope_store_enabled, channel_id=0)
+        results = experiment.execute()
