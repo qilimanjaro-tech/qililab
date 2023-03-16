@@ -6,7 +6,7 @@ There are different types of instruments and some specs have to be determined vi
 Below there are some examples of the different instruments implemented in qililab.
 
 Rohde Schwarz
----------
+--------------
 ::
 
   - name: rohde_schwarz
