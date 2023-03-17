@@ -57,7 +57,7 @@ class VectorNetworkAnalyzerDriver(Device):
         return self.send_command(command=":OUTP", arg=arg)
 
     def stop(self):
-        """close an instrument."""
+        """Close an instrument."""
         self.output(arg="OFF")
 
     def electrical_delay(self, etime: str):  # MP 04/2017
@@ -71,9 +71,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
     def average_clear(self, channel=1):
-        """
-        Clears the average buffer
-        """
+        """Clears the average buffer."""
         self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
     def average_count(self, count: str, channel=1):
@@ -140,7 +138,7 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
-    def if_bandwidth(self, bandwidth, channel=1):
+    def if_bandwidth(self, bandwidth: str, channel=1):
         """
         Set Bandwidth
 
@@ -154,7 +152,7 @@ class VectorNetworkAnalyzerDriver(Device):
         return np.array(self.driver.query_binary_values("SENS:X?"))
 
     def scattering_parameter(self, par: str = "?", trace: int = 1):
-        """set scattering parameter"""
+        """Set scattering parameter."""
         if not isinstance(par, str):
             raise ValueError("PAREXC: Par must be a string")
         upper_par = par.upper()
@@ -164,14 +162,12 @@ class VectorNetworkAnalyzerDriver(Device):
         return self.send_command(f"CALC1:MEAS{trace}:PAR", scatter_param.value)
 
     def set_timeout(self, value: float):
-        """set timeout in mili seconds"""
+        """Set timeout in mili seconds."""
         self.timeout = value
         self.driver.timeout = self.timeout
 
     def get_trace(self, channel=1, trace=1):
-        """
-        Get the data of the current trace
-        """
+        """Get the data of the current trace."""
         self.driver.write("FORM:DATA REAL,32")
         self.driver.write("FORM:BORD SWAPPED")  # SWAPPED
         data = self.driver.query_binary_values(f"CALC{channel}:MEAS{trace}:DATA:SDAT?")
@@ -191,15 +187,13 @@ class VectorNetworkAnalyzerDriver(Device):
             raise ValueError("MODEEXC: Mode must be a string")
         lower_mode = mode.lower()
         sweep_mode = VNASweepModes(lower_mode)
-        return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.name)
+        self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.name)
 
     def get_sweep_mode(self, channel=1):
-        """
-        Return the current sweep mode
-        """
+        """Return the current sweep mode."""
         return str(self.driver.query(f":SENS{channel}:SWE:MODE?")).rstrip()
 
-    def ready(self):
+    def ready(self) -> bool:
         """
         This is a proxy function.
         Returns True if the VNA is on HOLD after finishing the required number of averages.
@@ -210,15 +204,11 @@ class VectorNetworkAnalyzerDriver(Device):
             return False
 
     def release(self):
-        """
-        Bring the VNA back to a mode where it can be easily used by the operator.
-        """
+        """Bring the VNA back to a mode where it can be easily used by the operator."""
         self.set_sweep_mode("cont")
 
     def average_state(self, state: bool, channel=1):
-        """
-        Set status of Average
-        """
+        """Set status of Average."""
         if state:
             self.avg_state = True
             self.send_command(f"SENS{channel}:AVER:STAT", "ON")
@@ -253,8 +243,8 @@ class VectorNetworkAnalyzerDriver(Device):
         self.average_clear()
         self.set_sweep_mode("group")
 
-    def wait_until_ready(self, period=0.25):
-        """Waiting function to wait until VNA is ready"""
+    def wait_until_ready(self, period=0.25) -> bool:
+        """Waiting function to wait until VNA is ready."""
         timelimit = time.time() + self.timeout
         while time.time() < timelimit:
             if self.ready():

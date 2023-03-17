@@ -178,7 +178,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'scattering_parameter' property.
 
         Returns:
-            float: settings.scattering_parameter.
+            str: settings.scattering_parameter.
         """
         return self.settings.scattering_parameter
 
@@ -268,7 +268,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'averaging_enabled' property.
 
         Returns:
-            float: settings.averaging_enabled.
+            bool: settings.averaging_enabled.
         """
         return self.settings.averaging_enabled
 
@@ -283,7 +283,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'number_averages' property.
 
         Returns:
-            float: settings.number_averages.
+            int: settings.number_averages.
         """
         return self.settings.number_averages
 
@@ -298,7 +298,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'trigger_mode' property.
 
         Returns:
-            float: settings.trigger_mode.
+            str: settings.trigger_mode.
         """
         return self.settings.trigger_mode
 
@@ -307,7 +307,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'number_points' property.
 
         Returns:
-            float: settings.number_points.
+            int: settings.number_points.
         """
         return self.settings.number_points
 
@@ -322,7 +322,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer'sweep_mode' property.
 
         Returns:
-            float: settings.sweep_mode.
+            str: settings.sweep_mode.
         """
         return self.settings.sweep_mode
 
@@ -387,11 +387,11 @@ class VectorNetworkAnalyzer(Instrument):
         self.device.stop()
 
     def send_command(self, command: str) -> str:
-        """send a command directly to the device"""
+        """Send a command directly to the device."""
         return self.device.send_command(command=command, arg="")
 
     def autoscale(self):
-        """autoscale"""
+        """Autoscale."""
         self.device.autoscale()
 
     def output(self, arg: str | int) -> str:
@@ -407,7 +407,7 @@ class VectorNetworkAnalyzer(Instrument):
         raise ValueError("valid argument type must be either str or int and only valid values are ON, OFF, 1, 0")
 
     def average_clear(self, channel=1):
-        """clears the average buffer"""
+        """Clears the average buffer."""
         self.device.average_clear(channel=channel)
 
     def get_frequencies(self):
@@ -422,15 +422,13 @@ class VectorNetworkAnalyzer(Instrument):
         return self.device.ready()
 
     def release(self):
-        """
-        Bring the VNA back to a mode where it can be easily used by the operator.
-        """
+        """Bring the VNA back to a mode where it can be easily used by the operator."""
         self.device.release()
 
     def read_tracedata(self):
-        """get data from device"""
+        """Get data from device."""
         return self.device.read_tracedata()
 
     def acquire_result(self):
-        """Convert the data received from the device to a Result object"""
+        """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.device.read_tracedata())
