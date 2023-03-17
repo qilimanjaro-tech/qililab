@@ -17,18 +17,6 @@ class Operation(ABC):
     multiplicity: OperationMultiplicity = field(init=False)
     parameters: Parameters = field(init=False, default_factory=dict)
 
-    # @property
-    # def name(self) -> str:
-    #     return self.name.value
-
-    # @property
-    # def multiplicity(self) -> OperationMultiplicity:
-    #     return self.multiplicity
-
-    # @property
-    # def parameters(self) -> Parameters:
-    #     return self.parameters
-
     @property
     def parameter_names(self) -> Tuple[str, ...]:
         return tuple(self.parameters.keys())

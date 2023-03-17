@@ -10,7 +10,10 @@ from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
 from qililab.circuit.operations import Operation
-from qililab.typings.enums import OperationMultiplicity
+from qililab.typings.enums import (
+    OperationMultiplicity,
+    OperationTimingsCalculationMethod,
+)
 
 
 @dataclass
@@ -27,7 +30,7 @@ class Circuit:
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
         if operation.multiplicity == OperationMultiplicity.PARALLEL:
             self._add_parallel_operation(qubits=qubits, operation=operation, alias=alias)
-        elif operation.multiplicity == OperationMultiplicity.MULTIPLEXED:
+        elif operation.multiplicity in [OperationMultiplicity.CONTROLLED, OperationMultiplicity.MULTIPLEXED]:
             self._add_multiplexed_operation(qubits=qubits, operation=operation, alias=alias)
 
     @property
@@ -97,8 +100,32 @@ class Circuit:
                     layer_index, last_operation = index, operation
         return layer_index, last_operation
 
-    def get_operation_layers(self) -> List[List[OperationNode]]:
-        return rx.layers(self.graph, [self.entry_node.index])[1:]
+    def get_operation_layers(
+        self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
+    ) -> List[List[OperationNode]]:
+        layers = rx.layers(self.graph, [self.entry_node.index])[1:]
+        if method == OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE:
+            return layers
+        else:
+            for qubit in range(self.num_qubits):
+                for index, layer in enumerate(layers):
+                    current_single_operations_on_qubit = [
+                        op_i
+                        for op_i, operation in enumerate(layer)
+                        if qubit in operation.qubits and len(operation.qubits) == 1
+                    ]
+                    if len(current_single_operations_on_qubit) > 1:
+                        raise Exception()
+                    if len(current_single_operations_on_qubit) == 0:
+                        continue
+                    if index == len(layers) - 1:
+                        continue
+                    next_layer_operations_on_qubit = [
+                        operation for operation in layers[index + 1] if qubit in operation.qubits
+                    ]
+                    if len(next_layer_operations_on_qubit) == 0:
+                        layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
+            return layers
 
     def draw(self, filename: str | None = None):
         def node_attr(node):
@@ -113,18 +140,18 @@ class Circuit:
                     if node.operation.has_parameters()
                     else ""
                 )
-                label = f"{node.operation.name}{parameters}: {qubits}"
+                timing = f"\n{node.timing.start} -> {node.timing.end}" if node.timing is not None else ""
+                label = f"{node.operation.name}{parameters}: {qubits}{timing}"
                 return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
         return graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)
 
-    def print(self):
-        layers = rx.layers(self.graph, [self.entry_node.index])
+    def print(self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE):
+        layers = self.get_operation_layers(method=method)
         for qubit in range(self.num_qubits):
             print(f"{qubit}:", end="")
-            for _, layer in enumerate(layers[1:]):
+            for _, layer in enumerate(layers):
                 operations_on_qubit = [operation for operation in layer if qubit in operation.qubits]
-                assert len(operations_on_qubit) <= 1
                 if len(operations_on_qubit) == 0:
                     print("----------", end="")
                 if len(operations_on_qubit) == 1:

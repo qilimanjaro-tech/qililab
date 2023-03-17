@@ -600,6 +600,7 @@ class OperationName(str, Enum):
     RXY = "Rxy"  # noqa: E741
     R180 = "R180"
     X = "X"
+    CPHASE = "CPhase"
     WAIT = "Wait"
     RESET = "Reset"
     MEASURE = "Measure"
@@ -609,3 +610,8 @@ class OperationName(str, Enum):
     GAUSSIAN = "Gaussian"
     DRAG = "DRAG"
     SQUARE = "SQUARE"
+
+
+class OperationTimingsCalculationMethod(str, Enum):
+    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
+    AS_LATE_AS_POSSIBLE = "as_late_as_possible"

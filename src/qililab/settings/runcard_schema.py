@@ -4,7 +4,12 @@ from typing import List, Literal
 
 from qililab.constants import PLATFORM
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Category, MasterGateSettingsName, Parameter
+from qililab.typings.enums import (
+    Category,
+    MasterGateSettingsName,
+    OperationTimingsCalculationMethod,
+    Parameter,
+)
 from qililab.utils import nested_dataclass
 
 
@@ -82,6 +87,22 @@ class RuncardSchema:
     class PlatformSettings(DDBBElement):
         """SettingsSchema class."""
 
+        @nested_dataclass
+        class OperationSettings:
+            """OperationSchema class"""
+
+            @dataclass
+            class PulseSettings:
+                """PulseSchema class"""
+
+                name: str
+                amplitude: float | Literal[MasterGateSettingsName.MASTER_AMPLITUDE_GATE]
+                duration: int | Literal[MasterGateSettingsName.MASTER_DURATION_GATE]
+                parameters: dict
+
+            name: str
+            pulse: PulseSettings
+
         @dataclass
         class GateSettings:
             """GatesSchema class."""
@@ -115,11 +136,39 @@ class RuncardSchema:
         delay_before_readout: int
         master_amplitude_gate: float
         master_duration_gate: int
+        timings_calculation_method: Literal[
+            OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE
+        ]
+        operations: List[OperationSettings]
         gates: List[GateSettings]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
             self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
+
+        def get_operation_settings(self, name: str) -> OperationSettings:
+            """Get OperationSettings by operation's name
+
+            Args:
+                name (str): Name of the operation
+
+            Raises:
+                ValueError: If no operation is found
+
+            Returns:
+                OperationSettings: Operation's settings
+            """
+            for operation in self.operations:
+                # TODO: Fix bug that parses settings as dict instead of defined classes
+                if isinstance(operation, dict):
+                    operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
+                if operation.name == name:
+                    if isinstance(operation.pulse, dict):
+                        operation.pulse = RuncardSchema.PlatformSettings.OperationSettings.PulseSettings(
+                            **operation.pulse
+                        )
+                    return operation
+            raise ValueError(f"Operation {name} not found in platform settings.")
 
         def get_gate(self, name: str):
             """Get gate with the given name.

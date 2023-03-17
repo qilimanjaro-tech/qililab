@@ -1,12 +1,15 @@
 from dataclasses import dataclass, field
 
 from qililab.circuit.operations.operation import Operation
+from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to_pulse_operation import (
+    TranslatableToPulseOperation,
+)
 from qililab.typings import OperationName
 from qililab.typings.enums import OperationMultiplicity
 
 
 @dataclass
-class Rxy(Operation):
+class Rxy(TranslatableToPulseOperation):
     """Operation representing a rotation around XY axis
 
     Args:

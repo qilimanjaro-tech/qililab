@@ -6,6 +6,12 @@ from qililab.circuit.operations import Operation
 
 
 @dataclass
+class OperationTiming:
+    start: int
+    end: int
+
+
+@dataclass
 class OperationNode(Node):
     """Node representing an operation acting on one or more qubits
 
@@ -18,3 +24,4 @@ class OperationNode(Node):
     operation: Operation
     qubits: Tuple[int, ...]
     alias: str | None = None
+    timing: OperationTiming | None = None
