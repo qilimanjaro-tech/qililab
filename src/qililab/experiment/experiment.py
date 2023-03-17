@@ -87,6 +87,8 @@ class Experiment:
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before running an experiment.")
         num_schedules = self.execution.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -99,10 +101,14 @@ class Experiment:
 
     def turn_on_instruments(self):
         """Turn on instruments."""
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before turning on the instruments.")
         self.execution.turn_on_instruments()
 
     def turn_off_instruments(self):
         """Turn off instruments."""
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before turning off the instruments.")
         self.execution.turn_off_instruments()
 
     def disconnect(self):
@@ -285,6 +291,8 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before drawing the experiment.")
         return self.execution.draw(resolution=resolution, idx=idx)
 
     def to_dict(self):
