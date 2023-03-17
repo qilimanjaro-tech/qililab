@@ -6,7 +6,7 @@ settings:
   delay_before_readout: 40
   master_amplitude_gate: 1
   master_duration_gate: 20
-  timings_calculation_method: as_late_as_possible
+  timings_calculation_method: as_soon_as_possible
   operations:
     - name: X
       pulse:

@@ -29,6 +29,7 @@ pulse = PulseOperation(amplitude=1.0, duration=100)
 
 circuit = Circuit(2)
 circuit.add((0, 1), X())
+circuit.add(0, Wait(t=100))
 circuit.add(0, X())
 circuit.add((0, 1), Measure())
 
