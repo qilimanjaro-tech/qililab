@@ -77,6 +77,26 @@ class Experiment:
         # Prepares the results
         self.results, self.results_path = prepare_results(self.options, self.execution.num_schedules, self.to_dict())
 
+    def run(self):
+        """This method is responsible for:
+        * Looping over all the given circuits, loops and/or software averages. And for each loop:
+            * Generating and uploading the program corresponding to the circuit.
+            * Executing the circuit.
+            * Saving the results to the ``results.yml`` file.
+            * Sending the data to the live plotting (if asked to).
+            * Save the results to the ``results`` attribute.
+            * Save the results to the remote database (if asked to).
+        """
+        num_schedules = self.execution.num_schedules
+        for idx, _ in itertools.product(
+            tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
+            range(self.software_average),
+        ):
+            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+
+        if self.options.remote_save:
+            self.remote_save_experiment()
+
     def turn_on_instruments(self):
         """Turn on instruments."""
         self.execution.turn_on_instruments()
@@ -100,7 +120,6 @@ class Experiment:
             * Runs the experiment.
             * Turn off instruments.
             * Disconnect from the instruments.
-            * Save experiment and results remotely if asked.
             * Return results.
 
         Returns:
@@ -113,10 +132,6 @@ class Experiment:
         self.run()
         self.turn_off_instruments()
         self.disconnect()
-
-        if self.options.remote_save:
-            self.remote_save_experiment()
-
         return self.results
 
     def remote_save_experiment(self) -> None:
@@ -140,21 +155,20 @@ class Experiment:
             favorite=False,
         )
 
-    def run(self):
-        """This method is responsible for:
-        * Looping over all the given circuits, loops and/or software averages. And for each loop:
-            * Generating and uploading the program corresponding to the circuit.
-            * Executing the circuit.
-            * Saving the results to the ``results.yml`` file.
-            * Sending the data to the live plotting (if needed).
-            * Save the results to the ``results`` attribute.
+    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
+        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
+        executes it and returns the results.
+
+        Args:
+            idx (int): loop index to execute
+
+        Returns:
+            Result: Result object for one program execution.
         """
-        num_schedules = self.execution.num_schedules
-        for idx, _ in itertools.product(
-            tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
-            range(self.software_average),
-        ):
-            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+        self.execution.generate_program_and_upload(
+            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, path=self.results_path
+        )
+        return self.execution.run(plot=self._plot, path=self.results_path)
 
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
@@ -172,21 +186,6 @@ class Experiment:
             return
 
         self._process_loops(loops=loops, idx=idx, depth=depth)
-
-    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
-        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
-        executes it and returns the results.
-
-        Args:
-            idx (int): loop index to execute
-
-        Returns:
-            Result: Result object for one program execution.
-        """
-        self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, path=self.results_path
-        )
-        return self.execution.run(plot=self._plot, path=self.results_path)
 
     def _process_loops(self, loops: List[Loop], idx: int, depth: int):
         """Loop over the loop range values, change the element's parameter and call the recursive_loop function.

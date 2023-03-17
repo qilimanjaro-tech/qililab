@@ -2,12 +2,12 @@
 
 This document contains the changes of the current release.
 
-### New features since last release
+## New features since last release
 
 - Added new ChangeLog!
   [#170](https://github.com/qilimanjaro-tech/qililab/pull/170)
 
-### Improvements
+## Improvements
 
 - Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
@@ -36,13 +36,13 @@ This document contains the changes of the current release.
   - `disconnect`: Disconnect from the platform and release the device.
   - `remote_save_experiment`: If `remote_save = True`, save the experiment and the results to the database.
 
-### Breaking changes
+## Breaking changes
 
 - Remove context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
   instruments when not using the `execute` method directly!
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-### Deprecations / Removals
+## Deprecations / Removals
 
 - Remove the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
   `prepare_results` function inside the `experiments` folder.
@@ -61,9 +61,9 @@ This document contains the changes of the current release.
 - Remove the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-### Documentation
+## Documentation
 
-### Bug fixes
+## Bug fixes
 
 - Fix bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
