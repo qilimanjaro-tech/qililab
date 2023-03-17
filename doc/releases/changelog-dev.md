@@ -33,6 +33,12 @@ This document contains the changes of the current release.
 - Remove the `RemoteAPI` class. This class didn't add any functionality.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Remove the `ExecutionOptions` class. Now the user can freely choose which steps of the workflow to execute.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- Remove the `Platform.connect_and_initial_setup` method.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ### Documentation
 
 ### Bug fixes
