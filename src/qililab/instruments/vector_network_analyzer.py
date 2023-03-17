@@ -41,6 +41,7 @@ class VectorNetworkAnalyzer(Instrument):
         number_points: int = DEFAULT_NUMBER_POINTS
         sweep_mode: VNASweepModes = VNASweepModes.CONT
         device_timeout: float = DEFAULT_TIMEOUT
+        electrical_delay: float = 0.0
 
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
@@ -132,6 +133,9 @@ class VectorNetworkAnalyzer(Instrument):
             return
         if parameter == Parameter.DEVICE_TIMEOUT:
             self.device_timeout = value
+            return
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.electrical_delay = value
             return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
@@ -343,6 +347,21 @@ class VectorNetworkAnalyzer(Instrument):
         self.settings.device_timeout = value
         self.device.set_timeout(value=self.settings.device_timeout)
 
+    @property
+    def electrical_delay(self):
+        """VectorNetworkAnalyzer 'electrical_delay' property.
+
+        Returns:
+            float: settings.electrical_delay.
+        """
+        return self.settings.electrical_delay
+
+    @electrical_delay.setter
+    def electrical_delay(self, value: float):
+        """sets the electrical delay"""
+        self.settings.electrical_delay = value
+        self.device.electrical_delay(etime=f"{self.settings.electrical_delay:.12f}")
+
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
@@ -386,13 +405,6 @@ class VectorNetworkAnalyzer(Instrument):
         if isinstance(arg, (str, int)) and arg in ["ON", "OFF", 1, 0]:
             return self.device.output(arg=arg)
         raise ValueError("valid argument type must be either str or int and only valid values are ON, OFF, 1, 0")
-
-    def electrical_delay(self, etime: float):
-        """
-        Set electrical delay in 1
-        example input: time = 100E-9 for 100ns
-        """
-        self.device.electrical_delay(etime=f"{etime:.12f}")
 
     def average_clear(self, channel=1):
         """clears the average buffer"""
