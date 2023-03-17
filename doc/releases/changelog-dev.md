@@ -23,7 +23,8 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-- Remove `ExecutionPreparation` class, and replace it with a `prepare_results` function inside the `experiments` folder.
+- Remove the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
+  `prepare_results` function inside the `experiments` folder.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 - Remove unused `connect`, `disconnect` and `setup` methods from the `Execution` class. These are used in the
@@ -48,3 +49,8 @@ This document contains the changes of the current release.
 
 - The `qibo` version has been downgraded to `0.1.10` to allow installation on Mac laptops.
   [#185](https://github.com/qilimanjaro-tech/qililab/pull/185)
+
+- Fix the `Platform.get_element` method:
+
+  - Now calling `get_element` of a gate returns a `GateSettings` instance, instead of a `PlatformSettings` instance.
+  - Add try/except over the `chip.get_node_from_alias` method to avoid getting an error if the node doesn't exist.
