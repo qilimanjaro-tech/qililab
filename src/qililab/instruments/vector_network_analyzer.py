@@ -1,9 +1,15 @@
 """VectorNetworkAnalyzer class."""
 from dataclasses import dataclass
 
+from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.instrument import Instrument
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
+from qililab.typings.enums import (
+    Parameter,
+    VNAScatteringParameters,
+    VNASweepModes,
+    VNATriggerModes,
+)
 from qililab.typings.instruments.vector_network_analyzer import (
     VectorNetworkAnalyzerDriver,
 )
@@ -33,6 +39,8 @@ class VectorNetworkAnalyzer(Instrument):
         number_averages: int = 1
         trigger_mode: VNATriggerModes = VNATriggerModes.INT
         number_points: int = DEFAULT_NUMBER_POINTS
+        sweep_mode: VNASweepModes = VNASweepModes.CONT
+        device_timeout: float = DEFAULT_TIMEOUT
 
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
@@ -72,6 +80,9 @@ class VectorNetworkAnalyzer(Instrument):
             return
         if parameter == Parameter.TRIGGER_MODE:
             self.settings.trigger_mode = VNATriggerModes(value)
+            return
+        if parameter == Parameter.SWEEP_MODE:
+            self.settings.sweep_mode = VNASweepModes(value)
             return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
@@ -119,6 +130,9 @@ class VectorNetworkAnalyzer(Instrument):
         if parameter == Parameter.IF_BANDWIDTH:
             self.if_bandwidth = value
             return
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            self.device_timeout = value
+            return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
 
@@ -153,7 +167,7 @@ class VectorNetworkAnalyzer(Instrument):
     def power(self, value: float):
         """sets the power"""
         self.settings.power = value
-        self.device.power(power=str(self.settings.power))
+        self.device.power(power=f"{self.settings.power:.1f}")
 
     @property
     def scattering_parameter(self):
@@ -258,7 +272,7 @@ class VectorNetworkAnalyzer(Instrument):
     def averaging_enabled(self, value: bool):
         """sets the averaging enabled"""
         self.settings.averaging_enabled = value
-        self.device.average_state(state=str(self.settings.averaging_enabled))
+        self.device.average_state(state=self.settings.averaging_enabled)
 
     @property
     def number_averages(self):
@@ -299,6 +313,36 @@ class VectorNetworkAnalyzer(Instrument):
         self.settings.number_points = value
         self.device.freq_npoints(points=str(self.settings.number_points))
 
+    @property
+    def sweep_mode(self):
+        """VectorNetworkAnalyzer'sweep_mode' property.
+
+        Returns:
+            float: settings.sweep_mode.
+        """
+        return self.settings.sweep_mode
+
+    @sweep_mode.setter
+    def sweep_mode(self, value: str):
+        """sets the sweep mode"""
+        self.settings.sweep_mode = VNASweepModes(value)
+        self.device.set_sweep_mode(mode=str(self.settings.sweep_mode))
+
+    @property
+    def device_timeout(self):
+        """VectorNetworkAnalyzer 'device_timeout' property.
+
+        Returns:
+            float: settings.device_timeout.
+        """
+        return self.settings.device_timeout
+
+    @device_timeout.setter
+    def device_timeout(self, value: float):
+        """sets the device timeout in mili seconds"""
+        self.settings.device_timeout = value
+        self.device.set_timeout(value=self.settings.device_timeout)
+
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
         return dict(super().to_dict().items())
@@ -327,10 +371,6 @@ class VectorNetworkAnalyzer(Instrument):
         """send a command directly to the device"""
         return self.device.send_command(command=command, arg="")
 
-    def read(self) -> str:
-        """read directly from the device"""
-        return self.device.read()
-
     def autoscale(self):
         """autoscale"""
         self.device.autoscale()
@@ -347,23 +387,38 @@ class VectorNetworkAnalyzer(Instrument):
             return self.device.output(arg=arg)
         raise ValueError("valid argument type must be either str or int and only valid values are ON, OFF, 1, 0")
 
-    def electrical_delay(self, time: str):
-        """Set electrical delay in 1
-        example input: time = '100E-9' for 100ns"""
-        self.device.electrical_delay(etime=time)
+    def electrical_delay(self, etime: float):
+        """
+        Set electrical delay in 1
+        example input: time = 100E-9 for 100ns
+        """
+        self.device.electrical_delay(etime=f"{etime:.12f}")
 
     def average_clear(self, channel=1):
         """clears the average buffer"""
-        self.device.average_clear(channel=1)
+        self.device.average_clear(channel=channel)
 
     def get_frequencies(self):
         """return freqpoints"""
         return self.device.get_freqs()
 
-    def get_data(self):
+    def ready(self) -> bool:
+        """
+        This is a proxy function.
+        Returns True if the VNA is on HOLD after finishing the required number of averages.
+        """
+        return self.device.ready()
+
+    def release(self):
+        """
+        Bring the VNA back to a mode where it can be easily used by the operator.
+        """
+        self.device.release()
+
+    def read_tracedata(self):
         """get data from device"""
-        return self.device.get_data()
+        return self.device.read_tracedata()
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object"""
-        return VNAResult(data=self.device.get_data())
+        return VNAResult(data=self.device.read_tracedata())

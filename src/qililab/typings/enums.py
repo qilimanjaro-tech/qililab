@@ -467,6 +467,7 @@ class Parameter(str, Enum):
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
     DEVICE_TIMEOUT = "device_timeout"
+    SWEEP_MODE = "sweep_mode"
 
 
 class ResultName(str, Enum):

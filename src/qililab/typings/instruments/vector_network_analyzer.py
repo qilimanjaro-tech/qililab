@@ -42,6 +42,10 @@ class VectorNetworkAnalyzerDriver(Device):
         """Function to communicate with the device."""
         return self.driver.write(f"{command} {arg}")  # type: ignore
 
+    def autoscale(self):
+        """autoscale"""
+        self.driver.write("DISP:WIND:TRAC:Y:AUTO")
+
     def output(self, arg="?"):
         """Turns RF output power on/off
         Give no argument to query current status.
@@ -55,6 +59,16 @@ class VectorNetworkAnalyzerDriver(Device):
     def stop(self):
         """close an instrument."""
         self.output(arg="OFF")
+
+    def electrical_delay(self, etime: str):  # MP 04/2017
+        """
+        Set electrical delay in channel 1
+
+        Input:
+            etime (str) : Electrical delay in ns
+                example: etime = '100E-9' for 100ns
+        """
+        self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
     def average_clear(self, channel=1):
         """
@@ -88,7 +102,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             power (str) : Power in dBm
         """
-        self.send_command(f"SOUR{channel}:POW{port}", f"{power:.1f}")
+        self.send_command(f"SOUR{channel}:POW{port}", power)
 
     def freq_center(self, freq: str, channel=1):
         """
@@ -149,16 +163,12 @@ class VectorNetworkAnalyzerDriver(Device):
         scatter_param = VNAScatteringParameters(upper_par)
         return self.send_command(f"CALC1:MEAS{trace}:PAR", scatter_param.value)
 
-    def autoscale(self):
-        """autoscale"""
-        self.driver.write("DISP:WIND:TRAC:Y:AUTO")
-
     def set_timeout(self, value: float):
         """set timeout in mili seconds"""
         self.timeout = value
         self.driver.timeout = self.timeout
 
-    def get_tracedata(self, channel=1, trace=1):
+    def get_trace(self, channel=1, trace=1):
         """
         Get the data of the current trace
         """
@@ -205,28 +215,16 @@ class VectorNetworkAnalyzerDriver(Device):
         """
         self.set_sweep_mode("cont")
 
-    def electrical_delay(self, etime):  # MP 04/2017
-        """
-        Set electrical delay in channel 1
-
-        Input:
-            etime (str) : Electrical delay in ns
-                example: etime = '100E-9' for 100ns
-        """
-        self.send_command("SENS1:CORR:EXT:PORT1:TIME", f"{etime:.12f}")
-
-    def average_state(self, state, channel=1):
+    def average_state(self, state: bool, channel=1):
         """
         Set status of Average
         """
-        if state in ["True", "1"]:
+        if state:
             self.avg_state = True
             self.send_command(f"SENS{channel}:AVER:STAT", "ON")
-        elif state in ["False", "0"]:
+        else:
             self.avg_state = False
             self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
-        else:
-            raise ValueError("average state can only set True or False")
 
     def set_count(self, count: str, channel=1):
         """
@@ -264,7 +262,7 @@ class VectorNetworkAnalyzerDriver(Device):
             time.sleep(period)
         return False
 
-    def read_trace(self):
+    def read_tracedata(self):
         """
         Returnthe current trace data.
         It already releases the VNA after finishing the required number of averages.
@@ -272,11 +270,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.pre_measurement()
         self.start_measurement()
         if self.wait_until_ready():
-            trace = self.get_tracedata()
+            trace = self.get_trace()
             self.release()
             return trace
         raise TimeoutError("Timeout waiting for trace data")
-
-    def read(self):
-        """read directly from the device"""
-        raise NotImplementedError
