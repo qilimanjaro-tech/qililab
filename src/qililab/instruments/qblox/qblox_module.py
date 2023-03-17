@@ -200,7 +200,7 @@ class QbloxModule(AWG):
             avg_loop.append_component(ResetPh())
             gain = int(pulse_event.pulse.amplitude * AWG_MAX_GAIN)
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-            phase = int(pulse_event.pulse.phase * 1e9 / 360)
+            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
@@ -227,6 +227,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
         return acquisitions
 
     @abstractmethod
