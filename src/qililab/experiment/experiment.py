@@ -54,26 +54,18 @@ class Experiment:
 
     def initial_setup(self):
         """Configure each instrument with the values defined in the runcard."""
-        self.platform.set_initial_setup()
+        self.platform.initial_setup()
 
     def build_execution(self):
         """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class and
         generates the live plotting.
-
-        Args:
-            sequence (Circuit | PulseSequence): Sequence of gates/pulses.
-            options (ExecutionOptions): Execution options
         """
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
             self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``Execution`` class
-        self.execution = EXECUTION_BUILDER.build(
-            platform=self.platform,
-            pulse_schedules=self.pulse_schedules,
-            execution_options=self.options.execution_options,
-        )
+        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
         self._plot = LivePlot(
             connection=self.options.connection,

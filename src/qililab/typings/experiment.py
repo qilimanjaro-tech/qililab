@@ -6,7 +6,6 @@ from typing import List
 from qiboconnection.api import API
 
 from qililab.constants import EXPERIMENT, RUNCARD
-from qililab.typings.execution import ExecutionOptions
 from qililab.typings.yaml_type import yaml
 from qililab.utils.loop import Loop
 
@@ -37,7 +36,6 @@ class ExperimentOptions:
     name: str = DEFAULT_EXPERIMENT_NAME
     plot_y_label: str | None = None
     remote_device_manual_override: bool = field(default=False)
-    execution_options: ExecutionOptions = ExecutionOptions()
     remote_save: bool = True
     description: str = ""
 
@@ -55,7 +53,6 @@ class ExperimentOptions:
             EXPERIMENT.DEVICE_ID: self.device_id,
             EXPERIMENT.PLOT_Y_LABEL: self.plot_y_label,
             EXPERIMENT.REMOTE_DEVICE_MANUAL_OVERRIDE: self.remote_device_manual_override,
-            EXPERIMENT.EXECUTION_OPTIONS: asdict(self.execution_options),
             EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
         }
@@ -80,9 +77,6 @@ class ExperimentOptions:
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
             plot_y_label=dictionary.get(EXPERIMENT.PLOT_Y_LABEL, None),
             remote_device_manual_override=dictionary.get(EXPERIMENT.REMOTE_DEVICE_MANUAL_OVERRIDE, False),
-            execution_options=ExecutionOptions(**dictionary[EXPERIMENT.EXECUTION_OPTIONS])
-            if EXPERIMENT.EXECUTION_OPTIONS in dictionary
-            else ExecutionOptions(),
             remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
             description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )

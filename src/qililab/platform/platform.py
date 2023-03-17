@@ -28,23 +28,6 @@ class Platform:
         self._initial_setup_applied: bool = False
         self._instruments_turned_on: bool = False
 
-    def connect_and_set_initial_setup(
-        self,
-        automatic_turn_on_instruments: bool = False,
-        connection: API | None = None,
-        device_id: int | None = None,
-        manual_override: bool = False,
-    ):
-        """Connect and set initial setup of the instruments
-
-        Args:
-            automatic_turn_on_instruments (bool, optional): Turn on the instruments. Defaults to False.
-        """
-        self.connect(connection=connection, device_id=device_id, manual_override=manual_override)
-        if automatic_turn_on_instruments:
-            self.turn_on_instruments()
-        self.set_initial_setup()
-
     def connect(self, connection: API | None = None, device_id: int | None = None, manual_override=False):
         """Blocks the given device and connects to the instruments.
 
@@ -65,7 +48,7 @@ class Platform:
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
 
-    def set_initial_setup(self):
+    def initial_setup(self):
         """Set the initial setup of the instruments"""
         if self._initial_setup_applied:
             logger.info("Initial setup already applied to the instruments")
@@ -92,15 +75,11 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(
-        self, connection: API | None = None, device_id: int | None = None, automatic_turn_off_instruments: bool = False
-    ):
+    def disconnect(self, connection: API | None = None, device_id: int | None = None):
         """Close connection to the instrument controllers."""
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
-        if automatic_turn_off_instruments:
-            self.turn_off_instruments()
         self.instrument_controllers.disconnect()
         if connection is not None:
             connection.release_device(device_id=device_id)

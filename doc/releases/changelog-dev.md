@@ -12,9 +12,26 @@ This document contains the changes of the current release.
 - Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
 
+- Change `schedule_index_to_load` argument to `idx` for more readability.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ### Breaking changes
 
-### Deprecations
+- Remove context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
+  instruments when not using the `execute` method directly!
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+### Deprecations / Removals
+
+- Remove `ExecutionPreparation` class, and replace it with a `prepare_results` function inside the `experiments` folder.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- Remove unused `connect`, `disconnect` and `setup` methods from the `Execution` class. These are used in the
+  `Experiment` class, which call the corresponding methods of the `Platform` class.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- Remove the `RemoteAPI` class. This class didn't add any functionality.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 ### Documentation
 

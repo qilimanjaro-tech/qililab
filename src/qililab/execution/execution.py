@@ -5,7 +5,6 @@ from pathlib import Path
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.result import Result
-from qililab.typings.execution import ExecutionOptions
 from qililab.utils import LivePlot
 
 
@@ -15,7 +14,6 @@ class Execution:
 
     execution_manager: ExecutionManager
     platform: Platform
-    options: ExecutionOptions
 
     def turn_on_instruments(self):
         """Start/Turn on the instruments."""

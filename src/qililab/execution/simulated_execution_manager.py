@@ -32,7 +32,7 @@ class SimulatedExecutionManager(ExecutionManager):
             path (Path): path to save the program to upload
         """
         for simulated_bus in self.simulated_pulse_scheduled_buses:
-            simulated_bus.generate_program(schedule_index_to_load=idx)
+            simulated_bus.generate_program(idx=idx)
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
