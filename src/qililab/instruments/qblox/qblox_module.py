@@ -367,7 +367,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path0 = float(value)
-        self.device.out_0_offset(float(value))
+        self.device.out0_offset(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
@@ -381,7 +381,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
-        self.device.out_1_offset(float(value))
+        self.device.out1_offset(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
