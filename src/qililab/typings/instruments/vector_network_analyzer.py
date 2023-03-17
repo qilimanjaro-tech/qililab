@@ -77,8 +77,7 @@ class VectorNetworkAnalyzerDriver(Device):
         Set Number of Points for sweep
 
         Input:
-            points (str)
-                Number of Points
+            points (str) : Number of Points
         """
         self.send_command(":SENS1:SWE:POIN", points)
 
@@ -178,22 +177,11 @@ class VectorNetworkAnalyzerDriver(Device):
         Input:
             mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
-        # if not isinstance(mode, str):
-        #     raise ValueError("MODEEXC: Mode must be a string")
-        # lower_mode = mode.lower()
-        # sweep_mode = VNASweepModes(lower_mode)
-        # return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.name)
-        mode = mode.lower()
-        if mode == "hold":
-            self.send_command(f"SENS{channel}:SWE:MODE HOLD", "")
-        elif mode == "cont":
-            self.send_command(f"SENS{channel}:SWE:MODE CONT", "")
-        elif mode == "single":
-            self.send_command(f"SENS{channel}:SWE:MODE SING", "")
-        elif mode == "group":
-            self.send_command(f"SENS{channel}:SWE:MODE GRO", "")
-        else:
-            print("invalid mode")
+        if not isinstance(mode, str):
+            raise ValueError("MODEEXC: Mode must be a string")
+        lower_mode = mode.lower()
+        sweep_mode = VNASweepModes(lower_mode)
+        return self.send_command(f"SENS{channel}:SWE:MODE", sweep_mode.name)
 
     def get_sweep_mode(self, channel=1):
         """
@@ -278,7 +266,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def read_trace(self):
         """
-        Return trace data.
+        Returnthe current trace data.
         It already releases the VNA after finishing the required number of averages.
         """
         self.pre_measurement()
