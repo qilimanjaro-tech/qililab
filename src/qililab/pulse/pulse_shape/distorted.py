@@ -1,4 +1,4 @@
-"""Distorted pulse shape."""
+"""Bias tee correction pulse shape."""
 from dataclasses import dataclass
 
 import numpy as np
@@ -13,10 +13,10 @@ from qililab.utils import Factory
 
 @Factory.register
 @dataclass(unsafe_hash=True, eq=True)
-class Distorted(PulseShape):
-    """Distorted/square pulse shape."""
+class BiasTeeCorrection(PulseShape):
+    """Bias tee correction pulse shape."""
 
-    name = PulseShapeName.DISTORTED
+    name = PulseShapeName.BIAS_TEE_CORRECTION
     tau: float
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):

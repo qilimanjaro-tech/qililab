@@ -198,7 +198,7 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
-    DISTORTED = "distorted"
+    BIAS_TEE_CORRECTION = "bias_tee"
 
 
 class PulseShapeSettingsName(str, Enum):
