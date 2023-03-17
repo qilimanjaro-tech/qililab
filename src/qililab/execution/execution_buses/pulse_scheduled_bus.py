@@ -68,7 +68,7 @@ class PulseScheduledBus:
         num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(frequency=self.bus.frequency, resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(frequency=0.0, resolution=resolution)
 
     @property
     def port(self):

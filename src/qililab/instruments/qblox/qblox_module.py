@@ -10,10 +10,18 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync, SetAwgGain
+from qpysequence.program.instructions import (
+    Play,
+    ResetPh,
+    SetAwgGain,
+    SetPh,
+    Stop,
+    Wait,
+    WaitSync,
+)
 from qpysequence.sequence import Sequence as QpySequence
-from qpysequence.waveforms import Waveforms
 from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -185,10 +193,12 @@ class QbloxModule(AWG):
         timeline = pulse_bus_schedule.timeline
         if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            gain = int(pulse_event.pulse.amplitude*AWG_MAX_GAIN)
+            avg_loop.append_component(ResetPh())
+            gain = int(pulse_event.pulse.amplitude * AWG_MAX_GAIN)
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int(pulse_event.pulse.phase * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
@@ -357,7 +367,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path0 = float(value)
-        self.device.sequencers[sequencer_id].offset_awg_path0(float(value))
+        self.device.out0_offset(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
@@ -371,7 +381,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
-        self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+        self.device.out1_offset(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
