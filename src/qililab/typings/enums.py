@@ -199,6 +199,7 @@ class PulseShapeName(str, Enum):
     DRAG = "drag"
     RECTANGULAR = "rectangular"
     BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -212,6 +213,7 @@ class PulseShapeSettingsName(str, Enum):
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
     TAU = "tau"
+    AMP = "amp"
 
 
 class BusCategory(str, Enum):
