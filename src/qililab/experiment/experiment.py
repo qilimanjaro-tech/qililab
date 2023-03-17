@@ -57,8 +57,8 @@ class Experiment:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class and
-        generates the live plotting.
+        """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
+        generates the live plotting and prepares the `Results` class and the `results.yml` file.
         """
         # Translate circuits into pulses if needed
         if self.circuits:

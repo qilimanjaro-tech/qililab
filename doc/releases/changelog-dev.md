@@ -15,6 +15,27 @@ This document contains the changes of the current release.
 - Change `schedule_index_to_load` argument to `idx` for more readability.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Refactor the `Experiment` class, creating a method for each step of the workflow. The `Experiment.execute` method will run all these methods in order:
+
+  - `connect`: Connect to the instruments and block the device.
+  - `initial_setup`: Apply runcard settings to the instruments.
+  - `build_execution`:
+    - Translate the circuit into pulses.
+    - Create the `Execution` class (which contains all the buses with the pulses to execute).
+    - Initialize the live plotting.
+    - Create the `Results` class and the `results.yml` file (where the results will be stored).
+  - `turn_on_instruments`: Turn on the instruments (if necessary).
+  - `run`: Iterate over all the loop values, and for each step:
+    - Generate the program.
+    - Upload the program.
+    - Execute the program.
+    - Save the result to the `results.yml` file.
+    - Send data to live plotting.
+    - Save the result to the `Experiment.results` attribute.
+  - `turn_off_instruments`: Turn off the instruments (if necessary).
+  - `disconnect`: Disconnect from the platform and release the device.
+  - `remote_save_experiment`: If `remote_save = True`, save the experiment and the results to the database.
+
 ### Breaking changes
 
 - Remove context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
