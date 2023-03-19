@@ -54,7 +54,7 @@ class Execution:
         self.platform.turn_on_instruments()
 
     def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
+        self, schedule_index_to_load: int, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -68,6 +68,7 @@ class Execution:
             schedule_index_to_load=schedule_index_to_load,
             nshots=nshots,
             repetition_duration=repetition_duration,
+            num_binned_acquisitions=num_binned_acquisitions,
             path=path,
         )
 

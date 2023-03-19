@@ -47,7 +47,7 @@ class ExecutionManager:
         return self.pulse_scheduled_buses + self.pulse_scheduled_readout_buses
 
     def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
+        self, schedule_index_to_load: int, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
     ) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
@@ -61,6 +61,7 @@ class ExecutionManager:
             pulse_scheduled_bus.generate_program_and_upload(
                 schedule_index_to_load=schedule_index_to_load,
                 nshots=nshots,
+                num_binned_acquisitions=num_binned_acquisitions,
                 repetition_duration=repetition_duration,
                 path=path,
             )

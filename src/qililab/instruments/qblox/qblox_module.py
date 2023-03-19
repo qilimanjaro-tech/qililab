@@ -116,7 +116,12 @@ class QbloxModule(AWG):
         return self.device.module_type()
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        num_binned_acquisitions: int,
+        repetition_duration: int,
+        path: Path,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -127,7 +132,11 @@ class QbloxModule(AWG):
             path (Path): path to save the program to upload
         """
         self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
+            repetition_duration=repetition_duration,
+            path=path,
         )
 
     def run(self):
@@ -135,19 +144,27 @@ class QbloxModule(AWG):
         self.start_sequencer()
 
     def _check_cached_values(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        num_binned_acquisitions: int,
+        repetition_duration: int,
+        path: Path,
     ):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
             sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                pulse_bus_schedule=pulse_bus_schedule,
+                num_binned_acquisitions=num_binned_acquisitions,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
             )
             # FIXME: Qblox supports to set it directly to the device instead of using a file
             self.upload(sequence=sequence, path=path)
 
     def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -159,7 +176,8 @@ class QbloxModule(AWG):
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(
-            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+            num_binned_acquisitions=num_binned_acquisitions,
+            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port),
         )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
@@ -217,7 +235,9 @@ class QbloxModule(AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
+    def _generate_acquisitions(
+        self, num_binned_acquisitions: int, sequencer_id: int
+    ) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
@@ -227,7 +247,8 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
+        for idx in range(num_binned_acquisitions):
+            acquisitions.add(name=f"bins{idx}", num_bins=self._MAX_BINS, index=idx)
         return acquisitions
 
     @abstractmethod

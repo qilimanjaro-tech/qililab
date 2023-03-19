@@ -69,7 +69,7 @@ class AWG(Instrument):
 
     @abstractmethod
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int,  repetition_duration: int, path: Path
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 

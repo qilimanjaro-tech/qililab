@@ -76,7 +76,7 @@ class TimeDomainSystemControl(SystemControl):
             return
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -89,6 +89,7 @@ class TimeDomainSystemControl(SystemControl):
         return self.awg.generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
             path=path,
         )

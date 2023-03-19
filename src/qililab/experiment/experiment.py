@@ -86,6 +86,14 @@ class Experiment:
         return self.options.settings.repetition_duration
 
     @property
+    def num_binned_acquisitions(self):
+        """Experiment 'num_binned_acquisitions' property.
+        Returns:
+            int: settings.num_binned_acquisitions.
+        """
+        return self.options.settings.num_binned_acquisitions
+
+    @property
     def execution_ready(self):
         """checks if execution has already been prepared"""
         return self._execution_ready
@@ -366,6 +374,7 @@ class Experiment:
             schedule_index_to_load=schedule_index_to_load,
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
+            num_binned_acquisitions=self.num_binned_acquisitions,
             path=path,
         )
         return self._execution.run(plot=plot, path=path)

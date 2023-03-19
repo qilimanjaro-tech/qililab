@@ -20,7 +20,7 @@ class PulseScheduledBus:
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
+        self, schedule_index_to_load: int, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
     ) -> None:
         """Translate the Pulse Bus Schedule to each AWG program and upload them
 
@@ -33,6 +33,7 @@ class PulseScheduledBus:
         self.system_control.generate_program_and_upload(  # pylint: disable=no-member
             pulse_bus_schedule=self.pulse_schedule[schedule_index_to_load],
             nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
             path=path,
         )
