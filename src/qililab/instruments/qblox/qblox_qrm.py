@@ -83,7 +83,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -100,12 +100,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
                     sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
                 )
-                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id)
+                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id, 
+                                                          num_binned_acquisitions=num_binned_acquisitions)
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
         super().generate_program_and_upload(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule, 
+            nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,  
+            repetition_duration=repetition_duration, path=path
         )
 
     def acquire_result(self) -> QbloxResult:

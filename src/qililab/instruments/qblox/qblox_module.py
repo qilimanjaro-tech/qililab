@@ -248,7 +248,8 @@ class QbloxModule(AWG):
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
         for idx in range(num_binned_acquisitions):
-            acquisitions.add(name=f"bins{idx}", num_bins=self._MAX_BINS, index=idx)
+            acquisitions.add(name=f"bins{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions)-1, index=idx+1)
+        print(acquisitions)
         return acquisitions
 
     @abstractmethod
