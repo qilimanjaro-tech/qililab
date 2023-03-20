@@ -477,6 +477,7 @@ class Parameter(str, Enum):
     INTEGRATION_WEIGHT_Q_2 = "integration_weight_Q_2"
     GATE_PARAMETER = "gate_parameter"
     TAU = "tau"
+    AMP = "amp"
 
 
 class ResultName(str, Enum):
