@@ -31,7 +31,7 @@ class TestSGS100A:
             assert rohde_schwarz.settings.rf_on is True
             rohde_schwarz.device.on.assert_called_once()  # type: ignore
         else:
-            rohde_schwarz.settings.rf_on is False
+            assert rohde_schwarz.settings.rf_on is False
             rohde_schwarz.device.off.assert_called_once()  # type: ignore
 
     def test_turn_on_method(self, rohde_schwarz: SGS100A):
