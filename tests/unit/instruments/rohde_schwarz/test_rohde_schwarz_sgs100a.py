@@ -27,9 +27,9 @@ class TestSGS100A:
         rohde_schwarz.device.power.assert_called_with(rohde_schwarz.power)
         rohde_schwarz.device.frequency.assert_called_with(rohde_schwarz.frequency)
         if rohde_schwarz.rf_on:
-            rohde_schwarz.device.on.assert_called_once()
+            rohde_schwarz.device.on.assert_called_once()  # type: ignore
         else:
-            rohde_schwarz.device.off.assert_called_once()
+            rohde_schwarz.device.off.assert_called_once()  # type: ignore
 
     def test_turn_on_method(self, rohde_schwarz: SGS100A):
         """Test turn_on method"""
