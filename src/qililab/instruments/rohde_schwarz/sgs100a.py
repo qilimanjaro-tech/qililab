@@ -51,11 +51,10 @@ class SGS100A(SignalGenerator):
             return
         if parameter == Parameter.RF_ON:
             value = bool(value)
-            self.settings.rf_on = value
             if value:
-                self.device.on()
+                self.turn_on()
             else:
-                self.device.off()
+                self.turn_off()
             return
         raise ValueError(f"Invalid Parameter: {parameter.value}")
 
@@ -72,11 +71,13 @@ class SGS100A(SignalGenerator):
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start generating microwaves."""
+        self.settings.rf_on = True
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop generating microwaves."""
+        self.settings.rf_on = False
         self.device.off()
 
     @Instrument.CheckDeviceInitialized
