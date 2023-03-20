@@ -12,6 +12,9 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
+  [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
+
 ### Breaking changes
 
 ### Deprecations
@@ -22,6 +25,9 @@ This document contains the changes of the current release.
 
 - Fixed wrong timing calculation in Q1ASM generation
   [#186](https://github.com/qilimanjaro-tech/qililab/pull/186)
+
+- Fix bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
+  [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
 
 - The `qibo` version has been downgraded to `0.1.10` to allow installation on Mac laptops.
   [#185](https://github.com/qilimanjaro-tech/qililab/pull/185)
