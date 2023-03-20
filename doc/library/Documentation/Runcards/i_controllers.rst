@@ -1,13 +1,30 @@
 Instrument Controllers
 +++++++++++++++++++++++++
-Instrument controllers, as the name suggests, are from where the instruments are controlled.
-Each instrument must be connected to an instrument controller that serves as the 'drivers' of said instrument. So an instrument controller serves as a mediatior between our desire instrucctions and the actual actions of an instrument.
+Instrument controllers, are the way qililab has to communicate with each intrument is connected to.
+Each instrument must be connected to an instrument controller that serves as the 'drivers' of said instrument.
+So an instrument controller serves as a mediatior between our desire instrucctions and the actual actions of an instrument.
 
-An instrument controller can contain several instruments init, it is shown in the label `subcategory: multiple_instruments` instead of `subcategory: single_instrument`.
+An instrument controller can contain several instruments or just one. In the examples below, it is possible to see the label `subcategory: multiple_instruments` or `subcategory: single_instrument` depending on that matter.
 The diferent instruments are on different slots defined in `modules:`.
 
 As in the instrument section, every type of instrument controller has its own specs to determine.
 Below there are some examples of the different instrument controllers implemented in qililab.
+
+Rohde Schwarz
+-----------------
+::
+
+  - name: rohde_schwarz
+    id_: 2
+    alias: rohde_schwarz_controller_drive_q0
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.0.10
+    modules:
+      - signal_generator: rs_0
+        slot_id: 1
 
 Qblox Cluster
 ---------------
@@ -49,19 +66,3 @@ Qblox Spi Rack
         slot_id: 1
       - current_source: S4g_1
         slot_id: 2
-
-Rohde Schwarz
------------------
-::
-
-  - name: rohde_schwarz
-    id_: 2
-    alias: rohde_schwarz_controller_drive_q0
-    category: instrument_controller
-    subcategory: single_instrument
-    connection:
-      name: tcp_ip
-      address: 192.168.0.10
-    modules:
-      - signal_generator: rs_0
-        slot_id: 1

@@ -1,5 +1,7 @@
 Buses
 +++++++++++++++++++++++++
+Buses are 
+
 Describes an abstraction of **a physical line** with all required equipment necessary to communicate from the measurement **PC to a target** (Qubit, Resonator or Coupler) **via a chip port**.
 
 Each bus is a collection of instuments connected to a given port and stores the schedule of pulses that will be send to a port.
@@ -22,7 +24,6 @@ The system control contains an **AWG** and a **Signal Generator**
 
 .. image:: ../../img/control_bus.png
     :align: center
-
 
 |
 
