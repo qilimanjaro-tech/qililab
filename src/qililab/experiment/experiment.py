@@ -26,6 +26,7 @@ from .prepare_results import prepare_results
 class Experiment:
     """Experiment class"""
 
+    # Specify the types of the attributes that are not defined during initialization
     execution: Execution
     results: Results
     results_path: Path

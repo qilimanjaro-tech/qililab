@@ -1,41 +1,50 @@
 """Tests for the Experiment class."""
 import time
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from matplotlib.figure import Figure
 from qibo.gates import M
 from qibo.models.circuit import Circuit
 
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
+from qililab.pulse import PulseSchedule
+from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions, ExperimentSettings
+from qililab.utils.live_plot import LivePlot
 
 from .aux_methods import mock_instruments
 
 
-class TestExperiment:
+class TestAttributes:
     """Unit tests checking the Experiment attributes and methods"""
 
-    def test_platform_attribute_instance(self, experiment: Experiment):
-        """Test platform attribute instance."""
+    def test_platform_attributes(self, experiment: Experiment):
+        """Test platform attributes after initialization."""
         assert isinstance(experiment.platform, Platform)
-
-    def test_execution_attribute_instance(self, experiment: Experiment):
-        """Test execution attribute instance."""
-        assert not hasattr(experiment, "execution")
-        experiment.build_execution()
-        assert isinstance(experiment.execution, Execution)
-
-    def test_options_property(self, experiment: Experiment):
-        """Test options property."""
+        assert isinstance(experiment.circuits, list)
+        if len(experiment.circuits) > 0:
+            for circuit in experiment.circuits:
+                assert isinstance(circuit, Circuit)
+        assert isinstance(experiment.pulse_schedules, list)
+        if len(experiment.pulse_schedules) > 0:
+            for pulse_schedule in experiment.pulse_schedules:
+                assert isinstance(pulse_schedule, PulseSchedule)
         assert isinstance(experiment.options, ExperimentOptions)
+        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "results")
+        assert not hasattr(experiment, "results_path")
+        assert not hasattr(experiment, "_plot")
+        assert not hasattr(experiment, "_remote_id")
 
-    def test_settings_property(self, experiment: Experiment):
-        """Test settings property."""
-        assert isinstance(experiment.options.settings, ExperimentSettings)
+
+class TestProperties:
+    """Test the properties of the Experiment class."""
 
     def test_software_average_property(self, experiment: Experiment):
         """Test software_average property."""
@@ -48,6 +57,50 @@ class TestExperiment:
     def test_repetition_duration_property(self, experiment: Experiment):
         """Test repetition_duration property."""
         assert experiment.repetition_duration == experiment.options.settings.repetition_duration
+
+
+class TestMethods:
+    """Test the methods of the Experiment class."""
+
+    def test_connect(self, experiment_all_platforms: Experiment):
+        """Test the ``connect`` method of the Experiment class."""
+        with patch("qililab.platform.platform.Platform.connect") as mock_connect:
+            experiment_all_platforms.connect()
+            mock_connect.assert_called_once()
+
+    def test_initial_setup(self, experiment_all_platforms: Experiment):
+        """Test the ``initial_setup`` method of the Experiment class."""
+        with patch("qililab.platform.platform.Platform.initial_setup") as mock_initial_setup:
+            experiment_all_platforms.initial_setup()
+            mock_initial_setup.assert_called_once()
+
+    @patch("qililab.experiment.prepare_results.open")
+    @patch("qililab.experiment.prepare_results.os.makedirs")
+    def test_platform_attributes_after_build_execution(
+        self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment
+    ):
+        """Test the ``build_execution`` method of the Experiment class."""
+        # Check that the ``pulse_schedules`` attribute is empty
+        assert len(experiment.pulse_schedules) == 0
+        # Check that attributes don't exist
+        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "results")
+        assert not hasattr(experiment, "results_path")
+        assert not hasattr(experiment, "_plot")
+        assert not hasattr(experiment, "_remote_id")
+        # Build execution
+        experiment.build_execution()
+        # Assert that the mocks are called when building the execution (such that NO files are created)
+        mock_open.assert_called()
+        mock_makedirs.assert_called()
+        # Check that the ``pulse_schedules`` attribute is NOT empty
+        assert len(experiment.pulse_schedules) == len(experiment.circuits)
+        # Check that new attributes are created
+        assert isinstance(experiment.execution, Execution)
+        assert isinstance(experiment.results, Results)
+        assert isinstance(experiment.results_path, Path)
+        assert isinstance(experiment._plot, LivePlot)
+        assert not hasattr(experiment, "_remote_id")
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method."""
@@ -67,22 +120,33 @@ class TestExperiment:
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
 
-    def test_draw_method(self, experiment_all_platforms: Experiment):
+    @patch("qililab.experiment.prepare_results.open")
+    @patch("qililab.experiment.prepare_results.os.makedirs")
+    def test_draw_method(self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment_all_platforms: Experiment):
         """Test draw method."""
         experiment_all_platforms.build_execution()
-        experiment_all_platforms.draw()
+        # Assert that the mocks are called when building the execution (such that NO files are created)
+        mock_open.assert_called()
+        mock_makedirs.assert_called()
+        figure = experiment_all_platforms.draw()
+        assert isinstance(figure, Figure)
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
         if experiment_all_platforms.options.loops is not None:
             print(experiment_all_platforms.options.loops[0].num_loops)
 
-    def test_draw_method_with_one_bus(self, platform: Platform):
+    @patch("qililab.experiment.prepare_results.open")
+    @patch("qililab.experiment.prepare_results.os.makedirs")
+    def test_draw_method_with_one_bus(self, mock_open: MagicMock, mock_makedirs: MagicMock, platform: Platform):
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
         circuit.add(M(0))
         experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.build_execution()
+        # Assert that the mocks are called when building the execution (such that NO files are created)
+        mock_open.assert_called()
+        mock_makedirs.assert_called()
         experiment.draw()
 
     def test_str_method(self, experiment_all_platforms: Experiment):
