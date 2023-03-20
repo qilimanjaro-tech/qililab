@@ -10,15 +10,7 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import (
-    Play,
-    ResetPh,
-    SetAwgGain,
-    SetPh,
-    Stop,
-    Wait,
-    WaitSync,
-)
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync, Acquire
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -183,13 +175,14 @@ class QbloxModule(AWG):
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
             nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
@@ -204,7 +197,9 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
-        program.append_block(avg_loop)
+        acquisition = Loop(name="acquisition", begin=num_binned_acquisitions)
+        program.append_block(acquisition)
+        acquisition.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -227,7 +222,8 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
+        avg_loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        # self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
         wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
