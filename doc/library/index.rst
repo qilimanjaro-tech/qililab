@@ -43,7 +43,7 @@ In this page you can find the documentation of the qililab package implemented i
    :maxdepth: 1
    :caption: API Reference:
 
-   ApiReferences/qililab
+   ApiReferences/modules
 
 
 Indices and tables
