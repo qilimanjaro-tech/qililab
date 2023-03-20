@@ -8,7 +8,9 @@ from qililab.typings.enums import Parameter
 class TestSGS100A:
     """Unit tests checking the SGS100A attributes and methods"""
 
-    @pytest.mark.parametrize("parameter, value", [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09)])
+    @pytest.mark.parametrize(
+        "parameter, value", [(Parameter.POWER, 0.01), (Parameter.LO_FREQUENCY, 6.0e09), (Parameter.RF_ON, True)]
+    )
     def test_setup_method(self, parameter: Parameter, value: float, rohde_schwarz: SGS100A):
         """Test setup method"""
         rohde_schwarz.setup(parameter=parameter, value=value)
@@ -16,12 +18,18 @@ class TestSGS100A:
             assert rohde_schwarz.settings.power == value
         if parameter == Parameter.LO_FREQUENCY:
             assert rohde_schwarz.settings.frequency == value
+        if parameter == Parameter.RF_ON:
+            assert rohde_schwarz.settings.rf_on == value
 
     def test_initial_setup_method(self, rohde_schwarz: SGS100A):
         """Test initial setup method"""
         rohde_schwarz.initial_setup()
         rohde_schwarz.device.power.assert_called_with(rohde_schwarz.power)
         rohde_schwarz.device.frequency.assert_called_with(rohde_schwarz.frequency)
+        if rohde_schwarz.rf_on:
+            rohde_schwarz.device.on.assert_called_once()
+        else:
+            rohde_schwarz.device.off.assert_called_once()
 
     def test_turn_on_method(self, rohde_schwarz: SGS100A):
         """Test turn_on method"""

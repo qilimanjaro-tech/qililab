@@ -64,6 +64,10 @@ class SGS100A(SignalGenerator):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
+        if self.rf_on:
+            self.device.on()
+        else:
+            self.device.off()
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
@@ -78,3 +82,4 @@ class SGS100A(SignalGenerator):
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
+        pass
