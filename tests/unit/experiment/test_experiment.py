@@ -76,9 +76,7 @@ class TestMethods:
 
     @patch("qililab.experiment.prepare_results.open")
     @patch("qililab.experiment.prepare_results.os.makedirs")
-    def test_platform_attributes_after_build_execution(
-        self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment
-    ):
+    def test_build_execution(self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment):
         """Test the ``build_execution`` method of the Experiment class."""
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
@@ -101,6 +99,21 @@ class TestMethods:
         assert isinstance(experiment.results_path, Path)
         assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
+
+    def test_run_raises_error(self, experiment: Experiment):
+        """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
+        with pytest.raises(ValueError, match="Please build the execution before running an experiment"):
+            experiment.run()
+
+    def test_turn_on_instruments_raises_error(self, experiment: Experiment):
+        """Test that the ``turn_on_instruments`` method raises an error if ``build_execution`` has not been called."""
+        with pytest.raises(ValueError, match="Please build the execution before turning on the instruments"):
+            experiment.turn_on_instruments()
+
+    def test_turn_off_instruments_raises_error(self, experiment: Experiment):
+        """Test that the ``turn_off_instruments`` method raises an error if ``build_execution`` has not been called."""
+        with pytest.raises(ValueError, match="Please build the execution before turning off the instruments"):
+            experiment.turn_off_instruments()
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method."""
