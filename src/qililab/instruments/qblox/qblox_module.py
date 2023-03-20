@@ -197,9 +197,8 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
-        acquisition = Loop(name="acquisition", begin=num_binned_acquisitions)
-        program.append_block(acquisition)
-        acquisition.append_block(avg_loop)
+        bins = Loop(name="bins", begin=0, end=int(self._MAX_BINS/num_binned_acquisitions)-1, step=1)
+        program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -222,13 +221,15 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        avg_loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
-        # self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
+        # avg_loop.append_component(Acquire(acq_index=1, bin_index=bins.counter_register, wait_time=self._MIN_WAIT_TIME))
+        self._append_acquire_instruction(loop=avg_loop, register=bins.counter_register, sequencer_id=sequencer_id)
+        bins.append_block(avg_loop)
         wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
+        print(repr(program))
         return program
 
     def _generate_acquisitions(
@@ -243,8 +244,9 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        for idx in range(num_binned_acquisitions):
-            acquisitions.add(name=f"bins{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions)-1, index=idx+1)
+        acquisitions.add(name="binning", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=1)
+        for idx in range(num_binned_acquisitions-1):
+            acquisitions.add(name=f"binning{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=idx+2)
         print(acquisitions)
         return acquisitions
 
