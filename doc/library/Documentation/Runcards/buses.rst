@@ -1,13 +1,12 @@
 Buses
 +++++++++++++++++++++++++
-Buses are 
+Buses describes an abstraction of **a physical line** in the lab setup. 
+It contains all required equipment necessary to communicate from the measurement **PC to a target** (Qubit, Resonator or Coupler) **via a chip port**.
 
-Describes an abstraction of **a physical line** with all required equipment necessary to communicate from the measurement **PC to a target** (Qubit, Resonator or Coupler) **via a chip port**.
+Each bus is a collection of instuments connected to a given port and stores the schedule of pulses that will be send to that port.
+In the `buses` section of the runcard, we create thous lines by grouping different instruments to a bus, replicating the setup of the lab.
 
-Each bus is a collection of instuments connected to a given port and stores the schedule of pulses that will be send to a port.
-Each specific Bus type has only one specific **System Control** type.
-
-There are two main groups in regard to the nature of the bus:
+There are different types of buses depending on the functionality, for each functionality there is a sistem controller that it is utilized .
 
 Time Domain
 **************
