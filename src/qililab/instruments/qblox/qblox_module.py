@@ -197,7 +197,7 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
-        bins = Loop(name="bins", begin=0, end=int(self._MAX_BINS/num_binned_acquisitions)-1, step=1)
+        bins = Loop(name="bins", begin=0, end=1000, step=1) # int(self._MAX_BINS/num_binned_acquisitions)-1
         program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
