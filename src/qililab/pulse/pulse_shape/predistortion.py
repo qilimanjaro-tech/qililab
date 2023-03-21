@@ -1,4 +1,4 @@
-"""Exponential decay correction pulse shape."""
+"""Predistortion pulse shape."""
 from dataclasses import dataclass
 
 import numpy as np
@@ -13,10 +13,11 @@ from qililab.utils import Factory
 
 @Factory.register
 @dataclass(unsafe_hash=True, eq=True)
-class ExponentialCorrection(PulseShape):
-    """Exponential decay correction pulse shape."""
+class Predistortion(PulseShape):
+    """Predistortion pulse shape."""
 
-    name = PulseShapeName.EXPONENTIAL_CORRECTION
+    name = PulseShapeName.PREDISTORTION
+    tau_bias_tee: float
     tau_exponential: float
     amp: float
     sampling_rate: float = 1.0
@@ -34,25 +35,35 @@ class ExponentialCorrection(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+
         ysig = amplitude * np.ones(round(duration / resolution))
         
-        # Parameters
+        #Bias tee correction
+        k1 = 2 * self.tau_bias_tee*self.sampling_rate
+        a1 = [1, -1]
+        b1 = [(k1 + 1) / k1, -(k1 - 1) / k1]
+        
+        ysig = signal.lfilter(b1, a1, ysig)
+        norm = np.amax(np.abs(ysig))
+        ysig = ysig/norm
+
+        # Exponential correction
         alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
 
         if self.amp >= 0.0:
-            k = self.amp/(1+self.amp-alpha)
-            b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
+            k2 = self.amp/(1+self.amp-alpha)
+            b2 = [(1-k2 + k2*alpha), -(1-k2)*(1-alpha)]
         else:
-            k = -self.amp/(1+self.amp)/(1-alpha)
-            b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
+            k2 = -self.amp/(1+self.amp)/(1-alpha)
+            b2 = [(1+k2 - k2*alpha), -(1-k2)*(1-alpha)]
         
-        a = [1, -(1-alpha)]
+        a2 = [1, -(1-alpha)]
 
-        # Filtered signal
-        ycorr = signal.lfilter(b, a, ysig)
-        norm = np.amax(np.abs(ycorr)) 
-        ycorr = ycorr/norm
-        return ycorr
+        ysig = signal.lfilter(b2, a2, ysig)
+        norm = np.amax(np.abs(ysig)) 
+        ysig = ysig/norm
+        
+        return ysig
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
@@ -62,6 +73,7 @@ class ExponentialCorrection(PulseShape):
         """
         return {
             RUNCARD.NAME: self.name.value,
+            PulseShapeSettingsName.TAU_BIAS_TEE.value: self.tau_bias_tee,
             PulseShapeSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
-            PulseShapeSettingsName.AMP.value: self.amp
+            PulseShapeSettingsName.AMP.value: self.amp,
         }

@@ -17,7 +17,7 @@ class BiasTeeCorrection(PulseShape):
     """Bias tee correction pulse shape."""
 
     name = PulseShapeName.BIAS_TEE_CORRECTION
-    tau: float
+    tau_bias_tee: float
     sampling_rate: float = 1.0
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
@@ -34,7 +34,7 @@ class BiasTeeCorrection(PulseShape):
         """
         ysig = amplitude * np.ones(round(duration / resolution))
         
-        k = 2 * self.tau*self.sampling_rate
+        k = 2 * self.tau_bias_tee*self.sampling_rate
         a = [1, -1]
         b = [(k + 1) / k, -(k - 1) / k]
         
@@ -53,5 +53,5 @@ class BiasTeeCorrection(PulseShape):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.TAU.value: self.tau,
+            PulseShapeSettingsName.TAU_BIAS_TEE.value: self.tau_bias_tee,
         }

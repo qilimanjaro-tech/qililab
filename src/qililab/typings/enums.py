@@ -200,6 +200,7 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    PREDISTORTION = "predistortion"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -212,7 +213,8 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
-    TAU = "tau"
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
 
 
@@ -476,7 +478,8 @@ class Parameter(str, Enum):
     INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
     INTEGRATION_WEIGHT_Q_2 = "integration_weight_Q_2"
     GATE_PARAMETER = "gate_parameter"
-    TAU = "tau"
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
 
 
