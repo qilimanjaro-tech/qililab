@@ -1,6 +1,7 @@
 """Loop class."""
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, dataclass, field
 from typing import List
 
@@ -20,6 +21,7 @@ class Loop:
     options: LoopOptions
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
+    hardware: bool = False
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
@@ -28,6 +30,12 @@ class Loop:
         if self.loop is not None:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
+            if self.hardware is True:
+                if self.loop.hardware is False:
+                    raise ValueError("Cannot add a software loop inside a hardware loop.")
+                if self.alias != self.loop.alias:
+                    raise ValueError("Nested hardware loops of parameters of different buses is not supported.")
+
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
@@ -85,6 +93,44 @@ class Loop:
             int: Number of nested loops.
         """
         return len(self.loops)
+
+    @property
+    def hw_loop(self) -> Loop | None:
+        """Returns a Loop object containing only the hardware loops.
+
+        Returns:
+            Loop | None: Loop object containing only the hardware loops. If the initial Loop is software, ``None`` is
+                returned.
+        """
+        if not self.hardware:
+            # If Loop is already a hardware loop, return None
+            return None
+        loop: Loop | None = copy.deepcopy(self)
+        while loop is not None and not loop.hardware:
+            loop = loop.loop
+
+        return loop
+
+    @property
+    def sw_loop(self) -> Loop | None:
+        """Returns a Loop object containing only the software loops.
+
+        Returns:
+            Loop | None: Loop object containing only the software loops. If the initial Loop is hardware, ``None`` is
+                returned.
+        """
+        if self.hardware:
+            # If Loop is already a hardware loop, return None
+            return None
+        loop: Loop | None = copy.deepcopy(self)
+        tmp_loop = loop
+        while tmp_loop.loop is not None:
+            if tmp_loop.loop.hardware:
+                tmp_loop.loop = None
+                break
+            tmp_loop = tmp_loop.loop
+
+        return loop
 
     @property
     def loops(self) -> List[Loop]:

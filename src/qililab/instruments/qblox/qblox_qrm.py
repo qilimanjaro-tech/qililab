@@ -8,15 +8,14 @@ from qpysequence.program.instructions import Acquire
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import (
-    AWGQbloxADCSequencer,
-)
+from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
+from qililab.utils import Loop as HwLoop
 
 
 @InstrumentFactory.register
@@ -83,7 +82,12 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        hw_loop: HwLoop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -105,7 +109,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
         super().generate_program_and_upload(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            path=path,
+            hw_loop=hw_loop,
         )
 
     def acquire_result(self) -> QbloxResult:

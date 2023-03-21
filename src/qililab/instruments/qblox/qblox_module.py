@@ -17,9 +17,7 @@ from qpysequence.waveforms import Waveforms
 from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
-from qililab.instruments.awg_settings.awg_sequencer_path import (
-    AWGSequencerPathIdentifier,
-)
+from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
@@ -107,7 +105,12 @@ class QbloxModule(AWG):
         return self.device.module_type()
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 

@@ -9,7 +9,7 @@ from qililab.system_controls.system_control_types import (
     TimeDomainSystemControl,
 )
 from qililab.typings import BusSubCategory
-from qililab.utils import Waveforms
+from qililab.utils import Loop, Waveforms
 
 
 @dataclass
@@ -19,7 +19,9 @@ class PulseScheduledBus:
     bus: TimeDomainBus | SimulatedBus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, path: Path) -> None:
+    def generate_program_and_upload(
+        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+    ) -> None:
         """Translate the Pulse Bus Schedule to each AWG program and upload them
 
         Args:
@@ -33,6 +35,7 @@ class PulseScheduledBus:
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
+            hw_loop=hw_loop,
         )
 
     def run(self):
@@ -102,3 +105,12 @@ class PulseScheduledBus:
             BusSubCategory: Bus subcategory.
         """
         return self.bus.bus_subcategory
+
+    @property
+    def alias(self) -> str:
+        """Alias of the bus.
+
+        Returns:
+            str: alias of the bus
+        """
+        return self.bus.alias

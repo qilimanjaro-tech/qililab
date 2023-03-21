@@ -1,11 +1,12 @@
 """Execution class."""
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.result import Result
-from qililab.utils import LivePlot
+from qililab.utils import LivePlot, Loop
 
 
 @dataclass
@@ -23,7 +24,9 @@ class Execution:
         """Start/Turn on the instruments."""
         self.platform.turn_off_instruments()
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, path: Path) -> None:
+    def generate_program_and_upload(
+        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+    ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
@@ -33,7 +36,7 @@ class Execution:
             path (Path): path to save the program to upload
         """
         return self.execution_manager.generate_program_and_upload(
-            idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path
+            idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path, hw_loop=hw_loop
         )
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:

@@ -2,21 +2,18 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
-from qililab.execution.execution_buses import (
-    PulseScheduledBus,
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses import PulseScheduledBus, PulseScheduledReadoutBus
 from qililab.platform.components.bus_types import ContinuousBus
 from qililab.result import Result
 from qililab.typings import yaml
-from qililab.utils import LivePlot, Waveforms
+from qililab.utils import LivePlot, Loop, Waveforms
 
 
 @dataclass
@@ -46,7 +43,9 @@ class ExecutionManager:
         """returns a list with pulse_scheduled_buses and pulse_scheduled_readout_buses"""
         return self.pulse_scheduled_buses + self.pulse_scheduled_readout_buses
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, path: Path) -> None:
+    def generate_program_and_upload(
+        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+    ) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
@@ -56,8 +55,9 @@ class ExecutionManager:
             path (Path): path to save the program to upload
         """
         for pulse_scheduled_bus in self.all_pulse_scheduled_buses:
+            loop = hw_loop if hw_loop.alias == pulse_scheduled_bus.alias else None
             pulse_scheduled_bus.generate_program_and_upload(
-                idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path
+                idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path, hw_loop=loop
             )
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)

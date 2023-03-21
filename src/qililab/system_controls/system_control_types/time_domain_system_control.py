@@ -7,6 +7,7 @@ from qililab.pulse import PulseBusSchedule
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
 from qililab.typings.enums import Category, Parameter
+from qililab.utils import Loop
 
 
 class TimeDomainSystemControl(SystemControl):
@@ -56,7 +57,12 @@ class TimeDomainSystemControl(SystemControl):
         self.awg.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -71,6 +77,7 @@ class TimeDomainSystemControl(SystemControl):
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
+            hw_loop=hw_loop,
         )
 
     def run(self) -> None:

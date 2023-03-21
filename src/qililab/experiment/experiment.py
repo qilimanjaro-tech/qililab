@@ -95,7 +95,7 @@ class Experiment:
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
         ):
-            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+            self._execute_recursive_loops(loops=self.options.sw_loops, idx=idx)
 
         if self.options.remote_save:
             self.remote_save_experiment()
@@ -173,7 +173,11 @@ class Experiment:
             Result: Result object for one program execution.
         """
         self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, path=self.results_path
+            idx=idx,
+            nshots=self.hardware_average,
+            repetition_duration=self.repetition_duration,
+            path=self.results_path,
+            hw_loops=self.options.hw_loop,
         )
         return self.execution.run(plot=self._plot, path=self.results_path)
 

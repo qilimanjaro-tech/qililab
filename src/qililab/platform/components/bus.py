@@ -110,6 +110,15 @@ class Bus(FactoryElement):
         """
         return self.settings.bus_subcategory
 
+    @property
+    def alias(self) -> str:
+        """Bus alias.
+
+        Returns:
+            str: alias of the bus
+        """
+        return self.settings.alias
+
     def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in deepcopy(self.settings):

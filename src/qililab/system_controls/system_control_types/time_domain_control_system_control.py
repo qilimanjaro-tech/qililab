@@ -9,7 +9,7 @@ from qililab.system_controls.system_control_types.time_domain_system_control imp
 )
 from qililab.typings import SystemControlSubCategory
 from qililab.typings.enums import Category, Parameter, SystemControlName
-from qililab.utils import Factory
+from qililab.utils import Factory, Loop
 
 
 @Factory.register
@@ -88,7 +88,12 @@ class ControlSystemControl(TimeDomainSystemControl):
         return super()._get_supported_instrument_categories() + [Category.SIGNAL_GENERATOR]
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -108,4 +113,5 @@ class ControlSystemControl(TimeDomainSystemControl):
             nshots=nshots,
             repetition_duration=repetition_duration,
             path=path,
+            hw_loop=hw_loop,
         )

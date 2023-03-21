@@ -7,13 +7,10 @@ from typing import Sequence
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
-from qililab.instruments.awg_settings.typings import (
-    AWGSequencerPathIdentifier,
-    AWGTypes,
-)
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGTypes
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
-from qililab.utils.asdict_factory import dict_factory
+from qililab.utils import Loop, dict_factory
 
 
 class AWG(Instrument):
@@ -69,7 +66,12 @@ class AWG(Instrument):
 
     @abstractmethod
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        path: Path,
+        hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 

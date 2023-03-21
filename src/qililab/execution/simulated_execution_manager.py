@@ -1,6 +1,7 @@
 """Simulated ExecutionManager class."""
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import List
 
 from qililab.config import logger
 from qililab.execution.execution_buses.simulated_pulse_scheduled_readout_bus import (
@@ -8,7 +9,7 @@ from qililab.execution.execution_buses.simulated_pulse_scheduled_readout_bus imp
 )
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.result import Result
-from qililab.utils import LivePlot
+from qililab.utils import LivePlot, Loop
 
 
 @dataclass
@@ -22,7 +23,9 @@ class SimulatedExecutionManager(ExecutionManager):
         """returns a list with only simulated_pulse_scheduled_buses"""
         return self.simulated_pulse_scheduled_buses
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, path: Path) -> None:
+    def generate_program_and_upload(
+        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+    ) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
