@@ -21,33 +21,39 @@ from qililab.utils.live_plot import LivePlot
 from .aux_methods import mock_instruments
 
 
-@pytest.fixture(name="built_experiment")
+@pytest.fixture(name="connected_experiment")
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
 @patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
-@patch("qililab.experiment.prepare_results.os.makedirs")
-@patch("qililab.experiment.prepare_results.open")
-def fixture_built_experiment(
-    mock_open: MagicMock,
-    mock_makedirs: MagicMock,
+def fixture_connected_experiment(
     mock_mini_circuits: MagicMock,
     mock_keithley: MagicMock,
     mock_rs: MagicMock,
     mock_pulsar: MagicMock,
-    experiment: Experiment,
+    experiment_all_platforms: Experiment,
 ):
     """Fixture that returns a connected and built experiment."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    experiment.connect()
+    experiment_all_platforms.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()
     mock_pulsar.assert_called()
-    experiment.build_execution()
-    mock_open.assert_called()
-    mock_makedirs.assert_called()
-    return experiment
+    return experiment_all_platforms
+
+
+@pytest.fixture(name="built_experiment")
+def fixture_built_experiment(connected_experiment: Experiment):
+    """Fixture that returns a connected and built experiment."""
+    with patch("qililab.experiment.prepare_results.open") as mock_open:
+        with patch("qililab.experiment.prepare_results.os.makedirs") as mock_makedirs:
+            # Build execution
+            connected_experiment.build_execution()
+            # Assert that the mocks are called when building the execution (such that NO files are created)
+            mock_open.assert_called()
+            mock_makedirs.assert_called()
+    return connected_experiment
 
 
 class TestAttributes:
@@ -188,16 +194,15 @@ class TestMethods:
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
 
-    @patch("qililab.experiment.prepare_results.open")
-    @patch("qililab.experiment.prepare_results.os.makedirs")
-    def test_draw_method(self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment_all_platforms: Experiment):
+    def test_draw_method(self, built_experiment: Experiment):
         """Test draw method."""
-        experiment_all_platforms.build_execution()
-        # Assert that the mocks are called when building the execution (such that NO files are created)
-        mock_open.assert_called()
-        mock_makedirs.assert_called()
-        figure = experiment_all_platforms.draw()
+        figure = built_experiment.draw()
         assert isinstance(figure, Figure)
+
+    def test_draw_raises_error(self, experiment: Experiment):
+        """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""
+        with pytest.raises(ValueError, match="Please build the execution before drawing the experiment"):
+            experiment.draw()
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
