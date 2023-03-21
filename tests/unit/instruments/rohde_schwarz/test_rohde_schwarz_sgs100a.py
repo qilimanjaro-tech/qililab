@@ -22,8 +22,10 @@ class TestSGS100A:
         if parameter == Parameter.RF_ON:
             assert rohde_schwarz.settings.rf_on == value
 
-    def test_initial_setup_method(self, rohde_schwarz: SGS100A):
+    @pytest.mark.parametrize("rf_on", [True, False])
+    def test_initial_setup_method(self, rf_on: bool, rohde_schwarz: SGS100A):
         """Test initial setup method"""
+        rohde_schwarz.setup(Parameter.RF_ON, rf_on)
         rohde_schwarz.initial_setup()
         rohde_schwarz.device.power.assert_called_with(rohde_schwarz.power)
         rohde_schwarz.device.frequency.assert_called_with(rohde_schwarz.frequency)
