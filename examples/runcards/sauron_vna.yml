@@ -6,19 +6,39 @@ settings:
   delay_before_readout: 40
   master_amplitude_gate: 1
   master_duration_gate: 100
-  master_drag_coefficient: 0
   gates: []
 schema:
   chip:
   instruments:
     - name: keysight_e5080b
-      alias: keysight_e5080b
+      alias: VNA
       id_: 0
       category: vna
       firmware: A.15.10.06
       power: -60.0
+      scattering_parameter: S21
+      averaging_enabled: False
+      number_averages: 1
+      trigger_mode: INT
+      number_points: 1000
+      sweep_mode: CONT
+      device_timeout: 10000
+      electrical_delay: 0.0
 
-  buses: []
+  buses:
+    - id_: 0
+      name: continuous_readout_bus
+      category: bus
+      bus_category: continuous
+      bus_subcategory: readout
+      alias: vna_readout_bus
+      system_control:
+        id_: 0
+        name: continious_readout_system_control
+        category: system_control
+        system_control_category: continuous
+        system_control_subgategory: readout
+        vector_network_analyzer: VNA
   instrument_controllers:
     - name: keysight_e5080b_controller
       id_: 0

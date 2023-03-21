@@ -423,6 +423,7 @@ class VectorNetworkAnalyzer(Instrument):
 
     def release(self):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
+        self.settings.sweep_mode = VNASweepModes("cont")
         self.device.release()
 
     def read_tracedata(self):
