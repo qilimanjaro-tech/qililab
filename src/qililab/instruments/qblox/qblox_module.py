@@ -229,7 +229,6 @@ class QbloxModule(AWG):
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
-        print(repr(program))
         return program
 
     def _generate_acquisitions(
