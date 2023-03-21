@@ -30,7 +30,6 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
