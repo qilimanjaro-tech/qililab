@@ -12,10 +12,10 @@ This document contains the changes of the current release.
 - Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
 
-- Change `schedule_index_to_load` argument to `idx` for more readability.
+- Changed `schedule_index_to_load` argument to `idx` for more readability.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-- Refactor the `Experiment` class, creating a method for each step of the workflow. The `Experiment.execute` method will run all these methods in order:
+- Refactored the `Experiment` class, creating a method for each step of the workflow. The `Experiment.execute` method will run all these methods in order:
 
   - `connect`: Connect to the instruments and block the device.
   - `initial_setup`: Apply runcard settings to the instruments.
@@ -38,40 +38,40 @@ This document contains the changes of the current release.
 
 ## Breaking changes
 
-- Remove context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
+- Removed context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
   instruments when not using the `execute` method directly!
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- Removed the `ExecutionOptions` class. Now the user can freely choose which steps of the workflow to execute.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 ## Deprecations / Removals
 
-- Remove the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
+- Removed the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
   `prepare_results` function inside the `experiments` folder.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-- Remove unused `connect`, `disconnect` and `setup` methods from the `Execution` class. These are used in the
+- Removed unused `connect`, `disconnect` and `setup` methods from the `Execution` class. These are used in the
   `Experiment` class, which call the corresponding methods of the `Platform` class.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-- Remove the `RemoteAPI` class. This class didn't add any functionality.
+- Removed the `RemoteAPI` class. This class didn't add any functionality.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
-- Remove the `ExecutionOptions` class. Now the user can freely choose which steps of the workflow to execute.
-  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
-
-- Remove the `Platform.connect_and_initial_setup` method.
+- Removed the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 ## Documentation
 
 ## Bug fixes
 
-- Fix bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
+- Fixed bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
 
 - The `qibo` version has been downgraded to `0.1.10` to allow installation on Mac laptops.
   [#185](https://github.com/qilimanjaro-tech/qililab/pull/185)
 
-- Fix the `Platform.get_element` method:
+- Fixed the `Platform.get_element` method:
 
   - Now calling `get_element` of a gate returns a `GateSettings` instance, instead of a `PlatformSettings` instance.
   - Add try/except over the `chip.get_node_from_alias` method to avoid getting an error if the node doesn't exist.
