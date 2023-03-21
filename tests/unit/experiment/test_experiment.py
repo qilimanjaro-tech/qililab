@@ -221,6 +221,10 @@ class TestMethods:
         """Test __str__ method."""
         str(experiment_all_platforms)
 
+
+class TestSetParameter:
+    """Unit tests for the ``set_parameter`` method."""
+
     def test_set_parameter_method_without_a_connected_device(self, experiment: Experiment):
         """Test set_parameter method raising an error when device is not connected."""
         with pytest.raises(ValueError):
@@ -262,6 +266,10 @@ class TestMethods:
             ).settings.reset
             is False
         )
+
+
+class TestReset:
+    """Unit tests for the reset option."""
 
     @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
     @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
