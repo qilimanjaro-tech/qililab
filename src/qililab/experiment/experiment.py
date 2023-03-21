@@ -358,7 +358,6 @@ class Experiment:
             schedule_index_to_load=schedule_index_to_load,
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
-            path=path,
         )
         return self._execution.run(plot=plot, path=path)
 

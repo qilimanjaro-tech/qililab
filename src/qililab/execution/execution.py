@@ -53,9 +53,7 @@ class Execution:
         """Start/Turn on the instruments."""
         self.platform.turn_on_instruments()
 
-    def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
+    def generate_program_and_upload(self, schedule_index_to_load: int, nshots: int, repetition_duration: int) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
@@ -65,10 +63,7 @@ class Execution:
             path (Path): path to save the program to upload
         """
         return self.execution_manager.generate_program_and_upload(
-            schedule_index_to_load=schedule_index_to_load,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            path=path,
+            schedule_index_to_load=schedule_index_to_load, nshots=nshots, repetition_duration=repetition_duration
         )
 
     def setup(self) -> None:
