@@ -25,7 +25,7 @@ class Execution:
         self.platform.turn_off_instruments()
 
     def generate_program_and_upload(
-        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+        self, idx: int, nshots: int, repetition_duration: int, hw_loop: Loop | None
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -33,10 +33,9 @@ class Execution:
             schedule_index_to_load (int): specific schedule to load
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
         return self.execution_manager.generate_program_and_upload(
-            idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path, hw_loop=hw_loop
+            idx=idx, nshots=nshots, repetition_duration=repetition_duration, hw_loop=hw_loop
         )
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:

@@ -109,7 +109,6 @@ class QbloxModule(AWG):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        path: Path,
         hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
@@ -117,20 +116,17 @@ class QbloxModule(AWG):
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _check_cached_values(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
-    ):
+    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
@@ -138,7 +134,7 @@ class QbloxModule(AWG):
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
             # FIXME: Qblox supports to set it directly to the device instead of using a file
-            self.upload(sequence=sequence, path=path)
+            self.upload(sequence=sequence)
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
@@ -469,7 +465,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence, path: Path):
+    def upload(self, sequence: QpySequence):
         """Upload sequence to sequencer.
 
         Args:
@@ -477,12 +473,8 @@ class QbloxModule(AWG):
             acquisitions and program of the sequence.
         """
         logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-
-        file_path = str(path / f"{self.name.value}_sequence.yml")
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            json.dump(obj=sequence.todict(), fp=file)
         for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sequence(file_path)
+            self.device.sequencers[seq_idx].sequence(sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

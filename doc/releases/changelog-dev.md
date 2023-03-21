@@ -15,6 +15,9 @@ This document contains the changes of the current release.
 - Changed `schedule_index_to_load` argument to `idx` for more readability.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Upload sequence directly to Qblox instruments, without having to save & load a `json` file.
+  [#197](https://github.com/qilimanjaro-tech/qililab/pull/197)
+
 - Refactored the `Experiment` class, creating a method for each step of the workflow. The `Experiment.execute` method will run all these methods in order:
 
   - `connect`: Connect to the instruments and block the device.

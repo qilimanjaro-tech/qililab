@@ -176,8 +176,7 @@ class Experiment:
             idx=idx,
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
-            path=self.results_path,
-            hw_loops=self.options.hw_loop,
+            hw_loop=self.options.hw_loop,
         )
         return self.execution.run(plot=self._plot, path=self.results_path)
 

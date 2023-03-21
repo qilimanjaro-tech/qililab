@@ -70,7 +70,6 @@ class AWG(Instrument):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        path: Path,
         hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
@@ -78,8 +77,7 @@ class AWG(Instrument):
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
 
     @abstractmethod

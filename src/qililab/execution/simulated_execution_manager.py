@@ -4,9 +4,7 @@ from pathlib import Path
 from typing import List
 
 from qililab.config import logger
-from qililab.execution.execution_buses.simulated_pulse_scheduled_readout_bus import (
-    SimulatedPulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses.simulated_pulse_scheduled_readout_bus import SimulatedPulseScheduledReadoutBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.result import Result
 from qililab.utils import LivePlot, Loop
@@ -24,7 +22,7 @@ class SimulatedExecutionManager(ExecutionManager):
         return self.simulated_pulse_scheduled_buses
 
     def generate_program_and_upload(
-        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+        self, idx: int, nshots: int, repetition_duration: int, hw_loop: Loop | None
     ) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
@@ -32,7 +30,6 @@ class SimulatedExecutionManager(ExecutionManager):
             idx (int): index of the pulse schedule to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
         for simulated_bus in self.simulated_pulse_scheduled_buses:
             simulated_bus.generate_program(idx=idx)

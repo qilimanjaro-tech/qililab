@@ -61,7 +61,6 @@ class TimeDomainSystemControl(SystemControl):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        path: Path,
         hw_loop: Loop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
@@ -69,14 +68,12 @@ class TimeDomainSystemControl(SystemControl):
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         return self.awg.generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
-            path=path,
             hw_loop=hw_loop,
         )
 

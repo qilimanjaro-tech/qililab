@@ -44,7 +44,7 @@ class ExecutionManager:
         return self.pulse_scheduled_buses + self.pulse_scheduled_readout_buses
 
     def generate_program_and_upload(
-        self, idx: int, nshots: int, repetition_duration: int, path: Path, hw_loop: Loop | None
+        self, idx: int, nshots: int, repetition_duration: int, hw_loop: Loop | None
     ) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
@@ -52,12 +52,11 @@ class ExecutionManager:
             idx (int): index of the pulse schedule to generate and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
         for pulse_scheduled_bus in self.all_pulse_scheduled_buses:
             loop = hw_loop if hw_loop.alias == pulse_scheduled_bus.alias else None
             pulse_scheduled_bus.generate_program_and_upload(
-                idx=idx, nshots=nshots, repetition_duration=repetition_duration, path=path, hw_loop=loop
+                idx=idx, nshots=nshots, repetition_duration=repetition_duration, hw_loop=loop
             )
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
