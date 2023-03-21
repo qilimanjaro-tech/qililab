@@ -1,16 +1,14 @@
 """Qblox module class"""
 import itertools
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync, Acquire
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -240,7 +238,6 @@ class QbloxModule(AWG):
         acquisitions.add(name="binning", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=1)
         for idx in range(num_binned_acquisitions-1):
             acquisitions.add(name=f"binning{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=idx+2)
-        print(acquisitions)
         return acquisitions
 
     @abstractmethod
