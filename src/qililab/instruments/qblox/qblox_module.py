@@ -8,9 +8,9 @@ from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
+from qpysequence.program.instructions import Instruction, Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
@@ -22,6 +22,7 @@ from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
+from qililab.utils import Loop as HwLoop
 
 
 class QbloxModule(AWG):
@@ -109,7 +110,7 @@ class QbloxModule(AWG):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        hw_loop: Loop | None,
+        hw_loop: HwLoop | None,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -118,26 +119,22 @@ class QbloxModule(AWG):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
         """
-        self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-        )
+        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
+            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
+            sequence = self._translate_pulse_bus_schedule(
+                pulse_bus_schedule=pulse_bus_schedule,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+                hw_loop=hw_loop,
+            )
+            self.upload(sequence=sequence)
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
-        """check if values are already cached and upload if not cached"""
-        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
-            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-            )
-            # FIXME: Qblox supports to set it directly to the device instead of using a file
-            self.upload(sequence=sequence)
-
     def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, hw_loop: HwLoop | None
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -156,12 +153,18 @@ class QbloxModule(AWG):
             waveforms=waveforms,
             nshots=nshots,
             repetition_duration=repetition_duration,
+            hw_loop=hw_loop,
         )
         weights = self._generate_weights()
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        waveforms: Waveforms,
+        nshots: int,
+        repetition_duration: int,
+        hw_loop: HwLoop | None,
     ):
         """Generate Q1ASM program
 
@@ -173,35 +176,70 @@ class QbloxModule(AWG):
             Program: Q1ASM program.
         """
         sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        # Define program's blocks
         program = Program()
+        # Define loops
         avg_loop = Loop(name="average", begin=nshots)
+        old_loop = avg_loop
+        if hw_loop is not None:
+            for idx, loop in enumerate(hw_loop.loops):
+                values, instruction = self._translate_parameters(loop.parameter, loop.range)
+                step = (values[-1] - values[0]) / loop.num
+                new_loop = Loop(name=f"hw_loop_{idx}", begin=int(values[0]), end=int(values[-1]), step=int(step))
+                if instruction == SetAwgGain:
+                    # When setting gain, we set the same gain in both path0 and path1
+                    new_loop.append_component(instruction(new_loop.counter_register, new_loop.counter_register))
+                else:
+                    new_loop.append_component(
+                        instruction(new_loop.counter_register)  # pylint: disable=no-value-for-parameter
+                    )
+                old_loop.append_block(new_loop)
+                old_loop = new_loop
         program.append_block(avg_loop)
+        # Define stop
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
+        # Define the loop where all the instructions will go
+        # If we have hardware loops, this will be the inner loop (thus ``tmp_loop``)
+        main_loop = new_loop if hw_loop is not None else avg_loop
+
         timeline = pulse_bus_schedule.timeline
         if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+            main_loop.append_component(Wait(wait_time=int(timeline[0].start)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
-            avg_loop.append_component(ResetPh())
-            avg_loop.append_component(
+            main_loop.append_component(ResetPh())
+            main_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
+        self._append_acquire_instruction(loop=main_loop, register=0, sequencer_id=sequencer_id)
         wait_time = repetition_duration
         if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
+            main_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
+
+    def _translate_parameters(self, parameter: Parameter, values: List[float]) -> Tuple[List[float], Instruction]:
+        """Translate parameters into values supported by Qblox.
+
+        Args:
+            parameter (Parameter): name of the parameter
+            values (List[float]): values of the parameter
+        """
+        # TODO: This translation should be done inside qpysequence
+        values = np.array(values)
+        if parameter == Parameter.GAIN:
+            return values * (2**15 - 1), SetAwgGain
+        if parameter == Parameter.PHASE:
+            return (values % (2 * np.pi) * 1e9) / (2 * np.pi), SetPh
+        raise ValueError(f"The parameter {parameter.value} is not supported in a hardware loop.")
 
     def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1

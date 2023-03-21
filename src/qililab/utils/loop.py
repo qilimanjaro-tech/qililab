@@ -195,7 +195,9 @@ class Loop:
     @property
     def step(self):
         """returns 'step' options property."""
-        return self.options.step
+        if self.options.step is not None:
+            return self.options.step
+        return (self.stop - self.start) / self.num
 
     @property
     def logarithmic(self):
