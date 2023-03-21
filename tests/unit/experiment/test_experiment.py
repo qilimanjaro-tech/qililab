@@ -15,10 +15,39 @@ from qililab.pulse import PulseSchedule
 from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
-from qililab.typings.experiment import ExperimentOptions, ExperimentSettings
+from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 
 from .aux_methods import mock_instruments
+
+
+@pytest.fixture(name="built_experiment")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+@patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
+@patch("qililab.experiment.prepare_results.os.makedirs")
+@patch("qililab.experiment.prepare_results.open")
+def fixture_built_experiment(
+    mock_open: MagicMock,
+    mock_makedirs: MagicMock,
+    mock_mini_circuits: MagicMock,
+    mock_keithley: MagicMock,
+    mock_rs: MagicMock,
+    mock_pulsar: MagicMock,
+    experiment: Experiment,
+):
+    """Fixture that returns a connected and built experiment."""
+    mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+    experiment.connect()
+    mock_mini_circuits.assert_called()
+    mock_keithley.assert_called()
+    mock_rs.assert_called()
+    mock_pulsar.assert_called()
+    experiment.build_execution()
+    mock_open.assert_called()
+    mock_makedirs.assert_called()
+    return experiment
 
 
 class TestAttributes:
@@ -74,9 +103,7 @@ class TestMethods:
             experiment_all_platforms.initial_setup()
             mock_initial_setup.assert_called_once()
 
-    @patch("qililab.experiment.prepare_results.open")
-    @patch("qililab.experiment.prepare_results.os.makedirs")
-    def test_build_execution(self, mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment):
+    def test_build_execution(self, experiment: Experiment):
         """Test the ``build_execution`` method of the Experiment class."""
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
@@ -86,11 +113,13 @@ class TestMethods:
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
         assert not hasattr(experiment, "_remote_id")
-        # Build execution
-        experiment.build_execution()
-        # Assert that the mocks are called when building the execution (such that NO files are created)
-        mock_open.assert_called()
-        mock_makedirs.assert_called()
+        with patch("qililab.experiment.prepare_results.open") as mock_open:
+            with patch("qililab.experiment.prepare_results.os.makedirs") as mock_makedirs:
+                # Build execution
+                experiment.build_execution()
+                # Assert that the mocks are called when building the execution (such that NO files are created)
+                mock_open.assert_called()
+                mock_makedirs.assert_called()
         # Check that the ``pulse_schedules`` attribute is NOT empty
         assert len(experiment.pulse_schedules) == len(experiment.circuits)
         # Check that new attributes are created
@@ -100,20 +129,46 @@ class TestMethods:
         assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
 
+    def test_run(self, built_experiment: Experiment):
+        """Test the ``run`` method of the Experiment class."""
+        assert len(built_experiment.results.results) == 0
+        with patch("qililab.instruments.qblox.qblox_module.open") as mock_open:
+            built_experiment.run()
+            mock_open.assert_called()
+        assert len(built_experiment.results.results) > 0
+
     def test_run_raises_error(self, experiment: Experiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution before running an experiment"):
             experiment.run()
+
+    def test_turn_on_instruments(self, built_experiment: Experiment):
+        """Test the ``turn_on_instruments`` method of the Experiment class."""
+        with patch("qililab.platform.platform.Platform.turn_on_instruments") as mock_turn_on:
+            built_experiment.turn_on_instruments()
+            mock_turn_on.assert_called_once()
 
     def test_turn_on_instruments_raises_error(self, experiment: Experiment):
         """Test that the ``turn_on_instruments`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution before turning on the instruments"):
             experiment.turn_on_instruments()
 
+    def test_turn_off_instruments(self, built_experiment: Experiment):
+        """Test the ``turn_off_instruments`` method of the Experiment class."""
+        with patch("qililab.platform.platform.Platform.turn_off_instruments") as mock_turn_off:
+            built_experiment.turn_off_instruments()
+            mock_turn_off.assert_called_once()
+
     def test_turn_off_instruments_raises_error(self, experiment: Experiment):
         """Test that the ``turn_off_instruments`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution before turning off the instruments"):
             experiment.turn_off_instruments()
+
+    def test_disconnect(self, experiment: Experiment):
+        """Test the ``disconnect`` method of the Experiment class."""
+        with patch("qililab.platform.platform.Platform.disconnect") as mock_disconnect:
+            experiment.disconnect()
+            mock_disconnect.assert_called_once()
 
     def test_to_dict_method(self, experiment_all_platforms: Experiment):
         """Test to_dict method."""
