@@ -54,7 +54,7 @@ class ExecutionManager:
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
         for pulse_scheduled_bus in self.all_pulse_scheduled_buses:
-            loop = hw_loop if hw_loop.alias == pulse_scheduled_bus.alias else None
+            loop = hw_loop if hw_loop is not None and hw_loop.alias == pulse_scheduled_bus.alias else None
             pulse_scheduled_bus.generate_program_and_upload(
                 idx=idx, nshots=nshots, repetition_duration=repetition_duration, hw_loop=loop
             )

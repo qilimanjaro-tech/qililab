@@ -42,14 +42,18 @@ class ExperimentOptions:
     def __post_init__(self):
         """Raise an error if a list of hardware loops is provided."""
         # Lists of software and hardware loops. If the lists are empty, the value is set to None
-        self.sw_loops = [loop.sw_loop for loop in self.loops if loop.sw_loop is not None] or None
-        hw_loop = [loop.hw_loop for loop in self.loops if loop.hw_loop is not None]
-        if len(hw_loop):  # list is empty
-            self.hw_loop = None
-        elif len(hw_loop) == 1:
-            self.hw_loop = hw_loop[0]
+        if self.loops is not None:
+            self.sw_loops = [loop.sw_loop for loop in self.loops if loop.sw_loop is not None] or None
+            hw_loop = [loop.hw_loop for loop in self.loops if loop.hw_loop is not None]
+            if not hw_loop:  # list is empty
+                self.hw_loop = None
+            elif len(hw_loop) == 1:
+                self.hw_loop = hw_loop[0]
+            else:
+                raise ValueError("Running multiple hardware loops in parallel is not supported.")
         else:
-            raise ValueError("Running multiple hardware loops in parallel is not supported.")
+            self.sw_loops = None
+            self.hw_loop = None
 
     def to_dict(self):
         """Convert Experiment into a dictionary.

@@ -20,8 +20,6 @@ from .aux_methods import mock_instruments
 @patch("qililab.execution.execution_manager.open")
 @patch("qililab.experiment.prepare_results.open")
 @patch("qililab.experiment.prepare_results.os.makedirs")
-@patch("qililab.instruments.qblox.qblox_module.json.dump")
-@patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
     """Unit tests checking the execution of a platform with instruments."""
 
