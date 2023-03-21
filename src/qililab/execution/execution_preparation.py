@@ -108,5 +108,4 @@ class ExecutionPreparation:
             schedule_index_to_load=schedule_index_to_load,
             nshots=self.options.settings.hardware_average,
             repetition_duration=self.options.settings.repetition_duration,
-            path=results_path,
         )

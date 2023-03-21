@@ -11,12 +11,7 @@ from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_controls.system_control import SystemControl
 from qililab.typings import SystemControlCategory
-from qililab.typings.enums import (
-    Category,
-    Parameter,
-    SystemControlName,
-    SystemControlSubCategory,
-)
+from qililab.typings.enums import Category, Parameter, SystemControlName, SystemControlSubCategory
 from qililab.utils.factory import Factory
 
 
@@ -132,15 +127,14 @@ class SimulatedSystemControl(SystemControl):
         }
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
 
     @property

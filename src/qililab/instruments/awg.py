@@ -7,10 +7,7 @@ from typing import Sequence
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
-from qililab.instruments.awg_settings.typings import (
-    AWGSequencerPathIdentifier,
-    AWGTypes,
-)
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGTypes
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
 from qililab.utils.asdict_factory import dict_factory
@@ -69,17 +66,16 @@ class AWG(Instrument):
 
     @abstractmethod
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int,  repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int,  repetition_duration: int
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
-    
+
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
@@ -93,7 +89,7 @@ class AWG(Instrument):
         if sequencer_id is None:
             raise ValueError("'sequencer_id' must be defined.")
         return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
-    
+
     @property
     def num_sequencers(self):
         """Number of sequencers in the AWG

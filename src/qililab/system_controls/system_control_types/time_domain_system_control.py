@@ -76,22 +76,20 @@ class TimeDomainSystemControl(SystemControl):
             return
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         return self.awg.generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
-            path=path,
         )
 
     def run(self) -> None:
@@ -103,4 +101,4 @@ class TimeDomainSystemControl(SystemControl):
         """Prepare the bus before starting the sequencer"""
         self.awg.set_parameter(parameter=Parameter.GAIN, value=self.settings.gain, channel_id=self.settings.sequencer_id)
         self.awg.set_parameter(parameter=Parameter.IF, value=self.settings.intermediate_frequency, channel_id=self.settings.sequencer_id)
-        
+

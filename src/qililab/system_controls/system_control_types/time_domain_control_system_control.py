@@ -4,9 +4,7 @@ from pathlib import Path
 
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.pulse import PulseBusSchedule
-from qililab.system_controls.system_control_types.time_domain_system_control import (
-    TimeDomainSystemControl,
-)
+from qililab.system_controls.system_control_types.time_domain_system_control import TimeDomainSystemControl
 from qililab.typings import SystemControlSubCategory
 from qililab.typings.enums import Category, Parameter, SystemControlName
 from qililab.utils import Factory
@@ -98,15 +96,14 @@ class ControlSystemControl(TimeDomainSystemControl):
         return super()._get_supported_instrument_categories() + [Category.SIGNAL_GENERATOR]
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int,  repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int,  repetition_duration: int,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         if pulse_bus_schedule.frequency is not None and pulse_bus_schedule.frequency != self.frequency(
             port_id=pulse_bus_schedule.port
@@ -118,7 +115,6 @@ class ControlSystemControl(TimeDomainSystemControl):
             nshots=nshots,
             num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
-            path=path,
         )
 
     def setup(self):

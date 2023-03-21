@@ -375,7 +375,6 @@ class Experiment:
             nshots=self.hardware_average,
             repetition_duration=self.repetition_duration,
             num_binned_acquisitions=self.num_binned_acquisitions,
-            path=path,
         )
         return self._execution.run(plot=plot, path=path)
 
