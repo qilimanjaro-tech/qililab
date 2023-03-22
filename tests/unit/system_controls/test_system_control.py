@@ -1,6 +1,6 @@
 """Tests for the SystemControl class."""
 from qililab.platform.components.bus_element import BusElement
-from qililab.system_controls import SystemControl
+from qililab.system_control import SystemControl
 
 
 class TestSystemControl:

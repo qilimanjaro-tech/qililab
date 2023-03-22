@@ -18,8 +18,6 @@ from .enums import (
     ReferenceClock,
     ResultName,
     SchemaDrawOptions,
-    SystemControlCategory,
-    SystemControlSubCategory,
 )
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement

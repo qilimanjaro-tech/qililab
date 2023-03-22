@@ -40,7 +40,7 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_controls.system_control import SystemControl
+from qililab.system_control.system_control import SystemControl
 from qililab.system_controls.system_control_types.simulated_system_control import SimulatedSystemControl
 from qililab.system_controls.system_control_types.time_domain_control_system_control import ControlSystemControl
 from qililab.typings import Parameter

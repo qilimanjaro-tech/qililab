@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.bus import Bus
-from qililab.system_controls import (
+from qililab.system_control import (
     ContinuousReadoutSystemControl,
     SimulatedSystemControl,
     TimeDomainReadoutSystemControl,

@@ -4,7 +4,7 @@ from types import NoneType
 import pytest
 
 from qililab.platform import Bus
-from qililab.system_controls import SystemControl
+from qililab.system_control import SystemControl
 
 from .aux_methods import buses as load_buses
 

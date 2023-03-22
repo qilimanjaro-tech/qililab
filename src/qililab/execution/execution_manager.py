@@ -12,7 +12,7 @@ from qililab.constants import RESULTSDATAFRAME
 from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.platform.components.bus import Bus
 from qililab.result import Result
-from qililab.system_controls import TimeDomainReadoutSystemControl
+from qililab.system_control import TimeDomainReadoutSystemControl
 from qililab.typings import yaml
 from qililab.utils import LivePlot, Waveforms
 

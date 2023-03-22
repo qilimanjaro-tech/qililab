@@ -27,6 +27,7 @@ class RUNCARD:
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
+    INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"

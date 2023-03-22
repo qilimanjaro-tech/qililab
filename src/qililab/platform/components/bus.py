@@ -7,7 +7,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
-from qililab.system_controls import SimulatedSystemControl, SystemControl
+from qililab.system_control import SimulatedSystemControl, SystemControl
 from qililab.typings import BusCategory, BusSubCategory, Category, Node, Parameter
 from qililab.typings.enums import BusName
 from qililab.typings.factory_element import FactoryElement

@@ -250,44 +250,6 @@ class BusSubCategory(str, Enum):
     SIMULATED = "simulated"
 
 
-class SystemControlCategory(str, Enum):
-    """SystemControl categories.
-
-    Args:
-        enum (str): Available categories of SystemControl:
-        * time_domain
-        * continuous
-        * simulated
-    """
-
-    TIME_DOMAIN = "time_domain"
-    CONTINUOUS = "continuous"
-    SIMULATED = "simulated"
-
-
-class SystemControlSubCategory(str, Enum):
-    """SystemControl subcategories.
-
-    Args:
-        enum (str): Available subcategories of SystemControl:
-        * baseband
-        * control
-        * time_domain_readout
-        * current_bias
-        * microwave_bias
-        * continuous_readout
-        * simulated
-    """
-
-    BASEBAND = "baseband"
-    CONTROL = "control"
-    TIME_DOMAIN_READOUT = "readout"
-    CURRENT_BIAS = "current_bias"
-    MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "readout"
-    SIMULATED = "simulated"
-
-
 class NodeName(str, Enum):
     """Node names.
 
