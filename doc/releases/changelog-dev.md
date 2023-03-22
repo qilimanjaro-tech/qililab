@@ -55,6 +55,10 @@ This document contains the changes of the current release.
 - Removed the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Removed the frequency argument from the `Pulse.modulated_waveforms` method (and all the methods that uses this method
+  internally). Remove `frequency` property from certain buses.
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ## Deprecations / Removals
 
 - Removed the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
