@@ -259,6 +259,12 @@ class QbloxModule(AWG):
         if parameter == Parameter.OFFSET_PATH1:
             self._set_offset_path1(value=value, sequencer_id=channel_id)
             return
+        if parameter == Parameter.OFFSET_OUT0:
+            self._set_offset_out0(value=value)
+            return
+        if parameter == Parameter.OFFSET_OUT1:
+            self._set_offset_out1(value=value)
+            return
         if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, sequencer_id=channel_id)
             return
@@ -354,7 +360,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path0 = float(value)
-        self.device.sequencers[sequencer_id].out0_offset(float(value))
+        self.device.sequencers[sequencer_id].offset_awg_path0(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
@@ -368,7 +374,33 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
-        self.device.sequencers[sequencer_id].out1_offset(float(value))
+        self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_out0(self, value: float | str | bool):
+        """set offset out0
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.device.out0_offset(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_offset_out1(self, value: float | str | bool):
+        """set offset out1
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float
+        """
+        self.device.out1_offset(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
