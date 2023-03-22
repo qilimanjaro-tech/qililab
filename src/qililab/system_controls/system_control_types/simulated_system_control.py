@@ -84,7 +84,7 @@ class SimulatedSystemControl(SystemControl):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
 
-    def generate_program(self, pulse_bus_schedule: PulseBusSchedule, frequency: float | None = None):
+    def generate_program(self, pulse_bus_schedule: PulseBusSchedule):
         """Translate a Pulse Bus Schedule to a simulated program
 
         Args:
@@ -92,12 +92,8 @@ class SimulatedSystemControl(SystemControl):
             frequency (float | None): frequency to modulate the pulses. Optional
         """
         resolution = self.settings.resolution
-
-        waveform_frequency = pulse_bus_schedule.frequency if pulse_bus_schedule.frequency is not None else frequency
-        if waveform_frequency is None:
-            raise ValueError("frequency not defined.")
         # TODO: get pulses -> check
-        waveforms = pulse_bus_schedule.waveforms(frequency=waveform_frequency, resolution=resolution)
+        waveforms = pulse_bus_schedule.waveforms(resolution=resolution)
         i_waveform = np.array(waveforms.i)
         sequence = [i_waveform]
 

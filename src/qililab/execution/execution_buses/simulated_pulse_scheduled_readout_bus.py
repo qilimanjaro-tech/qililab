@@ -1,9 +1,7 @@
 """Simulated Pulse Scheduled Bus class."""
 from dataclasses import dataclass, field
 
-from qililab.execution.execution_buses.pulse_scheduled_readout_bus import (
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses.pulse_scheduled_readout_bus import PulseScheduledReadoutBus
 from qililab.platform.components.bus_types import SimulatedBus
 from qililab.pulse import PulseBusSchedule
 from qililab.result.result import Result
@@ -32,9 +30,7 @@ class SimulatedPulseScheduledReadoutBus(PulseScheduledReadoutBus):
         Args:
             idx (int): index of the pulse schedule to compile and upload
         """
-        self.system_control.generate_program(  # pylint: disable=no-member
-            pulse_bus_schedule=self.pulse_schedule[idx], frequency=self.bus.frequency
-        )
+        self.system_control.generate_program(pulse_bus_schedule=self.pulse_schedule[idx])
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument

@@ -1,6 +1,7 @@
 """Pulse class."""
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -31,7 +32,7 @@ class Pulse:
                 **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
@@ -41,6 +42,11 @@ class Pulse:
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
+        if self.frequency is None:
+            warnings.warn(f"No frequency found for pulse {self.name}. Setting frequency to 0.")
+            frequency = 0.0
+        else:
+            frequency = self.frequency
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)

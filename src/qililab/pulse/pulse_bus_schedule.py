@@ -120,7 +120,7 @@ class PulseBusSchedule:
         """Redirect __iter__ magic method."""
         return self.timeline.__iter__()
 
-    def waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
+    def waveforms(self, resolution: float = 1.0) -> Waveforms:
         """PulseSequence 'waveforms' property.
 
         Args:
@@ -136,7 +136,7 @@ class PulseBusSchedule:
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
             time += pulse_event.start
-            pulse_waveforms = pulse_event.modulated_waveforms(frequency=frequency, resolution=resolution)
+            pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
             waveforms += pulse_waveforms
             time += pulse_event.duration
 
