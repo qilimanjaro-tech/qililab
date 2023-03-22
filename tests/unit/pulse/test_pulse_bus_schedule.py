@@ -26,7 +26,7 @@ class TestPulseBusSchedule:
 
     def test_waveforms_method(self, pulse_bus_schedule: PulseBusSchedule):
         """Test waveforms method."""
-        waveforms = pulse_bus_schedule.waveforms(frequency=1e9, resolution=0.1)
+        waveforms = pulse_bus_schedule.waveforms(resolution=0.1)
         assert isinstance(waveforms.i, np.ndarray) and isinstance(waveforms.q, np.ndarray)
 
     def test_iter_method(self, pulse_bus_schedule: PulseBusSchedule):

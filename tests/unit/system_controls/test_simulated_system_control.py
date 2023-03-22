@@ -18,7 +18,7 @@ class TestSimulatedSystemControl:
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test run method."""
-        simulated_system_control.generate_program(pulse_bus_schedule=pulse_bus_schedule, frequency=6.0e09)
+        simulated_system_control.generate_program(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.run()
         result = simulated_system_control.acquire_result()
         assert isinstance(result, SimulatorResult)
