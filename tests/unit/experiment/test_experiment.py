@@ -1,4 +1,5 @@
 """Tests for the Experiment class."""
+import os
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,6 +9,7 @@ from matplotlib.figure import Figure
 from qibo.gates import M
 from qibo.models.circuit import Circuit
 
+from qililab.constants import DATA
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.platform import Platform
@@ -137,6 +139,15 @@ class TestMethods:
         else:
             assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
+
+    def test_build_execution_without_data_path_raises_error(self, experiment: Experiment):
+        """Test that the ``build_execution`` method of the ``Experiment`` class raises an error when no DATA
+        path is specified."""
+        old_data = os.environ.get(DATA)
+        del os.environ[DATA]
+        with pytest.raises(ValueError, match="Environment variable DATA is not set"):
+            experiment.build_execution()
+        os.environ[DATA] = old_data
 
     def test_run(self, built_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
