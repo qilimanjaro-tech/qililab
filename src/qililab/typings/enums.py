@@ -313,7 +313,7 @@ class InstrumentName(str, Enum):
         * QCM -> Exactly as Qblox InstrumentType
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
-        * mini_circuits
+        * mini_circuitsout0_offset
         * keithley_2600
         * qblox_D5a
         * qblox_S4g
@@ -466,6 +466,8 @@ class Parameter(str, Enum):
     GAIN_PATH1 = "gain_path1"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    OFFSET_OUT0 = "offset_out0"
+    OFFSET_OUT1 = "offset_out1"
 
 
 class ResultName(str, Enum):
