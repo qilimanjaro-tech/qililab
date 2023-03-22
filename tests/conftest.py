@@ -314,7 +314,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AC
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
+    mock_instance.mock_add_spec(["power", "frequency", "rf_on"])
     rohde_schwarz_controller.connect()
     return rohde_schwarz_controller.modules[0]
 
