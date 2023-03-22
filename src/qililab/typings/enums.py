@@ -200,6 +200,7 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     PREDISTORTION = "predistortion"
 
 
@@ -215,7 +216,11 @@ class PulseShapeSettingsName(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     TAU_BIAS_TEE = "tau_bias_tee"
     TAU_EXPONENTIAL = "tau_exponential"
+    TAU_EXPONENTIAL1 = "tau_exponential1"
+    TAU_EXPONENTIAL2 = "tau_exponential2"
     AMP = "amp"
+    AMP1 = "amp1"
+    AMP2 = "amp2"
 
 
 class BusCategory(str, Enum):
@@ -480,7 +485,11 @@ class Parameter(str, Enum):
     GATE_PARAMETER = "gate_parameter"
     TAU_BIAS_TEE = "tau_bias_tee"
     TAU_EXPONENTIAL = "tau_exponential"
+    TAU_EXPONENTIAL1 = "tau_exponential1"
+    TAU_EXPONENTIAL2 = "tau_exponential2"
     AMP = "amp"
+    AMP1 = "amp1"
+    AMP2 = "amp2"
 
 
 class ResultName(str, Enum):
