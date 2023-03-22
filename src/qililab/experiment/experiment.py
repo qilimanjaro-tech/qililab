@@ -76,13 +76,16 @@ class Experiment:
         # Build ``Execution`` class
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
-        self._plot = LivePlot(
-            connection=self.options.connection,
-            loops=self.options.loops,
-            plot_y_label=self.options.plot_y_label,
-            num_schedules=self.execution.num_schedules,
-            title=self.options.name,
-        )
+        if self.options.connection is None:
+            self._plot = None
+        else:
+            self._plot = LivePlot(
+                connection=self.options.connection,
+                loops=self.options.loops,
+                plot_y_label=self.options.plot_y_label,
+                num_schedules=self.execution.num_schedules,
+                title=self.options.name,
+            )
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
 

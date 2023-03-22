@@ -12,8 +12,8 @@ from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
 
-@pytest.fixture(name="valid_remote_api")
-def fixture_create_valid_remote_api() -> API:
+@pytest.fixture(name="valid_api")
+def fixture_create_valid_api() -> API:
     """Create a valid remote api connection
     Returns:
         RemoteAPI: Remote API connection
@@ -46,23 +46,23 @@ def fixture_create_another_loop() -> Loop:
 class TestLivePlot:
     """Unit tests checking the Experiment attributes and methods"""
 
-    def test_live_plot_instance_no_connection(self, valid_remote_api: API):
+    def test_live_plot_instance_no_connection(self, valid_api: API):
         """Test that the LivePlot instance is created correctly without any connection"""
-        plot = LivePlot(connection=valid_remote_api, num_schedules=1)
+        plot = LivePlot(connection=valid_api, num_schedules=1)
         assert isinstance(plot, LivePlot)
 
-    def test_live_plot_ranges_with_one_loop(self, valid_remote_api: API, one_loop: Loop):
+    def test_live_plot_ranges_with_one_loop(self, valid_api: API, one_loop: Loop):
         """test live plot ranges with one loop"""
 
-        plot = LivePlot(connection=valid_remote_api, loops=[one_loop], num_schedules=1)
+        plot = LivePlot(connection=valid_api, loops=[one_loop], num_schedules=1)
         for x_value in one_loop.range:
             plot.send_points(value=x_value**2)
             time.sleep(0.1)
 
-    def test_live_plot_ranges_with_two_loops(self, valid_remote_api: API, one_loop: Loop):
+    def test_live_plot_ranges_with_two_loops(self, valid_api: API, one_loop: Loop):
         """test live plot ranges with two loops"""
         loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=1, stop=11, num=10), loop=one_loop)
-        plot = LivePlot(connection=valid_remote_api, loops=[loop], num_schedules=1)
+        plot = LivePlot(connection=valid_api, loops=[loop], num_schedules=1)
         for x_value in loop.range:
             for y_value in one_loop.range:
                 z_value = float(np.sin(x_value * y_value / (2 * np.pi)))

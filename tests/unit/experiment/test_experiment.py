@@ -132,7 +132,10 @@ class TestMethods:
         assert isinstance(experiment.execution, Execution)
         assert isinstance(experiment.results, Results)
         assert isinstance(experiment.results_path, Path)
-        assert isinstance(experiment._plot, LivePlot)
+        if experiment.options.connection is None:
+            assert experiment._plot is None
+        else:
+            assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
 
     def test_run(self, built_experiment: Experiment):

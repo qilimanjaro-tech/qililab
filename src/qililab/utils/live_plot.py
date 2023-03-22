@@ -1,13 +1,11 @@
 """LivePlot class."""
 from dataclasses import InitVar, dataclass, field
-from functools import partial
 from itertools import count
-from typing import Callable, Iterator, List
+from typing import Iterator, List
 
 import numpy as np
 from qiboconnection.api import API
 
-from qililab.config import logger
 from qililab.constants import DEFAULT_PLOT_Y_LABEL
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
@@ -60,33 +58,6 @@ class LivePlot:
         ranges_meshgrid = np.meshgrid(x_loop_range, y_loop_range)
         return iter(ranges_meshgrid[0].ravel()), iter(ranges_meshgrid[1].ravel())
 
-    class CheckRemoteApiInitialized:
-        """Property used to check if the Remote API has been initialized."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "LivePlot", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                AttributeError: If connection has not been initialized.
-            """
-            if not hasattr(ref, "remote_api") or ref.remote_api is None:
-                logger.debug("Live plotting disabled. Remote API has not been initialized.")
-                return
-            if ref.remote_api.connection is None:
-                logger.debug("Live plotting disabled. Remote Connection has not been initialized.")
-                return
-            return self._method(ref, *args, **kwargs)
-
-    @CheckRemoteApiInitialized
     def create_live_plot(self, title: str) -> int:
         """Create live plot
 
@@ -105,7 +76,6 @@ class LivePlot:
             y_axis=self.y_axis,
         )
 
-    @CheckRemoteApiInitialized
     def send_points(self, value: float):
         """Send plot points.
 
