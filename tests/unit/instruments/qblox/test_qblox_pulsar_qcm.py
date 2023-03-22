@@ -94,15 +94,10 @@ class TestQbloxQCM:
         qrm.reset()
         assert qrm._cache is None  # pylint: disable=protected-access
 
-    @patch("qililab.instruments.qblox.qblox_module.json.dump", return_value=None)
-    def test_upload_method(self, mock_dump: MagicMock, qcm: QbloxQCM):
+    def test_upload_method(self, qcm: QbloxQCM):
         """Test upload method"""
-        qcm.upload(
-            sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
-            path=Path(__file__).parent,
-        )
+        qcm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
         qcm.device.sequencer0.sequence.assert_called_once()
-        mock_dump.assert_called_once()
 
     def test_id_property(self, qcm_no_device: QbloxQCM):
         """Test id property."""

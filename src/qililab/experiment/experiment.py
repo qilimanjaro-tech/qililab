@@ -10,13 +10,7 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import __version__, logger
-from qililab.constants import (
-    DATA,
-    EXPERIMENT,
-    EXPERIMENT_FILENAME,
-    RESULTS_FILENAME,
-    RUNCARD,
-)
+from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
@@ -184,7 +178,7 @@ class Experiment:
             Result: Result object for one program execution.
         """
         self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, path=self.results_path
+            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
         )
         return self.execution.run(plot=self._plot, path=self.results_path)
 

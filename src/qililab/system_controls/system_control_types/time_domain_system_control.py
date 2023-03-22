@@ -56,21 +56,19 @@ class TimeDomainSystemControl(SystemControl):
         self.awg.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         return self.awg.generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
-            path=path,
         )
 
     def run(self) -> None:

@@ -15,6 +15,9 @@ This document contains the changes of the current release.
 - Cast `chip` dictionary into the `ChipSchema` class and remove unused `InstrumentControllerSchema` class.
   [#187](https://github.com/qilimanjaro-tech/qililab/pull/187)
 
+- Upload sequence directly to Qblox instruments, without having to save & load a `json` file.
+  [#197](https://github.com/qilimanjaro-tech/qililab/pull/197)
+
 - Changed `schedule_index_to_load` argument to `idx` for more readability.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 

@@ -20,8 +20,6 @@ from .aux_methods import mock_instruments
 @patch("qililab.execution.execution_manager.open")
 @patch("qililab.experiment.experiment.open")
 @patch("qililab.experiment.experiment.os.makedirs")
-@patch("qililab.instruments.qblox.qblox_module.json.dump")
-@patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
     """Unit tests checking the execution of a platform with instruments."""
 
@@ -29,12 +27,10 @@ class TestExecution:
     def test_execute_with_remote_save(
         self,
         mocked_remote_connection: MagicMock,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
+        mock_open_0: MagicMock,
         mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
-        mock_dump_1: MagicMock,
+        mock_dump_0: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -61,16 +57,12 @@ class TestExecution:
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
         mock_dump_0.assert_called()
-        mock_dump_1.assert_called()
         mock_open_0.assert_called()
         mock_open_1.assert_called()
-        mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_nested_loop(
         self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
         mock_open_2: MagicMock,
@@ -97,9 +89,7 @@ class TestExecution:
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
-        mock_dump_0.assert_called()
         mock_dump_1.assert_called()
-        mock_open_0.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
@@ -116,8 +106,6 @@ class TestExecution:
 
     def test_execute_method_with_instruments(
         self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
         mock_open_2: MagicMock,
@@ -140,17 +128,13 @@ class TestExecution:
         acquisitions = results.acquisitions()
         assert isinstance(probabilities, pd.DataFrame)
         assert isinstance(acquisitions, pd.DataFrame)
-        mock_dump_0.assert_called()
         mock_dump_1.assert_called()
-        mock_open_0.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_from_dict_experiment(
         self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
         mock_open_2: MagicMock,
@@ -177,17 +161,13 @@ class TestExecution:
         acquisitions = results.acquisitions()
         assert isinstance(probabilities, pd.DataFrame)
         assert isinstance(acquisitions, pd.DataFrame)
-        mock_dump_0.assert_called()
         mock_dump_1.assert_called()
-        mock_open_0.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_keyboard_interrupt(
         self,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
         mock_open_2: MagicMock,
@@ -208,8 +188,6 @@ class TestExecution:
             mock_rs.assert_called()
             mock_pulsar.assert_called()
             assert isinstance(results, Results)
-            mock_open_0.assert_called()
-            mock_dump_0.assert_called()
             mock_open_1.assert_called()
             mock_dump_1.assert_not_called()
             mock_open_2.assert_not_called()
