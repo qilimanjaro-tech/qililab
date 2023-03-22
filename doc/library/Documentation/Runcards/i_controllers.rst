@@ -4,10 +4,10 @@ Instrument controllers, are the way qililab has to **communicate** with each **i
 Each instrument must be connected to an instrument controller that serves as the *drivers* of said instrument.
 So, an instrument controller, serves as a mediatior between our desire instrucctions and the actual actions of an instrument.
 
-An instrument controller can contain one or multiple instruments. The option `subcategory: ` is utilized to determinate wether is a `single_instrumet` or a `multiple_instruments`.
-For a multiple instument, each instument is assigned in the section `modules: `
+An instrument controller can contain one or multiple instruments. The option ``subcategory:`` is utilized to determinate wether is a ``single_instrumet`` or a ``multiple_instruments``.
+For a multiple instument, each instument is assigned in the section ``modules:``
 
-As in the instrument section, every type of instrument controller has its own specs to determine.
+As in the :doc:`instrument<instruments>` section, every type of instrument controller has its own specs to determine.
 Below there are **some examples** of the different instrument controllers implemented in qililab.
 
 Rohde Schwarz
