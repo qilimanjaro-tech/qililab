@@ -31,23 +31,9 @@ class RuncardSchema:
         class BusSchema:
             """Bus schema class."""
 
-            @dataclass
-            class SystemControlSchema:
-                """Bus schema class."""
-
-                id_: int
-                name: str
-                category: str
-                system_control_category: str
-                system_control_subcategory: str
-                alias: str | None = None
-
             id_: int
-            name: str
             category: str
-            bus_category: str
-            bus_subcategory: str
-            system_control: SystemControlSchema
+            system_control: dict
             port: int
             alias: str | None = None
 

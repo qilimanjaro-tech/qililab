@@ -4,7 +4,7 @@ from qilisimulator.evolution import Evolution
 
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
-from qililab.system_controls.system_control_types import SimulatedSystemControl
+from qililab.system_control import SimulatedSystemControl
 from qililab.typings.enums import SystemControlName
 
 

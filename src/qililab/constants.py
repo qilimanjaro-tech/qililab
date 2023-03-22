@@ -42,10 +42,6 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    BUS_CATEGORY = "bus_category"
-    BUS_SUBCATEGORY = "bus_subcategory"
-    SYSTEM_CONTROL_CATEGORY = "system_control_category"
-    SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
 
 
 class PLATFORM:

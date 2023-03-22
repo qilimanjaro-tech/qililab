@@ -228,7 +228,7 @@ class Platform:
         Returns:
             Instruments: List of all instruments.
         """
-        return self.schema.instruments
+        return self.schema.platform_instruments
 
     @property
     def chip(self):

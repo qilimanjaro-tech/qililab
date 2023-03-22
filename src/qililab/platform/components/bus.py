@@ -8,13 +8,11 @@ from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
 from qililab.system_control import SimulatedSystemControl, SystemControl
-from qililab.typings import BusCategory, BusSubCategory, Category, Node, Parameter
-from qililab.typings.enums import BusName
-from qililab.typings.factory_element import FactoryElement
+from qililab.typings import Category, Node, Parameter
 from qililab.utils import Factory
 
 
-class Bus(FactoryElement):
+class Bus:
     """Bus class. Ideally a bus should contain a qubit control/readout and a signal generator, which are connected
     through a mixer for up- or down-conversion. At the end of the bus there should be a qubit or a resonator object,
     which is connected to one or multiple qubits.
@@ -23,7 +21,6 @@ class Bus(FactoryElement):
         settings (BusSettings): Bus settings.
     """
 
-    name: BusName
     targets: List[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
@@ -37,8 +34,6 @@ class Bus(FactoryElement):
             port (int): Chip's port where bus is connected.
         """
 
-        bus_category: BusCategory
-        bus_subcategory: BusSubCategory
         system_control: SystemControl
         port: int
 
@@ -54,9 +49,9 @@ class Bus(FactoryElement):
 
     settings: BusSettings
 
-    def __init__(self, settings: dict, instruments: Instruments, chip: Chip):
+    def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings)
-        self._replace_settings_dicts_with_instrument_objects(instruments=instruments)
+        self._replace_settings_dicts_with_instrument_objects(platform_instruments=platform_instruments)
         self.targets = chip.get_port_nodes(port_id=self.port)
 
     @property
@@ -92,51 +87,25 @@ class Bus(FactoryElement):
         """
         return self.settings.category
 
-    @property
-    def bus_category(self) -> BusCategory:
-        """Bus 'bus_category' property.
-
-        Returns:
-            BusCategory: Category of the bus.
-        """
-        return self.settings.bus_category
-
-    @property
-    def bus_subcategory(self) -> BusSubCategory:
-        """Bus 'subcategory' property.
-
-        Returns:
-            BusSubCategory: Subcategory of the bus
-        """
-        return self.settings.bus_subcategory
-
-    def _replace_settings_dicts_with_instrument_objects(self, instruments: Instruments):
+    def _replace_settings_dicts_with_instrument_objects(self, platform_instruments: Instruments):
         """Replace dictionaries from settings into its respective instrument classes."""
         for name, value in deepcopy(self.settings):
             instrument_object = None
             category = Category(name)
             if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
-                system_control_category = value.get(RUNCARD.SYSTEM_CONTROL_CATEGORY)
-                if not isinstance(system_control_category, str):
-                    raise ValueError(f"Invalid value for system_control_category: {system_control_category}")
-                system_control_subcategory = value.get(RUNCARD.SYSTEM_CONTROL_SUBCATEGORY)
-                if system_control_subcategory is not None and not isinstance(system_control_category, str):
-                    raise ValueError(f"Invalid value for system_control_subcategory: {system_control_subcategory}")
                 instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))
-                if isinstance(instrument_object, SimulatedSystemControl):
+                if instrument_object == SimulatedSystemControl:
                     instrument = instrument_object(settings=value)
                 else:
-                    instrument = instrument_object(settings=value, instruments=instruments)
-            if instrument_object is None:
+                    instrument = instrument_object(settings=value, platform_instruments=platform_instruments)
+            if instrument is None:
                 raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
-            setattr(self.settings, name, instrument_object)
+            setattr(self.settings, name, instrument)
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return (
-            f"Bus {self.id_} ({self.bus_category.value} {self.bus_subcategory.value}):  "
-            + f"----{self.system_control}---"
-            + "".join(f"--|{target}|----" for target in self.targets)
+        return f"Bus {self.id_}:  ----{self.system_control}---" + "".join(
+            f"--|{target}|----" for target in self.targets
         )
 
     def __eq__(self, other: object) -> bool:
@@ -164,10 +133,7 @@ class Bus(FactoryElement):
         """Return a dict representation of the SchemaSettings class."""
         return {
             RUNCARD.ID: self.id_,
-            RUNCARD.NAME: self.name.value,
             RUNCARD.CATEGORY: self.category.value,
-            RUNCARD.BUS_CATEGORY: self.bus_category.value,
-            RUNCARD.BUS_SUBCATEGORY: self.bus_subcategory.value,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
         }

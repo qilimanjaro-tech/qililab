@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,9 +10,8 @@ import numpy as np
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution.execution_buses import PulseScheduledBus
-from qililab.platform.components.bus import Bus
 from qililab.result import Result
-from qililab.system_control import TimeDomainReadoutSystemControl
+from qililab.system_control import ReadoutSystemControl
 from qililab.typings import yaml
 from qililab.utils import LivePlot, Waveforms
 
@@ -22,7 +21,7 @@ class ExecutionManager:
     """ExecutionManager class."""
 
     num_schedules: int
-    buses: list[PulseScheduledBus] = field(default_factory=list)
+    buses: List[PulseScheduledBus] = field(default_factory=list)
 
     def __post_init__(self):
         """check that the number of schedules matches all the schedules for each bus"""
@@ -66,26 +65,18 @@ class ExecutionManager:
         for bus in self.buses:
             bus.run()
 
-        if not self.pulse_scheduled_readout_buses:
-            return None
+        results = []
+        for bus in self.readout_buses:
+            result = bus.acquire_result()
+            self._asynchronous_data_handling(result=result, path=path, plot=plot)
+            results.append(result)
 
-        results = [
-            self._run_acquire_and_process_async_result(plot, path, readout_bus)
-            for readout_bus in self.pulse_scheduled_readout_buses
-        ]
         # FIXME: set multiple readout buses
         if len(results) > 1:
             logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if len(results) <= 0:
+        if not results:
             raise ValueError("No Results acquired")
         return results[0]
-
-    def _run_acquire_and_process_async_result(self, plot: LivePlot | None, path: Path, bus: PulseScheduledBus):
-        """run a bus, acquire the result and saves and plot the results asynchronously"""
-        bus.run()
-        result = bus.acquire_result()
-        self._asynchronous_data_handling(result=result, path=path, plot=plot)
-        return result
 
     def _asynchronous_bus_run(self, bus: PulseScheduledBus):
         """run pulse uploaded program asynchronously"""
@@ -171,9 +162,7 @@ class ExecutionManager:
         Returns:
             int | None: Acquire time. None if bus is of subcategory control.
         """
-        system_control = bus.system_control
-        if isinstance(system_control, TimeDomainReadoutSystemControl):
-            plt.axvline(x=system_control.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
+        plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulse_scheduled_buses."""
@@ -182,3 +171,12 @@ class ExecutionManager:
     def __getitem__(self, key):
         """Redirect __get_item__ magic method."""
         return self.buses.__getitem__(key)
+
+    @property
+    def readout_buses(self) -> List[PulseScheduledBus]:
+        """Returns a list of all the readout buses.
+
+        Returns:
+            List[PulseScheduledBus]: list of readout buses
+        """
+        return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]

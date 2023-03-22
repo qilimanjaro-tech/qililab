@@ -4,8 +4,7 @@ from dataclasses import dataclass, field
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
 from qililab.result.result import Result
-from qililab.system_controls.system_control_types import SimulatedSystemControl, TimeDomainSystemControl
-from qililab.typings import BusSubCategory
+from qililab.system_control import ReadoutSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
@@ -53,7 +52,7 @@ class PulseScheduledBus:
         Returns:
             Result: Acquired result
         """
-        return self.system_control.acquire_result()  # pylint: disable=no-member
+        return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
         """Pulse Scheduled Bus 'acquire_time' property.
@@ -65,10 +64,10 @@ class PulseScheduledBus:
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
         readout_schedule = self.pulse_schedule[idx]
-        return (
-            readout_schedule.timeline[-1].start
-            + self.system_control.acquisition_delay_time  # pylint: disable=no-member
-        )
+        time = readout_schedule.timeline[-1].start
+        if isinstance(self.system_control, ReadoutSystemControl):
+            time += self.system_control.acquisition_delay_time
+        return time
 
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
@@ -95,7 +94,7 @@ class PulseScheduledBus:
         return self.bus.port
 
     @property
-    def system_control(self) -> TimeDomainSystemControl | SimulatedSystemControl:
+    def system_control(self) -> SystemControl:
         """Pulse Scheduled Bus 'system_control' property.
 
         Returns:
@@ -111,12 +110,3 @@ class PulseScheduledBus:
             int: bus.id_
         """
         return self.bus.id_
-
-    @property
-    def bus_subcategory(self) -> BusSubCategory:
-        """Pulse Scheduled Bus 'subcategory' property.
-
-        Returns:
-            BusSubCategory: Bus subcategory.
-        """
-        return self.bus.bus_subcategory

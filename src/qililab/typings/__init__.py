@@ -2,8 +2,6 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusCategory,
-    BusSubCategory,
     Category,
     ConnectionName,
     GateName,
