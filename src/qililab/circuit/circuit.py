@@ -23,6 +23,10 @@ class Circuit:
     graph: rx.PyDiGraph = field(init=False)
 
     def __post_init__(self):
+        if not isinstance(self.num_qubits, int):
+            raise ValueError("Number of qubits should be integer.")
+        if self.num_qubits <= 0:
+            raise ValueError("Number of qubits should be positive.")
         self.graph = rx.PyDiGraph(multigraph=True)
         self.entry_node = self._add_entry_node()
 

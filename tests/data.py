@@ -62,6 +62,21 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",
@@ -479,6 +494,21 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",

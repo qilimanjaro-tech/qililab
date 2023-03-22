@@ -6,6 +6,7 @@ from qililab.circuit import Circuit
 from qililab.circuit.converters import QiliQasmConverter
 from qililab.circuit.operations import (
     R180,
+    Barrier,
     GaussianPulse,
     Measure,
     Operation,
@@ -24,14 +25,17 @@ os.environ["RUNCARDS"] = str(Path(fname) / "runcards")
 runcard_name = "internal_circuit"
 platform = build_platform(name=runcard_name)
 
-op = Operation()
-pulse = PulseOperation(amplitude=1.0, duration=100)
-
 circuit = Circuit(2)
 circuit.add((0, 1), X())
 circuit.add(0, Wait(t=100))
 circuit.add(0, X())
 circuit.add((0, 1), Measure())
+circuit.add(0, X())
+circuit.add(1, X())
+circuit.add(1, X())
+circuit.add(1, X())
+circuit.add((0, 1), Barrier())
+circuit.add((0, 1), X())
 
 print(circuit.get_operation_layers())
 print(circuit.get_operation_layers(OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE))
