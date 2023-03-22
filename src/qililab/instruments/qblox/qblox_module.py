@@ -189,7 +189,7 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
-        bins = Loop(name="bins", begin=0, end=1000, step=1) # int(self._MAX_BINS/num_binned_acquisitions)-1
+        bins = Loop(name="bins", begin=0, end=2000, step=1)     # int(self._MAX_BINS/num_binned_acquisitions)-1
         program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
@@ -235,9 +235,9 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="binning", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=1)
-        for idx in range(num_binned_acquisitions-1):
-            acquisitions.add(name=f"binning{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=idx+2)
+        acquisitions.add(name="binning", num_bins=2000, index=1)
+        # for idx in range(num_binned_acquisitions-1):
+        #     acquisitions.add(name=f"binning{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=idx+2)
         return acquisitions
 
     @abstractmethod
