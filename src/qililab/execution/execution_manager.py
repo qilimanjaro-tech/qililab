@@ -1,8 +1,9 @@
 """ExecutionManager class."""
+import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Thread
-from typing import Dict, List
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,7 +55,11 @@ class ExecutionManager:
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
         for pulse_scheduled_bus in self.all_pulse_scheduled_buses:
-            loop = hw_loop if hw_loop is not None and hw_loop.alias == pulse_scheduled_bus.alias else None
+            if hw_loop is not None and hw_loop.alias == pulse_scheduled_bus.alias:
+                loop = copy.deepcopy(hw_loop)
+                setattr(loop, "set_value", True)
+            else:
+                loop = hw_loop
             pulse_scheduled_bus.generate_program_and_upload(
                 idx=idx, nshots=nshots, repetition_duration=repetition_duration, hw_loop=loop
             )

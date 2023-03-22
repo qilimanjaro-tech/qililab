@@ -181,17 +181,21 @@ class QbloxModule(AWG):
         avg_loop = Loop(name="average", begin=nshots)
         old_loop = avg_loop
         if hw_loop is not None:
+            # ``set_value`` is set to ``True`` in ``ExecutionManager.generate_program_and_upload`` when the alias
+            # is the same alias as the bus
+            set_value = getattr(hw_loop, "set_value", False)
             for idx, loop in enumerate(hw_loop.loops):
                 values, instruction = self._translate_parameters(loop.parameter, loop.range)
                 step = (values[-1] - values[0]) / loop.num
                 new_loop = Loop(name=f"hw_loop_{idx}", begin=int(values[0]), end=int(values[-1]), step=int(step))
-                if instruction == SetAwgGain:
-                    # When setting gain, we set the same gain in both path0 and path1
-                    new_loop.append_component(instruction(new_loop.counter_register, new_loop.counter_register))
-                else:
-                    new_loop.append_component(
-                        instruction(new_loop.counter_register)  # pylint: disable=no-value-for-parameter
-                    )
+                if set_value:
+                    if instruction == SetAwgGain:
+                        # When setting gain, we set the same gain in both path0 and path1
+                        new_loop.append_component(instruction(new_loop.counter_register, new_loop.counter_register))
+                    else:
+                        new_loop.append_component(
+                            instruction(new_loop.counter_register)  # pylint: disable=no-value-for-parameter
+                        )
                 old_loop.append_block(new_loop)
                 old_loop = new_loop
         program.append_block(avg_loop)

@@ -31,16 +31,16 @@ def fixture_connected_experiment(
     mock_keithley: MagicMock,
     mock_rs: MagicMock,
     mock_pulsar: MagicMock,
-    experiment_all_platforms: Experiment,
+    experiment: Experiment,
 ):
     """Fixture that returns a connected and built experiment."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    experiment_all_platforms.connect()
+    experiment.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()
     mock_pulsar.assert_called()
-    return experiment_all_platforms
+    return experiment
 
 
 @pytest.fixture(name="built_experiment")
@@ -97,16 +97,16 @@ class TestProperties:
 class TestMethods:
     """Test the methods of the Experiment class."""
 
-    def test_connect(self, experiment_all_platforms: Experiment):
+    def test_connect(self, experiment: Experiment):
         """Test the ``connect`` method of the Experiment class."""
         with patch("qililab.platform.platform.Platform.connect") as mock_connect:
-            experiment_all_platforms.connect()
+            experiment.connect()
             mock_connect.assert_called_once()
 
-    def test_initial_setup(self, experiment_all_platforms: Experiment):
+    def test_initial_setup(self, experiment: Experiment):
         """Test the ``initial_setup`` method of the Experiment class."""
         with patch("qililab.platform.platform.Platform.initial_setup") as mock_initial_setup:
-            experiment_all_platforms.initial_setup()
+            experiment.initial_setup()
             mock_initial_setup.assert_called_once()
 
     def test_build_execution(self, experiment: Experiment):
@@ -174,9 +174,9 @@ class TestMethods:
             experiment.disconnect()
             mock_disconnect.assert_called_once()
 
-    def test_to_dict_method(self, experiment_all_platforms: Experiment):
+    def test_to_dict_method(self, experiment: Experiment):
         """Test to_dict method."""
-        dictionary = experiment_all_platforms.to_dict()
+        dictionary = experiment.to_dict()
         assert isinstance(dictionary, dict)
 
     def test_from_dict_method(self, experiment: Experiment):
@@ -202,10 +202,10 @@ class TestMethods:
         with pytest.raises(ValueError, match="Please build the execution before drawing the experiment"):
             experiment.draw()
 
-    def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
+    def test_loop_num_loops_property(self, experiment: Experiment):
         """Test loop's num_loops property."""
-        if experiment_all_platforms.options.loops is not None:
-            print(experiment_all_platforms.options.loops[0].num_loops)
+        if experiment.options.loops is not None:
+            print(experiment.options.loops[0].num_loops)
 
     @patch("qililab.experiment.prepare_results.open")
     @patch("qililab.experiment.prepare_results.os.makedirs")
@@ -220,9 +220,9 @@ class TestMethods:
         mock_makedirs.assert_called()
         experiment.draw()
 
-    def test_str_method(self, experiment_all_platforms: Experiment):
+    def test_str_method(self, experiment: Experiment):
         """Test __str__ method."""
-        str(experiment_all_platforms)
+        str(experiment)
 
 
 class TestSetParameter:

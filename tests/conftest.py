@@ -9,10 +9,7 @@ from dummy_qblox import DummyPulsar
 from qblox_instruments import PulsarType
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qiboconnection.api import API
-from qiboconnection.typings.connection import (
-    ConnectionConfiguration,
-    ConnectionEstablished,
-)
+from qiboconnection.typings.connection import ConnectionConfiguration, ConnectionEstablished
 from qpysequence import Sequence
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -20,24 +17,13 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import (
-    PulseScheduledBus,
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses import PulseScheduledBus, PulseScheduledReadoutBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instrument_controllers.keithley.keithley_2600_controller import (
-    Keithley2600Controller,
-)
-from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import (
-    MiniCircuitsController,
-)
-from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
-    QbloxPulsarController,
-)
-from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
-    SGS100AController,
-)
+from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
+from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
 from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
 from qililab.platform import Platform, Schema
 from qililab.pulse import (
@@ -55,12 +41,8 @@ from qililab.pulse import (
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.system_controls.system_control import SystemControl
-from qililab.system_controls.system_control_types.simulated_system_control import (
-    SimulatedSystemControl,
-)
-from qililab.system_controls.system_control_types.time_domain_control_system_control import (
-    ControlSystemControl,
-)
+from qililab.system_controls.system_control_types.simulated_system_control import SimulatedSystemControl
+from qililab.system_controls.system_control_types.time_domain_control_system_control import ControlSystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -68,13 +50,7 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
-from .data import (
-    FluxQubitSimulator,
-    Galadriel,
-    circuit,
-    experiment_params,
-    simulated_experiment_circuit,
-)
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
 from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
@@ -422,11 +398,16 @@ def fixture_experiment(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="rs_0",
-        parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
+        alias="drive_line_bus", parameter=Parameter.GAIN, options=LoopOptions(start=0, stop=1, num=100), hardware=True
     )
-    options = ExperimentOptions(loops=[loop])
+    loop2 = Loop(
+        alias="drive_line_bus",
+        parameter=Parameter.PHASE,
+        options=LoopOptions(start=0, stop=np.pi, num=100),
+        hardware=True,
+        loop=loop,
+    )
+    options = ExperimentOptions(loops=[loop2])
     experiment = Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
@@ -446,13 +427,7 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="rs_0",
-        parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(
-            start=3544000000,
-            stop=3744000000,
-            num=2,
-        ),
+        alias="rs_0", parameter=Parameter.LO_FREQUENCY, options=LoopOptions(start=3544000000, stop=3744000000, num=2)
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(

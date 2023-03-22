@@ -53,7 +53,7 @@ class Loop:
             return np.geomspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
         if self.num is not None:
             return np.linspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
-        if self.step is not None:
+        if self.options.step is not None:
             return np.arange(start=self.start, stop=self.stop, step=self.step)
 
         raise ValueError("Please specify either 'step' or 'num' arguments.")
