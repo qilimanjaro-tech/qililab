@@ -19,16 +19,13 @@ from qililab.platform.components.bus_types import (
 from qililab.platform.components.bus_types.simulated_bus import SimulatedBus
 from qililab.pulse import PulseSchedule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
-from qililab.typings.execution import ExecutionOptions
 from qililab.utils import Singleton
 
 
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(
-        self, platform: Platform, pulse_schedules: List[PulseSchedule], execution_options: ExecutionOptions
-    ) -> Execution:
+    def build(self, platform: Platform, pulse_schedules: List[PulseSchedule]) -> Execution:
         """Build Execution class.
 
         Returns:
@@ -38,7 +35,6 @@ class ExecutionBuilder(metaclass=Singleton):
         return Execution(
             execution_manager=self._build_execution_manager(platform=platform, pulse_schedules=pulse_schedules),
             platform=platform,
-            options=execution_options,
         )
 
     def _build_execution_manager(self, platform: Platform, pulse_schedules: List[PulseSchedule]):

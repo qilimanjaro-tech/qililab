@@ -4,12 +4,7 @@ from typing import List, Literal
 
 from qililab.constants import PLATFORM
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import (
-    Category,
-    MasterGateSettingsName,
-    OperationTimingsCalculationMethod,
-    Parameter,
-)
+from qililab.typings.enums import Category, MasterGateSettingsName, OperationTimingsCalculationMethod, Parameter
 from qililab.utils import nested_dataclass
 
 
@@ -65,23 +60,15 @@ class RuncardSchema:
             nodes: List[dict]
             alias: str | None = None
 
-        @dataclass
-        class InstrumentControllerSchema:
-            """Instrument Controller schema class."""
-
-            id_: int
-            category: str
-            subcategory: str
-            connection: dict
-            modules: List[dict]
-
         chip: ChipSchema | None
         buses: List[BusSchema]
         instruments: List[dict]
-        instrument_controllers: List[InstrumentControllerSchema]
+        instrument_controllers: List[dict]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
+            if isinstance(self.chip, dict):
+                self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
     class PlatformSettings(DDBBElement):
@@ -130,6 +117,14 @@ class RuncardSchema:
                 if gate_current_value == PLATFORM.MASTER_AMPLITUDE_GATE:
                     return MasterGateSettingsName.MASTER_AMPLITUDE_GATE
                 return MasterGateSettingsName.MASTER_DURATION_GATE
+
+            def set_parameter(self, parameter: Parameter, value: float | str | bool):
+                """Change a gate parameter with the given value."""
+                param = parameter.value
+                if not hasattr(self, param):
+                    self.shape[param] = value
+                else:
+                    setattr(self, param, value)
 
         name: str
         delay_between_pulses: int
@@ -203,14 +198,8 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            param = parameter.value
-            settings = self.get_gate(name=alias)
-            if not hasattr(settings, param):
-                settings = settings.shape
-            attr_type = type(getattr(settings, param))
-            if attr_type == int:
-                attr_type = float
-            setattr(settings, param, value)
+            gate_settings = self.get_gate(name=alias)
+            gate_settings.set_parameter(parameter, value)
 
     settings: PlatformSettings
     schema: Schema

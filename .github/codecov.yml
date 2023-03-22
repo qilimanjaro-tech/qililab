@@ -9,8 +9,7 @@ coverage:
       src:
         paths:
           - "src"
-        target: 80% # the required coverage value
-        threshold: 10% # the leniency in hitting the target
+        target: auto # make sure coverage is not decreased (in comparison with the main branch)
         flags:
           - "unittests"
   notify:
