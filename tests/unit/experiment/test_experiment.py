@@ -147,7 +147,8 @@ class TestMethods:
         del os.environ[DATA]
         with pytest.raises(ValueError, match="Environment variable DATA is not set"):
             experiment.build_execution()
-        os.environ[DATA] = old_data
+        if old_data is not None:
+            os.environ[DATA] = old_data
 
     def test_run(self, built_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
