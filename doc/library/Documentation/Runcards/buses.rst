@@ -6,11 +6,11 @@ It contains all required equipment necessary to communicate from the measurement
 Each bus is a collection of instuments connected to a given port and stores the schedule of pulses that will be send to that port.
 In the `buses` section of the runcard, we create thous lines by grouping different instruments to a bus, replicating the setup of the lab.
 
-There are different types of buses depending on the functionality, for each functionality there is a sistem controller that it is utilized .
+Every bus may have a *system controller*. There are several types of *sistem controllers* in regard to the fuctionality of the bus.
 
 Time Domain
 **************
-These type of buses, are **sequencies** of pusles in contrast to the :ref:`continous buses <cont>`, time domain must be time aware as they have to be able to generate a sequence of an specific order and timing.
+These type of system controller are for buses that needs to perform **sequencies** of pusles in contrast to the :ref:`continous buses <cont>`, **time domain** must be time aware as they have to be able to generate a sequence of an specific order and timing.
 
 Baseband Bus
 ---------------
@@ -77,7 +77,7 @@ The system control contains an **AWG**, a **Signal Generator** and an **ADC**
 
 Continous
 ***********
-This type of buses doesn't require any pulse sequence, just the system control is turned on and setup with the desired parameters. There is no time awareness it is always on.
+These type of system controller are for buses that doesn't require any pulse sequence, just the system control is turned on and setup with the desired parameters. There is no time awareness it is always on.
 
 Current bias Bus
 --------------------
