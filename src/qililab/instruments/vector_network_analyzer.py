@@ -330,7 +330,7 @@ class VectorNetworkAnalyzer(Instrument):
     def sweep_mode(self, value: str):
         """sets the sweep mode"""
         self.settings.sweep_mode = VNASweepModes(value)
-        self.device.set_sweep_mode(mode=str(self.settings.sweep_mode))
+        self.device.set_sweep_mode(mode=self.settings.sweep_mode.value)
 
     @property
     def device_timeout(self):
