@@ -23,7 +23,6 @@ In this page you can find the documentation of the qililab package implemented i
 
    GettingStarted/Pre
    GettingStarted/Inst
-   notebooks/hello_world
    GettingStarted/HelloW
    GettingStarted/Lab_connection
    GettingStarted/HelloL
@@ -39,13 +38,12 @@ In this page you can find the documentation of the qililab package implemented i
    :caption: Tutorials:
 
    notebooks/spectroscopy_demo
-   Tutorials/res_spectroscopy
 
 .. toctree::
    :maxdepth: 1
    :caption: API Reference:
 
-   ApiReferences/qililab
+   ApiReferences/modules
 
 
 Indices and tables

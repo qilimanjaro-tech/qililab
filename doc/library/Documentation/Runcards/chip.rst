@@ -36,7 +36,7 @@ Which is represented in the next diagram:
 
 .. image:: ../../img/Simple_Chip.png
     :align: center
-
+    
 |
 
 In this example, we have a qubit, a resonator, and the two ports from where we manipulate them.
