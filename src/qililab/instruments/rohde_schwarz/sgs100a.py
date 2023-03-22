@@ -82,4 +82,3 @@ class SGS100A(SignalGenerator):
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument."""
-        pass
