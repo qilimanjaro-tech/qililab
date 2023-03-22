@@ -7,7 +7,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
-from qililab.system_controls import SystemControl
+from qililab.system_controls import SimulatedSystemControl, SystemControl
 from qililab.typings import BusCategory, BusSubCategory, Category, Node, Parameter
 from qililab.typings.enums import BusName
 from qililab.typings.factory_element import FactoryElement
@@ -122,7 +122,11 @@ class Bus(FactoryElement):
                 system_control_subcategory = value.get(RUNCARD.SYSTEM_CONTROL_SUBCATEGORY)
                 if system_control_subcategory is not None and not isinstance(system_control_category, str):
                     raise ValueError(f"Invalid value for system_control_subcategory: {system_control_subcategory}")
-                instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))(settings=value, instruments=instruments)
+                instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))
+                if isinstance(instrument_object, SimulatedSystemControl):
+                    instrument = instrument_object(settings=value)
+                else:
+                    instrument = instrument_object(settings=value, instruments=instruments)
             if instrument_object is None:
                 raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
             setattr(self.settings, name, instrument_object)

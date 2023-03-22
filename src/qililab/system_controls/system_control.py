@@ -6,7 +6,7 @@ from typing import Type, get_type_hints
 from qililab.constants import RUNCARD
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
-from qililab.platform.components import BusElement
+from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
 from qililab.typings import SystemControlCategory, SystemControlSubCategory
 from qililab.typings.enums import Category, Parameter, SystemControlName
@@ -145,3 +145,7 @@ class SystemControl(BusElement, ABC):
             RUNCARD.SYSTEM_CONTROL_CATEGORY: self.settings.system_control_category.value,
             RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: self.settings.system_control_subcategory.value,
         } | {key: value.alias for key, value in self}
+
+
+class ReadoutSystemControl(SystemControl):
+    """System control used for readout."""

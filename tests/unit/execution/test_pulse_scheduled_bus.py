@@ -25,3 +25,7 @@ class TestPulseScheduledBus:
     def test_qubit_ids_property(self, pulse_scheduled_bus: PulseScheduledBus):
         """Test qubit_ids property."""
         assert pulse_scheduled_bus.port == pulse_scheduled_bus.bus.port
+
+    def test_acquire_time_method(self, pulse_scheduled_readout_bus: PulseScheduledBus):
+        """Test acquire_time method."""
+        assert isinstance(pulse_scheduled_readout_bus.acquire_time(), int)  # type: ignore

@@ -1,6 +1,5 @@
 """Time Domain SystemControl class."""
 from dataclasses import dataclass
-from pathlib import Path
 
 from qililab.instruments.awg import AWG
 from qililab.pulse import PulseBusSchedule
