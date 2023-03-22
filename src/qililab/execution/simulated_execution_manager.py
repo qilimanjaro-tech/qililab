@@ -22,19 +22,17 @@ class SimulatedExecutionManager(ExecutionManager):
         """returns a list with only simulated_pulse_scheduled_buses"""
         return self.simulated_pulse_scheduled_buses
 
-    def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
+    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, path: Path) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
-            schedule_index_to_load (int): specific schedule to load
+            idx (int): index of the pulse schedule to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
             path (Path): path to save the program to upload
         """
         for simulated_bus in self.simulated_pulse_scheduled_buses:
-            simulated_bus.generate_program(schedule_index_to_load=schedule_index_to_load)
+            simulated_bus.generate_program(idx=idx)
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
@@ -45,7 +43,7 @@ class SimulatedExecutionManager(ExecutionManager):
         ]
         # FIXME: set multiple readout buses
         if len(results) > 1:
-            logger.error("Only One Simualted Readout Bus allowed. Reading only from the first one.")
+            logger.error("Only One Simulated Readout Bus allowed. Reading only from the first one.")
         if len(results) <= 0:
             raise ValueError("No Results acquired")
         return results[0]
