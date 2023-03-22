@@ -29,7 +29,7 @@ class VectorNetworkAnalyzer(Instrument):
         """
 
         power: float
-        scattering_parameter: VNAScatteringParameters = VNAScatteringParameters.S21
+        scattering_parameter: VNAScatteringParameters = VNAScatteringParameters.S11
         frequency_span: float | None = None
         frequency_center: float | None = None
         frequency_start: float | None = None
