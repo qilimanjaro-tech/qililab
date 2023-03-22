@@ -26,14 +26,14 @@ class SimulatedPulseScheduledReadoutBus(PulseScheduledReadoutBus):
         """
         return self.bus.system_control
 
-    def generate_program(self, schedule_index_to_load: int) -> None:
+    def generate_program(self, idx: int) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
-            schedule_index_to_load (int): specific schedule to load
+            idx (int): index of the pulse schedule to compile and upload
         """
         self.system_control.generate_program(  # pylint: disable=no-member
-            pulse_bus_schedule=self.pulse_schedule[schedule_index_to_load], frequency=self.bus.frequency
+            pulse_bus_schedule=self.pulse_schedule[idx], frequency=self.bus.frequency
         )
 
     def acquire_result(self) -> Result:
