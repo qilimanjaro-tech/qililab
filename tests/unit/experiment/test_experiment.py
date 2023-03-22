@@ -46,8 +46,8 @@ def fixture_connected_experiment(
 @pytest.fixture(name="built_experiment")
 def fixture_built_experiment(connected_experiment: Experiment):
     """Fixture that returns a connected and built experiment."""
-    with patch("qililab.experiment.prepare_results.open") as mock_open:
-        with patch("qililab.experiment.prepare_results.os.makedirs") as mock_makedirs:
+    with patch("qililab.experiment.experiment.open") as mock_open:
+        with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
             # Build execution
             connected_experiment.build_execution()
             # Assert that the mocks are called when building the execution (such that NO files are created)
@@ -119,8 +119,8 @@ class TestMethods:
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
         assert not hasattr(experiment, "_remote_id")
-        with patch("qililab.experiment.prepare_results.open") as mock_open:
-            with patch("qililab.experiment.prepare_results.os.makedirs") as mock_makedirs:
+        with patch("qililab.experiment.experiment.open") as mock_open:
+            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
                 # Build execution
                 experiment.build_execution()
                 # Assert that the mocks are called when building the execution (such that NO files are created)
@@ -209,8 +209,8 @@ class TestMethods:
         if experiment_all_platforms.options.loops is not None:
             print(experiment_all_platforms.options.loops[0].num_loops)
 
-    @patch("qililab.experiment.prepare_results.open")
-    @patch("qililab.experiment.prepare_results.os.makedirs")
+    @patch("qililab.experiment.experiment.open")
+    @patch("qililab.experiment.experiment.os.makedirs")
     def test_draw_method_with_one_bus(self, mock_open: MagicMock, mock_makedirs: MagicMock, platform: Platform):
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
@@ -320,8 +320,8 @@ class TestReset:
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.experiment.prepare_results.open")
-@patch("qililab.experiment.prepare_results.os.makedirs")
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
 @patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
 @patch("qililab.execution.execution_manager.yaml.safe_dump")
 @patch("qililab.execution.execution_manager.open")

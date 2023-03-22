@@ -52,7 +52,7 @@ This document contains the changes of the current release.
 ## Deprecations / Removals
 
 - Removed the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
-  `prepare_results` function inside the `experiments` folder.
+  `prepare_results` method inside the `Experiment` class.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 - Removed unused `connect`, `disconnect` and `setup` methods from the `Execution` class. These are used in the

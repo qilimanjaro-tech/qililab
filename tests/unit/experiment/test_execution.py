@@ -16,10 +16,10 @@ from .aux_methods import mock_instruments
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.experiment.prepare_results.yaml.safe_dump")
+@patch("qililab.experiment.experiment.yaml.safe_dump")
 @patch("qililab.execution.execution_manager.open")
-@patch("qililab.experiment.prepare_results.open")
-@patch("qililab.experiment.prepare_results.os.makedirs")
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
 @patch("qililab.instruments.qblox.qblox_module.json.dump")
 @patch("qililab.instruments.qblox.qblox_module.open")
 class TestExecution:
