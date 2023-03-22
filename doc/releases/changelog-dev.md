@@ -69,8 +69,6 @@ This document contains the changes of the current release.
 
 ## Bug fixes
 
-- Fixed bug where calling `set_parameter` with `Parameter.DRAG_COEFFICIENT` would raise an error.
-
 - Fixed wrong timing calculation in Q1ASM generation
   [#186](https://github.com/qilimanjaro-tech/qililab/pull/186)
 
@@ -81,6 +79,7 @@ This document contains the changes of the current release.
   [#185](https://github.com/qilimanjaro-tech/qililab/pull/185)
 
 - Fixed the `Platform.get_element` method:
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
   - Now calling `get_element` of a gate returns a `GateSettings` instance, instead of a `PlatformSettings` instance.
   - Add try/except over the `chip.get_node_from_alias` method to avoid getting an error if the node doesn't exist.
