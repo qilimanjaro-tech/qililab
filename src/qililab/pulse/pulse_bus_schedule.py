@@ -151,14 +151,6 @@ class PulseBusSchedule:
         return self.timeline[0].pulse.name if len(self.timeline) > 0 else None
 
     @property
-    def frequency(self) -> float | None:
-        """Frequency of the pulses of the pulse sequence.
-        Returns:
-            float | None: Frequency of the pulses if the pulse sequence is not empty, None otherwise.
-        """
-        return self.timeline[0].pulse.frequency if len(self.timeline) > 0 else None
-
-    @property
     def readout_pulse_duration(self):
         """Duration in ns of the longest readout pulse in the pulse sequence.
 

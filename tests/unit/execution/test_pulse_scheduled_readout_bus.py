@@ -12,7 +12,6 @@ class TestPulseScheduledReadoutBus:
         self, pulse_scheduled_readout_bus: PulseScheduledReadoutBus, pulse_bus_schedule: PulseBusSchedule
     ):
         """Test add_pulse method."""
-        pulse_bus_schedule.timeline[0].pulse.frequency = pulse_scheduled_readout_bus.pulse_schedule[0].frequency
         pulse_scheduled_readout_bus.add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
     def test_waveforms_method(self, pulse_scheduled_readout_bus: PulseScheduledReadoutBus):
