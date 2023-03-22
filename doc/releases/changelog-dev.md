@@ -16,6 +16,7 @@ This document contains the changes of the current release.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 - Refactored the `Experiment` class, creating a method for each step of the workflow. The `Experiment.execute` method will run all these methods in order:
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
   - `connect`: Connect to the instruments and block the device.
   - `initial_setup`: Apply runcard settings to the instruments.
@@ -45,6 +46,9 @@ This document contains the changes of the current release.
 - Removed the `ExecutionOptions` class. Now the user can freely choose which steps of the workflow to execute.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Removed the `Platform.connect_and_initial_setup` method.
+  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ## Deprecations / Removals
 
 - Removed the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
@@ -56,9 +60,6 @@ This document contains the changes of the current release.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 - Removed the `RemoteAPI` class. This class didn't add any functionality.
-  [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
-
-- Removed the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 ## Documentation
