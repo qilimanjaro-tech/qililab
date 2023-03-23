@@ -62,7 +62,7 @@ class Experiment:
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``Execution`` class
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
