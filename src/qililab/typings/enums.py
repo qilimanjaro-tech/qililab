@@ -467,6 +467,7 @@ class Parameter(str, Enum):
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
     RF_ON = "rf_on"
+    OPERATION_PARAMETER = "operation_parameter"
 
 
 class ResultName(str, Enum):

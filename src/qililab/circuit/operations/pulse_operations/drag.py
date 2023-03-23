@@ -23,7 +23,7 @@ class DRAGPulse(PulseOperation):
     delta: float
 
     def __post_init__(self):
-        self.name = OperationName.GAUSSIAN
+        self.name = OperationName.DRAG
         self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {
             "amplitude": self.amplitude,

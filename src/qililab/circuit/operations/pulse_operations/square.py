@@ -21,6 +21,6 @@ class SquarePulse(PulseOperation):
     resolution: float
 
     def __post_init__(self):
-        self.name = OperationName.GAUSSIAN
+        self.name = OperationName.SQUARE
         self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {"amplitude": self.amplitude, "duration": self.duration, "resolution": self.resolution}

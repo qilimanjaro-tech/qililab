@@ -49,7 +49,7 @@ image.show()
 
 transpiler = CircuitTranspiler(circuit, platform.settings)
 transpiler.calculate_timings()
-
+transpiler.translate_to_pulse_operations()
 # print circuit in the usual way
 circuit.print()
 

@@ -41,11 +41,11 @@ class Circuit:
     def _add_parallel_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
         for qubit in qubits:
             _, last_operation_node = self._last_operation_of_qubit(qubit=qubit)
-            new_operation_node = self._add_operation_node(qubits=(qubit,), operation=operation)
+            new_operation_node = self._add_operation_node(qubits=(qubit,), operation=operation, alias=alias)
             self.graph.add_edge(last_operation_node.index, new_operation_node.index, None)
 
     def _add_multiplexed_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
-        new_operation_node = self._add_operation_node(qubits=qubits, operation=operation)
+        new_operation_node = self._add_operation_node(qubits=qubits, operation=operation, alias=alias)
         last_operation_nodes = []
         for qubit in qubits:
             _, last_operation_node = self._last_operation_of_qubit(qubit=qubit)
@@ -136,15 +136,9 @@ class Circuit:
                 return {"color": "yellow", "fillcolor": "yellow", "style": "filled", "label": "start"}
             else:
                 qubits = ", ".join((str(qubit) for qubit in node.qubits))
-                parameters = (
-                    "("
-                    + ", ".join((f"{parameter}={value}" for parameter, value in node.operation.parameters.items()))
-                    + ")"
-                    if node.operation.has_parameters()
-                    else ""
-                )
+                operation = str(node.operation)
                 timing = f"\n{node.timing.start} -> {node.timing.end}" if node.timing is not None else ""
-                label = f"{node.operation.name}{parameters}: {qubits}{timing}"
+                label = f"{operation}: {qubits}{timing}"
                 return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
         return graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)

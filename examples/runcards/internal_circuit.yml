@@ -10,14 +10,14 @@ settings:
   operations:
     - name: X
       pulse:
-        name: Gaussian
+        name: GaussianPulse
         amplitude: 1.0
         duration: 40
         parameters:
           sigma: 2
     - name: Measure
       pulse:
-        name: Square
+        name: SquarePulse
         amplitude: 1.0
         duration: 6000
         parameters:
