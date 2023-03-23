@@ -1,6 +1,5 @@
 """Pulse Scheduled Bus class."""
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule

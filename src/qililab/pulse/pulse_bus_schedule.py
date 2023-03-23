@@ -67,11 +67,10 @@ class PulseBusSchedule:
             ValueError: All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)
             ValueError: All Pulse objects inside a PulseSequence should have the same frequency.
         """
-        if self.pulses:
-            if pulse.name != self.timeline[0].pulse.name:
-                raise ValueError(
-                    "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
-                )
+        if self.pulses and pulse.name != self.timeline[0].pulse.name:
+            raise ValueError(
+                "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
+            )
 
     @property
     def end(self) -> int:
@@ -81,7 +80,7 @@ class PulseBusSchedule:
         end = 0
         for event in self.timeline:
             pulse_end = event.start_time + event.pulse.duration
-            end = pulse_end if pulse_end > end else end
+            end = max(pulse_end, end)
         return end
 
     @property
