@@ -1,16 +1,7 @@
 """Tests for the Operation class."""
 import pytest
 
-from qililab.circuit.operations import (
-    R180,
-    Barrier,
-    Measure,
-    Operation,
-    Reset,
-    Rxy,
-    Wait,
-    X,
-)
+from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset, Rxy, Wait, X
 
 
 @pytest.fixture(
@@ -63,3 +54,17 @@ class TestOperation:
             ValueError, match=f"Operation {operation.name} has no parameter '{non_existant_parameter_name}'"
         ):
             operation.set_parameter(non_existant_parameter_name, 1)
+
+    @pytest.mark.parametrize(
+        "operation,expected_result", [(X(), "X"), (Rxy(theta=180, phi=45), "Rxy(theta=180,phi=45)")]
+    )
+    def test_str_method(self, operation: Operation, expected_result: str):
+        """Test __str__ method"""
+        result = str(operation)
+        assert isinstance(result, str)
+        assert result == expected_result
+
+    @pytest.mark.parametrize("string_representation", ["X", "Wait(t=1000)", "Rxy(theta=180,phi=45)"])
+    def test_parse_method(self, string_representation: str):
+        operation = Operation.parse(string_representation=string_representation)
+        assert isinstance(operation, Operation)

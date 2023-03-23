@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 
+from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.typings.enums import OperationMultiplicity, OperationName
 
 
+@OperationFactory.register
 @dataclass
 class GaussianPulse(PulseOperation):
     """Operation representing a Gaussian pulse

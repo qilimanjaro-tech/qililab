@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 from qililab.circuit.operations.operation import Operation
-from qililab.typings.enums import OperationMultiplicity, OperationName
 
 
 @dataclass

@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
 
-from qililab.circuit.operations.operation import Operation
+from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.typings.enums import OperationMultiplicity, OperationName
 
 
+@OperationFactory.register
 @dataclass
 class DRAGPulse(PulseOperation):
     """Operation representing a DRAG pulse

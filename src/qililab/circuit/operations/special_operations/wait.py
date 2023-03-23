@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 
-from qililab.circuit.operations.operation import Operation
-from qililab.circuit.operations.special_operations.special_operation import (
-    SpecialOperation,
-)
+from qililab.circuit.operation_factory import OperationFactory
+from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.typings.enums import OperationMultiplicity, OperationName
 
 
+@OperationFactory.register
 @dataclass
 class Wait(SpecialOperation):
     """Operation representing an idle time of `t` ns.
