@@ -100,7 +100,7 @@ class Experiment:
 
         if self.options.remote_save:
             self.remote_save_experiment()
-            
+
         return self.results
 
     def turn_on_instruments(self):
@@ -405,7 +405,7 @@ class Experiment:
 
         # Dump the experiment data into the created file
         with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+            yaml.dump(data={}, stream=experiment_file, sort_keys=False)
 
         return results, results_path
 
