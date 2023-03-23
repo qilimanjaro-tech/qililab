@@ -134,7 +134,7 @@ class TestMethods:
         assert isinstance(experiment.execution, Execution)
         assert isinstance(experiment.results, Results)
         assert isinstance(experiment.results_path, Path)
-        if experiment.options.connection is None:
+        if experiment.platform.connection is None:
             assert experiment._plot is None
         else:
             assert isinstance(experiment._plot, LivePlot)

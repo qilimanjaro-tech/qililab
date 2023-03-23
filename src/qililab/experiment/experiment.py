@@ -47,13 +47,9 @@ class Experiment:
         self.pulse_schedules = pulse_schedules or []
         self.options = options
 
-    def connect(self):
+    def connect(self, manual_override=False):
         """Connects to the instruments and blocks the device."""
-        self.platform.connect(
-            connection=self.options.connection,
-            device_id=self.options.device_id,
-            manual_override=self.options.remote_device_manual_override,
-        )
+        self.platform.connect(manual_override=manual_override)
 
     def initial_setup(self):
         """Configure each instrument with the values defined in the runcard."""
@@ -70,11 +66,11 @@ class Experiment:
         # Build ``Execution`` class
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
-        if self.options.connection is None:
+        if self.platform.connection is None:
             self._plot = None
         else:
             self._plot = LivePlot(
-                connection=self.options.connection,
+                connection=self.platform.connection,
                 loops=self.options.loops,
                 plot_y_label=self.options.plot_y_label,
                 num_schedules=self.execution.num_schedules,
@@ -119,7 +115,7 @@ class Experiment:
 
     def disconnect(self):
         """Disconnects from the instruments and releases the device."""
-        self.platform.disconnect(self.options.connection, self.options.device_id)
+        self.platform.disconnect()
 
     def execute(self) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
@@ -152,17 +148,17 @@ class Experiment:
         Raises:
             ValueError: if connection is not specified
         """
-        if self.options.connection is None:
+        if self.platform.connection is None:
             return
 
         logger.debug("Sending experiment and results to remote database.")
-        self._remote_id = self.options.connection.save_experiment(
+        self._remote_id = self.platform.connection.save_experiment(
             name=self.options.name,
             description=self.options.description,
             experiment_dict=self.to_dict(),
             results_dict=self.results.to_dict(),
-            device_id=self.options.device_id,
-            user_id=self.options.connection.user_id,
+            device_id=self.platform.device_id,
+            user_id=self.platform.connection.user_id,
             qililab_version=__version__,
             favorite=False,
         )

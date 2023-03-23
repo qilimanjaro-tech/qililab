@@ -45,6 +45,7 @@ class RUNCARD:
     BUS_SUBCATEGORY = "bus_subcategory"
     SYSTEM_CONTROL_CATEGORY = "system_control_category"
     SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
+    DEVICE_ID = "device_id"
 
 
 class PLATFORM:
