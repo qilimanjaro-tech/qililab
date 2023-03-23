@@ -27,6 +27,7 @@ class Rxy(TranslatableToPulseOperation):
         self.parameters = {"theta": self.theta, "phi": self.phi}
 
 
+@OperationFactory.register
 @dataclass
 class R180(Rxy):
     """Operation representing a pi rotation around XY axis
@@ -45,6 +46,7 @@ class R180(Rxy):
         self.parameters = {"phi": self.phi}
 
 
+@OperationFactory.register
 @dataclass
 class X(R180):
     """Operation representing a pi rotation around XY axis with zero phase.

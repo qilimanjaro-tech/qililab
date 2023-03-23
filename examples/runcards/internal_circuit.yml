@@ -138,6 +138,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 16
       frequency: 8.0726e+09
+      rf_on: true
     - name: rohde_schwarz
       alias: rs_2
       id_: 0
@@ -145,6 +146,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 16
       frequency: 6.0e+09
+      rf_on: true
     - name: S4g
       alias: S4g
       id_: 2

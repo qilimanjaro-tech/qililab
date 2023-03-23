@@ -1,9 +1,6 @@
-from inspect import signature
-from typing import List, Tuple, Union
-
 from qililab import __version__
 from qililab.circuit import Circuit
-from qililab.circuit.operations import R180, Measure, Operation, Reset, Rxy, Wait, X
+from qililab.circuit.operations import Operation
 
 
 class QiliQasmConverter:
@@ -16,46 +13,24 @@ class QiliQasmConverter:
         layers = circuit.get_operation_layers()
         for layer in layers:
             for operation_node in layer:
-                name = operation_node.operation.name
-                parameters = (
-                    (f"{name}={value}" for name, value in operation_node.operation.parameters.items())
-                    if operation_node.operation.has_parameters()
-                    else None
-                )
-                operation = name if parameters is None else f"{name}({','.join(parameters)})"
                 qubits = ",".join(f"{qubit}" for qubit in operation_node.qubits)
-                code += [f"{operation} {qubits}"]
+                operation = str(operation_node.operation)
+                code += [f"{qubits} {operation}"]
 
         return "\n".join(code)
 
     @staticmethod
     def qasm_to_circuit(code: str):
-        operation_mapper = {"Rxy": Rxy, "R180": R180, "X": X, "Measure": Measure, "Wait": Wait, "Reset": Reset}
-        num_qubits = 0
-        operations: List[Tuple[Union[int, Tuple[int, ...]], Operation]] = []
         lines = code.split("\n")
         for line in lines:
             if line.startswith("//"):
                 continue
-            operation, str_qubits = line.split(None, 1)
-            if operation == "Circuit":
-                num_qubits = int(str_qubits)
+            first_str, second_str = line.split(None, 1)
+            if first_str == "Circuit":
+                num_qubits = int(second_str)
+                circuit = Circuit(num_qubits)
             else:
-                qubits = tuple(int(qubit) for qubit in str_qubits.split(","))
-                parenthesis = operation.find("(")
-                if parenthesis == -1:
-                    operations.append((qubits, operation_mapper[operation]()))
-                else:
-                    argument_pairs = operation[parenthesis + 1 : -1].split(",")
-                    operation = operation[:parenthesis]
-                    sig = signature(operation_mapper[operation])
-                    parameters = {}
-                    for pair in argument_pairs:
-                        name, value = tuple(pair.split("="))
-                        value = sig.parameters.get(name).annotation(value)
-                        parameters[name] = value
-                    operations.append((qubits, operation_mapper[operation](**parameters)))
-        circuit = Circuit(num_qubits)
-        for q, op in operations:
-            circuit.add(q, op)
+                qubits = tuple(int(qubit) for qubit in first_str.split(","))
+                operation = Operation.parse(second_str)
+                circuit.add(qubits, operation)
         return circuit
