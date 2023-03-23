@@ -162,7 +162,8 @@ class ExecutionManager:
         Returns:
             int | None: Acquire time. None if bus is of subcategory control.
         """
-        plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
+        if isinstance(bus.system_control, ReadoutSystemControl):
+            plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
         """Redirect __iter__ magic method to pulse_scheduled_buses."""
