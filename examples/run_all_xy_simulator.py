@@ -1,4 +1,7 @@
 """Run circuit experiment"""
+import os
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from qibo.gates import RX, RY, I
@@ -6,10 +9,13 @@ from qibo.models.circuit import Circuit
 
 from qililab import Experiment, build_platform
 
+os.environ["RUNCARDS"] = str(Path(__file__).parent / "runcards")
+os.environ["DATA"] = str(Path(__file__).parent / "data")
+
 
 def run_allxy():
     """Run AllXY"""
-    platform = build_platform(name="flux_qubit")
+    platform = build_platform(name="flux_qubit_simulator")
 
     circuits = []
     allxy_table = [
