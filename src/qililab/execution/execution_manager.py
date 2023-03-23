@@ -9,10 +9,7 @@ import numpy as np
 
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
-from qililab.execution.execution_buses import (
-    PulseScheduledBus,
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses import PulseScheduledBus, PulseScheduledReadoutBus
 from qililab.platform.components.bus_types import ContinuousBus
 from qililab.result import Result
 from qililab.typings import yaml
@@ -46,31 +43,18 @@ class ExecutionManager:
         """returns a list with pulse_scheduled_buses and pulse_scheduled_readout_buses"""
         return self.pulse_scheduled_buses + self.pulse_scheduled_readout_buses
 
-    def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
+    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
-            schedule_index_to_load (int): specific schedule to load
+            idx (int): index of the pulse schedule to generate and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
         for pulse_scheduled_bus in self.all_pulse_scheduled_buses:
             pulse_scheduled_bus.generate_program_and_upload(
-                schedule_index_to_load=schedule_index_to_load,
-                nshots=nshots,
-                repetition_duration=repetition_duration,
-                path=path,
+                idx=idx, nshots=nshots, repetition_duration=repetition_duration
             )
-
-    def setup(self):
-        """
-        Calls setup of each bus. Where the sequence will be generated
-        """
-        for bus in self.pulse_scheduled_buses:
-            bus.setup()
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
         """

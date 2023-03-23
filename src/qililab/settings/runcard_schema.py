@@ -102,6 +102,14 @@ class RuncardSchema:
                     return MasterGateSettingsName.MASTER_AMPLITUDE_GATE
                 return MasterGateSettingsName.MASTER_DURATION_GATE
 
+            def set_parameter(self, parameter: Parameter, value: float | str | bool):
+                """Change a gate parameter with the given value."""
+                param = parameter.value
+                if not hasattr(self, param):
+                    self.shape[param] = value
+                else:
+                    setattr(self, param, value)
+
         name: str
         delay_between_pulses: int
         delay_before_readout: int
@@ -146,12 +154,8 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            param = parameter.value
-            settings = self.get_gate(name=alias)
-            if not hasattr(settings, param):
-                settings.shape[param] = value
-            else:
-                setattr(settings, param, value)
+            gate_settings = self.get_gate(name=alias)
+            gate_settings.set_parameter(parameter, value)
 
     settings: PlatformSettings
     schema: Schema

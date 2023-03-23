@@ -2,13 +2,12 @@
 import os
 from pathlib import Path
 
-from qibo.gates import M, X
+from qibo.gates import M
 from qibo.models.circuit import Circuit
 from qiboconnection.api import API
 
 from qililab import Experiment, ExperimentOptions, ExperimentSettings, build_platform
 from qililab.typings.enums import Parameter
-from qililab.typings.execution import ExecutionOptions
 from qililab.typings.loop import LoopOptions
 from qililab.utils.loop import Loop
 
@@ -43,20 +42,11 @@ def run_circuit(connection: API | None = None):
         software_average=1,
     )
 
-    execution_options = ExecutionOptions(
-        set_initial_setup=True,
-        automatic_connect_to_instruments=True,
-        automatic_disconnect_to_instruments=True,
-        automatic_turn_on_instruments=True,
-        automatic_turn_off_instruments=True,
-    )
-
     options = ExperimentOptions(
         loops=[lo_freq_loop],  # loops to run the experiment
         settings=settings,  # experiment settings
         connection=connection,  # remote connection for live plotting
         device_id=SAURON_SOPRANO,  # device identifier to block and release for remote executions
-        execution_options=execution_options,
         name="my test experiment",
     )
 
