@@ -75,7 +75,7 @@ class SystemControl(BusElement, ABC):
             RUNCARD.ID: self.id_,
             RUNCARD.NAME: self.name.value,
             RUNCARD.CATEGORY: self.settings.category.value,
-            RUNCARD.INSTRUMENTS: [inst.to_dict() for inst in self.instruments],
+            RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments],
         }
 
     @property

@@ -40,6 +40,7 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.system_control import SimulatedSystemControl
 from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
@@ -504,6 +505,16 @@ def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseSch
     return execution_manager.buses[0]
 
 
+@pytest.fixture(name="pulse_scheduled_readout_bus")
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+    """Load PulseScheduledReadoutBus.
+
+    Returns:
+        PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
+    """
+    return execution_manager.readout_buses[0]
+
+
 @pytest.fixture(name="pulse")
 def fixture_pulse() -> Pulse:
     """Load Pulse.
@@ -559,8 +570,18 @@ def fixture_base_system_control(platform: Platform) -> SystemControl:
     return platform.buses[0].system_control
 
 
+@pytest.fixture(name="simulated_system_control")
+def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
+    """Load SimulatedSystemControl.
+
+    Returns:
+        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
+    """
+    return simulated_platform.buses[0].system_control
+
+
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 

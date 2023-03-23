@@ -101,16 +101,18 @@ class Platform:
             if alias in self.gate_names:
                 return self.settings.get_gate(name=alias)
 
-        element = self.instruments.get_instrument(alias=alias)
-        if element is None:
-            element = self.instrument_controllers.get_instrument_controller(alias=alias)
-        if element is None:
-            element = self.get_bus_by_alias(alias=alias)
-        if element is None:
+        try:
+            element = self.instruments.get_instrument(alias=alias)
+        except ValueError:
             try:
-                element = self.chip.get_node_from_alias(alias=alias)
-            except ValueError as error:
-                raise ValueError(f"Could not find element with alias {alias}.") from error
+                element = self.instrument_controllers.get_instrument_controller(alias=alias)
+            except ValueError:
+                element = self.get_bus_by_alias(alias=alias)
+                if element is None:
+                    try:
+                        element = self.chip.get_node_from_alias(alias=alias)
+                    except ValueError as error:
+                        raise ValueError(f"Could not find element with alias {alias}.") from error
         return element
 
     def get_bus(self, port: int):
@@ -127,19 +129,14 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+    def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        if alias is not None:
-            return next(
-                (element for element in self.buses if element.settings.alias == alias),
-                None,
-            )
+        for bus in self.buses:
+            if bus.alias == alias:
+                return bus
+
         return next(
-            (
-                element
-                for element in self.buses
-                if element.id_ == id_ and element.settings.category == Category(category)
-            ),
+            (element for element in self.buses if element.settings.alias == alias),
             None,
         )
 

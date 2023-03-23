@@ -39,7 +39,7 @@ class ExecutionBuilder(metaclass=Singleton):
                     raise ValueError(f"There is no bus connected to port {port}.")
                 if bus_idx not in buses:
                     buses[bus_idx] = PulseScheduledBus(bus=bus, pulse_schedule=[pulse_bus_schedule])
-                    return
+                    continue
                 buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
         return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules))

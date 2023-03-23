@@ -1,12 +1,13 @@
 """Simulated SystemControl class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.constants import RUNCARD
-from qililab.instruments import Instruments
+from qililab.instruments import Instrument, Instruments
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.typings.enums import SystemControlName
@@ -50,12 +51,13 @@ class SimulatedSystemControl(ReadoutSystemControl):
         drive_params: dict
         resolution: float
         store_states: bool
+        instruments: List[Instrument] = field(init=False, default_factory=list)
 
     settings: SimulatedSystemControlSettings
     _evo: Evolution
 
-    def __init__(self, settings: dict):
-        super().__init__(settings=settings, platform_instruments=Instruments([]))
+    def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
+        super().__init__(settings=settings, platform_instruments=platform_instruments)
         self._evo = Evolution(
             qubit_name=self.settings.qubit,
             qubit_params=self.settings.qubit_params,

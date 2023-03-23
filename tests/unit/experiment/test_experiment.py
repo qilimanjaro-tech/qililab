@@ -337,7 +337,7 @@ class TestReset:
 
 @patch("qililab.experiment.experiment.open")
 @patch("qililab.experiment.experiment.os.makedirs")
-@patch("qililab.system_controls.system_control_types.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
 @patch("qililab.execution.execution_manager.yaml.safe_dump")
 @patch("qililab.execution.execution_manager.open")
 class TestSimulatedExecution:

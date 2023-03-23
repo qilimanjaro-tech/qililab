@@ -1,14 +1,13 @@
 """Bus class."""
-from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from typing import List
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
-from qililab.system_control import SimulatedSystemControl, SystemControl
-from qililab.typings import Category, Node, Parameter
+from qililab.system_control import SystemControl
+from qililab.typings import Node, Parameter
 from qililab.utils import Factory
 
 
@@ -36,22 +35,20 @@ class Bus:
 
         system_control: SystemControl
         port: int
+        platform_instruments: InitVar[Instruments]
 
-        def __iter__(self):
-            """Iterate over Bus elements.
-
-            Yields:
-                Tuple[str, ]: _description_
-            """
-            for name, value in self.__dict__.items():
-                if name == Category.SYSTEM_CONTROL.value and value is not None:
-                    yield name, value
+        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
+            if isinstance(self.system_control, dict):
+                system_control_class = Factory.get(name=self.system_control.pop(RUNCARD.NAME))
+                self.system_control = system_control_class(
+                    settings=self.system_control, platform_instruments=platform_instruments
+                )
+            super().__post_init__()
 
     settings: BusSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
-        self.settings = self.BusSettings(**settings)
-        self._replace_settings_dicts_with_instrument_objects(platform_instruments=platform_instruments)
+        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)
         self.targets = chip.get_port_nodes(port_id=self.port)
 
     @property
@@ -63,8 +60,18 @@ class Bus:
         return self.settings.id_
 
     @property
+    def alias(self):
+        """Alias of the bus.
+
+        Returns:
+            str: alias of the bus
+        """
+        return self.settings.alias
+
+    @property
     def system_control(self):
         """Bus 'system_control' property.
+
         Returns:
             Resonator: settings.system_control.
         """
@@ -73,6 +80,7 @@ class Bus:
     @property
     def port(self):
         """Bus 'resonator' property.
+
         Returns:
             Resonator: settings.resonator.
         """
@@ -86,21 +94,6 @@ class Bus:
             str: settings.category.
         """
         return self.settings.category
-
-    def _replace_settings_dicts_with_instrument_objects(self, platform_instruments: Instruments):
-        """Replace dictionaries from settings into its respective instrument classes."""
-        for name, value in deepcopy(self.settings):
-            instrument_object = None
-            category = Category(name)
-            if category == Category.SYSTEM_CONTROL and isinstance(value, dict):
-                instrument_object = Factory.get(name=value.pop(RUNCARD.NAME))
-                if instrument_object == SimulatedSystemControl:
-                    instrument = instrument_object(settings=value)
-                else:
-                    instrument = instrument_object(settings=value, platform_instruments=platform_instruments)
-            if instrument is None:
-                raise ValueError(f"No instrument object found for category {category.value} and value {value}.")
-            setattr(self.settings, name, instrument)
 
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
@@ -127,7 +120,7 @@ class Bus:
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return self.settings.__iter__()
+        return iter(self.system_control)
 
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
