@@ -7,6 +7,8 @@ from typing import Callable, Type, get_type_hints
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
+from qililab.pulse import PulseBusSchedule
+from qililab.result import Result
 from qililab.settings import DDBBElement
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
@@ -141,25 +143,6 @@ class Instrument(BusElement, ABC):
         settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
-        """set parameter for an instrument
-
-        Args:
-            parameter (Parameter): parameter settings of the instrument to update
-            value (float | str | bool): value to update
-            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
-        """
-        if not hasattr(self, "device"):
-            raise ValueError(
-                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
-            )
-        if channel_id is None:
-            logger.debug("Setting parameter: %s to value: %f", parameter.value, value)
-        if channel_id is not None:
-            logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
-
-        self.setup(parameter=parameter, value=value, channel_id=channel_id)
-
     @CheckDeviceInitialized
     @abstractmethod
     def initial_setup(self):
@@ -178,13 +161,30 @@ class Instrument(BusElement, ABC):
 
     @CheckDeviceInitialized
     @abstractmethod
-    def reset(self):
-        """Reset instrument settings."""
+    def turn_on(self):
+        """Turn on an instrument."""
+
+    def generate_program_and_upload(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+    ) -> None:
+        """Generate program to execute and upload it to the instrument.
+
+        In some cases this method might do nothing."""
+
+    def run(self) -> None:
+        """Run the sequence previously uploaded to the instrument.
+
+        In some cases this method might do nothing."""
+
+    def acquire_result(self) -> Result | None:
+        """Acquire results of the measurement.
+
+        In some cases this method might do nothing."""
 
     @CheckDeviceInitialized
     @abstractmethod
-    def turn_on(self):
-        """Turn on an instrument."""
+    def reset(self):
+        """Reset instrument settings."""
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -230,3 +230,25 @@ class Instrument(BusElement, ABC):
     def __str__(self):
         """String representation of an instrument."""
         return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+
+    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+        """Sets the parameter of a specific instrument.
+
+        Args:
+            parameter (Parameter): parameter settings of the instrument to update
+            value (float | str | bool): value to update
+            channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
+
+        Returns:
+            bool: True if the parameter is set correctly, False otherwise
+        """
+        if not hasattr(self, "device"):
+            raise ValueError(
+                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+            )
+        if channel_id is None:
+            logger.debug("Setting parameter: %s to value: %f", parameter.value, value)
+        if channel_id is not None:
+            logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
+
+        return self.setup(parameter=parameter, value=value, channel_id=channel_id)

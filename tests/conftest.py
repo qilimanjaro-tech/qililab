@@ -9,10 +9,7 @@ from dummy_qblox import DummyPulsar
 from qblox_instruments import PulsarType
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qiboconnection.api import API
-from qiboconnection.typings.connection import (
-    ConnectionConfiguration,
-    ConnectionEstablished,
-)
+from qiboconnection.typings.connection import ConnectionConfiguration, ConnectionEstablished
 from qpysequence import Sequence
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -20,24 +17,13 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import (
-    PulseScheduledBus,
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instrument_controllers.keithley.keithley_2600_controller import (
-    Keithley2600Controller,
-)
-from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import (
-    MiniCircuitsController,
-)
-from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
-    QbloxPulsarController,
-)
-from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
-    SGS100AController,
-)
+from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
+from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
 from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
 from qililab.platform import Platform, Schema
 from qililab.pulse import (
@@ -53,15 +39,9 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
-from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_controls.system_control import SystemControl
-from qililab.system_controls.system_control_types.simulated_system_control import (
-    SimulatedSystemControl,
-)
-from qililab.system_controls.system_control_types.time_domain_control_system_control import (
-    ControlSystemControl,
-)
+from qililab.system_control import SimulatedSystemControl
+from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -69,13 +49,7 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
-from .data import (
-    FluxQubitSimulator,
-    Galadriel,
-    circuit,
-    experiment_params,
-    simulated_experiment_circuit,
-)
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
 from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
@@ -315,7 +289,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AC
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
+    mock_instance.mock_add_spec(["power", "frequency", "rf_on"])
     rohde_schwarz_controller.connect()
     return rohde_schwarz_controller.modules[0]
 
@@ -414,8 +388,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 
 
 @pytest.fixture(name="experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -426,11 +399,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(
-            start=3544000000,
-            stop=3744000000,
-            num=10,
-        ),
+        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
@@ -510,13 +479,20 @@ def fixture_simulated_experiment(simulated_platform: Platform):
 
 
 @pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
+def fixture_execution_manager(
+    mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment
+) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
         ExecutionManager: Instance of the ExecutionManager class.
     """
-    return experiment._execution.execution_manager  # pylint: disable=protected-access
+    experiment.build_execution()
+    mock_open.assert_called()
+    mock_makedirs.assert_called()
+    return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
 @pytest.fixture(name="pulse_scheduled_bus")
@@ -526,17 +502,17 @@ def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseSch
     Returns:
         PulseScheduledBus: Instance of the PulseScheduledBus class.
     """
-    return execution_manager.pulse_scheduled_buses[0]
+    return execution_manager.buses[0]
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
-def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledReadoutBus:
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
     """Load PulseScheduledReadoutBus.
 
     Returns:
         PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
     """
-    return execution_manager.pulse_scheduled_readout_buses[0]
+    return execution_manager.readout_buses[0]
 
 
 @pytest.fixture(name="pulse")
@@ -547,7 +523,7 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="pulse_event")
@@ -558,7 +534,7 @@ def fixture_pulse_event() -> PulseEvent:
         PulseEvent: Instance of the PulseEvent class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
 
 
@@ -569,7 +545,7 @@ def fixture_readout_event() -> ReadoutEvent:
     Returns:
         ReadoutEvent: Instance of the PulseEvent class.
     """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50)
+    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
     return ReadoutEvent(pulse=pulse, start_time=0)
 
 
@@ -581,7 +557,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="base_system_control")
@@ -590,16 +566,6 @@ def fixture_base_system_control(platform: Platform) -> SystemControl:
 
     Returns:
         SystemControl: Instance of the ControlSystemControl class.
-    """
-    return platform.buses[0].system_control
-
-
-@pytest.fixture(name="time_domain_control_system_control")
-def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
-    """Load ControlSystemControl.
-
-    Returns:
-        ControlSystemControl: Instance of the ControlSystemControl class.
     """
     return platform.buses[0].system_control
 
@@ -615,7 +581,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 
@@ -705,38 +671,3 @@ def fixture_create_mocked_api_connection(mocked_connection_established: Connecti
         api = API()
         mock_config.assert_called()
         return api
-
-
-@pytest.fixture(name="mocked_remote_api")
-def fixture_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
-    """Create a mocked remote api connection
-    Returns:
-        RemoteAPI: Remote API mocked connection
-    """
-    return RemoteAPI(connection=mocked_api)
-
-
-@pytest.fixture(name="valid_remote_api")
-def fixture_create_valid_remote_api() -> RemoteAPI:
-    """Create a valid remote api connection
-    Returns:
-        RemoteAPI: Remote API connection
-    """
-    configuration = ConnectionConfiguration(
-        username="write-a-valid-user",
-        api_key="write-a-valid-key",
-    )
-    return RemoteAPI(connection=API(configuration=configuration))
-
-
-@pytest.fixture(name="second_valid_remote_api")
-def fixture_create_second_valid_remote_api() -> RemoteAPI:
-    """Create a valid remote api connection
-    Returns:
-        RemoteAPI: Remote API connection
-    """
-    configuration = ConnectionConfiguration(
-        username="write-a-valid-user",
-        api_key="write-a-valid-key",
-    )
-    return RemoteAPI(connection=API(configuration=configuration))

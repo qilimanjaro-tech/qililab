@@ -10,7 +10,6 @@ class TestPulseScheduledBus:
 
     def test_add_pulse_method(self, pulse_scheduled_bus: PulseScheduledBus, pulse_bus_schedule: PulseBusSchedule):
         """Test add_pulse method."""
-        pulse_bus_schedule.timeline[0].pulse.frequency = pulse_scheduled_bus.pulse_schedule[0].frequency
         pulse_scheduled_bus.add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
     def test_waveforms_method(self, pulse_scheduled_bus: PulseScheduledBus):
@@ -26,3 +25,7 @@ class TestPulseScheduledBus:
     def test_qubit_ids_property(self, pulse_scheduled_bus: PulseScheduledBus):
         """Test qubit_ids property."""
         assert pulse_scheduled_bus.port == pulse_scheduled_bus.bus.port
+
+    def test_acquire_time_method(self, pulse_scheduled_readout_bus: PulseScheduledBus):
+        """Test acquire_time method."""
+        assert isinstance(pulse_scheduled_readout_bus.acquire_time(), int)  # type: ignore

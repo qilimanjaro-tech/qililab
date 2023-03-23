@@ -10,7 +10,6 @@ from qiboconnection.connection import ConnectionConfiguration
 from qililab import build_platform
 from qililab.experiment import Experiment
 from qililab.typings import Parameter
-from qililab.typings.execution import ExecutionOptions
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
@@ -67,13 +66,6 @@ def run_circuit(connection: API | None = None):
     #     options=ExperimentOptions(
     #         loops=[loop],
     #         name="experiment_demo",
-    #         execution_options=ExecutionOptions(
-    #             set_initial_setup=False,
-    #             automatic_connect_to_instruments=False,
-    #             automatic_disconnect_to_instruments=False,
-    #             automatic_turn_on_instruments=False,
-    #             automatic_turn_off_instruments=False,
-    #         ),
     #     ),
     # )
 

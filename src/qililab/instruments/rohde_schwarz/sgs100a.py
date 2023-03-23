@@ -30,7 +30,6 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
@@ -64,15 +63,21 @@ class SGS100A(SignalGenerator):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
+        if self.rf_on:
+            self.device.on()
+        else:
+            self.device.off()
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start generating microwaves."""
+        self.settings.rf_on = True
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop generating microwaves."""
+        self.settings.rf_on = False
         self.device.off()
 
     @Instrument.CheckDeviceInitialized

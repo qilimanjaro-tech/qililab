@@ -11,7 +11,7 @@ class TestPulseEvent:
 
     def test_modulated_waveforms_method(self, pulse_event: PulseEvent):
         """Test modulated_waveforms method."""
-        waveforms = pulse_event.modulated_waveforms(frequency=1e9)
+        waveforms = pulse_event.modulated_waveforms()
         assert isinstance(waveforms, Waveforms)
 
     def test_envelope_method(self, pulse_event: PulseEvent):

@@ -223,82 +223,6 @@ class PulseShapeSettingsName(str, Enum):
     AMP2 = "amp2"
 
 
-class BusCategory(str, Enum):
-    """Bus categories.
-
-    Args:
-        enum (str): Available categories of Bus:
-        * time_domain
-        * continuous
-        * simulated
-    """
-
-    TIME_DOMAIN = "time_domain"
-    CONTINUOUS = "continuous"
-    SIMULATED = "simulated"
-
-
-class BusSubCategory(str, Enum):
-    """Bus subcategories.
-
-    Args:
-        enum (str): Available subcategories of Bus:
-        * baseband
-        * control
-        * time_domain_readout
-        * current_bias
-        * microwave_bias
-        * continuous_readout
-        * simulated
-    """
-
-    BASEBAND = "baseband"
-    CONTROL = "control"
-    TIME_DOMAIN_READOUT = "readout"
-    CURRENT_BIAS = "current_bias"
-    MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "readout"
-    SIMULATED = "simulated"
-
-
-class SystemControlCategory(str, Enum):
-    """SystemControl categories.
-
-    Args:
-        enum (str): Available categories of SystemControl:
-        * time_domain
-        * continuous
-        * simulated
-    """
-
-    TIME_DOMAIN = "time_domain"
-    CONTINUOUS = "continuous"
-    SIMULATED = "simulated"
-
-
-class SystemControlSubCategory(str, Enum):
-    """SystemControl subcategories.
-
-    Args:
-        enum (str): Available subcategories of SystemControl:
-        * baseband
-        * control
-        * time_domain_readout
-        * current_bias
-        * microwave_bias
-        * continuous_readout
-        * simulated
-    """
-
-    BASEBAND = "baseband"
-    CONTROL = "control"
-    TIME_DOMAIN_READOUT = "readout"
-    CURRENT_BIAS = "current_bias"
-    MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "readout"
-    SIMULATED = "simulated"
-
-
 class NodeName(str, Enum):
     """Node names.
 
@@ -372,43 +296,14 @@ class SystemControlName(str, Enum):
 
     Args:
         enum (str): Available system control element names:
-        * time_domain_baseband_system_control
-        * time_domain_control_system_control
-        * time_domain_readout_system_control
-        * continuous_current_bias_system_control
-        * continuous_microwave_bias_system_control
-        * continuous_readout_system_control
+        * system_control
+        * readout_system_control
+        * simulated_system_control
     """
 
-    TIME_DOMAIN_BASEBAND_SYSTEM_CONTROL = "time_domain_baseband_system_control"
-    TIME_DOMAIN_CONTROL_SYSTEM_CONTROL = "time_domain_control_system_control"
-    TIME_DOMAIN_READOUT_SYSTEM_CONTROL = "time_domain_readout_system_control"
-    CONTINUOUS_CURRENT_BIAS_SYSTEM_CONTROL = "continuous_current_bias_system_control"
-    CONTINUOUS_MICROWAVE_BIAS_SYSTEM_CONTROL = "continuous_microwave_bias_system_control"
-    CONTINUOUS_READOUT_SYSTEM_CONTROL = "continuous_readout_system_control"
+    SYSTEM_CONTROL = "system_control"
+    READOUT_SYSTEM_CONTROL = "readout_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
-
-
-class BusName(str, Enum):
-    """System Control names.
-
-    Args:
-        enum (str): Available bus element names:
-        * time_domain_baseband_bus
-        * time_domain_control_bus
-        * time_domain_readout_bus
-        * continuous_current_bias_bus
-        * continuous_microwave_bias_bus
-        * continuous_readout_bus
-    """
-
-    TIME_DOMAIN_BASEBAND_BUS = "time_domain_baseband_bus"
-    TIME_DOMAIN_CONTROL_BUS = "time_domain_control_bus"
-    TIME_DOMAIN_READOUT_BUS = "time_domain_readout_bus"
-    CONTINUOUS_CURRENT_BIAS_BUS = "continuous_current_bias_bus"
-    CONTINUOUS_MICROWAVE_BIAS_BUS = "continuous_microwave_bias_bus"
-    CONTINUOUS_READOUT_BUS = "continuous_readout_bus"
-    SIMULATED_BUS = "simulated_bus"
 
 
 class Parameter(str, Enum):

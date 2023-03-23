@@ -1,6 +1,5 @@
 """FactoryElement class"""
 from qililab.typings.enums import (
-    BusName,
     ConnectionName,
     InstrumentControllerName,
     InstrumentName,
@@ -22,5 +21,4 @@ class FactoryElement:
         | NodeName
         | ConnectionName
         | InstrumentControllerName
-        | BusName
     )

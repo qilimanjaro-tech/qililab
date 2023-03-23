@@ -95,13 +95,13 @@ class CircuitToPulses:
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Adapt this code to translate two-qubit gates.
-        port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
+        qubit_idx = control_gate.target_qubits[0]
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
+        port = chip.get_port(node)
         old_time = self._update_time(
             time=time,
-            chip=chip,
-            node=port,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
-            wait_time=wait_time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_between_pulses, wait_time=wait_time,
         )
         return (
             PulseEvent(
@@ -110,6 +110,7 @@ class CircuitToPulses:
                     phase=float(gate_settings.phase),
                     duration=gate_settings.duration,
                     pulse_shape=pulse_shape,
+                    frequency=node.frequency,
                 ),
                 start_time=old_time,
             )
@@ -162,13 +163,12 @@ class CircuitToPulses:
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-        port = chip.get_port_from_qubit_idx(idx=qubit_idx, readout=True)
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
+        port = chip.get_port(node)
         old_time = self._update_time(
             time=time,
-            chip=chip,
-            node=port,
-            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
-            wait_time=wait_time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_before_readout, wait_time=wait_time,
         )
 
         return (
@@ -177,6 +177,7 @@ class CircuitToPulses:
                     amplitude=gate_settings.amplitude,
                     phase=gate_settings.phase,
                     duration=gate_settings.duration,
+                    frequency=node.frequency,
                     pulse_shape=pulse_shape,
                 ),
                 start_time=old_time + self.settings.delay_before_readout,
@@ -186,14 +187,13 @@ class CircuitToPulses:
             port.id_,
         )
 
-    def _update_time(self, time: Dict[int, int], chip: Chip, node: Node, pulse_time: int, wait_time: int):
+    def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int, wait_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
             port (int): Index of the chip port.
             pulse_time (int): Duration of the puls + wait time.
         """
-        qubit_idx = chip.get_qubit_idx_from_node(node=node)
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = wait_time + time[qubit_idx]

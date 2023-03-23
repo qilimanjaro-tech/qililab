@@ -27,6 +27,7 @@ class RUNCARD:
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
+    INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"
@@ -41,10 +42,7 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    BUS_CATEGORY = "bus_category"
-    BUS_SUBCATEGORY = "bus_subcategory"
-    SYSTEM_CONTROL_CATEGORY = "system_control_category"
-    SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
+    DEVICE_ID = "device_id"
 
 
 class PLATFORM:
@@ -92,7 +90,6 @@ class EXPERIMENT:
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "options"
-    EXECUTION_OPTIONS = "execution_options"
     DEVICE_ID = "device_id"
     PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"

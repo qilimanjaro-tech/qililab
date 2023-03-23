@@ -45,6 +45,12 @@ class TestPlatform:
         with pytest.raises(ValueError):
             platform.get_element(alias="ABC")
 
+    def test_get_element_with_gate(self, platform: Platform):
+        """Test the get_element method with a gate alias."""
+        gate = platform.get_element(alias="M")
+        assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
+        assert gate.name == "M"
+
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
         str(platform)
