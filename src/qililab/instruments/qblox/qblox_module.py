@@ -234,7 +234,11 @@ class QbloxModule(AWG):
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
         if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
+
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
