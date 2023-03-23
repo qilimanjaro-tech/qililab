@@ -10,10 +10,7 @@ from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
 from qililab.circuit.operations import Operation
-from qililab.typings.enums import (
-    OperationMultiplicity,
-    OperationTimingsCalculationMethod,
-)
+from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
 
 
 @dataclass
@@ -108,6 +105,8 @@ class Circuit:
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
     ) -> List[List[OperationNode]]:
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]
+        for layer in layers:
+            layer.sort(key=lambda node: node.index)
         if method == OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE:
             return layers
         else:

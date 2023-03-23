@@ -63,10 +63,10 @@ print(f"Depth: {circuit.depth}")
 # circuit.draw(filename='circuit.png')
 
 # Convert to QiliQASM
-qasm = QiliQasmConverter.circuit_to_qasm(circuit)
+qasm = QiliQasmConverter.to_qasm(circuit)
 print(qasm)
 
 # Parse from QiliQASM
-parsed_circuit = QiliQasmConverter.qasm_to_circuit(qasm)
+parsed_circuit = QiliQasmConverter.from_qasm(qasm)
 image = parsed_circuit.draw()
 image.show()
