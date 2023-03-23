@@ -523,7 +523,7 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="pulse_event")
@@ -534,7 +534,7 @@ def fixture_pulse_event() -> PulseEvent:
         PulseEvent: Instance of the PulseEvent class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
 
 
@@ -545,7 +545,7 @@ def fixture_readout_event() -> ReadoutEvent:
     Returns:
         ReadoutEvent: Instance of the PulseEvent class.
     """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50)
+    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
     return ReadoutEvent(pulse=pulse, start_time=0)
 
 
@@ -557,7 +557,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="base_system_control")

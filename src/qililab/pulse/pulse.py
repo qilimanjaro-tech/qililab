@@ -22,8 +22,8 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
+    frequency: float
     pulse_shape: PulseShape
-    frequency: float | None = None
 
     def __post_init__(self):
         """Create Pulse Shape"""
@@ -42,17 +42,12 @@ class Pulse:
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
-        if self.frequency is None:
-            warnings.warn(f"No frequency found for pulse {self.name}. Setting frequency to 0.")
-            frequency = 0.0
-        else:
-            frequency = self.frequency
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.phase + 2 * np.pi * frequency * start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=frequency, phase_offset=phase_offset)
+        phase_offset = self.phase + 2 * np.pi * self.frequency * start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
