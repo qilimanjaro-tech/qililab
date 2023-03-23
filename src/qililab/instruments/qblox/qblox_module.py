@@ -222,7 +222,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
+        #acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
         return acquisitions
 
     @abstractmethod
@@ -247,8 +247,12 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
+        if channel_id is None and self.num_sequencers == 1:
+            channel_id = 0
+
         if channel_id is None:
             raise ValueError("channel not specified to update instrument")
+
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"

@@ -38,11 +38,13 @@ class AWGAnalogDigitalConverter(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
+        if channel_id is None and self.num_sequencers == 1:
+            channel_id = 0
+        if channel_id is None:
+            raise ValueError("channel not specified to update instrument")
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             self._set_acquisition_delay_time(value=value)
             return
-        if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
             return

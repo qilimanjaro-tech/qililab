@@ -112,5 +112,5 @@ class SystemControl(BusElement, ABC):
         for instrument in self.instruments:
             with contextlib.suppress(ValueError):
                 instrument.set_parameter(parameter, value, channel_id)
-                break
+                return
         raise ValueError(f"Could not find parameter {parameter.value} in the system control {self.name}")

@@ -76,10 +76,8 @@ class Experiment:
                 num_schedules=self.execution.num_schedules,
                 title=self.options.name,
             )
-        # Prepares the results
-        self.results, self.results_path = self.prepare_results()
 
-    def run(self):
+    def run(self) -> Results:
         """This method is responsible for:
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
@@ -91,6 +89,8 @@ class Experiment:
         """
         if not hasattr(self, "execution"):
             raise ValueError("Please build the execution before running an experiment.")
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results()
         num_schedules = self.execution.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -100,6 +100,8 @@ class Experiment:
 
         if self.options.remote_save:
             self.remote_save_experiment()
+            
+        return self.results
 
     def turn_on_instruments(self):
         """Turn on instruments."""
@@ -277,11 +279,7 @@ class Experiment:
                 parameters = circuit.get_parameters()
                 parameters[int(alias)] = value
                 circuit.set_parameters(parameters)
-            self._execution, self._schedules = self._build_execution(
-                circuits=self.circuits,
-                pulse_schedules=self.pulse_schedules,
-                execution_options=self.options.execution_options,
-            )
+            self.build_execution()
             return
 
         if element is None:

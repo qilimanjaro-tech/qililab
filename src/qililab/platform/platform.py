@@ -38,12 +38,12 @@ class Platform:
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
                 current execution. Defaults to False.
         """
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
+
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
             return
-
-        if self.connection is not None and not manual_override:
-            self.connection.block_device_id(device_id=self.device_id)
 
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
