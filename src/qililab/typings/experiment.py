@@ -44,7 +44,6 @@ class ExperimentOptions:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.SETTINGS: asdict(self.settings),
             RUNCARD.NAME: self.name,
-            EXPERIMENT.CONNECTION: None,
             EXPERIMENT.PLOT_Y_LABEL: self.plot_y_label,
             EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,

@@ -55,6 +55,15 @@ This document contains the changes of the current release.
 - Removed the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Move `connection` and `device_id` information into the `Platform` class. Now users should add `device_id` inside
+  the runcard and add a `connection` argument when calling `build_platform`:
+  [#211](https://github.com/qilimanjaro-tech/qililab/pull/211)
+
+  ```python
+  platform = build_platform(name=runcard_name, connection=connection)
+  platform.connect(manual_override=False)
+  ```
+
 ## Deprecations / Removals
 
 - Removed the `ExecutionPreparation` class and the `results_data_management.py` file, and replace it with a
