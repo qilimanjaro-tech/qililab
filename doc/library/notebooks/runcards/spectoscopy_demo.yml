@@ -106,22 +106,6 @@ schema:
       power: 16
       frequency: 8.0726e+09
       rf_on: true
-    # - name: S4g
-    #   alias: S4g
-    #   id_: 2
-    #   category: current_source
-    #   firmware: None
-    #   current: [0.0,0.0]
-    #   ramping_enabled: [false,false]
-    #   ramp_rate: [0.0001,0.001]
-    #   span: [range_max_bi,range_max_bi]
-    #   dacs: [0,1]
-    # - name: mini_circuits
-    #   alias: attenuator
-    #   id_: 1
-    #   category: attenuator
-    #   firmware: None
-    #   attenuation: 32
   buses:
     - id_: 1
       name: time_domain_readout_bus
@@ -170,25 +154,3 @@ schema:
       modules:
         - signal_generator: rs_1
           slot_id: 0
-    # - name: qblox_spi_rack
-    #   id_: 0
-    #   alias: qblox_spi_rack
-    #   category: instrument_controller
-    #   subcategory: multiple_instruments
-    #   connection:
-    #     name: usb
-    #     address: /dev/ttyACM0
-    #   modules:
-    #     - current_source: S4g
-    #       slot_id: 7
-    # - name: mini_circuits
-    #   id_: 4
-    #   alias: attenuator_controller_0
-    #   category: instrument_controller
-    #   subcategory: single_instrument
-    #   connection:
-    #     name: tcp_ip
-    #     address: 192.168.1.69
-    #   modules:
-    #   - attenuator: attenuator
-    #     slot_id: 0
