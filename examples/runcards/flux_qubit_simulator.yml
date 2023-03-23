@@ -2,11 +2,11 @@ settings:
   id_: 0
   category: platform
   name: flux_qubit_simulator
+  device_id: 0
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
   master_duration_gate: 10
-  master_drag_coefficient: 0
   gates:
     - name: M
       amplitude: 1
@@ -29,7 +29,7 @@ settings:
       shape:
         name: drag
         num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
+        drag_coefficient: 0
 
     - name: Y
       amplitude: master_amplitude_gate
@@ -38,7 +38,7 @@ settings:
       shape:
         name: drag
         num_sigmas: 4
-        drag_coefficient: master_drag_coefficient
+        drag_coefficient: 0
 schema:
   chip:
     id_: 0
@@ -50,25 +50,24 @@ schema:
       - name: qubit
         alias: qubit
         id_: 1
-        qubit_idx: 0
+        qubit_index: 0
         frequency: 3.351e+09
         nodes: [0]
   instruments: []
   buses:
     - id_: 0
       category: bus
-      subcategory: control
       system_control:
         id_: 0
+        name: simulated_system_control
         category: system_control
-        subcategory: simulated_system_control
         qubit: csfq4jj
-        qubit_params:  # qubit parameters
+        qubit_params: # qubit parameters
           n_cut: 10
           phi_x: 6.28318530718 # 2*pi
           phi_z: -0.25132741228 # -0.08*pi
         drive: zport
-        drive_params:  # driving hamiltonian parameters
+        drive_params: # driving hamiltonian parameters
           dimension: 10
         resolution: 0.01
         store_states: True

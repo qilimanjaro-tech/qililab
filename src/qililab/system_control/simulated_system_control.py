@@ -70,23 +70,6 @@ class SimulatedSystemControl(ReadoutSystemControl):
         """String representation of a Simulated SystemControl class."""
         return "--"
 
-    def generate_program(self, pulse_bus_schedule: PulseBusSchedule):
-        """Translate a Pulse Bus Schedule to a simulated program
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            frequency (float | None): frequency to modulate the pulses. Optional
-        """
-        resolution = self.settings.resolution
-
-        # TODO: get pulses -> check
-        waveforms = pulse_bus_schedule.waveforms(resolution=resolution)
-        i_waveform = np.array(waveforms.i)
-        sequence = [i_waveform]
-
-        # Init evolution pulse sequence
-        self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
-
     def run(self) -> None:
         """Run the program"""
         self._evo.evolve()
@@ -104,15 +87,24 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
     ) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+        """Translate a Pulse Bus Schedule to a simulated program
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
         """
+        resolution = self.settings.resolution
+
+        # TODO: get pulses -> check
+        waveforms = pulse_bus_schedule.waveforms(resolution=resolution)
+        i_waveform = np.array(waveforms.i)
+        sequence = [i_waveform]
+
+        # Init evolution pulse sequence
+        self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
 
     @property
     def acquisition_delay_time(self) -> int:
