@@ -42,6 +42,7 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    DEVICE_ID = "device_id"
 
 
 class PLATFORM:

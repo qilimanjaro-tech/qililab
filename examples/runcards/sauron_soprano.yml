@@ -2,6 +2,7 @@ settings:
   id_: 0
   category: platform
   name: sauron_cluster
+  device_id: 9
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -137,6 +138,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 16
       frequency: 8.0726e+09
+      rf_on: False
 
     - name: rohde_schwarz
       alias: rs_2
@@ -145,6 +147,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 13
       frequency: 6.53392e+09
+      rf_on: False
 
     # - name: S4g
     #   alias: S4g
