@@ -33,8 +33,6 @@ class PulseBusSchedule:
             self._pulses.add(pulse_event.pulse)
         reference_pulse = self.timeline[0].pulse
         for pulse in self._pulses:
-            if pulse.frequency != reference_pulse.frequency:
-                raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
             if pulse.name != reference_pulse.name:
                 raise ValueError(
                     "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
@@ -74,8 +72,6 @@ class PulseBusSchedule:
                 raise ValueError(
                     "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
                 )
-            if pulse.frequency != self.timeline[0].pulse.frequency:
-                raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
 
     @property
     def end(self) -> int:

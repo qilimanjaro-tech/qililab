@@ -21,7 +21,7 @@ class Chip(DDBBElement):
         self.nodes = [Factory.get(name=node.pop(RUNCARD.NAME))(**node) for node in self.nodes]
         self.category = Category(self.category)
 
-    def _find_qubit(self, idx: int) -> Qubit:
+    def _get_qubit(self, idx: int) -> Qubit:
         """Find qubit from given idx value.
 
         Args:
@@ -49,7 +49,7 @@ class Chip(DDBBElement):
         """
         return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
-    def get_port_from_qubit_idx(self, idx: int, readout: bool) -> Port:
+    def get_node_from_qubit_idx(self, idx: int, readout: bool) -> Qubit | Resonator:
         """Get control/readout port number from qubit index.
 
         Args:
@@ -63,16 +63,16 @@ class Chip(DDBBElement):
         Returns:
             int: Control/readout port.
         """
-        qubit = self._find_qubit(idx=idx)
+        qubit = self._get_qubit(idx=idx)
         if not readout:
-            return self._get_adjacent_port(node=qubit)
+            return qubit
         adj_nodes = self._get_adjacent_nodes(node=qubit)
         for node in adj_nodes:
             if isinstance(node, Resonator):
-                return self._get_adjacent_port(node=node)
+                return node
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
 
-    def _get_adjacent_port(self, node: Node) -> Port:
+    def get_port(self, node: Node) -> Port:
         """Find node's port (if exists).
 
         Args:
