@@ -4,10 +4,7 @@ from pathlib import Path
 
 from qililab.platform.components.bus_types import SimulatedBus, TimeDomainBus
 from qililab.pulse import PulseBusSchedule
-from qililab.system_controls.system_control_types import (
-    SimulatedSystemControl,
-    TimeDomainSystemControl,
-)
+from qililab.system_controls.system_control_types import SimulatedSystemControl, TimeDomainSystemControl
 from qililab.typings import BusSubCategory
 from qililab.utils import Waveforms
 
@@ -19,22 +16,18 @@ class PulseScheduledBus:
     bus: TimeDomainBus | SimulatedBus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def generate_program_and_upload(
-        self, schedule_index_to_load: int, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
+    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
         """Translate the Pulse Bus Schedule to each AWG program and upload them
 
         Args:
-            schedule_index_to_load (int): specific schedule to load
+            idx (int): index of the pulse schedule to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
         self.system_control.generate_program_and_upload(  # pylint: disable=no-member
-            pulse_bus_schedule=self.pulse_schedule[schedule_index_to_load],
+            pulse_bus_schedule=self.pulse_schedule[idx],
             nshots=nshots,
             repetition_duration=repetition_duration,
-            path=path,
         )
 
     def run(self):
