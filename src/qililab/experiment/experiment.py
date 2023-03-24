@@ -289,10 +289,16 @@ class Experiment:
                 value=value,
                 channel_id=channel_id,
             )
+            self.build_execution()
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.build_execution()
+        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+            element.set_parameter(parameter=parameter, value=value)
+            self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
+
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.
