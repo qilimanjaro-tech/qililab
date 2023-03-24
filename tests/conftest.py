@@ -53,7 +53,6 @@ from qililab.pulse import (
     ReadoutPulse,
     Rectangular,
 )
-from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.system_controls.system_control import SystemControl
 from qililab.system_controls.system_control_types.simulated_system_control import (
@@ -315,7 +314,7 @@ def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AC
     """Return connected instance of SGS100A class"""
     # add dynamically created attributes
     mock_instance = mock_rs.return_value
-    mock_instance.mock_add_spec(["power", "frequency"])
+    mock_instance.mock_add_spec(["power", "frequency", "rf_on"])
     rohde_schwarz_controller.connect()
     return rohde_schwarz_controller.modules[0]
 
@@ -414,8 +413,7 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
 
 
 @pytest.fixture(name="experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -426,11 +424,7 @@ def fixture_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(
-            start=3544000000,
-            stop=3744000000,
-            num=10,
-        ),
+        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
@@ -516,7 +510,8 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     Returns:
         ExecutionManager: Instance of the ExecutionManager class.
     """
-    return experiment._execution.execution_manager  # pylint: disable=protected-access
+    experiment.build_execution()
+    return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
 @pytest.fixture(name="pulse_scheduled_bus")
@@ -705,38 +700,3 @@ def fixture_create_mocked_api_connection(mocked_connection_established: Connecti
         api = API()
         mock_config.assert_called()
         return api
-
-
-@pytest.fixture(name="mocked_remote_api")
-def fixture_create_mocked_remote_api(mocked_api: API) -> RemoteAPI:
-    """Create a mocked remote api connection
-    Returns:
-        RemoteAPI: Remote API mocked connection
-    """
-    return RemoteAPI(connection=mocked_api)
-
-
-@pytest.fixture(name="valid_remote_api")
-def fixture_create_valid_remote_api() -> RemoteAPI:
-    """Create a valid remote api connection
-    Returns:
-        RemoteAPI: Remote API connection
-    """
-    configuration = ConnectionConfiguration(
-        username="write-a-valid-user",
-        api_key="write-a-valid-key",
-    )
-    return RemoteAPI(connection=API(configuration=configuration))
-
-
-@pytest.fixture(name="second_valid_remote_api")
-def fixture_create_second_valid_remote_api() -> RemoteAPI:
-    """Create a valid remote api connection
-    Returns:
-        RemoteAPI: Remote API connection
-    """
-    configuration = ConnectionConfiguration(
-        username="write-a-valid-user",
-        api_key="write-a-valid-key",
-    )
-    return RemoteAPI(connection=API(configuration=configuration))

@@ -92,7 +92,6 @@ class EXPERIMENT:
     NUM_SCHEDULES = "num_schedules"
     LOOPS = "loops"
     OPTIONS = "options"
-    EXECUTION_OPTIONS = "execution_options"
     DEVICE_ID = "device_id"
     PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"

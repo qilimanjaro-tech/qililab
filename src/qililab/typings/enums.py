@@ -466,6 +466,7 @@ class Parameter(str, Enum):
     GAIN_PATH1 = "gain_path1"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    RF_ON = "rf_on"
     DEVICE_TIMEOUT = "device_timeout"
     SWEEP_MODE = "sweep_mode"
     ELECTRICAL_DELAY = "electrical_delay"
