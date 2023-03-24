@@ -1,6 +1,6 @@
 """ Experiment Options Typings """
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import List
 
 from qililab.constants import EXPERIMENT, RUNCARD
@@ -28,7 +28,6 @@ class ExperimentOptions:
     """Experiment Options"""
 
     loops: List[Loop] | None = None
-    settings: ExperimentSettings = ExperimentSettings()
     settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
     plot_y_label: str | None = None
