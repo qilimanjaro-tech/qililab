@@ -1,24 +1,14 @@
 """Qblox module class"""
 import itertools
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import (
-    Play,
-    ResetPh,
-    SetAwgGain,
-    SetPh,
-    Stop,
-    Wait,
-    WaitSync,
-)
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -114,7 +104,11 @@ class QbloxModule(AWG):
         return self.device.module_type()
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        num_binned_acquisitions: int,
+        repetition_duration: int,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -124,25 +118,37 @@ class QbloxModule(AWG):
             repetition_duration (int): repetition duration
         """
         self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
+            repetition_duration=repetition_duration,
         )
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
+    def _check_cached_values(
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        num_binned_acquisitions: int,
+        repetition_duration: int,
+    ):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
             sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                pulse_bus_schedule=pulse_bus_schedule,
+                num_binned_acquisitions=num_binned_acquisitions,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
             )
             # FIXME: Qblox supports to set it directly to the device instead of using a file
             self.upload(sequence=sequence)
 
     def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -154,19 +160,21 @@ class QbloxModule(AWG):
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(
-            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+            num_binned_acquisitions=num_binned_acquisitions,
+            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port),
         )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
             nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
@@ -181,7 +189,8 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
-        program.append_block(avg_loop)
+        bins = Loop(name="bins", begin=0, end=2000, step=1)     # int(self._MAX_BINS/num_binned_acquisitions)-1
+        program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -204,7 +213,9 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
+        # avg_loop.append_component(Acquire(acq_index=1, bin_index=bins.counter_register, wait_time=self._MIN_WAIT_TIME))
+        self._append_acquire_instruction(loop=avg_loop, register=bins.counter_register, sequencer_id=sequencer_id)
+        bins.append_block(avg_loop)
         wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
@@ -212,7 +223,9 @@ class QbloxModule(AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
+    def _generate_acquisitions(
+        self, num_binned_acquisitions: int, sequencer_id: int
+    ) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
@@ -222,7 +235,9 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        #acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
+        acquisitions.add(name="binning", num_bins=2000, index=1)
+        # for idx in range(num_binned_acquisitions-1):
+        #     acquisitions.add(name=f"binning{idx}", num_bins=int(self._MAX_BINS/num_binned_acquisitions+1)-1, index=idx+2)
         return acquisitions
 
     @abstractmethod

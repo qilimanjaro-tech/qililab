@@ -66,7 +66,7 @@ class AWG(Instrument):
 
     @abstractmethod
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_binned_acquisitions: int,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
@@ -75,7 +75,7 @@ class AWG(Instrument):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
         """
-    
+
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
@@ -89,7 +89,7 @@ class AWG(Instrument):
         if sequencer_id is None:
             raise ValueError("'sequencer_id' must be defined.")
         return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
-    
+
     @property
     def num_sequencers(self):
         """Number of sequencers in the AWG

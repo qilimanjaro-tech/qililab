@@ -17,6 +17,7 @@ class ExperimentSettings:
     hardware_average: int = 1024
     software_average: int = 1
     repetition_duration: int = 200000
+    num_binned_acquisitions: int = 2
 
     def __str__(self):
         """Returns a string representation of the experiment settings."""

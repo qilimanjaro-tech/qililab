@@ -81,7 +81,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
     ) -> None:
         if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
@@ -90,12 +90,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
                     sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
                 )
-                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id)
+                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id,
+                                                          num_binned_acquisitions=num_binned_acquisitions)
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
         super().generate_program_and_upload(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            num_binned_acquisitions=num_binned_acquisitions,
+            repetition_duration=repetition_duration,
         )
 
     def acquire_result(self) -> QbloxResult:
@@ -199,9 +203,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = (
-            0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
-        )  # use binned acquisition if averaging is false
+        # acquisition_idx = (
+        #     0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
+        # )  # use binned acquisition if averaging is false
+        acquisition_idx = 1
         loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
@@ -225,11 +230,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             str: Name of the acquisition. Options are "single" or "binning".
         """
-        return (
-            "single"
-            if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging
-            else "binning"
-        )
+        return "binning"
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
