@@ -57,7 +57,7 @@ class Galadriel:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
-        RUNCARD.DEVICE_ID: 9,
+        PLATFORM.DEVICE_ID: 9,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -479,7 +479,7 @@ class FluxQubitSimulator:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
-        RUNCARD.DEVICE_ID: 9,
+        PLATFORM.DEVICE_ID: 9,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
