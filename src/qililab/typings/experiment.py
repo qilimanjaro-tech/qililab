@@ -29,6 +29,7 @@ class ExperimentOptions:
 
     loops: List[Loop] | None = None
     settings: ExperimentSettings = ExperimentSettings()
+    settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
     plot_y_label: str | None = None
     remote_save: bool = True

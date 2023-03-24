@@ -14,7 +14,3 @@ class ReadoutPulse(Pulse):
 
     name: ClassVar[PulseName] = PulseName.READOUT_PULSE
     pulse_shape: PulseShape = Rectangular()
-
-    def __repr__(self):  # pylint: disable=useless-super-delegation
-        """Redirect __repr__ magic method."""
-        return super().__repr__()
