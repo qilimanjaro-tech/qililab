@@ -45,7 +45,6 @@ class RUNCARD:
     BUS_SUBCATEGORY = "bus_subcategory"
     SYSTEM_CONTROL_CATEGORY = "system_control_category"
     SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
-    DEVICE_ID = "device_id"
 
 
 class PLATFORM:
@@ -55,6 +54,7 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+    DEVICE_ID = "device_id"
 
 
 class CURRENTSOURCE:
