@@ -102,18 +102,13 @@ class Platform:
             if alias in self.gate_names:
                 return self.settings.get_gate(name=alias)
 
-        try:
-            element = self.instruments.get_instrument(alias=alias)
-        except ValueError:
-            try:
-                element = self.instrument_controllers.get_instrument_controller(alias=alias)
-            except ValueError:
-                element = self.get_bus_by_alias(alias=alias)
-                if element is None:
-                    try:
-                        element = self.chip.get_node_from_alias(alias=alias)
-                    except ValueError as error:
-                        raise ValueError(f"Could not find element with alias {alias}.") from error
+        element = self.instruments.get_instrument(alias=alias)
+        if element is None:
+            element = self.instrument_controllers.get_instrument_controller(alias=alias)
+        if element is None:
+            element = self.get_bus_by_alias(alias=alias)
+        if element is None:
+            element = self.chip.get_node_from_alias(alias=alias)
         return element
 
     def get_bus(self, port: int):

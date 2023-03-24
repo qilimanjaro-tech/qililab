@@ -18,7 +18,7 @@ class InstrumentControllers:
         for instrument in self.elements:
             if instrument.alias == alias:
                 return instrument
-        raise ValueError(f"Could not find instrument controller with alias {alias}")
+        return None
 
     def connect(self):
         """Connect to all instrument controllers."""
