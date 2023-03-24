@@ -1,0 +1,66 @@
+settings:
+  id_: 0
+  category: platform
+  name: sauron_yokogawa
+  delay_between_pulses: 0
+  delay_before_readout: 40
+  master_amplitude_gate: 1
+  master_duration_gate: 100
+  gates: []
+schema:
+  chip:
+    id_: 0
+    category: chip
+    nodes:
+      - name: port
+        id_: 0
+        nodes: [3]
+      - name: port
+        id_: 1
+        nodes: [2]
+      - name: resonator
+        alias: resonator
+        id_: 2
+        frequency: 8.0726e+09
+        nodes: [1, 3]
+      - name: qubit
+        alias: qubit
+        id_: 3
+        qubit_index: 0
+        frequency: 6.5328e+09
+        nodes: [0, 2]
+  instruments:
+    - name: yokogawa_gs200 #
+      alias: yokogawa #
+      id_: 0
+      firmware: A.15.10.06 #
+      current_value: #
+      output_status: #
+      source_mode: #
+  buses:
+    - id_: 0
+      name: continuous_current_bias_bus
+      category: bus
+      bus_category: continuous
+      bus_subcategory: current_bias
+      alias: yokogawa_current_bias_bus
+      system_control:
+        id_: 0
+        name: continuous_current_bias_system_control
+        category: system_control
+        system_control_category: continuous
+        system_control_subcategory: current_bias
+      port: 1
+  instrument_controllers:
+    - name: yokogawa_gs200_controller
+      id_: 0
+      alias: yokogawa_gs200_controller
+      category: instrument_controller
+      subcategory: single_instrument
+      timeout: 10000
+      connection:
+        name: tcp_ip
+        address: 192.168.1.15
+      modules:
+        - current_source: yokogawa
+          slot_id: 0

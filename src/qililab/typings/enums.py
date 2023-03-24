@@ -471,6 +471,8 @@ class Parameter(str, Enum):
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
     RF_ON = "rf_on"
+    SOURCE_MODE = "source_mode"
+    OUTPUT_STATUS = "output_status"
 
 
 class ResultName(str, Enum):
@@ -582,3 +584,16 @@ class Node(str, Enum):
     NODES = "nodes"
     FREQUENCY = "frequency"
     QUBIT_INDEX = "qubit_index"
+
+
+class YokogawaSourceModes(str, Enum):
+    """Yokogawa gs200 Source Modes
+
+    Args:
+        enum (str): Available types of source modes:
+        * current
+        * voltage
+    """
+
+    CURR = "current"
+    VOLT = "voltage"
