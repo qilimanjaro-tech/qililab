@@ -153,7 +153,9 @@ class TestMethods:
     def test_run(self, built_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
         assert len(built_experiment.results.results) == 0
-        built_experiment.run()
+        with patch("qililab.execution.execution_manager.open") as mock_open:
+            built_experiment.run()
+            mock_open.assert_called()
         assert len(built_experiment.results.results) > 0
 
     def test_run_raises_error(self, experiment: Experiment):

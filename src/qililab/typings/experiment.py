@@ -30,7 +30,7 @@ class ExperimentOptions:
     """Experiment Options"""
 
     loops: List[Loop] | None = None
-    settings: ExperimentSettings = ExperimentSettings()
+    settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     connection: API | None = None
     device_id: int | None = None
     name: str = DEFAULT_EXPERIMENT_NAME

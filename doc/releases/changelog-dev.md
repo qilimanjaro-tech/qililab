@@ -43,6 +43,10 @@ This document contains the changes of the current release.
   - `disconnect`: Disconnect from the platform and release the device.
   - `remote_save_experiment`: If `remote_save = True`, save the experiment and the results to the database.
 
+- When translating a Circuit into pulses, the target qubit/resonator frequency is now used to initialize the
+  corresponding pulse.
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ## Breaking changes
 
 - Removed context manager from `Execution` class. Users will be responsible for turning off and disconnecting the
@@ -54,6 +58,13 @@ This document contains the changes of the current release.
 
 - Removed the `Platform.connect_and_initial_setup` method.
   [#192](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- Removed the frequency argument from the `Pulse.modulated_waveforms` method (and all the methods that uses this method
+  internally). Remove `frequency` property from certain buses.
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
+- The `Pulse.frequency` argument is now mandatory to initialize a pulse.
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
 ## Deprecations / Removals
 

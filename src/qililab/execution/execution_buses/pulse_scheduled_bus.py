@@ -1,8 +1,7 @@
 """Pulse Scheduled Bus class."""
 from dataclasses import dataclass, field
-from pathlib import Path
 
-from qililab.platform.components.bus_types import SimulatedBus, TimeDomainBus
+from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
 from qililab.system_controls.system_control_types import SimulatedSystemControl, TimeDomainSystemControl
 from qililab.typings import BusSubCategory
@@ -13,7 +12,7 @@ from qililab.utils import Waveforms
 class PulseScheduledBus:
     """Pulse Scheduled Bus class."""
 
-    bus: TimeDomainBus | SimulatedBus
+    bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
@@ -60,7 +59,7 @@ class PulseScheduledBus:
         num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(frequency=self.bus.frequency, resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(resolution=resolution)
 
     @property
     def port(self):
