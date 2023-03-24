@@ -81,7 +81,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
     ) -> None:
         if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
             # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
@@ -90,15 +90,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
                     sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
                 )
-                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id,
-                                                          num_binned_acquisitions=num_binned_acquisitions)
+                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id)
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
         super().generate_program_and_upload(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
-            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
         )
 

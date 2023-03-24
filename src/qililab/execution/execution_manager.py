@@ -36,7 +36,7 @@ class ExecutionManager:
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int, num_binned_acquisitions: int) -> None:
+    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
         """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
 
         Args:
@@ -46,8 +46,7 @@ class ExecutionManager:
         """
         for pulse_scheduled_bus in self.buses:
             pulse_scheduled_bus.generate_program_and_upload(
-                idx=idx, nshots=nshots, repetition_duration=repetition_duration, num_binned_acquisitions=num_binned_acquisitions,
-            )
+                idx=idx, nshots=nshots, repetition_duration=repetition_duration)
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
         """

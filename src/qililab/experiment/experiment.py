@@ -176,8 +176,7 @@ class Experiment:
             Result: Result object for one program execution.
         """
         self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration, num_binned_acquisitions=self.num_binned_acquisitions,
-        )
+            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
         return self.execution.run(plot=self._plot, path=self.results_path)
 
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):

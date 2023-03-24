@@ -107,7 +107,6 @@ class QbloxModule(AWG):
         self,
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
-        num_binned_acquisitions: int,
         repetition_duration: int,
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
@@ -120,7 +119,6 @@ class QbloxModule(AWG):
         self._check_cached_values(
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
-            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
         )
 
@@ -132,7 +130,6 @@ class QbloxModule(AWG):
         self,
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
-        num_binned_acquisitions: int,
         repetition_duration: int,
     ):
         """check if values are already cached and upload if not cached"""
@@ -140,7 +137,6 @@ class QbloxModule(AWG):
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
             sequence = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule,
-                num_binned_acquisitions=num_binned_acquisitions,
                 nshots=nshots,
                 repetition_duration=repetition_duration,
             )
@@ -148,7 +144,7 @@ class QbloxModule(AWG):
             self.upload(sequence=sequence)
 
     def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, num_binned_acquisitions: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -160,21 +156,19 @@ class QbloxModule(AWG):
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(
-            num_binned_acquisitions=num_binned_acquisitions,
             sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port),
         )
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
             nshots=nshots,
-            num_binned_acquisitions=num_binned_acquisitions,
             repetition_duration=repetition_duration,
         )
         weights = self._generate_weights()
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, num_binned_acquisitions: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
     ):
         """Generate Q1ASM program
 
@@ -223,9 +217,7 @@ class QbloxModule(AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_acquisitions(
-        self, num_binned_acquisitions: int, sequencer_id: int
-    ) -> Acquisitions:
+    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
