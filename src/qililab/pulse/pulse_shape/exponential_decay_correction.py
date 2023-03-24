@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-from scipy import signal
+from scipy import signal 
 
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
@@ -37,21 +37,35 @@ class ExponentialCorrection(PulseShape):
         ysig = amplitude * np.ones(round(duration / resolution))
         
         # Parameters
-        alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
+        # alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
 
-        if self.amp >= 0.0:
-            k = self.amp/(1+self.amp-alpha)
-            b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
-        else:
-            k = -self.amp/(1+self.amp)/(1-alpha)
-            b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
+
+        # if self.amp >= 0.0:
+        #     k = self.amp/(1+self.amp-alpha)
+        #     b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
+        # else:
+        #     k = -self.amp/(1+self.amp)/(1-alpha)
+        #     b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
+
         
-        a = [1, -(1-alpha)]
+        # a = [1, -(1-alpha)]
+
+        # Parameters
+        a0 = 1
+        a1 = (self.tau_exponential*(1+2*self.amp)-1)/(2*self.tau_exponential*(1+self.amp)+1)
+
+        b0 = (2*self.tau_exponential+1)/(2*self.tau_exponential+(1+self.amp)+1)
+        b1 = (-2*self.tau_exponential+1)/(2*self.tau_exponential*(1+self.amp+1))
+
+        a = [a0, a1]
+        b = [b0, b1]
+    
 
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr)) 
-        ycorr = ycorr/norm
+        ycorr = (1/norm)*ycorr
+        
         return ycorr
 
     def to_dict(self):
