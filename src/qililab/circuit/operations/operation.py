@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 import re
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
@@ -9,6 +11,7 @@ from pytest import param
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.typings import OperationName
 from qililab.typings.enums import OperationMultiplicity
+from qililab.utils import classproperty
 
 ParameterValue = int | float | bool
 Parameters = Dict[str, ParameterValue]
@@ -18,9 +21,17 @@ Parameters = Dict[str, ParameterValue]
 class Operation(ABC):
     """Base class of all operations"""
 
-    name: OperationName = field(init=False)
-    multiplicity: OperationMultiplicity = field(init=False)
     parameters: Parameters = field(init=False, default_factory=dict)
+
+    @classproperty
+    @abstractmethod
+    def name(self) -> OperationName:
+        """Abstract property for the operation name."""
+
+    @classproperty
+    @abstractmethod
+    def multiplicity(self) -> OperationMultiplicity:
+        """Abstract property for the operation multiplicity."""
 
     @property
     def parameters_names(self) -> Tuple[str, ...]:

@@ -5,6 +5,7 @@ from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to
     TranslatableToPulseOperation,
 )
 from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.utils import classproperty
 
 
 @OperationFactory.register
@@ -13,6 +14,12 @@ class Parking(TranslatableToPulseOperation):
     """Operation representing the parking of cphase operation."""
 
     def __post_init__(self):
-        self.name = OperationName.PARKING
-        self.multiplicity = OperationMultiplicity.MULTIPLEXED
         self.parameters = {}
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.PARKING
+
+    @classproperty
+    def multiplicity(self) -> OperationMultiplicity:
+        return OperationMultiplicity.MULTIPLEXED

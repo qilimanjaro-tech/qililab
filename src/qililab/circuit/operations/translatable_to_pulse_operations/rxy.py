@@ -6,6 +6,7 @@ from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to
 )
 from qililab.typings import OperationName
 from qililab.typings.enums import OperationMultiplicity
+from qililab.utils import classproperty
 
 
 @OperationFactory.register
@@ -22,9 +23,15 @@ class Rxy(TranslatableToPulseOperation):
     phi: float
 
     def __post_init__(self):
-        self.name = OperationName.RXY
-        self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {"theta": self.theta, "phi": self.phi}
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.RXY
+
+    @classproperty
+    def multiplicity(self) -> OperationMultiplicity:
+        return OperationMultiplicity.PARALLEL
 
 
 @OperationFactory.register
@@ -41,16 +48,18 @@ class R180(Rxy):
 
     def __post_init__(self):
         self.theta = 180
-        self.name = OperationName.R180
-        self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {"phi": self.phi}
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.R180
 
 
 @OperationFactory.register
 @dataclass
 class X(R180):
     """Operation representing a pi rotation around XY axis with zero phase.
-    It is the equivelant of a X gate.
+    It is the equivelant to an X gate.
     """
 
     theta: float = field(init=False)
@@ -59,6 +68,8 @@ class X(R180):
     def __post_init__(self):
         self.theta = 180
         self.phi = 0
-        self.name = OperationName.X
-        self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {}
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.X

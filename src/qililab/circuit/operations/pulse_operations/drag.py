@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.utils import classproperty
 
 
 @OperationFactory.register
@@ -23,11 +24,17 @@ class DRAGPulse(PulseOperation):
     delta: float
 
     def __post_init__(self):
-        self.name = OperationName.DRAG
-        self.multiplicity = OperationMultiplicity.PARALLEL
         self.parameters = {
             "amplitude": self.amplitude,
             "duration": self.duration,
             "sigma": self.sigma,
             "delta": self.delta,
         }
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.DRAG
+
+    @classproperty
+    def multiplicity(self) -> OperationMultiplicity:
+        return OperationMultiplicity.PARALLEL

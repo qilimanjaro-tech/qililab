@@ -611,7 +611,7 @@ class OperationName(str, Enum):
     PULSE = "Pulse"
     GAUSSIAN = "Gaussian"
     DRAG = "DRAG"
-    SQUARE = "SQUARE"
+    SQUARE = "Square"
 
 
 class OperationTimingsCalculationMethod(str, Enum):

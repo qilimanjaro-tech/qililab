@@ -37,25 +37,28 @@ circuit.add(1, X())
 circuit.add((0, 1), Barrier())
 circuit.add((0, 1), X())
 
-print(circuit.get_operation_layers())
-print(circuit.get_operation_layers(OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE))
+# get layers with two different methods
+# print(circuit.get_operation_layers())
+# print(circuit.get_operation_layers(OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE))
 
 # print circuit in the usual way
 circuit.print()
 
 # draw circuit's graph, which in essense is a time dependency graph of operations
-image = circuit.draw()
-image.show()
+image = circuit.draw(filename="ir_0.png")
+# image.show()
 
 transpiler = CircuitTranspiler(circuit, platform.settings)
 transpiler.calculate_timings()
-transpiler.translate_to_pulse_operations()
-# print circuit in the usual way
-circuit.print()
+image = circuit.draw(filename="ir_1.png")
+# image.show()
 
-# draw circuit's graph, which in essense is a time dependency graph of operations
-image = circuit.draw()
-image.show()
+transpiler.translate_to_pulse_operations()
+image = circuit.draw(filename="ir_2.png")
+# image.show()
+
+# print circuit in the usual way
+# circuit.print()
 
 print(f"Depth: {circuit.depth}")
 
@@ -63,10 +66,10 @@ print(f"Depth: {circuit.depth}")
 # circuit.draw(filename='circuit.png')
 
 # Convert to QiliQASM
-qasm = QiliQasmConverter.to_qasm(circuit)
-print(qasm)
+# qasm = QiliQasmConverter.to_qasm(circuit)
+# print(qasm)
 
 # Parse from QiliQASM
-parsed_circuit = QiliQasmConverter.from_qasm(qasm)
-image = parsed_circuit.draw()
-image.show()
+# parsed_circuit = QiliQasmConverter.from_qasm(qasm)
+# image = parsed_circuit.draw()
+# image.show()

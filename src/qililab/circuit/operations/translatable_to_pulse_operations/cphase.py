@@ -5,6 +5,7 @@ from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to
     TranslatableToPulseOperation,
 )
 from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.utils import classproperty
 
 
 @OperationFactory.register
@@ -19,6 +20,12 @@ class CPhase(TranslatableToPulseOperation):
     theta: float
 
     def __post_init__(self):
-        self.name = OperationName.CPHASE
-        self.multiplicity = OperationMultiplicity.CONTROLLED
         self.parameters = {"theta": self.theta}
+
+    @classproperty
+    def name(self) -> OperationName:
+        return OperationName.CPHASE
+
+    @classproperty
+    def multiplicity(self) -> OperationMultiplicity:
+        return OperationMultiplicity.CONTROLLED

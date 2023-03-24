@@ -7,7 +7,7 @@ class OperationFactory:
     @classmethod
     def register(cls, operation: Type) -> Callable:
         def decorator(operation: Type) -> Type:
-            cls._operations[operation.__name__] = operation
+            cls._operations[operation.name.value] = operation
             return operation
 
         return decorator(operation=operation)
@@ -17,4 +17,5 @@ class OperationFactory:
         if name in cls._operations:
             return cls._operations[name]
         else:
+            print(cls._operations.keys())
             raise ValueError(f"Operation '{name}' is not registered.")
