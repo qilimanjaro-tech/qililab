@@ -57,7 +57,7 @@ class Experiment:
 
     def build_execution(self):
         """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
-        generates the live plotting and prepares the `Results` class and the `results.yml` file.
+        and generates the live plotting.
         """
         # Translate circuits into pulses if needed
         if self.circuits:
@@ -79,6 +79,7 @@ class Experiment:
 
     def run(self) -> Results:
         """This method is responsible for:
+        * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
             * Executing the circuit.
