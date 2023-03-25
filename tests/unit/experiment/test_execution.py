@@ -23,7 +23,7 @@ from .aux_methods import mock_instruments
 class TestExecution:
     """Unit tests checking the execution of a platform with instruments."""
 
-    @patch("qililab.typings.experiment.ExperimentOptions.connection")
+    @patch("qililab.platform.platform.API")
     def test_execute_with_remote_save(
         self,
         mocked_remote_connection: MagicMock,
@@ -47,7 +47,7 @@ class TestExecution:
         nested_experiment.options.remote_save = True
         nested_experiment.options.name = "TEST"
         nested_experiment.options.description = "TEST desc"
-        nested_experiment.options.connection = mocked_remote_connection
+        nested_experiment.platform.connection = mocked_remote_connection
         nested_experiment.execute()  # type: ignore
         nested_experiment.to_dict()
 

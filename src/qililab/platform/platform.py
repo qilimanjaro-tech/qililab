@@ -21,14 +21,15 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    def __init__(self, runcard_schema: RuncardSchema):
+    def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
+        self.connection = connection
         self._connected_to_instruments: bool = False
         self._initial_setup_applied: bool = False
         self._instruments_turned_on: bool = False
 
-    def connect(self, connection: API | None = None, device_id: int | None = None, manual_override=False):
+    def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
 
         Args:
@@ -41,8 +42,8 @@ class Platform:
             logger.info("Already connected to the instruments")
             return
 
-        if connection is not None and not manual_override:
-            connection.block_device_id(device_id=device_id)
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
 
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
@@ -75,14 +76,14 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(self, connection: API | None = None, device_id: int | None = None):
+    def disconnect(self):
         """Close connection to the instrument controllers."""
+        if self.connection is not None:
+            self.connection.release_device(device_id=self.device_id)
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
         self.instrument_controllers.disconnect()
-        if connection is not None:
-            connection.release_device(device_id=device_id)
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -247,6 +248,15 @@ class Platform:
             InstrumentControllers: List of all instrument controllers.
         """
         return self.schema.instrument_controllers
+
+    @property
+    def device_id(self):
+        """Returns the id of the platform device.
+
+        Returns:
+            int: id of the platform device
+        """
+        return self.settings.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
