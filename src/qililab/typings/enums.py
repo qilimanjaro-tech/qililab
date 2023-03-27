@@ -237,7 +237,7 @@ class InstrumentName(str, Enum):
         * QCM -> Exactly as Qblox InstrumentType
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
-        * mini_circuitsout0_offset
+        * mini_circuits
         * keithley_2600
         * qblox_D5a
         * qblox_S4g
