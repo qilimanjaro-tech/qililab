@@ -149,7 +149,6 @@ class Instrument(BusElement, ABC):
         """Set initial instrument settings."""
 
     @CheckDeviceInitialized
-    @abstractmethod
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
@@ -158,6 +157,7 @@ class Instrument(BusElement, ABC):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -252,3 +252,14 @@ class Instrument(BusElement, ABC):
             logger.debug("Setting parameter: %s to value: %f in channel %d", parameter.value, value, channel_id)
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
+
+
+class ParameterNotFound(Exception):
+    """Error raised when a parameter in an instrument is not found."""
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"ParameterNotFound: {self.message}"

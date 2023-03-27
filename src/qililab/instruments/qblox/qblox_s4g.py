@@ -7,7 +7,7 @@ from typing import Any
 
 from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import QbloxS4g as QbloxS4gDriver
@@ -83,7 +83,7 @@ class QbloxS4g(CurrentSource):
         if parameter == Parameter.RAMPING_RATE:
             self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):

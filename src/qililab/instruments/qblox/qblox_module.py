@@ -1,16 +1,14 @@
 """Qblox module class"""
 import itertools
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
+from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
@@ -18,7 +16,7 @@ from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
@@ -282,7 +280,7 @@ class QbloxModule(AWG):
         if parameter == Parameter.PHASE_IMBALANCE:
             self._set_phase_imbalance(value=value, sequencer_id=channel_id)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):

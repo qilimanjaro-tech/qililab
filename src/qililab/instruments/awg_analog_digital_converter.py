@@ -5,7 +5,7 @@ from typing import Sequence, cast
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
@@ -74,7 +74,7 @@ class AWGAnalogDigitalConverter(AWG):
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @abstractmethod
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
