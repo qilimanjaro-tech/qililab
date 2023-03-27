@@ -1,7 +1,6 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from typing import Sequence
 
 from qililab.constants import RUNCARD
@@ -75,7 +74,7 @@ class AWG(Instrument):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
         """
-    
+
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
@@ -89,7 +88,7 @@ class AWG(Instrument):
         if sequencer_id is None:
             raise ValueError("'sequencer_id' must be defined.")
         return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
-    
+
     @property
     def num_sequencers(self):
         """Number of sequencers in the AWG
