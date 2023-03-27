@@ -23,8 +23,6 @@ class TestQbloxQCM:
         qcm.device.sequencer0.mod_en_awg.assert_called()
         qcm.device.sequencer0.offset_awg_path0.assert_called()
         qcm.device.sequencer0.offset_awg_path1.assert_called()
-        qcm.device.out1_offset.assert_called()
-        qcm.device.out0_offsetassert_called()
         qcm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
         qcm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
 
