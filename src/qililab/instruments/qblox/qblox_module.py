@@ -580,3 +580,8 @@ class QbloxModule(AWG):
             int: Final wait time.
         """
         return self._MIN_WAIT_TIME
+
+    @property
+    def out_offsets(self):
+        """Returns the offsets of each output of the qblox module."""
+        return self.settings.out_offsets
