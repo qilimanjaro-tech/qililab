@@ -9,10 +9,7 @@ from dummy_qblox import DummyPulsar
 from qblox_instruments import PulsarType
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 from qiboconnection.api import API
-from qiboconnection.typings.connection import (
-    ConnectionConfiguration,
-    ConnectionEstablished,
-)
+from qiboconnection.typings.connection import ConnectionConfiguration, ConnectionEstablished
 from qpysequence import Sequence
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -20,24 +17,13 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import (
-    PulseScheduledBus,
-    PulseScheduledReadoutBus,
-)
+from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instrument_controllers.keithley.keithley_2600_controller import (
-    Keithley2600Controller,
-)
-from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import (
-    MiniCircuitsController,
-)
-from qililab.instrument_controllers.qblox.qblox_pulsar_controller import (
-    QbloxPulsarController,
-)
-from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import (
-    SGS100AController,
-)
+from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
+from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
+from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
 from qililab.instruments import SGS100A, Attenuator, Keithley2600, QbloxQCM, QbloxQRM
 from qililab.platform import Platform, Schema
 from qililab.pulse import (
@@ -54,13 +40,8 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_controls.system_control import SystemControl
-from qililab.system_controls.system_control_types.simulated_system_control import (
-    SimulatedSystemControl,
-)
-from qililab.system_controls.system_control_types.time_domain_control_system_control import (
-    ControlSystemControl,
-)
+from qililab.system_control import SimulatedSystemControl
+from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -68,13 +49,7 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
-from .data import (
-    FluxQubitSimulator,
-    Galadriel,
-    circuit,
-    experiment_params,
-    simulated_experiment_circuit,
-)
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
 from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
@@ -422,9 +397,9 @@ def fixture_experiment(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="rs_0",
-        parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
+        alias="X",
+        parameter=Parameter.DURATION,
+        options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
@@ -521,17 +496,17 @@ def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseSch
     Returns:
         PulseScheduledBus: Instance of the PulseScheduledBus class.
     """
-    return execution_manager.pulse_scheduled_buses[0]
+    return execution_manager.buses[0]
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
-def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledReadoutBus:
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
     """Load PulseScheduledReadoutBus.
 
     Returns:
         PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
     """
-    return execution_manager.pulse_scheduled_readout_buses[0]
+    return execution_manager.readout_buses[0]
 
 
 @pytest.fixture(name="pulse")
@@ -542,7 +517,7 @@ def fixture_pulse() -> Pulse:
         Pulse: Instance of the Pulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="pulse_event")
@@ -553,7 +528,7 @@ def fixture_pulse_event() -> PulseEvent:
         PulseEvent: Instance of the PulseEvent class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
 
 
@@ -564,7 +539,7 @@ def fixture_readout_event() -> ReadoutEvent:
     Returns:
         ReadoutEvent: Instance of the PulseEvent class.
     """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50)
+    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
     return ReadoutEvent(pulse=pulse, start_time=0)
 
 
@@ -576,7 +551,7 @@ def fixture_readout_pulse() -> ReadoutPulse:
         ReadoutPulse: Instance of the ReadoutPulse class.
     """
     pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, pulse_shape=pulse_shape)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="base_system_control")
@@ -585,16 +560,6 @@ def fixture_base_system_control(platform: Platform) -> SystemControl:
 
     Returns:
         SystemControl: Instance of the ControlSystemControl class.
-    """
-    return platform.buses[0].system_control
-
-
-@pytest.fixture(name="time_domain_control_system_control")
-def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
-    """Load ControlSystemControl.
-
-    Returns:
-        ControlSystemControl: Instance of the ControlSystemControl class.
     """
     return platform.buses[0].system_control
 
@@ -610,7 +575,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 
