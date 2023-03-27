@@ -1,7 +1,4 @@
 """Tests for the QbloxQCM class."""
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -44,6 +41,10 @@ class TestQbloxQCM:
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
             (Parameter.OFFSET_Q, 0.12, 0),
+            (Parameter.OFFSET_OUT0, 1.234, None),
+            (Parameter.OFFSET_OUT1, 0, None),
+            (Parameter.OFFSET_OUT2, 0.123, None),
+            (Parameter.OFFSET_OUT3, 10, None),
             (Parameter.OFFSET_PATH0, 0.8, 0),
             (Parameter.OFFSET_PATH1, 0.11, 0),
             (Parameter.IF, 100_000, 0),
@@ -86,6 +87,14 @@ class TestQbloxQCM:
             assert qcm.awg_sequencers[channel_id].gain_imbalance == value
         if parameter == Parameter.PHASE_IMBALANCE:
             assert qcm.awg_sequencers[channel_id].phase_imbalance == value
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            assert qcm.out_offsets[output] == value
+
+    def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
+        """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
+        with pytest.raises(IndexError, match="Output 5 is out of range"):
+            qcm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""

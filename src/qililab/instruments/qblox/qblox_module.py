@@ -261,7 +261,7 @@ class QbloxModule(AWG):
             self._set_offset_path1(value=value, sequencer_id=channel_id)
             return
         if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = parameter.value[-1]
+            output = int(parameter.value[-1])
             self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.OFFSET_I:
@@ -386,6 +386,13 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float or int
         """
+        if output > len(self.out_offsets):
+            raise IndexError(
+                f"Output {output} is out of range. The runcard has only {len(self.out_offsets)} output offsets defined."
+                " Please update the list of output offsets of the runcard such that it contains a value for each "
+                "output of the device."
+            )
+        self.out_offsets[output] = value
         getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
