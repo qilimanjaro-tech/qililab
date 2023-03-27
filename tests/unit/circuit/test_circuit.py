@@ -1,6 +1,8 @@
 # pylint: disable=no-member
 
 """Tests for the Operation class."""
+import io
+from contextlib import redirect_stdout
 from typing import Tuple
 
 import pytest
@@ -8,9 +10,10 @@ import rustworkx as rx
 
 from qililab.circuit import Circuit
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
+from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset, Rxy, Wait, X
 from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
-from qililab.typings.enums import OperationMultiplicity
+from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
 
 
 @pytest.fixture(name="simple_circuit")
@@ -25,11 +28,29 @@ def fixture_simple_circuit() -> Circuit:
     return circuit
 
 
+@pytest.fixture(name="simple_circuit_print_output_soon")
+def fixture_simple_circuit_print_output_soon() -> str:
+    """Return the print output of simple circuit."""
+    return "0:---------X------Wait---------X---Measure\n" "1:---------X-----------------------Measure\n"
+
+
+@pytest.fixture(name="simple_circuit_print_output_late")
+def fixture_simple_circuit_print_output_late() -> str:
+    """Return the print output of simple circuit."""
+    return "0:---------X------Wait---------X---Measure\n" "1:-----------------------------X---Measure\n"
+
+
 @pytest.fixture(name="empty_circuit")
 def fixture_empty_circuit() -> Circuit:
     """Return a circuit with no operations."""
     circuit = Circuit(2)
     return circuit
+
+
+@pytest.fixture(name="empty_circuit_print_output")
+def fixture_empty_circuit_print_output() -> str:
+    """Return the print output of simple circuit."""
+    return "0:\n" "1:\n"
 
 
 class TestCircuit:
@@ -93,3 +114,37 @@ class TestCircuit:
         circuit.add(qubits=qubits, operation=operation)
         number_of_nodes_after = circuit.graph.num_nodes()
         assert number_of_nodes_after == number_of_nodes_before + number_of_nodes_that_should_be_added
+
+    @pytest.mark.parametrize(
+        "circuit_fixture,timings_method,expected_output_fixture",
+        [
+            (
+                "simple_circuit",
+                OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE,
+                "simple_circuit_print_output_soon",
+            ),
+            (
+                "simple_circuit",
+                OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE,
+                "simple_circuit_print_output_late",
+            ),
+            ("empty_circuit", OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, "empty_circuit_print_output"),
+            ("empty_circuit", OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE, "empty_circuit_print_output"),
+        ],
+    )
+    def test_print_method(
+        self,
+        request: pytest.FixtureRequest,
+        circuit_fixture: str,
+        timings_method: OperationTimingsCalculationMethod,
+        expected_output_fixture: str,
+    ):
+        circuit = request.getfixturevalue(circuit_fixture)
+        expected_output = request.getfixturevalue(expected_output_fixture)
+
+        # Capture the printed output using io.StringIO
+        with io.StringIO() as buf, redirect_stdout(buf):
+            circuit.print(method=timings_method)
+            printed_output = buf.getvalue()
+
+        assert printed_output == expected_output
