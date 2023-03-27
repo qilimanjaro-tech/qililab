@@ -5,5 +5,7 @@ from .pulse_shape import PulseShape
 from .rectangular import Rectangular
 from .bias_tee_correction import BiasTeeCorrection
 from .exponential_decay_correction import ExponentialCorrection
+from .exponential_decay_correction_v2 import ExponentialCorrectionV2
 from .exponential_decay_correction_loop import ExponentialCorrectionLoop
+from .exponential_decay_correction_loop_v2 import ExponentialCorrectionLoopV2
 from .predistortion import Predistortion

@@ -201,6 +201,8 @@ class PulseShapeName(str, Enum):
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
+    EXPONENTIAL_CORRECTION_LOOP_V2 = "exponential_loop_v2"
+    EXPONENTIAL_CORRECTION_V2 = "exponential_v2"
     PREDISTORTION = "predistortion"
 
 
