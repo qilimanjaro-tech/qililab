@@ -12,6 +12,7 @@ from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset,
 from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
 from qililab.execution.circuit_transpiler import CircuitTranspiler
 from qililab.platform import Platform
+from qililab.settings.runcard_schema import RuncardSchema
 from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
 
 
@@ -36,6 +37,18 @@ def fixture_empty_circuit() -> Circuit:
 
 class TestCircuitTranspiler:
     """Unit tests checking the CircuitTranspiler attributes and methods"""
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_properties_after_init(self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform):
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(circuit=circuit, settings=platform.settings)
+        assert isinstance(transpiler.circuit, Circuit)
+        assert isinstance(transpiler.settings, RuncardSchema.PlatformSettings)
+        assert transpiler.circuit_ir1 is None
+        assert transpiler.circuit_ir2 is None
 
     @pytest.mark.parametrize(
         "circuit_fixture",

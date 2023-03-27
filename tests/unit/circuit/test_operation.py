@@ -56,7 +56,8 @@ class TestOperation:
             operation.set_parameter(non_existant_parameter_name, 1)
 
     @pytest.mark.parametrize(
-        "operation,expected_result", [(X(), "X"), (Rxy(theta=180, phi=45), "Rxy(theta=180,phi=45)")]
+        "operation,expected_result",
+        [(X(), "X"), (Rxy(theta=180, phi=45), "Rxy(theta=180,phi=45)"), (Wait(t=120), "Wait(t=120)")],
     )
     def test_str_method(self, operation: Operation, expected_result: str):
         """Test __str__ method"""
