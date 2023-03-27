@@ -479,19 +479,13 @@ def fixture_simulated_experiment(simulated_platform: Platform):
 
 
 @pytest.fixture(name="execution_manager")
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
-def fixture_execution_manager(
-    mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment
-) -> ExecutionManager:
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
         ExecutionManager: Instance of the ExecutionManager class.
     """
     experiment.build_execution()
-    mock_open.assert_called()
-    mock_makedirs.assert_called()
     return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
