@@ -57,12 +57,12 @@ class Experiment:
 
     def build_execution(self):
         """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
-        generates the live plotting and prepares the `Results` class and the `results.yml` file.
+        and generates the live plotting.
         """
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``Execution`` class
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
@@ -76,11 +76,10 @@ class Experiment:
                 num_schedules=self.execution.num_schedules,
                 title=self.options.name,
             )
-        # Prepares the results
-        self.results, self.results_path = self.prepare_results()
 
-    def run(self):
+    def run(self) -> Results:
         """This method is responsible for:
+        * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
             * Executing the circuit.
@@ -91,6 +90,8 @@ class Experiment:
         """
         if not hasattr(self, "execution"):
             raise ValueError("Please build the execution before running an experiment.")
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results()
         num_schedules = self.execution.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -100,6 +101,8 @@ class Experiment:
 
         if self.options.remote_save:
             self.remote_save_experiment()
+
+        return self.results
 
     def turn_on_instruments(self):
         """Turn on instruments."""
@@ -137,10 +140,10 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        self.run()
+        results = self.run()
         self.turn_off_instruments()
         self.disconnect()
-        return self.results
+        return results
 
     def remote_save_experiment(self) -> None:
         """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
@@ -281,6 +284,10 @@ class Experiment:
             )
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.build_execution()
+        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+            element.set_parameter(parameter=parameter, value=value)
+            self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 

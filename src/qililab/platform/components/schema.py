@@ -8,8 +8,7 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.platform.components.buses import Buses
-from qililab.utils.factory import Factory
+from qililab.platform.components import Bus, Buses
 
 
 class Schema:
@@ -24,12 +23,7 @@ class Schema:
         )
         self.chip = Chip(**chip) if chip is not None else None
         self.buses = (
-            Buses(
-                elements=[
-                    Factory.get(name=bus.pop(RUNCARD.NAME))(settings=bus, instruments=self.instruments, chip=self.chip)
-                    for bus in buses
-                ]
-            )
+            Buses(elements=[Bus(settings=bus, platform_instruments=self.instruments, chip=self.chip) for bus in buses])
             if buses is not None
             else None
         )

@@ -17,7 +17,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import PulseScheduledBus, PulseScheduledReadoutBus
+from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
@@ -40,9 +40,8 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_controls.system_control import SystemControl
-from qililab.system_controls.system_control_types.simulated_system_control import SimulatedSystemControl
-from qililab.system_controls.system_control_types.time_domain_control_system_control import ControlSystemControl
+from qililab.system_control import SimulatedSystemControl
+from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -398,9 +397,9 @@ def fixture_experiment(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="rs_0",
-        parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
+        alias="X",
+        parameter=Parameter.DURATION,
+        options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
@@ -480,19 +479,13 @@ def fixture_simulated_experiment(simulated_platform: Platform):
 
 
 @pytest.fixture(name="execution_manager")
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
-def fixture_execution_manager(
-    mock_open: MagicMock, mock_makedirs: MagicMock, experiment: Experiment
-) -> ExecutionManager:
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
         ExecutionManager: Instance of the ExecutionManager class.
     """
     experiment.build_execution()
-    mock_open.assert_called()
-    mock_makedirs.assert_called()
     return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
@@ -503,17 +496,17 @@ def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseSch
     Returns:
         PulseScheduledBus: Instance of the PulseScheduledBus class.
     """
-    return execution_manager.pulse_scheduled_buses[0]
+    return execution_manager.buses[0]
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
-def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledReadoutBus:
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
     """Load PulseScheduledReadoutBus.
 
     Returns:
         PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
     """
-    return execution_manager.pulse_scheduled_readout_buses[0]
+    return execution_manager.readout_buses[0]
 
 
 @pytest.fixture(name="pulse")
@@ -571,16 +564,6 @@ def fixture_base_system_control(platform: Platform) -> SystemControl:
     return platform.buses[0].system_control
 
 
-@pytest.fixture(name="time_domain_control_system_control")
-def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
-    """Load ControlSystemControl.
-
-    Returns:
-        ControlSystemControl: Instance of the ControlSystemControl class.
-    """
-    return platform.buses[0].system_control
-
-
 @pytest.fixture(name="simulated_system_control")
 def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
     """Load SimulatedSystemControl.
@@ -592,7 +575,7 @@ def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedS
 
 
 @pytest.fixture(name="simulated_platform")
-@patch("qililab.system_controls.system_control_types.simulated_system_control.Evolution", autospec=True)
+@patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     """Return Platform object."""
 

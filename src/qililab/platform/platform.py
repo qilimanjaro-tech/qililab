@@ -108,10 +108,7 @@ class Platform:
         if element is None:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
-            try:
-                element = self.chip.get_node_from_alias(alias=alias)
-            except ValueError as error:
-                raise ValueError(f"Could not find element with alias {alias}.") from error
+            element = self.chip.get_node_from_alias(alias=alias)
         return element
 
     def get_bus(self, port: int):
@@ -128,19 +125,14 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+    def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        if alias is not None:
-            return next(
-                (element for element in self.buses if element.settings.alias == alias),
-                None,
-            )
+        for bus in self.buses:
+            if bus.alias == alias:
+                return bus
+
         return next(
-            (
-                element
-                for element in self.buses
-                if element.id_ == id_ and element.settings.category == Category(category)
-            ),
+            (element for element in self.buses if element.settings.alias == alias),
             None,
         )
 
@@ -160,10 +152,7 @@ class Platform:
             value (float): New value.
         """
         if alias in ([Category.PLATFORM.value] + self.gate_names):
-            if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)

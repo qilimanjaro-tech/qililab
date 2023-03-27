@@ -3,7 +3,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
@@ -55,7 +55,7 @@ class SGS100A(SignalGenerator):
             else:
                 self.turn_off()
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

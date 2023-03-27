@@ -47,6 +47,11 @@ This document contains the changes of the current release.
   corresponding pulse.
   [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
 
+- Removed all the `Bus` and `SystemControl` types. Now there is only a generic `Bus`, that can contain a
+  `SystemControl`, `ReadoutSystemControl` (which contain a list of instruments to control) or `SimulatedSystemControl`,
+  which is used to control simulated quantum systems.
+  [#210](https://github.com/qilimanjaro-tech/qililab/pull/192)
+
 ## Breaking changes
 
 - Removed context manager from `Execution` class. Users will be responsible for turning off and disconnecting the

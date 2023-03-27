@@ -7,7 +7,7 @@ from time import sleep
 from typing import Any
 
 from qililab.config import logger
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.voltage_source import VoltageSource
 from qililab.typings import InstrumentName
@@ -84,7 +84,7 @@ class QbloxD5a(VoltageSource):
         if parameter == Parameter.RAMPING_RATE:
             self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_voltage(self, value: float | str | bool, channel_id: int, channel: Any):
