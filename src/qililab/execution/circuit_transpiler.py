@@ -1,26 +1,12 @@
-"""ExecutionManager class."""
+# pylint: disable=union-attr
+"""CircuitTranspiler class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from re import I
-from typing import Tuple, Type
-
-import rustworkx as rx
 
 from qililab.circuit import Circuit
-from qililab.circuit.nodes import OperationNode
 from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
-from qililab.circuit.operations import (
-    R180,
-    Barrier,
-    Measure,
-    Operation,
-    PulseOperation,
-    Rxy,
-    TranslatableToPulseOperation,
-    Wait,
-    X,
-)
+from qililab.circuit.operations import Barrier, PulseOperation, TranslatableToPulseOperation, Wait
 from qililab.settings import RuncardSchema
 
 
@@ -30,8 +16,8 @@ class CircuitTranspiler:
 
     circuit: Circuit
     settings: RuncardSchema.PlatformSettings
-    circuit_ir1: Circuit | None = field(default=None)
-    circuit_ir2: Circuit | None = field(default=None)
+    circuit_ir1: Circuit | None = field(init=False, default=None)
+    circuit_ir2: Circuit | None = field(init=False, default=None)
 
     def calculate_timings(self) -> Circuit:
         self.circuit_ir1 = deepcopy(self.circuit)
@@ -101,7 +87,7 @@ class CircuitTranspiler:
         if self.circuit_ir1 is None:
             self.calculate_timings()
         self.circuit_ir2 = deepcopy(self.circuit_ir1)
-        layers = self.circuit_ir2.get_operation_layers(method=self.settings.timings_calculation_method)
+        layers = self.circuit_ir2.get_operation_layers(method=self.settings.timings_calculation_method)  # type: ignore[union-attr]
         for index, layer in enumerate(layers):
             for operation_node in layer:
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
@@ -115,4 +101,4 @@ class CircuitTranspiler:
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
                     operation_node.operation = pulse_operation
-        return self.circuit_ir2
+        return self.circuit_ir2  # type: ignore[return-value]
