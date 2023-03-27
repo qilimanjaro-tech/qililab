@@ -152,10 +152,7 @@ class Platform:
             value (float): New value.
         """
         if alias in ([Category.PLATFORM.value] + self.gate_names):
-            if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
