@@ -7,6 +7,7 @@ settings:
   master_amplitude_gate: 1
   master_duration_gate: 20
   timings_calculation_method: as_soon_as_possible
+  device_id: 9
   operations:
     - name: X
       pulse:
@@ -165,34 +166,22 @@ schema:
       attenuation: 32
   buses:
     - id_: 1
-      name: time_domain_readout_bus
       category: bus
-      bus_category: time_domain
-      bus_subcategory: readout
       alias: feedline_input_output_bus
       system_control:
         id_: 1
-        name: time_domain_readout_system_control
+        name: readout_system_control
         category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: readout
-        awg: QRM
-        signal_generator: rs_1
+        instruments: [QCM, rs_1]
       port: 1
     - id_: 2
-      name: time_domain_control_bus
       category: bus
-      bus_category: time_domain
-      bus_subcategory: control
       alias: feedline_input_output_bus
       system_control:
         id_: 2
-        name: time_domain_control_system_control
+        name: system_control
         category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: control
-        awg: QCM
-        signal_generator: rs_2
+        instruments: [QCM, rs_2]
       port: 0
   instrument_controllers:
     - name: qblox_cluster

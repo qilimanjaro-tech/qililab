@@ -1,5 +1,6 @@
 """ExecutionManager class."""
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
 from re import I
 from typing import Tuple, Type
 
@@ -29,10 +30,13 @@ class CircuitTranspiler:
 
     circuit: Circuit
     settings: RuncardSchema.PlatformSettings
+    circuit_ir1: Circuit = field(init=False)
+    circuit_ir2: Circuit = field(init=False)
 
-    def calculate_timings(self) -> None:
-        nqubits = self.circuit.num_qubits
-        layers = self.circuit.get_operation_layers(method=self.settings.timings_calculation_method)
+    def calculate_timings(self) -> Circuit:
+        self.circuit_ir1 = deepcopy(self.circuit)
+        nqubits = self.circuit_ir1.num_qubits
+        layers = self.circuit_ir1.get_operation_layers(method=self.settings.timings_calculation_method)
         qubits_last_end_timings = [0 for _ in range(nqubits)]
         for index, layer in enumerate(layers):
             for operation_node in layer:
@@ -91,9 +95,13 @@ class CircuitTranspiler:
                         qubits_last_end_timings[qubit] = end_time
                 else:
                     raise ValueError(f"Operation {operation_node} not supported for translation yet.")
+        return self.circuit_ir1
 
-    def translate_to_pulse_operations(self):
-        layers = self.circuit.get_operation_layers(method=self.settings.timings_calculation_method)
+    def translate_to_pulse_operations(self) -> Circuit:
+        if self.circuit_ir1 is None:
+            self.calculate_timings()
+        self.circuit_ir2 = deepcopy(self.circuit_ir1)
+        layers = self.circuit_ir2.get_operation_layers(method=self.settings.timings_calculation_method)
         for index, layer in enumerate(layers):
             for operation_node in layer:
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
@@ -107,3 +115,4 @@ class CircuitTranspiler:
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
                     operation_node.operation = pulse_operation
+        return self.circuit_ir2

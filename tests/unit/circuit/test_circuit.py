@@ -8,16 +8,8 @@ import rustworkx as rx
 
 from qililab.circuit import Circuit
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
-from qililab.circuit.operations import (
-    R180,
-    Barrier,
-    Measure,
-    Operation,
-    Reset,
-    Rxy,
-    Wait,
-    X,
-)
+from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset, Rxy, Wait, X
+from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
 from qililab.typings.enums import OperationMultiplicity
 
 
@@ -71,8 +63,11 @@ class TestCircuit:
         assert isinstance(depth, int)
         assert depth == 4
 
-    @pytest.mark.parametrize("qubits,operation", [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset())])
-    def test_add_method_that_should_add_one_node(
+    @pytest.mark.parametrize(
+        "qubits,operation",
+        [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset()), ((0, 1), Measure()), ((0, 1), CPhase(theta=90))],
+    )
+    def test_add_method_should_add_correct_nodes(
         self, simple_circuit: Circuit, qubits: int | Tuple[int, ...], operation: Operation
     ):
         number_of_nodes_before = simple_circuit.graph.num_nodes()

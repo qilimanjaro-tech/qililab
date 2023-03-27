@@ -141,7 +141,9 @@ class Circuit:
                 label = f"{operation}: {qubits}{timing}"
                 return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
-        return graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)
+        image = graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)
+        if image is not None:
+            image.show()
 
     def print(self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE):
         layers = self.get_operation_layers(method=method)
