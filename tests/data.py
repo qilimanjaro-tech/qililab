@@ -143,6 +143,8 @@ class Galadriel:
                 Parameter.PHASE_IMBALANCE.value: 0,
                 Parameter.OFFSET_PATH0.value: 0,
                 Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_OUT0.value: 0,
+                Parameter.OFFSET_OUT1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
             }

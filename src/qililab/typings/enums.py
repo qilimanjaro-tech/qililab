@@ -361,6 +361,8 @@ class Parameter(str, Enum):
     GAIN_PATH1 = "gain_path1"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    OFFSET_OUT0 = "offset_out0"
+    OFFSET_OUT1 = "offset_out1"
     RF_ON = "rf_on"
 
 
