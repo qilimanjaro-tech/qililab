@@ -1,6 +1,7 @@
 """Pulse class."""
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -21,8 +22,8 @@ class Pulse:
     amplitude: float
     phase: float
     duration: int
+    frequency: float
     pulse_shape: PulseShape
-    frequency: float | None = None
 
     def __post_init__(self):
         """Create Pulse Shape"""
@@ -31,7 +32,7 @@ class Pulse:
                 **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
@@ -45,8 +46,8 @@ class Pulse:
         i = np.real(envelope)
         q = np.imag(envelope)
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.phase + 2 * np.pi * frequency * start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=frequency, phase_offset=phase_offset)
+        phase_offset = self.phase + 2 * np.pi * self.frequency * start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):

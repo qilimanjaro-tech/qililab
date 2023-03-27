@@ -5,7 +5,7 @@ from typing import Sequence, cast
 
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.result.result import Result
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 
@@ -38,11 +38,14 @@ class AWGAnalogDigitalConverter(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
+        if channel_id is None:
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             self._set_acquisition_delay_time(value=value)
             return
-        if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
         if parameter == Parameter.SCOPE_HARDWARE_AVERAGING:
             self._set_scope_hardware_averaging(value=value, sequencer_id=channel_id)
             return
@@ -71,7 +74,7 @@ class AWGAnalogDigitalConverter(AWG):
             self._set_scope_store_enabled(value=value, sequencer_id=channel_id)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @abstractmethod
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
