@@ -22,8 +22,10 @@ class TestQbloxQRM:
         qrm.initial_setup()
         qrm.device.sequencer0.offset_awg_path0.assert_called()
         qrm.device.sequencer0.offset_awg_path1.assert_called()
+        qrm.device.out0_offset.assert_called()
         qrm.device.out1_offset.assert_called()
-        qrm.device.out0_offsetassert_called()
+        qrm.device.out2_offset.assert_called()
+        qrm.device.out3_offset.assert_called()
         qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
         qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
         qrm.device.sequencer0.mod_en_awg.assert_called()
@@ -55,6 +57,10 @@ class TestQbloxQRM:
             (Parameter.OFFSET_Q, 0.12, 0),
             (Parameter.OFFSET_PATH0, 0.8, 0),
             (Parameter.OFFSET_PATH1, 0.11, 0),
+            (Parameter.OFFSET_OUT0, 1.234, None),
+            (Parameter.OFFSET_OUT1, 0, None),
+            (Parameter.OFFSET_OUT2, 0.123, None),
+            (Parameter.OFFSET_OUT3, 10, None),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),

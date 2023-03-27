@@ -105,6 +105,11 @@ class AWG(Instrument):
         return self.settings.awg_sequencers
 
     @property
+    def out_offsets(self):
+        """Returns the offsets of each output of the qblox module."""
+        return self.settings.out_offsets
+
+    @property
     def awg_iq_channels(self):
         """AWG 'awg_iq_channels' property."""
         return self.settings.awg_iq_channels

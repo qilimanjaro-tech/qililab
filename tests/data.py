@@ -125,6 +125,7 @@ class Galadriel:
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
+        AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
@@ -143,8 +144,6 @@ class Galadriel:
                 Parameter.PHASE_IMBALANCE.value: 0,
                 Parameter.OFFSET_PATH0.value: 0,
                 Parameter.OFFSET_PATH1.value: 0,
-                Parameter.OFFSET_OUT0.value: 0,
-                Parameter.OFFSET_OUT1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
             }
@@ -191,6 +190,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
+        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23, 12.3, 0],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,

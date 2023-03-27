@@ -363,6 +363,8 @@ class Parameter(str, Enum):
     OFFSET_PATH1 = "offset_path1"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
+    OFFSET_OUT2 = "offset_out0"
+    OFFSET_OUT3 = "offset_out1"
     RF_ON = "rf_on"
 
 

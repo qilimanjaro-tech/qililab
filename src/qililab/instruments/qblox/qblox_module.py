@@ -41,11 +41,12 @@ class QbloxModule(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            sync_enabled (List[bool]): Enable synchronization over multiple instruments for each sequencer.
-            num_bins (int): Number of bins
+            awg_sequencers (Sequence[AWGQbloxSequencer]): list of settings for each sequencer
+            out_offsets (List[float]): list of offsets for each output of the qblox module
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
+        out_offsets: List[float]
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -96,6 +97,9 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+
+        for idx, offset in enumerate(self.out_offsets):
+            self._set_out_offset(output=idx, value=offset)
 
     @property
     def module_type(self):
@@ -256,11 +260,9 @@ class QbloxModule(AWG):
         if parameter == Parameter.OFFSET_PATH1:
             self._set_offset_path1(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.OFFSET_OUT0:
-            self._set_offset_out0(value=value)
-            return
-        if parameter == Parameter.OFFSET_OUT1:
-            self._set_offset_out1(value=value)
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = parameter.value[-1]
+            self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, sequencer_id=channel_id)
@@ -374,30 +376,17 @@ class QbloxModule(AWG):
         self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_out0(self, value: float | str | bool):
-        """set offset out0
+    def _set_out_offset(self, output: int, value: float | str | bool):
+        """Set output offsets of the Qblox device.
 
         Args:
+            output (int): output to update
             value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
 
         Raises:
-            ValueError: when value type is not float
+            ValueError: when value type is not float or int
         """
-        self.device.out0_offset(float(value))
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_out1(self, value: float | str | bool):
-        """set offset out1
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        self.device.out1_offset(float(value))
+        getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
