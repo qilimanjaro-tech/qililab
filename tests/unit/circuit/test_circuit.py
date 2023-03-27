@@ -27,7 +27,7 @@ def fixture_simple_circuit() -> Circuit:
 
 @pytest.fixture(name="empty_circuit")
 def fixture_empty_circuit() -> Circuit:
-    """Return a simple circuit."""
+    """Return a circuit with no operations."""
     circuit = Circuit(2)
     return circuit
 
@@ -52,29 +52,44 @@ class TestCircuit:
         with pytest.raises(ValueError, match="Number of qubits should be integer."):
             Circuit(num_qubits=num_qubits)
 
-    def test_graph_is_valid(self, simple_circuit: Circuit):
-        assert isinstance(simple_circuit.graph, rx.PyDiGraph)
-        assert simple_circuit.graph.multigraph is True
-        assert isinstance(simple_circuit.entry_node, EntryNode)
-        assert isinstance(simple_circuit.entry_node.index, int)
+    @pytest.mark.parametrize(
+        "circuit_fixture,expected_depth",
+        [("simple_circuit", 4), ("empty_circuit", 0)],
+    )
+    def test_graph_is_valid(self, request: pytest.FixtureRequest, circuit_fixture: str, expected_depth: int):
+        circuit = request.getfixturevalue(circuit_fixture)
+        assert isinstance(circuit.graph, rx.PyDiGraph)
+        assert circuit.graph.multigraph is True
+        assert isinstance(circuit.entry_node, EntryNode)
+        assert isinstance(circuit.entry_node.index, int)
 
-    def test_depth_parameter(self, simple_circuit: Circuit):
-        depth = simple_circuit.depth
+    @pytest.mark.parametrize(
+        "circuit_fixture,expected_depth",
+        [("simple_circuit", 4), ("empty_circuit", 0)],
+    )
+    def test_depth_parameter(self, request: pytest.FixtureRequest, circuit_fixture: str, expected_depth: int):
+        circuit = request.getfixturevalue(circuit_fixture)
+        depth = circuit.depth
         assert isinstance(depth, int)
-        assert depth == 4
+        assert depth == expected_depth
 
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
     @pytest.mark.parametrize(
         "qubits,operation",
         [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset()), ((0, 1), Measure()), ((0, 1), CPhase(theta=90))],
     )
     def test_add_method_should_add_correct_nodes(
-        self, simple_circuit: Circuit, qubits: int | Tuple[int, ...], operation: Operation
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
     ):
-        number_of_nodes_before = simple_circuit.graph.num_nodes()
+        circuit = request.getfixturevalue(circuit_fixture)
+        number_of_nodes_before = circuit.graph.num_nodes()
         num_qubits = len(qubits) if isinstance(qubits, tuple) else 1
         number_of_nodes_that_should_be_added = (
             num_qubits if operation.multiplicity == OperationMultiplicity.PARALLEL else 1
         )
-        simple_circuit.add(qubits=qubits, operation=operation)
-        number_of_nodes_after = simple_circuit.graph.num_nodes()
+        circuit.add(qubits=qubits, operation=operation)
+        number_of_nodes_after = circuit.graph.num_nodes()
         assert number_of_nodes_after == number_of_nodes_before + number_of_nodes_that_should_be_added

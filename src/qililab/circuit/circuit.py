@@ -104,6 +104,14 @@ class Circuit:
     def get_operation_layers(
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
     ) -> List[List[OperationNode]]:
+        """Get the layers of operation nodes. Each layer represents an advancement in time.
+
+        Args:
+            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
+
+        Returns:
+            List[List[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
+        """
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]
         for layer in layers:
             layer.sort(key=lambda node: node.index)
@@ -131,6 +139,12 @@ class Circuit:
             return layers
 
     def draw(self, filename: str | None = None):
+        """Draw the circuit's graph.
+
+        Args:
+            filename (str | None, optional): If set, then the result is saved to a file. Defaults to None.
+        """
+
         def node_attr(node):
             if isinstance(node, EntryNode):
                 return {"color": "yellow", "fillcolor": "yellow", "style": "filled", "label": "start"}
@@ -146,6 +160,11 @@ class Circuit:
             image.show()
 
     def print(self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE):
+        """Prints the circuit to the standard output.
+
+        Args:
+            method (OperationTimingsCalculationMethod, optional): Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
+        """
         layers = self.get_operation_layers(method=method)
         for qubit in range(self.num_qubits):
             print(f"{qubit}:", end="")
@@ -156,6 +175,3 @@ class Circuit:
                 if len(operations_on_qubit) == 1:
                     print(f"{operations_on_qubit[0].operation.name:->10s}", end="")
             print()
-
-    def serialize(self):
-        return rx.node_link_json(self.graph)

@@ -1,5 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
+from multiprocessing.pool import RUN
 from typing import Dict, List, Type
 
 from qibo.gates import RX, RY, I, M, X, Y
@@ -72,6 +73,10 @@ class Galadriel:
             {
                 RUNCARD.NAME: "X",
                 "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "Measure",
+                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {"resolution": 1}},
             },
         ],
         "gates": [

@@ -30,8 +30,8 @@ class CircuitTranspiler:
 
     circuit: Circuit
     settings: RuncardSchema.PlatformSettings
-    circuit_ir1: Circuit = field(init=False)
-    circuit_ir2: Circuit = field(init=False)
+    circuit_ir1: Circuit | None = field(default=None)
+    circuit_ir2: Circuit | None = field(default=None)
 
     def calculate_timings(self) -> Circuit:
         self.circuit_ir1 = deepcopy(self.circuit)
