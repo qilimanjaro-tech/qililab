@@ -105,9 +105,3 @@ class SimulatedSystemControl(ReadoutSystemControl):
 
         # Init evolution pulse sequence
         self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
-
-    @property
-    def acquisition_delay_time(self) -> int:
-        """SystemControl 'acquisition_delay_time' property.
-        Delay (in ns) between the readout pulse and the acquisition."""
-        return 0

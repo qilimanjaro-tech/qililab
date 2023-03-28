@@ -1,12 +1,11 @@
 """SystemControl class."""
-
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
 from typing import List, Type, get_type_hints
 
 from qililab.constants import RUNCARD
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.instruments import Instruments
 from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
@@ -110,7 +109,7 @@ class SystemControl(BusElement, ABC):
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         for instrument in self.instruments:
-            with contextlib.suppress(ValueError):
+            with contextlib.suppress(ParameterNotFound):
                 instrument.set_parameter(parameter, value, channel_id)
                 return
-        raise ValueError(f"Could not find parameter {parameter.value} in the system control {self.name}")
+        raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")

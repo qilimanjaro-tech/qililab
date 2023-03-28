@@ -29,3 +29,15 @@ class TestPulseScheduledBus:
     def test_acquire_time_method(self, pulse_scheduled_readout_bus: PulseScheduledBus):
         """Test acquire_time method."""
         assert isinstance(pulse_scheduled_readout_bus.acquire_time(), int)  # type: ignore
+
+    def test_acquire_time_raises_error(self, pulse_scheduled_bus: PulseScheduledBus):
+        """Test that the ``acquire_time`` method raises an error when the index is out of bounds."""
+        with pytest.raises(IndexError, match="Index 9 is out of bounds for pulse_schedule list of length"):
+            pulse_scheduled_bus.acquire_time(idx=9)
+
+    def test_acquire_results_raises_error(self, pulse_scheduled_bus: PulseScheduledBus):
+        """Test that the ``acquire_results`` raises an error when no readout system control is present."""
+        with pytest.raises(
+            ValueError, match="The bus drive_line_bus needs a readout system control to acquire the results"
+        ):
+            pulse_scheduled_bus.acquire_result()

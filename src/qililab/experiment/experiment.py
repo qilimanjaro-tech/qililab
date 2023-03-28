@@ -57,7 +57,7 @@ class Experiment:
 
     def build_execution(self):
         """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
-        generates the live plotting and prepares the `Results` class and the `results.yml` file.
+        and generates the live plotting.
         """
         # Translate circuits into pulses if needed
         if self.circuits:
@@ -79,6 +79,7 @@ class Experiment:
 
     def run(self) -> Results:
         """This method is responsible for:
+        * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
             * Executing the circuit.
@@ -139,10 +140,10 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        self.run()
+        results = self.run()
         self.turn_off_instruments()
         self.disconnect()
-        return self.results
+        return results
 
     def remote_save_experiment(self) -> None:
         """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
@@ -298,7 +299,6 @@ class Experiment:
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
-
 
     def draw(self, resolution: float = 1.0, idx: int = 0):
         """Return figure with the waveforms sent to each bus.

@@ -133,7 +133,6 @@ class Chip(DDBBElement):
             if node.alias == alias:
                 return node
         return None
-        # raise ValueError(f"Could not find node with alias {alias}")
 
     def get_qubit_idx_from_node(self, node: Node) -> int:
         """Get qubit id from given node.

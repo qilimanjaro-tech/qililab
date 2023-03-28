@@ -101,7 +101,8 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses, wait_time=wait_time,
+            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
+            wait_time=wait_time,
         )
         return (
             PulseEvent(
@@ -168,7 +169,8 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_before_readout, wait_time=wait_time,
+            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
+            wait_time=wait_time,
         )
 
         return (

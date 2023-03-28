@@ -18,7 +18,7 @@ class Instruments:
         for element in self.elements:
             if element.alias == alias:
                 return element
-        raise ValueError(f"Could not find instrument with alias {alias} in the runcard.")
+        return None
 
     def to_dict(self):
         """Return a dict representation of the Instruments class."""

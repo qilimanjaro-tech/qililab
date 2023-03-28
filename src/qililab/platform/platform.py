@@ -38,12 +38,12 @@ class Platform:
             manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
                 current execution. Defaults to False.
         """
-        if self.connection is not None and not manual_override:
-            self.connection.block_device_id(device_id=self.device_id)
-
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
             return
+
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
 
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
@@ -102,18 +102,13 @@ class Platform:
             if alias in self.gate_names:
                 return self.settings.get_gate(name=alias)
 
-        try:
-            element = self.instruments.get_instrument(alias=alias)
-        except ValueError:
-            try:
-                element = self.instrument_controllers.get_instrument_controller(alias=alias)
-            except ValueError:
-                element = self.get_bus_by_alias(alias=alias)
-                if element is None:
-                    try:
-                        element = self.chip.get_node_from_alias(alias=alias)
-                    except ValueError as error:
-                        raise ValueError(f"Could not find element with alias {alias}.") from error
+        element = self.instruments.get_instrument(alias=alias)
+        if element is None:
+            element = self.instrument_controllers.get_instrument_controller(alias=alias)
+        if element is None:
+            element = self.get_bus_by_alias(alias=alias)
+        if element is None:
+            element = self.chip.get_node_from_alias(alias=alias)
         return element
 
     def get_bus(self, port: int):
@@ -157,10 +152,7 @@ class Platform:
             value (float): New value.
         """
         if alias in ([Category.PLATFORM.value] + self.gate_names):
-            if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)

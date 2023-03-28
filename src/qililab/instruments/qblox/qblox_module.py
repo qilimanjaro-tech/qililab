@@ -1,24 +1,14 @@
 """Qblox module class"""
 import itertools
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import (
-    Play,
-    ResetPh,
-    SetAwgGain,
-    SetPh,
-    Stop,
-    Wait,
-    WaitSync,
-)
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -27,7 +17,7 @@ from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
@@ -222,7 +212,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
-        #acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
+        # acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
         return acquisitions
 
     @abstractmethod
@@ -247,11 +237,11 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
-        if channel_id is None and self.num_sequencers == 1:
-            channel_id = 0
-
         if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
 
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
@@ -296,7 +286,7 @@ class QbloxModule(AWG):
         if parameter == Parameter.PHASE_IMBALANCE:
             self._set_phase_imbalance(value=value, sequencer_id=channel_id)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):

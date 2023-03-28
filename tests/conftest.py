@@ -397,9 +397,9 @@ def fixture_experiment(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="rs_0",
-        parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(start=3544000000, stop=3744000000, num=10),
+        alias="X",
+        parameter=Parameter.DURATION,
+        options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(

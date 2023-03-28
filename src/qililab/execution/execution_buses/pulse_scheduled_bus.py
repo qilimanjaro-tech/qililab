@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
 from qililab.result.result import Result
-from qililab.system_control import ReadoutSystemControl, SystemControl
+from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
@@ -33,10 +33,6 @@ class PulseScheduledBus:
         """Run the given pulse sequence."""
         return self.system_control.run()  # pylint: disable=no-member
 
-    def setup(self):
-        """Applies setup for each bus and uploads it to the sequencer"""
-        return self.system_control.setup()
-
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
 
@@ -53,6 +49,11 @@ class PulseScheduledBus:
         Returns:
             Result: Acquired result
         """
+        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
+            raise ValueError(
+                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
+                f"has a {self.system_control.name} instead."
+            )
         return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
