@@ -4,10 +4,7 @@
 from dataclasses import asdict, dataclass
 
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPath
-from qililab.instruments.awg_settings.typings import (
-    AWGSequencerPathIdentifier,
-    AWGSequencerTypes,
-)
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGSequencerTypes
 from qililab.utils.asdict_factory import dict_factory
 
 

@@ -2,12 +2,8 @@
 from dataclasses import dataclass
 
 from qililab.instrument_controllers.qblox.qblox_controller import QbloxController
-from qililab.instrument_controllers.single_instrument_controller import (
-    SingleInstrumentController,
-)
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.typings.enums import ConnectionName, InstrumentControllerName
 from qililab.typings.instruments.pulsar import Pulsar
 

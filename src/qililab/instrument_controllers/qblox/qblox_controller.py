@@ -3,10 +3,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.instrument_controller import (
-    InstrumentController,
-    InstrumentControllerSettings,
-)
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.instruments.qblox.qblox_qcm import QbloxQCM
 from qililab.instruments.qblox.qblox_qrm import QbloxQRM
 from qililab.typings.enums import InstrumentTypeName, Parameter, ReferenceClock
