@@ -47,7 +47,7 @@ Print platform
 
 .. code-block:: none
 
-    Chip None with 1 qubits and 2 ports: 
+    Chip None with 1 qubits and 2 ports:
 
     * Port 0: ----|qubit|----
     * Port 1: ----|resonator|----
@@ -60,7 +60,7 @@ Print platform
     print(platform.schema)
 
 ::
-    
+
     Bus 1 (time_domain readout):  -----|rs_1|--|QRM|------|resonator|----
 
 So there it is, we have created a platform with a simple runcard. From here we could begin our experiments.
