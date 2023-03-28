@@ -1,11 +1,38 @@
 """Tests for the Operation class."""
 import pytest
 
-from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset, Rxy, Wait, X
+from qililab.circuit.operations import (
+    R180,
+    Barrier,
+    DRAGPulse,
+    GaussianPulse,
+    Measure,
+    Operation,
+    Reset,
+    Rxy,
+    SquarePulse,
+    Wait,
+    X,
+)
+from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
+from qililab.typings.enums import OperationMultiplicity
 
 
 @pytest.fixture(
-    name="operation", params=[Rxy(theta=90, phi=90), R180(phi=90), X(), Wait(t=100), Barrier(), Measure(), Reset()]
+    name="operation",
+    params=[
+        Rxy(theta=90, phi=90),
+        R180(phi=90),
+        X(),
+        Wait(t=100),
+        Barrier(),
+        Measure(),
+        Reset(),
+        DRAGPulse(amplitude=1.0, duration=40, sigma=1, delta=1),
+        SquarePulse(amplitude=1.0, duration=40, resolution=1.0),
+        GaussianPulse(amplitude=1.0, duration=40, sigma=1.0),
+        CPhase(theta=90),
+    ],
 )
 def fixture_operation(request: pytest.FixtureRequest) -> Operation:
     """Return operation object."""
@@ -25,7 +52,21 @@ class TestOperation:
         has_parameters = operation.has_parameters()
         assert isinstance(has_parameters, bool)
 
-    def test_get_parameter(self, operation: Operation):
+    def test_parameter_names_property(self, operation: Operation):
+        """Test parameter_names property"""
+        names = operation.parameters_names
+        assert isinstance(names, tuple)
+
+    def test_parameter_values_property(self, operation: Operation):
+        """Test parameter_values property"""
+        values = operation.parameters_values
+        assert isinstance(values, tuple)
+
+    def test_multiplicity_property(self, operation: Operation):
+        multiplicity = operation.multiplicity
+        assert isinstance(multiplicity, OperationMultiplicity)
+
+    def test_get_parameter_method(self, operation: Operation):
         """Test get_parameter method returns correct value"""
         for name, value in operation.parameters.items():
             retrieved_value = operation.get_parameter(name)
@@ -69,3 +110,8 @@ class TestOperation:
     def test_parse_method(self, string_representation: str):
         operation = Operation.parse(string_representation=string_representation)
         assert isinstance(operation, Operation)
+
+    @pytest.mark.parametrize("string_representation", ["Wait(time=1000)", "Rxy(omikron=180,phi=45)"])
+    def test_parse_method_raises_error_when_operation_has_different_parameter(self, string_representation: str):
+        with pytest.raises(ValueError):
+            Operation.parse(string_representation=string_representation)

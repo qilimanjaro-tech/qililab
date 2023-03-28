@@ -17,5 +17,4 @@ class OperationFactory:
         if name in cls._operations:
             return cls._operations[name]
         else:
-            print(cls._operations.keys())
             raise ValueError(f"Operation '{name}' is not registered.")
