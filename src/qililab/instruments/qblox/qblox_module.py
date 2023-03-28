@@ -112,23 +112,16 @@ class QbloxModule(AWG):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
         """
-        self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-        )
+        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
+            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
+            sequence, sequencer_id = self._translate_pulse_bus_schedule(
+                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+            )
+            self.upload(sequence=sequence, sequencer_id=sequencer_id)
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
-
-    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
-        """check if values are already cached and upload if not cached"""
-        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
-            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-            )
-            # FIXME: Qblox supports to set it directly to the device instead of using a file
-            self.upload(sequence=sequence)
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
@@ -141,21 +134,27 @@ class QbloxModule(AWG):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
+        sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        acquisitions = self._generate_acquisitions(
-            sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        )
+        acquisitions = self._generate_acquisitions()
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
             nshots=nshots,
             repetition_duration=repetition_duration,
+            sequencer_id=sequencer_id,
         )
         weights = self._generate_weights()
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        sequence = QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return sequence, sequencer_id
 
     def _generate_program(
-        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        waveforms: Waveforms,
+        nshots: int,
+        repetition_duration: int,
+        sequencer_id: int,
     ):
         """Generate Q1ASM program
 
@@ -166,7 +165,6 @@ class QbloxModule(AWG):
         Returns:
             Program: Q1ASM program.
         """
-        sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=nshots)
@@ -197,7 +195,7 @@ class QbloxModule(AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_acquisitions(self, sequencer_id: int) -> Acquisitions:
+    def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
         and index = 0.
 
@@ -463,16 +461,16 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence):
+    def upload(self, sequence: QpySequence, sequencer_id: int):
         """Upload sequence to sequencer.
 
         Args:
-            sequence (Sequence): Sequence object containing the waveforms, weights,
-            acquisitions and program of the sequence.
+            sequence (Sequence): Sequence object containing the waveforms, weights, acquisitions and program of the
+                sequence.
+            sequencer_id (int): id of the sequencer to upload the program to
         """
         logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-        for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sequence(sequence.todict())
+        self.device.sequencers[sequencer_id].sequence(sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

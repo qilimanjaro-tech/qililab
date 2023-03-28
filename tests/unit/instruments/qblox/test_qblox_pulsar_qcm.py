@@ -96,7 +96,8 @@ class TestQbloxQCM:
 
     def test_upload_method(self, qcm: QbloxQCM):
         """Test upload method"""
-        qcm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={})
+        qcm.upload(sequence=sequence, sequencer_id=0)
         qcm.device.sequencer0.sequence.assert_called_once()
 
     def test_id_property(self, qcm_no_device: QbloxQCM):

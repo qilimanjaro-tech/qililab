@@ -151,7 +151,8 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm: QbloxQRM):
         """Test upload method"""
-        qrm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
+        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={})
+        qrm.upload(sequence=sequence, sequencer_id=0)
         qrm.device.sequencer0.sequence.assert_called()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
