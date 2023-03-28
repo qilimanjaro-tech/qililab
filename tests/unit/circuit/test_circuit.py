@@ -11,9 +11,43 @@ import rustworkx as rx
 from qililab.circuit import Circuit
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
 from qililab.circuit.nodes.operation_node import OperationTiming
-from qililab.circuit.operations import R180, Barrier, Measure, Operation, Reset, Rxy, Wait, X
-from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
+from qililab.circuit.operations import (
+    R180,
+    Barrier,
+    CPhase,
+    DRAGPulse,
+    GaussianPulse,
+    Measure,
+    Operation,
+    Reset,
+    Rxy,
+    SquarePulse,
+    Wait,
+    X,
+)
 from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
+
+
+@pytest.fixture(name="parallel_circuit")
+def fixture_parallel_circuit() -> Circuit:
+    """Return a circuit with parallel operations only"""
+    circuit = Circuit(2)
+    circuit.add(0, SquarePulse(amplitude=1.0, duration=40, resolution=1.0))
+    circuit.add(0, GaussianPulse(amplitude=1.0, duration=40, sigma=1.0))
+    circuit.add(1, DRAGPulse(amplitude=1.0, duration=40, sigma=1.0, delta=2.0))
+    return circuit
+
+
+@pytest.fixture(name="parallel_circuit_print_output_soon")
+def fixture_parallel_circuit_print_ouput_soon() -> str:
+    """Return the print output of parallel circuit."""
+    return "0:----Square--Gaussian\n" "1:------DRAG----------\n"
+
+
+@pytest.fixture(name="parallel_circuit_print_output_late")
+def fixture_parallel_circuit_print_ouput_late() -> str:
+    """Return the print output of parallel circuit."""
+    return "0:----Square--Gaussian\n" "1:----------------DRAG\n"
 
 
 @pytest.fixture(name="simple_circuit")
@@ -127,6 +161,16 @@ class TestCircuit:
                 "simple_circuit",
                 OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE,
                 "simple_circuit_print_output_late",
+            ),
+            (
+                "parallel_circuit",
+                OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE,
+                "parallel_circuit_print_output_soon",
+            ),
+            (
+                "parallel_circuit",
+                OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE,
+                "parallel_circuit_print_output_late",
             ),
             ("empty_circuit", OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, "empty_circuit_print_output"),
             ("empty_circuit", OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE, "empty_circuit_print_output"),

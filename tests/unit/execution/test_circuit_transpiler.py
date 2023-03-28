@@ -22,9 +22,12 @@ def fixture_simple_circuit() -> Circuit:
     circuit = Circuit(2)
     circuit.add(0, X())
     circuit.add(0, Wait(t=100))
+    circuit.add(1, X())
+    circuit.add((0, 1), Barrier())
     circuit.add(0, X())
     circuit.add(1, X())
     circuit.add((0, 1), Measure())
+    circuit.add((0, 1), Reset())
     return circuit
 
 

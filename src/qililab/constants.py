@@ -52,6 +52,7 @@ class PLATFORM:
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
+    PASSIVE_RESET_DURATION = "passive_reset_duration"
     DEVICE_ID = "device_id"
 
 

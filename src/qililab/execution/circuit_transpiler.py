@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
-from qililab.circuit.operations import Barrier, PulseOperation, TranslatableToPulseOperation, Wait
+from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.settings import RuncardSchema
 
 
@@ -76,6 +76,15 @@ class CircuitTranspiler:
                         + [max_end_time_of_previous_layer]
                     )
                     end_time = start_time
+                    operation_node.timing = OperationTiming(start=start_time, end=end_time)
+                    for qubit in operation_node.qubits:
+                        qubits_last_end_timings[qubit] = end_time
+                elif isinstance(operation_node.operation, Reset):
+                    start_time = max(
+                        [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
+                        + [max_end_time_of_previous_layer]
+                    )
+                    end_time = start_time + self.settings.passive_reset_duration
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
                     for qubit in operation_node.qubits:
                         qubits_last_end_timings[qubit] = end_time

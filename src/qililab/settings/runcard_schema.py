@@ -121,6 +121,7 @@ class RuncardSchema:
         timings_calculation_method: Literal[
             OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE
         ]
+        passive_reset_duration: int
         operations: List[OperationSettings]
         gates: List[GateSettings]
 

@@ -125,8 +125,6 @@ class Circuit:
                         for op_i, operation in enumerate(layer)
                         if qubit in operation.qubits and len(operation.qubits) == 1
                     ]
-                    if len(current_single_operations_on_qubit) > 1:
-                        raise Exception()
                     if len(current_single_operations_on_qubit) == 0:
                         continue
                     if index == len(layers) - 1:

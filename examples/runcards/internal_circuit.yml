@@ -7,6 +7,7 @@ settings:
   master_amplitude_gate: 1
   master_duration_gate: 20
   timings_calculation_method: as_soon_as_possible
+  passive_reset_duration: 100
   device_id: 9
   operations:
     - name: X
