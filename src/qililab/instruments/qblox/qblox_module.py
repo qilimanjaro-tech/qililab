@@ -119,7 +119,7 @@ class QbloxModule(AWG):
         """
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence, sequencer_id = self._translate_pulse_bus_schedule(
+            sequence, self.sequencer_id = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
             self.upload(sequence=sequence, sequencer_id=sequencer_id)
@@ -232,9 +232,8 @@ class QbloxModule(AWG):
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
-        for sequencer in self.awg_sequencers:
-            self.device.arm_sequencer(sequencer=sequencer.identifier)
-            self.device.start_sequencer(sequencer=sequencer.identifier)
+        self.device.arm_sequencer(sequencer=self.sequencer_id)
+        self.device.start_sequencer(sequencer=self.sequencer_id)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
