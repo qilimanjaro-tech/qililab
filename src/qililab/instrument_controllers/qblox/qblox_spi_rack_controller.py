@@ -2,19 +2,11 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.multi_instrument_controller import (
-    MultiInstrumentController,
-)
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.multi_instrument_controller import MultiInstrumentController
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.qblox.qblox_d5a import QbloxD5a
 from qililab.instruments.qblox.qblox_s4g import QbloxS4g
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentTypeName,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
 from qililab.typings.instruments.spi_rack import SPI_Rack
 
 
