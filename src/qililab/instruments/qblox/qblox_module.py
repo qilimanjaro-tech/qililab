@@ -122,7 +122,7 @@ class QbloxModule(AWG):
             sequence, self.sequencer_id = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
-            self.upload(sequence=sequence, sequencer_id=sequencer_id)
+            self.upload(sequence=sequence, sequencer_id=self.sequencer_id)
 
     def run(self):
         """Run the uploaded program"""
