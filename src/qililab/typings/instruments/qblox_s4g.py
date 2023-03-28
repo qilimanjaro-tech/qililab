@@ -1,7 +1,5 @@
 """Class Qblox S4g"""
-from qblox_instruments.qcodes_drivers.spi_rack_modules import (
-    S4gModule as Driver_S4gModule,
-)
+from qblox_instruments.qcodes_drivers.spi_rack_modules import S4gModule as Driver_S4gModule
 
 from qililab.typings.instruments.device import Device
 

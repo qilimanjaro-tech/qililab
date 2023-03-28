@@ -1,8 +1,5 @@
 """Keithley2600 driver."""
-from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import (
-    Keithley_2600,
-    KeithleyChannel,
-)
+from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import Keithley_2600, KeithleyChannel
 
 from qililab.typings.instruments.device import Device
 

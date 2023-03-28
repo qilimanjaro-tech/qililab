@@ -10,9 +10,7 @@ import pandas as pd
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
-from qililab.result.qblox_results.qblox_acquisitions_builder import (
-    QbloxAcquisitionsBuilder,
-)
+from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
 from qililab.result.result import Result

@@ -1,10 +1,7 @@
 """Single Instrument Controller class"""
 from dataclasses import dataclass
 
-from qililab.instrument_controllers.instrument_controller import (
-    InstrumentController,
-    InstrumentControllerSettings,
-)
+from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
 from qililab.typings.enums import InstrumentControllerSubCategory
 
 
