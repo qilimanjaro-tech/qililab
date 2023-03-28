@@ -490,6 +490,7 @@ class FluxQubitSimulator:
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
         "operations": [
             {
                 RUNCARD.NAME: "Rxy",
