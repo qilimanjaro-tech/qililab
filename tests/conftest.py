@@ -50,33 +50,39 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
+from .data import FluxQubitSimulator, Galadriel, SauronVNA, circuit, experiment_params, simulated_experiment_circuit
 from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
 
-@pytest.fixture(name="platform")
+@pytest.fixture(name="sauron_platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db()
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="sauron_platform")
+def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="schema")
-def fixture_schema(platform: Platform) -> Schema:
+def fixture_schema(sauron_platform: Platform) -> Schema:
     """Load Schema.
 
     Returns:
         Schema: Instance of the Schema class.
     """
-    return platform.schema
+    return sauron_platform.schema
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
-def fixture_pulsar_controller_qcm(platform: Platform):
+def fixture_pulsar_controller_qcm(sauron_platform: Platform):
     """Return an instance of QbloxPulsarController class"""
     settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
     settings.pop("name")
-    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
+    return QbloxPulsarController(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
 @pytest.fixture(name="qcm_no_device")
@@ -132,11 +138,11 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
-def fixture_pulsar_controller_qrm(platform: Platform):
+def fixture_pulsar_controller_qrm(sauron_platform: Platform):
     """Return an instance of QbloxPulsarController class"""
     settings = copy.deepcopy(Galadriel.pulsar_controller_qrm_0)
     settings.pop("name")
-    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
+    return QbloxPulsarController(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
 @pytest.fixture(name="qrm_no_device")
@@ -269,11 +275,11 @@ def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
 
 
 @pytest.fixture(name="rohde_schwarz_controller")
-def fixture_rohde_schwarz_controller(platform: Platform):
+def fixture_rohde_schwarz_controller(sauron_platform: Platform):
     """Return an instance of SGS100A controller class"""
     settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
     settings.pop("name")
-    return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
+    return SGS100AController(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
 @pytest.fixture(name="rohde_schwarz_no_device")
@@ -296,11 +302,11 @@ def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AC
 
 
 @pytest.fixture(name="keithley_2600_controller")
-def fixture_keithley_2600_controller(platform: Platform):
+def fixture_keithley_2600_controller(sauron_platform: Platform):
     """Return connected instance of Keithley2600Controller class"""
     settings = copy.deepcopy(Galadriel.keithley_2600_controller_0)
     settings.pop("name")
-    return Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
+    return Keithley2600Controller(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
 @pytest.fixture(name="keithley_2600_no_device")
@@ -324,7 +330,7 @@ def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keit
 
 
 @pytest.fixture(name="attenuator_controller")
-def fixture_attenuator_controller(platform: Platform) -> MiniCircuitsController:
+def fixture_attenuator_controller(sauron_platform: Platform) -> MiniCircuitsController:
     """Load Schema.
 
     Returns:
@@ -332,7 +338,7 @@ def fixture_attenuator_controller(platform: Platform) -> MiniCircuitsController:
     """
     settings = copy.deepcopy(Galadriel.attenuator_controller_0)
     settings.pop("name")
-    return MiniCircuitsController(settings=settings, loaded_instruments=platform.instruments)
+    return MiniCircuitsController(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
 @pytest.fixture(name="attenuator_no_device")
@@ -362,9 +368,11 @@ def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircui
 
 
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
-def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
+def fixture_pulse_schedule(sauron_platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(settings=sauron_platform.settings).translate(circuits=[circuit], chip=sauron_platform.chip)[
+        0
+    ]
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -556,23 +564,23 @@ def fixture_readout_pulse() -> ReadoutPulse:
 
 
 @pytest.fixture(name="base_system_control")
-def fixture_base_system_control(platform: Platform) -> SystemControl:
+def fixture_base_system_control(sauron_platform: Platform) -> SystemControl:
     """Load SystemControl.
 
     Returns:
         SystemControl: Instance of the ControlSystemControl class.
     """
-    return platform.buses[0].system_control
+    return sauron_platform.buses[0].system_control
 
 
 @pytest.fixture(name="time_domain_control_system_control")
-def fixture_time_domain_control_system_control(platform: Platform) -> ControlSystemControl:
+def fixture_time_domain_control_system_control(sauron_platform: Platform) -> ControlSystemControl:
     """Load ControlSystemControl.
 
     Returns:
         ControlSystemControl: Instance of the ControlSystemControl class.
     """
-    return platform.buses[0].system_control
+    return sauron_platform.buses[0].system_control
 
 
 @pytest.fixture(name="simulated_system_control")
@@ -622,9 +630,9 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     return request.param  # type: ignore
 
 
-def platform_db() -> Platform:
+def platform_db(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name=DEFAULT_PLATFORM_NAME)
             mock_load.assert_called()
@@ -632,9 +640,9 @@ def platform_db() -> Platform:
     return platform
 
 
-def platform_yaml() -> Platform:
+def platform_yaml(runcard: dict) -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="sauron")
             mock_load.assert_called()

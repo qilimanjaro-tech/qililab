@@ -848,7 +848,7 @@ class SauronVNA:
     keysight_e5080b_controller = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
-        RUNCARD.ALIAS: InstrumentControllerName.KEYSIGHT_E5080B,
+        RUNCARD.ALIAS: InstrumentControllerName.KEYSIGHT_E5080B.value,
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.TIMEOUT.value: 10000,
@@ -858,7 +858,7 @@ class SauronVNA:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.VNA.value: InstrumentName.KEYSIGHT_E5080B,
+                Category.VNA.value: InstrumentName.KEYSIGHT_E5080B.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -867,7 +867,7 @@ class SauronVNA:
     keysight_e5080b = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.KEYSIGHT_E5080B,
-        RUNCARD.ALIAS: InstrumentName.KEYSIGHT_E5080B,
+        RUNCARD.ALIAS: InstrumentName.KEYSIGHT_E5080B.value,
         RUNCARD.CATEGORY: Category.VNA.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,

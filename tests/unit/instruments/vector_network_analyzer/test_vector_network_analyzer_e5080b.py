@@ -250,14 +250,14 @@ class TestE5080B:
 
 
 @pytest.fixture(name="vector_network_analyzer_controller")
-def fixture_vector_network_analyzer_controller(platform: Platform):
+def fixture_vector_network_analyzer_controller(sauron_platform: Platform):
     """Return an instance of VectorNetworkAnalyzer controller class"""
     settings = copy.deepcopy(SauronVNA.keysight_e5080b_controller)
     settings.pop("name")
-    return E5080BController(settings=settings, loaded_instruments=platform.instruments)
+    return E5080BController(settings=settings, loaded_instruments=sauron_platform.instruments)
 
 
-@pytest.fixture(name="vector_network_analyzerb_no_device")
+@pytest.fixture(name="vector_network_analyzer_no_device")
 def fixture_vector_network_analyzer_no_device():
     """Return an instance of VectorNetworkAnalyzer class"""
     settings = copy.deepcopy(SauronVNA.keysight_e5080b)
