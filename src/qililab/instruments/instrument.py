@@ -161,8 +161,8 @@ class Instrument(BusElement, ABC):
 
     @CheckDeviceInitialized
     @abstractmethod
-    def reset(self):
-        """Reset instrument settings."""
+    def turn_on(self):
+        """Turn on an instrument."""
 
     def generate_program_and_upload(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
@@ -180,6 +180,11 @@ class Instrument(BusElement, ABC):
         """Acquire results of the measurement.
 
         In some cases this method might do nothing."""
+
+    @CheckDeviceInitialized
+    @abstractmethod
+    def reset(self):
+        """Reset instrument settings."""
 
     @CheckDeviceInitialized
     @abstractmethod
