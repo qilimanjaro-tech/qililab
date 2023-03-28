@@ -119,10 +119,10 @@ class QbloxModule(AWG):
         """
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence, self.sequencer_id = self._translate_pulse_bus_schedule(
+            sequence, sequencer_id, empty_sequence = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
-            self.upload(sequence=sequence, sequencer_id=self.sequencer_id)
+            self.upload(sequence=sequence, sequencer_id=sequencer_id, empty_sequence=empty_sequence)
 
     def run(self):
         """Run the uploaded program"""
@@ -149,9 +149,37 @@ class QbloxModule(AWG):
             repetition_duration=repetition_duration,
             sequencer_id=sequencer_id,
         )
+        empty_program = self._generate_empty_program(nshots, repetition_duration)
         weights = self._generate_weights()
         sequence = QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
-        return sequence, sequencer_id
+        empty_sequence = QpySequence(
+            program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}
+        )
+        return sequence, sequencer_id, empty_sequence
+
+    def _generate_empty_program(self, nshots: int, repetition_duration: int):
+        """Generate Q1ASM program
+
+        Args:
+            pulse_sequence (PulseSequence): Pulse sequence.
+            waveforms (Waveforms): Waveforms.
+
+        Returns:
+            Program: Q1ASM program.
+        """
+        # Define program's blocks
+        program = Program()
+        avg_loop = Loop(name="average", begin=nshots)
+        program.append_block(avg_loop)
+        stop = Block(name="stop")
+        stop.append_component(Stop())
+        program.append_block(block=stop)
+        wait_time = repetition_duration
+        if wait_time > self._MIN_WAIT_TIME:
+            avg_loop.append_component(long_wait(wait_time=wait_time))
+
+        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
+        return program
 
     def _generate_program(
         self,
@@ -232,8 +260,9 @@ class QbloxModule(AWG):
 
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
-        self.device.arm_sequencer(sequencer=self.sequencer_id)
-        self.device.start_sequencer(sequencer=self.sequencer_id)
+        for sequencer in self.awg_sequencers:
+            self.device.arm_sequencer(sequencer=sequencer.identifier)
+            self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -494,7 +523,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence, sequencer_id: int):
+    def upload(self, sequence: QpySequence, sequencer_id: int, empty_sequence: QpySequence):
         """Upload sequence to sequencer.
 
         Args:
@@ -503,7 +532,11 @@ class QbloxModule(AWG):
             sequencer_id (int): id of the sequencer to upload the program to
         """
         logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-        self.device.sequencers[sequencer_id].sequence(sequence.todict())
+        for seq_idx in range(self.num_sequencers):
+            if seq_idx == sequencer_id:
+                self.device.sequencers[seq_idx].sequence(sequence.todict())
+            else:
+                self.device.sequencers[seq_idx].sequence(empty_sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
