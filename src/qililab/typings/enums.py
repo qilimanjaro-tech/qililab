@@ -470,6 +470,7 @@ class Parameter(str, Enum):
     DEVICE_TIMEOUT = "device_timeout"
     SWEEP_MODE = "sweep_mode"
     ELECTRICAL_DELAY = "electrical_delay"
+    TIMEOUT = "timeout"
 
 
 class ResultName(str, Enum):

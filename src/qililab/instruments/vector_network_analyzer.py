@@ -4,15 +4,8 @@ from dataclasses import dataclass
 from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.instrument import Instrument
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import (
-    Parameter,
-    VNAScatteringParameters,
-    VNASweepModes,
-    VNATriggerModes,
-)
-from qililab.typings.instruments.vector_network_analyzer import (
-    VectorNetworkAnalyzerDriver,
-)
+from qililab.typings.enums import Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
+from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 DEFAULT_NUMBER_POINTS = 1000
 
@@ -47,7 +40,7 @@ class VectorNetworkAnalyzer(Instrument):
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -83,7 +76,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.settings.trigger_mode = VNATriggerModes(value)
             return
         if parameter == Parameter.SWEEP_MODE:
-            self.settings.sweep_mode = VNASweepModes(value)
+            self.sweep_mode = VNASweepModes(value)
             return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
@@ -163,7 +156,7 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'power' property.
 
         Returns:
-            float: settings.power.
+            float: settings.power
         """
         return self.settings.power
 

@@ -37,7 +37,6 @@ class VectorNetworkAnalyzerDriver(Device):
     def reset(self):
         """Reset instrument settings."""
         self.driver.write("SYST:PRES; *OPC?")
-        
 
     def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""
@@ -60,6 +59,10 @@ class VectorNetworkAnalyzerDriver(Device):
     def stop(self):
         """Close an instrument."""
         self.output(arg="OFF")
+
+    def start(self):
+        """Open an instrument."""
+        self.output(arg="ON")
 
     def electrical_delay(self, etime: str):  # MP 04/2017
         """
@@ -167,7 +170,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.timeout = value
         self.driver.timeout = self.timeout
 
-    def get_trace(self, channel=1, trace=1):
+    def _get_trace(self, channel=1, trace=1):
         """Get the data of the current trace."""
         self.driver.write("FORM:DATA REAL,32")
         self.driver.write("FORM:BORD SWAPPED")  # SWAPPED
@@ -261,7 +264,7 @@ class VectorNetworkAnalyzerDriver(Device):
         self.pre_measurement()
         self.start_measurement()
         if self.wait_until_ready():
-            trace = self.get_trace()
+            trace = self._get_trace()
             self.release()
             return trace
         raise TimeoutError("Timeout waiting for trace data")
