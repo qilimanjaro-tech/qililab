@@ -12,11 +12,11 @@ from ...conftest import platform_db, platform_yaml
 class TestPlatform:
     """Integration tests checking the Platform attributes and methods."""
 
-    def test_platform_manager_dump_method(self, sauron_platform: Platform):
+    def test_platform_manager_dump_method(self, platform: Platform):
         """Test PlatformManager dump method."""
-        save_platform(platform=sauron_platform)
+        save_platform(platform=platform)
         with pytest.raises(NotImplementedError):
-            save_platform(platform=sauron_platform, database=True)
+            save_platform(platform=platform, database=True)
 
 
 class TestPlatformManagerYAML:

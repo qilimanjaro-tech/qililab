@@ -19,77 +19,77 @@ from ...conftest import platform_db, platform_yaml
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
 
-    def test_id_property(self, sauron_platform: Platform):
+    def test_id_property(self, platform: Platform):
         """Test id property."""
-        assert sauron_platform.id_ == sauron_platform.settings.id_
+        assert platform.id_ == platform.settings.id_
 
-    def test_name_property(self, sauron_platform: Platform):
+    def test_name_property(self, platform: Platform):
         """Test name property."""
-        assert sauron_platform.name == sauron_platform.settings.name
+        assert platform.name == platform.settings.name
 
-    def test_category_property(self, sauron_platform: Platform):
+    def test_category_property(self, platform: Platform):
         """Test category property."""
-        assert sauron_platform.category == sauron_platform.settings.category
+        assert platform.category == platform.settings.category
 
-    def test_num_qubits_property(self, sauron_platform: Platform):
+    def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""
-        assert sauron_platform.num_qubits == sauron_platform.chip.num_qubits
+        assert platform.num_qubits == platform.chip.num_qubits
 
-    def test_platform_name(self, sauron_platform: Platform):
+    def test_platform_name(self, platform: Platform):
         """Test platform name."""
-        assert sauron_platform.name == DEFAULT_PLATFORM_NAME
+        assert platform.name == DEFAULT_PLATFORM_NAME
 
-    def test_get_element_method_unknown_raises_error(self, sauron_platform: Platform):
+    def test_get_element_method_unknown_raises_error(self, platform: Platform):
         """Test get_element method with unknown element."""
         with pytest.raises(ValueError):
-            sauron_platform.get_element(alias="ABC")
+            platform.get_element(alias="ABC")
 
-    def test_get_element_with_gate(self, sauron_platform: Platform):
+    def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gate = sauron_platform.get_element(alias="M")
+        gate = platform.get_element(alias="M")
         assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
         assert gate.name == "M"
 
-    def test_str_magic_method(self, sauron_platform: Platform):
+    def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
-        str(sauron_platform)
+        str(platform)
 
-    def test_settings_instance(self, sauron_platform: Platform):
+    def test_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(sauron_platform.settings, RuncardSchema.PlatformSettings)
+        assert isinstance(platform.settings, RuncardSchema.PlatformSettings)
 
-    def test_schema_instance(self, sauron_platform: Platform):
+    def test_schema_instance(self, platform: Platform):
         """Test schema instance."""
-        assert isinstance(sauron_platform.schema, Schema)
+        assert isinstance(platform.schema, Schema)
 
-    def test_buses_instance(self, sauron_platform: Platform):
+    def test_buses_instance(self, platform: Platform):
         """Test buses instance."""
-        assert isinstance(sauron_platform.buses, Buses)
+        assert isinstance(platform.buses, Buses)
 
-    def test_bus_0_signal_generator_instance(self, sauron_platform: Platform):
+    def test_bus_0_signal_generator_instance(self, platform: Platform):
         """Test bus 0 signal generator instance."""
-        element = sauron_platform.get_element(alias="rs_0")
+        element = platform.get_element(alias="rs_0")
         assert isinstance(element, SignalGenerator)
 
-    def test_qubit_0_instance(self, sauron_platform: Platform):
+    def test_qubit_0_instance(self, platform: Platform):
         """Test qubit 1 instance."""
-        element = sauron_platform.get_element(alias="qubit")
+        element = platform.get_element(alias="qubit")
         assert isinstance(element, Qubit)
 
-    def test_bus_0_awg_instance(self, sauron_platform: Platform):
+    def test_bus_0_awg_instance(self, platform: Platform):
         """Test bus 0 qubit control instance."""
-        element = sauron_platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
+        element = platform.get_element(alias=InstrumentName.QBLOX_QCM.value)
         assert isinstance(element, AWG)
 
-    def test_bus_1_awg_instance(self, sauron_platform: Platform):
+    def test_bus_1_awg_instance(self, platform: Platform):
         """Test bus 1 qubit readout instance."""
-        element = sauron_platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
+        element = platform.get_element(alias=InstrumentName.QBLOX_QRM.value)
         assert isinstance(element, AWGAnalogDigitalConverter)
 
     @patch("qililab.platform.platform_manager.yaml.dump")
-    def test_platform_manager_dump_method(self, mock_dump: MagicMock, sauron_platform: Platform):
+    def test_platform_manager_dump_method(self, mock_dump: MagicMock, platform: Platform):
         """Test PlatformManager dump method."""
-        save_platform(platform=sauron_platform)
+        save_platform(platform=platform)
         with pytest.raises(NotImplementedError):
-            save_platform(platform=sauron_platform, database=True)
+            save_platform(platform=platform, database=True)
         mock_dump.assert_called()

@@ -224,11 +224,11 @@ class TestMethods:
 
     @patch("qililab.experiment.experiment.open")
     @patch("qililab.experiment.experiment.os.makedirs")
-    def test_draw_method_with_one_bus(self, mock_open: MagicMock, mock_makedirs: MagicMock, sauron_platform: Platform):
+    def test_draw_method_with_one_bus(self, mock_open: MagicMock, mock_makedirs: MagicMock, platform: Platform):
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
         circuit.add(M(0))
-        experiment = Experiment(circuits=[circuit], platform=sauron_platform)
+        experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.build_execution()
         # Assert that the mocks are called when building the execution (such that NO files are created)
         mock_open.assert_called()
