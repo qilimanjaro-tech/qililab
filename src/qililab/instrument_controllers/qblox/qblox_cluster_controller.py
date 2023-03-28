@@ -1,13 +1,9 @@
 """Qblox Cluster Controller class"""
 from dataclasses import dataclass
 
-from qililab.instrument_controllers.multi_instrument_controller import (
-    MultiInstrumentController,
-)
+from qililab.instrument_controllers.multi_instrument_controller import MultiInstrumentController
 from qililab.instrument_controllers.qblox.qblox_controller import QbloxController
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.typings.enums import ConnectionName, InstrumentControllerName
 from qililab.typings.instruments.cluster import Cluster
 

@@ -89,7 +89,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device._delete_acquisition(  # pylint: disable=protected-access
                     sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
                 )
-                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id)
+                acquisition = self._generate_acquisitions()
                 self.device._add_acquisitions(  # pylint: disable=protected-access
                     sequencer=sequencer_id, acquisitions=acquisition.to_dict()
                 )
