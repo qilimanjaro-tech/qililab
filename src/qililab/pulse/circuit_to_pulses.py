@@ -6,7 +6,7 @@ import numpy as np
 from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip import Chip, Node
+from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -16,7 +16,6 @@ from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.readout_event import ReadoutEvent
 from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -66,7 +65,7 @@ class CircuitToPulses:
         return pulse_schedule_list
 
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
-        """Build Pulse Shape from Gate seetings"""
+        """Build Pulse Shape from Gate settings"""
         shape_settings = gate_settings.shape.copy()
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
