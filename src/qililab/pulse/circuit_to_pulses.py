@@ -186,6 +186,9 @@ class CircuitToPulses:
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
+        residue = pulse_time % self.settings.minimum_clock_time
+        if residue != 0:
+            pulse_time += self.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
 
