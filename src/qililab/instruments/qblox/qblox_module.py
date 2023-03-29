@@ -535,8 +535,8 @@ class QbloxModule(AWG):
         for seq_idx in range(self.num_sequencers):
             if seq_idx == sequencer_id:
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
-            else:
-                self.device.sequencers[seq_idx].sequence(empty_sequence.todict())
+            # else:
+            #     self.device.sequencers[seq_idx].sequence(empty_sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
