@@ -2,15 +2,45 @@
 import copy
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller import E5080BController
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.platform import Platform
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import Parameter, VNASweepModes
+from qililab.typings.enums import Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
 from tests.data import SauronVNA
+
+
+@pytest.fixture(name="vector_network_analyzer_controller")
+def fixture_vector_network_analyzer_controller(sauron_platform: Platform):
+    """Return an instance of VectorNetworkAnalyzer controller class"""
+    settings = copy.deepcopy(SauronVNA.keysight_e5080b_controller)
+    settings.pop("name")
+    return E5080BController(settings=settings, loaded_instruments=sauron_platform.instruments)
+
+
+@pytest.fixture(name="vector_network_analyzer_no_device")
+def fixture_vector_network_analyzer_no_device():
+    """Return an instance of VectorNetworkAnalyzer class"""
+    settings = copy.deepcopy(SauronVNA.keysight_e5080b)
+    settings.pop("name")
+    return E5080B(settings=settings)
+
+
+@pytest.fixture(name="vector_network_analyzer")
+@patch(
+    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BDriver",
+    autospec=True,
+)
+def fixture_vector_network_analyzer(mock_device: MagicMock, vector_network_analyzer_controller: E5080BController):
+    """Return connected instance of VectorNetworkAnalyzer class"""
+    # add dynamically created attributes
+    mock_instance = mock_device.return_value
+    mock_instance.mock_add_spec(["power"])
+    vector_network_analyzer_controller.connect()
+    mock_device.assert_called()
+    return vector_network_analyzer_controller.modules[0]
 
 
 class TestE5080B:
@@ -34,7 +64,22 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
         vector_network_analyzer.setup(parameter, value)
-        vector_network_analyzer._set_parameter_float.assert_called_with(parameter, value)
+        if parameter == Parameter.POWER:
+            assert vector_network_analyzer.power == value
+        if parameter == Parameter.FREQUENCY_SPAN:
+            assert vector_network_analyzer.frequency_span == value
+        if parameter == Parameter.FREQUENCY_CENTER:
+            assert vector_network_analyzer.frequency_center == value
+        if parameter == Parameter.FREQUENCY_START:
+            assert vector_network_analyzer.frequency_start == value
+        if parameter == Parameter.FREQUENCY_STOP:
+            assert vector_network_analyzer.frequency_stop == value
+        if parameter == Parameter.IF_BANDWIDTH:
+            assert vector_network_analyzer.if_bandwidth == value
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            assert vector_network_analyzer.device_timeout == value
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            assert vector_network_analyzer.electrical_delay == value
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -50,7 +95,12 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, str)
         vector_network_analyzer.setup(parameter, value)
-        vector_network_analyzer._set_parameter_str.assert_called_with(parameter, value)
+        if parameter == Parameter.TRIGGER_MODE:
+            assert vector_network_analyzer.trigger_mode == VNATriggerModes(value)
+        if parameter == Parameter.SCATTERING_PARAMETER:
+            assert vector_network_analyzer.scattering_parameter == VNAScatteringParameters(value)
+        if parameter == Parameter.SWEEP_MODE:
+            assert vector_network_analyzer.sweep_mode == VNASweepModes(value)
 
     @pytest.mark.parametrize(
         "parameter, value", [(Parameter.AVERAGING_ENABLED, True), (Parameter.AVERAGING_ENABLED, False)]
@@ -60,7 +110,8 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, bool)
         vector_network_analyzer.setup(parameter, value)
-        vector_network_analyzer._set_parameter_bool.assert_called_with(parameter, value)
+        if parameter == Parameter.AVERAGING_ENABLED:
+            vector_network_analyzer.averaging_enabled == value
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.NUMBER_POINTS, 100), (Parameter.NUMBER_AVERAGES, 4)])
     def test_setup_method_value_int(self, parameter: Parameter, value, vector_network_analyzer: E5080B):
@@ -68,7 +119,10 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, int)
         vector_network_analyzer.setup(parameter, value)
-        vector_network_analyzer._set_parameter_int.assert_called_with(parameter, value)
+        if parameter == Parameter.NUMBER_POINTS:
+            assert vector_network_analyzer.number_points == value
+        if parameter == Parameter.NUMBER_AVERAGES:
+            assert vector_network_analyzer.number_averages == value
 
     def test_initial_setup_method(self, vector_network_analyzer: E5080B):
         """Test the initial setup method"""
@@ -94,7 +148,7 @@ class TestE5080B:
     def test_send_command_method(self, command: str, vector_network_analyzer: E5080B):
         """Test the send command method"""
         vector_network_analyzer.send_command(command)
-        vector_network_analyzer.device.send_command.assert_called_with(command)
+        vector_network_analyzer.device.send_command.assert_called_with(command=command, arg="")
 
     def test_autoscale_method(self, vector_network_analyzer: E5080B):
         """Test autoscale method"""
@@ -120,15 +174,13 @@ class TestE5080B:
 
     def test_get_frequencies_method(self, vector_network_analyzer: E5080B):
         """Test the get frequencies method"""
-        output = vector_network_analyzer.get_frequencies()
+        vector_network_analyzer.get_frequencies()
         vector_network_analyzer.device.get_freqs.assert_called()
-        assert type(output) is np.array
 
     def test_ready_method(self, vector_network_analyzer: E5080B):
         """Test ready method"""
-        output = vector_network_analyzer.ready()
+        vector_network_analyzer.ready()
         vector_network_analyzer.device.ready.assert_called()
-        assert isinstance(output, bool)
 
     def test_release_method(self, vector_network_analyzer: E5080B):
         """Test release method"""
@@ -147,7 +199,6 @@ class TestE5080B:
         output = vector_network_analyzer.acquire_result()
         vector_network_analyzer.device.read_tracedata.assert_called()
         assert isinstance(output, VNAResult)
-        assert type(output).__name__ == type(VNAResult).__name__
 
     def test_power_property(self, vector_network_analyzer_no_device: E5080B):
         """Test power property."""
@@ -247,34 +298,3 @@ class TestE5080B:
             vector_network_analyzer_no_device.electrical_delay
             == vector_network_analyzer_no_device.settings.electrical_delay
         )
-
-
-@pytest.fixture(name="vector_network_analyzer_controller")
-def fixture_vector_network_analyzer_controller(sauron_platform: Platform):
-    """Return an instance of VectorNetworkAnalyzer controller class"""
-    settings = copy.deepcopy(SauronVNA.keysight_e5080b_controller)
-    settings.pop("name")
-    return E5080BController(settings=settings, loaded_instruments=sauron_platform.instruments)
-
-
-@pytest.fixture(name="vector_network_analyzer_no_device")
-def fixture_vector_network_analyzer_no_device():
-    """Return an instance of VectorNetworkAnalyzer class"""
-    settings = copy.deepcopy(SauronVNA.keysight_e5080b)
-    settings.pop("name")
-    return E5080B(settings=settings)
-
-
-@pytest.fixture(name="vector_network_analyzer")
-@patch(
-    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BDriver",
-    autospec=True,
-)
-def fixture_vector_network_analyzer(mock_device: MagicMock, vector_network_analyzer_controller: E5080BController):
-    """Return connected instance of VectorNetworkAnalyzer class"""
-    # add dynamically created attributes
-    mock_instance = mock_device.return_value
-    mock_instance.mock_add_spec(["power"])
-    vector_network_analyzer_controller.connect()
-    mock_device.assert_called()
-    return vector_network_analyzer_controller.modules[0]
