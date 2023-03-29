@@ -1,6 +1,5 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Sequence, cast
 
 from qpysequence.program import Loop, Register
@@ -9,7 +8,7 @@ from qpysequence.program.instructions import Acquire
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
@@ -236,5 +235,5 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
-        except ValueError:
+        except ParameterNotFound:
             QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)

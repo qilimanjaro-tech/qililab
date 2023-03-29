@@ -2,9 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instrument_controllers.vector_network_analyzer.vector_network_analyzer_controller import (
     VectorNetworkAnalyzerController,
 )

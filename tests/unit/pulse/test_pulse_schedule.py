@@ -1,12 +1,5 @@
 """Tests for the PulseSequences class."""
-from qililab.pulse import (
-    Pulse,
-    PulseBusSchedule,
-    PulseEvent,
-    PulseSchedule,
-    ReadoutEvent,
-    ReadoutPulse,
-)
+from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, PulseSchedule, ReadoutEvent, ReadoutPulse
 
 
 class TestPulseSequences:

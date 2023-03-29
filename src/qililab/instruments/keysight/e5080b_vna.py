@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from qililab.constants import DEFAULT_TIMEOUT
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.typings.enums import InstrumentName, Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
@@ -76,7 +76,7 @@ class E5080B(VectorNetworkAnalyzer):
         if isinstance(value, int):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        raise ValueError(f"Invalid Parameter: {parameter} with type {type(parameter)}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -95,7 +95,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.sweep_mode = VNASweepModes(value)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_bool(self, parameter: Parameter, value: bool):
         """Set instrument settings parameter to the corresponding value
@@ -108,7 +108,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.averaging_enabled = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_float(
         self,
@@ -147,7 +147,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.electrical_delay = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_int(self, parameter: Parameter, value: int):
         """Set instrument settings parameter to the corresponding value
@@ -165,7 +165,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.number_points = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     @property
     def power(self):

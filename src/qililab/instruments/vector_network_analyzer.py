@@ -1,9 +1,12 @@
 """VectorNetworkAnalyzer class."""
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.result.vna_result import VNAResult
+from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
+
+DEFAULT_NUMBER_POINTS = 1000
 
 
 class VectorNetworkAnalyzer(Instrument):

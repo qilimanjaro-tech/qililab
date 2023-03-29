@@ -1,11 +1,10 @@
 """Pulse Scheduled Bus class."""
 from dataclasses import dataclass, field
-from pathlib import Path
 
-from qililab.platform.components.bus_types import SimulatedBus, TimeDomainBus
+from qililab.platform import Bus
 from qililab.pulse import PulseBusSchedule
-from qililab.system_controls.system_control_types import SimulatedSystemControl, TimeDomainSystemControl
-from qililab.typings import BusSubCategory
+from qililab.result.result import Result
+from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
 from qililab.utils import Waveforms
 
 
@@ -13,7 +12,7 @@ from qililab.utils import Waveforms
 class PulseScheduledBus:
     """Pulse Scheduled Bus class."""
 
-    bus: TimeDomainBus | SimulatedBus
+    bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
@@ -47,6 +46,34 @@ class PulseScheduledBus:
 
         self.pulse_schedule.append(pulse_bus_schedule)
 
+    def acquire_result(self) -> Result:
+        """Read the result from the AWG instrument
+
+        Returns:
+            Result: Acquired result
+        """
+        if not isinstance(self.system_control, (ReadoutSystemControl, SimulatedSystemControl)):
+            raise ValueError(
+                f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
+                f"has a {self.system_control.name} instead."
+            )
+        return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
+
+    def acquire_time(self, idx: int = 0) -> int:
+        """Pulse Scheduled Bus 'acquire_time' property.
+
+        Returns:
+            int: Acquire time (in ns).
+        """
+        num_sequences = len(self.pulse_schedule)
+        if idx >= num_sequences:
+            raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
+        readout_schedule = self.pulse_schedule[idx]
+        time = readout_schedule.timeline[-1].start
+        if isinstance(self.system_control, ReadoutSystemControl):
+            time += self.system_control.acquisition_delay_time
+        return time
+
     def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
@@ -60,7 +87,7 @@ class PulseScheduledBus:
         num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(frequency=self.bus.frequency, resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(resolution=resolution)
 
     @property
     def port(self):
@@ -72,7 +99,7 @@ class PulseScheduledBus:
         return self.bus.port
 
     @property
-    def system_control(self) -> TimeDomainSystemControl | SimulatedSystemControl:
+    def system_control(self) -> SystemControl:
         """Pulse Scheduled Bus 'system_control' property.
 
         Returns:
@@ -88,12 +115,3 @@ class PulseScheduledBus:
             int: bus.id_
         """
         return self.bus.id_
-
-    @property
-    def bus_subcategory(self) -> BusSubCategory:
-        """Pulse Scheduled Bus 'subcategory' property.
-
-        Returns:
-            BusSubCategory: Bus subcategory.
-        """
-        return self.bus.bus_subcategory

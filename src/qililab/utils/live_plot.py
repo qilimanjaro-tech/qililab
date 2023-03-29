@@ -9,10 +9,7 @@ from qiboconnection.api import API
 from qililab.constants import DEFAULT_PLOT_Y_LABEL
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
-from qililab.utils.util_loops import (
-    find_minimum_inner_range_from_loops,
-    find_minimum_outer_range_from_loops,
-)
+from qililab.utils.util_loops import find_minimum_inner_range_from_loops, find_minimum_outer_range_from_loops
 
 
 @dataclass

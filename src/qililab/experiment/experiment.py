@@ -47,13 +47,9 @@ class Experiment:
         self.pulse_schedules = pulse_schedules or []
         self.options = options
 
-    def connect(self):
+    def connect(self, manual_override=False):
         """Connects to the instruments and blocks the device."""
-        self.platform.connect(
-            connection=self.options.connection,
-            device_id=self.options.device_id,
-            manual_override=self.options.remote_device_manual_override,
-        )
+        self.platform.connect(manual_override=manual_override)
 
     def initial_setup(self):
         """Configure each instrument with the values defined in the runcard."""
@@ -61,30 +57,29 @@ class Experiment:
 
     def build_execution(self):
         """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
-        generates the live plotting and prepares the `Results` class and the `results.yml` file.
+        and generates the live plotting.
         """
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``Execution`` class
         self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
-        if self.options.connection is None:
+        if self.platform.connection is None:
             self._plot = None
         else:
             self._plot = LivePlot(
-                connection=self.options.connection,
+                connection=self.platform.connection,
                 loops=self.options.loops,
                 plot_y_label=self.options.plot_y_label,
                 num_schedules=self.execution.num_schedules,
                 title=self.options.name,
             )
-        # Prepares the results
-        self.results, self.results_path = self.prepare_results()
 
-    def run(self):
+    def run(self) -> Results:
         """This method is responsible for:
+        * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
             * Executing the circuit.
@@ -95,6 +90,8 @@ class Experiment:
         """
         if not hasattr(self, "execution"):
             raise ValueError("Please build the execution before running an experiment.")
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results()
         num_schedules = self.execution.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -104,6 +101,8 @@ class Experiment:
 
         if self.options.remote_save:
             self.remote_save_experiment()
+
+        return self.results
 
     def turn_on_instruments(self):
         """Turn on instruments."""
@@ -119,7 +118,7 @@ class Experiment:
 
     def disconnect(self):
         """Disconnects from the instruments and releases the device."""
-        self.platform.disconnect(self.options.connection, self.options.device_id)
+        self.platform.disconnect()
 
     def execute(self) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
@@ -141,10 +140,10 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        self.run()
+        results = self.run()
         self.turn_off_instruments()
         self.disconnect()
-        return self.results
+        return results
 
     def remote_save_experiment(self) -> None:
         """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
@@ -152,17 +151,17 @@ class Experiment:
         Raises:
             ValueError: if connection is not specified
         """
-        if self.options.connection is None:
+        if self.platform.connection is None:
             return
 
         logger.debug("Sending experiment and results to remote database.")
-        self._remote_id = self.options.connection.save_experiment(
+        self._remote_id = self.platform.connection.save_experiment(
             name=self.options.name,
             description=self.options.description,
             experiment_dict=self.to_dict(),
             results_dict=self.results.to_dict(),
-            device_id=self.options.device_id,
-            user_id=self.options.connection.user_id,
+            device_id=self.platform.device_id,
+            user_id=self.platform.connection.user_id,
             qililab_version=__version__,
             favorite=False,
         )
@@ -285,6 +284,10 @@ class Experiment:
             )
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.build_execution()
+        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+            element.set_parameter(parameter=parameter, value=value)
+            self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 

@@ -2,6 +2,7 @@ settings:
   id_: 0
   category: platform
   name: sauron_vna
+  device_id: 9
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -40,15 +41,12 @@ schema:
     - id_: 0
       name: continuous_readout_bus
       category: bus
-      bus_category: continuous
-      bus_subcategory: readout
       alias: vna_readout_bus
       system_control:
         id_: 0
-        name: continuous_readout_system_control
+        name: readout_system_control
         category: system_control
-        system_control_category: continuous
-        system_control_subcategory: readout
+        instruments: [VNA]
       port: 1
   instrument_controllers:
     - name: keysight_e5080b_controller
