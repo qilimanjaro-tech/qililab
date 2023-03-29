@@ -34,7 +34,7 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, float)
         vector_network_analyzer.setup(parameter, value)
-        # vector_network_analyzer._set_parameter_float.assert_called_with(parameter, value)
+        vector_network_analyzer._set_parameter_float.assert_called_with(parameter, value)
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -50,7 +50,7 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, str)
         vector_network_analyzer.setup(parameter, value)
-        # vector_network_analyzer._set_parameter_str.assert_called_with(parameter, value)
+        vector_network_analyzer._set_parameter_str.assert_called_with(parameter, value)
 
     @pytest.mark.parametrize(
         "parameter, value", [(Parameter.AVERAGING_ENABLED, True), (Parameter.AVERAGING_ENABLED, False)]
@@ -60,7 +60,7 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, bool)
         vector_network_analyzer.setup(parameter, value)
-        # vector_network_analyzer._set_parameter_bool.assert_called_with(parameter, value)
+        vector_network_analyzer._set_parameter_bool.assert_called_with(parameter, value)
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.NUMBER_POINTS, 100), (Parameter.NUMBER_AVERAGES, 4)])
     def test_setup_method_value_int(self, parameter: Parameter, value, vector_network_analyzer: E5080B):
@@ -68,7 +68,7 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, int)
         vector_network_analyzer.setup(parameter, value)
-        # vector_network_analyzer._set_parameter_int.assert_called_with(parameter, value)
+        vector_network_analyzer._set_parameter_int.assert_called_with(parameter, value)
 
     def test_initial_setup_method(self, vector_network_analyzer: E5080B):
         """Test the initial setup method"""
@@ -78,34 +78,34 @@ class TestE5080B:
     def test_reset_method(self, vector_network_analyzer: E5080B):
         """Test reset method"""
         vector_network_analyzer.reset()
-        # vector_network_analyzer.device.reset.assert_called()
+        vector_network_analyzer.device.reset.assert_called()
 
     def test_turn_on_method(self, vector_network_analyzer: E5080B):
         """Test the turn on method"""
         vector_network_analyzer.turn_on()
-        # vector_network_analyzer.device.start.assert_called()
+        vector_network_analyzer.device.start.assert_called()
 
     def test_turn_off_method(self, vector_network_analyzer: E5080B):
         """Test the turn off method"""
         vector_network_analyzer.turn_off()
-        # vector_network_analyzer.device.stop.assert_called()
+        vector_network_analyzer.device.stop.assert_called()
 
     @pytest.mark.parametrize("command", [":SENS1:AVER:CLE", "SENS1:AVER:COUN 3"])
     def test_send_command_method(self, command: str, vector_network_analyzer: E5080B):
         """Test the send command method"""
         vector_network_analyzer.send_command(command)
-        # vector_network_analyzer.device.send_command.assert_called_with(command)
+        vector_network_analyzer.device.send_command.assert_called_with(command)
 
     def test_autoscale_method(self, vector_network_analyzer: E5080B):
         """Test autoscale method"""
         vector_network_analyzer.autoscale()
-        # vector_network_analyzer.device.autoscale.assert_called()
+        vector_network_analyzer.device.autoscale.assert_called()
 
     @pytest.mark.parametrize("arg", ["ON", "OFF", 1, 0])
     def test_output_method(self, arg: str | int, vector_network_analyzer: E5080B):
         """Test output method"""
         vector_network_analyzer.output(arg)
-        # vector_network_analyzer.device.output.assert_called_with(arg)
+        vector_network_analyzer.device.output.assert_called_with(arg)
 
     @pytest.mark.parametrize("arg", ["On", "Off", 1.0, [0]])
     def test_output_method_fails(self, arg: str | int, vector_network_analyzer: E5080B):
@@ -116,36 +116,36 @@ class TestE5080B:
     def test_average_clear_method(self, vector_network_analyzer: E5080B):
         """Test the average clear method"""
         vector_network_analyzer.average_clear()
-        # vector_network_analyzer.device.average_clear.assert_called()
+        vector_network_analyzer.device.average_clear.assert_called()
 
     def test_get_frequencies_method(self, vector_network_analyzer: E5080B):
         """Test the get frequencies method"""
         output = vector_network_analyzer.get_frequencies()
-        # vector_network_analyzer.device.get_freqs.assert_called()
+        vector_network_analyzer.device.get_freqs.assert_called()
         assert type(output) is np.array
 
     def test_ready_method(self, vector_network_analyzer: E5080B):
         """Test ready method"""
         output = vector_network_analyzer.ready()
-        # vector_network_analyzer.device.ready.assert_called()
+        vector_network_analyzer.device.ready.assert_called()
         assert isinstance(output, bool)
 
     def test_release_method(self, vector_network_analyzer: E5080B):
         """Test release method"""
         vector_network_analyzer.release()
         assert vector_network_analyzer.settings.sweep_mode == VNASweepModes("cont")
-        # vector_network_analyzer.device.release.assert_called()
+        vector_network_analyzer.device.release.assert_called()
 
     def test_read_tracedata_method(self, vector_network_analyzer: E5080B):
         """Test the read tracedata method"""
         output = vector_network_analyzer.read_tracedata()
-        # vector_network_analyzer.device.read_tracedata.assert_called()
+        vector_network_analyzer.device.read_tracedata.assert_called()
         assert output is not None
 
     def test_acquire_result_method(self, vector_network_analyzer: E5080B):
         """Test the acquire result method"""
         output = vector_network_analyzer.acquire_result()
-        # vector_network_analyzer.device.read_tracedata.assert_called()
+        vector_network_analyzer.device.read_tracedata.assert_called()
         assert isinstance(output, VNAResult)
         assert type(output).__name__ == type(VNAResult).__name__
 
