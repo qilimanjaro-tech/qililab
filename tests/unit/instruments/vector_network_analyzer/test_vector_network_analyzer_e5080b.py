@@ -103,6 +103,24 @@ class TestE5080B:
             assert vector_network_analyzer.sweep_mode == VNASweepModes(value)
 
     @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.SCATTERING_PARAMETER, "S221"),
+            (Parameter.SCATTERING_PARAMETER, "s11"),
+            (Parameter.SWEEP_MODE, "CONT"),
+            (Parameter.SWEEP_MODE, "sweep_mode continuous"),
+        ],
+    )
+    def test_setup_method_value_str_raises_exception(
+        self, parameter: Parameter, value, vector_network_analyzer: E5080B
+    ):
+        """Test the setup method raises exception with incorrect str value"""
+        assert isinstance(parameter, Parameter)
+        assert isinstance(value, str)
+        with pytest.raises(Exception):
+            vector_network_analyzer.setup(parameter, value)
+
+    @pytest.mark.parametrize(
         "parameter, value", [(Parameter.AVERAGING_ENABLED, True), (Parameter.AVERAGING_ENABLED, False)]
     )
     def test_setup_method_value_bool(self, parameter: Parameter, value, vector_network_analyzer: E5080B):
