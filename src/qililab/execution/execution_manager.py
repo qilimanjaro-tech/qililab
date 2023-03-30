@@ -9,7 +9,7 @@ import numpy as np
 
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
-from qililab.execution.execution_buses import BusExecution
+from qililab.execution import BusExecution
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings import yaml
@@ -36,16 +36,20 @@ class ExecutionManager:
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
+    def compile_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
+        """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs and uploads them to
+        the required instruments.
 
         Args:
-            idx (int): index of the pulse bus schedule to load
+            idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
-        for pulse_scheduled_bus in self.buses:
-            pulse_scheduled_bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+        for bus in self.buses:
+            bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+
+        for bus in self.buses:
+            bus.upload()
 
     def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
         """
@@ -164,7 +168,7 @@ class ExecutionManager:
             plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
-        """Redirect __iter__ magic method to pulse_scheduled_buses."""
+        """Redirect __iter__ magic method to buses."""
         return self.buses.__iter__()
 
     def __getitem__(self, key):

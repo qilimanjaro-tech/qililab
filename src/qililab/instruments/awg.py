@@ -1,8 +1,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import Sequence
+from typing import List, Sequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
@@ -68,8 +67,6 @@ class AWG(Instrument):
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> None:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
-        In some cases this method might do nothing.
-
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
@@ -79,16 +76,6 @@ class AWG(Instrument):
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
-
-    def frequency(self, sequencer_id: int | None = None, port_id: int | None = None):
-        """AWG 'frequency' property."""
-        if sequencer_id is None and port_id is None:
-            raise ValueError("one of 'sequencer_id' or 'port_id' must be defined.")
-        if port_id is not None:
-            sequencer_id = self.get_sequencers_from_chip_port_id(chip_port_id=port_id)
-        if sequencer_id is None:
-            raise ValueError("'sequencer_id' must be defined.")
-        return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
 
     @property
     def num_sequencers(self):
@@ -183,7 +170,7 @@ class AWG(Instrument):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencers_from_chip_port_id(self, chip_port_id: int) -> int:
+    def get_sequencers_from_chip_port_id(self, chip_port_id: int) -> List[int]:
         """Get sequencer ids from the chip port identifier
 
         Args:

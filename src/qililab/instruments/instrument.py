@@ -164,27 +164,6 @@ class Instrument(BusElement, ABC):
     def turn_on(self):
         """Turn on an instrument."""
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> None:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        In some cases this method might do nothing.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-        """
-
-    def upload(self):
-        """Upload the compiled assembly program into the device.
-
-        In some cases this method might do nothing."""
-
-    def run(self) -> None:
-        """Run the sequence previously uploaded to the instrument.
-
-        In some cases this method might do nothing."""
-
     def acquire_result(self) -> Result | None:
         """Acquire results of the measurement.
 

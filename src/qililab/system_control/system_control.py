@@ -6,8 +6,8 @@ from dataclasses import InitVar, dataclass
 from typing import List, Type, get_type_hints
 
 from qililab.constants import RUNCARD
-from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.instruments.instruments import Instruments
+from qililab.instruments import AWG, Instrument, Instruments
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
 from qililab.settings import DDBBElement
@@ -48,14 +48,38 @@ class SystemControl(BusElement, ABC):
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
         for instrument in self.instruments:
-            instrument.compile(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-            )
+            if isinstance(instrument, AWG):
+                instrument.compile(
+                    pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                )
+                return
+
+        raise AttributeError(
+            f"The system control with alias {self.settings.alias} doesn't have any AWG to compile the given pulse "
+            "sequence."
+        )
+
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        for instrument in self.instruments:
+            if isinstance(instrument, AWG):
+                instrument.upload()
+                return
+
+        raise AttributeError(
+            f"The system control with alias {self.settings.alias} doesn't have any AWG to upload a program."
+        )
 
     def run(self) -> None:
-        """Run the uploaded program"""
+        """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
-            instrument.run()
+            if isinstance(instrument, AWG):
+                instrument.run()
+                return
+
+        raise AttributeError(
+            f"The system control with alias {self.settings.alias} doesn't have any AWG to run a program."
+        )
 
     def __str__(self):
         """String representation of a SystemControl class."""

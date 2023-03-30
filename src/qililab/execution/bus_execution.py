@@ -17,10 +17,10 @@ class BusExecution:
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
     def compile(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
+        """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
-            idx (int): index of the pulse bus schedule to load
+            idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
@@ -28,9 +28,13 @@ class BusExecution:
             pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
         )
 
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        self.system_control.upload()
+
     def run(self):
         """Run the given pulse sequence."""
-        return self.system_control.run()  # pylint: disable=no-member
+        return self.system_control.run()
 
     def setup(self):
         """Generates the sequence for each bus and uploads it to the sequencer"""

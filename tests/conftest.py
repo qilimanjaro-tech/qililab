@@ -17,8 +17,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import BusExecution
-from qililab.execution.execution_manager import ExecutionManager
+from qililab.execution import BusExecution, ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
 from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
@@ -489,8 +488,8 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
-@pytest.fixture(name="pulse_scheduled_bus")
-def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> BusExecution:
+@pytest.fixture(name="bus_execution")
+def fixture_bus_execution(execution_manager: ExecutionManager) -> BusExecution:
     """Load BusExecution.
 
     Returns:

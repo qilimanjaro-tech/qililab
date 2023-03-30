@@ -176,7 +176,9 @@ class Experiment:
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            self.execution.compile(idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            self.execution.compile_and_upload(
+                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+            )
             result = self.execution.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)

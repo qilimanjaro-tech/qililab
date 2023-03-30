@@ -1,8 +1,7 @@
 """ExecutionBuilder class"""
 from typing import Dict, List
 
-from qililab.execution.execution import Execution
-from qililab.execution.execution_buses import BusExecution
+from qililab.execution import BusExecution, Execution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
