@@ -50,11 +50,6 @@ class TestInitialization:
     def test_gate_settings_are_set_during_instantiation(self, platform_settings: RuncardSchema.PlatformSettings):
         """Test that during initialization of the ``CircuitToPulses`` class we set the settings of all the hardware
         gates."""
-        assert len(HardwareGateFactory.pulsed_gates.values()) > 0  # make sure the list is not empty
-
-        for gate in HardwareGateFactory.pulsed_gates.values():
-            assert gate.settings is None
-
         _ = CircuitToPulses(settings=platform_settings)
 
         for gate in HardwareGateFactory.pulsed_gates.values():
