@@ -2,13 +2,9 @@
 from dataclasses import dataclass
 
 from qililab.constants import DEFAULT_TIMEOUT
-from qililab.instrument_controllers.single_instrument_controller import (
-    SingleInstrumentController,
-)
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.typings.enums import ConnectionName
-from qililab.typings.instruments.vector_network_analyzer import (
-    VectorNetworkAnalyzerDriver,
-)
+from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
 class VectorNetworkAnalyzerController(SingleInstrumentController):

@@ -2,19 +2,11 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.single_instrument_controller import (
-    SingleInstrumentController,
-)
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.mini_circuits.attenuator import Attenuator
 from qililab.typings import MiniCircuitsDriver
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentTypeName,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
 
 
 @InstrumentControllerFactory.register

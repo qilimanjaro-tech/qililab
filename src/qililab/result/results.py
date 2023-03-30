@@ -13,10 +13,7 @@ from qililab.utils import coordinate_decompose
 from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
-from qililab.utils.util_loops import (
-    compute_ranges_from_loops,
-    compute_shapes_from_loops,
-)
+from qililab.utils.util_loops import compute_ranges_from_loops, compute_shapes_from_loops
 
 
 @dataclass

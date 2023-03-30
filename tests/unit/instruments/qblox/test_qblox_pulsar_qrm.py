@@ -46,7 +46,7 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
         [
-            (Parameter.GAIN, 0.02, 0),
+            (Parameter.GAIN, 0.02, None),
             (Parameter.GAIN_PATH0, 0.03, 0),
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
@@ -84,6 +84,8 @@ class TestQbloxQRM:
     ):
         """Test setup method"""
         qrm.setup(parameter=parameter, value=value, channel_id=channel_id)
+        if channel_id is None:
+            channel_id = 0
         if parameter == Parameter.GAIN:
             assert qrm.awg_sequencers[channel_id].gain_path0 == value
             assert qrm.awg_sequencers[channel_id].gain_path1 == value
@@ -129,6 +131,12 @@ class TestQbloxQRM:
             assert qrm.awg_sequencers[channel_id].acquisition_timeout == value
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             assert qrm.acquisition_delay_time == value
+
+    def test_setup_raises_error(self, qrm: QbloxQRM):
+        """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
+        sequencers."""
+        with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 1"):
+            qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
 
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
