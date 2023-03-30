@@ -6,7 +6,7 @@ from qililab.pulse import PulseBusSchedule
 
 
 class TestBusExecution:
-    """Unit tests checking the pulse scheduled bus and methods."""
+    """Unit tests checking the BusExecution and methods."""
 
     def test_add_pulse_method(self, bus_execution: BusExecution, pulse_bus_schedule: PulseBusSchedule):
         """Test add_pulse method."""

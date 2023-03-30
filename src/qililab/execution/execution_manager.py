@@ -36,18 +36,25 @@ class ExecutionManager:
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
 
-    def compile_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs and uploads them to
-        the required instruments.
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> dict:
+        """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-        """
-        for bus in self.buses:
-            bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
 
+        Returns:
+            list: list of compiled assembly programs
+        """
+        programs = {}
+        for bus in self.buses:
+            bus_programs = bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+            programs[bus.alias] = bus_programs
+        return programs
+
+    def upload(self):
+        """Uploads all previously compiled programs into its corresponding instruments."""
         for bus in self.buses:
             bus.upload()
 

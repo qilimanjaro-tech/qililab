@@ -1,4 +1,4 @@
-"""Pulse Scheduled Bus class."""
+"""BusExecution class."""
 from dataclasses import dataclass, field
 
 from qililab.platform import Bus
@@ -16,15 +16,18 @@ class BusExecution:
     bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> None:
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
         """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+
+        Returns:
+            list: list of compiled assembly programs
         """
-        self.system_control.compile(
+        return self.system_control.compile(
             pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
         )
 
@@ -63,7 +66,7 @@ class BusExecution:
         return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
-        """Pulse Scheduled Bus 'acquire_time' property.
+        """BusExecution 'acquire_time' property.
 
         Returns:
             int: Acquire time (in ns).
@@ -94,7 +97,7 @@ class BusExecution:
 
     @property
     def port(self):
-        """Pulse Scheduled Bus 'port' property
+        """BusExecution 'port' property
 
         Returns:
             int: Port where the bus is connected.
@@ -103,7 +106,7 @@ class BusExecution:
 
     @property
     def system_control(self) -> SystemControl:
-        """Pulse Scheduled Bus 'system_control' property.
+        """BusExecution 'system_control' property.
 
         Returns:
             SystemControl: bus.system_control
@@ -112,9 +115,18 @@ class BusExecution:
 
     @property
     def id_(self):
-        """Pulse Scheduled Bus 'id_' property.
+        """BusExecution 'id_' property.
 
         Returns:
             int: bus.id_
         """
         return self.bus.id_
+
+    @property
+    def alias(self):
+        """BusExecution 'alias' property.
+
+        Returns:
+            str: alias of the bus
+        """
+        return self.bus.alias

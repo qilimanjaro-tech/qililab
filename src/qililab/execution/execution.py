@@ -23,7 +23,7 @@ class Execution:
         """Start/Turn on the instruments."""
         self.platform.turn_off_instruments()
 
-    def compile_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> dict:
         """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs and uploads them to
         the required instruments.
 
@@ -31,10 +31,15 @@ class Execution:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+
+        Returns:
+            list: list of compiled assembly programs
         """
-        return self.execution_manager.compile_and_upload(
-            idx=idx, nshots=nshots, repetition_duration=repetition_duration
-        )
+        return self.execution_manager.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+
+    def upload(self):
+        """Uploads all previously compiled programs into its corresponding instruments."""
+        self.execution_manager.upload()
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Run the given pulse sequence."""

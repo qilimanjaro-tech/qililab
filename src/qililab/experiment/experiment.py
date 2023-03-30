@@ -172,13 +172,11 @@ class Experiment:
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            self.execution.compile_and_upload(
-                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
-            )
+            self.execution.compile(idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
             result = self.execution.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)
@@ -192,7 +190,7 @@ class Experiment:
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)

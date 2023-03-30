@@ -64,13 +64,16 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> None:
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+
+        Returns:
+            list: list of compiled assembly programs
         """
 
     @abstractmethod

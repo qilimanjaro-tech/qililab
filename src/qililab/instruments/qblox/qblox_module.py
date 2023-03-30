@@ -110,7 +110,7 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> None:
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -122,18 +122,24 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+
+        Returns:
+            List[QpySequence]: list of compiled assembly programs
         """
         if nshots != self.nshots or repetition_duration != self.repetition_duration:
             self.nshots = nshots
             self.repetition_duration = repetition_duration
             self.clear_cache()
 
+        compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer in sequencers:
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
-                self._compile(pulse_bus_schedule, sequencer)
+                sequence = self._compile(pulse_bus_schedule, sequencer)
+                compiled_sequences.append(sequence)
+        return compiled_sequences
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int):
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
         """Compiles the ``PulseBusSchedule`` into an assembly program and updates the cache and the saved sequences.
 
         Args:
@@ -143,6 +149,7 @@ class QbloxModule(AWG):
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         self._cache[sequencer] = pulse_bus_schedule
         self.sequences[sequencer] = (sequence, False)
+        return sequence
 
     def run(self):
         """Run the uploaded program"""

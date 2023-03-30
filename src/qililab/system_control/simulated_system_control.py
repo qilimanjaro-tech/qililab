@@ -89,18 +89,22 @@ class SimulatedSystemControl(ReadoutSystemControl):
 
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
-    ) -> None:
+    ) -> list:
         """Compiles the ``PulseBusSchedule``.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+
+        Returns:
+            list: empty list
         """
         # TODO: get pulses -> check
         waveforms = pulse_bus_schedule.waveforms(resolution=self.settings.resolution)
         i_waveform = np.array(waveforms.i)
         self.sequence = [i_waveform]
+        return []
 
     def upload(self):
         # Init evolution pulse sequence

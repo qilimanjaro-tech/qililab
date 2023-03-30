@@ -25,7 +25,7 @@ class ExecutionBuilder(metaclass=Singleton):
         )
 
     def _build_execution_manager(self, platform: Platform, pulse_schedules: List[PulseSchedule]):
-        """Loop over pulses in PulseSequence, classify them by bus index and instantiate a Pulse Scheduled Bus class.
+        """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusExecution class.
 
         Returns:
             ExecutionManager: ExecutionManager object.
