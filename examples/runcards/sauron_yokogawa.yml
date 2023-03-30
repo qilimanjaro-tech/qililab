@@ -37,8 +37,7 @@ schema:
       id_: 0
       firmware: A.15.10.06 #
       current_value: #
-      output_status: #
-      source_mode: #
+      output_status: True
   buses:
     - id_: 0
       category: bus
