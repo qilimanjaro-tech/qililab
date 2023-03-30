@@ -1,6 +1,7 @@
 settings:
   id_: 0
   category: platform
+  device_id: 9
   name: sauron_yokogawa
   delay_between_pulses: 0
   delay_before_readout: 40
@@ -30,8 +31,9 @@ schema:
         frequency: 6.5328e+09
         nodes: [0, 2]
   instruments:
-    - name: yokogawa_gs200 #
-      alias: yokogawa #
+    - name: YokogawaGS200
+      alias: YokogawaGS200
+      categoty:
       id_: 0
       firmware: A.15.10.06 #
       current_value: #
@@ -39,28 +41,26 @@ schema:
       source_mode: #
   buses:
     - id_: 0
-      name: continuous_current_bias_bus
       category: bus
       bus_category: continuous
       bus_subcategory: current_bias
-      alias: yokogawa_current_bias_bus
+      alias: YokogawaGS200
       system_control:
         id_: 0
-        name: continuous_current_bias_system_control
+        name: system_control
         category: system_control
-        system_control_category: continuous
-        system_control_subcategory: current_bias
+        instruments: [YokogawaGS200]
       port: 1
   instrument_controllers:
-    - name: yokogawa_gs200_controller
+    - name: yokogawa
       id_: 0
-      alias: yokogawa_gs200_controller
+      alias: YokogawaGS200
       category: instrument_controller
       subcategory: single_instrument
-      timeout: 10000
+      reference_clock: 10000
       connection:
         name: tcp_ip
         address: 192.168.1.15
       modules:
-        - current_source: yokogawa
+        - current_source: YokogawaGS200
           slot_id: 0
