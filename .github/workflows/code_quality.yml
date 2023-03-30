@@ -36,7 +36,7 @@ jobs:
           isort . -l 120 --check
           black . -l 120 --check
           flake8
-          pylint -E
+          pylint src tests -E
           mypy src
           interrogate -vv --fail-under=80
           bandit -r src -c .bandit
