@@ -43,6 +43,7 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
+            self.name = Instrument.name
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -57,7 +58,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
+                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}.")
             value = kwargs["value"]
             if not isinstance(value, str):
                 raise ValueError(f"value must be a string. Current type: {type(value)}")
@@ -68,6 +69,8 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
+            self.name = Instrument.name
+
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -82,7 +85,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
+                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}.")
             value = kwargs["value"]
             if not isinstance(value, bool):
                 raise ValueError(f"value must be a bool. Current type: {type(value)}")
@@ -93,6 +96,8 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
+            self.name = Instrument.name
+
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -107,7 +112,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
+                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}..")
             value = kwargs["value"]
             if not isinstance(value, float) and not isinstance(value, int):
                 raise ValueError(f"value must be a float or an int. Current type: {type(value)}")
@@ -121,6 +126,7 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
+            self.name = Instrument.name
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -135,7 +141,7 @@ class Instrument(BusElement, ABC):
                 AttributeError: If device has not been initialized.
             """
             if not hasattr(ref, "device") and (not args or not hasattr(args[0], "device")):
-                raise AttributeError("Instrument Device has not been initialized")
+                raise AttributeError(f"Instrument Device {self.name.value} has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
     def __init__(self, settings: dict):
@@ -157,7 +163,7 @@ class Instrument(BusElement, ABC):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name.value}")
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -244,7 +250,7 @@ class Instrument(BusElement, ABC):
         """
         if not hasattr(self, "device"):
             raise ValueError(
-                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+                f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
             )
         if channel_id is None:
             logger.debug("Setting parameter: %s to value: %f", parameter.value, value)

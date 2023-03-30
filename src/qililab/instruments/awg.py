@@ -83,11 +83,11 @@ class AWG(Instrument):
     def frequency(self, sequencer_id: int | None = None, port_id: int | None = None):
         """AWG 'frequency' property."""
         if sequencer_id is None and port_id is None:
-            raise ValueError("one of 'sequencer_id' or 'port_id' must be defined.")
+            raise ValueError(f"one of 'sequencer_id' or 'port_id' must be defined for {self.name.value}.")
         if port_id is not None:
             sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=port_id)
         if sequencer_id is None:
-            raise ValueError("'sequencer_id' must be defined.")
+            raise ValueError(f"'sequencer_id' must be defined for {self.name.value}.")
         return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
 
     @property

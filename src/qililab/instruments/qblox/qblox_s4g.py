@@ -64,7 +64,7 @@ class QbloxS4g(CurrentSource):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
+            raise ValueError(f"channel not specified to update instrument {self.name.value}")
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."

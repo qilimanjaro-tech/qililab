@@ -42,4 +42,4 @@ class ReadoutSystemControl(SystemControl):
         for instrument in self.instruments:
             if isinstance(instrument, AWGAnalogDigitalConverter):
                 return instrument.acquisition_delay_time
-        raise ValueError(f"The system control {self.name} doesn't have an AWG instrument.")
+        raise ValueError(f"The system control {self.name.value} doesn't have an AWG instrument.")
