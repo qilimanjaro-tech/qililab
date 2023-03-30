@@ -27,9 +27,9 @@ class GS200(CurrentSource):
     class YokogawaGS200Settings(CurrentSource.CurrentSourceSettings):
         """Contains the settings of a specific signal generator."""
 
-        source_mode: YokogawaSourceModes
         output_status: bool
         current_value: float
+        source_mode: YokogawaSourceModes = YokogawaSourceModes.CURR
 
     settings: YokogawaGS200Settings
     device: YokogawaGS200Driver
