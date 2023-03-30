@@ -160,8 +160,6 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "sequencer0",
             "out0_offset",
             "out1_offset",
-            "out2_offset",
-            "out3_offset",
             "scope_acq_trigger_mode_path0",
             "scope_acq_trigger_mode_path1",
             "scope_acq_sequencer_select",
