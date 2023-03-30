@@ -1,6 +1,7 @@
 codecov:
   branch: main
   require_ci_to_pass: true
+  wait_for_ci: true
 
 coverage:
   status:
