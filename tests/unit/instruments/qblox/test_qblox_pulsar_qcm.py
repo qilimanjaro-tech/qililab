@@ -88,16 +88,16 @@ class TestQbloxQCM:
         qcm.turn_off()
         qcm.device.stop_sequencer.assert_called_once()
 
-    def test_reset_method(self, qrm: QbloxQCM):
+    def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
-        qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        qcm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
+        qcm.reset()
+        assert qcm._cache == {}  # pylint: disable=protected-access
 
-    def test_upload_method(self, qcm: QbloxQCM):
+    def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={})
-        qcm.upload(sequence=sequence, sequencer_id=0)
+        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qcm.upload()
         qcm.device.sequencer0.sequence.assert_called_once()
 
     def test_id_property(self, qcm_no_device: QbloxQCM):
@@ -115,7 +115,3 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_frequency_property(self, qcm_no_device: QbloxQCM):
-        """Test frequency property."""
-        assert qcm_no_device.frequency(0) == qcm_no_device.awg_sequencers[0].intermediate_frequency

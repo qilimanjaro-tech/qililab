@@ -78,13 +78,16 @@ class QbloxModule(AWG):
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
-    # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
-    # the sequence has been uploaded or not
-    sequences: Dict[int, Tuple[Sequence, bool]]  # {sequencer_idx: (program, True), ...}
-    nshots: int
-    repetition_duration: int
     # Cache containing the last compiled pulse schedule for each sequencer
     _cache: Dict[int, PulseBusSchedule] = {}
+
+    def __init__(self, settings: dict):
+        # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
+        # the sequence has been uploaded or not
+        self.sequences: Dict[int, Tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        self.nshots: int | None = None
+        self.repetition_duration: int | None = None
+        super().__init__(settings=settings)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -503,9 +506,13 @@ class QbloxModule(AWG):
             program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}
         )
         for seq_idx in range(self.num_sequencers):
-            sequence = self.sequences.get(seq_idx, empty_sequence)
-            logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-            self.device.sequencers[seq_idx].sequence(sequence.todict())
+            if seq_idx not in self.sequences:
+                self.sequences[seq_idx] = (empty_sequence, False)
+            sequence, uploaded = self.sequences[seq_idx]
+            if not uploaded:
+                logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+                self.device.sequencers[seq_idx].sequence(sequence.todict())
+                self.sequences[seq_idx] = (sequence, True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

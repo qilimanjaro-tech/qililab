@@ -87,7 +87,7 @@ def fixture_qcm_no_device():
 
 @pytest.fixture(name="qcm")
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
-def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
+def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController) -> QbloxQCM:
     """Return connected instance of QbloxQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -126,7 +126,9 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         ]
     )
     pulsar_controller_qcm.connect()
-    return pulsar_controller_qcm.modules[0]
+    qblox_qcm = pulsar_controller_qcm.modules[0]
+    assert isinstance(qblox_qcm, QbloxQCM)
+    return qblox_qcm
 
 
 @pytest.fixture(name="pulsar_controller_qrm")

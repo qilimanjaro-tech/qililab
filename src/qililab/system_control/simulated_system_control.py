@@ -57,6 +57,7 @@ class SimulatedSystemControl(ReadoutSystemControl):
     _evo: Evolution
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
+        self.sequence: List[np.ndarray] | None = None
         super().__init__(settings=settings, platform_instruments=platform_instruments)
         self._evo = Evolution(
             qubit_name=self.settings.qubit,
@@ -89,19 +90,18 @@ class SimulatedSystemControl(ReadoutSystemControl):
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
     ) -> None:
-        """Translate a Pulse Bus Schedule to a simulated program
+        """Compiles the ``PulseBusSchedule``.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetition duration
+            repetition_duration (int): maximum window for the duration of one hardware repetition
         """
-        resolution = self.settings.resolution
-
         # TODO: get pulses -> check
-        waveforms = pulse_bus_schedule.waveforms(resolution=resolution)
+        waveforms = pulse_bus_schedule.waveforms(resolution=self.settings.resolution)
         i_waveform = np.array(waveforms.i)
-        sequence = [i_waveform]
+        self.sequence = [i_waveform]
 
+    def upload(self):
         # Init evolution pulse sequence
-        self._evo.set_pulse_sequence(pulse_sequence=sequence, resolution=resolution * 1e-9)
+        self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)

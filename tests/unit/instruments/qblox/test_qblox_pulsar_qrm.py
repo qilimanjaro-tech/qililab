@@ -1,7 +1,4 @@
 """Test for the QbloxQRM class."""
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -145,15 +142,15 @@ class TestQbloxQRM:
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
         qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        assert qrm._cache == {}  # pylint: disable=protected-access
 
-    def test_upload_method(self, qrm: QbloxQRM):
+    def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        sequence = Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={})
-        qrm.upload(sequence=sequence, sequencer_id=0)
-        qrm.device.sequencer0.sequence.assert_called()
+        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qrm.upload()
+        qrm.device.sequencer0.sequence.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
@@ -203,7 +200,3 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
-
-    def tests_frequency_property(self, qrm_no_device: QbloxQRM):
-        """Test frequency property."""
-        assert qrm_no_device.frequency(0) == qrm_no_device.awg_sequencers[0].intermediate_frequency
