@@ -88,13 +88,14 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             sequencer (int): index of the sequencer to generate the program
         """
         # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-        self.device._delete_acquisition(  # pylint: disable=protected-access
-            sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-        )
-        acquisition = self._generate_acquisitions()
-        self.device._add_acquisitions(  # pylint: disable=protected-access
-            sequencer=sequencer, acquisitions=acquisition.to_dict()
-        )
+        if hasattr(self, "device"):
+            self.device._delete_acquisition(  # pylint: disable=protected-access
+                sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
+            )
+            acquisition = self._generate_acquisitions()
+            self.device._add_acquisitions(  # pylint: disable=protected-access
+                sequencer=sequencer, acquisitions=acquisition.to_dict()
+            )
         super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:

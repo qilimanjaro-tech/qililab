@@ -104,6 +104,21 @@ class Experiment:
 
         return self.results
 
+    def compile(self) -> List[dict]:
+        """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
+        experiment.
+
+        Returns:
+            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+                compiled sequences as values.
+        """
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before compilation.")
+        return [
+            self.execution.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            for schedule_idx in range(len(self.pulse_schedules))
+        ]
+
     def turn_on_instruments(self):
         """Turn on instruments."""
         if not hasattr(self, "execution"):
@@ -238,11 +253,7 @@ class Experiment:
 
         for value, loop, element in zip(values, loops, elements):
             self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
+                element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
             )
 
     def set_parameter(
@@ -262,12 +273,7 @@ class Experiment:
             channel_id (int | None): channel id
         """
         if element is None:
-            self.platform.set_parameter(
-                alias=alias,
-                parameter=Parameter(parameter),
-                value=value,
-                channel_id=channel_id,
-            )
+            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()

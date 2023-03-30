@@ -137,6 +137,8 @@ class QbloxModule(AWG):
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
                 sequence = self._compile(pulse_bus_schedule, sequencer)
                 compiled_sequences.append(sequence)
+            else:
+                compiled_sequences.append(self.sequences[sequencer][0])
         return compiled_sequences
 
     def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
