@@ -3,7 +3,7 @@
 import re
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from inspect import signature
+from inspect import Signature, signature
 from typing import ClassVar, Dict, Tuple
 
 from pytest import param
@@ -17,11 +17,12 @@ ParameterValue = int | float | bool
 Parameters = Dict[str, ParameterValue]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Operation(ABC):
     """Base class of all operations"""
 
     parameters: Parameters = field(init=False, default_factory=dict)
+    _class_signature: Signature | None = None
 
     @classproperty
     @abstractmethod
@@ -35,22 +36,57 @@ class Operation(ABC):
 
     @property
     def parameters_names(self) -> Tuple[str, ...]:
+        """Get the names of all parameters
+
+        Returns:
+            Tuple[str, ...]: The names of all parameters as tuple
+        """
         return tuple(self.parameters.keys())
 
     @property
     def parameters_values(self) -> Tuple[ParameterValue, ...]:
+        """Get the values of all parameters
+
+        Returns:
+            Tuple[ParameterValue, ...]: The values of all parameters as tuple
+        """
         return tuple(self.parameters.values())
 
     def has_parameters(self) -> bool:
+        """Returns True if operation has settable parameters, False otherwise
+
+        Returns:
+            bool: True if operation has settable parameters, False otherwise
+        """
         return len(self.parameters) > 0
 
     def set_parameter(self, name: str, value: ParameterValue):
+        """Set parameter value
+
+        Args:
+            name (str): The name of the parameter
+            value (ParameterValue): The new value of the parameter
+
+        Raises:
+            ValueError: If parameter does not exist
+        """
         if name not in self.parameters:
             raise ValueError(f"Operation {self.name} has no parameter '{name}'")
         self.parameters[name] = value
         setattr(self, name, value)
 
     def get_parameter(self, name: str) -> ParameterValue:
+        """Get parameter's value
+
+        Args:
+            name (str): The name of the parameter
+
+        Raises:
+            ValueError: If parapameter does not exist
+
+        Returns:
+            ParameterValue: The value of the parameter
+        """
         if name not in self.parameters:
             raise ValueError(f"Operation {self.name} has no parameter '{name}'")
         return self.parameters[name]
@@ -62,6 +98,17 @@ class Operation(ABC):
             parameters = ",".join([f"{name}={value}" for name, value in self.parameters.items()])
             result += f"({parameters})"
         return result
+
+    @classmethod
+    def _get_signature(cls) -> Signature:
+        """Get the signature of the class. Caches result for quicker retrievals.
+
+        Returns:
+            Signature: The signature of the class.
+        """
+        if cls._class_signature is None:
+            cls._class_signature = signature(cls)
+        return cls._class_signature
 
     @classmethod
     def parse(cls, string_representation: str):
@@ -78,7 +125,7 @@ class Operation(ABC):
         if match:
             operation_name, parameters_str = match.groups()
             operation_class = OperationFactory.get(operation_name)
-            operation_signature = signature(operation_class)
+            operation_signature = operation_class._get_signature()
             parameters = {}
             if parameters_str is not None:
                 for parameter_str in parameters_str.split(","):
