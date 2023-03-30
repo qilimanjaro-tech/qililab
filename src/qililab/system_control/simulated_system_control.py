@@ -86,7 +86,7 @@ class SimulatedSystemControl(ReadoutSystemControl):
         """Return a dict representation of a SystemControl class."""
         return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
 
-    def generate_program_and_upload(
+    def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
     ) -> None:
         """Translate a Pulse Bus Schedule to a simulated program

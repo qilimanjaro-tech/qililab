@@ -39,21 +39,17 @@ class SystemControl(BusElement, ABC):
         settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> None:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetition duration
+            repetition_duration (int): maximum window for the duration of one hardware repetition
         """
         for instrument in self.instruments:
-            instrument.generate_program_and_upload(
-                pulse_bus_schedule=pulse_bus_schedule,
-                nshots=nshots,
-                repetition_duration=repetition_duration,
+            instrument.compile(
+                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
 
     def run(self) -> None:

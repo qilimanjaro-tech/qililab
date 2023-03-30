@@ -23,18 +23,15 @@ class Execution:
         """Start/Turn on the instruments."""
         self.platform.turn_off_instruments()
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> None:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
-            schedule_index_to_load (int): specific schedule to load
+            idx (int): index of the pulse bus schedule to load
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-            path (Path): path to save the program to upload
         """
-        return self.execution_manager.generate_program_and_upload(
-            idx=idx, nshots=nshots, repetition_duration=repetition_duration
-        )
+        return self.execution_manager.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Run the given pulse sequence."""

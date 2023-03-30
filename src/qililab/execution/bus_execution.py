@@ -9,24 +9,23 @@ from qililab.utils import Waveforms
 
 
 @dataclass
-class PulseScheduledBus:
-    """Pulse Scheduled Bus class."""
+class BusExecution:
+    """This class contains the information of a specific bus in the platform together with a list of
+    pulse schedules that will be executed on this bus."""
 
     bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Translate the Pulse Bus Schedule to each AWG program and upload them
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> None:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
-            idx (int): index of the pulse schedule to compile and upload
+            idx (int): index of the pulse bus schedule to load
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
-        self.system_control.generate_program_and_upload(  # pylint: disable=no-member
-            pulse_bus_schedule=self.pulse_schedule[idx],
-            nshots=nshots,
-            repetition_duration=repetition_duration,
+        self.system_control.compile(
+            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
         )
 
     def run(self):

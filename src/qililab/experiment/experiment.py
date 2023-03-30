@@ -166,21 +166,6 @@ class Experiment:
             favorite=False,
         )
 
-    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
-        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
-        executes it and returns the results.
-
-        Args:
-            idx (int): loop index to execute
-
-        Returns:
-            Result: Result object for one program execution.
-        """
-        self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
-        )
-        return self.execution.run(plot=self._plot, path=self.results_path)
-
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
@@ -191,7 +176,8 @@ class Experiment:
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            result = self._generate_program_upload_and_execute(idx=idx)
+            self.execution.compile(idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            result = self.execution.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)
             return

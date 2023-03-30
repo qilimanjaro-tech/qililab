@@ -2,7 +2,7 @@
 from typing import Dict, List
 
 from qililab.execution.execution import Execution
-from qililab.execution.execution_buses import PulseScheduledBus
+from qililab.execution.execution_buses import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
@@ -31,14 +31,14 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             ExecutionManager: ExecutionManager object.
         """
-        buses: Dict[int, PulseScheduledBus] = {}
+        buses: Dict[int, BusExecution] = {}
         for pulse_schedule in pulse_schedules:
             for pulse_bus_schedule in pulse_schedule.elements:
                 port, bus_idx, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
                 if bus is None:
                     raise ValueError(f"There is no bus connected to port {port}.")
                 if bus_idx not in buses:
-                    buses[bus_idx] = PulseScheduledBus(bus=bus, pulse_schedule=[pulse_bus_schedule])
+                    buses[bus_idx] = BusExecution(bus=bus, pulse_schedule=[pulse_bus_schedule])
                     continue
                 buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 

@@ -17,7 +17,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import PulseScheduledBus
+from qililab.execution.execution_buses import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
@@ -490,17 +490,17 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 
 
 @pytest.fixture(name="pulse_scheduled_bus")
-def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
-    """Load PulseScheduledBus.
+def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> BusExecution:
+    """Load BusExecution.
 
     Returns:
-        PulseScheduledBus: Instance of the PulseScheduledBus class.
+        BusExecution: Instance of the BusExecution class.
     """
     return execution_manager.buses[0]
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
-def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> BusExecution:
     """Load PulseScheduledReadoutBus.
 
     Returns:
