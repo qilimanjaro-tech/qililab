@@ -19,10 +19,10 @@ This document contains the changes of the current release.
   {'drive_line_bus': [qpysequence_1], 'feedline_input_output_bus': [qpysequence_2]}
   ```
 
-  This experiment is only using one bus (`drive_line_bus`), which has a list of the uploaded sequences
+  This experiment is using two buses (`drive_line_bus` and `feedling_input_output_bus`), which have a list of the uploaded sequences
   (in this case only 1).
 
-  We can then obtain the program of such sequence:
+  We can then obtain the program of such sequences:
 
   ```pycon
   >>> sequences[0]["drive_line_bus"][0]._program
