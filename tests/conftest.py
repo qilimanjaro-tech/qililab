@@ -98,6 +98,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "sequencer0",
             "out0_offset",
             "out1_offset",
+            "out2_offset",
+            "out3_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
