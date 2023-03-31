@@ -67,6 +67,7 @@ class TestBusExecution:
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
+        assert sequences[0]._program.duration == 2000 * 1000 + 4  # additional 4ns for the initial wait_sync
 
     def test_upload(self, bus_execution: BusExecution):
         """Test upload method."""

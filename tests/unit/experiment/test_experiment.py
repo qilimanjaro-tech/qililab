@@ -8,10 +8,12 @@ import pytest
 from matplotlib.figure import Figure
 from qibo.gates import M
 from qibo.models.circuit import Circuit
+from qpysequence import Sequence
 
 from qililab.constants import DATA
 from qililab.execution import Execution
 from qililab.experiment import Experiment
+from qililab.instruments import AWG
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.result.results import Results
@@ -120,6 +122,24 @@ class TestMethods:
         else:
             assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
+
+    def test_compile(self, experiment: Experiment):
+        """Test the compile method of the ``Execution`` class."""
+        experiment.build_execution()
+        sequences = experiment.compile()
+        assert isinstance(sequences, list)
+        assert len(sequences) == len(experiment.circuits)
+        sequences = sequences[0]
+        buses = experiment.execution.execution_manager.buses
+        assert len(sequences) == len(buses)
+        for alias, sequences in sequences.items():
+            assert alias in {bus.alias for bus in buses}
+            assert isinstance(sequences, list)
+            assert len(sequences) == 1
+            assert isinstance(sequences[0], Sequence)
+            assert (
+                sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+            )  # additional 4ns for the initial wait_sync
 
     def test_run_without_data_path_raises_error(self, experiment: Experiment):
         """Test that the ``build_execution`` method of the ``Experiment`` class raises an error when no DATA
