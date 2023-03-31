@@ -41,11 +41,12 @@ class QbloxModule(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            sync_enabled (List[bool]): Enable synchronization over multiple instruments for each sequencer.
-            num_bins (int): Number of bins
+            awg_sequencers (Sequence[AWGQbloxSequencer]): list of settings for each sequencer
+            out_offsets (List[float]): list of offsets for each output of the qblox module
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
+        out_offsets: List[float]
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -96,6 +97,9 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+
+        for idx, offset in enumerate(self.out_offsets):
+            self._set_out_offset(output=idx, value=offset)
 
     @property
     def module_type(self):
@@ -256,6 +260,10 @@ class QbloxModule(AWG):
         if parameter == Parameter.OFFSET_PATH1:
             self._set_offset_path1(value=value, sequencer_id=channel_id)
             return
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
+            return
         if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, sequencer_id=channel_id)
             return
@@ -366,6 +374,26 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
         self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_out_offset(self, output: int, value: float | str | bool):
+        """Set output offsets of the Qblox device.
+
+        Args:
+            output (int): output to update
+            value (float | str | bool): value to update
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        if output > len(self.out_offsets):
+            raise IndexError(
+                f"Output {output} is out of range. The runcard has only {len(self.out_offsets)} output offsets defined."
+                " Please update the list of output offsets of the runcard such that it contains a value for each "
+                "output of the device."
+            )
+        self.out_offsets[output] = value
+        getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
@@ -559,3 +587,8 @@ class QbloxModule(AWG):
             int: Final wait time.
         """
         return self._MIN_WAIT_TIME
+
+    @property
+    def out_offsets(self):
+        """Returns the offsets of each output of the qblox module."""
+        return self.settings.out_offsets
