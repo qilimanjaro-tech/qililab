@@ -41,9 +41,7 @@ schema:
   buses:
     - id_: 0
       category: bus
-      bus_category: continuous
-      bus_subcategory: current_bias
-      alias: YokogawaGS200
+      alias: yokogawa_gs200_bus
       system_control:
         id_: 0
         name: system_control
