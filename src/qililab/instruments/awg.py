@@ -102,10 +102,7 @@ class AWG(Instrument):
     @property
     def intermediate_frequencies(self):
         """AWG 'intermediate_frequencies' property."""
-        return [
-            self.settings.awg_sequencers[sequencer.identifier].intermediate_frequency
-            for sequencer in self.awg_sequencers
-        ]
+        return [sequencer.intermediate_frequency for sequencer in self.awg_sequencers]
 
     def offset_i(self, sequencer_id: int):
         """AWG 'offset_i' property."""
