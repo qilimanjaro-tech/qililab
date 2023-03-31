@@ -179,16 +179,17 @@ class QbloxModule(AWG):
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
-            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulses.label())
-            wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
-            avg_loop.append_component(ResetPh())
-            avg_loop.append_component(
-                Play(
-                    waveform_0=waveform_pair.waveform_i.index,
-                    waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
+            for pulse in pulse_event.pulses:
+                waveform_pair = waveforms.find_pair_by_name(pulse.label())
+                wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
+                avg_loop.append_component(ResetPh())
+                avg_loop.append_component(
+                    Play(
+                        waveform_0=waveform_pair.waveform_i.index,
+                        waveform_1=waveform_pair.waveform_q.index,
+                        wait_time=int(wait_time),
+                    )
                 )
-            )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
         wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
@@ -531,9 +532,9 @@ class QbloxModule(AWG):
                 )
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
-        """Generate I and Q waveforms from a PulseSequence object.
+        """Generate I and Q waveforms from a PulseBusSchedule object.
         Args:
-            pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
+            pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule object.
         Returns:
             Waveforms: Waveforms object containing the generated waveforms.
         """
@@ -542,12 +543,13 @@ class QbloxModule(AWG):
         unique_pulses: List[Tuple[int, PulseShape]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
-            if (pulse_event.duration, pulse_event.pulses.pulse_shape) not in unique_pulses:
-                unique_pulses.append((pulse_event.duration, pulse_event.pulses.pulse_shape))
-                envelope = pulse_event.pulses.envelope(amplitude=1)
-                real = np.real(envelope)
-                imag = np.imag(envelope)
-                waveforms.add_pair((real, imag), name=pulse_event.pulses.label())
+            for pulse in pulse_event.pulses:
+                if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
+                    unique_pulses.append((pulse_event.duration, pulse.pulse_shape))
+                    envelope = pulse.envelope(amplitude=1)
+                    real = np.real(envelope)
+                    imag = np.imag(envelope)
+                    waveforms.add_pair((real, imag), name=pulse.label())
 
         return waveforms
 

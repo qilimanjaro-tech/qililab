@@ -12,9 +12,9 @@ from qililab.constants import (
     INSTRUMENTREFERENCE,
     LOOP,
     PLATFORM,
-    PULSES,
     PULSEBUSSCHEDULE,
     PULSEEVENT,
+    PULSES,
     PULSESCHEDULES,
     RUNCARD,
     SCHEMA,
@@ -789,14 +789,16 @@ experiment = {
                 {
                     PULSEBUSSCHEDULE.TIMELINE: [
                         {
-                            PULSEEVENT.PULSES: [{
-                                PULSES.NAME: PulseName.READOUT_PULSE.value,
-                                PULSES.AMPLITUDE: 1,
-                                PULSES.FREQUENCY: 1e9,
-                                PULSES.PHASE: 0,
-                                PULSES.DURATION: 2000,
-                                PULSES.PULSE_SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
-                            }],
+                            PULSEEVENT.PULSES: [
+                                {
+                                    PULSES.NAME: PulseName.READOUT_PULSE.value,
+                                    PULSES.AMPLITUDE: 1,
+                                    PULSES.FREQUENCY: 1e9,
+                                    PULSES.PHASE: 0,
+                                    PULSES.DURATION: 2000,
+                                    PULSES.PULSE_SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
+                                }
+                            ],
                             PULSEEVENT.START_TIME: 40,
                         }
                     ],

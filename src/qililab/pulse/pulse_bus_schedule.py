@@ -28,14 +28,16 @@ class PulseBusSchedule:
         self._check_pulse_names()
         self.timeline.sort()
         self._generate_pulses_set()
-            
+
     def _check_pulse_names(self):
         """Sort timeline and add used pulses to the pulses set."""
         pulse_names = self.timeline[0].pulse_names
         for event in self.timeline:
             if event.pulse_names != pulse_names:
-                raise ValueError("All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse).")
-            
+                raise ValueError(
+                    "All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)."
+                )
+
     def _generate_pulses_set(self):
         for event in self.timeline:
             for pulse in event.pulses:
@@ -47,33 +49,25 @@ class PulseBusSchedule:
             pulse (Pulse): Pulse object.
             start_time (int): Start time in nanoseconds.
         """
-        self._check_pulse_validity(pulse)
+        if self.pulses and pulse.name != self.timeline[0].pulse_names:
+            raise ValueError(
+                "All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)."
+            )
         self._pulses.add(pulse)
-        insort(self.timeline, PulseEvent(pulse, start_time))
+        insort(self.timeline, PulseEvent([pulse], start_time))
 
     def add_event(self, pulse_event: PulseEvent):
         """Add pulse event to sequence.
         Args:
             pulse_event (PulseEvent): PulseEvent object.
         """
-        self._check_pulse_validity(pulse_event.pulses)
-        self._pulses.add(pulse_event.pulses)
-        insort(self.timeline, pulse_event)
-
-    def _check_pulse_validity(self, pulse: Pulse):
-        """Checks whether pulse is valid or not based on its name and frequency.
-
-        Args:
-            pulse (Pulse): Pulse to check.
-
-        Raises:
-            ValueError: All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)
-            ValueError: All Pulse objects inside a PulseBusSchedule should have the same frequency.
-        """
-        if self.pulses and pulse.name != self.timeline[0].pulses[0].name:
+        if self.pulses and pulse_event.pulse_names != self.timeline[0].pulse_names:
             raise ValueError(
                 "All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)."
             )
+        for pulse in pulse_event.pulses:
+            self._pulses.add(pulse)
+        insort(self.timeline, pulse_event)
 
     @property
     def end(self) -> int:
@@ -82,8 +76,7 @@ class PulseBusSchedule:
             int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
-            pulse_end = event.start_time + event.pulses.duration
-            end = max(pulse_end, end)
+            end = max(event.end_time, end)
         return end
 
     @property
@@ -146,7 +139,7 @@ class PulseBusSchedule:
         Returns:
             PulseName | None: Name of the pulses if the pulse sequence is not empty, None otherwise.
         """
-        return self.timeline[0].pulses.name if len(self.timeline) > 0 else None
+        return self.timeline[0].pulse_names if len(self.timeline) > 0 else None
 
     @property
     def readout_pulse_duration(self):

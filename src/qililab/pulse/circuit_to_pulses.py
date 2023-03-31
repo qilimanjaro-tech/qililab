@@ -94,13 +94,15 @@ class CircuitToPulses:
         )
         return (
             PulseEvent(
-                pulses=[Pulse(
-                    amplitude=float(gate_settings.amplitude),
-                    phase=float(gate_settings.phase),
-                    duration=gate_settings.duration,
-                    pulse_shape=pulse_shape,
-                    frequency=node.frequency,
-                )],
+                pulses=[
+                    Pulse(
+                        amplitude=float(gate_settings.amplitude),
+                        phase=float(gate_settings.phase),
+                        duration=gate_settings.duration,
+                        pulse_shape=pulse_shape,
+                        frequency=node.frequency,
+                    )
+                ],
                 start_time=old_time,
             )
             if gate_settings.duration > 0
@@ -162,13 +164,15 @@ class CircuitToPulses:
 
         return (
             ReadoutEvent(
-                pulse=ReadoutPulse(
-                    amplitude=gate_settings.amplitude,
-                    phase=gate_settings.phase,
-                    duration=gate_settings.duration,
-                    frequency=node.frequency,
-                    pulse_shape=pulse_shape,
-                ),
+                pulses=[
+                    ReadoutPulse(
+                        amplitude=gate_settings.amplitude,
+                        phase=gate_settings.phase,
+                        duration=gate_settings.duration,
+                        frequency=node.frequency,
+                        pulse_shape=pulse_shape,
+                    )
+                ],
                 start_time=old_time + self.settings.delay_before_readout,
             )
             if gate_settings.duration > 0
