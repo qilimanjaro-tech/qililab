@@ -86,6 +86,7 @@ class QbloxModule(AWG):
         # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
         # the sequence has been uploaded or not
         self.sequences: Dict[int, Tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        # TODO: Set this attribute during initialization of the instrument
         self.nshots: int | None = None
         self.repetition_duration: int | None = None
         super().__init__(settings=settings)
@@ -538,6 +539,8 @@ class QbloxModule(AWG):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""
+        if self.nshots is None or self.repetition_duration is None:
+            raise ValueError("Please compile the circuit before uploading it to the device.")
         empty_program = self._generate_empty_program()
         empty_sequence = QpySequence(
             program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}

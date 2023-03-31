@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
@@ -79,7 +80,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> None:
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
         """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
         the cache and the saved sequences.
 
@@ -96,7 +97,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             self.device._add_acquisitions(  # pylint: disable=protected-access
                 sequencer=sequencer, acquisitions=acquisition.to_dict()
             )
-        super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
+        return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument

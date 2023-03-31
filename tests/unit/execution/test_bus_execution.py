@@ -1,8 +1,23 @@
 """Tests for the BusExecution class."""
-import pytest
+from unittest.mock import MagicMock, patch
 
-from qililab.execution import BusExecution
+import pytest
+from qpysequence import Sequence
+
+from qililab.execution import BusExecution, ExecutionManager
+from qililab.instruments import AWG
 from qililab.pulse import PulseBusSchedule
+from tests.utils import mock_instruments
+
+
+@pytest.fixture(name="bus_execution")
+def fixture_bus_execution(execution_manager: ExecutionManager) -> BusExecution:
+    """Load BusExecution.
+
+    Returns:
+        BusExecution: Instance of the BusExecution class.
+    """
+    return execution_manager.buses[0]
 
 
 class TestBusExecution:
@@ -41,3 +56,24 @@ class TestBusExecution:
             ValueError, match="The bus drive_line_bus needs a readout system control to acquire the results"
         ):
             bus_execution.acquire_result()
+
+    def test_alias_property(self, bus_execution: BusExecution):
+        """Test alias property."""
+        assert bus_execution.alias == bus_execution.bus.alias
+
+    def test_compile(self, bus_execution: BusExecution):
+        """Test compile method."""
+        sequences = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+
+    def test_upload(self, bus_execution: BusExecution):
+        """Test upload method."""
+        awg = bus_execution.system_control.instruments[0]
+        assert isinstance(awg, AWG)
+        awg.device = MagicMock()
+        _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        bus_execution.upload()
+        for seq_idx in range(awg.num_sequencers):
+            awg.device.sequencers[seq_idx].sequence.assert_called_once()

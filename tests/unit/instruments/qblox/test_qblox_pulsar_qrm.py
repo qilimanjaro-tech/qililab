@@ -148,6 +148,19 @@ class TestQbloxQRM:
         qrm.reset()
         assert qrm._cache == {}  # pylint: disable=protected-access
 
+    def test_compile(self, qrm, pulse_bus_schedule):
+        """Test compile method."""
+        pulse_bus_schedule.port = 1  # change port to target the resonator
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+
+    def test_upload_raises_error(self, qrm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qrm.upload()
+
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)

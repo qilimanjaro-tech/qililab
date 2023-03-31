@@ -107,6 +107,18 @@ class TestQbloxQCM:
         qcm.reset()
         assert qcm._cache == {}  # pylint: disable=protected-access
 
+    def test_compile(self, qcm, pulse_bus_schedule):
+        """Test compile method."""
+        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+
+    def test_upload_raises_error(self, qcm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qcm.upload()
+
     def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
         qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)

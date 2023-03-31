@@ -19,8 +19,7 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
-
-from .aux_methods import mock_instruments
+from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="connected_experiment")
