@@ -15,7 +15,7 @@ from qililab.utils import Waveforms
 @dataclass
 class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus. All pulses should have the same name
-    (Pulse or ReadoutPulse) and have the same frequency."""
+    (Pulse or ReadoutPulse)."""
 
     port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: List[PulseEvent] = field(default_factory=list)
@@ -23,20 +23,23 @@ class PulseBusSchedule:
 
     def __post_init__(self):
         """Sort timeline and add used pulses to the pulses set if timeline is not empty."""
-        if self.timeline:
-            self._sort_and_check()
-
-    def _sort_and_check(self):
-        """Sort timeline and add used pulses to the pulses set."""
+        if not self.timeline:
+            return
+        self._check_pulse_names()
         self.timeline.sort()
-        for pulse_event in self.timeline:
-            self._pulses.add(pulse_event.pulse)
-        reference_pulse = self.timeline[0].pulse
-        for pulse in self._pulses:
-            if pulse.name != reference_pulse.name:
-                raise ValueError(
-                    "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
-                )
+        self._generate_pulses_set()
+            
+    def _check_pulse_names(self):
+        """Sort timeline and add used pulses to the pulses set."""
+        pulse_names = self.timeline[0].pulse_names
+        for event in self.timeline:
+            if event.pulse_names != pulse_names:
+                raise ValueError("All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse).")
+            
+    def _generate_pulses_set(self):
+        for event in self.timeline:
+            for pulse in event.pulses:
+                self._pulses.add(pulse)
 
     def add(self, pulse: Pulse, start_time: int):
         """Add pulse to sequence that will begin at start_time.
@@ -53,8 +56,8 @@ class PulseBusSchedule:
         Args:
             pulse_event (PulseEvent): PulseEvent object.
         """
-        self._check_pulse_validity(pulse_event.pulse)
-        self._pulses.add(pulse_event.pulse)
+        self._check_pulse_validity(pulse_event.pulses)
+        self._pulses.add(pulse_event.pulses)
         insort(self.timeline, pulse_event)
 
     def _check_pulse_validity(self, pulse: Pulse):
@@ -64,37 +67,37 @@ class PulseBusSchedule:
             pulse (Pulse): Pulse to check.
 
         Raises:
-            ValueError: All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)
-            ValueError: All Pulse objects inside a PulseSequence should have the same frequency.
+            ValueError: All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)
+            ValueError: All Pulse objects inside a PulseBusSchedule should have the same frequency.
         """
-        if self.pulses and pulse.name != self.timeline[0].pulse.name:
+        if self.pulses and pulse.name != self.timeline[0].pulses[0].name:
             raise ValueError(
-                "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
+                "All Pulse objects inside a PulseBusSchedule should have the same type (Pulse or ReadoutPulse)."
             )
 
     @property
     def end(self) -> int:
-        """End of the PulseSequence.
+        """End of the PulseBusSchedule.
         Returns:
-            int: End of the PulseSequence."""
+            int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
-            pulse_end = event.start_time + event.pulse.duration
+            pulse_end = event.start_time + event.pulses.duration
             end = max(pulse_end, end)
         return end
 
     @property
     def start(self) -> int:
-        """Start of the PulseSequence.
+        """Start of the PulseBusSchedule.
         Returns:
-            int: Start of the PulseSequence."""
+            int: Start of the PulseBusSchedule."""
         return self.timeline[0].start_time
 
     @property
     def duration(self) -> int:
-        """Duration of the PulseSequence.
+        """Duration of the PulseBusSchedule.
         Returns:
-            int: Duration of the PulseSequence."""
+            int: Duration of the PulseBusSchedule."""
         return self.end - self.start
 
     @property
@@ -106,7 +109,7 @@ class PulseBusSchedule:
 
     @property
     def pulses(self):
-        """Set of Pulse objects used in this PulseSequence.
+        """Set of Pulse objects used in this PulseBusSchedule.
         Returns:
             str: The set of Pulse objects."""
         return self._pulses
@@ -116,7 +119,7 @@ class PulseBusSchedule:
         return self.timeline.__iter__()
 
     def waveforms(self, resolution: float = 1.0) -> Waveforms:
-        """PulseSequence 'waveforms' property.
+        """PulseBusSchedule 'waveforms' property.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
@@ -127,10 +130,10 @@ class PulseBusSchedule:
         waveforms = Waveforms()
         time = 0
         for pulse_event in self.timeline:
-            wait_time = round((pulse_event.start - time) / resolution)
+            wait_time = round((pulse_event.start_time - time) / resolution)
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
-            time += pulse_event.start
+            time += pulse_event.start_time
             pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
             waveforms += pulse_waveforms
             time += pulse_event.duration
@@ -143,7 +146,7 @@ class PulseBusSchedule:
         Returns:
             PulseName | None: Name of the pulses if the pulse sequence is not empty, None otherwise.
         """
-        return self.timeline[0].pulse.name if len(self.timeline) > 0 else None
+        return self.timeline[0].pulses.name if len(self.timeline) > 0 else None
 
     @property
     def readout_pulse_duration(self):
@@ -173,13 +176,13 @@ class PulseBusSchedule:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load PulseSequence object from dictionary.
+        """Load PulseBusSchedule object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseSequence object.
+            dictionary (dict): Dictionary representation of the PulseBusSchedule object.
 
         Returns:
-            PulseSequence: Loaded class.
+            PulseBusSchedule: Loaded class.
         """
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
         port = dictionary[PULSEBUSSCHEDULE.PORT]

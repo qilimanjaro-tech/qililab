@@ -94,13 +94,13 @@ class CircuitToPulses:
         )
         return (
             PulseEvent(
-                pulse=Pulse(
+                pulses=[Pulse(
                     amplitude=float(gate_settings.amplitude),
                     phase=float(gate_settings.phase),
                     duration=gate_settings.duration,
                     pulse_shape=pulse_shape,
                     frequency=node.frequency,
-                ),
+                )],
                 start_time=old_time,
             )
             if gate_settings.duration > 0

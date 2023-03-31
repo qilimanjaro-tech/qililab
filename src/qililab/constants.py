@@ -151,7 +151,7 @@ class PULSEBUSSCHEDULE:
     PORT = "port"
 
 
-class PULSE:
+class PULSES:
     """Pulse attribute names."""
 
     NAME = "name"
@@ -172,7 +172,7 @@ class PULSESHAPE:
 class PULSEEVENT:
     """PulseEvent attribute names."""
 
-    PULSE = "pulse"
+    PULSES = "pulses"
     START_TIME = "start_time"
 
 

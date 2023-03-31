@@ -40,12 +40,12 @@ class TestPulseBusSchedule:
 
     def test_end(self, pulse_bus_schedule: PulseBusSchedule):
         last_pulse_event = pulse_bus_schedule.timeline[-1]
-        end = last_pulse_event.start + last_pulse_event.pulse.duration
+        end = last_pulse_event.start_time + last_pulse_event.pulses.duration
         assert end == pulse_bus_schedule.end
 
     def test_start(self, pulse_bus_schedule: PulseBusSchedule):
         first_pulse_event = pulse_bus_schedule.timeline[0]
-        start = first_pulse_event.start
+        start = first_pulse_event.start_time
         assert start == pulse_bus_schedule.start
 
     def test_total_duration(self, pulse_bus_schedule: PulseBusSchedule):

@@ -529,7 +529,7 @@ def fixture_pulse_event() -> PulseEvent:
     """
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
+    return PulseEvent(pulses=[pulse], start_time=0)
 
 
 @pytest.fixture(name="readout_event")
@@ -540,7 +540,7 @@ def fixture_readout_event() -> ReadoutEvent:
         ReadoutEvent: Instance of the PulseEvent class.
     """
     pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
-    return ReadoutEvent(pulse=pulse, start_time=0)
+    return ReadoutEvent(pulses=[pulse], start_time=0)
 
 
 @pytest.fixture(name="readout_pulse")

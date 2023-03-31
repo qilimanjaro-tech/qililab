@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import ClassVar, List
+from bisect import insort
 
 from qililab.constants import PULSEEVENT, RUNCARD
 from qililab.pulse.pulse import Pulse
@@ -12,48 +14,58 @@ from qililab.utils.waveforms import Waveforms
 
 @dataclass
 class PulseEvent:
-    """Object representing a Pulse starting at a certain time."""
+    """Object representing a group of pulses starting simultaneously at a certain time."""
 
-    pulse: Pulse
+    pulses: List[Pulse]
     start_time: int
-    end_time: int = field(init=False, repr=False)
-    duration: int = field(init=False, repr=False)
+    pulse_names: ClassVar[PulseName] = PulseName.PULSE
 
     def __post_init__(self):
-        """Set the duration of the PulseEvent from that of the Pulse and calculate end_time."""
-        self.duration = self.pulse.duration
-        self.end_time = self.start_time + self.duration
+        """Checks that all the pulses are of the correct type and sorts them based on their frequency in ascending order."""
+        for pulse in self.pulses:
+            if pulse.name != self.pulse_names:
+                raise ValueError(
+                    "All Pulse objects inside a PulseEvent should have the same type (Pulse or ReadoutPulse)."
+                )
+        self.pulses.sort(key=lambda pulse: pulse.frequency)
 
-    def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
-        """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
+    def modulated_waveforms(self, resolution: float = 1.0) -> List[Waveforms]:
+        """Applies digital quadrature amplitude modulation (QAM) to the pulses envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
 
         Returns:
-            Waveforms: I and Q modulated waveforms.
+            List[Waveforms]: I and Q modulated waveforms of all the pulses in the event.
         """
-        return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time)
+        return [pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time) for pulse in self.pulses]
 
     @property
-    def start(self):
-        """Pulse 'start' property.
-
-        Raises:
-            ValueError: Is start time is not defined.
-
-        Returns:
-            int: Start time of the pulse.
-        """
-        return self.start_time
-
+    def duration(self):
+        return max(pulse.duration for pulse in self.pulses)
+    
+    @property
+    def end_time(self):
+        return self.start_time + self.duration
+    
+    def add_pulse(self, pulse: Pulse):
+        if pulse.name != self.pulse_names:
+            raise ValueError("All Pulse objects inside a PulseEvent should be of the same type (Pulse or ReadoutPulse).")
+        insort(self.pulses, pulse, key=lambda pulse: pulse.frequency)
+    
+    def merge(self, other: PulseEvent):
+        if self.start_time != other.start_time:
+            raise ValueError("Can't merge PulseEvents with different start_time.")
+        for pulse in other.pulses:
+            self.add_pulse(pulse)
+        
     def to_dict(self):
         """Return dictionary of pulse.
 
         Returns:
             dict: Dictionary describing the pulse.
         """
-        return {PULSEEVENT.PULSE: self.pulse.to_dict(), PULSEEVENT.START_TIME: self.start_time}
+        return {PULSEEVENT.PULSES: [pulse.to_dict() for pulse in self.pulses.to_dict()], PULSEEVENT.START_TIME: self.start_time}
 
     @classmethod
     def from_dict(cls, dictionary: dict):
@@ -65,15 +77,10 @@ class PulseEvent:
         Returns:
             PulseEvent: Loaded class.
         """
-        pulse_settings = dictionary[PULSEEVENT.PULSE]
-        print(dictionary)
-        pulse = (
-            Pulse.from_dict(pulse_settings)
-            if Pulse.name == PulseName(pulse_settings.pop(RUNCARD.NAME))
-            else ReadoutPulse.from_dict(pulse_settings)
-        )
+        pulses_list = dictionary[PULSEEVENT.PULSES]
+        pulses = [Pulse.from_dict(pulse_dict) if Pulse.name == PulseName(pulse_dict.pop(RUNCARD.NAME)) else ReadoutPulse.from_dict(pulse_dict) for pulse_dict in pulses_list]
         start_time = dictionary[PULSEEVENT.START_TIME]
-        return PulseEvent(pulse=pulse, start_time=start_time)
+        return PulseEvent(pulses=pulses, start_time=start_time)
 
     def __lt__(self, other: PulseEvent):
         """Returns True if and only if self.start_time is less than other.start_time

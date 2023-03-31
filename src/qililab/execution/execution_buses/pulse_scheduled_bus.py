@@ -69,7 +69,7 @@ class PulseScheduledBus:
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
         readout_schedule = self.pulse_schedule[idx]
-        time = readout_schedule.timeline[-1].start
+        time = readout_schedule.timeline[-1].start_time
         if isinstance(self.system_control, ReadoutSystemControl):
             time += self.system_control.acquisition_delay_time
         return time

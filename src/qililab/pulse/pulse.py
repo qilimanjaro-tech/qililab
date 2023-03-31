@@ -7,7 +7,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from qililab.constants import PULSE, RUNCARD
+from qililab.constants import PULSES, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
@@ -79,12 +79,12 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSE.NAME: self.name.value,
-            PULSE.AMPLITUDE: self.amplitude,
-            PULSE.FREQUENCY: self.frequency,
-            PULSE.PHASE: self.phase,
-            PULSE.DURATION: self.duration,
-            PULSE.PULSE_SHAPE: self.pulse_shape.to_dict(),
+            PULSES.NAME: self.name.value,
+            PULSES.AMPLITUDE: self.amplitude,
+            PULSES.FREQUENCY: self.frequency,
+            PULSES.PHASE: self.phase,
+            PULSES.DURATION: self.duration,
+            PULSES.PULSE_SHAPE: self.pulse_shape.to_dict(),
         }
 
     def label(self) -> str:
