@@ -49,6 +49,17 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- Change name `PulseScheduledBus` to `BusExecution`.
+  [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
+
+- Separate `generate_program_and_upload` into two methods: `compile` and `upload`. From now on, when executing a
+  single circuit, all the pulses of each bus will be compiled first, and then uploaded to the instruments.
+  [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
+
+- Make `nshots` and `repetition_duration` dynamic attributes of the `QbloxModule` class. When any of these two settings
+  changes, the cache is emptied to make sure new programs are compiled.
+  [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
+
 ### Breaking changes
 
 - An `out_offsets` attribute has been added to the settings of a `QbloxModule` object. This attribute contains a list
@@ -72,6 +83,12 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
+- Removed the `AWG.frequency` attribute because it was not used.
+  [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
+
 ### Documentation
 
 ### Bug fixes
+
+- Fixed bug where the `QbloxModule` uploaded the same sequence to all the sequencers.
+  [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
