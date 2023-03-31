@@ -43,7 +43,6 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
-            self.name = Instrument.name
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -58,7 +57,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}.")
+                raise ValueError("'value' not specified to update instrument settings.")
             value = kwargs["value"]
             if not isinstance(value, str):
                 raise ValueError(f"value must be a string. Current type: {type(value)}")
@@ -69,8 +68,6 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
-            self.name = Instrument.name
-
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -85,7 +82,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}.")
+                raise ValueError("'value' not specified to update instrument settings.")
             value = kwargs["value"]
             if not isinstance(value, bool):
                 raise ValueError(f"value must be a bool. Current type: {type(value)}")
@@ -96,8 +93,6 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
-            self.name = Instrument.name
-
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -112,7 +107,7 @@ class Instrument(BusElement, ABC):
                 ValueError: If value is neither a float or int.
             """
             if "value" not in kwargs:
-                raise ValueError(f"'value' not specified to update settings for instrument {self.name.value}..")
+                raise ValueError("'value' not specified to update instrument settings.")
             value = kwargs["value"]
             if not isinstance(value, float) and not isinstance(value, int):
                 raise ValueError(f"value must be a float or an int. Current type: {type(value)}")
@@ -126,7 +121,6 @@ class Instrument(BusElement, ABC):
 
         def __init__(self, method: Callable):
             self._method = method
-            self.name = Instrument.name
 
         def __get__(self, obj, objtype):
             """Support instance methods."""
@@ -141,7 +135,7 @@ class Instrument(BusElement, ABC):
                 AttributeError: If device has not been initialized.
             """
             if not hasattr(ref, "device") and (not args or not hasattr(args[0], "device")):
-                raise AttributeError(f"Instrument Device {self.name.value} has not been initialized")
+                raise AttributeError("Instrument Device has not been initialized")
             return self._method(ref, *args, **kwargs) if hasattr(ref, "device") else self._method(*args, **kwargs)
 
     def __init__(self, settings: dict):
