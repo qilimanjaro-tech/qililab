@@ -831,3 +831,111 @@ class MockedSettingsFactory:
         """Return class attribute."""
         mocked_platform = cls.handlers[platform_name]
         return copy.deepcopy(mocked_platform.runcard)
+
+
+class SauronYokogawa:
+    """Test data of the sauron with yokogawa platform."""
+
+    name = "sauron_yokogawa"
+
+    platform = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "sauron_yokogawa",
+        PLATFORM.DEVICE_ID: 9,
+        RUNCARD.ALIAS: None,
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
+        "gates": [],
+    }
+
+    yokogawa_gs200_controller = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA,
+        RUNCARD.ALIAS: "YokogawaGS200",
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.CURRENT_SOURCE.value: "YokogawaGS200",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    yokogawa_gs200 = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "YokogawaGS200",
+        RUNCARD.CATEGORY: Category.CURRENT_SOURCE.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        # Parameter.CURRENT.value: [],
+        # Parameter.SPAN.value: [],
+        # Parameter.RAMPING_ENABLED.value: [],
+        # Parameter.RAMPING_RATE.value: [],
+        # "dacs": [],
+        Parameter.OUTPUT_STATUS.value: False,
+        "current_value": 0.0,
+    }
+
+    instruments = [yokogawa_gs200]
+    instrument_controllers = [yokogawa_gs200_controller]
+
+    chip = {
+        RUNCARD.ID: 0,
+        RUNCARD.ALIAS: None,
+        RUNCARD.CATEGORY: Category.CHIP.value,
+        Node.NODES.value: [
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+            {
+                RUNCARD.NAME: NodeName.RESONATOR.value,
+                RUNCARD.ID: 2,
+                RUNCARD.ALIAS: NodeName.RESONATOR.value,
+                Node.FREQUENCY.value: 8.0726e09,
+                Node.NODES.value: [1, 3],
+            },
+            {
+                RUNCARD.NAME: NodeName.QUBIT.value,
+                RUNCARD.ID: 3,
+                RUNCARD.ALIAS: NodeName.QUBIT.value,
+                Node.QUBIT_INDEX.value: 0,
+                Node.FREQUENCY.value: 6.5328e09,
+                Node.NODES.value: [0, 2],
+            },
+        ],
+    }
+
+    buses = [
+        {
+            RUNCARD.ID: 0,
+            RUNCARD.CATEGORY: Category.BUS.value,
+            RUNCARD.ALIAS: "yokogawa_gs200_bus",
+            Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 0,
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
+                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            },
+            NodeName.PORT.value: 1,
+        },
+    ]
+
+    schema = {
+        SCHEMA.INSTRUMENTS: instruments,
+        SCHEMA.CHIP: chip,
+        SCHEMA.BUSES: buses,
+        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+    runcard = {
+        RUNCARD.SETTINGS: platform,
+        RUNCARD.SCHEMA: schema,
+    }
