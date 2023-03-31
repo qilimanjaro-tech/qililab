@@ -73,6 +73,7 @@ class SimulatedSystemControl(ReadoutSystemControl):
 
     def run(self) -> None:
         """Run the program"""
+        self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
         self._evo.evolve()
 
     def acquire_result(self) -> SimulatorResult:
@@ -107,5 +108,4 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return []
 
     def upload(self):
-        # Init evolution pulse sequence
-        self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
+        pass

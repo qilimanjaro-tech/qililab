@@ -547,16 +547,6 @@ def fixture_readout_pulse() -> ReadoutPulse:
     return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
-@pytest.fixture(name="simulated_system_control")
-def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
-    """Load SimulatedSystemControl.
-
-    Returns:
-        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
-    """
-    return simulated_platform.buses[0].system_control
-
-
 @pytest.fixture(name="simulated_platform")
 @patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:

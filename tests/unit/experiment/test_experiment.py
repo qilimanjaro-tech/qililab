@@ -129,17 +129,23 @@ class TestMethods:
         sequences = experiment.compile()
         assert isinstance(sequences, list)
         assert len(sequences) == len(experiment.circuits)
-        sequences = sequences[0]
+        sequence = sequences[0]
         buses = experiment.execution.execution_manager.buses
-        assert len(sequences) == len(buses)
-        for alias, sequences in sequences.items():
+        assert len(sequence) == len(buses)
+        for alias, bus_sequences in sequence.items():
             assert alias in {bus.alias for bus in buses}
-            assert isinstance(sequences, list)
-            assert len(sequences) == 1
-            assert isinstance(sequences[0], Sequence)
+            assert isinstance(bus_sequences, list)
+            assert len(bus_sequences) == 1
+            assert isinstance(bus_sequences[0], Sequence)
             assert (
-                sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+                bus_sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
             )  # additional 4ns for the initial wait_sync
+
+    def test_compile_raises_error(self, experiment: Experiment):
+        """Test that the ``compile`` method of the ``Experiment`` class raises an error when ``build_execution`` is
+        not called."""
+        with pytest.raises(ValueError, match="Please build the execution before compilation"):
+            experiment.compile()
 
     def test_run_without_data_path_raises_error(self, experiment: Experiment):
         """Test that the ``build_execution`` method of the ``Experiment`` class raises an error when no DATA
