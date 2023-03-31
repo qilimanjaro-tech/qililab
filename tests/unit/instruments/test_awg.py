@@ -83,28 +83,30 @@ class TestInitialization:
         assert isinstance(awg.settings.category, Category)
         assert awg.settings.category == Category.AWG
         assert awg.settings.firmware == "0.7.0"
-        assert awg.settings.num_sequencers == 1
-        assert isinstance(awg.settings.awg_sequencers[0], AWGSequencer)
-        assert awg.settings.awg_sequencers[0].identifier == 0
-        assert awg.settings.awg_sequencers[0].chip_port_id == 100
-        assert isinstance(awg.settings.awg_sequencers[0].path0, AWGSequencerPath)
-        assert isinstance(awg.settings.awg_sequencers[0].path1.output_channel, AWGOutputChannel)
-        assert awg.settings.awg_sequencers[0].path0.output_channel.identifier == 0
-        assert awg.settings.awg_sequencers[0].path1.output_channel.identifier == 1
-        assert awg.settings.awg_sequencers[0].intermediate_frequency == 20000000
-        assert awg.settings.awg_sequencers[0].gain_path0 == 0.1
-        assert awg.settings.awg_sequencers[0].gain_path1 == 0.1
-        assert awg.settings.awg_sequencers[0].gain_imbalance == 1
-        assert awg.settings.awg_sequencers[0].phase_imbalance == 0
-        assert awg.settings.awg_sequencers[0].offset_path0 == 0
-        assert awg.settings.awg_sequencers[0].offset_path1 == 0
-        assert awg.settings.awg_sequencers[0].hardware_modulation is True
+        assert awg.settings.num_sequencers == 2
+        for idx, sequencer in enumerate(awg.settings.awg_sequencers):
+            assert isinstance(sequencer, AWGSequencer)
+            assert sequencer.identifier == idx
+            assert sequencer.chip_port_id == 100 + idx
+            assert isinstance(sequencer.path0, AWGSequencerPath)
+            assert isinstance(sequencer.path1.output_channel, AWGOutputChannel)
+            assert sequencer.path0.output_channel.identifier == 0 + 2 * idx
+            assert sequencer.path1.output_channel.identifier == 1 + 2 * idx
+            assert sequencer.intermediate_frequency == 20000000
+            assert sequencer.gain_path0 == 0.1
+            assert sequencer.gain_path1 == 0.1
+            assert sequencer.gain_imbalance == 1
+            assert sequencer.phase_imbalance == 0
+            assert sequencer.offset_path0 == 0
+            assert sequencer.offset_path1 == 0
+            assert sequencer.hardware_modulation is True
         assert isinstance(awg.settings.awg_iq_channels[0], AWGIQChannel)
-        assert awg.settings.awg_iq_channels[0].identifier == 0
-        assert awg.settings.awg_iq_channels[0].i_channel.awg_sequencer_identifier == 0
-        assert awg.settings.awg_iq_channels[0].i_channel.awg_sequencer_path_identifier.value == 0
-        assert awg.settings.awg_iq_channels[0].q_channel.awg_sequencer_identifier == 0
-        assert awg.settings.awg_iq_channels[0].q_channel.awg_sequencer_path_identifier.value == 1
+        for idx, iq_channel in enumerate(awg.settings.awg_iq_channels):
+            assert iq_channel.identifier == idx
+            assert iq_channel.i_channel.awg_sequencer_identifier == idx
+            assert iq_channel.i_channel.awg_sequencer_path_identifier.value == idx
+            assert iq_channel.q_channel.awg_sequencer_identifier == idx
+            assert iq_channel.q_channel.awg_sequencer_path_identifier.value == int(not idx)
 
 
 class TestProperties:
