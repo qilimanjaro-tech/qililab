@@ -40,17 +40,9 @@ def fixture_empty_circuit() -> Circuit:
 class TestCircuitTranspiler:
     """Unit tests checking the CircuitTranspiler attributes and methods"""
 
-    @pytest.mark.parametrize(
-        "circuit_fixture",
-        ["simple_circuit", "empty_circuit"],
-    )
-    def test_properties_after_init(self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform):
-        circuit = request.getfixturevalue(circuit_fixture)
-        transpiler = CircuitTranspiler(circuit=circuit, settings=platform.settings)
-        assert isinstance(transpiler.circuit, Circuit)
+    def test_properties_after_init(self, platform: Platform):
+        transpiler = CircuitTranspiler(settings=platform.settings)
         assert isinstance(transpiler.settings, RuncardSchema.PlatformSettings)
-        assert transpiler.circuit_ir1 is None
-        assert transpiler.circuit_ir2 is None
 
     @pytest.mark.parametrize(
         "circuit_fixture",
@@ -71,10 +63,11 @@ class TestCircuitTranspiler:
         circuit = request.getfixturevalue(circuit_fixture)
         settings = platform.settings
         settings.timings_calculation_method = timings_calculation_method
-        transpiler = CircuitTranspiler(circuit, settings)
-        circuit_ir1 = transpiler.calculate_timings()
-        assert isinstance(circuit_ir1, Circuit)
-        assert circuit_ir1.depth == circuit.depth
+        transpiler = CircuitTranspiler(settings=settings)
+        transpiled_circuit = transpiler.calculate_timings(circuit=circuit)
+        assert isinstance(transpiled_circuit, Circuit)
+        assert transpiled_circuit.depth == circuit.depth
+        assert transpiled_circuit.has_timings_calculated is True
 
     @pytest.mark.parametrize(
         "circuit_fixture",
@@ -85,10 +78,10 @@ class TestCircuitTranspiler:
     ):
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
-        transpiler = CircuitTranspiler(circuit, platform.settings)
-        circuit_ir2 = transpiler.translate_to_pulse_operations()
-        assert isinstance(circuit_ir2, Circuit)
-        assert circuit_ir2.depth == circuit.depth
+        transpiler = CircuitTranspiler(settings=platform.settings)
+        transpiled_circuit = transpiler.transpile_to_pulse_operations(circuit=circuit)
+        assert isinstance(transpiled_circuit, Circuit)
+        assert transpiled_circuit.depth == circuit.depth
 
     def test_calculate_timings_method_raises_error_when_operation_not_supported(self, platform: Platform):
         """Test num_qubits property"""
@@ -108,6 +101,6 @@ class TestCircuitTranspiler:
 
         circuit = Circuit(1)
         circuit.add(0, UnkownOperation())
-        transpiler = CircuitTranspiler(circuit, platform.settings)
+        transpiler = CircuitTranspiler(settings=platform.settings)
         with pytest.raises(ValueError):
-            transpiler.calculate_timings()
+            transpiler.calculate_timings(circuit=circuit)

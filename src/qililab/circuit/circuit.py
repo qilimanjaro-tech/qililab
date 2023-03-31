@@ -18,6 +18,7 @@ class Circuit:
     num_qubits: int
     entry_node: EntryNode = field(init=False)
     graph: rx.PyDiGraph = field(init=False)
+    has_timings_calculated: bool = field(default=False)
 
     def __post_init__(self):
         if not isinstance(self.num_qubits, int):
@@ -28,6 +29,7 @@ class Circuit:
         self.entry_node = self._add_entry_node()
 
     def add(self, qubits: int | Tuple[int, ...], operation: Operation, alias: str | None = None):
+        self.has_timings_calculated = False
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
         if operation.multiplicity == OperationMultiplicity.PARALLEL:
             self._add_parallel_operation(qubits=qubits, operation=operation, alias=alias)

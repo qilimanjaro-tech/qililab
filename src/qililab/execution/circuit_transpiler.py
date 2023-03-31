@@ -7,22 +7,23 @@ from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
+from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.settings import RuncardSchema
+from qililab.typings.enums import TranspilerOutputMethod
 
 
 @dataclass
 class CircuitTranspiler:
     """CircuitTranspiler class."""
 
-    circuit: Circuit
     settings: RuncardSchema.PlatformSettings
-    circuit_ir1: Circuit | None = field(init=False, default=None)
-    circuit_ir2: Circuit | None = field(init=False, default=None)
 
-    def calculate_timings(self) -> Circuit:
-        self.circuit_ir1 = deepcopy(self.circuit)
-        nqubits = self.circuit_ir1.num_qubits
-        layers = self.circuit_ir1.get_operation_layers(method=self.settings.timings_calculation_method)
+    def calculate_timings(
+        self, circuit: Circuit, output_method: TranspilerOutputMethod = TranspilerOutputMethod.IN_PLACE
+    ) -> Circuit:
+        output_circuit = circuit if output_method == TranspilerOutputMethod.IN_PLACE else deepcopy(circuit)
+        nqubits = output_circuit.num_qubits
+        layers = output_circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         qubits_last_end_timings = [0 for _ in range(nqubits)]
         for index, layer in enumerate(layers):
             for operation_node in layer:
@@ -38,12 +39,17 @@ class CircuitTranspiler:
                         if isinstance(operation_settings.pulse.duration, int)
                         else operation_settings.pulse.duration.value
                     )
+                    delay = (
+                        self.settings.delay_before_readout
+                        if isinstance(operation_node.operation, Measure)
+                        else self.settings.delay_between_pulses
+                    )
                     start_time = (
                         max(
                             [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
                             + [max_end_time_of_previous_layer]
                         )
-                        + self.settings.delay_between_pulses
+                        + delay
                     )
                     end_time = start_time + pulse_duration
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
@@ -90,13 +96,17 @@ class CircuitTranspiler:
                         qubits_last_end_timings[qubit] = end_time
                 else:
                     raise ValueError(f"Operation {operation_node} not supported for translation yet.")
-        return self.circuit_ir1
+        output_circuit.has_timings_calculated = True
+        return output_circuit
 
-    def translate_to_pulse_operations(self) -> Circuit:
-        if self.circuit_ir1 is None:
-            self.calculate_timings()
-        self.circuit_ir2 = deepcopy(self.circuit_ir1)
-        layers = self.circuit_ir2.get_operation_layers(method=self.settings.timings_calculation_method)  # type: ignore[union-attr]
+    def transpile_to_pulse_operations(
+        self, circuit: Circuit, output_method: TranspilerOutputMethod = TranspilerOutputMethod.IN_PLACE
+    ) -> Circuit:
+        output_circuit = circuit if output_method == TranspilerOutputMethod.IN_PLACE else deepcopy(circuit)
+        if not output_circuit.has_timings_calculated:
+            # TODO: Discuss if we should raise an error instead
+            output_circuit = self.calculate_timings(output_circuit, output_method=output_method)
+        layers = output_circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         for index, layer in enumerate(layers):
             for operation_node in layer:
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
@@ -110,4 +120,4 @@ class CircuitTranspiler:
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
                     operation_node.operation = pulse_operation
-        return self.circuit_ir2  # type: ignore[return-value]
+        return output_circuit

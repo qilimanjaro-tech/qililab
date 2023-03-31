@@ -512,3 +512,8 @@ class OperationName(str, Enum):
 class OperationTimingsCalculationMethod(str, Enum):
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
+
+
+class TranspilerOutputMethod(str, Enum):
+    IN_PLACE = "in_place"
+    COPY = "copy"

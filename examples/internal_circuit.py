@@ -54,15 +54,15 @@ circuit.draw()
 # circuit.draw(filename='circuit.png')
 
 # create the transpiler
-transpiler = CircuitTranspiler(circuit, platform.settings)
+transpiler = CircuitTranspiler(settings=platform.settings)
 
 # calculate timings
-circuit_ir1 = transpiler.calculate_timings()
-circuit_ir1.draw()
+transpiler.calculate_timings(circuit)
+circuit.draw()
 
 # translate operations to pulse operations
-circuit_ir2 = transpiler.translate_to_pulse_operations()
-circuit_ir2.draw()
+transpiler.transpile_to_pulse_operations(circuit)
+circuit.draw()
 
 # Convert to QiliQASM
 qasm = QiliQasmConverter.to_qasm(circuit)
