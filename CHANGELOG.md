@@ -45,7 +45,7 @@
 
 - When translating a Circuit into pulses, the target qubit/resonator frequency is now used to initialize the
   corresponding pulse.
-  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/209)
 
 ### Breaking changes
 
@@ -70,10 +70,10 @@
 
 - Removed the frequency argument from the `Pulse.modulated_waveforms` method (and all the methods that uses this method
   internally). Remove `frequency` property from certain buses.
-  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/209)
 
 - The `Pulse.frequency` argument is now mandatory to initialize a pulse.
-  [#209](https://github.com/qilimanjaro-tech/qililab/pull/192)
+  [#209](https://github.com/qilimanjaro-tech/qililab/pull/209)
 
 ### Deprecations / Removals
 
@@ -91,7 +91,7 @@
 - Removed all the `Bus` and `SystemControl` types. Now there is only a generic `Bus`, that can contain a
   `SystemControl`, `ReadoutSystemControl` (which contain a list of instruments to control) or `SimulatedSystemControl`,
   which is used to control simulated quantum systems.
-  [#210](https://github.com/qilimanjaro-tech/qililab/pull/192)
+  [#210](https://github.com/qilimanjaro-tech/qililab/pull/210)
 
 ### Bug fixes
 
