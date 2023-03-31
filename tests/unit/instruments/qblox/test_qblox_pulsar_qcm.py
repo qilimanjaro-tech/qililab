@@ -1,4 +1,5 @@
 """Tests for the QbloxQCM class."""
+import copy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -8,9 +9,72 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
+from qililab.platform import Platform
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
+from tests.data import Galadriel
+
+
+@pytest.fixture(name="pulsar_controller_qcm")
+def fixture_pulsar_controller_qcm(platform: Platform):
+    """Return an instance of QbloxPulsarController class"""
+    settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
+    settings.pop("name")
+    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="qcm_no_device")
+def fixture_qcm_no_device():
+    """Return an instance of QbloxQCM class"""
+    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+    settings.pop("name")
+    return QbloxQCM(settings=settings)
+
+
+@pytest.fixture(name="qcm")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
+    """Return connected instance of QbloxQCM class"""
+    # add dynamically created attributes
+    mock_instance = mock_pulsar.return_value
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "out0_offset",
+            "out1_offset",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "scope_acq_sequencer_select",
+        ]
+    )
+    mock_instance.sequencers = [mock_instance.sequencer0]
+    mock_instance.sequencer0.mock_add_spec(
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+            "set",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
+            "offset_awg_path0",
+            "offset_awg_path1",
+        ]
+    )
+    pulsar_controller_qcm.connect()
+    return pulsar_controller_qcm.modules[0]
 
 
 class TestQbloxQCM:
@@ -88,11 +152,11 @@ class TestQbloxQCM:
         qcm.turn_off()
         qcm.device.stop_sequencer.assert_called_once()
 
-    def test_reset_method(self, qrm: QbloxQCM):
+    def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
-        qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        qcm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qcm.reset()
+        assert qcm._cache is None  # pylint: disable=protected-access
 
     def test_upload_method(self, qcm: QbloxQCM):
         """Test upload method"""
