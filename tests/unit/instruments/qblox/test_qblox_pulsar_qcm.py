@@ -113,6 +113,7 @@ class TestQbloxQCM:
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
+        assert sequences[0]._program.duration == 1000 * 2000 + 4
 
     def test_upload_raises_error(self, qcm):
         """Test upload method raises error."""
