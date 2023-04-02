@@ -146,10 +146,6 @@ class RuncardSchema:
                 if isinstance(operation, dict):
                     operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
                 if operation.name == name:
-                    if isinstance(operation.pulse, dict):
-                        operation.pulse = RuncardSchema.PlatformSettings.OperationSettings.PulseSettings(
-                            **operation.pulse
-                        )
                     return operation
             raise ValueError(f"Operation {name} not found in platform settings.")
 
