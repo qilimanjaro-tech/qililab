@@ -121,7 +121,7 @@ class Operation(ABC):
         Returns:
             Operation: An instance of the parsed operation.
         """
-        match = re.match(r"(\w+)(?:\(([\w]+=.+,?)\))?", string_representation)
+        match = re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation)
         if match:
             operation_name, parameters_str = match.groups()
             operation_class = OperationFactory.get(operation_name)

@@ -8,6 +8,7 @@ from qililab.circuit.operations import (
     GaussianPulse,
     Measure,
     Operation,
+    Parking,
     Reset,
     Rxy,
     SquarePulse,
@@ -32,6 +33,7 @@ from qililab.typings.enums import OperationMultiplicity
         SquarePulse(amplitude=1.0, duration=40, resolution=1.0),
         GaussianPulse(amplitude=1.0, duration=40, sigma=1.0),
         CPhase(theta=90),
+        Parking(),
     ],
 )
 def fixture_operation(request: pytest.FixtureRequest) -> Operation:
@@ -113,5 +115,12 @@ class TestOperation:
 
     @pytest.mark.parametrize("string_representation", ["Wait(time=1000)", "Rxy(omikron=180,phi=45)"])
     def test_parse_method_raises_error_when_operation_has_different_parameter(self, string_representation: str):
+        with pytest.raises(ValueError):
+            Operation.parse(string_representation=string_representation)
+
+    @pytest.mark.parametrize("string_representation", ["    "])
+    def test_parse_method_raises_error_when_string_representation_does_not_match_regex(
+        self, string_representation: str
+    ):
         with pytest.raises(ValueError):
             Operation.parse(string_representation=string_representation)

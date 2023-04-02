@@ -57,6 +57,27 @@ class TestPlatformSettings:
         assert isinstance(settings.master_duration_gate, int)
         assert isinstance(settings.gates, list)
         assert isinstance(settings.gates[0], settings.GateSettings)
+        assert isinstance(settings.passive_reset_duration, int)
+        assert isinstance(settings.operations, list)
+
+    def test_get_operation_settings(self):
+        """Test the ``get_operation_settings`` method of the PlatformSettings class."""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        for operation in settings.operations:
+            if isinstance(operation, dict):
+                operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
+            assert isinstance(settings.get_operation_settings(name=operation.name), settings.OperationSettings)
+
+    def test_get_operation_settings_raises_error_when_operation_does_not_exist(self):
+        """Test the ``get_gate`` method of the PlatformSettings class."""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        name = "unkown_operation"
+        with pytest.raises(ValueError, match=f"Operation {name} not found in platform settings."):
+            settings.get_operation_settings(name)
 
     def test_get_gate(self):
         """Test the ``get_gate`` method of the PlatformSettings class."""
