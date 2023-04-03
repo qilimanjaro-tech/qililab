@@ -9,7 +9,6 @@ import numpy as np
 
 from qililab.constants import PULSES, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 from qililab.utils.signal_processing import modulate
 
@@ -18,7 +17,6 @@ from qililab.utils.signal_processing import modulate
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    name: ClassVar[PulseName] = PulseName.PULSE
     amplitude: float
     phase: float
     duration: int
@@ -32,10 +30,13 @@ class Pulse:
                 **self.pulse_shape,  # pylint: disable=not-a-mapping
             )
 
-    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(
+        self, frequency: float = 0.0, resolution: float = 1.0, start_time: float = 0.0
+    ) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
+            frequency (float, optional): The frequency to modulate the pulse in Hz. Defaults to self.frequency.
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
             start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
 
@@ -45,9 +46,10 @@ class Pulse:
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)
+        frequency = frequency or self.frequency
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.phase + 2 * np.pi * self.frequency * start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
+        phase_offset = self.phase + 2 * np.pi * frequency * start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=frequency, phase_offset=phase_offset)
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
@@ -79,7 +81,6 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSES.NAME: self.name.value,
             PULSES.AMPLITUDE: self.amplitude,
             PULSES.FREQUENCY: self.frequency,
             PULSES.PHASE: self.phase,

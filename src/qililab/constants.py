@@ -174,6 +174,7 @@ class PULSEEVENT:
 
     PULSES = "pulses"
     START_TIME = "start_time"
+    EVENT_TYPE = "event_type"
 
 
 class INSTRUMENTCONTROLLER:

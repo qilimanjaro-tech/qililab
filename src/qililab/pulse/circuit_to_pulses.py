@@ -14,9 +14,7 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.pulse.readout_event import ReadoutEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -165,7 +163,7 @@ class CircuitToPulses:
         return (
             ReadoutEvent(
                 pulses=[
-                    ReadoutPulse(
+                    Pulse(
                         amplitude=gate_settings.amplitude,
                         phase=gate_settings.phase,
                         duration=gate_settings.duration,

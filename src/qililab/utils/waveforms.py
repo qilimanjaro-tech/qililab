@@ -1,5 +1,8 @@
 """Waveform class."""
+from __future__ import annotations
+
 from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 
@@ -43,3 +46,17 @@ class Waveforms:
         if len(self.i) != len(self.q):
             raise ValueError("Both I and Q waveforms must have the same length.")
         return len(self.i)
+
+    @classmethod
+    def from_composition(cls, waveforms_list: List[Waveforms]) -> Waveforms:
+        """Creates a new Waveforms objects by superposing the Waveforms in a list of waveforms.
+
+        Args:
+            waveforms_list (List[Waveforms]): List with the waveforms to create the composition.
+
+        Returns:
+            Waveforms: Waveforms object containing the composition of the waveforms in the list.
+        """
+        i = sum(waveforms.i for waveforms in waveforms_list) / len(waveforms_list)
+        q = sum(waveforms.q for waveforms in waveforms_list) / len(waveforms_list)
+        return cls(i, q)

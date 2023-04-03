@@ -8,8 +8,7 @@ from typing import ClassVar, List
 from qililab.constants import PULSEEVENT
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
-from qililab.typings.enums import PulseName
+from qililab.typings.enums import PulseEventName
 
 
 @dataclass
@@ -17,7 +16,7 @@ class ReadoutEvent(PulseEvent):
     """Describes a single pulse with a start time."""
 
     pulses: List[Pulse]
-    _pulse_names: ClassVar[PulseName] = PulseName.READOUT_PULSE
+    event_type: ClassVar[PulseEventName] = PulseEventName.PULSE
 
     @classmethod
     def from_dict(cls, dictionary: dict):
@@ -30,6 +29,6 @@ class ReadoutEvent(PulseEvent):
             PulseEvent: Loaded class.
         """
         pulses_list = dictionary[PULSEEVENT.PULSES]
-        pulses = [ReadoutPulse.from_dict(pulse_dict) for pulse_dict in pulses_list]
+        pulses = [Pulse.from_dict(pulse_dict) for pulse_dict in pulses_list]
         start_time = dictionary[PULSEEVENT.START_TIME]
         return cls(pulses=pulses, start_time=start_time)

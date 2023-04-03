@@ -1,19 +1,9 @@
 """Tests for the PulseSequences class."""
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, PulseSchedule, ReadoutEvent, ReadoutPulse
+from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, PulseSchedule, ReadoutEvent
 
 
 class TestPulseSequences:
     """Unit tests checking the PulseSequences attributes and methods"""
-
-    def test_add_method(
-        self,
-        pulse_schedule: PulseSchedule,
-        pulse: Pulse,
-        readout_pulse: ReadoutPulse,
-    ):
-        """Test add method."""
-        pulse_schedule.add(pulse=pulse, start_time=0, port=0)
-        pulse_schedule.add(pulse=readout_pulse, start_time=2000, port=1)
 
     def test_add_event_method(
         self, pulse_schedule: PulseSchedule, pulse_event: PulseEvent, readout_event: ReadoutEvent

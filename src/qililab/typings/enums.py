@@ -174,17 +174,17 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
-class PulseName(str, Enum):
-    """Pulse names.
+class PulseEventName(str, Enum):
+    """Pulse event names.
 
     Args:
         Enum (str): Available types of Pulse names:
         * pulse
-        * readout_pulse
+        * readout
     """
 
     PULSE = "pulse"
-    READOUT_PULSE = "readout_pulse"
+    READOUT = "readout"
 
 
 class PulseShapeName(str, Enum):
