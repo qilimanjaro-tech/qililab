@@ -88,6 +88,8 @@ class TestQbloxQRM:
         qrm.initial_setup()
         qrm.device.sequencer0.offset_awg_path0.assert_called()
         qrm.device.sequencer0.offset_awg_path1.assert_called()
+        qrm.device.out0_offset.assert_called()
+        qrm.device.out1_offset.assert_called()
         qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
         qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
         qrm.device.sequencer0.mod_en_awg.assert_called()

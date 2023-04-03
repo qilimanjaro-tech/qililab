@@ -1,6 +1,5 @@
 """Tests for the QbloxQCM class."""
 import copy
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -45,6 +44,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "sequencer0",
             "out0_offset",
             "out1_offset",
+            "out2_offset",
+            "out3_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
@@ -83,6 +84,10 @@ class TestQbloxQCM:
     def test_inital_setup_method(self, qcm: QbloxQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
+        qcm.device.out0_offset.assert_called()
+        qcm.device.out1_offset.assert_called()
+        qcm.device.out2_offset.assert_called()
+        qcm.device.out3_offset.assert_called()
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.awg_sequencers[0].sync_enabled)
         qcm.device.sequencer0.mod_en_awg.assert_called()
         qcm.device.sequencer0.offset_awg_path0.assert_called()
@@ -104,6 +109,10 @@ class TestQbloxQCM:
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
             (Parameter.OFFSET_Q, 0.12, 0),
+            (Parameter.OFFSET_OUT0, 1.234, None),
+            (Parameter.OFFSET_OUT1, 0, None),
+            (Parameter.OFFSET_OUT2, 0.123, None),
+            (Parameter.OFFSET_OUT3, 10, None),
             (Parameter.OFFSET_PATH0, 0.8, 0),
             (Parameter.OFFSET_PATH1, 0.11, 0),
             (Parameter.IF, 100_000, 0),
@@ -146,6 +155,14 @@ class TestQbloxQCM:
             assert qcm.awg_sequencers[channel_id].gain_imbalance == value
         if parameter == Parameter.PHASE_IMBALANCE:
             assert qcm.awg_sequencers[channel_id].phase_imbalance == value
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            assert qcm.out_offsets[output] == value
+
+    def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
+        """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
+        with pytest.raises(IndexError, match="Output 5 is out of range"):
+            qcm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
