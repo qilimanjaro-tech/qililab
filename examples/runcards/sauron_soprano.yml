@@ -2,6 +2,7 @@ settings:
   id_: 0
   category: platform
   name: sauron_cluster
+  device_id: 9
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
@@ -137,6 +138,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 16
       frequency: 8.0726e+09
+      rf_on: False
 
     - name: rohde_schwarz
       alias: rs_2
@@ -145,6 +147,7 @@ schema:
       firmware: 4.2.76.0-4.30.046.295
       power: 13
       frequency: 6.53392e+09
+      rf_on: False
 
     # - name: S4g
     #   alias: S4g
@@ -159,34 +162,22 @@ schema:
 
   buses:
     - id_: 0
-      name: time_domain_control_bus
       category: bus
-      bus_category: time_domain
-      bus_subcategory: control
       alias: drive_line_bus
       system_control:
         id_: 0
-        name: time_domain_control_system_control
+        name: system_control
         category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: control
-        awg: QCM
-        signal_generator: rs_2
+        instruments: [QCM, rs_2]
       port: 0
     - id_: 1
-      name: time_domain_readout_bus
       category: bus
-      bus_category: time_domain
-      bus_subcategory: readout
       alias: feedline_input_output_bus
       system_control:
         id_: 1
-        name: time_domain_readout_system_control
+        name: readout_system_control
         category: system_control
-        system_control_category: time_domain
-        system_control_subcategory: readout
-        awg: QRM
-        signal_generator: rs_1
+        instruments: [QRM, rs_1]
       port: 1
   instrument_controllers:
     - name: qblox_cluster

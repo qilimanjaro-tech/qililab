@@ -9,10 +9,18 @@ coverage:
       src:
         paths:
           - "src"
-        target: 80% # the required coverage value
-        threshold: 10% # the leniency in hitting the target
+        target: auto # make sure coverage is not decreased (in comparison with the main branch)
         flags:
           - "unittests"
+    patch:
+      default: false # disable the default status that measures entire project
+      src:
+        paths:
+          - "src"
+        target: 100% # make sure coverage of new lines is 100%
+        flags:
+          - "unittests"
+
   notify:
     slack:
       default:

@@ -3,10 +3,7 @@
 from dataclasses import asdict, dataclass, field
 from typing import List
 
-from qiboconnection.api import API
-
 from qililab.constants import EXPERIMENT, RUNCARD
-from qililab.typings.execution import ExecutionOptions
 from qililab.typings.yaml_type import yaml
 from qililab.utils.loop import Loop
 
@@ -31,13 +28,9 @@ class ExperimentOptions:
     """Experiment Options"""
 
     loops: List[Loop] | None = None
-    settings: ExperimentSettings = ExperimentSettings()
-    connection: API | None = None
-    device_id: int | None = None
+    settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
     plot_y_label: str | None = None
-    remote_device_manual_override: bool = field(default=False)
-    execution_options: ExecutionOptions = ExecutionOptions()
     remote_save: bool = True
     description: str = ""
 
@@ -51,11 +44,7 @@ class ExperimentOptions:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.SETTINGS: asdict(self.settings),
             RUNCARD.NAME: self.name,
-            EXPERIMENT.CONNECTION: None,
-            EXPERIMENT.DEVICE_ID: self.device_id,
             EXPERIMENT.PLOT_Y_LABEL: self.plot_y_label,
-            EXPERIMENT.REMOTE_DEVICE_MANUAL_OVERRIDE: self.remote_device_manual_override,
-            EXPERIMENT.EXECUTION_OPTIONS: asdict(self.execution_options),
             EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
         }
@@ -75,14 +64,8 @@ class ExperimentOptions:
             settings=ExperimentSettings(**dictionary[RUNCARD.SETTINGS])
             if RUNCARD.SETTINGS in dictionary
             else ExperimentSettings(),
-            connection=dictionary.get(EXPERIMENT.CONNECTION, None),
-            device_id=dictionary.get(EXPERIMENT.DEVICE_ID, None),
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
             plot_y_label=dictionary.get(EXPERIMENT.PLOT_Y_LABEL, None),
-            remote_device_manual_override=dictionary.get(EXPERIMENT.REMOTE_DEVICE_MANUAL_OVERRIDE, False),
-            execution_options=ExecutionOptions(**dictionary[EXPERIMENT.EXECUTION_OPTIONS])
-            if EXPERIMENT.EXECUTION_OPTIONS in dictionary
-            else ExecutionOptions(),
             remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
             description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )

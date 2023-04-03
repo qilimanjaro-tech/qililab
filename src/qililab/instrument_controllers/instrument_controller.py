@@ -13,11 +13,7 @@ from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
 from qililab.settings import DDBBElement
-from qililab.typings.enums import (
-    InstrumentControllerName,
-    InstrumentControllerSubCategory,
-    Parameter,
-)
+from qililab.typings.enums import InstrumentControllerName, InstrumentControllerSubCategory, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
@@ -185,7 +181,6 @@ class InstrumentController(BusElement, ABC):
         """Initial setup of the instrument."""
         for module in self.modules:
             logger.info("Initial setup to instrument %s.", module.alias or module.name.value)
-
             module.initial_setup()
 
     def connect(self):

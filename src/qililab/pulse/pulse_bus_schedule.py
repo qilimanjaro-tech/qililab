@@ -33,8 +33,6 @@ class PulseBusSchedule:
             self._pulses.add(pulse_event.pulse)
         reference_pulse = self.timeline[0].pulse
         for pulse in self._pulses:
-            if pulse.frequency != reference_pulse.frequency:
-                raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
             if pulse.name != reference_pulse.name:
                 raise ValueError(
                     "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
@@ -69,13 +67,10 @@ class PulseBusSchedule:
             ValueError: All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)
             ValueError: All Pulse objects inside a PulseSequence should have the same frequency.
         """
-        if self.pulses:
-            if pulse.name != self.timeline[0].pulse.name:
-                raise ValueError(
-                    "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
-                )
-            if pulse.frequency != self.timeline[0].pulse.frequency:
-                raise ValueError("All Pulse objects inside a PulseSequence should have the same frequency.")
+        if self.pulses and pulse.name != self.timeline[0].pulse.name:
+            raise ValueError(
+                "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
+            )
 
     @property
     def end(self) -> int:
@@ -85,7 +80,7 @@ class PulseBusSchedule:
         end = 0
         for event in self.timeline:
             pulse_end = event.start_time + event.pulse.duration
-            end = pulse_end if pulse_end > end else end
+            end = max(pulse_end, end)
         return end
 
     @property
@@ -120,7 +115,7 @@ class PulseBusSchedule:
         """Redirect __iter__ magic method."""
         return self.timeline.__iter__()
 
-    def waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
+    def waveforms(self, resolution: float = 1.0) -> Waveforms:
         """PulseSequence 'waveforms' property.
 
         Args:
@@ -136,7 +131,7 @@ class PulseBusSchedule:
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
             time += pulse_event.start
-            pulse_waveforms = pulse_event.modulated_waveforms(frequency=frequency, resolution=resolution)
+            pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
             waveforms += pulse_waveforms
             time += pulse_event.duration
 
@@ -149,14 +144,6 @@ class PulseBusSchedule:
             PulseName | None: Name of the pulses if the pulse sequence is not empty, None otherwise.
         """
         return self.timeline[0].pulse.name if len(self.timeline) > 0 else None
-
-    @property
-    def frequency(self) -> float | None:
-        """Frequency of the pulses of the pulse sequence.
-        Returns:
-            float | None: Frequency of the pulses if the pulse sequence is not empty, None otherwise.
-        """
-        return self.timeline[0].pulse.frequency if len(self.timeline) > 0 else None
 
     @property
     def readout_pulse_duration(self):

@@ -3,7 +3,7 @@ Class to interface with the local oscillator RohdeSchwarz SGS100A
 """
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.signal_generator import SignalGenerator
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, RohdeSchwarzSGS100A
@@ -30,7 +30,6 @@ class SGS100A(SignalGenerator):
     device: RohdeSchwarzSGS100A
 
     @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
@@ -49,22 +48,35 @@ class SGS100A(SignalGenerator):
             self.settings.frequency = float(value)
             self.device.frequency(self.frequency)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        if parameter == Parameter.RF_ON:
+            value = bool(value)
+            if value:
+                self.turn_on()
+            else:
+                self.turn_off()
+            return
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup"""
         self.device.power(self.power)
         self.device.frequency(self.frequency)
+        if self.rf_on:
+            self.device.on()
+        else:
+            self.device.off()
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start generating microwaves."""
+        self.settings.rf_on = True
         self.device.on()
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop generating microwaves."""
+        self.settings.rf_on = False
         self.device.off()
 
     @Instrument.CheckDeviceInitialized

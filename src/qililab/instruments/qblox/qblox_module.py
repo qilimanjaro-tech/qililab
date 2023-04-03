@@ -1,26 +1,22 @@
 """Qblox module class"""
 import itertools
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative, set_phase_rad
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetPh, Stop, Wait, WaitSync
+from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
-from qililab.instruments.awg_settings.awg_sequencer_path import (
-    AWGSequencerPathIdentifier,
-)
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
@@ -45,11 +41,12 @@ class QbloxModule(AWG):
         """Contains the settings of a specific pulsar.
 
         Args:
-            sync_enabled (List[bool]): Enable synchronization over multiple instruments for each sequencer.
-            num_bins (int): Number of bins
+            awg_sequencers (Sequence[AWGQbloxSequencer]): list of settings for each sequencer
+            out_offsets (List[float]): list of offsets for each output of the qblox module
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
+        out_offsets: List[float]
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -101,33 +98,33 @@ class QbloxModule(AWG):
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
+        for idx, offset in enumerate(self.out_offsets):
+            self._set_out_offset(output=idx, value=offset)
+
     @property
     def module_type(self):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
     def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
     ) -> None:
         """Translate a Pulse Bus Schedule to an AWG program and upload it
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
         """
         self._check_cached_values(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _check_cached_values(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
-    ):
+    def _check_cached_values(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
@@ -135,7 +132,7 @@ class QbloxModule(AWG):
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
             # FIXME: Qblox supports to set it directly to the device instead of using a file
-            self.upload(sequence=sequence, path=path)
+            self.upload(sequence=sequence)
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
@@ -197,7 +194,7 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
-        wait_time = repetition_duration
+        wait_time = repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
@@ -239,7 +236,11 @@ class QbloxModule(AWG):
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
         if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
+            if self.num_sequencers == 1:
+                channel_id = 0
+            else:
+                raise ValueError("channel not specified to update instrument")
+
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
                 f"the specified channel id:{channel_id} is out of range. Number of sequencers is {self.num_sequencers}"
@@ -258,6 +259,10 @@ class QbloxModule(AWG):
             return
         if parameter == Parameter.OFFSET_PATH1:
             self._set_offset_path1(value=value, sequencer_id=channel_id)
+            return
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, sequencer_id=channel_id)
@@ -283,7 +288,7 @@ class QbloxModule(AWG):
         if parameter == Parameter.PHASE_IMBALANCE:
             self._set_phase_imbalance(value=value, sequencer_id=channel_id)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_num_bins(self, value: float | str | bool, sequencer_id: int):
@@ -369,6 +374,26 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
         self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_out_offset(self, output: int, value: float | str | bool):
+        """Set output offsets of the Qblox device.
+
+        Args:
+            output (int): output to update
+            value (float | str | bool): value to update
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        if output > len(self.out_offsets):
+            raise IndexError(
+                f"Output {output} is out of range. The runcard has only {len(self.out_offsets)} output offsets defined."
+                " Please update the list of output offsets of the runcard such that it contains a value for each "
+                "output of the device."
+            )
+        self.out_offsets[output] = value
+        getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
@@ -466,7 +491,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence, path: Path):
+    def upload(self, sequence: QpySequence):
         """Upload sequence to sequencer.
 
         Args:
@@ -474,12 +499,8 @@ class QbloxModule(AWG):
             acquisitions and program of the sequence.
         """
         logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-
-        file_path = str(path / f"{self.name.value}_sequence.yml")
-        with open(file=file_path, mode="w", encoding="utf-8") as file:
-            json.dump(obj=sequence.todict(), fp=file)
         for seq_idx in range(self.num_sequencers):
-            self.device.sequencers[seq_idx].sequence(file_path)
+            self.device.sequencers[seq_idx].sequence(sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
@@ -566,3 +587,8 @@ class QbloxModule(AWG):
             int: Final wait time.
         """
         return self._MIN_WAIT_TIME
+
+    @property
+    def out_offsets(self):
+        """Returns the offsets of each output of the qblox module."""
+        return self.settings.out_offsets
