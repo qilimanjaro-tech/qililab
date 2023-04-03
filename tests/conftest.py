@@ -1,51 +1,32 @@
 """Pytest configuration fixtures."""
-import copy
-from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
-from dummy_qblox import DummyPulsar
-from qblox_instruments import PulsarType
-from qiboconnection.api import API
-from qiboconnection.typings.connection import ConnectionConfiguration, ConnectionEstablished
-from qpysequence import Sequence
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
-from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
-from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
+from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.platform import Platform, Schema
+from qililab.platform import Platform
 from qililab.pulse import (
     CircuitToPulses,
-    Drag,
     Gaussian,
     Pulse,
     PulseBusSchedule,
     PulseEvent,
     PulseSchedule,
-    PulseShape,
     ReadoutEvent,
     ReadoutPulse,
-    Rectangular,
 )
-from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_control import SimulatedSystemControl
-from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
-from qililab.utils.signal_processing import modulate
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
 from .side_effect import yaml_safe_load_side_effect
-from .utils import dummy_qrm_name_generator
 
 
 @pytest.fixture(name="platform")
