@@ -131,7 +131,8 @@ class GS200(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
-        self.device.off()
+        pass
+        # self.device.off()
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
