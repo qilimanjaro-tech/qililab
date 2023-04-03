@@ -16,7 +16,7 @@ class ReadoutEvent(PulseEvent):
     """Describes a single pulse with a start time."""
 
     pulses: List[Pulse]
-    event_type: ClassVar[PulseEventName] = PulseEventName.PULSE
+    event_type: ClassVar[PulseEventName] = PulseEventName.READOUT
 
     @classmethod
     def from_dict(cls, dictionary: dict):

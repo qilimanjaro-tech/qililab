@@ -16,8 +16,9 @@ class TestPulseEvent:
 
     def test_envelope_method(self, pulse_event: PulseEvent):
         """Test envelope method"""
-        envelope = pulse_event.pulses.envelope(amplitude=2.0, resolution=0.1)
-        assert isinstance(envelope, np.ndarray)
+        for pulse in pulse_event.pulses:
+            envelope = pulse.envelope(amplitude=2.0, resolution=0.1)
+            assert isinstance(envelope, np.ndarray)
 
     def test_to_dict_method(self, pulse_event: PulseEvent):
         """Test to_dict method"""

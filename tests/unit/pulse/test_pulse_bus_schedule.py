@@ -8,10 +8,6 @@ from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, ReadoutEvent
 class TestPulseBusSchedule:
     """Unit tests checking the PulseSequence attributes and methods"""
 
-    def test_add_method(self, pulse_bus_schedule: PulseBusSchedule, pulse: Pulse):
-        """Test add method."""
-        pulse_bus_schedule.add(pulse=pulse, start_time=0)
-
     def test_add_event_method(self, pulse_bus_schedule: PulseBusSchedule, pulse_event: PulseEvent):
         """Test add method."""
         pulse_bus_schedule.add_event(pulse_event=pulse_event)
@@ -40,7 +36,7 @@ class TestPulseBusSchedule:
 
     def test_end(self, pulse_bus_schedule: PulseBusSchedule):
         last_pulse_event = pulse_bus_schedule.timeline[-1]
-        end = last_pulse_event.start_time + last_pulse_event.pulses.duration
+        end = last_pulse_event.start_time + last_pulse_event.duration
         assert end == pulse_bus_schedule.end
 
     def test_start(self, pulse_bus_schedule: PulseBusSchedule):

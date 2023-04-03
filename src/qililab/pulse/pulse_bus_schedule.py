@@ -48,7 +48,7 @@ class PulseBusSchedule:
         Args:
             pulse_event (PulseEvent): PulseEvent object.
         """
-        if self.pulses and pulse_event.event_type != self.timeline[0].event_type:
+        if self._pulses and pulse_event.event_type != self.name:
             raise ValueError(
                 "All PulseEvent objects inside a PulseBusSchedule should have the same type (PulseEvent or ReadoutEvent)."
             )
