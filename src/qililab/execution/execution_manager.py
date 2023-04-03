@@ -58,19 +58,9 @@ class ExecutionManager:
         for bus in self.buses:
             bus.upload()
 
-    def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
-        """
-        Function that converts input circuit for n qubits into m circuits one for each bus
-
-        Args: n qubit circuit
-              metadata on how qubits are mapped to buses
-        Output: m circuits, one for each bus.
-        """
-
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
-        # FIXME: run in parallel
         for bus in self.buses:
             bus.run()
 
@@ -86,16 +76,6 @@ class ExecutionManager:
         if not results:
             raise ValueError("No Results acquired")
         return results[0]
-
-    def _asynchronous_bus_run(self, bus: BusExecution):
-        """run pulse uploaded program asynchronously"""
-
-        def _threaded_function(bus: BusExecution):
-            """Asynchronous thread."""
-            bus.run()
-
-        thread = Thread(target=_threaded_function, args=[bus])
-        thread.start()
 
     def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None):
         """Asynchronously dumps data in file and plots the data.
