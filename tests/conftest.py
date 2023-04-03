@@ -333,16 +333,6 @@ def fixture_readout_pulse() -> ReadoutPulse:
     return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
-@pytest.fixture(name="base_system_control")
-def fixture_base_system_control(platform: Platform) -> SystemControl:
-    """Load SystemControl.
-
-    Returns:
-        SystemControl: Instance of the ControlSystemControl class.
-    """
-    return platform.buses[0].system_control
-
-
 @pytest.fixture(name="simulated_system_control")
 def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
     """Load SimulatedSystemControl.
@@ -376,12 +366,6 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     return platform
 
 
-@pytest.fixture(name="loop")
-def fixture_loop() -> Loop:
-    """Return Platform object."""
-    return Loop(alias="X", parameter=Parameter.AMPLITUDE, options=LoopOptions(start=0, stop=1))
-
-
 def platform_db() -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
@@ -400,39 +384,3 @@ def platform_yaml() -> Platform:
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
-
-
-@pytest.fixture(scope="session", name="mocked_connection_configuration")
-def fixture_create_mocked_connection_configuration() -> ConnectionConfiguration:
-    """Create a mock connection configuration"""
-    return ConnectionConfiguration(user_id=666, username="mocked_user", api_key="betterNOTaskMockedAPIKey")
-
-
-@pytest.fixture(scope="session", name="mocked_connection_established")
-def fixture_create_mocked_connection_established(
-    mocked_connection_configuration: ConnectionConfiguration,
-) -> ConnectionEstablished:
-    """Create a mock connection configuration"""
-    return ConnectionEstablished(
-        **asdict(mocked_connection_configuration),
-        authorisation_access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3O"
-        + "DkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.Sf"
-        + "lKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-        api_path="/api/v1",
-    )
-
-
-@pytest.fixture(scope="session", name="mocked_api")
-def fixture_create_mocked_api_connection(mocked_connection_established: ConnectionEstablished) -> API:
-    """Create a mocked api connection
-    Returns:
-        API: API mocked connection
-    """
-    with patch(
-        "qiboconnection.connection.load_config_file_to_disk",
-        autospec=True,
-        return_value=mocked_connection_established,
-    ) as mock_config:
-        api = API()
-        mock_config.assert_called()
-        return api

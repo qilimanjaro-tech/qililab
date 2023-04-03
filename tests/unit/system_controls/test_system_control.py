@@ -1,6 +1,19 @@
 """Tests for the SystemControl class."""
+import pytest
+
 from qililab.instruments import Instrument
+from qililab.platform import Platform
 from qililab.system_control import SystemControl
+
+
+@pytest.fixture(name="base_system_control")
+def fixture_base_system_control(platform: Platform) -> SystemControl:
+    """Load SystemControl.
+
+    Returns:
+        SystemControl: Instance of the ControlSystemControl class.
+    """
+    return platform.buses[0].system_control
 
 
 class TestSystemControl:
