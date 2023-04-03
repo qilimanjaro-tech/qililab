@@ -35,7 +35,6 @@ def fixture_vector_network_analyzer_no_device():
 )
 def fixture_vector_network_analyzer(mock_device: MagicMock, vector_network_analyzer_controller: E5080BController):
     """Return connected instance of VectorNetworkAnalyzer class"""
-    # add dynamically created attributes
     mock_instance = mock_device.return_value
     mock_instance.mock_add_spec(["power"])
     vector_network_analyzer_controller.connect()
