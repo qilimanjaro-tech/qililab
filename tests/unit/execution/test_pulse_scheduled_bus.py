@@ -2,7 +2,18 @@
 import pytest
 
 from qililab.execution import PulseScheduledBus
+from qililab.execution.execution_manager import ExecutionManager
 from qililab.pulse import PulseBusSchedule
+
+
+@pytest.fixture(name="pulse_scheduled_readout_bus")
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+    """Load PulseScheduledReadoutBus.
+
+    Returns:
+        PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
+    """
+    return execution_manager.readout_buses[0]
 
 
 class TestPulseScheduledBus:

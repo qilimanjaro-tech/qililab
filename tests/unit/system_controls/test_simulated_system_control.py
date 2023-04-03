@@ -1,11 +1,23 @@
 """Tests for the SimulatedSystemControl class."""
 
+import pytest
 from qilisimulator.evolution import Evolution
 
+from qililab.platform import Platform
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_control import SimulatedSystemControl
 from qililab.typings.enums import SystemControlName
+
+
+@pytest.fixture(name="simulated_system_control")
+def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
+    """Load SimulatedSystemControl.
+
+    Returns:
+        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
+    """
+    return simulated_platform.buses[0].system_control
 
 
 class TestSimulatedSystemControl:
