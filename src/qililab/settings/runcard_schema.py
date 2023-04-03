@@ -2,9 +2,16 @@
 from dataclasses import dataclass
 from typing import List, Literal
 
+from qililab.circuit.operations.special_operations.reset import Reset
 from qililab.constants import PLATFORM
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Category, MasterGateSettingsName, OperationTimingsCalculationMethod, Parameter
+from qililab.typings.enums import (
+    Category,
+    MasterGateSettingsName,
+    OperationTimingsCalculationMethod,
+    Parameter,
+    ResetMethod,
+)
 from qililab.utils import nested_dataclass
 
 
@@ -121,6 +128,7 @@ class RuncardSchema:
         timings_calculation_method: Literal[
             OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE
         ]
+        reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
         operations: List[OperationSettings]
         gates: List[GateSettings]

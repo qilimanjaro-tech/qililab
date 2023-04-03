@@ -521,3 +521,8 @@ class OperationTimingsCalculationMethod(str, Enum):
 class TranspilerOutputMethod(str, Enum):
     IN_PLACE = "in_place"
     COPY = "copy"
+
+
+class ResetMethod(str, Enum):
+    PASSIVE = "passive"
+    ACTIVE = "active"

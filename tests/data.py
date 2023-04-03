@@ -27,6 +27,7 @@ from qililab.instruments.awg_settings.typings import (
     AWGSequencerTypes,
     AWGTypes,
 )
+from qililab.platform.platform import Platform
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -41,6 +42,7 @@ from qililab.typings.enums import (
     PulseName,
     PulseShapeName,
     ReferenceClock,
+    ResetMethod,
     SystemControlName,
 )
 
@@ -61,6 +63,7 @@ class Galadriel:
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
         "operations": [
             {
@@ -492,6 +495,7 @@ class FluxQubitSimulator:
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
         "operations": [
             {

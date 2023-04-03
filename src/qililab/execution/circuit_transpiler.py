@@ -9,7 +9,7 @@ from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import TranspilerOutputMethod
+from qililab.typings.enums import ResetMethod, TranspilerOutputMethod
 
 
 @dataclass
@@ -86,14 +86,15 @@ class CircuitTranspiler:
                     for qubit in operation_node.qubits:
                         qubits_last_end_timings[qubit] = end_time
                 elif isinstance(operation_node.operation, Reset):
-                    start_time = max(
-                        [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                        + [max_end_time_of_previous_layer]
-                    )
-                    end_time = start_time + self.settings.passive_reset_duration
-                    operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                    for qubit in operation_node.qubits:
-                        qubits_last_end_timings[qubit] = end_time
+                    if self.settings.reset_method == ResetMethod.PASSIVE:
+                        start_time = max(
+                            [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
+                            + [max_end_time_of_previous_layer]
+                        )
+                        end_time = start_time + self.settings.passive_reset_duration
+                        operation_node.timing = OperationTiming(start=start_time, end=end_time)
+                        for qubit in operation_node.qubits:
+                            qubits_last_end_timings[qubit] = end_time
                 else:
                     raise ValueError(f"Operation {operation_node} not supported for translation yet.")
         output_circuit.has_timings_calculated = True

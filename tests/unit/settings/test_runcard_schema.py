@@ -57,6 +57,7 @@ class TestPlatformSettings:
         assert isinstance(settings.master_duration_gate, int)
         assert isinstance(settings.gates, list)
         assert isinstance(settings.gates[0], settings.GateSettings)
+        assert isinstance(settings.reset_method, str)
         assert isinstance(settings.passive_reset_duration, int)
         assert isinstance(settings.operations, list)
 
