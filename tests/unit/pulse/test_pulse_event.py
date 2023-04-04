@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import PulseEvent
+from qililab.pulse import Pulse, PulseEvent
 from qililab.utils import Waveforms
 
 
@@ -24,3 +24,15 @@ class TestPulseEvent:
         """Test to_dict method"""
         dictionary = pulse_event.to_dict()
         assert isinstance(dictionary, dict)
+
+    def test_merge_method(self, pulse_event: PulseEvent, pulse: Pulse):
+        """Test merge method."""
+        start_time = pulse_event.start_time
+        event_sync = PulseEvent(pulses=[pulse], start_time=start_time)
+        event_unsync = PulseEvent(pulses=[pulse], start_time=start_time + 1)
+        event_length_original = len(pulse_event.pulses)
+        with pytest.raises(ValueError):
+            pulse_event.merge(pulse_event=event_unsync)
+        assert len(pulse_event.pulses) == event_length_original
+        pulse_event.merge(event_sync)
+        assert len(pulse_event.pulses) == event_length_original + 1
