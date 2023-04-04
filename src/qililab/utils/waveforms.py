@@ -59,4 +59,4 @@ class Waveforms:
         """
         i = sum(waveforms.i for waveforms in waveforms_list) / len(waveforms_list)
         q = sum(waveforms.q for waveforms in waveforms_list) / len(waveforms_list)
-        return cls(i, q)
+        return cls(np.array(i), np.array(q))
