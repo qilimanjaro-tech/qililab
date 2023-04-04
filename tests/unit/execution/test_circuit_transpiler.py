@@ -88,9 +88,6 @@ class TestCircuitTranspiler:
 
         @dataclass
         class UnkownOperation(Operation):
-            def __post_init__(self):
-                self.parameters = {}
-
             @classproperty
             def name(self) -> OperationName:
                 return OperationName.X
@@ -98,6 +95,10 @@ class TestCircuitTranspiler:
             @classproperty
             def multiplicity(self) -> OperationMultiplicity:
                 return OperationMultiplicity.PARALLEL
+
+            @property
+            def parameters(self):
+                return {}
 
         circuit = Circuit(1)
         circuit.add(0, UnkownOperation())

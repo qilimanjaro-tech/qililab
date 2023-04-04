@@ -21,13 +21,29 @@ class GaussianPulse(PulseOperation):
     duration: int
     sigma: float
 
-    def __post_init__(self):
-        self.parameters = {"amplitude": self.amplitude, "duration": self.duration, "sigma": self.sigma}
-
     @classproperty
     def name(self) -> OperationName:
+        """Get operation's name
+
+        Returns:
+            OperationName: The operation's name
+        """
         return OperationName.GAUSSIAN
 
     @classproperty
     def multiplicity(self) -> OperationMultiplicity:
+        """Get operation's multiplicity
+
+        Returns:
+            OperationMultiplicity: The operation's multiplicity
+        """
         return OperationMultiplicity.PARALLEL
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {"amplitude": self.amplitude, "duration": self.duration, "sigma": self.sigma}

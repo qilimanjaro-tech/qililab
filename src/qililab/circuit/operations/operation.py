@@ -1,12 +1,16 @@
-# pylint: disable=no-member
+"""Operation class
+
+This file provides the abstract base class (ABC) Operation, which serves as the base class for all quantum operations in a quantum circuit.
+
+It defines the ParameterValue and Parameters types for handling operation parameters.
+The Operation class includes methods for setting and getting parameter values, as well as parsing a string representation of an operation to create an instance of the corresponding operation.
+"""
 
 import re
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from inspect import Signature, signature
-from typing import ClassVar, Dict, Tuple
-
-from pytest import param
+from typing import Dict, Tuple
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.typings import OperationName
@@ -21,7 +25,6 @@ Parameters = Dict[str, ParameterValue]
 class Operation(ABC):
     """Base class of all operations"""
 
-    parameters: Parameters = field(init=False, default_factory=dict)
     _class_signature: Signature | None = None
 
     @classproperty
@@ -33,6 +36,16 @@ class Operation(ABC):
     @abstractmethod
     def multiplicity(self) -> OperationMultiplicity:
         """Abstract property for the operation multiplicity."""
+
+    @property
+    @abstractmethod
+    def parameters(self) -> Parameters:
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {}
 
     @property
     def parameters_names(self) -> Tuple[str, ...]:
@@ -61,7 +74,7 @@ class Operation(ABC):
         return len(self.parameters) > 0
 
     def set_parameter(self, name: str, value: ParameterValue):
-        """Set parameter value
+        """Set parameter's value
 
         Args:
             name (str): The name of the parameter
@@ -70,9 +83,8 @@ class Operation(ABC):
         Raises:
             ValueError: If parameter does not exist
         """
-        if name not in self.parameters:
+        if not (hasattr(self, name) and name in self.parameters):
             raise ValueError(f"Operation {self.name} has no parameter '{name}'")
-        self.parameters[name] = value
         setattr(self, name, value)
 
     def get_parameter(self, name: str) -> ParameterValue:
@@ -87,13 +99,17 @@ class Operation(ABC):
         Returns:
             ParameterValue: The value of the parameter
         """
-        if name not in self.parameters:
+        if not (hasattr(self, name) and name in self.parameters):
             raise ValueError(f"Operation {self.name} has no parameter '{name}'")
-        return self.parameters[name]
+        return getattr(self, name)
 
     def __str__(self) -> str:
-        """Return the string representation of the operation."""
-        result = self.name.value
+        """Get the string representation of the operation
+
+        Returns:
+            str: The string representation of the operation
+        """
+        result = self.name.value  # pylint: disable=no-member
         if self.has_parameters():
             parameters = ",".join([f"{name}={value}" for name, value in self.parameters.items()])
             result += f"({parameters})"

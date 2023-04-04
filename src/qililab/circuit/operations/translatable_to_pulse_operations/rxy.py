@@ -22,54 +22,87 @@ class Rxy(TranslatableToPulseOperation):
     theta: float
     phi: float
 
-    def __post_init__(self):
-        self.parameters = {"theta": self.theta, "phi": self.phi}
-
     @classproperty
     def name(self) -> OperationName:
         return OperationName.RXY
 
     @classproperty
     def multiplicity(self) -> OperationMultiplicity:
+        """Get operation's multiplicity
+
+        Returns:
+            OperationMultiplicity: The operation's multiplicity
+        """
         return OperationMultiplicity.PARALLEL
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {"theta": self.theta, "phi": self.phi}
 
 
 @OperationFactory.register
 @dataclass
 class R180(Rxy):
-    """Operation representing a pi rotation around XY axis
+    """R180 Operation
+
+    Operation representing a pi rotation around XY axis
 
     Args:
         phi (float): phi angle in degrees
     """
 
-    theta: float = field(init=False)
+    theta: float = field(init=False, default=180)
     phi: float
-
-    def __post_init__(self):
-        self.theta = 180
-        self.parameters = {"phi": self.phi}
 
     @classproperty
     def name(self) -> OperationName:
+        """Get operation's name
+
+        Returns:
+            OperationName: The operation's name
+        """
         return OperationName.R180
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {"phi": self.phi}
 
 
 @OperationFactory.register
 @dataclass
 class X(R180):
-    """Operation representing a pi rotation around XY axis with zero phase.
-    It is the equivelant to an X gate.
+    """X Operation
+
+    Operation representing a pi rotation around XY axis with zero phase. It is the equivelant to an X gate.
     """
 
-    theta: float = field(init=False)
-    phi: float = field(init=False)
-
-    def __post_init__(self):
-        self.theta = 180
-        self.phi = 0
-        self.parameters = {}
+    theta: float = field(init=False, default=180)
+    phi: float = field(init=False, default=0)
 
     @classproperty
     def name(self) -> OperationName:
+        """Get operation's name
+
+        Returns:
+            OperationName: The operation's name
+        """
         return OperationName.X
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {}

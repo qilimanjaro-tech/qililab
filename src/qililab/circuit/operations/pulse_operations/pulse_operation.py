@@ -14,3 +14,12 @@ class PulseOperation(Operation):
 
     amplitude: float
     duration: int
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {"amplitude": self.amplitude, "duration": self.duration}

@@ -11,13 +11,29 @@ from qililab.utils import classproperty
 class Barrier(SpecialOperation):
     """Operation representing a time constraint (forced synchronization)."""
 
-    def __post_init__(self):
-        self.parameters = {}
-
     @classproperty
     def name(self) -> OperationName:
+        """Get operation's name
+
+        Returns:
+            OperationName: The operation's name
+        """
         return OperationName.BARRIER
 
     @classproperty
     def multiplicity(self) -> OperationMultiplicity:
+        """Get operation's multiplicity
+
+        Returns:
+            OperationMultiplicity: The operation's multiplicity
+        """
         return OperationMultiplicity.MULTIPLEXED
+
+    @property
+    def parameters(self):
+        """Get the names and values of all parameters as dictionary
+
+        Returns:
+            Parameters: The parameters of the operation
+        """
+        return {}
