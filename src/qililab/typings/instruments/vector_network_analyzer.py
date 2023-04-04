@@ -9,7 +9,7 @@ from qililab.typings.instruments.device import Device
 
 @dataclass
 class VectorNetworkAnalyzerDriver(Device):
-    """Typing class of the Vector Network Analyzer generic PyVisa driver."""
+    """Typing class of the driver for a Vector Network Analyzer instrument."""
 
     name: str
     address: str
@@ -20,7 +20,6 @@ class VectorNetworkAnalyzerDriver(Device):
         """Configure driver and connect to the resource"""
         resource_manager = pyvisa.ResourceManager("@py")
         self.driver = resource_manager.open_resource(f"TCPIP::{self.address}::INSTR")
-        self.driver.timeout = self.timeout
 
     def initial_setup(self):
         """Set initial preset"""
@@ -33,35 +32,22 @@ class VectorNetworkAnalyzerDriver(Device):
         """Reset instrument settings."""
         self.driver.write("SYST:PRES; *OPC?")
 
-    def send_command(self, command: str, arg: str = "?"):
+    def send_command(self, command: str, arg: str = ""):
         """Function to communicate with the device."""
         return self.driver.write(f"{command} {arg}")  # type: ignore
 
-    def output(self, arg="?"):
-        """Turns RF output power on/off
-        Give no argument to query current status.
-        Parameters
-        -----------
-        arg : int, str
-            Set state to 'ON', 'OFF', 1, 0
-        """
-        return self.send_command(command=":OUTP", arg=arg)
+    def send_query(self, query: str):
+        """Function to communicate with the device."""
+        return self.driver.query(query)  # type: ignore
+
+    def send_binary_query(self, query: str):
+        """Function to communicate with the device."""
+        return self.driver.query_binary_values(query)  # type: ignore
+
+    def autoscale(self):
+        """Autoscale."""
+        self.driver.write("DISP:WIND:TRAC:Y:AUTO")
 
     def set_timeout(self, value: float):
         """Set timeout in mili seconds."""
         self.timeout = value
-
-    def stop(self):
-        """Close an instrument."""
-        self.output(arg="OFF")
-
-    def start(self):
-        """Open an instrument."""
-        self.output(arg="ON")
-
-    def read_tracedata(self):
-        """
-        Returnthe current trace data.
-        It already releases the VNA after finishing the required number of averages.
-        """
-        pass
