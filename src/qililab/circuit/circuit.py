@@ -116,21 +116,20 @@ class Circuit:
         return self.graph[index]
 
     def _last_operation_of_qubit(self, qubit: int) -> Tuple[int, Node]:
-        """Get the last operation node regarding qubit, along with the layer's index the node is
+        """Get the last operation node regarding qubit, along with the layer's index. If no operation found returns the entry node.
 
         Args:
             qubit (int): qubit's index
 
         Returns:
-            Tuple[int, Node]: layer, Node
+            Tuple[int, Node]: layer index, Node
         """
-        layer_index, last_operation = 0, self.entry_node
         layers = rx.layers(self.graph, [self.entry_node.index])  # pylint: disable=no-member
-        for index, layer in enumerate(layers[1:]):
+        for index, layer in reversed(list(enumerate(layers[1:]))):
             for operation in layer:
                 if qubit in operation.qubits:
-                    layer_index, last_operation = index, operation
-        return layer_index, last_operation
+                    return index, operation
+        return 0, self.entry_node
 
     def get_operation_layers(
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
@@ -138,7 +137,7 @@ class Circuit:
         """Get the layers of operation nodes. Each layer represents an advancement in time.
 
         Args:
-            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
+            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. If set to `OperationTimingsCalcuationMethod.AS_LATE_AS_POSSIBLE, we rearrange the layers, moving operations to the largest layer index possible. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
 
         Returns:
             List[List[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
