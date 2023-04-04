@@ -31,19 +31,31 @@ class TestPulseBusSchedule:
             assert isinstance(pulse, PulseEvent)
 
     def test_unique_pulses_duration(self, pulse_bus_schedule: PulseBusSchedule):
+        """Test unique pulses duration."""
         pulses_duration = sum(pulse.duration for pulse in pulse_bus_schedule.pulses)
         assert pulses_duration == pulse_bus_schedule.unique_pulses_duration
 
     def test_end(self, pulse_bus_schedule: PulseBusSchedule):
+        """Test end property"""
         last_pulse_event = pulse_bus_schedule.timeline[-1]
         end = last_pulse_event.start_time + last_pulse_event.duration
         assert end == pulse_bus_schedule.end
 
     def test_start(self, pulse_bus_schedule: PulseBusSchedule):
+        """Test start property"""
         first_pulse_event = pulse_bus_schedule.timeline[0]
         start = first_pulse_event.start_time
         assert start == pulse_bus_schedule.start
 
     def test_total_duration(self, pulse_bus_schedule: PulseBusSchedule):
+        """Test total duration property"""
         duration = pulse_bus_schedule.end - pulse_bus_schedule.start
         assert pulse_bus_schedule.duration == duration
+
+    def test_empty_schedule(self):
+        """Test the instantiation of a PulseBusSchedule without any events."""
+        try:
+            empty = PulseBusSchedule(port=0)
+        except Exception as exc:
+            assert False, f"Instantiation of empty PulseBusSchedule raised {exc}"
+        assert len(empty.timeline) == 0
