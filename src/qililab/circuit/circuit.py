@@ -1,11 +1,13 @@
-# pylint: disable=no-member
+"""Circuit class
 
-from dataclasses import asdict, dataclass, field
-from tkinter.messagebox import NO
+This file provides the Circuit class for representing quantum circuits.
+
+It stores the circuit as a Directed Acyclic Graph and uses the rustworkx library for its manipulation.
+It offers methods to add operations to the circuit, calculate the circuit's depth, and visualize the circuit.
+"""
 from typing import List, Tuple
 
 import rustworkx as rx
-from rustworkx.visit import BFSVisitor, DFSVisitor, PruneSearch
 from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
@@ -13,22 +15,40 @@ from qililab.circuit.operations import Operation
 from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
 
 
-@dataclass
 class Circuit:
-    num_qubits: int
-    entry_node: EntryNode = field(init=False)
-    graph: rx.PyDiGraph = field(init=False)
-    has_timings_calculated: bool = field(default=False)
+    """The Circuit class"""
 
-    def __post_init__(self):
-        if not isinstance(self.num_qubits, int):
+    def __init__(self, num_qubits: int):
+        """Constructor of Circuit
+
+        Args:
+            num_qubits (int): The number of qubits of the circuit
+
+        Raises:
+            ValueError: If num_qubits is not integer.
+            ValueError: If num_qubits is not positive.
+        """
+        if not isinstance(num_qubits, int):
             raise ValueError("Number of qubits should be integer.")
-        if self.num_qubits <= 0:
+        if num_qubits <= 0:
             raise ValueError("Number of qubits should be positive.")
-        self.graph = rx.PyDiGraph(multigraph=True)
-        self.entry_node = self._add_entry_node()
+
+        self.num_qubits: int = num_qubits
+        self.graph: rx.PyDiGraph = rx.PyDiGraph(multigraph=True)  # pylint: disable=no-member
+        self.has_timings_calculated: bool = False
+
+        index = self.graph.add_node(EntryNode())
+        self.graph[index].index = index
+        self.entry_node = self.graph[index]
 
     def add(self, qubits: int | Tuple[int, ...], operation: Operation, alias: str | None = None):
+        """Adds an operation to the circuit.
+
+        Args:
+            qubits (int | Tuple[int, ...]): The qubit(s) the operation acts on
+            operation (Operation): The operation to add
+            alias (str | None, optional): Optional alias for the operation. Defaults to None.
+        """
         self.has_timings_calculated = False
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
         if operation.multiplicity == OperationMultiplicity.PARALLEL:
@@ -38,15 +58,34 @@ class Circuit:
 
     @property
     def depth(self) -> int:
-        return len(rx.layers(self.graph, [self.entry_node.index])) - 1
+        """Get the depth of the circuit which is essentially the number of operation layers
+
+        Returns:
+            int: The depth of the circuit
+        """
+        return len(rx.layers(self.graph, [self.entry_node.index])) - 1  # pylint: disable=no-member
 
     def _add_parallel_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
+        """Add an operation node for each qubit
+
+        Args:
+            qubits (Tuple[int, ...]): The qubits the operations acts on
+            operation (Operation): The operation to add
+            alias (str | None, optional): Optional alias for the operation. Defaults to None.
+        """
         for qubit in qubits:
             _, last_operation_node = self._last_operation_of_qubit(qubit=qubit)
             new_operation_node = self._add_operation_node(qubits=(qubit,), operation=operation, alias=alias)
             self.graph.add_edge(last_operation_node.index, new_operation_node.index, None)
 
     def _add_multiplexed_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
+        """Adds one operation node for all qubits
+
+        Args:
+            qubits (Tuple[int, ...]): The qubits the operation acts on
+            operation (Operation): The operation to add
+            alias (str | None, optional): Optional alias for the operation. Defaults to None.
+        """
         new_operation_node = self._add_operation_node(qubits=qubits, operation=operation, alias=alias)
         last_operation_nodes = []
         for qubit in qubits:
@@ -76,16 +115,6 @@ class Circuit:
         self.graph[index].index = index
         return self.graph[index]
 
-    def _add_entry_node(self) -> EntryNode:
-        """Add the entry point of circuit's graph. Should be called only once on Circuit's `__post_init__()`
-
-        Returns:
-            EntryNode: The entry node added
-        """
-        index = self.graph.add_node(EntryNode())
-        self.graph[index].index = index
-        return self.graph[index]
-
     def _last_operation_of_qubit(self, qubit: int) -> Tuple[int, Node]:
         """Get the last operation node regarding qubit, along with the layer's index the node is
 
@@ -96,7 +125,7 @@ class Circuit:
             Tuple[int, Node]: layer, Node
         """
         layer_index, last_operation = 0, self.entry_node
-        layers = rx.layers(self.graph, [self.entry_node.index])
+        layers = rx.layers(self.graph, [self.entry_node.index])  # pylint: disable=no-member
         for index, layer in enumerate(layers[1:]):
             for operation in layer:
                 if qubit in operation.qubits:
@@ -114,7 +143,7 @@ class Circuit:
         Returns:
             List[List[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
         """
-        layers = rx.layers(self.graph, [self.entry_node.index])[1:]
+        layers = rx.layers(self.graph, [self.entry_node.index])[1:]  # pylint: disable=no-member
         for layer in layers:
             layer.sort(key=lambda node: node.index)
         if method == OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE:
@@ -139,10 +168,10 @@ class Circuit:
             return layers
 
     def draw(self, filename: str | None = None):
-        """Draw the circuit's graph.
+        """Draws the circuit's graph.
 
         Args:
-            filename (str | None, optional): If set, then the result is saved to a file. Defaults to None.
+            filename (str | None, optional): If set, the result is saved to a file. Defaults to None.
         """
 
         def node_attr(node):
