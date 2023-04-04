@@ -6,6 +6,7 @@ from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
 from qililab.instruments import QbloxQCM
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 
@@ -133,3 +134,15 @@ class TestQbloxQCM:
     def test_frequency_property(self, qcm_no_device: QbloxQCM):
         """Test frequency property."""
         assert qcm_no_device.frequency(0) == qcm_no_device.awg_sequencers[0].intermediate_frequency
+
+    def test_multiplexing_limit_error(self, qcm_no_device: QbloxQCM):
+        frequencies = [6.0 + i * 0.1 for i in range(7)]
+        event = PulseEvent(
+            pulses=[
+                Pulse(amplitude=1, phase=0, duration=1000, frequency=frequency, pulse_shape=Gaussian(num_sigmas=5))
+                for frequency in frequencies
+            ],
+            start_time=0,
+        )
+        pulse_bus_schedule = PulseBusSchedule(port=0, timeline=[event])
+        qcm_no_device._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
