@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from bisect import insort
 from dataclasses import dataclass, field
-from typing import ClassVar, List
+from typing import ClassVar, List, Set
 
 from qililab.constants import PULSEEVENT, RUNCARD
 from qililab.pulse.pulse import Pulse
@@ -36,6 +36,16 @@ class PulseEvent:
             pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time) for pulse in self.pulses
         ]
         return Waveforms.from_composition(waveforms_list=waveforms_list)
+
+    @property
+    def frequencies(self) -> Set[float]:
+        """Frequencies present in the PulseEvent.
+
+
+        Returns:
+            Set[float]: Set containing the frequencies present in the event.
+        """
+        return {pulse.frequency for pulse in self.pulses}
 
     @property
     def duration(self) -> int:

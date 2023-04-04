@@ -66,3 +66,7 @@ class TestPulseBusSchedule:
         timeline = [pulse_event, readout_event]
         with pytest.raises(ValueError):
             PulseBusSchedule(port=0, timeline=timeline)
+
+    def test_frequencies(self, pulse_bus_schedule: PulseBusSchedule):
+        """Test that the set of frequencies of a PulseBusShedule contains the correct amount of elements."""
+        assert len(pulse_bus_schedule.frequencies) == 1

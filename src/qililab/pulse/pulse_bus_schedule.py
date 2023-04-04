@@ -43,6 +43,19 @@ class PulseBusSchedule:
             for pulse in event.pulses:
                 self._pulses.add(pulse)
 
+    @property
+    def frequencies(self) -> Set[float]:
+        """Frequencies present in the PulseEvent.
+
+
+        Returns:
+            Set[float]: Set containing the frequencies present in the schedule.
+        """
+        frequencies_set: Set[float] = set()
+        for event in self.timeline:
+            frequencies_set = frequencies_set.union(event.frequencies)
+        return frequencies_set
+
     def add_event(self, pulse_event: PulseEvent):
         """Add pulse event to sequence.
         Args:
