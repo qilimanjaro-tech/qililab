@@ -578,7 +578,7 @@ class QbloxModule(AWG):
         frequencies = sorted(pulse_bus_schedule.frequencies)
         if len(frequencies) > self._NUM_MAX_SEQUENCERS:
             raise IndexError(
-                f"A QbloxModule only can support up to {self._NUM_MAX_SEQUENCERS}. Current PulseBusSchedule contains {len(frequencies)}"
+                f"A QbloxModule only can support up to {self._NUM_MAX_SEQUENCERS} frequencies. Current PulseBusSchedule contains {len(frequencies)}."
             )
 
         waveforms_dict = {frequency: Waveforms() for frequency in frequencies}

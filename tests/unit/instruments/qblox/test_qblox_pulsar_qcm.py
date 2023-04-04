@@ -145,4 +145,5 @@ class TestQbloxQCM:
             start_time=0,
         )
         pulse_bus_schedule = PulseBusSchedule(port=0, timeline=[event])
-        qcm_no_device._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        with pytest.raises(IndexError):
+            qcm_no_device._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
