@@ -59,3 +59,10 @@ class TestPulseBusSchedule:
         except Exception as exc:
             assert False, f"Instantiation of empty PulseBusSchedule raised {exc}"
         assert len(empty.timeline) == 0
+
+    def test_wrong_instantiation(self, pulse_event: PulseEvent, readout_event: ReadoutEvent):
+        """Test that a PulseBusSchedule cannot be instantiated with a list containing a PulseEvent and a
+        ReadoutEvent."""
+        timeline = [pulse_event, readout_event]
+        with pytest.raises(ValueError):
+            PulseBusSchedule(port=0, timeline=timeline)
