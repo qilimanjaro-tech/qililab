@@ -2,7 +2,7 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, cast
+from typing import Dict, List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -128,35 +128,45 @@ class QbloxModule(AWG):
         """check if values are already cached and upload if not cached"""
         if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
             self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence = self._translate_pulse_bus_schedule(
+            sequences = self._translate_pulse_bus_schedule(
                 pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
             )
-            # FIXME: Qblox supports to set it directly to the device instead of using a file
-            self.upload(sequence=sequence)
+            self.upload(sequences=list(sequences.values()))
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ):
-        """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
+    ) -> Dict[float, QpySequence]:
+        """Translate a PulseBusSchedule QPySequences.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
 
         Returns:
-            Sequence: Qblox Sequence object containing the program and waveforms.
+            Dict[float, Sequence]: Dictionary containing the Qblox sequence (value) for each frequency (key) present in the PulseBusSchedule.
         """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        waveforms_dict = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions(
             sequencer_id=self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         )
-        program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule,
-            waveforms=waveforms,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-        )
+        programs = {}
+        for frequency, waveforms in waveforms_dict.items():
+            program = self._generate_program(
+                pulse_bus_schedule=pulse_bus_schedule,
+                waveforms=waveforms,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+            )
+            programs[frequency] = program
         weights = self._generate_weights()
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return {
+            frequency: QpySequence(
+                program=programs[frequency],
+                waveforms=waveforms_dict[frequency],
+                acquisitions=acquisitions,
+                weights=weights,
+            )
+            for frequency in pulse_bus_schedule.frequencies
+        }
 
     def _generate_program(
         self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots: int, repetition_duration: int
@@ -492,15 +502,14 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence):
+    def upload(self, sequences: List[QpySequence]):
         """Upload sequence to sequencer.
 
         Args:
-            sequence (Sequence): Sequence object containing the waveforms, weights,
-            acquisitions and program of the sequence.
+            sequences (List[Sequence]): List of Sequence objects, each containing the waveforms, weights, acquisitions and program of the sequence.
         """
-        logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-        for seq_idx in range(self.num_sequencers):
+        for seq_idx, sequence in enumerate(sequences):
+            logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
             self.device.sequencers[seq_idx].sequence(sequence.todict())
 
     def _set_nco(self, sequencer_id: int):
@@ -559,27 +568,30 @@ class QbloxModule(AWG):
                     f"channel_map_path1_out{sequencer.out_id_path1}_en", True
                 )
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule) -> Dict[float, Waveforms]:
         """Generate I and Q waveforms from a PulseBusSchedule object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule object.
         Returns:
-            Waveforms: Waveforms object containing the generated waveforms.
+            Dict[float, Waveforms]: dictionary with the generated Waveforms (value) for each frequency (key).
         """
-        waveforms = Waveforms()
+        frequencies: List[float] = list(pulse_bus_schedule.frequencies).sort()
+        if len(frequencies) > self._NUM_MAX_SEQUENCERS:
+            raise IndexError(
+                f"A QbloxModule only can support up to {self._NUM_MAX_SEQUENCERS}. Current PulseBusSchedule contains {len(frequencies)}"
+            )
 
-        unique_pulses: List[Tuple[int, PulseShape]] = []
+        waveforms_dict = {frequency: Waveforms() for frequency in frequencies}
+        unique_pulses: List[Tuple[int, PulseShape, float]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
             for pulse in pulse_event.pulses:
-                if (pulse.duration, pulse.pulse_shape) not in unique_pulses:
-                    unique_pulses.append((pulse_event.duration, pulse.pulse_shape))
+                if (pulse.duration, pulse.pulse_shape, pulse.frequency) not in unique_pulses:
+                    unique_pulses.append((pulse_event.duration, pulse.pulse_shape, pulse.frequency))
                     envelope = pulse.envelope(amplitude=1)
-                    real = np.real(envelope)
-                    imag = np.imag(envelope)
-                    waveforms.add_pair((real, imag), name=pulse.label())
+                    waveforms_dict[pulse.frequency].add_pair_from_complex(envelope, name=pulse.label())
 
-        return waveforms
+        return waveforms_dict
 
     @property
     def final_wait_time(self) -> int:
