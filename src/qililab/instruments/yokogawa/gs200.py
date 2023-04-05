@@ -89,7 +89,7 @@ class GS200(CurrentSource):
     def source_mode(self, value):
         """sets the source mode"""
         self.settings.source_mode = value
-        self.device.source_mode(self.settings.source_mode.name)
+        self.device._set_source_mode(self.settings.source_mode.name)
 
     @property
     def output_status(self):
@@ -118,7 +118,7 @@ class GS200(CurrentSource):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        self.device.source_mode(YokogawaSourceModes.CURR.name)
+        self.device._set_source_mode(YokogawaSourceModes.CURR.name)
 
     @Instrument.CheckDeviceInitialized
     def start(self):

@@ -49,7 +49,14 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
+from .data import (
+    FluxQubitSimulator,
+    Galadriel,
+    SauronYokogawa,
+    circuit,
+    experiment_params,
+    simulated_experiment_circuit,
+)
 from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
@@ -57,7 +64,13 @@ from .utils import dummy_qrm_name_generator
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db()
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="sauron_yoko_platform")
+def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronYokogawa.runcard)
 
 
 @pytest.fixture(name="schema")
@@ -611,9 +624,9 @@ def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     return request.param  # type: ignore
 
 
-def platform_db() -> Platform:
+def platform_db(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name=DEFAULT_PLATFORM_NAME)
             mock_load.assert_called()
@@ -621,9 +634,9 @@ def platform_db() -> Platform:
     return platform
 
 
-def platform_yaml() -> Platform:
+def platform_yaml(runcard: dict) -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="sauron")
             mock_load.assert_called()

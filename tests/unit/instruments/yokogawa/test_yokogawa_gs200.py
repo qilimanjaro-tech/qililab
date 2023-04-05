@@ -12,19 +12,11 @@ from tests.data import SauronYokogawa
 
 
 @pytest.fixture(name="yokogawa_gs200_controller")
-def fixture_yokogawa_gs200_controller(platform: Platform):
+def fixture_yokogawa_gs200_controller(sauron_yoko_platform: Platform):
     """Return an instance of GS200 controller class"""
     settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200_controller)
     settings.pop("name")
-    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
-
-
-@pytest.fixture(name="yokogawa_gs200_no_device")
-def fixture_yokogawa_gs200_no_device():
-    """Return an instance of GS200 class"""
-    settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200)
-    settings.pop("name")
-    return GS200(settings=settings)
+    return GS200Controller(settings=settings, loaded_instruments=sauron_yoko_platform.instruments)
 
 
 @pytest.fixture(name="yokogawa_gs200")
@@ -61,15 +53,16 @@ class TestGS200:
         if parameter == Parameter.SOURCE_MODE:
             assert yokogawa_gs200.source_mode == YokogawaSourceModes(value)
 
-    def test_to_dict_method(self, yokogawa_gs200_no_device: GS200):
+    def test_to_dict_method(self, yokogawa_gs200: GS200):
         """Test the dict method"""
-        assert isinstance(yokogawa_gs200_no_device.to_dict(), dict)
+        assert isinstance(yokogawa_gs200.to_dict(), dict)
 
     @pytest.mark.parametrize("ramp_to, step, delay", [(0.001, 0.0001, 0), (0.001, 0.0001, 1), (0.0001, 0.00005, 10)])
     def test_ramp_current_method(self, ramp_to, step, delay, yokogawa_gs200: GS200):
         """Test the ramp current method"""
-        assert yokogawa_gs200.settings.current_value == ramp_to
+        yokogawa_gs200.ramp_current(ramp_to, step, delay)
         yokogawa_gs200.device.ramp_current.assert_called_with(ramp_to=ramp_to, step=step, delay=delay)
+        assert yokogawa_gs200.settings.current_value == ramp_to
 
     def test_start_method(self, yokogawa_gs200: GS200):
         """Test start method"""
@@ -86,19 +79,19 @@ class TestGS200:
     def test_initial_setup_method(self, yokogawa_gs200: GS200):
         """Test the initial setup method"""
         yokogawa_gs200.initial_setup()
-        yokogawa_gs200.device.source_mode.assert_called_with(YokogawaSourceModes.CURR.name)
+        yokogawa_gs200.device._set_source_mode.assert_called_with(YokogawaSourceModes.CURR.name)
 
-    def test_source_mode_property(self, yokogawa_gs200_no_device: GS200):
+    def test_source_mode_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
-        assert hasattr(yokogawa_gs200_no_device, "source_mode")
-        assert yokogawa_gs200_no_device.source_mode == yokogawa_gs200_no_device.settings.source_mode
+        assert hasattr(yokogawa_gs200, "source_mode")
+        assert yokogawa_gs200.source_mode == yokogawa_gs200.settings.source_mode
 
-    def test_output_status_property(self, yokogawa_gs200_no_device: GS200):
+    def test_output_status_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
-        assert hasattr(yokogawa_gs200_no_device, "output_status")
-        assert yokogawa_gs200_no_device.output_status == yokogawa_gs200_no_device.settings.output_status
+        assert hasattr(yokogawa_gs200, "output_status")
+        assert yokogawa_gs200.output_status == yokogawa_gs200.settings.output_status
 
-    def test_current_value_property(self, yokogawa_gs200_no_device: GS200):
+    def test_current_value_property(self, yokogawa_gs200: GS200):
         """Test the source mode property"""
-        assert hasattr(yokogawa_gs200_no_device, "current_value")
-        assert yokogawa_gs200_no_device.current_value == yokogawa_gs200_no_device.settings.current_value
+        assert hasattr(yokogawa_gs200, "current_value")
+        assert yokogawa_gs200.current_value == yokogawa_gs200.settings.current_value
