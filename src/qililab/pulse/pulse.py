@@ -11,7 +11,7 @@ from qililab.utils import Factory, Waveforms
 from qililab.utils.signal_processing import modulate
 
 
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
@@ -20,13 +20,6 @@ class Pulse:
     duration: int
     frequency: float
     pulse_shape: PulseShape
-
-    def __post_init__(self):
-        """Create Pulse Shape"""
-        if isinstance(self.pulse_shape, dict):
-            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
-                **self.pulse_shape,  # pylint: disable=not-a-mapping
-            )
 
     def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
@@ -66,6 +59,9 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
+        pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
+        pulse_shape = Factory.get(name=pulse_shape_dict.pop(RUNCARD.NAME))(**pulse_shape_dict)
+        dictionary[PULSE.PULSE_SHAPE] = pulse_shape
         return cls(**dictionary)
 
     def to_dict(self):
