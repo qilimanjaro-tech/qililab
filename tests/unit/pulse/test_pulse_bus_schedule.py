@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, ReadoutEvent
+from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent
 
 
 class TestPulseBusSchedule:
@@ -15,14 +15,6 @@ class TestPulseBusSchedule:
     def test_add_event_method(self, pulse_bus_schedule: PulseBusSchedule, pulse_event: PulseEvent):
         """Test add method."""
         pulse_bus_schedule.add_event(pulse_event=pulse_event)
-
-    def test_add_event_method_with_wrong_pulse(
-        self, pulse_bus_schedule: PulseBusSchedule, pulse_event: PulseEvent, readout_event: ReadoutEvent
-    ):
-        """Test add method with wrong name"""
-        pulse_bus_schedule.add_event(pulse_event=pulse_event)
-        with pytest.raises(ValueError):
-            pulse_bus_schedule.add_event(pulse_event=readout_event)
 
     def test_waveforms_method(self, pulse_bus_schedule: PulseBusSchedule):
         """Test waveforms method."""

@@ -9,7 +9,6 @@ import numpy as np
 
 from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 from qililab.utils.signal_processing import modulate
 
@@ -18,7 +17,6 @@ from qililab.utils.signal_processing import modulate
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    name: ClassVar[PulseName] = PulseName.PULSE
     amplitude: float
     phase: float
     duration: int
@@ -79,7 +77,6 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSE.NAME: self.name.value,
             PULSE.AMPLITUDE: self.amplitude,
             PULSE.FREQUENCY: self.frequency,
             PULSE.PHASE: self.phase,

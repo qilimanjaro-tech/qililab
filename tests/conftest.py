@@ -34,8 +34,6 @@ from qililab.pulse import (
     PulseEvent,
     PulseSchedule,
     PulseShape,
-    ReadoutEvent,
-    ReadoutPulse,
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
@@ -523,28 +521,6 @@ def fixture_pulse_event() -> PulseEvent:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="readout_event")
-def fixture_readout_event() -> ReadoutEvent:
-    """Load ReadoutEvent.
-
-    Returns:
-        ReadoutEvent: Instance of the PulseEvent class.
-    """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
-    return ReadoutEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="readout_pulse")
-def fixture_readout_pulse() -> ReadoutPulse:
-    """Load ReadoutPulse.
-
-    Returns:
-        ReadoutPulse: Instance of the ReadoutPulse class.
-    """
-    pulse_shape = Gaussian(num_sigmas=4)
-    return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 @pytest.fixture(name="simulated_platform")

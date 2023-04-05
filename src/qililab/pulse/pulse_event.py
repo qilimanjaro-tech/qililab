@@ -5,8 +5,6 @@ from dataclasses import dataclass, field
 
 from qililab.constants import PULSEEVENT, RUNCARD
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.readout_pulse import ReadoutPulse
-from qililab.typings.enums import PulseName
 from qililab.utils.waveforms import Waveforms
 
 
@@ -67,11 +65,7 @@ class PulseEvent:
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
         print(dictionary)
-        pulse = (
-            Pulse.from_dict(pulse_settings)
-            if Pulse.name == PulseName(pulse_settings.pop(RUNCARD.NAME))
-            else ReadoutPulse.from_dict(pulse_settings)
-        )
+        pulse = Pulse.from_dict(pulse_settings)
         start_time = dictionary[PULSEEVENT.START_TIME]
         return PulseEvent(pulse=pulse, start_time=start_time)
 

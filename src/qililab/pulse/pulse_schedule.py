@@ -36,7 +36,7 @@ class PulseSchedule:
             pulse (PulseEvent): PulseEvent object.
         """
         for pulse_sequence in self.elements:
-            if port == pulse_sequence.port and pulse_event.pulse.name == pulse_sequence.name:
+            if port == pulse_sequence.port:
                 pulse_sequence.add_event(pulse_event=pulse_event)
                 return
         self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))

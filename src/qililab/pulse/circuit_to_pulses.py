@@ -13,8 +13,6 @@ from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.readout_event import ReadoutEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
@@ -140,14 +138,17 @@ class CircuitToPulses:
 
     def _readout_gate_to_pulse_event(
         self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> Tuple[ReadoutEvent | None, int]:
+    ) -> Tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
-            gate (Gate): Qibo Gate.
+            time: Dict[int, int]: time.
+            readout_gate (Gate): Qibo Gate.
+            qubit_id (int): qubit number.
+            chip (Chip): chip object.
 
         Returns:
-            Pulse: Pulse object.
+            Tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
@@ -161,8 +162,8 @@ class CircuitToPulses:
         )
 
         return (
-            ReadoutEvent(
-                pulse=ReadoutPulse(
+            PulseEvent(
+                pulse=Pulse(
                     amplitude=gate_settings.amplitude,
                     phase=gate_settings.phase,
                     duration=gate_settings.duration,

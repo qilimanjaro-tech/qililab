@@ -8,14 +8,12 @@ import numpy as np
 from qililab.constants import PULSEBUSSCHEDULE
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.typings import PulseName
 from qililab.utils import Waveforms
 
 
 @dataclass
 class PulseBusSchedule:
-    """Container of Pulse objects addressed to the same bus. All pulses should have the same name
-    (Pulse or ReadoutPulse) and have the same frequency."""
+    """Container of Pulse objects addressed to the same bus."""
 
     port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: List[PulseEvent] = field(default_factory=list)
@@ -24,19 +22,9 @@ class PulseBusSchedule:
     def __post_init__(self):
         """Sort timeline and add used pulses to the pulses set if timeline is not empty."""
         if self.timeline:
-            self._sort_and_check()
-
-    def _sort_and_check(self):
-        """Sort timeline and add used pulses to the pulses set."""
-        self.timeline.sort()
-        for pulse_event in self.timeline:
-            self._pulses.add(pulse_event.pulse)
-        reference_pulse = self.timeline[0].pulse
-        for pulse in self._pulses:
-            if pulse.name != reference_pulse.name:
-                raise ValueError(
-                    "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
-                )
+            self.timeline.sort()
+            for pulse_event in self.timeline:
+                self._pulses.add(pulse_event.pulse)
 
     def add(self, pulse: Pulse, start_time: int):
         """Add pulse to sequence that will begin at start_time.
@@ -44,7 +32,6 @@ class PulseBusSchedule:
             pulse (Pulse): Pulse object.
             start_time (int): Start time in nanoseconds.
         """
-        self._check_pulse_validity(pulse)
         self._pulses.add(pulse)
         insort(self.timeline, PulseEvent(pulse, start_time))
 
@@ -53,24 +40,8 @@ class PulseBusSchedule:
         Args:
             pulse_event (PulseEvent): PulseEvent object.
         """
-        self._check_pulse_validity(pulse_event.pulse)
         self._pulses.add(pulse_event.pulse)
         insort(self.timeline, pulse_event)
-
-    def _check_pulse_validity(self, pulse: Pulse):
-        """Checks whether pulse is valid or not based on its name and frequency.
-
-        Args:
-            pulse (Pulse): Pulse to check.
-
-        Raises:
-            ValueError: All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)
-            ValueError: All Pulse objects inside a PulseSequence should have the same frequency.
-        """
-        if self.pulses and pulse.name != self.timeline[0].pulse.name:
-            raise ValueError(
-                "All Pulse objects inside a PulseSequence should have the same type (Pulse or ReadoutPulse)."
-            )
 
     @property
     def end(self) -> int:
@@ -136,29 +107,6 @@ class PulseBusSchedule:
             time += pulse_event.duration
 
         return waveforms
-
-    @property
-    def name(self) -> PulseName | None:
-        """Name of the pulses of the pulse sequence.
-        Returns:
-            PulseName | None: Name of the pulses if the pulse sequence is not empty, None otherwise.
-        """
-        return self.timeline[0].pulse.name if len(self.timeline) > 0 else None
-
-    @property
-    def readout_pulse_duration(self):
-        """Duration in ns of the longest readout pulse in the pulse sequence.
-
-        Returns:
-            int: Duration in ns of the readout pulse
-        """
-        max_readout_pulse_duration = max(
-            pulse.duration for pulse in self.pulses if pulse.name == PulseName.READOUT_PULSE
-        )
-
-        if max_readout_pulse_duration == 0:
-            raise ValueError("No ReadoutPulse found.")
-        return max_readout_pulse_duration
 
     def to_dict(self):
         """Return dictionary representation of the class.
