@@ -36,6 +36,7 @@ class Circuit:
         self.num_qubits: int = num_qubits
         self.graph: rx.PyDiGraph = rx.PyDiGraph(multigraph=True)  # pylint: disable=no-member
         self.has_timings_calculated: bool = False
+        self.has_transpiled_to_pulses: bool = False
 
         index = self.graph.add_node(EntryNode())
         self.graph[index].index = index
@@ -177,10 +178,14 @@ class Circuit:
             if isinstance(node, EntryNode):
                 return {"color": "yellow", "fillcolor": "yellow", "style": "filled", "label": "start"}
             else:
+                operation = (
+                    str(node.operation)
+                    if node.transpiled_pulse_operation is None
+                    else f"{node.operation} -> {node.transpiled_pulse_operation}"
+                )
                 qubits = ", ".join((str(qubit) for qubit in node.qubits))
-                operation = str(node.operation)
-                timing = f"\n{node.timing.start} -> {node.timing.end}" if node.timing is not None else ""
-                label = f"{operation}: {qubits}{timing}"
+                timing = f"{node.timing.start}ns -> {node.timing.end}ns" if node.timing is not None else ""
+                label = f"{operation}: {qubits}\n{timing}"
                 return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
         image = graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)

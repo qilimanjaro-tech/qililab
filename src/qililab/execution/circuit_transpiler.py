@@ -133,5 +133,6 @@ class CircuitTranspiler:
                         **pulse_operation_settings.parameters,
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
-                    operation_node.operation = pulse_operation
+                    operation_node.transpiled_pulse_operation = pulse_operation
+        output_circuit.has_transpiled_to_pulses = True
         return output_circuit

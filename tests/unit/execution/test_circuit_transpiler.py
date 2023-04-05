@@ -82,6 +82,7 @@ class TestCircuitTranspiler:
         transpiled_circuit = transpiler.transpile_to_pulse_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit.depth == circuit.depth
+        assert transpiled_circuit.has_transpiled_to_pulses is True
 
     def test_calculate_timings_method_raises_error_when_operation_not_supported(self, platform: Platform):
         """Test num_qubits property"""

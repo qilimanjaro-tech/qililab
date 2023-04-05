@@ -3,6 +3,7 @@ from typing import Tuple
 
 from qililab.circuit.nodes.node import Node
 from qililab.circuit.operations import Operation
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 
 
 @dataclass
@@ -25,3 +26,4 @@ class OperationNode(Node):
     qubits: Tuple[int, ...]
     alias: str | None = None
     timing: OperationTiming | None = None
+    transpiled_pulse_operation: PulseOperation | None = None
