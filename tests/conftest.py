@@ -115,16 +115,6 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     return experiment.execution.execution_manager  # pylint: disable=protected-access
 
 
-@pytest.fixture(name="pulse_scheduled_bus")
-def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
-    """Load PulseScheduledBus.
-
-    Returns:
-        PulseScheduledBus: Instance of the PulseScheduledBus class.
-    """
-    return execution_manager.buses[0]
-
-
 @pytest.fixture(name="pulse")
 def fixture_pulse() -> Pulse:
     """Load Pulse.
