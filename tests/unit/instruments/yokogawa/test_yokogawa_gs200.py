@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qililab.instrument_controllers import GS200Controller
-from qililab.instruments.yokogawa import GS200
+from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Controller
+from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import SauronYokogawa
@@ -25,7 +25,7 @@ def fixture_yokogawa_gs200_no_device():
     settings = copy.deepcopy(SauronYokogawa.yokogawa_gs200)
     settings.pop("name")
     return None
-    # return GS200(settings=settings)
+    return GS200(settings=settings)
 
 
 @pytest.fixture(name="yokogawa_gs200")
