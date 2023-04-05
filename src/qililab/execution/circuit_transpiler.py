@@ -44,6 +44,11 @@ class CircuitTranspiler:
                     if index >= 1
                     else 0
                 )
+                # Initial guess of start time of operation
+                start_time = max(
+                    [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
+                    + [max_end_time_of_previous_layer]
+                )
                 # Calculate [start-end] time of operation
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
@@ -57,43 +62,18 @@ class CircuitTranspiler:
                         if isinstance(operation_node.operation, Measure)
                         else self.settings.delay_between_pulses
                     )
-                    start_time = (
-                        max(
-                            [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                            + [max_end_time_of_previous_layer]
-                        )
-                        + delay
-                    )
+                    start_time = start_time + delay
                     end_time = start_time + pulse_duration
                 elif isinstance(operation_node.operation, PulseOperation):
-                    start_time = (
-                        max(
-                            [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                            + [max_end_time_of_previous_layer]
-                        )
-                        + self.settings.delay_between_pulses
-                    )
+                    start_time = start_time + self.settings.delay_between_pulses
                     end_time = start_time + operation_node.operation.duration
                 elif isinstance(operation_node.operation, Wait):
-                    start_time = max(
-                        [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                        + [max_end_time_of_previous_layer]
-                    )
                     end_time = start_time + operation_node.operation.t
                 elif isinstance(operation_node.operation, Barrier):
-                    start_time = max(
-                        [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                        + [max_end_time_of_previous_layer]
-                    )
                     end_time = start_time
                 elif isinstance(operation_node.operation, Reset):
                     if self.settings.reset_method == ResetMethod.PASSIVE:
-                        start_time = max(
-                            [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
-                            + [max_end_time_of_previous_layer]
-                        )
                         end_time = start_time + self.settings.passive_reset_duration
-                        operation_node.timing = OperationTiming(start=start_time, end=end_time)
                 else:
                     raise ValueError(f"Operation {operation_node} not supported for translation yet.")
                 # Update timings
