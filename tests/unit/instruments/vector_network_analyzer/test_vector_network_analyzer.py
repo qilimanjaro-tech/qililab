@@ -3,6 +3,7 @@ import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
+import pyvisa
 
 from qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller import E5080BController
 from qililab.instruments.keysight.e5080b_vna import E5080B
@@ -95,3 +96,45 @@ class TestVectorNetworkAnalyzer:
         mock_ready.return_value = True
         output = vector_network_analyzer.acquire_result()
         assert isinstance(output, VNAResult)
+
+
+class TestVectorNetworkAnalyzerDriver:
+    """Test for the driver class at typings"""
+
+    def test_post_init_method(self, vector_network_analyzer: E5080B):
+        """Test the postinit function from the driver"""
+        vector_network_analyzer.device.__post_init__()
+        vector_network_analyzer.device.pyvisa.ResourceManager.assert_called_with("@py")
+        assert isinstance(vector_network_analyzer.device.driver, pyvisa.Resource)
+
+    def test_initial_setup_method(self, vector_network_analyzer: E5080B):
+        """Test the initial setup method of the driver"""
+        vector_network_analyzer.device.initial_setup()
+        vector_network_analyzer.device.driver.write.assert_called_with("FORM:DATA REAL,32")
+        vector_network_analyzer.device.driver.write.assert_called_with("*CLS")
+        vector_network_analyzer.device.driver.write.assert_called_with("SYST:PRES; *OPC?")
+
+    def test_reset_method(self, vector_network_analyzer: E5080B):
+        """Test the reset method of the driver"""
+        vector_network_analyzer.device.initial_setup()
+        vector_network_analyzer.device.driver.write.assert_called_with("SYST:PRES; *OPC?")
+
+    def test_send_command(self, command, arg, vector_network_analyzer: E5080B):
+        """Test the send command method of the driver"""
+        vector_network_analyzer.device.send_command(command, arg)
+        vector_network_analyzer.device.driver.write.assert_called_with(f"{command} {arg}")
+
+    def test_send_query_method(self, query, vector_network_analyzer: E5080B):
+        """Test the send query method of the driver"""
+        vector_network_analyzer.device.send_query(query)
+        vector_network_analyzer.device.driver.query.assert_called_with(query)
+
+    def test_send_binary_query_method(self, query, vector_network_analyzer: E5080B):
+        """Test the send binary query method of the driver"""
+        vector_network_analyzer.device.send_binary_query(query)
+        vector_network_analyzer.device.driver.query_binary_values.assert_called_with(query)
+
+    def test_set_timeput_method(self, value, vector_network_analyzer: E5080B):
+        """Test the set timeout method of the driver"""
+        vector_network_analyzer.device.set_timeout(value)
+        assert vector_network_analyzer.device.timeout == value

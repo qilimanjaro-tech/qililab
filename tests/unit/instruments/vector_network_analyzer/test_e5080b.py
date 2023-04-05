@@ -1,10 +1,12 @@
 """Test for the VectorNetworkAnalyzer E5080B class."""
 import copy
+from sqlite3 import Time
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller import E5080BController
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
@@ -82,6 +84,18 @@ class TestE5080B:
     @pytest.mark.parametrize(
         "parameter, value",
         [
+            (Parameter.CURRENT, 0.34),
+            (Parameter.VOLTAGE, -20.1),
+        ],
+    )
+    def test_setup_method_flt_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with incorrect float parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.setup(parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
             (Parameter.TRIGGER_MODE, "INT"),
             (Parameter.SCATTERING_PARAMETER, "S21"),
             (Parameter.SWEEP_MODE, "cont"),
@@ -113,7 +127,19 @@ class TestE5080B:
         """Test the setup method raises exception with incorrect str value"""
         assert isinstance(parameter, Parameter)
         assert isinstance(value, str)
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
+            e5080b.setup(parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.CURRENT, "foo"),
+            (Parameter.VOLTAGE, "bar"),
+        ],
+    )
+    def test_setup_method_str_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with incorrect str parameter"""
+        with pytest.raises(ParameterNotFound):
             e5080b.setup(parameter, value)
 
     @pytest.mark.parametrize(
@@ -127,6 +153,18 @@ class TestE5080B:
         if parameter == Parameter.AVERAGING_ENABLED:
             assert e5080b.averaging_enabled == value
 
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.CURRENT, True),
+            (Parameter.VOLTAGE, False),
+        ],
+    )
+    def test_setup_method_bool_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with incorrect bool parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.setup(parameter, value)
+
     @pytest.mark.parametrize("parameter, value", [(Parameter.NUMBER_POINTS, 100), (Parameter.NUMBER_AVERAGES, 4)])
     def test_setup_method_value_int(self, parameter: Parameter, value, e5080b: E5080B):
         """Test the setup method with int value"""
@@ -137,6 +175,31 @@ class TestE5080B:
             assert e5080b.number_points == value
         if parameter == Parameter.NUMBER_AVERAGES:
             assert e5080b.number_averages == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.CURRENT, 0),
+            (Parameter.VOLTAGE, -20),
+        ],
+    )
+    def test_setup_method_int_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with incorrect int parameter"""
+        with pytest.raises(ParameterNotFound):
+            e5080b.setup(parameter, value)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.SCATTERING_PARAMETER, ["S221"]),
+            (Parameter.SCATTERING_PARAMETER, {}),
+            (Parameter.SWEEP_MODE, None),
+        ],
+    )
+    def test_setup_method_raises_exception(self, parameter, value, e5080b: E5080B):
+        """Test the setup method raises exception with incorrect value type"""
+        with pytest.raises(Exception):
+            e5080b.setup(parameter, value)
 
     def test_get_sweep_mode_method(self, e5080b: E5080B):
         """Test the get sweep mode method"""
@@ -184,7 +247,15 @@ class TestE5080B:
         """Test the auxiliary private method wait until ready"""
         mock_ready.return_value = True
         output = e5080b._wait_until_ready()
-        assert isinstance(output, bool)
+        assert output
+
+    @patch("qililab.instruments.keysight.e5080b_vna.E5080B.ready")
+    @patch.object(E5080B, "device_timeout", new=10)
+    def test_wait_until_ready_method_fails(self, mock_ready, e5080b: E5080B):
+        """Test the auxiliary private method wait until ready fails"""
+        mock_ready.return_value = False
+        output = e5080b._wait_until_ready()
+        assert not output
 
     def test_average_clear_method(self, e5080b: E5080B):
         """Test the average clear method"""
@@ -200,6 +271,16 @@ class TestE5080B:
         """Test ready method"""
         output = e5080b.ready()
         assert isinstance(output, bool)
+
+    @patch("qililab.instruments.keysight.e5080b_vna.E5080B._get_sweep_mode")
+    def test_ready_method_raises_exception(self, mock_get_sweep_mode, e5080b: E5080B):
+        """Test read method raises an Exception"""
+        mock_get_sweep_mode.side_effect = ValueError("Mocked exception")
+        output = e5080b.ready()
+        assert not output
+        with pytest.raises(Exception) as exc:
+            e5080b.ready()
+            assert exc == Exception
 
     def test_release_method(self, e5080b: E5080B):
         """Test release method"""
@@ -217,6 +298,14 @@ class TestE5080B:
         mock_ready.return_value = True
         output = e5080b.read_tracedata()
         assert output is not None
+
+    @patch("qililab.instruments.keysight.e5080b_vna.E5080B.ready")
+    @patch.object(E5080B, "device_timeout", new=10)
+    def test_read_tracedata_method_raises_exception(self, mock_ready, e5080b: E5080B):
+        """Test the read tracedata method"""
+        mock_ready.return_value = False
+        with pytest.raises(TimeoutError):
+            e5080b.read_tracedata()
 
     def test_power_property(self, e5080b_no_device: E5080B):
         """Test power property."""
@@ -277,6 +366,12 @@ class TestE5080B:
         """Test the sweep mode property"""
         assert hasattr(e5080b, "sweep_mode")
         assert e5080b.sweep_mode == e5080b.settings.sweep_mode
+
+    @pytest.mark.parametrize("value", ["foo", "bar"])
+    def test_sweep_mode_property_fails(self, value, e5080b: E5080B):
+        """Test the sweep mode property setter raises an exception"""
+        with pytest.raises(ValueError):
+            e5080b.sweep_mode = value
 
     def test_device_timeout_property(self, e5080b_no_device: E5080B):
         """Test the device timeout property"""

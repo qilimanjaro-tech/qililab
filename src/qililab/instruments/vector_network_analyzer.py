@@ -54,7 +54,6 @@ class VectorNetworkAnalyzer(Instrument):
 
     def read_tracedata(self):
         """Get data from device."""
-        pass
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
