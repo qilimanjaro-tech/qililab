@@ -37,13 +37,13 @@ class CircuitTranspiler:
         layers = output_circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         qubits_last_end_timings = [0 for _ in range(nqubits)]
         for index, layer in enumerate(layers):
+            # Calculate maximum end time of previous layer
+            max_end_time_of_previous_layer = (
+                max([op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None])
+                if index >= 1
+                else 0
+            )
             for operation_node in layer:
-                # Calculate maximum end time of previous layer
-                max_end_time_of_previous_layer = (
-                    max([op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None])
-                    if index >= 1
-                    else 0
-                )
                 # Initial guess of start time of operation
                 start_time = max(
                     [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
