@@ -4,7 +4,6 @@ from enum import Enum
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseShapeName
 
 

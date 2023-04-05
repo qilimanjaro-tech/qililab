@@ -6,7 +6,7 @@ import numpy as np
 from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip import Chip, Node
+from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -14,7 +14,6 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 

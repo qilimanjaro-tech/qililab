@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from qililab.constants import PULSEEVENT, RUNCARD
+from qililab.constants import PULSEEVENT
 from qililab.pulse.pulse import Pulse
 from qililab.utils.waveforms import Waveforms
 
