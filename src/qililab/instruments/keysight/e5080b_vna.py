@@ -188,10 +188,8 @@ class E5080B(VectorNetworkAnalyzer):
     def _average_state(self, state, channel=1):
         """Set status of Average."""
         if state:
-            self.averaging_enabled = True
             self.send_command(f"SENS{channel}:AVER:STAT", "ON")
         else:
-            self.averaging_enabled = False
             self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
 
     def _average_count(self, count, channel):
@@ -214,9 +212,9 @@ class E5080B(VectorNetworkAnalyzer):
         Trigger count is set to number of averages
         """
         if not self.averaging_enabled:
-            self.averaging_enabled(state="True")
-            self.number_averages(1)
-        self._set_count(self.number_averages)
+            self.averaging_enabled = True
+            self.number_averages = 1
+        self._set_count(str(self.settings.number_averages))
 
     def _start_measurement(self):
         """
@@ -224,7 +222,7 @@ class E5080B(VectorNetworkAnalyzer):
         Also, the averages need to be reset.
         """
         self.average_clear()
-        self.sweep_mode("group")
+        self.sweep_mode = "group"
 
     def _wait_until_ready(self, period=0.25) -> bool:
         """Waiting function to wait until VNA is ready."""
@@ -483,10 +481,14 @@ class E5080B(VectorNetworkAnalyzer):
         except Exception:
             return False
 
-    def release(self):
+    def release(self, channel=1):
         """Bring the VNA back to a mode where it can be easily used by the operator."""
         self.settings.sweep_mode = VNASweepModes("cont")
-        self.sweep_mode(self.settings.sweep_mode.value)
+        self.send_command(f"SENS{channel}:SWE:MODE", self.settings.sweep_mode.value)
+
+    def autoscale(self):
+        """Autoscale"""
+        self.send_command(command="DISP:WIND:TRAC:Y:AUTO")
 
     def read_tracedata(self):
         """

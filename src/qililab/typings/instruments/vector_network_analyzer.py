@@ -44,10 +44,6 @@ class VectorNetworkAnalyzerDriver(Device):
         """Function to communicate with the device."""
         return self.driver.query_binary_values(query)  # type: ignore
 
-    def autoscale(self):
-        """Autoscale."""
-        self.driver.write("DISP:WIND:TRAC:Y:AUTO")
-
     def set_timeout(self, value: float):
         """Set timeout in mili seconds."""
         self.timeout = value
