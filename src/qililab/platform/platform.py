@@ -1,12 +1,13 @@
 """Platform class."""
 from dataclasses import asdict
+from typing import Tuple
 
 from qiboconnection.api import API
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
+from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
-from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
 from qililab.typings.yaml_type import yaml
@@ -111,7 +112,7 @@ class Platform:
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int):
+    def get_bus(self, port: int) -> Tuple[int, Bus] | Tuple[list, None]:
         """Find bus associated with the specified port.
 
         Args:
@@ -124,6 +125,26 @@ class Platform:
             ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
             ([], None),
         )
+
+    def get_bus_by_qubit_index(self, qubit_index: int):
+        """Find bus associated with the given qubit index.
+
+        Args:
+            qubit_index (int): qubit index
+
+        Returns:
+            Tuple[Bus, Bus]: Returns a tuple of Bus objects containing the control and readout buses of the given qubit
+        """
+        control_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=False)
+        readout_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=True)
+        control_bus = self.get_bus(port=control_port)[1]
+        readout_bus = self.get_bus(port=readout_port)[1]
+        if readout_bus is None or control_bus is None:
+            raise ValueError(
+                f"Could not find buses for qubit {qubit_index} connected to the ports "
+                f"{readout_port} and {control_port}."
+            )
+        return control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
