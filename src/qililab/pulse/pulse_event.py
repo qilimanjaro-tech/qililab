@@ -33,18 +33,6 @@ class PulseEvent:
         """
         return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time)
 
-    @property
-    def start(self):
-        """Pulse 'start' property.
-
-        Raises:
-            ValueError: Is start time is not defined.
-
-        Returns:
-            int: Start time of the pulse.
-        """
-        return self.start_time
-
     def to_dict(self):
         """Return dictionary of pulse.
 

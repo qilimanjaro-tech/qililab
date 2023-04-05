@@ -18,17 +18,6 @@ class PulseSchedule:
 
     elements: List[PulseBusSchedule] = field(default_factory=list)
 
-    def add(self, pulse: Pulse, start_time: int, port: int):
-        """Add pulse.
-
-        Args:
-            pulse (Pulse): Pulse object.
-            start_time (int): start time of the pulse.
-            port (int): target port.
-        """
-        pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
-        self.add_event(pulse_event=pulse_event, port=port)
-
     def add_event(self, pulse_event: PulseEvent, port: int):
         """Add pulse event.
 

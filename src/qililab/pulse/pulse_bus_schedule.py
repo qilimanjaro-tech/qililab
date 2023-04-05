@@ -26,15 +26,6 @@ class PulseBusSchedule:
             for pulse_event in self.timeline:
                 self._pulses.add(pulse_event.pulse)
 
-    def add(self, pulse: Pulse, start_time: int):
-        """Add pulse to sequence that will begin at start_time.
-        Args:
-            pulse (Pulse): Pulse object.
-            start_time (int): Start time in nanoseconds.
-        """
-        self._pulses.add(pulse)
-        insort(self.timeline, PulseEvent(pulse, start_time))
-
     def add_event(self, pulse_event: PulseEvent):
         """Add pulse event to sequence.
         Args:
@@ -98,10 +89,10 @@ class PulseBusSchedule:
         waveforms = Waveforms()
         time = 0
         for pulse_event in self.timeline:
-            wait_time = round((pulse_event.start - time) / resolution)
+            wait_time = round((pulse_event.start_time - time) / resolution)
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
-            time += pulse_event.start
+            time += pulse_event.start_time
             pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
             waveforms += pulse_waveforms
             time += pulse_event.duration

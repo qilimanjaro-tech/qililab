@@ -5,14 +5,6 @@ from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 class TestPulseSequences:
     """Unit tests checking the PulseSequences attributes and methods"""
 
-    def test_add_method(
-        self,
-        pulse_schedule: PulseSchedule,
-        pulse: Pulse,
-    ):
-        """Test add method."""
-        pulse_schedule.add(pulse=pulse, start_time=0, port=0)
-
     def test_add_event_method(self, pulse_schedule: PulseSchedule, pulse_event: PulseEvent):
         """Tead add_event method."""
         pulse_schedule.add_event(pulse_event=pulse_event, port=0)
