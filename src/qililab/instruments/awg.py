@@ -1,16 +1,12 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import Sequence
+from typing import List, Sequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
-from qililab.instruments.awg_settings.typings import (
-    AWGSequencerPathIdentifier,
-    AWGTypes,
-)
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGTypes
 from qililab.instruments.instrument import Instrument
 from qililab.pulse import PulseBusSchedule
 from qililab.utils.asdict_factory import dict_factory
@@ -68,31 +64,21 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            repetition_duration (int): repetition duration
+
+        Returns:
+            list: list of compiled assembly programs
         """
 
     @abstractmethod
     def run(self):
         """Run the uploaded program"""
-
-    def frequency(self, sequencer_id: int | None = None, port_id: int | None = None):
-        """AWG 'frequency' property."""
-        if sequencer_id is None and port_id is None:
-            raise ValueError("one of 'sequencer_id' or 'port_id' must be defined.")
-        if port_id is not None:
-            sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=port_id)
-        if sequencer_id is None:
-            raise ValueError("'sequencer_id' must be defined.")
-        return self.get_sequencer(sequencer_id=sequencer_id).intermediate_frequency
 
     @property
     def num_sequencers(self):
@@ -116,10 +102,7 @@ class AWG(Instrument):
     @property
     def intermediate_frequencies(self):
         """AWG 'intermediate_frequencies' property."""
-        return [
-            self.settings.awg_sequencers[sequencer.identifier].intermediate_frequency
-            for sequencer in self.awg_sequencers
-        ]
+        return [sequencer.intermediate_frequency for sequencer in self.awg_sequencers]
 
     def offset_i(self, sequencer_id: int):
         """AWG 'offset_i' property."""
@@ -152,28 +135,13 @@ class AWG(Instrument):
             if iq_channel.sequencer_id_i_channel == sequencer_id
         ]
 
-        return self._check_path_identifier_results(sequencer_id, path_identifier)
+        if len(path_identifier) != 1:
+            raise ValueError(
+                "Each sequencer should only contain 1 path connected to the I channel."
+                f"Sequencer {sequencer_id} has {len(path_identifier)} paths connected to the I channel."
+            )
 
-    def _check_path_identifier_results(self, sequencer_id: int, path_identifier: list[AWGSequencerPathIdentifier]):
-        """check that the list of path identifiers has only one element
-
-        Args:
-            sequencer_id (int): sequencer identifier
-            path_identifier (list[AWGSequencerPathIdentifier]): path identifier list
-
-        Raises:
-            ValueError: No I/Q Channel mapped to the sequencer with id
-            ValueError: More than one I/Q Channel mapped to the sequencer with id
-
-        Returns:
-            _type_: _description_
-        """
-        return self._check_only_one_element_or_raise_error(
-            path_identifier,
-            "No I Channel mapped to the sequencer with id: ",
-            sequencer_id,
-            "More than one I Channel mapped to the sequencer with id: ",
-        )
+        return path_identifier[0]
 
     def get_sequencer_path_id_mapped_to_q_channel(self, sequencer_id: int) -> AWGSequencerPathIdentifier:
         """get sequencer path id mapped to q channel of sequencer Id
@@ -190,31 +158,28 @@ class AWG(Instrument):
             if iq_channel.sequencer_id_q_channel == sequencer_id
         ]
 
-        return self._check_path_identifier_results(sequencer_id, path_identifier)
+        if len(path_identifier) != 1:
+            raise ValueError(
+                "Each sequencer should only contain 1 path connected to the Q channel."
+                f"Sequencer {sequencer_id} has {len(path_identifier)} paths connected to the Q channel."
+            )
+
+        return path_identifier[0]
 
     def to_dict(self):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencer_id_from_chip_port_id(self, chip_port_id: int) -> int:
-        """Get sequencer id from the chip port identifier
+    def get_sequencers_from_chip_port_id(self, chip_port_id: int) -> List[int]:
+        """Get sequencer ids from the chip port identifier
 
         Args:
             chip_port_id (int): chip port identifier
 
         Returns:
-            int: sequencer identifier
+            List[int]: list of integers containing the indices of the sequencers connected to the chip port
         """
-        sequencer_identifiers = [
-            sequencer.identifier for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id
-        ]
-
-        return self._check_only_one_element_or_raise_error(
-            sequencer_identifiers,
-            "No sequencer found mapped to the chip port with id: ",
-            chip_port_id,
-            "More than one sequencer mapped to the chip port with id: ",
-        )
+        return [sequencer.identifier for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]
 
     def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
         """Get sequencer from the sequencer identifier
@@ -229,38 +194,10 @@ class AWG(Instrument):
             sequencer.identifier for sequencer in self.awg_sequencers if sequencer.identifier == sequencer_id
         ]
 
-        sequencer_identifier = self._check_only_one_element_or_raise_error(
-            sequencer_identifiers,
-            "No sequencer found with id: ",
-            sequencer_id,
-            "More than one sequencer found with id: ",
-        )
-        return self.awg_sequencers[sequencer_identifier]
+        if len(sequencer_identifiers) != 1:
+            raise ValueError(
+                f"Each sequencer should have a unique id. Found {len(sequencer_identifiers)} sequencers "
+                f"with id {sequencer_id}."
+            )
 
-    def _check_only_one_element_or_raise_error(
-        self,
-        elements: Sequence[int | AWGSequencerPathIdentifier],
-        error_text_no_element: str,
-        value: int,
-        error_text_more_elements: str,
-    ):
-        """check only one element is in the list or raise an error
-
-        Args:
-            elements (list[int  |  AWGSequencerPathIdentifier]): _description_
-            error_text_no_element (str): text to print when there is no elements
-            value (int): value to print in the errors
-            error_text_more_elements (str): text to print when there are more elements
-
-        Raises:
-            ValueError: error_text_no_element
-            ValueError: error_text_more_elements
-
-        Returns:
-            int or AWGSequencerPathIdentifier: int or AWGSequencerPathIdentifier
-        """
-        if len(elements) <= 0:
-            raise ValueError(f"{error_text_no_element}{value}")
-        if len(elements) > 1:
-            raise ValueError(f"{error_text_more_elements}{value}")
-        return elements[0]
+        return self.awg_sequencers[sequencer_identifiers[0]]

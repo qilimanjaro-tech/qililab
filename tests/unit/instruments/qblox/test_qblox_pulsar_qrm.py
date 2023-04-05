@@ -1,7 +1,4 @@
 """Test for the QbloxQRM class."""
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -22,6 +19,8 @@ class TestQbloxQRM:
         qrm.initial_setup()
         qrm.device.sequencer0.offset_awg_path0.assert_called()
         qrm.device.sequencer0.offset_awg_path1.assert_called()
+        qrm.device.out0_offset.assert_called()
+        qrm.device.out1_offset.assert_called()
         qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
         qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
         qrm.device.sequencer0.mod_en_awg.assert_called()
@@ -46,7 +45,7 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
         [
-            (Parameter.GAIN, 0.02, 0),
+            (Parameter.GAIN, 0.02, None),
             (Parameter.GAIN_PATH0, 0.03, 0),
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
@@ -84,6 +83,8 @@ class TestQbloxQRM:
     ):
         """Test setup method"""
         qrm.setup(parameter=parameter, value=value, channel_id=channel_id)
+        if channel_id is None:
+            channel_id = 0
         if parameter == Parameter.GAIN:
             assert qrm.awg_sequencers[channel_id].gain_path0 == value
             assert qrm.awg_sequencers[channel_id].gain_path1 == value
@@ -130,6 +131,12 @@ class TestQbloxQRM:
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             assert qrm.acquisition_delay_time == value
 
+    def test_setup_raises_error(self, qrm: QbloxQRM):
+        """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
+        sequencers."""
+        with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 1"):
+            qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
+
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
         qrm.turn_off()
@@ -137,19 +144,28 @@ class TestQbloxQRM:
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
         qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        assert qrm._cache == {}  # pylint: disable=protected-access
 
-    @patch("qililab.instruments.qblox.qblox_module.json.dump", return_value=None)
-    def test_upload_method(self, mock_dump: MagicMock, qrm: QbloxQRM):
+    def test_compile(self, qrm, pulse_bus_schedule):
+        """Test compile method."""
+        pulse_bus_schedule.port = 1  # change port to target the resonator
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+
+    def test_upload_raises_error(self, qrm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qrm.upload()
+
+    def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        qrm.upload(
-            sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}),
-            path=Path(__file__).parent,
-        )
-        qrm.device.sequencer0.sequence.assert_called()
-        mock_dump.assert_called_once()
+        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qrm.upload()
+        qrm.device.sequencer0.sequence.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
@@ -199,7 +215,3 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
-
-    def tests_frequency_property(self, qrm_no_device: QbloxQRM):
-        """Test frequency property."""
-        assert qrm_no_device.frequency(0) == qrm_no_device.awg_sequencers[0].intermediate_frequency

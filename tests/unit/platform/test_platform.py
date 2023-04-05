@@ -38,10 +38,16 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
-    def test_get_element_method_unknown_raises_error(self, platform: Platform):
+    def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
-        with pytest.raises(ValueError):
-            platform.get_element(alias="ABC")
+        element = platform.get_element(alias="ABC")
+        assert element is None
+
+    def test_get_element_with_gate(self, platform: Platform):
+        """Test the get_element method with a gate alias."""
+        gate = platform.get_element(alias="M")
+        assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
+        assert gate.name == "M"
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

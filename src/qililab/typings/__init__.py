@@ -2,8 +2,6 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusCategory,
-    BusSubCategory,
     Category,
     ConnectionName,
     GateName,
@@ -18,10 +16,7 @@ from .enums import (
     ReferenceClock,
     ResultName,
     SchemaDrawOptions,
-    SystemControlCategory,
-    SystemControlSubCategory,
 )
-from .execution import ExecutionOptions
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
 from .instruments import (

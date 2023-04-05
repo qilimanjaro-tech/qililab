@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List
 
 from qililab.platform.components.bus import Bus
+from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
 
 
 @dataclass
@@ -37,3 +38,9 @@ class Buses:
     def to_dict(self) -> List[dict]:
         """Return a dict representation of the Buses class."""
         return [bus.to_dict() for bus in self.elements]
+
+    @property
+    def readout_buses(self) -> List[Bus]:
+        """Returns a list of buses containing system controls used for readout."""
+        readout_sc = (ReadoutSystemControl, SimulatedSystemControl)
+        return [bus for bus in self.elements if isinstance(bus.system_control, readout_sc)]

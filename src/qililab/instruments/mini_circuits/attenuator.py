@@ -1,7 +1,7 @@
 """Attenuator class."""
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
@@ -37,7 +37,7 @@ class Attenuator(Instrument):
             self.settings.attenuation = float(value)
             self.device.setup(attenuation=self.attenuation)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

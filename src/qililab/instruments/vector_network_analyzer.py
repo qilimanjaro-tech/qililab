@@ -1,12 +1,10 @@
 """VectorNetworkAnalyzer class."""
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
-from qililab.typings.instruments.vector_network_analyzer import (
-    VectorNetworkAnalyzerDriver,
-)
+from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 DEFAULT_NUMBER_POINTS = 1000
 
@@ -58,7 +56,7 @@ class VectorNetworkAnalyzer(Instrument):
         if isinstance(value, int):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        raise ValueError(f"Invalid Parameter: {parameter} with type {type(parameter)}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -74,7 +72,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.settings.trigger_mode = VNATriggerModes(value)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_bool(self, parameter: Parameter, value: bool):
         """Set instrument settings parameter to the corresponding value
@@ -87,7 +85,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.averaging_enabled = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_float(
         self,
@@ -120,7 +118,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.if_bandwidth = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_int(self, parameter: Parameter, value: int):
         """Set instrument settings parameter to the corresponding value
@@ -138,7 +136,7 @@ class VectorNetworkAnalyzer(Instrument):
             self.number_points = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     @property
     def power(self):

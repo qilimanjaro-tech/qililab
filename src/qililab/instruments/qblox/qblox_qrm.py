@@ -1,17 +1,15 @@
 """Qblox pulsar QRM class"""
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Sequence, cast
 
+from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import (
-    AWGQbloxADCSequencer,
-)
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseBusSchedule
@@ -82,31 +80,24 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, path: Path
-    ) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
+        """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
+        the cache and the saved sequences.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): repetitition duration
-            path (Path): path to save the program to upload
+            sequencer (int): index of the sequencer to generate the program
         """
-        if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
-            # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            for sequencer in self.awg_sequencers:
-                sequencer_id = sequencer.identifier
-                self.device._delete_acquisition(  # pylint: disable=protected-access
-                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
-                )
-                acquisition = self._generate_acquisitions(sequencer_id=sequencer_id)
-                self.device._add_acquisitions(  # pylint: disable=protected-access
-                    sequencer=sequencer_id, acquisitions=acquisition.to_dict()
-                )
-        super().generate_program_and_upload(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, path=path
-        )
+        # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
+        if hasattr(self, "device"):
+            self.device._delete_acquisition(  # pylint: disable=protected-access
+                sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
+            )
+            acquisition = self._generate_acquisitions()
+            self.device._add_acquisitions(  # pylint: disable=protected-access
+                sequencer=sequencer, acquisitions=acquisition.to_dict()
+            )
+        return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
@@ -246,5 +237,5 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """set a specific parameter to the instrument"""
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
-        except ValueError:
+        except ParameterNotFound:
             QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)

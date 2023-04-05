@@ -4,7 +4,7 @@ from typing import Tuple
 
 import numpy as np
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName, Keithley2600Driver
 from qililab.typings.enums import Parameter
@@ -51,7 +51,7 @@ class Keithley2600(Instrument):
             self.max_voltage = float(value)
             self.device.smua.limitv(self.max_voltage)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

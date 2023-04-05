@@ -2,6 +2,7 @@
 import pytest
 
 from qililab.platform import Bus, Buses
+from qililab.system_control import ReadoutSystemControl
 
 from .aux_methods import buses as load_buses
 
@@ -24,3 +25,9 @@ class TestBuses:
     def test_len_method(self, buses: Buses):
         """Test __len__ method."""
         assert len(buses) == len(buses.elements)
+
+    def test_readout_buses(self, buses: Buses):
+        """Test that the ``readout_buses`` method returns a list of readout buses."""
+        readout_buses = buses.readout_buses
+        assert isinstance(readout_buses, list)
+        assert isinstance(readout_buses[0].system_control, ReadoutSystemControl)

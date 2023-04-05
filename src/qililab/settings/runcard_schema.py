@@ -31,23 +31,9 @@ class RuncardSchema:
         class BusSchema:
             """Bus schema class."""
 
-            @dataclass
-            class SystemControlSchema:
-                """Bus schema class."""
-
-                id_: int
-                name: str
-                category: str
-                system_control_category: str
-                system_control_subcategory: str
-                alias: str | None = None
-
             id_: int
-            name: str
             category: str
-            bus_category: str
-            bus_subcategory: str
-            system_control: SystemControlSchema
+            system_control: dict
             port: int
             alias: str | None = None
 
@@ -102,7 +88,16 @@ class RuncardSchema:
                     return MasterGateSettingsName.MASTER_AMPLITUDE_GATE
                 return MasterGateSettingsName.MASTER_DURATION_GATE
 
+            def set_parameter(self, parameter: Parameter, value: float | str | bool):
+                """Change a gate parameter with the given value."""
+                param = parameter.value
+                if not hasattr(self, param):
+                    self.shape[param] = value
+                else:
+                    setattr(self, param, value)
+
         name: str
+        device_id: int
         delay_between_pulses: int
         delay_before_readout: int
         master_amplitude_gate: float
@@ -146,12 +141,8 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            param = parameter.value
-            settings = self.get_gate(name=alias)
-            if not hasattr(settings, param):
-                settings.shape[param] = value
-            else:
-                setattr(settings, param, value)
+            gate_settings = self.get_gate(name=alias)
+            gate_settings.set_parameter(parameter, value)
 
     settings: PlatformSettings
     schema: Schema

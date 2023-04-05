@@ -7,7 +7,6 @@ from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import dict_factory
 from qililab.platform.components.schema import Schema
-from qililab.remote_connection.remote_api import RemoteAPI
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
 from qililab.typings.yaml_type import yaml
@@ -22,56 +21,35 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    settings: RuncardSchema.PlatformSettings
-    schema: Schema
-
-    def __init__(self, runcard_schema: RuncardSchema):
+    def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
-        self._remote_api: RemoteAPI | None = None
+        self.connection = connection
         self._connected_to_instruments: bool = False
         self._initial_setup_applied: bool = False
         self._instruments_turned_on: bool = False
 
-    def connect_and_set_initial_setup(
-        self,
-        automatic_turn_on_instruments: bool = False,
-        connection: API | None = None,
-        device_id: int | None = None,
-        manual_override: bool = False,
-    ):
-        """Connect and set initial setup of the instruments
+    def connect(self, manual_override=False):
+        """Blocks the given device and connects to the instruments.
 
         Args:
-            automatic_turn_on_instruments (bool, optional): Turn on the instruments. Defaults to False.
+            connection (API): qiboconnection's ``API`` class
+            device_id (int): id of the device
+            manual_override (bool, optional): If ``True``, avoid checking if the device is blocked. This will stop any
+                current execution. Defaults to False.
         """
-        self.connect(connection=connection, device_id=device_id, manual_override=manual_override)
-        if automatic_turn_on_instruments:
-            self.turn_on_instruments()
-        self.set_initial_setup()
-
-    def connect(
-        self,
-        connection: API | None = None,
-        device_id: int | None = None,
-        manual_override: bool = False,
-    ):
-        """Connect to the instrument controllers."""
         if self._connected_to_instruments:
             logger.info("Already connected to the instruments")
             return
 
-        self._remote_api = RemoteAPI(
-            connection=connection,
-            device_id=device_id,
-            manual_override=manual_override,
-        )
-        self._remote_api.block_remote_device()
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
+
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
 
-    def set_initial_setup(self):
+    def initial_setup(self):
         """Set the initial setup of the instruments"""
         if self._initial_setup_applied:
             logger.info("Initial setup already applied to the instruments")
@@ -98,16 +76,14 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(self, automatic_turn_off_instruments: bool = False):
+    def disconnect(self):
         """Close connection to the instrument controllers."""
+        if self.connection is not None:
+            self.connection.release_device(device_id=self.device_id)
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
-        if automatic_turn_off_instruments:
-            self.turn_off_instruments()
         self.instrument_controllers.disconnect()
-        if self._remote_api is not None:
-            self._remote_api.release_remote_device()
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -120,8 +96,11 @@ class Platform:
         Returns:
             Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
-        if alias is not None and alias in ([Category.PLATFORM.value] + self.gate_names):
-            return self.settings
+        if alias is not None:
+            if alias == Category.PLATFORM.value:
+                return self.settings
+            if alias in self.gate_names:
+                return self.settings.get_gate(name=alias)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -130,8 +109,6 @@ class Platform:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
             element = self.chip.get_node_from_alias(alias=alias)
-        if element is None:
-            raise ValueError(f"Could not find element with alias {alias}.")
         return element
 
     def get_bus(self, port: int):
@@ -148,19 +125,14 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
+    def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        if alias is not None:
-            return next(
-                (element for element in self.buses if element.settings.alias == alias),
-                None,
-            )
+        for bus in self.buses:
+            if bus.alias == alias:
+                return bus
+
         return next(
-            (
-                element
-                for element in self.buses
-                if element.id_ == id_ and element.settings.category == Category(category)
-            ),
+            (element for element in self.buses if element.settings.alias == alias),
             None,
         )
 
@@ -180,10 +152,7 @@ class Platform:
             value (float): New value.
         """
         if alias in ([Category.PLATFORM.value] + self.gate_names):
-            if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -270,9 +239,13 @@ class Platform:
         return self.schema.instrument_controllers
 
     @property
-    def remote_api(self):
-        """Platform 'remote_api' property."""
-        return self._remote_api
+    def device_id(self):
+        """Returns the id of the platform device.
+
+        Returns:
+            int: id of the platform device
+        """
+        return self.settings.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
