@@ -98,6 +98,7 @@ class RuncardSchema:
 
         name: str
         device_id: int
+        minimum_clock_time: int
         delay_between_pulses: int
         delay_before_readout: int
         master_amplitude_gate: float

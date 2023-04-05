@@ -171,13 +171,27 @@ class TestQbloxQCM:
 
     def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
-        qcm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qcm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
         qcm.reset()
-        assert qcm._cache is None  # pylint: disable=protected-access
+        assert qcm._cache == {}  # pylint: disable=protected-access
 
-    def test_upload_method(self, qcm: QbloxQCM):
+    def test_compile(self, qcm, pulse_bus_schedule):
+        """Test compile method."""
+        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+        assert sequences[0]._program.duration == 1000 * 2000 + 4
+
+    def test_upload_raises_error(self, qcm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qcm.upload()
+
+    def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
-        qcm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
+        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qcm.upload()
         qcm.device.sequencer0.sequence.assert_called_once()
 
     def test_id_property(self, qcm_no_device: QbloxQCM):
@@ -195,7 +209,3 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_frequency_property(self, qcm_no_device: QbloxQCM):
-        """Test frequency property."""
-        assert qcm_no_device.frequency(0) == qcm_no_device.awg_sequencers[0].intermediate_frequency

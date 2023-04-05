@@ -5,7 +5,6 @@ import pytest
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
-from qililab.execution.execution_buses import PulseScheduledBus
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
