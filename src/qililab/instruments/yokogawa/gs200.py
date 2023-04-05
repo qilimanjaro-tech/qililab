@@ -49,6 +49,9 @@ class GS200(CurrentSource):
         if isinstance(value, bool):
             self._set_parameter_bool(parameter=parameter, value=value)
             return
+        if isinstance(value, float):
+            self._set_parameter_float(parameter=parameter, value=value)
+            return
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -72,6 +75,19 @@ class GS200(CurrentSource):
         """
         if parameter == Parameter.OUTPUT_STATUS:
             self.output_status = value
+            return
+
+        raise ValueError(f"Invalid Parameter: {parameter}")
+
+    def _set_parameter_float(self, parameter: Parameter, value: float):
+        """Set instrument settings parameter to the corresponding value
+
+        Args:
+            parameter (Parameter): settings parameter to be updated
+            value (float): new value
+        """
+        if parameter == Parameter.CURRENT_VALUE:
+            self.current_value = value
             return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
@@ -117,6 +133,12 @@ class GS200(CurrentSource):
             float: settings.current_value.
         """
         return self.settings.current_value
+
+    @current_value.setter
+    def current_value(self, value):
+        """Sets the current_value"""
+        self.settings.current_value = value
+        self.device.ramp_current(value,value,0)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):

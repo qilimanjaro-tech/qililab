@@ -368,6 +368,7 @@ class Parameter(str, Enum):
     RF_ON = "rf_on"
     SOURCE_MODE = "source_mode"
     OUTPUT_STATUS = "output_status"
+    CURRENT_VALUE = "current_value"
 
 
 class ResultName(str, Enum):
