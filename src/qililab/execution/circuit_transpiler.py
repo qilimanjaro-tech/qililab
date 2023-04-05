@@ -1,4 +1,3 @@
-# pylint: disable=union-attr
 """CircuitTranspiler class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -21,6 +20,18 @@ class CircuitTranspiler:
     def calculate_timings(
         self, circuit: Circuit, output_method: TranspilerOutputMethod = TranspilerOutputMethod.IN_PLACE
     ) -> Circuit:
+        """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
+
+        Args:
+            circuit (Circuit): The quantum circuit for which timings need to be calculated.
+            output_method (TranspilerOutputMethod, optional): The output method to use. If the output method is set to IN_PLACE, the original circuit is modified; otherwise, a deep copy of the circuit is made and modified. Defaults to TranspilerOutputMethod.IN_PLACE.
+
+        Returns:
+            Circuit: The circuit with annotated operations that contain timing information.
+
+        Raises:
+            ValueError: If an unsupported operation is encountered in the circuit.
+        """
         output_circuit = circuit if output_method == TranspilerOutputMethod.IN_PLACE else deepcopy(circuit)
         nqubits = output_circuit.num_qubits
         layers = output_circuit.get_operation_layers(method=self.settings.timings_calculation_method)
@@ -53,8 +64,6 @@ class CircuitTranspiler:
                     )
                     end_time = start_time + pulse_duration
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                    for qubit in operation_node.qubits:
-                        qubits_last_end_timings[qubit] = end_time
                 elif isinstance(operation_node.operation, PulseOperation):
                     start_time = (
                         max(
@@ -65,8 +74,6 @@ class CircuitTranspiler:
                     )
                     end_time = start_time + operation_node.operation.duration
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                    for qubit in operation_node.qubits:
-                        qubits_last_end_timings[qubit] = end_time
                 elif isinstance(operation_node.operation, Wait):
                     start_time = max(
                         [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
@@ -74,8 +81,6 @@ class CircuitTranspiler:
                     )
                     end_time = start_time + operation_node.operation.t
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                    for qubit in operation_node.qubits:
-                        qubits_last_end_timings[qubit] = end_time
                 elif isinstance(operation_node.operation, Barrier):
                     start_time = max(
                         [qubits_last_end_timings[qubit] for qubit in operation_node.qubits]
@@ -83,8 +88,6 @@ class CircuitTranspiler:
                     )
                     end_time = start_time
                     operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                    for qubit in operation_node.qubits:
-                        qubits_last_end_timings[qubit] = end_time
                 elif isinstance(operation_node.operation, Reset):
                     if self.settings.reset_method == ResetMethod.PASSIVE:
                         start_time = max(
@@ -93,16 +96,26 @@ class CircuitTranspiler:
                         )
                         end_time = start_time + self.settings.passive_reset_duration
                         operation_node.timing = OperationTiming(start=start_time, end=end_time)
-                        for qubit in operation_node.qubits:
-                            qubits_last_end_timings[qubit] = end_time
                 else:
                     raise ValueError(f"Operation {operation_node} not supported for translation yet.")
+                for qubit in operation_node.qubits:
+                    qubits_last_end_timings[qubit] = end_time
         output_circuit.has_timings_calculated = True
         return output_circuit
 
     def transpile_to_pulse_operations(
         self, circuit: Circuit, output_method: TranspilerOutputMethod = TranspilerOutputMethod.IN_PLACE
     ) -> Circuit:
+        """
+        Transpiles the given quantum circuit into pulse operations.
+
+        Args:
+            circuit (Circuit): The quantum circuit to be transpiled into pulse operations.
+            output_method (TranspilerOutputMethod, optional): The output method to use. If the output method is set to IN_PLACE, the original circuit is modified; otherwise, a deep copy of the circuit is made and modified. Defaults to TranspilerOutputMethod.IN_PLACE.
+
+        Returns:
+            Circuit: The transpiled circuit with pulse operations.
+        """
         output_circuit = circuit if output_method == TranspilerOutputMethod.IN_PLACE else deepcopy(circuit)
         if not output_circuit.has_timings_calculated:
             # TODO: Discuss if we should raise an error instead
