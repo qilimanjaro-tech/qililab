@@ -46,9 +46,6 @@ class GS200(CurrentSource):
         if isinstance(value, str):
             self._set_parameter_str(parameter=parameter, value=value)
             return
-        if isinstance(value, bool):
-            self._set_parameter_bool(parameter=parameter, value=value)
-            return
         if isinstance(value, float):
             self._set_parameter_float(parameter=parameter, value=value)
             return
@@ -62,19 +59,6 @@ class GS200(CurrentSource):
         """
         if parameter == Parameter.SOURCE_MODE:
             self.source_mode = YokogawaSourceModes(value)
-            return
-
-        raise ValueError(f"Invalid Parameter: {parameter}")
-
-    def _set_parameter_bool(self, parameter: Parameter, value: bool):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (bool): new value
-        """
-        if parameter == Parameter.OUTPUT_STATUS:
-            self.output_status = value
             return
 
         raise ValueError(f"Invalid Parameter: {parameter}")
@@ -116,15 +100,6 @@ class GS200(CurrentSource):
         """
         return self.settings.output_status
 
-    @output_status.setter
-    def output_status(self, value):
-        """sets output_status"""
-        self.settings.output_status = value
-        if self.settings.output_status:
-            self.device.on()
-        else:
-            self.device.off()
-
     @property
     def current_value(self):
         """Yokogawa gs200 'current_value' property.
@@ -138,23 +113,24 @@ class GS200(CurrentSource):
     def current_value(self, value):
         """Sets the current_value"""
         self.settings.current_value = value
-        self.device.ramp_current(value,value,0)
+        self.device.ramp_current(value, value, 0)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        self.device.source_mode("CURR")
+        self.device.source_mode(YokogawaSourceModes.CURR.name)
 
     @Instrument.CheckDeviceInitialized
     def start(self):
         """Dummy method."""
         self.device.on()
+        self.settings.output_status = True
 
     @Instrument.CheckDeviceInitialized
     def stop(self):
         """Stop outputing current."""
-        pass
-        # self.device.off()
+        self.device.off()
+        self.settings.output_status = False
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""

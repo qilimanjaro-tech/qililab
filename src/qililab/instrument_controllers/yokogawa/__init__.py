@@ -1,2 +1,2 @@
 """ Yokogawa GS200 Controllers."""
-from .gs200_controler import GS200Controller
+from .gs200_controller import GS200Controller

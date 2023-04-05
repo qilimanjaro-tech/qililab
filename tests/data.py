@@ -854,17 +854,16 @@ class SauronYokogawa:
     yokogawa_gs200_controller = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.YOKOGAWA,
-        RUNCARD.ALIAS: "YokogawaGS200",
+        RUNCARD.ALIAS: InstrumentName.YOKOGAWA_GS200.value,
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
-        Parameter.REFERENCE_CLOCK.value: 10000,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.1.15",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.CURRENT_SOURCE.value: "YokogawaGS200",
+                Category.CURRENT_SOURCE.value: InstrumentName.YOKOGAWA_GS200.value,
                 INSTRUMENTREFERENCE.SLOT_ID: 0,
             }
         ],
@@ -873,16 +872,16 @@ class SauronYokogawa:
     yokogawa_gs200 = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
-        RUNCARD.ALIAS: "YokogawaGS200",
+        RUNCARD.ALIAS: InstrumentName.YOKOGAWA_GS200.value,
         RUNCARD.CATEGORY: Category.CURRENT_SOURCE.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
-        # Parameter.CURRENT.value: [],
-        # Parameter.SPAN.value: [],
-        # Parameter.RAMPING_ENABLED.value: [],
-        # Parameter.RAMPING_RATE.value: [],
-        # "dacs": [],
+        Parameter.CURRENT.value: [0.0, 0.0],
+        Parameter.CURRENT_VALUE.value: 0.0,
+        Parameter.SPAN.value: ["range_max_bi"],
+        Parameter.RAMPING_ENABLED.value: [False],
+        Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
         Parameter.OUTPUT_STATUS.value: False,
-        "current_value": 0.0,
+        "dacs": [0, 1],
     }
 
     instruments = [yokogawa_gs200]
@@ -922,7 +921,7 @@ class SauronYokogawa:
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
-                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+                RUNCARD.INSTRUMENTS: [InstrumentName.YOKOGAWA_GS200.value],
             },
             NodeName.PORT.value: 1,
         },
