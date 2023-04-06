@@ -203,6 +203,7 @@ class PulseShapeName(str, Enum):
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     EXPONENTIAL_CORRECTION_LOOP_V2 = "exponential_loop_v2"
     EXPONENTIAL_CORRECTION_V2 = "exponential_v2"
+    EXPONENTIAL_CORRECTION_V3 = "exponential_v3"
     PREDISTORTION = "predistortion"
 
 
@@ -221,6 +222,7 @@ class PulseShapeSettingsName(str, Enum):
     TAU_EXPONENTIAL1 = "tau_exponential1"
     TAU_EXPONENTIAL2 = "tau_exponential2"
     AMP = "amp"
+    B = "b"
     AMP1 = "amp1"
     AMP2 = "amp2"
 
@@ -490,6 +492,7 @@ class Parameter(str, Enum):
     TAU_EXPONENTIAL1 = "tau_exponential1"
     TAU_EXPONENTIAL2 = "tau_exponential2"
     AMP = "amp"
+    B = "b"
     AMP1 = "amp1"
     AMP2 = "amp2"
 
