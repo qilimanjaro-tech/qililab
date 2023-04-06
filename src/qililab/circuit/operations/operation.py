@@ -38,7 +38,6 @@ class Operation(ABC):
         """Abstract property for the operation multiplicity."""
 
     @property
-    @abstractmethod
     def parameters(self) -> Parameters:
         """Get the names and values of all parameters as dictionary
 

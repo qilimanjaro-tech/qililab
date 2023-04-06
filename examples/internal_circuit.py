@@ -1,21 +1,7 @@
 import os
 from pathlib import Path
 
-from qililab import build_platform
-from qililab.circuit import Circuit
-from qililab.circuit.converters import QiliQasmConverter
-from qililab.circuit.operations import (
-    R180,
-    Barrier,
-    GaussianPulse,
-    Measure,
-    Operation,
-    PulseOperation,
-    Reset,
-    Rxy,
-    Wait,
-    X,
-)
+from qililab import Circuit, Measure, QiliQasmConverter, Wait, X, build_platform
 from qililab.execution.circuit_transpiler import CircuitTranspiler
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import OperationTimingsCalculationMethod

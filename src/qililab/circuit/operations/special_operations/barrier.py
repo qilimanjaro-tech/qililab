@@ -28,12 +28,3 @@ class Barrier(SpecialOperation):
             OperationMultiplicity: The operation's multiplicity
         """
         return OperationMultiplicity.MULTIPLEXED
-
-    @property
-    def parameters(self):
-        """Get the names and values of all parameters as dictionary
-
-        Returns:
-            Parameters: The parameters of the operation
-        """
-        return {}

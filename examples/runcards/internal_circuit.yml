@@ -10,6 +10,7 @@ settings:
   reset_method: passive
   passive_reset_duration: 100
   device_id: 9
+  minimum_clock_time: 4
   operations:
     - name: X
       pulse:
