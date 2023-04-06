@@ -23,7 +23,7 @@ class TestPulseBusSchedule:
             assert isinstance(pulse, PulseEvent)
 
     def test_unique_pulses_duration(self, pulse_bus_schedule: PulseBusSchedule):
-        """Test the unique_pulses duration method."""
+        """Test the unique_pulses_duration property."""
         pulses_duration = sum(pulse.duration for pulse in pulse_bus_schedule.pulses)
         assert pulses_duration == pulse_bus_schedule.unique_pulses_duration
 
