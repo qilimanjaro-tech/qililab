@@ -10,6 +10,15 @@ from qililab.pulse import PulseBusSchedule
 from tests.utils import mock_instruments
 
 
+@pytest.fixture(name="pulse_scheduled_readout_bus")
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> BusExecution:
+    """Load PulseScheduledReadoutBus.
+    Returns:
+        PulseScheduledReadoutBus: Instance of the PulseScheduledReadoutBus class.
+    """
+    return execution_manager.readout_buses[0]
+
+
 @pytest.fixture(name="bus_execution")
 def fixture_bus_execution(execution_manager: ExecutionManager) -> BusExecution:
     """Load BusExecution.
