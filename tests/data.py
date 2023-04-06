@@ -846,6 +846,7 @@ class SauronYokogawa:
         RUNCARD.ID: 0,
         RUNCARD.NAME: "sauron_yokogawa",
         PLATFORM.DEVICE_ID: 9,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
