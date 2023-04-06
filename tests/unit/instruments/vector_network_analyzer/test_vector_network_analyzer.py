@@ -99,55 +99,68 @@ class TestVectorNetworkAnalyzer:
         assert isinstance(output, VNAResult)
 
 
-# @pytest.fixture(name="vna_driver")
-# @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.Resource", autospec=True)
-# def fixture_e5080b_device(mock_driver: MagicMock, device: VectorNetworkAnalyzerDriver):
-#    """Return connected instance of VectorNetworkAnalyzer class"""
-#    mock_instance = mock_driver.return_value
-#    vector_network_analyzer_controller.connect()
-#    mock_device.assert_called()
-#    return device
-#
-# class TestVectorNetworkAnalyzerDriver:
-#    """Test for the driver class at typings"""
-#
-#
-#    @patch("qililab.typings.instruments.vector_network_analyzer.driver", autospec=True)
-#    def test_post_init_method(self, vna_driver: VectorNetworkAnalyzerDriver):
-#        """Test the postinit function from the driver"""
-#        vna_driver.device.__post_init__()
-#        vna_driver.device.pyvisa.ResourceManager.assert_called_with("@py")
-#        assert isinstance(vna_driver.device.driver, pyvisa.Resource)
-#
-#    @patch.object(VectorNetworkAnalyzerDriver, 'driver')
-#    def test_initial_setup_method(self, vna_driver: VectorNetworkAnalyzerDriver):
-#        """Test the initial setup method of the driver"""
-#        vna_driver.initial_setup()
-#        vna_driver.driver.write.assert_called_with("FORM:DATA REAL,32")
-#        vna_driver.driver.write.assert_called_with("*CLS")
-#        vna_driver.driver.write.assert_called_with("SYST:PRES; *")
-#
-#    def test_reset_method(self, vector_network_analyzer: E5080B):
-#        """Test the reset method of the driver"""
-#        vector_network_analyzer.device.initial_setup()
-#        vector_network_analyzer.device.driver.write.assert_called_with("SYST:PRES; *OPC?")
-#
-#    def test_send_command(self, command, arg, vector_network_analyzer: E5080B):
-#        """Test the send command method of the driver"""
-#        vector_network_analyzer.device.send_command(command, arg)
-#        vector_network_analyzer.device.driver.write.assert_called_with(f"{command} {arg}")
-#
-#    def test_send_query_method(self, query, vector_network_analyzer: E5080B):
-#        """Test the send query method of the driver"""
-#        vector_network_analyzer.device.send_query(query)
-#        vector_network_analyzer.device.driver.query.assert_called_with(query)
-#
-#    def test_send_binary_query_method(self, query, vector_network_analyzer: E5080B):
-#        """Test the send binary query method of the driver"""
-#        vector_network_analyzer.device.send_binary_query(query)
-#        vector_network_analyzer.device.driver.query_binary_values.assert_called_with(query)
-#
-#    def test_set_timeput_method(self, value, vector_network_analyzer: E5080B):
-#        """Test the set timeout method of the driver"""
-#        vector_network_analyzer.device.set_timeout(value)
-#        assert vector_network_analyzer.device.timeout == value
+class TestVectorNetworkAnalyzerDriver:
+    """Test for the driver class at typings"""
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_post_init_method(self, mock_resource_manager):
+        """Test the postinit function from the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.__post_init__()
+        assert vna_driver.driver == mock_resource
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_initial_setup_method(self, mock_resource_manager):
+        """Test the initial setup method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.initial_setup()
+        vna_driver.driver.write.assert_called()
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_reset_method(self, mock_resource_manager):
+        """Test the reset method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.reset()
+        vna_driver.driver.write.assert_called_with("SYST:PRES; *OPC?")
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_send_command(self, mock_resource_manager):
+        """Test the send command method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.send_command("SENS1:AVER:COUN", "3")
+        vna_driver.driver.write.assert_called_with("SENS1:AVER:COUN 3")
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_send_query_method(self, mock_resource_manager):
+        """Test the send query method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.send_query(":SENS1:SWE:MODE?")
+        vna_driver.driver.query.assert_called_with(":SENS1:SWE:MODE?")
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_send_binary_query_method(self, mock_resource_manager):
+        """Test the send binary query method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.send_binary_query("CALC1:MEAS1:DATA:SDAT?")
+        vna_driver.driver.query_binary_values.assert_called_with("CALC1:MEAS1:DATA:SDAT?")
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_set_timeout_method(self, mock_resource_manager):
+        """Test the set timeout method of the driver"""
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
+        vna_driver.set_timeout(200)
+        assert vna_driver.timeout == 200
