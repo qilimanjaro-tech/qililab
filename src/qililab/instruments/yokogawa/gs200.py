@@ -4,7 +4,7 @@ Class to interface with the voltage source Qblox S4g
 from dataclasses import dataclass
 
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import YokogawaGS200 as YokogawaGS200Driver
@@ -61,7 +61,7 @@ class GS200(CurrentSource):
             self.source_mode = YokogawaSourceModes(value)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_float(self, parameter: Parameter, value: float):
         """Set instrument settings parameter to the corresponding value
@@ -74,7 +74,7 @@ class GS200(CurrentSource):
             self.current_value = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     @property
     def source_mode(self):
