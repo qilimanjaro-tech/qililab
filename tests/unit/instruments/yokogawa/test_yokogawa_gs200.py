@@ -5,10 +5,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab.instrument_controllers.yokogawa.gs200_controller import GS200Controller
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.yokogawa.gs200 import GS200
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter, YokogawaSourceModes
-from tests.data import SauronYokogawa
+from tests.data import Galadriel, SauronYokogawa
 
 
 @pytest.fixture(name="yokogawa_gs200_controller")
@@ -31,7 +32,7 @@ def fixture_yokogawa_gs200(mock_rs: MagicMock, yokogawa_gs200_controller: GS200C
 
 
 class TestGS200:
-    """Unit tests checking the SGS100A attributes and methods"""
+    """Unit tests checking the GS200 attributes and methods"""
 
     @pytest.mark.parametrize("parameter, value", [(Parameter.CURRENT_VALUE, 0.001), (Parameter.CURRENT_VALUE, 0.0005)])
     def test_setup_method_value_flt(self, parameter: Parameter, value, yokogawa_gs200: GS200):
@@ -41,6 +42,12 @@ class TestGS200:
         yokogawa_gs200.setup(parameter, value)
         if parameter == Parameter.CURRENT_VALUE:
             assert yokogawa_gs200.current_value == value
+
+    @pytest.mark.parametrize("parameter, value", [(Parameter.MAX_CURRENT, 0.001), (Parameter.CURRENT, 0.0005)])
+    def test_setup_method_value_flt_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
+        """Test the setup method with float value raises an exception with wrong parameters"""
+        with pytest.raises(ParameterNotFound):
+            yokogawa_gs200.setup(parameter, value)
 
     @pytest.mark.parametrize(
         "parameter, value", [(Parameter.SOURCE_MODE, "current"), (Parameter.SOURCE_MODE, "voltage")]
@@ -52,6 +59,12 @@ class TestGS200:
         yokogawa_gs200.setup(parameter, value)
         if parameter == Parameter.SOURCE_MODE:
             assert yokogawa_gs200.source_mode == YokogawaSourceModes(value)
+
+    @pytest.mark.parametrize("parameter, value", [(Parameter.GAIN, 0.001), (Parameter.INTEGRATION, 0.0005)])
+    def test_setup_method_value_str_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
+        """Test the setup method with string value raises an exception with wrong parameters"""
+        with pytest.raises(ParameterNotFound):
+            yokogawa_gs200.setup(parameter, value)
 
     def test_to_dict_method(self, yokogawa_gs200: GS200):
         """Test the dict method"""
@@ -95,3 +108,20 @@ class TestGS200:
         """Test the source mode property"""
         assert hasattr(yokogawa_gs200, "current_value")
         assert yokogawa_gs200.current_value == yokogawa_gs200.settings.current_value
+
+
+@pytest.fixture(name="yokogawa_gs200_controller_fail")
+def fixture_yokogawa_gs200_controller_fail(platform: Platform):
+    """Return an instance of GS200 controller class"""
+    settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
+    settings.pop("name")
+    settings.pop("reference_clock")
+    return GS200Controller(settings=settings, loaded_instruments=platform.instruments)
+
+
+class TestGS200Controller:
+    """Unit tests checking the GS200 Controller attributes and methods"""
+
+    def test_check_supported_modules_raises_exception(self, yokogawa_gs200_controller_fail: GS200Controller):
+        with pytest.raises(ValueError):
+            yokogawa_gs200_controller_fail._check_supported_modules()
