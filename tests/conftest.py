@@ -8,16 +8,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import (
-    CircuitToPulses,
-    Gaussian,
-    Pulse,
-    PulseBusSchedule,
-    PulseEvent,
-    PulseSchedule,
-    PulseShape,
-    Rectangular,
-)
+from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -44,20 +35,6 @@ def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
 def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
     return PulseBusSchedule(timeline=[pulse_event], port=0)
-
-
-@pytest.fixture(name="mux_pulse_bus_schedule")
-def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
-    """Return multiplexed PulseBusSchedule instance."""
-    pulse_event_1 = PulseEvent(
-        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.0, pulse_shape=Gaussian(num_sigmas=5)),
-        start_time=0,
-    )
-    pulse_event_2 = PulseEvent(
-        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
-        start_time=0,
-    )
-    return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)
 
 
 @pytest.fixture(name="experiment", params=experiment_params)

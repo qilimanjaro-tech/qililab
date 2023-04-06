@@ -46,7 +46,7 @@ class PulseBusSchedule:
         return sorted(frequencies_set)
 
     @property
-    def end(self) -> int:
+    def end_time(self) -> int:
         """End of the PulseBusSchedule.
         Returns:
             int: End of the PulseBusSchedule."""
@@ -57,7 +57,7 @@ class PulseBusSchedule:
         return end
 
     @property
-    def start(self) -> int:
+    def start_time(self) -> int:
         """Start of the PulseBusSchedule.
         Returns:
             int: Start of the PulseBusSchedule."""
@@ -68,7 +68,7 @@ class PulseBusSchedule:
         """Duration of the PulseBusSchedule.
         Returns:
             int: Duration of the PulseBusSchedule."""
-        return self.end - self.start
+        return self.end_time - self.start_time
 
     @property
     def unique_pulses_duration(self) -> int:
