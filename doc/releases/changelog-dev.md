@@ -80,6 +80,7 @@ This document contains the changes of the current release.
   - `with_frequency(frequency: float)` returns a new `PulseBusSchedule` containing only those events at that frequency.
 
 - `Pulse`, `PulseEvent`, `PulseShapes` and child classes are now immutable.
+  [#236](https://github.com/qilimanjaro-tech/qililab/pull/236)
 
 ### Breaking changes
 
