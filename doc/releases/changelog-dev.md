@@ -4,6 +4,19 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added Yokogawa driver to qililab.
+  [#238](https://github.com/qilimanjaro-tech/qililab/pull/238)
+
+  Now the Yokogawa instrument can be used in experiments. For example:
+
+  ```python
+  platform.set_parameter(
+      alias="YokogawaGS200", parameter=Parameter.CURRENT_VALUE, value=0.0003
+  )
+  ```
+
+  See `examples/test_yokogawa_gs200.ipynb` for a more detailed working example.
+
 - Added `Experiment.compile` method, which return the compiled experiment for debugging purposes.
   [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
 
