@@ -17,8 +17,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME, RUNCARD, SCHEMA
-from qililab.execution.execution_buses import PulseScheduledBus
-from qililab.execution.execution_manager import ExecutionManager
+from qililab.execution import BusExecution, ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
 from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
@@ -101,7 +100,7 @@ def fixture_qcm_no_device():
 
 @pytest.fixture(name="qcm")
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
-def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController):
+def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarController) -> QbloxQCM:
     """Return connected instance of QbloxQCM class"""
     # add dynamically created attributes
     mock_instance = mock_pulsar.return_value
@@ -111,6 +110,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "sequencer0",
             "out0_offset",
             "out1_offset",
+            "out2_offset",
+            "out3_offset",
             "scope_acq_avg_mode_en_path0",
             "scope_acq_avg_mode_en_path1",
             "scope_acq_trigger_mode_path0",
@@ -140,7 +141,9 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         ]
     )
     pulsar_controller_qcm.connect()
-    return pulsar_controller_qcm.modules[0]
+    qblox_qcm = pulsar_controller_qcm.modules[0]
+    assert isinstance(qblox_qcm, QbloxQCM)
+    return qblox_qcm
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -412,7 +415,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=4, stop=1000, step=40),
+        options=LoopOptions(start=4, stop=1000, step=41),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
@@ -499,21 +502,11 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
         ExecutionManager: Instance of the ExecutionManager class.
     """
     experiment.build_execution()
-    return experiment.execution.execution_manager  # pylint: disable=protected-access
-
-
-@pytest.fixture(name="pulse_scheduled_bus")
-def fixture_pulse_scheduled_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
-    """Load PulseScheduledBus.
-
-    Returns:
-        PulseScheduledBus: Instance of the PulseScheduledBus class.
-    """
-    return execution_manager.buses[0]
+    return experiment.execution.execution_manager
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
-def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> PulseScheduledBus:
+def fixture_pulse_scheduled_readout_bus(execution_manager: ExecutionManager) -> BusExecution:
     """Load PulseScheduledReadoutBus.
 
     Returns:
@@ -565,26 +558,6 @@ def fixture_readout_pulse() -> ReadoutPulse:
     """
     pulse_shape = Gaussian(num_sigmas=4)
     return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-
-
-@pytest.fixture(name="base_system_control")
-def fixture_base_system_control(platform: Platform) -> SystemControl:
-    """Load SystemControl.
-
-    Returns:
-        SystemControl: Instance of the ControlSystemControl class.
-    """
-    return platform.buses[0].system_control
-
-
-@pytest.fixture(name="simulated_system_control")
-def fixture_simulated_system_control(simulated_platform: Platform) -> SimulatedSystemControl:
-    """Load SimulatedSystemControl.
-
-    Returns:
-        SimulatedSystemControl: Instance of the SimulatedSystemControl class.
-    """
-    return simulated_platform.buses[0].system_control
 
 
 @pytest.fixture(name="simulated_platform")

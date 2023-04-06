@@ -1,7 +1,4 @@
 """Tests for the QbloxQCM class."""
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
@@ -19,6 +16,10 @@ class TestQbloxQCM:
     def test_inital_setup_method(self, qcm: QbloxQCM):
         """Test initial_setup method"""
         qcm.initial_setup()
+        qcm.device.out0_offset.assert_called()
+        qcm.device.out1_offset.assert_called()
+        qcm.device.out2_offset.assert_called()
+        qcm.device.out3_offset.assert_called()
         qcm.device.sequencer0.sync_en.assert_called_with(qcm.awg_sequencers[0].sync_enabled)
         qcm.device.sequencer0.mod_en_awg.assert_called()
         qcm.device.sequencer0.offset_awg_path0.assert_called()
@@ -40,6 +41,10 @@ class TestQbloxQCM:
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
             (Parameter.OFFSET_Q, 0.12, 0),
+            (Parameter.OFFSET_OUT0, 1.234, None),
+            (Parameter.OFFSET_OUT1, 0, None),
+            (Parameter.OFFSET_OUT2, 0.123, None),
+            (Parameter.OFFSET_OUT3, 10, None),
             (Parameter.OFFSET_PATH0, 0.8, 0),
             (Parameter.OFFSET_PATH1, 0.11, 0),
             (Parameter.IF, 100_000, 0),
@@ -82,21 +87,43 @@ class TestQbloxQCM:
             assert qcm.awg_sequencers[channel_id].gain_imbalance == value
         if parameter == Parameter.PHASE_IMBALANCE:
             assert qcm.awg_sequencers[channel_id].phase_imbalance == value
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            assert qcm.out_offsets[output] == value
+
+    def test_setup_out_offset_raises_error(self, qcm: QbloxQCM):
+        """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
+        with pytest.raises(IndexError, match="Output 5 is out of range"):
+            qcm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
         qcm.turn_off()
         qcm.device.stop_sequencer.assert_called_once()
 
-    def test_reset_method(self, qrm: QbloxQCM):
+    def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
-        qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        qcm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
+        qcm.reset()
+        assert qcm._cache == {}  # pylint: disable=protected-access
 
-    def test_upload_method(self, qcm: QbloxQCM):
+    def test_compile(self, qcm, pulse_bus_schedule):
+        """Test compile method."""
+        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+        assert sequences[0]._program.duration == 1000 * 2000 + 4
+
+    def test_upload_raises_error(self, qcm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qcm.upload()
+
+    def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
-        qcm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
+        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qcm.upload()
         qcm.device.sequencer0.sequence.assert_called_once()
 
     def test_id_property(self, qcm_no_device: QbloxQCM):
@@ -114,7 +141,3 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_frequency_property(self, qcm_no_device: QbloxQCM):
-        """Test frequency property."""
-        assert qcm_no_device.frequency(0) == qcm_no_device.awg_sequencers[0].intermediate_frequency

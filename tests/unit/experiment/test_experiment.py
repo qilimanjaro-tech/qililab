@@ -8,10 +8,12 @@ import pytest
 from matplotlib.figure import Figure
 from qibo.gates import M
 from qibo.models.circuit import Circuit
+from qpysequence import Sequence
 
 from qililab.constants import DATA
 from qililab.execution import Execution
 from qililab.experiment import Experiment
+from qililab.instruments import AWG
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.result.results import Results
@@ -19,8 +21,7 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
-
-from .aux_methods import mock_instruments
+from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="connected_experiment")
@@ -121,6 +122,30 @@ class TestMethods:
         else:
             assert isinstance(experiment._plot, LivePlot)
         assert not hasattr(experiment, "_remote_id")
+
+    def test_compile(self, experiment: Experiment):
+        """Test the compile method of the ``Execution`` class."""
+        experiment.build_execution()
+        sequences = experiment.compile()
+        assert isinstance(sequences, list)
+        assert len(sequences) == len(experiment.circuits)
+        sequence = sequences[0]
+        buses = experiment.execution.execution_manager.buses
+        assert len(sequence) == len(buses)
+        for alias, bus_sequences in sequence.items():
+            assert alias in {bus.alias for bus in buses}
+            assert isinstance(bus_sequences, list)
+            assert len(bus_sequences) == 1
+            assert isinstance(bus_sequences[0], Sequence)
+            assert (
+                bus_sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+            )  # additional 4ns for the initial wait_sync
+
+    def test_compile_raises_error(self, experiment: Experiment):
+        """Test that the ``compile`` method of the ``Experiment`` class raises an error when ``build_execution`` is
+        not called."""
+        with pytest.raises(ValueError, match="Please build the execution before compilation"):
+            experiment.compile()
 
     def test_run_without_data_path_raises_error(self, experiment: Experiment):
         """Test that the ``build_execution`` method of the ``Experiment`` class raises an error when no DATA

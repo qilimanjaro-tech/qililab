@@ -130,7 +130,7 @@ class PulseBusSchedule:
             wait_time = round((pulse_event.start - time) / resolution)
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
-            time += pulse_event.start
+            time += wait_time
             pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
             waveforms += pulse_waveforms
             time += pulse_event.duration
