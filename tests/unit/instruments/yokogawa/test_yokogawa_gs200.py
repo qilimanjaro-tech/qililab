@@ -60,7 +60,7 @@ class TestGS200:
         if parameter == Parameter.SOURCE_MODE:
             assert yokogawa_gs200.source_mode == YokogawaSourceModes(value)
 
-    @pytest.mark.parametrize("parameter, value", [(Parameter.GAIN, 0.001), (Parameter.INTEGRATION, 0.0005)])
+    @pytest.mark.parametrize("parameter, value", [(Parameter.GAIN, "foo"), (Parameter.INTEGRATION, "bar")])
     def test_setup_method_value_str_raises_exception(self, parameter: Parameter, value, yokogawa_gs200: GS200):
         """Test the setup method with string value raises an exception with wrong parameters"""
         with pytest.raises(ParameterNotFound):
