@@ -23,6 +23,10 @@ class PulseEvent:
     def end_time(self) -> int:
         return self.start_time + self.duration
 
+    @property
+    def frequency(self) -> float:
+        return self.pulse.frequency
+
     def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 

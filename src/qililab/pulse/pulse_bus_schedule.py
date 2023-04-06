@@ -1,4 +1,6 @@
 """PulseBusSchedule class."""
+from __future__ import annotations
+
 from bisect import insort
 from dataclasses import dataclass, field
 from typing import List, Set
@@ -34,11 +36,20 @@ class PulseBusSchedule:
         self._pulses.add(pulse_event.pulse)
         insort(self.timeline, pulse_event)
 
+    def frequencies(self) -> List[float]:
+        """Frequencies of the pulses in the sequence.
+
+        Returns:
+            List[float]: List of the frequencies in ascending order.
+        """
+        frequencies_set = {pulse.frequency for pulse in self._pulses}
+        return sorted(frequencies_set)
+
     @property
     def end(self) -> int:
-        """End of the PulseSequence.
+        """End of the PulseBusSchedule.
         Returns:
-            int: End of the PulseSequence."""
+            int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
             pulse_end = event.start_time + event.pulse.duration
@@ -47,16 +58,16 @@ class PulseBusSchedule:
 
     @property
     def start(self) -> int:
-        """Start of the PulseSequence.
+        """Start of the PulseBusSchedule.
         Returns:
-            int: Start of the PulseSequence."""
+            int: Start of the PulseBusSchedule."""
         return self.timeline[0].start_time
 
     @property
     def duration(self) -> int:
-        """Duration of the PulseSequence.
+        """Duration of the PulseBusSchedule.
         Returns:
-            int: Duration of the PulseSequence."""
+            int: Duration of the PulseBusSchedule."""
         return self.end - self.start
 
     @property
@@ -68,7 +79,7 @@ class PulseBusSchedule:
 
     @property
     def pulses(self):
-        """Set of Pulse objects used in this PulseSequence.
+        """Set of Pulse objects used in this PulseBusSchedule.
         Returns:
             str: The set of Pulse objects."""
         return self._pulses
@@ -78,7 +89,7 @@ class PulseBusSchedule:
         return self.timeline.__iter__()
 
     def waveforms(self, resolution: float = 1.0) -> Waveforms:
-        """PulseSequence 'waveforms' property.
+        """PulseBusSchedule 'waveforms' property.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
@@ -99,6 +110,18 @@ class PulseBusSchedule:
 
         return waveforms
 
+    def with_frequency(self, frequency: float) -> PulseBusSchedule:
+        """Filter PulseBusSchedule by frequency.
+
+        Args:
+            frequency (float): Frequency to filter the PulseBusSchedule.
+
+        Returns:
+            PulseBusSchedule: Filtered PulseBusSchedule.
+        """
+        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.frequency == frequency]
+        return PulseBusSchedule(port=self.port, timeline=filtered_timeline)
+
     def to_dict(self):
         """Return dictionary representation of the class.
 
@@ -112,13 +135,13 @@ class PulseBusSchedule:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load PulseSequence object from dictionary.
+        """Load PulseBusSchedule object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseSequence object.
+            dictionary (dict): Dictionary representation of the PulseBusSchedule object.
 
         Returns:
-            PulseSequence: Loaded class.
+            PulseBusSchedule: Loaded class.
         """
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
         port = dictionary[PULSEBUSSCHEDULE.PORT]
