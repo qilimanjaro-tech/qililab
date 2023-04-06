@@ -55,6 +55,7 @@ class PLATFORM:
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"
     DEVICE_ID = "device_id"
+    MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
 
 class CURRENTSOURCE:
