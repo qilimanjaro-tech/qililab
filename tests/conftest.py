@@ -8,16 +8,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import (
-    CircuitToPulses,
-    Gaussian,
-    Pulse,
-    PulseBusSchedule,
-    PulseEvent,
-    PulseSchedule,
-    ReadoutEvent,
-    ReadoutPulse,
-)
+from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -135,17 +126,6 @@ def fixture_pulse_event() -> PulseEvent:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="readout_event")
-def fixture_readout_event() -> ReadoutEvent:
-    """Load ReadoutEvent.
-
-    Returns:
-        ReadoutEvent: Instance of the PulseEvent class.
-    """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
-    return ReadoutEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="simulated_platform")
