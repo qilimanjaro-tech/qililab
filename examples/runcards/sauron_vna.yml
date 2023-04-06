@@ -39,7 +39,6 @@ schema:
       power: -60.0
   buses:
     - id_: 0
-      name: continuous_readout_bus
       category: bus
       alias: vna_readout_bus
       system_control:

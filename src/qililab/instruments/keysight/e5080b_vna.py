@@ -171,68 +171,6 @@ class E5080B(VectorNetworkAnalyzer):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _get_sweep_mode(self, channel=1):
-        """Return the current sweep mode."""
-        return str(self.send_query(f":SENS{channel}:SWE:MODE?")).rstrip()
-
-    def _get_trace(self, channel=1, trace=1):
-        """Get the data of the current trace."""
-        self.send_command(command="FORM:DATA", arg="REAL,32")
-        self.send_command(command="FORM:BORD", arg="SWAPPED")  # SWAPPED
-        data = self.send_binary_query(f"CALC{channel}:MEAS{trace}:DATA:SDAT?")
-        datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
-        dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
-
-        return datareal + 1j * dataimag
-
-    def _average_state(self, state, channel=1):
-        """Set status of Average."""
-        if state:
-            self.send_command(f"SENS{channel}:AVER:STAT", "ON")
-        else:
-            self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
-
-    def _average_count(self, count, channel):
-        """Set the average count"""
-        self.send_command(f"SENS{channel}:AVER:COUN", count)
-        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
-
-    def _set_count(self, count: str, channel=1):
-        """
-        Sets the trigger count (groups)
-        Input:
-            count (str) : Count number
-        """
-        self.send_command(f"SENS{channel}:SWE:GRO:COUN", count)
-
-    def _pre_measurement(self):
-        """
-        Set everything needed for the measurement
-        Averaging has to be enabled.
-        Trigger count is set to number of averages
-        """
-        if not self.averaging_enabled:
-            self.averaging_enabled = True
-            self.number_averages = 1
-        self._set_count(str(self.settings.number_averages))
-
-    def _start_measurement(self):
-        """
-        This function is called at the beginning of each single measurement in the spectroscopy script.
-        Also, the averages need to be reset.
-        """
-        self.average_clear()
-        self.sweep_mode = "group"
-
-    def _wait_until_ready(self, period=0.25) -> bool:
-        """Waiting function to wait until VNA is ready."""
-        timelimit = time.time() + self.device_timeout
-        while time.time() < timelimit:
-            if self.ready():
-                return True
-            time.sleep(period)
-        return False
-
     @property
     def power(self):
         """VectorNetworkAnalyzer 'power' property.
@@ -422,7 +360,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         if value in {"hold", "cont", "group", "single"}:
             self.settings.sweep_mode = VNASweepModes(value)
-            mode = self.settings.sweep_mode.value
+            mode = self.settings.sweep_mode.name
             self.send_command(f"SENS{channel}:SWE:MODE", mode)
             return
         raise ValueError(f"Invalid sweep mode value: {value}")
@@ -462,6 +400,68 @@ class E5080B(VectorNetworkAnalyzer):
         self.settings.electrical_delay = value
         etime = f"{self.settings.electrical_delay:.12f}"
         self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
+
+    def _get_sweep_mode(self, channel=1):
+        """Return the current sweep mode."""
+        return str(self.send_query(f":SENS{channel}:SWE:MODE?")).rstrip()
+
+    def _get_trace(self, channel=1, trace=1):
+        """Get the data of the current trace."""
+        self.send_command(command="FORM:DATA", arg="REAL,32")
+        self.send_command(command="FORM:BORD", arg="SWAPPED")  # SWAPPED
+        data = self.send_binary_query(f"CALC{channel}:MEAS{trace}:DATA:SDAT?")
+        datareal = np.array(data[::2])  # Elements from data starting from 0 iterating by 2
+        dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
+
+        return datareal + 1j * dataimag
+
+    def _average_state(self, state, channel=1):
+        """Set status of Average."""
+        if state:
+            self.send_command(f"SENS{channel}:AVER:STAT", "ON")
+        else:
+            self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
+
+    def _average_count(self, count, channel):
+        """Set the average count"""
+        self.send_command(f"SENS{channel}:AVER:COUN", count)
+        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
+
+    def _set_count(self, count: str, channel=1):
+        """
+        Sets the trigger count (groups)
+        Input:
+            count (str) : Count number
+        """
+        self.send_command(f"SENS{channel}:SWE:GRO:COUN", count)
+
+    def _pre_measurement(self):
+        """
+        Set everything needed for the measurement
+        Averaging has to be enabled.
+        Trigger count is set to number of averages
+        """
+        if not self.averaging_enabled:
+            self.averaging_enabled = True
+            self.number_averages = 1
+        self._set_count(str(self.settings.number_averages))
+
+    def _start_measurement(self):
+        """
+        This function is called at the beginning of each single measurement in the spectroscopy script.
+        Also, the averages need to be reset.
+        """
+        self.average_clear()
+        self.sweep_mode = "group"
+
+    def _wait_until_ready(self, period=0.25) -> bool:
+        """Waiting function to wait until VNA is ready."""
+        timelimit = time.time() + self.device_timeout
+        while time.time() < timelimit:
+            if self.ready():
+                return True
+            time.sleep(period)
+        return False
 
     def average_clear(self, channel=1):
         """Clears the average buffer."""
