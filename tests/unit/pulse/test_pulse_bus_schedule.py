@@ -43,3 +43,16 @@ class TestPulseBusSchedule:
         """Test the total duration property."""
         duration = pulse_bus_schedule.end - pulse_bus_schedule.start
         assert pulse_bus_schedule.duration == duration
+
+    def test_frequencies(self, mux_pulse_bus_schedule: PulseBusSchedule):
+        """Test the frequencies method."""
+        frequencies = sorted({event.frequency for event in mux_pulse_bus_schedule.timeline})
+        assert frequencies == mux_pulse_bus_schedule.frequencies()
+
+    def test_with_frequency(self, mux_pulse_bus_schedule: PulseBusSchedule):
+        """Test the with_frequency method."""
+        frequencies = mux_pulse_bus_schedule.frequencies()
+        for frequency in frequencies:
+            schedule = mux_pulse_bus_schedule.with_frequency(frequency)
+            assert len(schedule.frequencies()) == 1
+            assert frequency == schedule.frequencies()[0]

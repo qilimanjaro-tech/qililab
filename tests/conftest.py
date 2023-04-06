@@ -373,6 +373,20 @@ def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
+@pytest.fixture(name="mux_pulse_bus_schedule")
+def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
+    """Return multiplexed PulseBusSchedule instance."""
+    pulse_event_1 = PulseEvent(
+        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.0, pulse_shape=Gaussian(num_sigmas=5)),
+        start_time=0,
+    )
+    pulse_event_2 = PulseEvent(
+        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
+        start_time=0,
+    )
+    return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)
+
+
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
 @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
 def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
