@@ -518,11 +518,6 @@ class OperationTimingsCalculationMethod(str, Enum):
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class TranspilerOutputMethod(str, Enum):
-    IN_PLACE = "in_place"
-    COPY = "copy"
-
-
 class ResetMethod(str, Enum):
     PASSIVE = "passive"
     ACTIVE = "active"
