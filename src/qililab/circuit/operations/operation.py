@@ -93,7 +93,7 @@ class Operation(ABC):
             name (str): The name of the parameter
 
         Raises:
-            ValueError: If parapameter does not exist
+            ValueError: If parameter does not exist
 
         Returns:
             ParameterValue: The value of the parameter
