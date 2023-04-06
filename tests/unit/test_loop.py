@@ -6,6 +6,12 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
 
+@pytest.fixture(name="loop")
+def fixture_loop() -> Loop:
+    """Return Platform object."""
+    return Loop(alias="X", parameter=Parameter.AMPLITUDE, options=LoopOptions(start=0, stop=1))
+
+
 class TestLoop:
     """Unit tests checking the Loop attributes and methods"""
 
