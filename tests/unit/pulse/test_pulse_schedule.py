@@ -1,5 +1,18 @@
 """Tests for the PulseSequences class."""
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, PulseSchedule, ReadoutEvent, ReadoutPulse
+import pytest
+
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule, ReadoutEvent, ReadoutPulse
+
+
+@pytest.fixture(name="readout_pulse")
+def fixture_readout_pulse() -> ReadoutPulse:
+    """Load ReadoutPulse.
+
+    Returns:
+        ReadoutPulse: Instance of the ReadoutPulse class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    return ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 class TestPulseSequences:

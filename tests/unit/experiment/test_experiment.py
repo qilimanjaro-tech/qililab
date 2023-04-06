@@ -10,7 +10,8 @@ from qibo.gates import M
 from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
-from qililab.constants import DATA
+from qililab import build_platform
+from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution import Execution
 from qililab.experiment import Experiment
 from qililab.instruments import AWG
@@ -20,7 +21,11 @@ from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
+from qililab.typings.loop import LoopOptions
+from qililab.utils import Loop
 from qililab.utils.live_plot import LivePlot
+from tests.data import experiment_params, simulated_experiment_circuit
+from tests.side_effect import yaml_safe_load_side_effect
 from tests.utils import mock_instruments
 
 
@@ -83,6 +88,21 @@ class TestProperties:
     def test_repetition_duration_property(self, experiment: Experiment):
         """Test repetition_duration property."""
         assert experiment.repetition_duration == experiment.options.settings.repetition_duration
+
+
+@pytest.fixture(name="experiment_all_platforms", params=experiment_params)
+@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="flux_qubit")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
+    mock_load.assert_called()
+    return experiment
 
 
 class TestMethods:
@@ -306,6 +326,34 @@ class TestSetParameter:
         assert experiment.platform.settings.get_gate(name="X").duration == 123
 
 
+@pytest.fixture(name="experiment_reset", params=experiment_params)
+@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
+def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop = Loop(
+        alias="rs_0",
+        parameter=Parameter.LO_FREQUENCY,
+        options=LoopOptions(
+            start=3544000000,
+            stop=3744000000,
+            num=2,
+        ),
+    )
+    options = ExperimentOptions(loops=[loop])
+    experiment = Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
+    mock_load.assert_called()
+    return experiment
+
+
 class TestReset:
     """Unit tests for the reset option."""
 
@@ -351,6 +399,12 @@ class TestReset:
         experiment_reset.platform.connect()
         experiment_reset.platform.disconnect()
         assert mock_reset.call_count == 10
+
+
+@pytest.fixture(name="simulated_experiment")
+def fixture_simulated_experiment(simulated_platform: Platform):
+    """Return Experiment object."""
+    return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
 @patch("qililab.experiment.experiment.open")
