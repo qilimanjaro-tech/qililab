@@ -14,13 +14,14 @@ class PulseEvent:
 
     pulse: Pulse
     start_time: int
-    end_time: int = field(init=False, repr=False)
-    duration: int = field(init=False, repr=False)
 
-    def __post_init__(self):
-        """Set the duration of the PulseEvent from that of the Pulse and calculate end_time."""
-        self.duration = self.pulse.duration
-        self.end_time = self.start_time + self.duration
+    @property
+    def duration(self) -> int:
+        return self.pulse.duration
+
+    @property
+    def end_time(self) -> int:
+        return self.start_time + self.duration
 
     def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
