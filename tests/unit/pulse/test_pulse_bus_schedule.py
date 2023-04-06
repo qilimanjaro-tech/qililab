@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent
+from qililab.pulse import PulseBusSchedule, PulseEvent
 
 
 class TestPulseBusSchedule:

@@ -1,6 +1,8 @@
 """Tests for the PulseSequences class."""
 import pytest
 
+from qililab.pulse import PulseBusSchedule, PulseEvent, PulseSchedule
+
 
 class TestPulseSequences:
     """Unit tests checking the PulseSequences attributes and methods"""
