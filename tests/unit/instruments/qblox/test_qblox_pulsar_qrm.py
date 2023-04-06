@@ -1,4 +1,5 @@
 """Test for the QbloxQRM class."""
+import copy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -8,10 +9,75 @@ from qpysequence.program import Program
 from qpysequence.sequence import Sequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQRM
+from qililab.platform import Platform
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
+from tests.data import Galadriel
+
+
+@pytest.fixture(name="pulsar_controller_qrm")
+def fixture_pulsar_controller_qrm(platform: Platform):
+    """Return an instance of QbloxPulsarController class"""
+    settings = copy.deepcopy(Galadriel.pulsar_controller_qrm_0)
+    settings.pop("name")
+    return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="qrm_no_device")
+def fixture_qrm_no_device():
+    """Return an instance of QbloxQRM class"""
+    settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+    settings.pop("name")
+    return QbloxQRM(settings=settings)
+
+
+@pytest.fixture(name="qrm")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarController):
+    """Return connected instance of QbloxQRM class"""
+    # add dynamically created attributes
+    mock_instance = mock_pulsar.return_value
+    mock_instance.mock_add_spec(
+        [
+            "reference_source",
+            "sequencer0",
+            "out0_offset",
+            "out1_offset",
+            "scope_acq_trigger_mode_path0",
+            "scope_acq_trigger_mode_path1",
+            "scope_acq_sequencer_select",
+            "scope_acq_avg_mode_en_path0",
+            "scope_acq_avg_mode_en_path1",
+            "get_acquisitions",
+        ]
+    )
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
+    mock_instance.sequencer0.mock_add_spec(
+        [
+            "sync_en",
+            "gain_awg_path0",
+            "gain_awg_path1",
+            "sequence",
+            "mod_en_awg",
+            "nco_freq",
+            "scope_acq_sequencer_select",
+            "channel_map_path0_out0_en",
+            "channel_map_path1_out1_en",
+            "demod_en_acq",
+            "integration_length_acq",
+            "set",
+            "mixer_corr_phase_offset_degree",
+            "mixer_corr_gain_ratio",
+            "offset_awg_path0",
+            "offset_awg_path1",
+        ]
+    )
+    # connect to instrument
+    pulsar_controller_qrm.connect()
+    return pulsar_controller_qrm.modules[0]
 
 
 class TestQbloxQRM:
@@ -147,14 +213,28 @@ class TestQbloxQRM:
 
     def test_reset_method(self, qrm: QbloxQRM):
         """Test reset method"""
-        qrm._cache = [None, 0, 0]  # type: ignore # pylint: disable=protected-access
+        qrm._cache = {0: None}  # type: ignore # pylint: disable=protected-access
         qrm.reset()
-        assert qrm._cache is None  # pylint: disable=protected-access
+        assert qrm._cache == {}  # pylint: disable=protected-access
 
-    def test_upload_method(self, qrm: QbloxQRM):
+    def test_compile(self, qrm, pulse_bus_schedule):
+        """Test compile method."""
+        pulse_bus_schedule.port = 1  # change port to target the resonator
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 1
+        assert isinstance(sequences[0], Sequence)
+
+    def test_upload_raises_error(self, qrm):
+        """Test upload method raises error."""
+        with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
+            qrm.upload()
+
+    def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        qrm.upload(sequence=Sequence(program=Program(), waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}))
-        qrm.device.sequencer0.sequence.assert_called()
+        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qrm.upload()
+        qrm.device.sequencer0.sequence.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
@@ -204,7 +284,3 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
-
-    def tests_frequency_property(self, qrm_no_device: QbloxQRM):
-        """Test frequency property."""
-        assert qrm_no_device.frequency(0) == qrm_no_device.awg_sequencers[0].intermediate_frequency

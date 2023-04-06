@@ -3,12 +3,95 @@
 import numpy as np
 import pandas as pd
 import pytest
+from dummy_qblox import DummyPulsar
+from qblox_instruments import PulsarType
+from qpysequence import Sequence
+from qpysequence.acquisitions import Acquisitions
+from qpysequence.program import Program
+from qpysequence.waveforms import Waveforms
 
 from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
 from qililab.exceptions.data_unavailable import DataUnavailable
 from qililab.result.qblox_results.qblox_result import QbloxResult
+from qililab.utils.signal_processing import modulate
+from tests.utils import dummy_qrm_name_generator
 
 from ...utils import compare_pair_of_arrays, complete_array
+
+
+@pytest.fixture(name="qrm_sequence")
+def fixture_qrm_sequence() -> Sequence:
+    """Returns an instance of Sequence with an empty program, a pair of waveforms (ones and zeros), a single
+    acquisition specification and without weights.
+
+    Returns:
+        Sequence: Sequence object.
+    """
+    program = Program()
+    waveforms = Waveforms()
+    waveforms.add_pair_from_complex(np.ones(1000))
+    acquisitions = Acquisitions()
+    acquisitions.add("single")
+    return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
+
+
+@pytest.fixture(name="dummy_qrm")
+def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
+    """dummy QRM
+
+    Args:
+        qrm_sequence (Sequence): _description_
+
+    Returns:
+        DummyPulsar: _description_
+    """
+    qrm = DummyPulsar(name=next(dummy_qrm_name_generator), pulsar_type=PulsarType.PULSAR_QRM)
+    waveform_length = 1000
+    zeros = np.zeros(waveform_length, dtype=np.float32)
+    ones = np.ones(waveform_length, dtype=np.float32)
+    sim_in_0, sim_in_1 = modulate(i=ones, q=zeros, frequency=10e6, phase_offset=0.0)
+    filler = [0.0] * (16380 - waveform_length)
+    sim_in_0 = np.append(sim_in_0, filler)
+    sim_in_1 = np.append(sim_in_1, filler)
+    qrm.feed_input_data(input_path0=sim_in_0, input_path1=sim_in_1)
+    qrm.sequencers[0].sequence(qrm_sequence.todict())
+    qrm.sequencers[0].nco_freq(10e6)
+    qrm.sequencers[0].demod_en_acq(True)
+    qrm.scope_acq_sequencer_select(0)
+    qrm.scope_acq_trigger_mode_path0("sequencer")
+    qrm.scope_acq_trigger_mode_path1("sequencer")
+    qrm.get_sequencer_state(0)
+    qrm.get_acquisition_state(0, 1)
+    return qrm
+
+
+@pytest.fixture(name="qblox_result_noscope")
+def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
+    """fixture_qblox_result_noscope
+
+    Args:
+        dummy_qrm (DummyPulsar): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
+
+
+@pytest.fixture(name="qblox_result_scope")
+def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
+    """fixture_qblox_result_scope
+
+    Args:
+        dummy_qrm (DummyPulsar): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dummy_qrm.store_scope_acquisition(0, "single")
+    acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
+    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
 
 
 class TestsQbloxResult:
