@@ -414,7 +414,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=4, stop=1000, step=40),
+        options=LoopOptions(start=4, stop=1000, step=41),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
