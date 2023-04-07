@@ -75,6 +75,13 @@ This document contains the changes of the current release.
   changes, the cache is emptied to make sure new programs are compiled.
   [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
 
+- Added methods to `PulseBusSchedule` for multiplexing: [#236](https://github.com/qilimanjaro-tech/qililab/pull/236)
+  - `frequencies()` returns a list of the frequencies in the schedule.
+  - `with_frequency(frequency: float)` returns a new `PulseBusSchedule` containing only those events at that frequency.
+
+- `Pulse`, `PulseEvent`, `PulseShapes` and child classes are now immutable.
+  [#236](https://github.com/qilimanjaro-tech/qililab/pull/236)
+
 ### Breaking changes
 
 - An `out_offsets` attribute has been added to the settings of a `QbloxModule` object. This attribute contains a list
@@ -100,6 +107,10 @@ This document contains the changes of the current release.
 
 - Removed the `AWG.frequency` attribute because it was not used.
   [#225](https://github.com/qilimanjaro-tech/qililab/pull/225)
+- Removed `ReadoutPulse` and `ReadoutEvent`. `Pulse` and `PulseEvent` have to be used instead. 
+  [#236](https://github.com/qilimanjaro-tech/qililab/pull/236)
+- Removed `add(Pulse)` method from `PulseBusSchedule` and `PulseSchedule`. `add_event(PulseEvent)` has to be used instead.
+  [#236](https://github.com/qilimanjaro-tech/qililab/pull/236)
 
 ### Documentation
 
