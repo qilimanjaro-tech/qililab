@@ -1,4 +1,4 @@
-"""Pulse Scheduled Bus class."""
+"""BusExecution class."""
 from dataclasses import dataclass, field
 
 from qililab.platform import Bus
@@ -9,29 +9,35 @@ from qililab.utils import Waveforms
 
 
 @dataclass
-class PulseScheduledBus:
-    """Pulse Scheduled Bus class."""
+class BusExecution:
+    """This class contains the information of a specific bus in the platform together with a list of
+    pulse schedules that will be executed on this bus."""
 
     bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """Translate the Pulse Bus Schedule to each AWG program and upload them
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
+        """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
-            idx (int): index of the pulse schedule to compile and upload
+            idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+
+        Returns:
+            list: list of compiled assembly programs
         """
-        self.system_control.generate_program_and_upload(  # pylint: disable=no-member
-            pulse_bus_schedule=self.pulse_schedule[idx],
-            nshots=nshots,
-            repetition_duration=repetition_duration,
+        return self.system_control.compile(
+            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
         )
+
+    def upload(self):
+        """Uploads any previously compiled program into the instrument."""
+        self.system_control.upload()
 
     def run(self):
         """Run the given pulse sequence."""
-        return self.system_control.run()  # pylint: disable=no-member
+        return self.system_control.run()
 
     def setup(self):
         """Generates the sequence for each bus and uploads it to the sequencer"""
@@ -60,7 +66,7 @@ class PulseScheduledBus:
         return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
-        """Pulse Scheduled Bus 'acquire_time' property.
+        """BusExecution 'acquire_time' property.
 
         Returns:
             int: Acquire time (in ns).
@@ -69,7 +75,7 @@ class PulseScheduledBus:
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
         readout_schedule = self.pulse_schedule[idx]
-        time = readout_schedule.timeline[-1].start
+        time = readout_schedule.timeline[-1].start_time
         if isinstance(self.system_control, ReadoutSystemControl):
             time += self.system_control.acquisition_delay_time
         return time
@@ -91,7 +97,7 @@ class PulseScheduledBus:
 
     @property
     def port(self):
-        """Pulse Scheduled Bus 'port' property
+        """BusExecution 'port' property
 
         Returns:
             int: Port where the bus is connected.
@@ -100,7 +106,7 @@ class PulseScheduledBus:
 
     @property
     def system_control(self) -> SystemControl:
-        """Pulse Scheduled Bus 'system_control' property.
+        """BusExecution 'system_control' property.
 
         Returns:
             SystemControl: bus.system_control
@@ -109,9 +115,18 @@ class PulseScheduledBus:
 
     @property
     def id_(self):
-        """Pulse Scheduled Bus 'id_' property.
+        """BusExecution 'id_' property.
 
         Returns:
             int: bus.id_
         """
         return self.bus.id_
+
+    @property
+    def alias(self):
+        """BusExecution 'alias' property.
+
+        Returns:
+            str: alias of the bus
+        """
+        return self.bus.alias

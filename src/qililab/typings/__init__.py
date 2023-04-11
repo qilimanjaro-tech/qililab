@@ -11,7 +11,6 @@ from .enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
     ResultName,
