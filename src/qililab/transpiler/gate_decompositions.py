@@ -108,45 +108,19 @@ def translate_gate(gate, native_gates):
 
 
 onequbit_dec = GateDecompositions()
-onequbit_dec.add(gates.H, [VZ(np.pi), RMW(np.pi/2, -np.pi/2)])
+onequbit_dec.add(gates.H, [gates.RZ(np.pi), RMW(np.pi/2, -np.pi/2)])
 onequbit_dec.add(gates.X, [RMW(np.pi, 0)])
-onequbit_dec.add(gates.Y, [VZ(-np.pi), RMW(np.pi/2, np.pi)])
-onequbit_dec.add(gates.Z, [VZ(np.pi)])
-onequbit_dec.add(gates.RX, lambda gate: [VZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2 - np.pi/2), RMW(np.pi/2, np.pi/2)])
-onequbit_dec.add(gates.RY, lambda gate: [VZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2), RMW(np.pi/2, np.pi)])
-onequbit_dec.add(gates.RZ, lambda gate: [VZ(gate.parameters[0] / 2)])
+onequbit_dec.add(gates.Y, [gates.RZ(-np.pi), RMW(np.pi/2, np.pi)])
+onequbit_dec.add(gates.Z, [gates.RZ(np.pi)])
+onequbit_dec.add(gates.RX, lambda gate: [gates.RZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2 - np.pi/2), RMW(np.pi/2, np.pi/2)])
+onequbit_dec.add(gates.RY, lambda gate: [gates.RZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2), RMW(np.pi/2, np.pi)])
+onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(gate.parameters[0] / 2)])
 
-
-
-
-
-onequbit_dec.add(gates.H, [gates.U3(0, 7 * np.pi / 2, np.pi, 0)])
-onequbit_dec.add(gates.X, [gates.U3(0, np.pi, 0, np.pi)])
-onequbit_dec.add(gates.Y, [gates.U3(0, np.pi, 0, 0)])
-# apply virtually by changing ``phase`` instead of using pulses
-onequbit_dec.add(gates.Z, [gates.Z(0)])
-onequbit_dec.add(gates.S, [gates.RZ(0, np.pi / 2)])
-onequbit_dec.add(gates.SDG, [gates.RZ(0, -np.pi / 2)])
-onequbit_dec.add(gates.T, [gates.RZ(0, np.pi / 4)])
-onequbit_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
-onequbit_dec.add(gates.I, [gates.I(0)])
-onequbit_dec.add(gates.Align, [gates.Align(0)])
-onequbit_dec.add(gates.RX, lambda gate: [gates.U3(0, gate.parameters[0], -np.pi / 2, np.pi / 2)])
-onequbit_dec.add(gates.RY, lambda gate: [gates.U3(0, gate.parameters[0], 0, 0)])
-# apply virtually by changing ``phase`` instead of using pulses
-onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0])])
-# apply virtually by changing ``phase`` instead of using pulses
 onequbit_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
 onequbit_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
 onequbit_dec.add(gates.U3, lambda gate: [gates.U3(0, gate.parameters[0], gate.parameters[1], gate.parameters[2])])
-onequbit_dec.add(
-    gates.Unitary,
-    lambda gate: [gates.U3(0, *u3_decomposition(gate.parameters[0]))],
-)
-onequbit_dec.add(
-    gates.FusedGate,
-    lambda gate: [gates.U3(0, *u3_decomposition(gate.asmatrix(backend)))],
-)
+
+# TODO: raise error if gate not implemented
 
 
 
