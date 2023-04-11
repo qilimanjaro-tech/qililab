@@ -137,8 +137,8 @@ class Platform:
         """
         control_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=False)
         readout_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=True)
-        control_bus = self.get_bus(port=control_port)[1]
-        readout_bus = self.get_bus(port=readout_port)[1]
+        control_bus = self.get_bus(port=self.chip.get_port(node=control_port))[1]
+        readout_bus = self.get_bus(port=self.chip.get_port(node=readout_port))[1]
         if readout_bus is None or control_bus is None:
             raise ValueError(
                 f"Could not find buses for qubit {qubit_index} connected to the ports "
