@@ -11,6 +11,7 @@ from qpysequence.waveforms import Waveforms
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
 from qililab.platform import Platform
+from qililab.pulse import PulseBusSchedule
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
@@ -209,3 +210,9 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
+
+    def test_max_frequencies_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
+        """Test split_schedule_for_sequencers method raises error when handling more frequencies than it can support."""
+        expected_error_message = f"The number of frequencies must be less or equal than {qcm._NUM_MAX_SEQUENCERS}"
+        with pytest.raises(IndexError, match=expected_error_message):
+            qcm._split_schedule_for_sequencers(pulse_bus_schedule=big_pulse_bus_schedule)
