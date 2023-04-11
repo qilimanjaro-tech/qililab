@@ -9,7 +9,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class Gaussian(PulseShape):
     """Gaussian pulse shape"""
 

@@ -50,6 +50,16 @@ class TestInitialization:
         assert not hasattr(system_control.settings, "platform_instruments")
 
 
+@pytest.fixture(name="base_system_control")
+def fixture_base_system_control(platform: Platform) -> SystemControl:
+    """Load SystemControl.
+
+    Returns:
+        SystemControl: Instance of the ControlSystemControl class.
+    """
+    return platform.buses[0].system_control
+
+
 class TestMethods:
     """Unit tests checking the ``SystemControl`` methods."""
 

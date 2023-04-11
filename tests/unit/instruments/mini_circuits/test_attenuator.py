@@ -1,11 +1,53 @@
 """Tests for the Attenuator class."""
+import copy
 import urllib
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qililab.instrument_controllers.mini_circuits.mini_circuits_controller import MiniCircuitsController
 from qililab.instruments import Attenuator
+from qililab.platform import Platform
 from qililab.typings.enums import Parameter
+from tests.data import Galadriel
+
+
+@pytest.fixture(name="attenuator_controller")
+def fixture_attenuator_controller(platform: Platform) -> MiniCircuitsController:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    settings = copy.deepcopy(Galadriel.attenuator_controller_0)
+    settings.pop("name")
+    return MiniCircuitsController(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="attenuator_no_device")
+def fixture_attenuator_no_device() -> Attenuator:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    settings = copy.deepcopy(Galadriel.attenuator)
+    settings.pop("name")
+    return Attenuator(settings=settings)
+
+
+@pytest.fixture(name="attenuator")
+@patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
+def fixture_attenuator(mock_urllib: MagicMock, attenuator_controller: MiniCircuitsController) -> Attenuator:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    attenuator_controller.connect()
+    mock_urllib.request.Request.assert_called()
+    mock_urllib.request.urlopen.assert_called()
+    return attenuator_controller.modules[0]
 
 
 class TestAttenuator:
