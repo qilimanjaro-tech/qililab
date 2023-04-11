@@ -7,6 +7,7 @@ settings:
   delay_before_readout: 40
   master_amplitude_gate: 1
   master_duration_gate: 100
+  minimum_clock_time: 4
   gates: []
 schema:
   chip:
