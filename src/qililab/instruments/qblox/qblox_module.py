@@ -171,7 +171,7 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
-        if n_freqs := len(pulse_bus_schedule.frequencies()) != 1:
+        if (n_freqs := len(pulse_bus_schedule.frequencies())) != 1:
             raise ValueError(
                 f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
             )
