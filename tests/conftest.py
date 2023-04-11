@@ -39,8 +39,6 @@ from qililab.pulse import (
     Rectangular,
 )
 from qililab.result.qblox_results.qblox_result import QbloxResult
-from qililab.system_control import SimulatedSystemControl
-from qililab.system_control.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -49,7 +47,6 @@ from qililab.utils import Loop
 from qililab.utils.signal_processing import modulate
 
 from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params, simulated_experiment_circuit
-from .side_effect import yaml_safe_load_side_effect
 from .utils import dummy_qrm_name_generator
 
 
@@ -376,8 +373,7 @@ def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -385,9 +381,10 @@ def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.Fixtu
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
-    mock_load.assert_called()
-    return experiment
+    return Experiment(
+        platform=platform,
+        circuits=circuits if isinstance(circuits, list) else [circuits],
+    )
 
 
 @pytest.fixture(name="experiment", params=experiment_params)
@@ -405,16 +402,13 @@ def fixture_experiment(request: pytest.FixtureRequest):
         options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -436,13 +430,11 @@ def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureReques
     experiment = Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
     return experiment
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -468,11 +460,9 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="simulated_experiment")

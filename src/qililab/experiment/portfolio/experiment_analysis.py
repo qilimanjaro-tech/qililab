@@ -1,5 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 from qililab.experiment.experiment import Experiment
 
 
-class ExperimentAnalysis(Experiment):
+class ExperimentAnalysis(ABC, Experiment):
     """Class used to analyze the results of an experiment. The analysis of an experiment consist of the following steps:
 
     1. Acquire results: either by running an experiment or loading one.
@@ -53,8 +53,8 @@ class ExperimentAnalysis(Experiment):
 
         return self.popt
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def func(xdata: np.ndarray, *args):
         """The model function, func(x, …) used to fit the post-processed data.
 
@@ -82,7 +82,7 @@ class ExperimentAnalysis(Experiment):
         fig, axes = plt.subplots(figsize=(9, 7))
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{loop.alias}: {loop.parameter.value}")
-        axes.set_ylabel("|S21| [dB]")
+        axes.set_ylabel(f"{self.options.plot_y_label}")
         axes.plot(x_axis, self.post_process_results, "-o")
         if hasattr(self, "popt"):
             axes.plot(x_axis, self.func(x_axis, *self.popt), "--")

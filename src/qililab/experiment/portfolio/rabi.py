@@ -44,7 +44,7 @@ class Rabi(ExperimentAnalysis):
             name="Rabi",
             loops=[loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
-            plot_y_label="Integrated Voltage (mV)",
+            plot_y_label="|S21| [dB]",
         )
 
         # Initialize experiment
