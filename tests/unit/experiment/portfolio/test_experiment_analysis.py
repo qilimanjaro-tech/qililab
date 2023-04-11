@@ -20,9 +20,12 @@ circuit.add(RX(0, 23))
 circuit.add(RY(0, 15))
 circuit.add(M(0))
 
-x = np.linspa
-i = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-q = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+start = 1
+stop = 5
+num = 1000
+x = np.linspace(start, stop, num)
+i = 5 * np.sin(7 * x)
+q = 9 * np.sin(7 * x)
 
 
 class DummyExperimentAnalysis(ExperimentAnalysis):
@@ -44,7 +47,7 @@ def fixture_experiment_analysis():
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=4, stop=1000, step=40),
+        options=LoopOptions(start=start, stop=stop, num=num),
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
@@ -66,6 +69,30 @@ class TestExperimentAnalysis:
 
     def test_fit(self, experiment_analysis: DummyExperimentAnalysis):
         """Test fit method."""
-        experiment_analysis.post_process_results()
+        experiment_analysis.post_processed_results = q
+        popt = experiment_analysis.fit(p0=(8, 7.5))  # p0 is an initial guess
+        assert all(popt == (9, 7))
+
+    def test_fit_raises_error(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``fit`` method raises an error when the results are not post processed."""
+        with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
+            experiment_analysis.fit(p0=(8, 7.5))
+
+    def test_plot(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test plot method."""
+        experiment_analysis.post_processed_results = q
         popt = experiment_analysis.fit()
-        assert all(popt == [1, 1])
+        fig = experiment_analysis.plot()
+        ax = fig.axes[0]
+        assert len(ax.lines) == 2
+        line0 = ax.lines[0]
+        assert np.allclose(line0.get_xdata(), x)
+        assert np.allclose(line0.get_ydata(), q)
+        line1 = ax.lines[1]
+        assert np.allclose(line1.get_xdata(), x)
+        assert np.allclose(line1.get_ydata(), popt[0] * np.sin(popt[1] * x))
+
+    def test_plot_raises_error(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``plot`` method raises an error when the results are not post processed."""
+        with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
+            experiment_analysis.plot()

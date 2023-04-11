@@ -47,6 +47,11 @@ class ExperimentAnalysis(ABC, Experiment):
             float: optimal values for the parameters so that the sum of the squared residuals of
                 ``f(xdata, *popt) - ydata is minimized.
         """
+        if not hasattr(self, "post_processed_results"):
+            raise AttributeError(
+                "The post-processed results must be computed before fitting. "
+                "Please call ``post_process_results`` first."
+            )
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
             self.func, xdata=self.options.loops[0].range, ydata=self.post_processed_results, p0=p0
         )
@@ -74,6 +79,11 @@ class ExperimentAnalysis(ABC, Experiment):
 
         By default this method creates a figure with size (9, 7) and plots the magnitude of the IQ data.
         """
+        if not hasattr(self, "post_processed_results"):
+            raise AttributeError(
+                "The post-processed results must be computed before fitting. "
+                "Please call ``post_process_results`` first."
+            )
         # Get loop data
         loop = self.options.loops[0]
         x_axis = loop.range
@@ -83,7 +93,7 @@ class ExperimentAnalysis(ABC, Experiment):
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{loop.alias}: {loop.parameter.value}")
         axes.set_ylabel(f"{self.options.plot_y_label}")
-        axes.plot(x_axis, self.post_process_results, "-o")
+        axes.plot(x_axis, self.post_processed_results, "-o")
         if hasattr(self, "popt"):
             axes.plot(x_axis, self.func(x_axis, *self.popt), "--")
         return fig
