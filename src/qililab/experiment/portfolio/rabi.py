@@ -1,21 +1,18 @@
 """This file contains a pre-defined version of a rabi experiment."""
-import matplotlib.pyplot as plt
 import numpy as np
 from qibo.gates import M, X
 from qibo.models import Circuit
 
-from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
 from qililab.utils import Loop
 
+from .experiment_analysis import ExperimentAnalysis
 
-class Rabi(Experiment):
-    """Class used to run a rabi experiment on the given qubit. This can be done in two different ways:
 
-    * ``use_frequency=False``: by modifying the amplitude of the pulse associated to the X gate
-    * ``use_frequency=True``: by modifying the intermediate frequency of the driving bus that is connected to the given
-        qubit
+class Rabi(ExperimentAnalysis):
+    """Class used to run a rabi experiment on the given qubit. This experiment modifies the amplitude of the pulse
+    associated to the X gate.
 
     Args:
         platform (Platform): platform used to run the experiment
@@ -23,8 +20,6 @@ class Rabi(Experiment):
         loop_options (LoopOptions): options of the loop used in the experiment, which modifies the amplitude of X gate
         repetition_duration (int, optional): duration of a single repetition in nanoseconds. Defaults to 10000.
         hardware_average (int, optional): number of repetitions used to average the result. Defaults to 10000.
-        use_frequency (bool, optional): whether to use the frequency of the driving bus to perform the experiment (True)
-            or the amplitude of the X gate (False). Defaults to False.
     """
 
     def __init__(
@@ -79,7 +74,6 @@ class Rabi(Experiment):
         """Method used to change parameters of the control gate used in the experiment. Some possible gate
         parameters are:
 
-            * Parameter.AMPLITUDE
             * Parameter.DURATION
             * Parameter.PHASE
 
@@ -103,30 +97,6 @@ class Rabi(Experiment):
         for parameter, value in parameters.items():
             self.platform.set_parameter(alias="M", parameter=parameter, value=value)
 
-    def post_process_results(self):
-        """Method used to post-process the results of a rabi experiment."""
-
-    def fit(self):
-        """Method used to fit the results of a rabi experiment.
-
-        This method fits
-        """
-
-    def plot(self):
-        """Method used to plot the results of a rabi experiment."""
-        # Prepare acquisition data
-        acquisitions = self.results.acquisitions()
-        i = np.array(acquisitions["i"])
-        q = np.array(acquisitions["q"])
-
-        # Get loop data
-        loop = self.options.loops[0]
-        x_axis = loop.range
-
-        # Plot data
-        figure = plt.figure(figsize=(9, 7))
-        plt.title("Rabi experiment.")
-        plt.xlabel("QCM gain")
-        plt.ylabel("|S21| [dB]")
-        plt.plot(x_axis, 20 * np.log10(np.sqrt(i**2 + q**2)), "-o")
-        return figure
+    @staticmethod
+    def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
+        return a * np.sin(xdata * b)
