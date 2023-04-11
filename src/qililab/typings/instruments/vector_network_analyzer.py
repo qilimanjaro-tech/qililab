@@ -32,7 +32,7 @@ class VectorNetworkAnalyzerDriver(Device):
         """Reset instrument settings."""
         self.driver.write("SYST:PRES; *OPC?")
 
-    def send_command(self, command: str, arg: str = ""):
+    def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""
         return self.driver.write(f"{command} {arg}")  # type: ignore
 
@@ -47,3 +47,8 @@ class VectorNetworkAnalyzerDriver(Device):
     def set_timeout(self, value: float):
         """Set timeout in mili seconds."""
         self.timeout = value
+        self.driver.timeout = self.timeout
+
+    def read(self) -> str:
+        """read directly from the device"""
+        return self.driver.read()  # type: ignore

@@ -7,6 +7,7 @@ import numpy as np
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
+from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import InstrumentName, Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
 from qililab.typings.instruments.keysight_e5080b import E5080BDriver
 
@@ -50,90 +51,6 @@ class E5080B(VectorNetworkAnalyzer):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    @VectorNetworkAnalyzer.power.setter  # type: ignore
-    def power(self, value: float, channel=1, port=1):
-        """sets the power in dBm"""
-        self.settings.power = value
-        power = f"{self.settings.power:.1f}"
-        self.send_command(f"SOUR{channel}:POW{port}", power)
-
-    @VectorNetworkAnalyzer.scattering_parameter.setter  # type: ignore
-    def scattering_parameter(self, value: str, channel=1):
-        """sets the scattering parameter"""
-        if value in {"S11", "S12", "S21", "S22"}:
-            self.settings.scattering_parameter = VNAScatteringParameters(value)
-            scat_par = self.settings.scattering_parameter.value
-            self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
-            return
-        raise ValueError(f"Invalid swescattering parameter value: {value}")
-
-    @VectorNetworkAnalyzer.frequency_span.setter  # type: ignore
-    def frequency_span(self, value: float, channel=1):
-        """sets the frequency span in kHz"""
-        self.settings.frequency_span = value
-        freq = str(self.settings.frequency_span)
-        self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
-
-    @VectorNetworkAnalyzer.frequency_center.setter  # type: ignore
-    def frequency_center(self, value: float, channel=1):
-        """sets the frequency center in Hz"""
-        self.settings.frequency_center = value
-        freq = str(self.settings.frequency_center)
-        self.send_command(f"SENS{channel}:FREQ:CENT", freq)
-
-    @VectorNetworkAnalyzer.frequency_start.setter  # type: ignore
-    def frequency_start(self, value: float, channel=1):
-        """sets the frequency start in Hz"""
-        self.settings.frequency_start = value
-        freq = str(self.settings.frequency_start)
-        self.send_command(f"SENS{channel}:FREQ:STAR", freq)
-
-    @VectorNetworkAnalyzer.frequency_stop.setter  # type: ignore
-    def frequency_stop(self, value: float, channel=1):
-        """sets the frequency stop in Hz"""
-        self.settings.frequency_stop = value
-        freq = str(self.settings.frequency_stop)
-        self.send_command(f"SENS{channel}:FREQ:STOP", freq)
-
-    @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
-    def if_bandwidth(self, value: float, channel=1):
-        """sets the if bandwidth in Hz"""
-        self.settings.if_bandwidth = value
-        bandwidth = str(self.settings.if_bandwidth)
-        self.send_command(f"SENS{channel}:BWID", bandwidth)
-
-    @VectorNetworkAnalyzer.averaging_enabled.setter  # type: ignore
-    def averaging_enabled(self, value: bool):
-        """sets the averaging enabled"""
-        self.settings.averaging_enabled = value
-        self._average_state(state=self.settings.averaging_enabled)
-
-    @VectorNetworkAnalyzer.number_averages.setter  # type: ignore
-    def number_averages(self, value: int, channel=1):
-        """sets the number averages"""
-        self.settings.number_averages = value
-        self._average_count(count=str(self.settings.number_averages), channel=channel)
-
-    @VectorNetworkAnalyzer.number_points.setter  # type: ignore
-    def number_points(self, value: int):
-        """sets the number of points for sweep"""
-        self.settings.number_points = value
-        points = str(self.settings.number_points)
-        self.send_command(":SENS1:SWE:POIN", points)
-
-    @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
-    def electrical_delay(self, value: float):
-        """
-        Set electrical delay in channel 1
-
-        Input:
-            value (str) : Electrical delay in ns
-                example: value = '100E-9' for 100ns
-        """
-        self.settings.electrical_delay = value
-        etime = f"{self.settings.electrical_delay:.12f}"
-        self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
-
     @property
     def sweep_mode(self):
         """VectorNetworkAnalyzer'sweep_mode' property.
@@ -171,18 +88,6 @@ class E5080B(VectorNetworkAnalyzer):
         dataimag = np.array(data[1::2])  # Elements from data starting from 1 iterating by 2
 
         return datareal + 1j * dataimag
-
-    def _average_state(self, state, channel=1):
-        """Set status of Average."""
-        if state:
-            self.send_command(f"SENS{channel}:AVER:STAT", "ON")
-        else:
-            self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
-
-    def _average_count(self, count, channel):
-        """Set the average count"""
-        self.send_command(f"SENS{channel}:AVER:COUN", count)
-        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
     def _set_count(self, count: str, channel=1):
         """
@@ -243,10 +148,6 @@ class E5080B(VectorNetworkAnalyzer):
         self.settings.sweep_mode = VNASweepModes("cont")
         self.send_command(f"SENS{channel}:SWE:MODE", self.settings.sweep_mode.value)
 
-    def autoscale(self):
-        """Autoscale"""
-        self.send_command(command="DISP:WIND:TRAC:Y:AUTO")
-
     def read_tracedata(self):
         """
         Return the current trace data.
@@ -259,3 +160,7 @@ class E5080B(VectorNetworkAnalyzer):
             self.release()
             return trace
         raise TimeoutError("Timeout waiting for trace data")
+
+    def acquire_result(self):
+        """Convert the data received from the device to a Result object."""
+        return VNAResult(data=self.read_tracedata())
