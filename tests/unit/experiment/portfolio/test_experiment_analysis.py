@@ -20,10 +20,10 @@ circuit.add(RX(0, 23))
 circuit.add(RY(0, 15))
 circuit.add(M(0))
 
-start = 1
-stop = 5
-num = 1000
-x = np.linspace(start, stop, num)
+START = 1
+STOP = 5
+NUM = 1000
+x = np.linspace(START, STOP, NUM)
 i = 5 * np.sin(7 * x)
 q = 9 * np.sin(7 * x)
 
@@ -47,7 +47,7 @@ def fixture_experiment_analysis():
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=start, stop=stop, num=num),
+        options=LoopOptions(start=START, stop=STOP, num=NUM),
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
