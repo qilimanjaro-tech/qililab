@@ -74,15 +74,17 @@ class TestRabi:
 
     def test_control_gate_setup(self, rabi: Rabi):
         """Test the ``control_gate_setup`` method."""
-        rabi.platform = MagicMock()
-        rabi.control_gate_setup(parameters={Parameter.AMPLITUDE: 0.6})
-        rabi.platform.set_parameter.assert_called_once_with(alias="X", parameter=Parameter.AMPLITUDE, value=0.6)
+        assert not hasattr(rabi, "execution")  # ``build_execution`` has not been called
+        rabi.control_gate_setup(parameters={Parameter.AMPLITUDE: 123})
+        assert hasattr(rabi, "execution")  # ``build_execution`` has been called
+        assert rabi.platform.get_element("X").amplitude == 123
 
     def test_measurement_setup(self, rabi: Rabi):
         """Test the ``measurement_setup`` method."""
-        rabi.platform = MagicMock()
-        rabi.measurement_setup(parameters={Parameter.AMPLITUDE: 0.6})
-        rabi.platform.set_parameter.assert_called_once_with(alias="M", parameter=Parameter.AMPLITUDE, value=0.6)
+        assert not hasattr(rabi, "execution")  # ``build_execution`` has not been called
+        rabi.measurement_setup(parameters={Parameter.AMPLITUDE: 123})
+        assert hasattr(rabi, "execution")  # ``build_execution`` has been called
+        assert rabi.platform.get_element("M").amplitude == 123
 
     def test_func(self, rabi: Rabi):
         """Test the ``func`` method."""
