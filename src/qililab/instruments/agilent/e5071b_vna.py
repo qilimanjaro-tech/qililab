@@ -24,12 +24,9 @@ class E5071B(VectorNetworkAnalyzer):
     settings: E5071BSettings
 
     @VectorNetworkAnalyzer.power.setter  # type: ignore
-    def power(self, power=None, channel=1):
+    def power(self, power: float, channel=1):
         """Set or read current power"""
-        if power is None:
-            power = "?"
-        else:
-            self.settings.power = power
+        self.settings.power = power
         self.send_command(command=f":SOUR{channel}:POW:LEV:IMM:AMPL", arg=f"{power}")
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
@@ -40,12 +37,9 @@ class E5071B(VectorNetworkAnalyzer):
         self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")  # type: ignore
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
-    def if_bandwidth(self, bandwidth=None, channel=1):
+    def if_bandwidth(self, bandwidth: float, channel=1):
         """Set/query IF Bandwidth for specified channel"""
-        if bandwidth is None:
-            bandwidth = "?"
-        else:
-            self.settings.power = bandwidth
+        self.settings.if_bandwidth = bandwidth
         return self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
     def initial_setup(self):

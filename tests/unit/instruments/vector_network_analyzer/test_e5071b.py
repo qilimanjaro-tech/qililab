@@ -8,6 +8,7 @@ from qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_c
 from qililab.instruments.agilent.e5071b_vna import E5071B
 from qililab.platform import Platform
 from qililab.result.vna_result import VNAResult
+from qililab.typings.enums import Parameter
 from tests.data import SauronVNA
 
 
@@ -82,6 +83,27 @@ class TestE5071B:
         """Test the set timeout method"""
         e5071b.set_timeout(100)
         e5071b.device.set_timeout.assert_called_with(100)
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
+            (Parameter.POWER, -60.0),
+            (Parameter.IF_BANDWIDTH, 50.0),
+            (Parameter.ELECTRICAL_DELAY, 0.0),
+        ],
+    )
+    def test_setup_properties(self, parameter: Parameter, value, e5071b: E5071B):
+        assert isinstance(parameter, Parameter)
+        e5071b.setup(parameter, value)
+        if parameter == Parameter.POWER:
+            assert e5071b.power == value
+            e5071b.device.send_command.assert_called_with(f":SOUR1:POW:LEV:IMM:AMPL {value}")
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            assert e5071b.electrical_delay == value
+            e5071b.device.send_command.assert_called_with(f"CALC:MEAS:CORR:EDEL:TIME {value}")
+        if parameter == Parameter.IF_BANDWIDTH:
+            assert e5071b.if_bandwidth == value
+            e5071b.device.send_command.assert_called_with(f":SENS1:BAND:RES {value}")
 
     def test_power_property(self, e5071b_no_device: E5071B):
         """Test power property"""
