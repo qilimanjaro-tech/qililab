@@ -189,7 +189,7 @@ class TestVectorNetworkAnalyzer:
         """Test the send command method"""
         assert isinstance(command, str)
         e5080b.send_command(command)
-        e5080b.device.send_command.assert_called_with(command=command, arg="")
+        e5080b.device.send_command.assert_called_with(command=command, arg="?")
 
     @pytest.mark.parametrize("query", [":SENS1:SWE:MODE?"])
     def test_send_query_method(self, query: str, e5080b: E5080B):
@@ -214,6 +214,11 @@ class TestVectorNetworkAnalyzer:
         """Test the read method"""
         e5080b.read_raw()
         e5080b.device.read_raw.assert_called()
+
+    def test_set_timeout_method(self, e5071b: E5071B):
+        """Test the set timeout method"""
+        e5071b.set_timeout(100)
+        e5071b.device.set_timeout.assert_called_with(100)
 
     @pytest.mark.parametrize(
         "state, command, arg", [(True, "SENS1:AVER:STAT", "ON"), (False, "SENS1:AVER:STAT", "OFF")]
@@ -287,11 +292,6 @@ class TestVectorNetworkAnalyzer:
         """Test the number points property"""
         assert hasattr(e5080b_no_device, "number_points")
         assert e5080b_no_device.number_points == e5080b_no_device.settings.number_points
-
-    def test_device_timeout_property(self, e5080b_no_device: E5080B):
-        """Test the device timeout property"""
-        assert hasattr(e5080b_no_device, "device_timeout")
-        assert e5080b_no_device.device_timeout == e5080b_no_device.settings.device_timeout
 
     def test_electrical_delay_property(self, e5080b_no_device: E5080B):
         """Test the electrical delay property"""

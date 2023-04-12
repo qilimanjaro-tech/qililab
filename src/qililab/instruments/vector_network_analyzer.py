@@ -1,7 +1,6 @@
 """VectorNetworkAnalyzer class."""
 from dataclasses import dataclass
 
-from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
@@ -43,7 +42,6 @@ class VectorNetworkAnalyzer(Instrument):
         trigger_mode: VNATriggerModes = VNATriggerModes.INT
         number_points: int = DEFAULT_NUMBER_POINTS
         electrical_delay: float = 0.0
-        device_timeout: float = DEFAULT_TIMEOUT
 
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
@@ -54,7 +52,7 @@ class VectorNetworkAnalyzer(Instrument):
 
         Args:
             parameter (Parameter): settings parameter to be updated
-            value (float | str | bool): new value
+            value (float | str | bool | int): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
         if isinstance(value, str):
@@ -100,11 +98,7 @@ class VectorNetworkAnalyzer(Instrument):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(
-        self,
-        parameter: Parameter,
-        value: float,
-    ):
+    def _set_parameter_float(self, parameter: Parameter, value: float):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -328,20 +322,6 @@ class VectorNetworkAnalyzer(Instrument):
         self.send_command(f":SENS{channel}:SWE:POIN", points)
 
     @property
-    def device_timeout(self):
-        """VectorNetworkAnalyzer 'device_timeout' property.
-
-        Returns:
-            float: settings.device_timeout.
-        """
-        return self.settings.device_timeout
-
-    @device_timeout.setter
-    def device_timeout(self, value: float):
-        """sets the device timeout in mili seconds"""
-        self.settings.device_timeout = value
-
-    @property
     def electrical_delay(self):
         """VectorNetworkAnalyzer 'electrical_delay' property.
 
@@ -399,26 +379,48 @@ class VectorNetworkAnalyzer(Instrument):
         """Stop an instrument."""
         return self.send_command(command=":OUTP", arg="OFF")
 
-    def send_command(self, command: str, arg: str = "") -> str:
-        """Send a command directly to the device."""
+    def send_command(self, command: str, arg: str = "?") -> str:
+        """
+        Send a command directly to the device.
+
+        Input:
+            command(str): Command to send the device
+            arg(str): Argument to send the command with. Default empty string
+        Example:
+            send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
+        """
         return self.device.send_command(command=command, arg=arg)
 
     def send_query(self, query: str):
-        """Send a query directly to the device."""
+        """
+        Send a query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
         return self.device.send_query(query)
 
     def send_binary_query(self, query: str):
-        """Send a binary query directly to the device."""
-        return self.device.send_binary_query(query)  # type: ignore
+        """
+        Send a binary query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
+        return self.device.send_binary_query(query)
 
     def autoscale(self):
         """Autoscale"""
         self.send_command(command="DISP:WIND:TRAC:Y:AUTO", arg="")
 
     def read(self) -> str:
-        """read directly from the device"""
+        """Read directly from the device"""
         return self.device.read()
 
     def read_raw(self) -> str:
-        """read raw data directly from the device"""
+        """Read raw data directly from the device"""
         return self.device.read_raw()
+
+    def set_timeout(self, value: float):
+        """Set timeout in mili seconds"""
+        self.device.set_timeout(value)

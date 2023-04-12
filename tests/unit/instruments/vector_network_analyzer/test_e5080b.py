@@ -6,7 +6,7 @@ import pytest
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
+from qililab.typings.enums import Parameter, VNASweepModes
 
 
 class TestE5080B:
@@ -15,8 +15,21 @@ class TestE5080B:
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            (Parameter.TRIGGER_MODE, "INT"),
-            (Parameter.SCATTERING_PARAMETER, "S21"),
+            (Parameter.DEVICE_TIMEOUT, 0.45),
+            (Parameter.DEVICE_TIMEOUT, 11.0),
+        ],
+    )
+    def test_setup_method_value_flt(self, parameter: Parameter, value, e5080b: E5080B):
+        """Test the setup method with float value"""
+        assert isinstance(parameter, Parameter)
+        assert isinstance(value, float)
+        e5080b.setup(parameter, value)
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            assert e5080b.device_timeout == value
+
+    @pytest.mark.parametrize(
+        "parameter, value",
+        [
             (Parameter.SWEEP_MODE, "cont"),
             (Parameter.SWEEP_MODE, "hold"),
         ],
@@ -26,18 +39,12 @@ class TestE5080B:
         assert isinstance(parameter, Parameter)
         assert isinstance(value, str)
         e5080b.setup(parameter, value)
-        if parameter == Parameter.TRIGGER_MODE:
-            assert e5080b.trigger_mode == VNATriggerModes(value)
-        if parameter == Parameter.SCATTERING_PARAMETER:
-            assert e5080b.scattering_parameter == VNAScatteringParameters(value)
         if parameter == Parameter.SWEEP_MODE:
             assert e5080b.sweep_mode == VNASweepModes(value)
 
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            (Parameter.SCATTERING_PARAMETER, "S221"),
-            (Parameter.SCATTERING_PARAMETER, "s11"),
             (Parameter.SWEEP_MODE, "CONT"),
             (Parameter.SWEEP_MODE, "sweep_mode continuous"),
         ],
@@ -156,13 +163,18 @@ class TestE5080B:
         output = e5080b.acquire_result()
         assert isinstance(output, VNAResult)
 
-    def test_sweep_mode_property(self, e5080b: E5080B):
+    def test_sweep_mode_property(self, e5080b_no_device: E5080B):
         """Test the sweep mode property"""
-        assert hasattr(e5080b, "sweep_mode")
-        assert e5080b.sweep_mode == e5080b.settings.sweep_mode
+        assert hasattr(e5080b_no_device, "sweep_mode")
+        assert e5080b_no_device.sweep_mode == e5080b_no_device.settings.sweep_mode
+
+    def test_device_timeout_property(self, e5080b_no_device: E5080B):
+        """Test the device timeout property"""
+        assert hasattr(e5080b_no_device, "device_timeout")
+        assert e5080b_no_device.device_timeout == e5080b_no_device.settings.device_timeout
 
     @pytest.mark.parametrize("value", ["foo", "bar"])
-    def test_sweep_mode_property_fails(self, value, e5080b: E5080B):
+    def test_sweep_mode_property_fails(self, value, e5080b_no_device: E5080B):
         """Test the sweep mode property setter raises an exception"""
         with pytest.raises(ValueError):
-            e5080b.sweep_mode = value
+            e5080b_no_device.sweep_mode = value

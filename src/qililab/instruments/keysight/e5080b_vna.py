@@ -4,11 +4,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from qililab.instruments.instrument import ParameterNotFound
+from qililab.constants import DEFAULT_TIMEOUT
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
-from qililab.typings.enums import InstrumentName, Parameter, VNAScatteringParameters, VNASweepModes, VNATriggerModes
+from qililab.typings.enums import InstrumentName, Parameter, VNASweepModes
 from qililab.typings.instruments.keysight_e5080b import E5080BDriver
 
 
@@ -29,8 +29,22 @@ class E5080B(VectorNetworkAnalyzer):
         """
 
         sweep_mode: VNASweepModes = VNASweepModes.CONT
+        device_timeout: float = DEFAULT_TIMEOUT
 
     settings: E5080BSettings
+
+    def _set_parameter_float(self, parameter: Parameter, value: float):
+        """Set instrument settings parameter to the corresponding value
+
+        Args:
+            parameter (Parameter): settings parameter to be updated
+            value (float): new value
+        """
+        if parameter == Parameter.DEVICE_TIMEOUT:
+            self.device_timeout = value
+            return
+
+        super()._set_parameter_float(parameter, value)
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -39,17 +53,11 @@ class E5080B(VectorNetworkAnalyzer):
             parameter (Parameter): settings parameter to be updated
             value (str): new value
         """
-        if parameter == Parameter.SCATTERING_PARAMETER:
-            self.scattering_parameter = VNAScatteringParameters(value)
-            return
-        if parameter == Parameter.TRIGGER_MODE:
-            self.settings.trigger_mode = VNATriggerModes(value)
-            return
         if parameter == Parameter.SWEEP_MODE:
             self.sweep_mode = VNASweepModes(value)
             return
 
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
+        super()._set_parameter_str(parameter, value)
 
     @property
     def sweep_mode(self):
@@ -74,6 +82,20 @@ class E5080B(VectorNetworkAnalyzer):
             self.send_command(f"SENS{channel}:SWE:MODE", mode)
             return
         raise ValueError(f"Invalid sweep mode value: {value}")
+
+    @property
+    def device_timeout(self):
+        """VectorNetworkAnalyzer 'device_timeout' property.
+
+        Returns:
+            float: settings.device_timeout.
+        """
+        return self.settings.device_timeout
+
+    @device_timeout.setter
+    def device_timeout(self, value: float):
+        """sets the device timeout in mili seconds"""
+        self.settings.device_timeout = value
 
     def _get_sweep_mode(self, channel=1):
         """Return the current sweep mode."""

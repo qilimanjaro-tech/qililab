@@ -34,21 +34,16 @@ class TestE5071B:
         assert isinstance(command, str)
         assert isinstance(arg, str)
         e5071b.send_command(command, arg)
-        e5071b.device.send_command.assert_called_with(f"{command} {arg}")
+        e5071b.device.send_command.assert_called_with(command, arg)
 
     @pytest.mark.parametrize("continuous", [True, False])
     def test_continuous_method(self, continuous, e5071b: E5071B):
         """Test the continuous method"""
         e5071b.continuous(continuous)
         if continuous:
-            e5071b.device.send_command.assert_called_with(":INIT:CONT ON ")
+            e5071b.device.send_command.assert_called_with(":INIT:CONT", "ON")
         else:
-            e5071b.device.send_command.assert_called_with(":INIT:CONT OFF ")
-
-    def test_set_timeout_method(self, e5071b: E5071B):
-        """Test the set timeout method"""
-        e5071b.set_timeout(100)
-        e5071b.device.set_timeout.assert_called_with(100)
+            e5071b.device.send_command.assert_called_with(":INIT:CONT", "OFF")
 
     @pytest.mark.parametrize(
         "parameter, value",
@@ -63,13 +58,13 @@ class TestE5071B:
         e5071b.setup(parameter, value)
         if parameter == Parameter.POWER:
             assert e5071b.power == value
-            e5071b.device.send_command.assert_called_with(f":SOUR1:POW:LEV:IMM:AMPL {value}")
+            e5071b.device.send_command.assert_called_with(":SOUR1:POW:LEV:IMM:AMPL", f"{value}")
         if parameter == Parameter.ELECTRICAL_DELAY:
             assert e5071b.electrical_delay == value
-            e5071b.device.send_command.assert_called_with(f"CALC:MEAS:CORR:EDEL:TIME {value}")
+            e5071b.device.send_command.assert_called_with("CALC:MEAS:CORR:EDEL:TIME", f"{value}")
         if parameter == Parameter.IF_BANDWIDTH:
             assert e5071b.if_bandwidth == value
-            e5071b.device.send_command.assert_called_with(f":SENS1:BAND:RES {value}")
+            e5071b.device.send_command.assert_called_with(":SENS1:BAND:RES", f"{value}")
 
     def test_power_property(self, e5071b_no_device: E5071B):
         """Test power property"""

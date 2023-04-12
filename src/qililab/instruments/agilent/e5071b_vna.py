@@ -31,10 +31,16 @@ class E5071B(VectorNetworkAnalyzer):
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
     def electrical_delay(self, time: float):
-        """Set electrical delay in 1
-        example input: time = '100E-9' for 100ns"""
+        """Set electrical delay in channel 1hannel 1
+
+        Input:
+            value (str) : Electrical delay in ns
+
+        Example:
+            value = '100E-9' for 100ns
+        """
         self.settings.electrical_delay = time
-        self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")  # type: ignore
+        self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
     def if_bandwidth(self, bandwidth: float, channel=1):
@@ -45,7 +51,7 @@ class E5071B(VectorNetworkAnalyzer):
     def initial_setup(self):
         """Set initial instrument settings."""
 
-    def get_data(self):  # sourcery skip: simplify-division
+    def get_data(self):
         """get data"""
         self.send_command(command=":INIT:CONT", arg="OFF")
         self.send_command(command=":INIT:IMM;", arg="*WAI")
@@ -54,8 +60,8 @@ class E5071B(VectorNetworkAnalyzer):
         i_0 = serialized_data.find(b"#")
         number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
         number_bytes = int(serialized_data[i_0 + 2 : i_0 + 2 + number_digits])
-        number_data = int(number_bytes / 4)
-        number_points = int(number_data / 2)
+        number_data = number_data = number_bytes // 4
+        number_points = number_data // 2
         v_data = np.frombuffer(
             serialized_data[(i_0 + 2 + number_digits) : (i_0 + 2 + number_digits + number_bytes)],
             dtype=">f",
@@ -69,18 +75,10 @@ class E5071B(VectorNetworkAnalyzer):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.get_data())
 
-    def send_command(self, command: str, arg: str = "?"):
-        """Function to communicate with the device."""
-        return self.device.send_command(f"{command} {arg}")  # type: ignore
-
     def continuous(self, continuous: bool):
         """set continuous mode
         Args:
             continuous (bool): continuous flag
         """
-        command = ":INIT:CONT " + ("ON" if continuous else "OFF")
-        self.send_command(command=command, arg="")
-
-    def set_timeout(self, value: float):
-        """set timeout in mili seconds"""
-        self.device.set_timeout(value)
+        arg = "ON" if continuous else "OFF"
+        self.send_command(command=":INIT:CONT", arg=arg)
