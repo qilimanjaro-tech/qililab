@@ -35,7 +35,7 @@ class Rabi(ExperimentAnalysis):
         circuit.add(X(qubit))
         circuit.add(M(qubit))
 
-        self.control_bus, self.readout_bus = platform.get_bus_by_qubit_index(qubit)
+        control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
 
         # Define loop used in the experiment
         loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, options=loop_options)
@@ -48,7 +48,13 @@ class Rabi(ExperimentAnalysis):
         )
 
         # Initialize experiment
-        super().__init__(platform=platform, circuits=[circuit], options=experiment_options)
+        super().__init__(
+            platform=platform,
+            circuits=[circuit],
+            options=experiment_options,
+            control_bus=control_bus,
+            readout_bus=readout_bus,
+        )
 
     @staticmethod
     def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
