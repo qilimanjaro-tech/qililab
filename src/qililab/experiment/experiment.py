@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
-from qililab.execution import EXECUTION_BUILDER, Execution
+from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.result.result import Result
@@ -29,7 +29,7 @@ class Experiment:
     """Experiment class"""
 
     # Specify the types of the attributes that are not defined during initialization
-    execution: Execution
+    execution: ExecutionManager
     results: Results
     results_path: Path
     _plot: LivePlot
