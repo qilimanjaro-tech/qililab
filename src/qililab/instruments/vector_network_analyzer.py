@@ -414,3 +414,11 @@ class VectorNetworkAnalyzer(Instrument):
     def autoscale(self):
         """Autoscale"""
         self.send_command(command="DISP:WIND:TRAC:Y:AUTO", arg="")
+
+    def read(self) -> str:
+        """read directly from the device"""
+        return self.device.read()
+
+    def read_raw(self) -> str:
+        """read raw data directly from the device"""
+        return self.device.read_raw()

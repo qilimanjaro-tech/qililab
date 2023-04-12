@@ -857,8 +857,36 @@ class SauronVNA:
         Parameter.POWER.value: -60.0,
     }
 
-    instruments = [keysight_e5080b]
-    instrument_controllers = [keysight_e5080b_controller]
+    agilent_e5071b_controller = {
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: InstrumentControllerName.AGILENT_E5071B,
+        RUNCARD.ALIAS: InstrumentControllerName.AGILENT_E5071B.value,
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.TIMEOUT.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.254",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.VNA.value: InstrumentName.AGILENT_E5071B.value,
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    agilent_e5071b = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.AGILENT_E5071B,
+        RUNCARD.ALIAS: InstrumentName.AGILENT_E5071B.value,
+        RUNCARD.CATEGORY: Category.VNA.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.POWER.value: -60.0,
+    }
+
+    instruments = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers = [keysight_e5080b_controller, agilent_e5071b_controller]
 
     chip = {
         RUNCARD.ID: 0,
@@ -897,6 +925,18 @@ class SauronVNA:
                 RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
             },
             NodeName.PORT.value: 1,
+        },
+        {
+            RUNCARD.ID: 1,
+            RUNCARD.CATEGORY: Category.BUS.value,
+            RUNCARD.ALIAS: "agilent_e5071b_readout_bus",
+            Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 1,
+                RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
+                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
+            },
+            NodeName.PORT.value: 0,
         },
     ]
 

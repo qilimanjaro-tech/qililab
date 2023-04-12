@@ -52,3 +52,7 @@ class VectorNetworkAnalyzerDriver(Device):
     def read(self) -> str:
         """read directly from the device"""
         return self.driver.read()  # type: ignore
+
+    def read_raw(self):
+        """read raw data directly from the device"""
+        return self.driver.read_raw()  # type: ignore

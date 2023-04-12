@@ -24,32 +24,39 @@ class E5071B(VectorNetworkAnalyzer):
     settings: E5071BSettings
 
     @VectorNetworkAnalyzer.power.setter  # type: ignore
-    def power(self, power: str = "?", channel: str = ""):
+    def power(self, power=None, channel=1):
         """Set or read current power"""
-        com_str = f":SOUR{channel}:POW:LEV:IMM:AMPL"
-        return float(self.send_command(command=com_str, arg=power))
+        if power is None:
+            power = "?"
+        else:
+            self.settings.power = power
+        self.send_command(command=f":SOUR{channel}:POW:LEV:IMM:AMPL", arg=f"{power}")
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
-    def electrical_delay(self, time: str):
+    def electrical_delay(self, time: float):
         """Set electrical delay in 1
         example input: time = '100E-9' for 100ns"""
-        self.send_command("CALC:MEAS:CORR:EDEL:TIME", time)  # type: ignore
+        self.settings.electrical_delay = time
+        self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")  # type: ignore
 
     @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
-    def if_bandwidth(self, bandwidth: str = "?", channel: str = ""):
+    def if_bandwidth(self, bandwidth=None, channel=1):
         """Set/query IF Bandwidth for specified channel"""
-        com_str = f":SENS{channel}:BAND:RES"
-        return self.send_command(command=com_str, arg=bandwidth)
+        if bandwidth is None:
+            bandwidth = "?"
+        else:
+            self.settings.power = bandwidth
+        return self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
     def initial_setup(self):
         """Set initial instrument settings."""
 
     def get_data(self):  # sourcery skip: simplify-division
         """get data"""
-        self.send_command(":INIT:CONT OFF")
-        self.send_command(":INIT:IMM; *WAI")
-        self.send_command("CALC:MEAS:DATA:SDATA?")
-        serialized_data = self.device.driver.read_raw()
+        self.send_command(command=":INIT:CONT", arg="OFF")
+        self.send_command(command=":INIT:IMM;", arg="*WAI")
+        self.send_command(command="CALC:MEAS:DATA:SDATA?", arg="")
+        serialized_data = self.read_raw()
         i_0 = serialized_data.find(b"#")
         number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
         number_bytes = int(serialized_data[i_0 + 2 : i_0 + 2 + number_digits])
@@ -67,10 +74,6 @@ class E5071B(VectorNetworkAnalyzer):
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
         return VNAResult(data=self.get_data())
-
-    def read(self) -> str:
-        """read directly from the device"""
-        return self.device.read()
 
     def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""
