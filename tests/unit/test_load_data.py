@@ -56,7 +56,7 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
 @patch("qililab.utils.load_data.open", side_effect=lambda filepath, *args, **kwargs: filepath)
 @patch(
     "qililab.utils.load_data.yaml.safe_load",
-    side_effect=lambda stream: deepcopy(results_one_loops if stream.name.endswith("results.yml") else experiment),
+    side_effect=lambda stream: deepcopy(results_one_loops) if stream.name.endswith("results.yml") else experiment,
 )
 def test_load_experiment_and_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
     """Test load Experiment class."""
