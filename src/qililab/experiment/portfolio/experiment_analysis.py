@@ -52,8 +52,14 @@ class ExperimentAnalysis(ABC, Experiment):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
+        # TODO: Support nested loops
+        loops = self.options.loops
+        if loops is None:
+            raise ValueError("The experiment must have at least one loop.")
+        if len(loops) > 1:
+            raise ValueError("Analysis of nested loops is not supported.")
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.options.loops[0].range, ydata=self.post_processed_results, p0=p0
+            self.func, xdata=loops[0].range, ydata=self.post_processed_results, p0=p0
         )
 
         return self.popt
@@ -85,7 +91,14 @@ class ExperimentAnalysis(ABC, Experiment):
                 "Please call ``post_process_results`` first."
             )
         # Get loop data
-        loop = self.options.loops[0]
+        # TODO: Support nested loops
+        loops = self.options.loops
+        if loops is None:
+            raise ValueError("The experiment must have at least one loop.")
+        if len(loops) > 1:
+            raise ValueError("Analysis of nested loops is not supported.")
+
+        loop = loops[0]
         x_axis = loop.range
 
         # Plot data

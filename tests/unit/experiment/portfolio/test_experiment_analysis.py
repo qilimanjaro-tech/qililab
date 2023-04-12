@@ -73,9 +73,29 @@ class TestExperimentAnalysis:
         popt = experiment_analysis.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert all(popt == (9, 7))
 
-    def test_fit_raises_error(self, experiment_analysis: DummyExperimentAnalysis):
+    def test_fit_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``fit`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
+            experiment_analysis.fit(p0=(8, 7.5))
+
+    def test_fit_raises_error_when_no_loops(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``fit`` method raises an error when the results are not post processed."""
+        experiment_analysis.options.loops = None
+        experiment_analysis.post_processed_results = q
+        with pytest.raises(ValueError, match="The experiment must have at least one loop."):
+            experiment_analysis.fit(p0=(8, 7.5))
+
+    def test_fit_raises_error_more_than_one_loop(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``fit`` method raises an error when the results are not post processed."""
+        experiment_analysis.options.loops.append(
+            Loop(
+                alias="Y",
+                parameter=Parameter.DURATION,
+                options=LoopOptions(start=START, stop=STOP, num=NUM),
+            )
+        )
+        experiment_analysis.post_processed_results = q
+        with pytest.raises(ValueError, match="Analysis of nested loops is not supported."):
             experiment_analysis.fit(p0=(8, 7.5))
 
     def test_plot(self, experiment_analysis: DummyExperimentAnalysis):
@@ -92,7 +112,27 @@ class TestExperimentAnalysis:
         assert np.allclose(line1.get_xdata(), x)
         assert np.allclose(line1.get_ydata(), popt[0] * np.sin(popt[1] * x))
 
-    def test_plot_raises_error(self, experiment_analysis: DummyExperimentAnalysis):
+    def test_plot_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
+            experiment_analysis.plot()
+
+    def test_plot_raises_error_when_no_loops(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``plot`` method raises an error when the results are not post processed."""
+        experiment_analysis.options.loops = None
+        experiment_analysis.post_processed_results = q
+        with pytest.raises(ValueError, match="The experiment must have at least one loop."):
+            experiment_analysis.plot()
+
+    def test_plot_raises_error_more_than_one_loop(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``plot`` method raises an error when the results are not post processed."""
+        experiment_analysis.options.loops.append(
+            Loop(
+                alias="Y",
+                parameter=Parameter.DURATION,
+                options=LoopOptions(start=START, stop=STOP, num=NUM),
+            )
+        )
+        experiment_analysis.post_processed_results = q
+        with pytest.raises(ValueError, match="Analysis of nested loops is not supported."):
             experiment_analysis.plot()
