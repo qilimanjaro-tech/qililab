@@ -1,12 +1,15 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 from abc import ABC, abstractmethod
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
+from qibo.models import Circuit
 from scipy.optimize import curve_fit
 
 from qililab.experiment.experiment import Experiment
-from qililab.platform import Bus
+from qililab.platform import Bus, Platform
+from qililab.typings import ExperimentOptions
 
 
 class ExperimentAnalysis(ABC, Experiment):
@@ -20,8 +23,18 @@ class ExperimentAnalysis(ABC, Experiment):
 
     post_processed_results: np.ndarray
     popt: np.ndarray  # fitted parameters
-    control_bus: Bus | None  # TODO: This will probably change for 2-qubit experiments
-    readout_bus: Bus | None
+
+    def __init__(
+        self,
+        platform: Platform,
+        circuits: List[Circuit],
+        options: ExperimentOptions,
+        control_bus: Bus | None = None,  # TODO: This will probably change for 2-qubit experiments
+        readout_bus: Bus | None = None,
+    ):
+        self.control_bus = control_bus
+        self.readout_bus = readout_bus
+        super().__init__(platform=platform, circuits=circuits, options=options)
 
     def post_process_results(self):
         """Method used to post-process the results of an experiment.

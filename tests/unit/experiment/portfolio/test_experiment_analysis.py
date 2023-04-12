@@ -1,4 +1,5 @@
 """Unit tests for the ``ExperimentAnalysis`` class."""
+from typing import List
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,6 +9,7 @@ from qibo.models import Circuit
 
 from qililab import build_platform
 from qililab.experiment.portfolio import ExperimentAnalysis
+from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, LoopOptions, Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel
@@ -30,6 +32,11 @@ q = 9 * np.sin(7 * x)
 
 class DummyExperimentAnalysis(ExperimentAnalysis):
     """Dummy class used to test the ``ExperimentAnalysis`` class."""
+
+    def __init__(self, platform: Platform, circuits: List[Circuit], options: ExperimentOptions):
+        control_bus = None
+        readout_bus = None
+        super().__init__(platform, circuits, options, control_bus, readout_bus)
 
     @staticmethod
     def func(xdata: np.ndarray, a: float, b: float) -> np.ndarray:  # type: ignore # pylint: disable=arguments-differ
@@ -148,6 +155,11 @@ class TestExperimentAnalysis:
         experiment_analysis.readout_bus = MagicMock()
         experiment_analysis.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=False)
         experiment_analysis.readout_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
+
+    def test_bus_setup_raises_error_when_no_bus_is_found(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test that the ``bus_setup`` method raises an error when no bus is found."""
+        with pytest.raises(ValueError, match="The experiment doesn't have a readout bus"):
+            experiment_analysis.bus_setup(parameters={Parameter.AMPLITUDE: 0.6})
 
     def test_control_gate_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``control_gate_setup`` method."""
