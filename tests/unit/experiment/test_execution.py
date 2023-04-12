@@ -7,7 +7,7 @@ import pytest
 from qpysequence import Sequence
 
 from qililab.constants import RESULTSDATAFRAME
-from qililab.execution import Execution
+from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instruments import AWG
 from qililab.result.results import Results
@@ -15,7 +15,7 @@ from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="execution")
-def fixture_execution_manager(experiment: Experiment) -> Execution:
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     """Fixture that returns an instance of an Execution class."""
     experiment.build_execution()
     return experiment.execution
@@ -29,7 +29,7 @@ def fixture_execution_manager(experiment: Experiment) -> Execution:
 @patch("qililab.execution.execution_manager.open")
 @patch("qililab.experiment.experiment.open")
 @patch("qililab.experiment.experiment.os.makedirs")
-class TestExecution:
+class TestExecutionManager:
     """Unit tests checking the execution of a platform with instruments."""
 
     @patch("qililab.platform.platform.API")
@@ -206,21 +206,21 @@ class TestExecution:
 class TestWorkflow:
     """Unit tests for the methods used in the workflow of an `Execution` class."""
 
-    def test_compile(self, execution: Execution):
+    def test_compile(self, execution: ExecutionManager):
         """Test the compile method of the ``Execution`` class."""
         sequences = execution.compile(idx=0, nshots=1000, repetition_duration=2000)
         assert isinstance(sequences, dict)
-        assert len(sequences) == len(execution.execution_manager.buses)
+        assert len(sequences) == len(execution.buses)
         for alias, sequences in sequences.items():
-            assert alias in {bus.alias for bus in execution.execution_manager.buses}
+            assert alias in {bus.alias for bus in execution.buses}
             assert isinstance(sequences, list)
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
             assert sequences[0]._program.duration == 2000 * 1000 + 4  # additional 4ns for the initial wait_sync
 
-    def test_upload(self, execution: Execution):
+    def test_upload(self, execution: ExecutionManager):
         """Test upload method."""
-        awgs = [bus.system_control.instruments[0] for bus in execution.execution_manager.buses]
+        awgs = [bus.system_control.instruments[0] for bus in execution.buses]
         for awg in awgs:
             assert isinstance(awg, AWG)
             awg.device = MagicMock()

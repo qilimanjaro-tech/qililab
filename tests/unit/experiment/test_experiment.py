@@ -12,7 +12,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.constants import DATA, RUNCARD, SCHEMA
-from qililab.execution import Execution
+from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instruments import AWG
 from qililab.platform import Platform
@@ -134,7 +134,7 @@ class TestMethods:
         # Check that the ``pulse_schedules`` attribute is NOT empty
         assert len(experiment.pulse_schedules) == len(experiment.circuits)
         # Check that new attributes are created
-        assert isinstance(experiment.execution, Execution)
+        assert isinstance(experiment.execution, ExecutionManager)
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         if experiment.platform.connection is None:
@@ -150,7 +150,7 @@ class TestMethods:
         assert isinstance(sequences, list)
         assert len(sequences) == len(experiment.circuits)
         sequence = sequences[0]
-        buses = experiment.execution.execution_manager.buses
+        buses = experiment.execution.buses
         assert len(sequence) == len(buses)
         for alias, bus_sequences in sequence.items():
             assert alias in {bus.alias for bus in buses}
@@ -182,7 +182,7 @@ class TestMethods:
         """Test the ``run`` method of the Experiment class."""
         connected_experiment.build_execution()
         assert not hasattr(connected_experiment, "results")
-        with patch("qililab.execution.execution_manager.open") as mock_open:
+        with patch("qililab.execution.open") as mock_open:
             with patch("qililab.experiment.experiment.open") as mock_open:
                 with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
                     # Build execution

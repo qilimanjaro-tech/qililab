@@ -102,7 +102,7 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
         ExecutionManager: Instance of the ExecutionManager class.
     """
     experiment.build_execution()
-    return experiment.execution.execution_manager  # pylint: disable=protected-access
+    return experiment.execution  # pylint: disable=protected-access
 
 
 @pytest.fixture(name="pulse")
