@@ -52,6 +52,28 @@ def test_load_experiment(mock_load: MagicMock, mock_open: MagicMock, mock_os: Ma
     assert isinstance(exp.options.loops[0], Loop)
 
 
+@patch("qililab.utils.load_data.os.path.exists", side_effect=lambda _: True)
+@patch("qililab.utils.load_data.open", side_effect=lambda filepath, *args, **kwargs: filepath)
+@patch(
+    "qililab.utils.load_data.yaml.safe_load",
+    side_effect=lambda stream: deepcopy(results_one_loops) if stream.name.endswith("results.yml") else experiment,
+)
+def test_load_experiment_and_results(mock_load: MagicMock, mock_open: MagicMock, mock_os: MagicMock):
+    """Test load Experiment class."""
+    exp, results = load(path="", load_experiment=True)
+    mock_load.assert_called()
+    mock_open.assert_called()
+    mock_os.assert_called()
+    assert exp is not None
+    assert exp.options is not None
+    assert exp.options.loops is not None
+    assert isinstance(exp.options.loops[0], Loop)
+    assert exp.results is results
+    assert results is not None
+    assert results.loops is not None
+    assert isinstance(results.loops[0], Loop)
+
+
 @patch("qililab.utils.load_data.glob.glob", return_value=["one", "two"])
 @patch("qililab.utils.load_data.os.path.getctime", return_value=0)
 def test_load_without_path(mock_cttime: MagicMock, mock_glob: MagicMock):
