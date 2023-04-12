@@ -1,5 +1,4 @@
 """Test for the VectorNetworkAnalyzer class."""
-import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -79,18 +78,17 @@ class TestVectorNetworkAnalyzer:
             assert e5071b.scattering_parameter == VNAScatteringParameters(value)
 
     @pytest.mark.parametrize(
-        "parameter, value",
+        "value",
         [
-            (Parameter.SCATTERING_PARAMETER, "S221"),
-            (Parameter.SCATTERING_PARAMETER, "s11"),
+            "S221",
+            "s11",
         ],
     )
-    def test_setup_method_value_str_raises_exception(self, parameter: Parameter, value, e5071b: E5071B):
+    def test_setup_scattering_value_raises_exception(self, value, e5071b: E5071B):
         """Test the setup method raises exception with incorrect str value"""
-        assert isinstance(parameter, Parameter)
         assert isinstance(value, str)
         with pytest.raises(ValueError):
-            e5071b.setup(parameter, value)
+            e5071b.scattering_parameter = value
 
     @pytest.mark.parametrize(
         "parameter, value",

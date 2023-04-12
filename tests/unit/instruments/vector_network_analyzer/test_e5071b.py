@@ -1,5 +1,4 @@
 """Test for the VectorNetworkAnalyzer E5071B class."""
-import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
