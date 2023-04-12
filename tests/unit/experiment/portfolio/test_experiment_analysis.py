@@ -33,11 +33,6 @@ q = 9 * np.sin(7 * x)
 class DummyExperimentAnalysis(ExperimentAnalysis):
     """Dummy class used to test the ``ExperimentAnalysis`` class."""
 
-    def __init__(self, platform: Platform, circuits: List[Circuit], options: ExperimentOptions):
-        control_bus = None
-        readout_bus = None
-        super().__init__(platform, circuits, options, control_bus, readout_bus)
-
     @staticmethod
     def func(xdata: np.ndarray, a: float, b: float) -> np.ndarray:  # type: ignore # pylint: disable=arguments-differ
         return a * np.sin(b * xdata)

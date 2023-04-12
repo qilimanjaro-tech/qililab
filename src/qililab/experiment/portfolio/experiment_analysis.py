@@ -19,6 +19,13 @@ class ExperimentAnalysis(ABC, Experiment):
     2. Post-process results: post-process the results of the experiment.
     3. Fit results: fit the post-processed results of the experiment.
     4. Plot results: plot the post-processed results of the experiment together with the fitted function.
+
+    Args:
+        platform (Platform): platform used to run the experiment
+        circuits (List[Circuit]): list of circuits used in the experiment
+        options (ExperimentOptions): options of the experiment
+        control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
+        readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
     """
 
     post_processed_results: np.ndarray
