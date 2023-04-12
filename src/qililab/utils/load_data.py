@@ -47,5 +47,6 @@ def load(path: str | None = None, load_experiment: bool = False) -> Tuple[Experi
     if os.path.exists(parsed_path / RESULTS_FILENAME):
         with open(parsed_path / RESULTS_FILENAME, mode="r", encoding="utf-8") as results_file:
             results = Results(**yaml.safe_load(stream=results_file))
+            experiment.results = results
 
     return experiment, results
