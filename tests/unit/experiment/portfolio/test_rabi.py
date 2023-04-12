@@ -8,7 +8,7 @@ from qibo.gates import M, X
 from qililab import build_platform
 from qililab.experiment import Rabi
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings import LoopOptions, Parameter
+from qililab.typings import LoopOptions
 from tests.data import Galadriel
 
 START = 1
@@ -59,32 +59,6 @@ class TestRabi:
         assert rabi.options.settings.repetition_duration == 10000
         assert rabi.options.settings.hardware_average == 10000
         assert rabi.options.plot_y_label == "|S21| [dB]"
-
-    def test_bus_setup_with_control_true(self, rabi: Rabi):
-        """Test the ``bus_setup`` method with ``control=True``."""
-        rabi.control_bus = MagicMock()
-        rabi.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=True)
-        rabi.control_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
-
-    def test_bus_setup_with_control_false(self, rabi: Rabi):
-        """Test the ``bus_setup`` method with ``control=False``."""
-        rabi.readout_bus = MagicMock()
-        rabi.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=False)
-        rabi.readout_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
-
-    def test_control_gate_setup(self, rabi: Rabi):
-        """Test the ``control_gate_setup`` method."""
-        assert not hasattr(rabi, "execution")  # ``build_execution`` has not been called
-        rabi.control_gate_setup(parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(rabi, "execution")  # ``build_execution`` has been called
-        assert rabi.platform.get_element("X").amplitude == 123
-
-    def test_measurement_setup(self, rabi: Rabi):
-        """Test the ``measurement_setup`` method."""
-        assert not hasattr(rabi, "execution")  # ``build_execution`` has not been called
-        rabi.measurement_setup(parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(rabi, "execution")  # ``build_execution`` has been called
-        assert rabi.platform.get_element("M").amplitude == 123
 
     def test_func(self, rabi: Rabi):
         """Test the ``func`` method."""

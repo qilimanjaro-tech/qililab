@@ -136,3 +136,29 @@ class TestExperimentAnalysis:
         experiment_analysis.post_processed_results = q
         with pytest.raises(ValueError, match="Analysis of nested loops is not supported."):
             experiment_analysis.plot()
+
+    def test_bus_setup_with_control_true(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test the ``bus_setup`` method with ``control=True``."""
+        experiment_analysis.control_bus = MagicMock()
+        experiment_analysis.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=True)
+        experiment_analysis.control_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
+
+    def test_bus_setup_with_control_false(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test the ``bus_setup`` method with ``control=False``."""
+        experiment_analysis.readout_bus = MagicMock()
+        experiment_analysis.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=False)
+        experiment_analysis.readout_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
+
+    def test_control_gate_setup(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test the ``control_gate_setup`` method."""
+        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        experiment_analysis.gate_setup(gate="X", parameters={Parameter.AMPLITUDE: 123})
+        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert experiment_analysis.platform.get_element("X").amplitude == 123
+
+    def test_measurement_setup(self, experiment_analysis: DummyExperimentAnalysis):
+        """Test the ``measurement_setup`` method."""
+        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        experiment_analysis.gate_setup(gate="M", parameters={Parameter.AMPLITUDE: 123})
+        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert experiment_analysis.platform.get_element("M").amplitude == 123

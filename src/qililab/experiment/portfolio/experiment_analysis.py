@@ -6,6 +6,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from qililab.experiment.experiment import Experiment
+from qililab.platform import Bus
 
 
 class ExperimentAnalysis(ABC, Experiment):
@@ -19,6 +20,8 @@ class ExperimentAnalysis(ABC, Experiment):
 
     post_processed_results: np.ndarray
     popt: np.ndarray  # fitted parameters
+    control_bus: Bus | None  # TODO: This will probably change for 2-qubit experiments
+    readout_bus: Bus | None
 
     def post_process_results(self):
         """Method used to post-process the results of an experiment.
@@ -110,3 +113,41 @@ class ExperimentAnalysis(ABC, Experiment):
         if hasattr(self, "popt"):
             axes.plot(x_axis, self.func(x_axis, *self.popt), "--")
         return fig
+
+    def bus_setup(self, parameters: dict, control=False) -> None:
+        """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
+
+            * Parameter.CURRENT
+            * Parameter.ATTENUATION
+            * Parameter.IF
+            * Parameter.GAIN
+            * Parameter.LO_FREQUENCY
+            * Parameter.POWER
+
+        Args:
+            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+            control (bool, optional): whether to change the parameters of the control bus (True) or the readout
+                bus (False)
+        """
+        bus = self.control_bus if control else self.readout_bus
+
+        if bus is None:
+            raise ValueError(f"The experiment doesn't have a {'control' if control else 'readout'} bus.")
+
+        for parameter, value in parameters.items():
+            bus.set_parameter(parameter=parameter, value=value)
+
+    def gate_setup(self, gate: str, parameters: dict) -> None:
+        """Method used to change the parameters of the given gate. Some possible gate parameters are:
+
+            * Parameter.AMPLITUDE
+            * Parameter.DURATION
+            * Parameter.PHASE
+
+        Args:
+            gate (str): name of the gate to change
+            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+        """
+        for parameter, value in parameters.items():
+            self.platform.set_parameter(alias=gate, parameter=parameter, value=value)
+        self.build_execution()

@@ -50,55 +50,6 @@ class Rabi(ExperimentAnalysis):
         # Initialize experiment
         super().__init__(platform=platform, circuits=[circuit], options=experiment_options)
 
-    def bus_setup(self, parameters: dict, control=False) -> None:
-        """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
-
-            * Parameter.CURRENT
-            * Parameter.ATTENUATION
-            * Parameter.IF
-            * Parameter.GAIN
-            * Parameter.LO_FREQUENCY
-            * Parameter.POWER
-
-        Args:
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
-            control (bool, optional): whether to change the parameters of the control bus (True) or the readout
-                bus (False)
-        """
-        bus = self.control_bus if control else self.readout_bus
-
-        for parameter, value in parameters.items():
-            bus.set_parameter(parameter=parameter, value=value)
-
-    def control_gate_setup(self, parameters: dict) -> None:
-        """Method used to change parameters of the control gate used in the experiment. Some possible gate
-        parameters are:
-
-            * Parameter.DURATION
-            * Parameter.PHASE
-
-        Args:
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
-        """
-        for parameter, value in parameters.items():
-            self.platform.set_parameter(alias="X", parameter=parameter, value=value)
-        self.build_execution()
-
-    def measurement_setup(self, parameters: dict) -> None:
-        """Method used to change parameters of the measurement gate used in the experiment. Some possible gate
-        parameters are:
-
-            * Parameter.AMPLITUDE
-            * Parameter.DURATION
-            * Parameter.PHASE
-
-        Args:
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
-        """
-        for parameter, value in parameters.items():
-            self.platform.set_parameter(alias="M", parameter=parameter, value=value)
-        self.build_execution()
-
     @staticmethod
     def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
         return a * np.sin(xdata * b)
