@@ -82,6 +82,7 @@ class Rabi(ExperimentAnalysis):
         """
         for parameter, value in parameters.items():
             self.platform.set_parameter(alias="X", parameter=parameter, value=value)
+        self.build_execution()
 
     def measurement_setup(self, parameters: dict) -> None:
         """Method used to change parameters of the measurement gate used in the experiment. Some possible gate
@@ -96,6 +97,7 @@ class Rabi(ExperimentAnalysis):
         """
         for parameter, value in parameters.items():
             self.platform.set_parameter(alias="M", parameter=parameter, value=value)
+        self.build_execution()
 
     @staticmethod
     def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
