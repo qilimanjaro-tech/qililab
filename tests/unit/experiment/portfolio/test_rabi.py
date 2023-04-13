@@ -62,13 +62,16 @@ class TestRabi:
 
     def test_func(self, rabi: Rabi):
         """Test the ``func`` method."""
-        assert np.allclose(rabi.func(xdata=x, a=5, b=7), i)
+        assert np.allclose(
+            rabi.func(xdata=x, amplitude=5, frequency=7 / (2 * np.pi), phase=-np.pi / 2, offset=0),
+            i,
+        )
 
     def test_fit(self, rabi: Rabi):
         """Test fit method."""
         rabi.post_processed_results = q
-        popt = rabi.fit(p0=(8, 7.5))  # p0 is an initial guess
-        assert all(popt == (9, 7))
+        popt = rabi.fit(p0=(8, 7.5 / (2 * np.pi), -np.pi / 2, 0))  # p0 is an initial guess
+        assert np.allclose(popt, (9, 7 / (2 * np.pi), -np.pi / 2, 0))
 
     def test_plot(self, rabi: Rabi):
         """Test plot method."""
@@ -82,4 +85,4 @@ class TestRabi:
         assert np.allclose(line0.get_ydata(), q)
         line1 = ax.lines[1]
         assert np.allclose(line1.get_xdata(), x)
-        assert np.allclose(line1.get_ydata(), popt[0] * np.sin(popt[1] * x))
+        assert np.allclose(line1.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * x + popt[2]) + popt[3])
