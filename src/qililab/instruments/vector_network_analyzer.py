@@ -125,9 +125,6 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         if parameter == Parameter.IF_BANDWIDTH:
             self.if_bandwidth = value
             return
-        if parameter == Parameter.DEVICE_TIMEOUT:
-            self.device_timeout = value
-            return
         if parameter == Parameter.ELECTRICAL_DELAY:
             self.electrical_delay = value
             return

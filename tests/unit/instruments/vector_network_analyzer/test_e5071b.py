@@ -55,7 +55,6 @@ class TestE5071B:
             (Parameter.FREQUENCY_START, 27.5),
             (Parameter.FREQUENCY_STOP, 40.5),
             (Parameter.IF_BANDWIDTH, 50.0),
-            (Parameter.DEVICE_TIMEOUT, 100.0),
             (Parameter.ELECTRICAL_DELAY, 0.0),
         ],
     )
@@ -76,8 +75,6 @@ class TestE5071B:
             assert e5071b.frequency_stop == value
         if parameter == Parameter.IF_BANDWIDTH:
             assert e5071b.if_bandwidth == value
-        if parameter == Parameter.DEVICE_TIMEOUT:
-            assert e5071b.device_timeout == value
         if parameter == Parameter.ELECTRICAL_DELAY:
             assert e5071b.electrical_delay == value
 
