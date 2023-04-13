@@ -1,6 +1,6 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 
 from qililab.experiment.experiment import Experiment
 from qililab.platform import Bus, Platform
-from qililab.typings import ExperimentOptions
+from qililab.typings import ExperimentOptions, Parameter
 
 
 class ExperimentAnalysis(ABC, Experiment):
@@ -134,7 +134,7 @@ class ExperimentAnalysis(ABC, Experiment):
             axes.plot(x_axis, self.func(x_axis, *self.popt), "--")
         return fig
 
-    def bus_setup(self, parameters: dict, control=False) -> None:
+    def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
 
             * Parameter.CURRENT
@@ -145,7 +145,8 @@ class ExperimentAnalysis(ABC, Experiment):
             * Parameter.POWER
 
         Args:
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+                parameter values as values
             control (bool, optional): whether to change the parameters of the control bus (True) or the readout
                 bus (False)
         """
