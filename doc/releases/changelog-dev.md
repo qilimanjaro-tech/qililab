@@ -10,7 +10,7 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class. Please use `ExecutionManager`instead.
+The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class. Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
 
 - Deprecated `Execution.platform` atribute in favor of `ExecutionManager.platform`.
 - Removed all methods from `Execution` class. Methods with the same name are in the `ExecutionManager` class.
