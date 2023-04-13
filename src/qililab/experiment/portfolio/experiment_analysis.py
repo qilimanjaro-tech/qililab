@@ -164,7 +164,7 @@ class ExperimentAnalysis(ABC, Experiment):
         for parameter, value in parameters.items():
             bus.set_parameter(parameter=parameter, value=value)
 
-    def gate_setup(self, gate: str, parameters: Dict[Parameter, float | str | bool]) -> None:
+    def gate_setup(self, parameters: Dict[Parameter, float | str | bool], gate: str) -> None:
         """Method used to change the parameters of the given gate. Some possible gate parameters are:
 
             * Parameter.AMPLITUDE
@@ -172,9 +172,9 @@ class ExperimentAnalysis(ABC, Experiment):
             * Parameter.PHASE
 
         Args:
-            gate (str): name of the gate to change
             parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
+            gate (str): name of the gate to change
         """
         for parameter, value in parameters.items():
             self.platform.set_parameter(alias=gate, parameter=parameter, value=value)
