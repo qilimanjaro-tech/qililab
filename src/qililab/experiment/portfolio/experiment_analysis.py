@@ -59,7 +59,7 @@ class ExperimentAnalysis(ABC, Experiment):
         return self.post_processed_results
 
     def fit(self, p0: tuple | None = None):
-        r"""Method used to fit the results of an experiment.
+        """Method used to fit the results of an experiment.
 
         This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
 
