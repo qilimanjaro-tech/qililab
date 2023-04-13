@@ -59,6 +59,33 @@ class E5080B(VectorNetworkAnalyzer):
 
         super()._set_parameter_str(parameter, value)
 
+    @VectorNetworkAnalyzer.power.setter  # type: ignore
+    def power(self, value: float, channel=1, port=1):
+        """sets the power in dBm"""
+        self.settings.power = value
+        power = f"{self.settings.power:.1f}"
+        self.send_command(f"SOUR{channel}:POW{port}", power)
+
+    @VectorNetworkAnalyzer.if_bandwidth.setter  # type: ignore
+    def if_bandwidth(self, value: float, channel=1):
+        """sets the if bandwidth in Hz"""
+        self.settings.if_bandwidth = value
+        bandwidth = str(self.settings.if_bandwidth)
+        self.send_command(f"SENS{channel}:BWID", bandwidth)
+
+    @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
+    def electrical_delay(self, value: float):
+        """
+        Set electrical delay in channel 1
+
+        Input:
+            value (str) : Electrical delay in ns
+                example: value = '100E-9' for 100ns
+        """
+        self.settings.electrical_delay = value
+        etime = f"{self.settings.electrical_delay:.12f}"
+        self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
+
     @property
     def sweep_mode(self):
         """VectorNetworkAnalyzer'sweep_mode' property.

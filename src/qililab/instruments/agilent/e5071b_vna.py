@@ -48,9 +48,6 @@ class E5071B(VectorNetworkAnalyzer):
         self.settings.if_bandwidth = bandwidth
         return self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
-    def initial_setup(self):
-        """Set initial instrument settings."""
-
     def get_data(self):
         """get data"""
         self.send_command(command=":INIT:CONT", arg="OFF")

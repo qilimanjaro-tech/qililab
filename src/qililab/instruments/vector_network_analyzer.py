@@ -1,4 +1,5 @@
 """VectorNetworkAnalyzer class."""
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -8,7 +9,7 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument):
+class VectorNetworkAnalyzer(Instrument, ABC):
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
@@ -161,11 +162,9 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.power
 
     @power.setter
+    @abstractmethod
     def power(self, value: float, channel=1, port=1):
         """sets the power in dBm"""
-        self.settings.power = value
-        power = f"{self.settings.power:.1f}"
-        self.send_command(f"SOUR{channel}:POW{port}", power)
 
     @property
     def scattering_parameter(self):
@@ -260,11 +259,9 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.if_bandwidth
 
     @if_bandwidth.setter
+    @abstractmethod
     def if_bandwidth(self, value: float, channel=1):
         """sets the if bandwidth in Hz"""
-        self.settings.if_bandwidth = value
-        bandwidth = str(self.settings.if_bandwidth)
-        self.send_command(f"SENS{channel}:BWID", bandwidth)
 
     @property
     def averaging_enabled(self):
@@ -331,6 +328,7 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.electrical_delay
 
     @electrical_delay.setter
+    @abstractmethod
     def electrical_delay(self, value: float):
         """
         Set electrical delay in channel 1
@@ -339,9 +337,6 @@ class VectorNetworkAnalyzer(Instrument):
             value (str) : Electrical delay in ns
                 example: value = '100E-9' for 100ns
         """
-        self.settings.electrical_delay = value
-        etime = f"{self.settings.electrical_delay:.12f}"
-        self.send_command("SENS1:CORR:EXT:PORT1:TIME", etime)
 
     def _average_state(self, state, channel=1):
         """Set status of Average."""
