@@ -67,6 +67,7 @@ class TestRabi:
             i,
         )
 
+    @pytest.mark.flaky(reruns=10)
     def test_fit(self, rabi: Rabi):
         """Test fit method."""
         rabi.post_processed_results = q

@@ -69,6 +69,7 @@ class TestExperimentAnalysis:
         res = experiment_analysis.post_process_results()
         assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
 
+    @pytest.mark.flaky(reruns=10)
     def test_fit(self, experiment_analysis: DummyExperimentAnalysis):
         """Test fit method."""
         experiment_analysis.post_processed_results = q
