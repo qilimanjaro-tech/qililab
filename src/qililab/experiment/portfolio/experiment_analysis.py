@@ -1,4 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
+import inspect
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
@@ -129,9 +130,14 @@ class ExperimentAnalysis(ABC, Experiment):
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{loop.alias}: {loop.parameter.value}")
         axes.set_ylabel(f"{self.options.plot_y_label}")
-        axes.plot(x_axis, self.post_processed_results, "-o")
+        axes.scatter(x_axis, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
-            axes.plot(x_axis, self.func(x_axis, *self.popt), "--")
+            # Create label text
+            args = list(inspect.signature(self.func).parameters.keys())[1:]
+            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
+            axes.plot(x_axis, self.func(x_axis, *self.popt), "--", label=text, color="red")
+
+        axes.legend(loc="upper right")
         return fig
 
     def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:

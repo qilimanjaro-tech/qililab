@@ -78,11 +78,10 @@ class TestRabi:
         rabi.post_processed_results = q
         popt = rabi.fit()
         fig = rabi.plot()
+        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
+        assert np.allclose(scatter_data[:, 0], x)
+        assert np.allclose(scatter_data[:, 1], q)
         ax = fig.axes[0]
-        assert len(ax.lines) == 2
-        line0 = ax.lines[0]
-        assert np.allclose(line0.get_xdata(), x)
-        assert np.allclose(line0.get_ydata(), q)
-        line1 = ax.lines[1]
-        assert np.allclose(line1.get_xdata(), x)
-        assert np.allclose(line1.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * x + popt[2]) + popt[3])
+        line = ax.lines[0]
+        assert np.allclose(line.get_xdata(), x)
+        assert np.allclose(line.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * x + popt[2]) + popt[3])
