@@ -103,12 +103,10 @@ class E5080B(VectorNetworkAnalyzer):
         Input:
             mode (str) : Sweep mode: 'hold', 'cont', single' and 'group'
         """
-        if value in {"hold", "cont", "group", "single"}:
-            self.settings.sweep_mode = VNASweepModes(value)
-            mode = self.settings.sweep_mode.name
-            self.send_command(f"SENS{channel}:SWE:MODE", mode)
-            return
-        raise ValueError(f"Invalid sweep mode value: {value}")
+        self.settings.sweep_mode = VNASweepModes(value)
+        mode = self.settings.sweep_mode.name
+        self.send_command(f"SENS{channel}:SWE:MODE", mode)
+        return
 
     @property
     def device_timeout(self):

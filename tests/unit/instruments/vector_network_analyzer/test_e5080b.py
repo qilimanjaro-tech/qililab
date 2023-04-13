@@ -117,10 +117,10 @@ class TestE5080B:
     @pytest.mark.parametrize(
         "parameter, value",
         [
-            (Parameter.SWEEP_MODE, "CONT"),
-            (Parameter.SWEEP_MODE, "sweep_mode continuous"),
             (Parameter.SCATTERING_PARAMETER, "S221"),
             (Parameter.SCATTERING_PARAMETER, "s11"),
+            (Parameter.SWEEP_MODE, "CONT"),
+            (Parameter.SWEEP_MODE, "sweep_mode continuous"),
         ],
     )
     def test_setup_method_value_str_raises_exception(self, parameter: Parameter, value, e5080b: E5080B):
