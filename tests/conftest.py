@@ -8,10 +8,6 @@ from qililab import build_platform
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller import E5071BController
-from qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller import E5080BController
-from qililab.instruments.agilent.e5071b_vna import E5071B
-from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.platform import Platform
 from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.typings import Parameter
@@ -180,63 +176,3 @@ def platform_yaml(runcard: dict) -> Platform:
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
-
-
-@pytest.fixture(name="e5080b_controller")
-def fixture_e5080b_controller(sauron_platform: Platform):
-    """Return an instance of VectorNetworkAnalyzer controller class"""
-    settings = copy.deepcopy(SauronVNA.keysight_e5080b_controller)
-    settings.pop("name")
-    return E5080BController(settings=settings, loaded_instruments=sauron_platform.instruments)
-
-
-@pytest.fixture(name="e5080b_no_device")
-def fixture_e5080b_no_device():
-    """Return an instance of VectorNetworkAnalyzer class"""
-    settings = copy.deepcopy(SauronVNA.keysight_e5080b)
-    settings.pop("name")
-    return E5080B(settings=settings)
-
-
-@pytest.fixture(name="e5080b")
-@patch(
-    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BDriver",
-    autospec=True,
-)
-def fixture_e5080b(mock_device: MagicMock, e5080b_controller: E5080BController):
-    """Return connected instance of VectorNetworkAnalyzer class"""
-    mock_instance = mock_device.return_value
-    mock_instance.mock_add_spec(["power"])
-    e5080b_controller.connect()
-    mock_device.assert_called()
-    return e5080b_controller.modules[0]
-
-
-@pytest.fixture(name="e5071b_controller")
-def fixture_e5071b_controller(sauron_platform: Platform):
-    """Return an instance of VectorNetworkAnalyzer controller class"""
-    settings = copy.deepcopy(SauronVNA.agilent_e5071b_controller)
-    settings.pop("name")
-    return E5071BController(settings=settings, loaded_instruments=sauron_platform.instruments)
-
-
-@pytest.fixture(name="e5071b_no_device")
-def fixture_e5071b_no_device():
-    """Return an instance of VectorNetworkAnalyzer class"""
-    settings = copy.deepcopy(SauronVNA.agilent_e5071b)
-    settings.pop("name")
-    return E5071B(settings=settings)
-
-
-@pytest.fixture(name="e5071b")
-@patch(
-    "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.E5071BDriver",
-    autospec=True,
-)
-def fixture_e5071b(mock_device: MagicMock, e5071b_controller: E5071BController):
-    """Return connected instance of VectorNetworkAnalyzer class"""
-    mock_instance = mock_device.return_value
-    mock_instance.mock_add_spec(["power"])
-    e5071b_controller.connect()
-    mock_device.assert_called()
-    return e5071b_controller.modules[0]
