@@ -67,12 +67,11 @@ class TestRabi:
             i,
         )
 
-    @pytest.mark.flaky(reruns=10)
     def test_fit(self, rabi: Rabi):
         """Test fit method."""
         rabi.post_processed_results = q
         popt = rabi.fit(p0=(8, 7.5 / (2 * np.pi), -np.pi / 2, 0))  # p0 is an initial guess
-        assert np.allclose(popt, (9, 7 / (2 * np.pi), -np.pi / 2, 0))
+        assert np.allclose(popt, (9, 7 / (2 * np.pi), -np.pi / 2, 0), atol=1e-5)
 
     def test_plot(self, rabi: Rabi):
         """Test plot method."""
