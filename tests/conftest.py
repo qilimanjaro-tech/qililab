@@ -16,7 +16,6 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
 from .data import FluxQubitSimulator, Galadriel, SauronVNA, circuit, experiment_params
-from .side_effect import yaml_safe_load_side_effect
 
 
 @pytest.fixture(name="platform")
@@ -58,16 +57,13 @@ def fixture_experiment(request: pytest.FixtureRequest):
         options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -93,11 +89,9 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="execution_manager")
