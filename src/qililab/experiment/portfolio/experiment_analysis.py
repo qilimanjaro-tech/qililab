@@ -42,7 +42,15 @@ class ExperimentAnalysis(ABC, Experiment):
         readout_bus: Bus | None = None,
         experiment_loop: Loop | None = None,
     ):
-        self.loop = experiment_loop or options.loops[0]  # TODO: Support nested loops
+        if experiment_loop is None:
+            if options.loops is None:
+                raise ValueError(
+                    "A loop must be provided. Either an experiment loop in the `ExperimentOptions` class, or "
+                    "an external loop in the `experiment_loop` argument."
+                )
+            self.loop = options.loops[0]  # TODO: Support nested loops
+        else:
+            self.loop = experiment_loop
         self.control_bus = control_bus
         self.readout_bus = readout_bus
         super().__init__(platform=platform, circuits=circuits, options=options)
