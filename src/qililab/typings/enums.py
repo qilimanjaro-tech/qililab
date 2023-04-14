@@ -364,6 +364,7 @@ class Parameter(str, Enum):
     OFFSET_OUT2 = "offset_out2"
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
+    NUM_FLIPS = "num_flips"
     INTEGRATION_WEIGHT_I_1 = "integration_weight_I_1"
     INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
     INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
