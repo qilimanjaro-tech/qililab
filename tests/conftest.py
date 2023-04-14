@@ -1,5 +1,4 @@
 """Pytest configuration fixtures."""
-import copy
 from unittest.mock import MagicMock, patch
 
 import pytest

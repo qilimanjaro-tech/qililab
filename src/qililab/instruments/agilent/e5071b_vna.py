@@ -7,7 +7,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import InstrumentName
-from qililab.typings.instruments.agilent_e5071b import E5071BDriver
+from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
 @InstrumentFactory.register
@@ -15,7 +15,7 @@ class E5071B(VectorNetworkAnalyzer):
     """Agilent Vector Network Analyzer E5071B"""
 
     name = InstrumentName.AGILENT_E5071B
-    device: E5071BDriver
+    device: VectorNetworkAnalyzerDriver
 
     @dataclass
     class E5071BSettings(VectorNetworkAnalyzer.VectorNetworkAnalyzerSettings):
