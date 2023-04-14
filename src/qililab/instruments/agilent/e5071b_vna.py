@@ -46,7 +46,7 @@ class E5071B(VectorNetworkAnalyzer):
     def if_bandwidth(self, bandwidth: float, channel=1):
         """Set/query IF Bandwidth for specified channel"""
         self.settings.if_bandwidth = bandwidth
-        return self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
+        self.send_command(command=f":SENS{channel}:BAND:RES", arg=f"{bandwidth}")
 
     def get_data(self):
         """get data"""
