@@ -31,7 +31,7 @@ def fixture_e5080b_no_device():
 
 @pytest.fixture(name="e5080b")
 @patch(
-    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BDriver",
+    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.VectorNetworkAnalyzerDriver",
     autospec=True,
 )
 def fixture_e5080b(mock_device: MagicMock, e5080b_controller: E5080BController):
