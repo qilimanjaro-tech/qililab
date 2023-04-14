@@ -173,15 +173,13 @@ class QbloxModule(AWG):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        sequencer_id = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)[0]
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
         weights = self._generate_weights()
-        sequence = QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
-        return sequence, sequencer_id
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_empty_program(self):
         """Generate Q1ASM program
@@ -411,7 +409,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path0 = float(value)
-        self.device.out0_offset(float(value))
+        self.device.sequencers[sequencer_id].offset_awg_path0(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
@@ -425,7 +423,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         self.awg_sequencers[sequencer_id].offset_path1 = float(value)
-        self.device.out1_offset(float(value))
+        self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_out_offset(self, output: int, value: float | str | bool):
