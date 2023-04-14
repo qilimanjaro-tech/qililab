@@ -1,8 +1,41 @@
 """Tests for the SGS100A class."""
+import copy
+from unittest.mock import MagicMock, patch
+
 import pytest
 
+from qililab.instrument_controllers.rohde_schwarz.sgs100a_controller import SGS100AController
 from qililab.instruments import SGS100A
+from qililab.platform import Platform
 from qililab.typings.enums import Parameter
+from tests.data import Galadriel
+
+
+@pytest.fixture(name="rohde_schwarz_controller")
+def fixture_rohde_schwarz_controller(platform: Platform):
+    """Return an instance of SGS100A controller class"""
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
+    settings.pop("name")
+    return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="rohde_schwarz_no_device")
+def fixture_rohde_schwarz_no_device():
+    """Return an instance of SGS100A class"""
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_0)
+    settings.pop("name")
+    return SGS100A(settings=settings)
+
+
+@pytest.fixture(name="rohde_schwarz")
+@patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+def fixture_rohde_schwarz(mock_rs: MagicMock, rohde_schwarz_controller: SGS100AController):
+    """Return connected instance of SGS100A class"""
+    # add dynamically created attributes
+    mock_instance = mock_rs.return_value
+    mock_instance.mock_add_spec(["power", "frequency", "rf_on"])
+    rohde_schwarz_controller.connect()
+    return rohde_schwarz_controller.modules[0]
 
 
 class TestSGS100A:

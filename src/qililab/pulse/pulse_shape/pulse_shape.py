@@ -4,11 +4,10 @@ from enum import Enum
 
 import numpy as np
 
-from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseShapeName
 
 
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class PulseShape(FactoryElement):
     """Pulse shape abstract base class."""
 
