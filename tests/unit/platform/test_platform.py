@@ -6,6 +6,8 @@ import pytest
 from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.instrument_connections import Connection
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema

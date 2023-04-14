@@ -6,10 +6,11 @@ from typing import Dict, List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait
+from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync
 from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
@@ -230,6 +231,10 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
+            gain = int(pulse_event.pulse.amplitude * AWG_MAX_GAIN)
+            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
+            avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -255,6 +260,7 @@ class QbloxModule(AWG):
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
         acquisitions.add(name="single", num_bins=1, index=0)
+        # acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
         return acquisitions
 
     @abstractmethod

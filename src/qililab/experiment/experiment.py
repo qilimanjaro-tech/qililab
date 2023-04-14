@@ -14,7 +14,6 @@ from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FIL
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
-from qililab.result.result import Result
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
@@ -272,6 +271,14 @@ class Experiment:
             alias (str): alias of the element that contains the given parameter
             channel_id (int | None): channel id
         """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = circuit.get_parameters()
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self.build_execution()
+            return
+
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
@@ -394,7 +401,7 @@ class Experiment:
 
         # Dump the experiment data into the created file
         with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+            yaml.dump(data={}, stream=experiment_file, sort_keys=False)
 
         return results, results_path
 

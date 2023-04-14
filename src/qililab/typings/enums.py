@@ -185,6 +185,10 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
+    EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
+    PREDISTORTION = "predistortion"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -197,6 +201,13 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    TAU_EXPONENTIAL1 = "tau_exponential1"
+    TAU_EXPONENTIAL2 = "tau_exponential2"
+    AMP = "amp"
+    AMP1 = "amp1"
+    AMP2 = "amp2"
 
 
 class NodeName(str, Enum):
@@ -354,6 +365,18 @@ class Parameter(str, Enum):
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
     NUM_FLIPS = "num_flips"
+    INTEGRATION_WEIGHT_I_1 = "integration_weight_I_1"
+    INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
+    INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
+    INTEGRATION_WEIGHT_Q_2 = "integration_weight_Q_2"
+    GATE_PARAMETER = "gate_parameter"
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    TAU_EXPONENTIAL1 = "tau_exponential1"
+    TAU_EXPONENTIAL2 = "tau_exponential2"
+    AMP = "amp"
+    AMP1 = "amp1"
+    AMP2 = "amp2"
 
 
 class ResultName(str, Enum):
