@@ -1,5 +1,6 @@
 """This file tests the the connection class"""
 import pytest
+import re
 
 from qililab.instrument_connections import Connection
 
@@ -9,6 +10,6 @@ class TestConnection:
     def test_error_raises_when_already_connected(self):
         test = Connection(settings = {"address": "test"})
         test._connected = True
-        with pytest.raises(ValueError) as e:
+        expected = re.escape("Instrument (test) is already connected")
+        with pytest.raises(ValueError, match=expected):
             test.connect(device="test", device_name="test")
-            assert str(e.value) == "Instrument (test_device) is already connected"
