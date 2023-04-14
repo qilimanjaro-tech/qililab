@@ -9,8 +9,9 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instrument_connections import Connection
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
-from qililab.platform import Buses, Platform, Schema
+from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
+from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 
 from ...conftest import platform_db, platform_yaml
@@ -95,14 +96,17 @@ class TestPlatform:
             save_platform(platform=platform, database=True)
         mock_dump.assert_called()
 
-    def test_turn_on_instruments(self, platform: Platform):
-        """Test turn_on_instruments method"""
-        with patch.object(InstrumentController, "CheckConnected", return_value=True):
-            with patch.object(Connection, "CheckConnected", return_value=True):
-                platform.turn_on_instruments()
-                assert platform._instruments_turned_on is True
+    def test_get_bus_by_qubit_index(self, platform: Platform):
+        """Test get_bus_by_qubit_index method."""
+        control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        assert isinstance(control_bus, Bus)
+        assert isinstance(readout_bus, Bus)
+        assert not isinstance(control_bus.system_control, ReadoutSystemControl)
+        assert isinstance(readout_bus.system_control, ReadoutSystemControl)
 
-    def test_turn_off_instruments(self, platform: Platform):
-        """Test turn_off_instruments method"""
-        platform.turn_off_instruments()
-        assert platform._instruments_turned_on is False
+    def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
+        """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
+        of the given qubit."""
+        platform.buses[0].settings.port = 100
+        with pytest.raises(ValueError, match="Could not find buses for qubit 0 connected to the ports"):
+            platform.get_bus_by_qubit_index(0)

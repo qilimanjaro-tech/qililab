@@ -11,7 +11,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class Drag(PulseShape):
     """Derivative Removal by Adiabatic Gate (DRAG) pulse shape."""
 
@@ -19,7 +19,7 @@ class Drag(PulseShape):
     num_sigmas: float
     drag_coefficient: float
 
-    def envelope(self, duration: int, amplitude: float,  resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """DRAG envelope centered with respect to the pulse.
 
         Args:

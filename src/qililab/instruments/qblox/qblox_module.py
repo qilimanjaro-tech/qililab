@@ -2,7 +2,7 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, cast
+from typing import Dict, List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -80,8 +80,17 @@ class QbloxModule(AWG):
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
-    # Cache containing the last PulseSequence, nshots and repetition_duration used.
-    _cache: Tuple[PulseBusSchedule, int, int] | None = None
+    # Cache containing the last compiled pulse schedule for each sequencer
+    _cache: Dict[int, PulseBusSchedule] = {}
+
+    def __init__(self, settings: dict):
+        # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
+        # the sequence has been uploaded or not
+        self.sequences: Dict[int, Tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        # TODO: Set this attribute during initialization of the instrument
+        self.nshots: int | None = None
+        self.repetition_duration: int | None = None
+        super().__init__(settings=settings)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -107,57 +116,74 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ) -> None:
-        """Translate a Pulse Bus Schedule to an AWG program and upload it
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
+
+        This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
+        compiled and added into the cache.
+
+        If the number of shots or the repetition duration changes, the cache will be cleared.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+
+        Returns:
+            List[QpySequence]: list of compiled assembly programs
         """
-        if (pulse_bus_schedule, nshots, repetition_duration) != self._cache:
-            self._cache = (pulse_bus_schedule, nshots, repetition_duration)
-            sequence, sequencer_id, empty_sequence = self._translate_pulse_bus_schedule(
-                pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-            )
-            self.upload(sequence=sequence, sequencer_id=sequencer_id, empty_sequence=empty_sequence)
+        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+            self.nshots = nshots
+            self.repetition_duration = repetition_duration
+            self.clear_cache()
+
+        compiled_sequences = []
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        for sequencer in sequencers:
+            if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
+                sequence = self._compile(pulse_bus_schedule, sequencer)
+                compiled_sequences.append(sequence)
+            else:
+                compiled_sequences.append(self.sequences[sequencer][0])
+        return compiled_sequences
+
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
+        """Compiles the ``PulseBusSchedule`` into an assembly program and updates the cache and the saved sequences.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            sequencer (int): index of the sequencer to generate the program
+        """
+        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
+        self._cache[sequencer] = pulse_bus_schedule
+        self.sequences[sequencer] = (sequence, False)
+        return sequence
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _translate_pulse_bus_schedule(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ):
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
+            sequencer (int): index of the sequencer to generate the program
 
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        sequencer_id = self.get_sequencer_id_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        sequencer_id = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)[0]
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule,
-            waveforms=waveforms,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            sequencer_id=sequencer_id,
+            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
-        empty_program = self._generate_empty_program(nshots, repetition_duration)
         weights = self._generate_weights()
         sequence = QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
-        empty_sequence = QpySequence(
-            program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}
-        )
-        return sequence, sequencer_id, empty_sequence
+        return sequence, sequencer_id
 
-    def _generate_empty_program(self, nshots: int, repetition_duration: int):
+    def _generate_empty_program(self):
         """Generate Q1ASM program
 
         Args:
@@ -169,49 +195,43 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=nshots)
+        avg_loop = Loop(name="average", begin=self.nshots)
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
-        wait_time = repetition_duration
+        wait_time = self.repetition_duration
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
-    def _generate_program(
-        self,
-        pulse_bus_schedule: PulseBusSchedule,
-        waveforms: Waveforms,
-        nshots: int,
-        repetition_duration: int,
-        sequencer_id: int,
-    ):
+    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int):
         """Generate Q1ASM program
 
         Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
-            waveforms (Waveforms): Waveforms.
+            pulse_sequence (PulseSequence): pulse sequence
+            waveforms (Waveforms): waveforms
+            sequencer (int): index of the sequencer to generate the program
 
         Returns:
             Program: Q1ASM program.
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=nshots)
+        avg_loop = Loop(name="average", begin=self.nshots)
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
-        if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+        if timeline[0].start_time != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-            wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
+            wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
             gain = int(pulse_event.pulse.amplitude * AWG_MAX_GAIN)
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
@@ -224,8 +244,8 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer_id)
-        wait_time = repetition_duration - avg_loop.duration_iter
+        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
+        wait_time = self.repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
 
@@ -515,7 +535,7 @@ class QbloxModule(AWG):
 
     def clear_cache(self):
         """Empty cache."""
-        self._cache = None
+        self._cache = {}
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
@@ -523,20 +543,24 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, sequence: QpySequence, sequencer_id: int, empty_sequence: QpySequence):
-        """Upload sequence to sequencer.
+    def upload(self):
+        """Upload all the previously compiled programs to its corresponding sequencers.
 
-        Args:
-            sequence (Sequence): Sequence object containing the waveforms, weights, acquisitions and program of the
-                sequence.
-            sequencer_id (int): id of the sequencer to upload the program to
-        """
-        logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+        This method must be called after the method ``compile``."""
+        if self.nshots is None or self.repetition_duration is None:
+            raise ValueError("Please compile the circuit before uploading it to the device.")
+        empty_program = self._generate_empty_program()
+        empty_sequence = QpySequence(
+            program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}
+        )
         for seq_idx in range(self.num_sequencers):
-            if seq_idx == sequencer_id:
+            if seq_idx not in self.sequences:
+                self.sequences[seq_idx] = (empty_sequence, False)
+            sequence, uploaded = self.sequences[seq_idx]
+            if not uploaded:
+                logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
-            # else:
-            #     self.device.sequencers[seq_idx].sequence(empty_sequence.todict())
+                self.sequences[seq_idx] = (sequence, True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""

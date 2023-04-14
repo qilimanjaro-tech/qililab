@@ -14,7 +14,6 @@ from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FIL
 from qililab.execution import EXECUTION_BUILDER, Execution
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
-from qililab.result.result import Result
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
@@ -104,6 +103,21 @@ class Experiment:
 
         return self.results
 
+    def compile(self) -> List[dict]:
+        """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
+        experiment.
+
+        Returns:
+            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+                compiled sequences as values.
+        """
+        if not hasattr(self, "execution"):
+            raise ValueError("Please build the execution before compilation.")
+        return [
+            self.execution.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            for schedule_idx in range(len(self.pulse_schedules))
+        ]
+
     def turn_on_instruments(self):
         """Turn on instruments."""
         if not hasattr(self, "execution"):
@@ -166,32 +180,18 @@ class Experiment:
             favorite=False,
         )
 
-    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
-        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
-        executes it and returns the results.
-
-        Args:
-            idx (int): loop index to execute
-
-        Returns:
-            Result: Result object for one program execution.
-        """
-        self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
-        )
-        return self.execution.run(plot=self._plot, path=self.results_path)
-
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            result = self._generate_program_upload_and_execute(idx=idx)
+            self.execution.compile(idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            result = self.execution.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)
             return
@@ -204,7 +204,7 @@ class Experiment:
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
@@ -252,11 +252,7 @@ class Experiment:
 
         for value, loop, element in zip(values, loops, elements):
             self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
+                element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
             )
 
     def set_parameter(
@@ -284,13 +280,7 @@ class Experiment:
             return
 
         if element is None:
-            self.platform.set_parameter(
-                alias=alias,
-                parameter=Parameter(parameter),
-                value=value,
-                channel_id=channel_id,
-            )
-            self.build_execution()
+            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()

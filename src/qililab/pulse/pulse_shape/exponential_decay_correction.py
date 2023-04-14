@@ -12,7 +12,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(unsafe_hash=True, eq=True, frozen=True)
 class ExponentialCorrection(PulseShape):
     """Exponential decay correction pulse shape."""
 
@@ -35,23 +35,23 @@ class ExponentialCorrection(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
         ysig = amplitude * np.ones(round(duration / resolution))
-        
+
         # Parameters
-        alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
+        alpha = 1 - np.exp(-1 / (self.sampling_rate * self.tau_exponential * (1 + self.amp)))
 
         if self.amp >= 0.0:
-            k = self.amp/(1+self.amp-alpha)
-            b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
+            k = self.amp / (1 + self.amp - alpha)
+            b = [(1 - k + k * alpha), -(1 - k) * (1 - alpha)]
         else:
-            k = -self.amp/(1+self.amp)/(1-alpha)
-            b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
-        
-        a = [1, -(1-alpha)]
+            k = -self.amp / (1 + self.amp) / (1 - alpha)
+            b = [(1 + k - k * alpha), -(1 - k) * (1 - alpha)]
+
+        a = [1, -(1 - alpha)]
 
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
-        norm = np.amax(np.abs(ycorr)) 
-        ycorr = ycorr/norm
+        norm = np.amax(np.abs(ycorr))
+        ycorr = ycorr / norm
         return ycorr
 
     def to_dict(self):
@@ -63,5 +63,5 @@ class ExponentialCorrection(PulseShape):
         return {
             RUNCARD.NAME: self.name.value,
             PulseShapeSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
-            PulseShapeSettingsName.AMP.value: self.amp
+            PulseShapeSettingsName.AMP.value: self.amp,
         }

@@ -12,7 +12,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(unsafe_hash=True, eq=True, frozen=True)
 class BiasTeeCorrection(PulseShape):
     """Bias tee correction pulse shape."""
 
@@ -33,15 +33,15 @@ class BiasTeeCorrection(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
         ysig = amplitude * np.ones(round(duration / resolution))
-        
-        k = 2 * self.tau_bias_tee*self.sampling_rate
+
+        k = 2 * self.tau_bias_tee * self.sampling_rate
         a = [1, -1]
         b = [(k + 1) / k, -(k - 1) / k]
-        
+
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr))
-        #norm = a[0]**(duration / resolution) * b[0]**(duration / resolution) 
-        ycorr = ycorr/norm
+        # norm = a[0]**(duration / resolution) * b[0]**(duration / resolution)
+        ycorr = ycorr / norm
 
         return ycorr
 
