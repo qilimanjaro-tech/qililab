@@ -32,7 +32,7 @@ class FittingModel(ABC):
         """
 
 
-class CosFunc(FittingModel):
+class Cos(FittingModel):
     """Cosine model function."""
 
     @staticmethod
@@ -50,3 +50,22 @@ class CosFunc(FittingModel):
             offset (float): offset
         """
         return amplitude * np.cos(2 * np.pi * frequency * xdata + phase) + offset
+
+
+class Exp(FittingModel):
+    """Exponential model function."""
+
+    @staticmethod
+    def func(xdata: np.ndarray, amplitude: float, decay: float, offset: float) -> np.ndarray:  # type: ignore  # pylint: disable=arguments-differ
+        """Exponential model function.
+
+        It must take the independent variable as the first argument and the parameters to fit as separate remaining
+        arguments.
+
+        Args:
+            xdata (ndarray): amplitude of the X gate
+            amplitude (float): amplitude of the exponential function
+            decay (float): decay constant
+            offset (float): offset
+        """
+        return amplitude * np.exp(-xdata / decay) + offset

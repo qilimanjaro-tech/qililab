@@ -1,4 +1,4 @@
-"""This file contains a pre-defined version of a flipping sequence experiment."""
+"""This file contains a pre-defined version of a T1 experiment."""
 import numpy as np
 from qibo.gates import RX, M, X
 from qibo.models import Circuit
@@ -8,11 +8,11 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, 
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import Cos
+from .fitting_models import Exp
 
 
-class FlippingSequence(ExperimentAnalysis, Cos):
-    """Class used to run a flipping sequence experiment on the given qubit.
+class T1(ExperimentAnalysis, Exp):
+    """Class used to run a T1 experiment on the given qubit.
 
     This experiment creates multiple circuits, each of which uses an RX(pi/2) gate to send the qubit to the equator of
     the Bloch sphere, and then applies N R(2pi) gates to flip the qubit around the x axis N times. Given that the
@@ -49,7 +49,7 @@ class FlippingSequence(ExperimentAnalysis, Cos):
         control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
 
         experiment_options = ExperimentOptions(
-            name="Flipping Sequence",
+            name="T1",
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
             plot_y_label="|S21| [dB]",
         )
