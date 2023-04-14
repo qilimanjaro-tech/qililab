@@ -74,7 +74,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
         return self.post_processed_results
 
-    def fit(self, p0: tuple | None = None):
+    def fit(self, p0: tuple | None = None) -> np.ndarray:
         """Method used to fit the results of an experiment.
 
         This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
@@ -83,8 +83,8 @@ class ExperimentAnalysis(Experiment, FittingModel):
             p0 (tuple, optional): Initial guess for the parameters. Defaults to None.
 
         Returns:
-            float: optimal values for the parameters so that the sum of the squared residuals of
-                ``f(xdata, *popt) - ydata is minimized.
+            ndarray: optimal values for the parameters so that the sum of the squared residuals of
+                ``f(xdata, *popt) - ydata`` is minimized.
         """
         if not hasattr(self, "post_processed_results"):
             raise AttributeError(
