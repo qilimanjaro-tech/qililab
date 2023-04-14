@@ -126,7 +126,7 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_qubit_index(self, qubit_index: int):
+    def get_bus_by_qubit_index(self, qubit_index: int) -> Tuple[Bus, Bus]:
         """Find bus associated with the given qubit index.
 
         Args:

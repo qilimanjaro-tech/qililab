@@ -57,5 +57,17 @@ class Rabi(ExperimentAnalysis):
         )
 
     @staticmethod
-    def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
-        return a * np.sin(xdata * b)
+    def func(xdata: np.ndarray, amplitude: float, frequency: float, phase: float, offset: float) -> np.ndarray:  # type: ignore  # pylint: disable=arguments-differ
+        """Cosine model function.
+
+        It must take the independent variable as the first argument and the parameters to fit as separate remaining
+        arguments.
+
+        Args:
+            xdata (ndarray): amplitude of the X gate
+            amplitude (float): amplitude of the cosine function
+            frequency (float): frequency in Hz (f, not omega!)
+            phase (float): phase in rad
+            offset (float): offset
+        """
+        return amplitude * np.cos(2 * np.pi * frequency * xdata + phase) + offset

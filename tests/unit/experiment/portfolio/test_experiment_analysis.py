@@ -73,7 +73,7 @@ class TestExperimentAnalysis:
         """Test fit method."""
         experiment_analysis.post_processed_results = q
         popt = experiment_analysis.fit(p0=(8, 7.5))  # p0 is an initial guess
-        assert all(popt == (9, 7))
+        assert np.allclose(popt, (9, 7), atol=1e-5)
 
     def test_fit_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``fit`` method raises an error when the results are not post processed."""
@@ -105,14 +105,13 @@ class TestExperimentAnalysis:
         experiment_analysis.post_processed_results = q
         popt = experiment_analysis.fit()
         fig = experiment_analysis.plot()
+        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
+        assert np.allclose(scatter_data[:, 0], x)
+        assert np.allclose(scatter_data[:, 1], q)
         ax = fig.axes[0]
-        assert len(ax.lines) == 2
-        line0 = ax.lines[0]
-        assert np.allclose(line0.get_xdata(), x)
-        assert np.allclose(line0.get_ydata(), q)
-        line1 = ax.lines[1]
-        assert np.allclose(line1.get_xdata(), x)
-        assert np.allclose(line1.get_ydata(), popt[0] * np.sin(popt[1] * x))
+        line = ax.lines[0]
+        assert np.allclose(line.get_xdata(), x)
+        assert np.allclose(line.get_ydata(), popt[0] * np.sin(popt[1] * x))
 
     def test_plot_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""

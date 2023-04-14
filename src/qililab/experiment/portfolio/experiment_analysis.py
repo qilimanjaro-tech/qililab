@@ -1,6 +1,7 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
+import inspect
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +10,7 @@ from scipy.optimize import curve_fit
 
 from qililab.experiment.experiment import Experiment
 from qililab.platform import Bus, Platform
-from qililab.typings import ExperimentOptions
+from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
 
 
@@ -62,7 +63,7 @@ class ExperimentAnalysis(ABC, Experiment):
         return self.post_processed_results
 
     def fit(self, p0: tuple | None = None):
-        r"""Method used to fit the results of an experiment.
+        """Method used to fit the results of an experiment.
 
         This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
 
@@ -118,12 +119,17 @@ class ExperimentAnalysis(ABC, Experiment):
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
         axes.set_ylabel(f"{self.options.plot_y_label}")
-        axes.plot(xdata, self.post_processed_results, "-o")
+        axes.scatter(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
-            axes.plot(xdata, self.func(xdata, *self.popt), "--")
+            # Create label text
+            args = list(inspect.signature(self.func).parameters.keys())[1:]
+            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
+            axes.plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
+
+        axes.legend(loc="upper right")
         return fig
 
-    def bus_setup(self, parameters: dict, control=False) -> None:
+    def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
 
             * Parameter.CURRENT
@@ -134,7 +140,8 @@ class ExperimentAnalysis(ABC, Experiment):
             * Parameter.POWER
 
         Args:
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
+            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+                parameter values as values
             control (bool, optional): whether to change the parameters of the control bus (True) or the readout
                 bus (False)
         """
@@ -146,7 +153,7 @@ class ExperimentAnalysis(ABC, Experiment):
         for parameter, value in parameters.items():
             bus.set_parameter(parameter=parameter, value=value)
 
-    def gate_setup(self, gate: str, parameters: dict) -> None:
+    def gate_setup(self, parameters: Dict[Parameter, float | str | bool], gate: str) -> None:
         """Method used to change the parameters of the given gate. Some possible gate parameters are:
 
             * Parameter.AMPLITUDE
@@ -154,8 +161,9 @@ class ExperimentAnalysis(ABC, Experiment):
             * Parameter.PHASE
 
         Args:
+            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+                parameter values as values
             gate (str): name of the gate to change
-            parameters (dict): dictionary containing parameter names as keys and parameter values as values
         """
         for parameter, value in parameters.items():
             self.platform.set_parameter(alias=gate, parameter=parameter, value=value)
