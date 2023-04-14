@@ -1,15 +1,11 @@
 import copy
-from native_gates import VZ, RMW, CZ
 
 import numpy as np
+import qibo
+from native_gates import RMW
 from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.config import raise_error
-
-from qibolab.transpilers.unitary_decompositions import (
-    two_qubit_decomposition,
-    u3_decomposition,
-)
 
 backend = NumpyBackend()
 
@@ -24,22 +20,6 @@ class GateDecompositions:
         """Register a decomposition for a gate."""
         self.decompositions[gate] = decomposition
 
-    def count_2q(self, gate):
-        """Count the number of two-qubit gates in the decomposition of the given gate."""
-        if gate.parameters:
-            decomposition = self.decompositions[gate.__class__](gate)
-        else:
-            decomposition = self.decompositions[gate.__class__]
-        return len(tuple(g for g in decomposition if len(g.qubits) > 1))
-
-    def count_1q(self, gate):
-        """Count the number of single qubit gates in the decomposition of the given gate."""
-        if gate.parameters:
-            decomposition = self.decompositions[gate.__class__](gate)
-        else:
-            decomposition = self.decompositions[gate.__class__]
-        return len(tuple(g for g in decomposition if len(g.qubits) == 1))
-
     def __call__(self, gate):
         """Decompose a gate."""
         decomposition = self.decompositions[gate.__class__]
@@ -48,7 +28,7 @@ class GateDecompositions:
         return [g.on_qubits({i: q for i, q in enumerate(gate.qubits)}) for g in decomposition]
 
 
-def translate_gate(gate, native_gates):
+def translate_gate(ngates) -> list[qibo.gates.Gate]:  # TODO edit doc
     """Maps Qibo gates to a hardware native implementation.
 
     Args:
@@ -59,69 +39,100 @@ def translate_gate(gate, native_gates):
     Returns:
         Shortest list of native gates
     """
+
+    # define supported gates (native qpu gates + virtual z + measurement)
+    supported_gates = native_gates() + (gates.RZ, gates.M)
+
+    # parse single gate input
+    if not isinstance(ngates, list):
+        raise Exception("argument ngates must be a list of gates")
+
+    new_gates = []
+    # iterate through all gates
+
+    # check which gates are native gates and if not all of them are so, translate
+    to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
+
+    if sum(to_translate) != 0:
+        for gate, tt in zip(ngates, to_translate):
+            if not tt:
+                new_gates.append(gate)  # append already native gates
+            elif len(gate.qubits) == 1:
+                new_gates += onequbit_dec(gate)
+            elif len(gate.qubits) == 2:
+                new_gates += cz_dec(gate)
+            else:
+                raise Exception("{} qubit gates not supported".format(len(gate.qubits)))
+        ngates = new_gates.copy()
+        return translate_gate(ngates)
+    return ngates
+
+
+"""
     if isinstance(gate, gates.M):
         return gate
 
     if len(gate.qubits) == 1:
         return onequbit_dec(gate)
 
-    if "CZ" in native_gates and "iSWAP" in native_gates:
-        # Check for a special optimized decomposition.
-        if gate.__class__ in opt_dec.decompositions:
-            return opt_dec(gate)
-        # Check if the gate has a CZ decomposition
-        if not gate.__class__ in iswap_dec.decompositions:
-            return cz_dec(gate)
-        # Check the decomposition with less 2 qubit gates.
-        else:
-            if cz_dec.count_2q(gate) < iswap_dec.count_2q(gate):
-                return cz_dec(gate)
-            elif cz_dec.count_2q(gate) > iswap_dec.count_2q(gate):
-                return iswap_dec(gate)
-            # If equal check the decomposition with less 1 qubit gates.
-            # This is never used for now but may be useful for future generalization
-            elif cz_dec.count_1q(gate) < iswap_dec.count_1q(gate):  # pragma: no cover
-                return cz_dec(gate)
-            else:  # pragma: no cover
-                return iswap_dec(gate)
-    elif "CZ" in native_gates:
+    elif len(gate.qubits) == 2:
         return cz_dec(gate)
-    elif "iSWAP" in native_gates:
-        if gate.__class__ in iswap_dec.decompositions:
-            return iswap_dec(gate)
-        else:
-            # First decompose into CZ
-            cz_decomposed = cz_dec(gate)
-            # Then CZ are decomposed into iSWAP
-            iswap_decomposed = []
-            for g in cz_decomposed:
-                # Need recursive function as gates.Unitary is not in iswap_dec
-                for g_translated in translate_gate(g, ["iSWAP"]):
-                    iswap_decomposed.append(g_translated)
-            return iswap_decomposed
-    else:  # pragma: no cover
-        raise_error(NotImplementedError, "Use only CZ and/or iSWAP as native gates")
+"""
 
 
+def native_gates():
+    return (RMW, gates.CZ)
 
 
-
-
+# Mind that the order of the gates is "the inverse" of the operators
+# i.e. to perform the operation AB|psi> the order of the operators
+# returned as a list must be  [B, A] so that B is applied to |psi> 1st
 onequbit_dec = GateDecompositions()
-onequbit_dec.add(gates.H, [gates.RZ(np.pi), RMW(np.pi/2, -np.pi/2)])
-onequbit_dec.add(gates.X, [RMW(np.pi, 0)])
-onequbit_dec.add(gates.Y, [gates.RZ(-np.pi), RMW(np.pi/2, np.pi)])
-onequbit_dec.add(gates.Z, [gates.RZ(np.pi)])
-onequbit_dec.add(gates.RX, lambda gate: [gates.RZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2 - np.pi/2), RMW(np.pi/2, np.pi/2)])
-onequbit_dec.add(gates.RY, lambda gate: [gates.RZ(-gate.parameters[0]/2), RMW(np.pi/2, gate.parameters[0]/2), RMW(np.pi/2, np.pi)])
-onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(gate.parameters[0] / 2)])
+onequbit_dec.add(gates.H, [RMW(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
+onequbit_dec.add(gates.X, [RMW(0, np.pi, 0)])
+onequbit_dec.add(
+    gates.Y,
+    [
+        RMW(0, np.pi, 0),
+        gates.RZ(0, np.pi),
+    ],
+)
+onequbit_dec.add(gates.Z, [gates.RZ(0, np.pi)])
+onequbit_dec.add(
+    gates.RX,
+    lambda gate: [
+        RMW(0, np.pi / 2, np.pi / 2),
+        RMW(0, np.pi / 2, gate.parameters[0] / 2 - np.pi / 2),
+        gates.RZ(0, -gate.parameters[0] / 2),
+    ],
+)
+onequbit_dec.add(
+    gates.RY,
+    lambda gate: [
+        RMW(0, np.pi / 2, np.pi),
+        RMW(0, np.pi / 2, gate.parameters[0] / 2),
+        gates.RZ(0, -gate.parameters[0] / 2),
+    ],
+)
 
+onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0] / 2)])
 onequbit_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
-onequbit_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
-onequbit_dec.add(gates.U3, lambda gate: [gates.U3(0, gate.parameters[0], gate.parameters[1], gate.parameters[2])])
+onequbit_dec.add(
+    gates.U2, lambda gate: [RMW(0, np.pi / 2, gate.parameters[0]), gates.RZ(0, gate.parameters[0] + gate.parameters[1])]
+)
+onequbit_dec.add(
+    gates.U3,
+    lambda gate: [
+        RMW(0, gate.parameters[0], -gate.parameters[2]),
+        gates.RZ(0, gate.parameters[1] + gate.parameters[2]),
+    ],
+)
+onequbit_dec.add(gates.S, [gates.RZ(0, np.pi / 2)])
+onequbit_dec.add(gates.SDG, [gates.RZ(0, -np.pi / 2)])
+onequbit_dec.add(gates.T, [gates.RZ(0, np.pi / 4)])
+onequbit_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
 
 # TODO: raise error if gate not implemented
-
 
 
 # register CZ decompositions
@@ -285,24 +296,6 @@ cz_dec.add(
         gates.CZ(0, 1),
         gates.RZ(0, np.pi / 4),
         gates.RX(1, -np.pi / 4),
-        gates.CZ(0, 1),
-        gates.H(1),
-    ],
-)
-cz_dec.add(gates.Unitary, lambda gate: two_qubit_decomposition(0, 1, gate.parameters[0]))
-cz_dec.add(gates.fSim, lambda gate: two_qubit_decomposition(0, 1, gate.asmatrix(backend)))
-cz_dec.add(gates.GeneralizedfSim, lambda gate: two_qubit_decomposition(0, 1, gate.asmatrix(backend)))
-
-
-# register other optimized gate decompositions
-opt_dec = GateDecompositions()
-opt_dec.add(
-    gates.SWAP,
-    [
-        gates.H(0),
-        gates.SDG(0),
-        gates.SDG(1),
-        gates.iSWAP(0, 1),
         gates.CZ(0, 1),
         gates.H(1),
     ],
