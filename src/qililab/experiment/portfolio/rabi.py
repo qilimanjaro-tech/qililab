@@ -1,5 +1,4 @@
 """This file contains a pre-defined version of a rabi experiment."""
-import numpy as np
 from qibo.gates import M, X
 from qibo.models import Circuit
 
@@ -8,9 +7,10 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, 
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
+from .fitting_models import CosFunc
 
 
-class Rabi(ExperimentAnalysis):
+class Rabi(ExperimentAnalysis, CosFunc):
     """Class used to run a rabi experiment on the given qubit. This experiment modifies the amplitude of the pulse
     associated to the X gate.
 
@@ -55,19 +55,3 @@ class Rabi(ExperimentAnalysis):
             control_bus=control_bus,
             readout_bus=readout_bus,
         )
-
-    @staticmethod
-    def func(xdata: np.ndarray, amplitude: float, frequency: float, phase: float, offset: float) -> np.ndarray:  # type: ignore  # pylint: disable=arguments-differ
-        """Cosine model function.
-
-        It must take the independent variable as the first argument and the parameters to fit as separate remaining
-        arguments.
-
-        Args:
-            xdata (ndarray): amplitude of the X gate
-            amplitude (float): amplitude of the cosine function
-            frequency (float): frequency in Hz (f, not omega!)
-            phase (float): phase in rad
-            offset (float): offset
-        """
-        return amplitude * np.cos(2 * np.pi * frequency * xdata + phase) + offset

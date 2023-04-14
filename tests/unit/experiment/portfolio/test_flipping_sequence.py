@@ -12,11 +12,11 @@ from qililab.typings import LoopOptions
 from tests.data import Galadriel
 
 START = 1
-STOP = 10
+STOP = 1000
 STEP = 2
 x = np.arange(START, STOP, step=STEP)
-i = 5 * np.sin(7 * x)
-q = 9 * np.sin(7 * x)
+i = 5 * np.sin(0.01 * x)
+q = 9 * np.sin(0.01 * x)
 
 
 @pytest.fixture(name="flipping_sequence")
@@ -62,24 +62,26 @@ class TestFlippingSequence:
 
     def test_func(self, flipping_sequence: FlippingSequence):
         """Test the ``func`` method."""
-        assert np.allclose(flipping_sequence.func(xdata=x, a=5, b=7), i)
+        assert np.allclose(
+            flipping_sequence.func(xdata=x, amplitude=5, frequency=0.01 / (2 * np.pi), phase=-np.pi / 2, offset=0),
+            i,
+        )
 
     def test_fit(self, flipping_sequence: FlippingSequence):
         """Test fit method."""
-        flipping_sequence.post_processed_results = 5 * np.sin()
-        popt = flipping_sequence.fit(p0=(8, 7.5))  # p0 is an initial guess
-        assert all(popt == (9, 7))
+        flipping_sequence.post_processed_results = q
+        popt = flipping_sequence.fit(p0=(-8, 0.005 / (2 * np.pi), 3 * np.pi / 2, 0))  # p0 is an initial guess
+        assert np.allclose(popt, (-9, 0.01 / (2 * np.pi), np.pi / 2, 0), atol=1e-5)
 
     def test_plot(self, flipping_sequence: FlippingSequence):
         """Test plot method."""
         flipping_sequence.post_processed_results = q
         popt = flipping_sequence.fit()
         fig = flipping_sequence.plot()
+        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
+        assert np.allclose(scatter_data[:, 0], x)
+        assert np.allclose(scatter_data[:, 1], q)
         ax = fig.axes[0]
-        assert len(ax.lines) == 2
-        line0 = ax.lines[0]
-        assert np.allclose(line0.get_xdata(), x)
-        assert np.allclose(line0.get_ydata(), q)
-        line1 = ax.lines[1]
-        assert np.allclose(line1.get_xdata(), x)
-        assert np.allclose(line1.get_ydata(), popt[0] * np.sin(popt[1] * x))
+        line = ax.lines[0]
+        assert np.allclose(line.get_xdata(), x)
+        assert np.allclose(line.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * x + popt[2]) + popt[3])

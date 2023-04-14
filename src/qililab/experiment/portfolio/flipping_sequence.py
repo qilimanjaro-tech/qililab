@@ -8,9 +8,10 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, 
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
+from .fitting_models import CosFunc
 
 
-class FlippingSequence(ExperimentAnalysis):
+class FlippingSequence(ExperimentAnalysis, CosFunc):
     """Class used to run a flipping sequence experiment on the given qubit.
 
     This experiment creates multiple circuits, each of which uses an RX(pi/2) gate to send the qubit to the equator of
@@ -62,7 +63,3 @@ class FlippingSequence(ExperimentAnalysis):
             readout_bus=readout_bus,
             experiment_loop=loop,
         )
-
-    @staticmethod
-    def func(xdata: np.ndarray, a: float, b: float):  # type: ignore # pylint: disable=arguments-differ
-        return a * np.sin(xdata * b)

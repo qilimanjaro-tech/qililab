@@ -1,6 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-from abc import ABC, abstractmethod
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
@@ -13,8 +12,10 @@ from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
 
+from .fitting_models import FittingModel
 
-class ExperimentAnalysis(ABC, Experiment):
+
+class ExperimentAnalysis(Experiment, FittingModel):
     """Class used to analyze the results of an experiment. The analysis of an experiment consist of the following steps:
 
     1. Acquire results: either by running an experiment or loading one.
@@ -93,22 +94,6 @@ class ExperimentAnalysis(ABC, Experiment):
         )
 
         return self.popt
-
-    @staticmethod
-    @abstractmethod
-    def func(xdata: np.ndarray, *args):
-        """The model function, func(x, …) used to fit the post-processed data.
-
-        It must take the independent variable as the first argument and the parameters to fit as separate remaining
-        arguments.
-
-        Args:
-            xdata (np.ndarray): independent variable
-            *args: parameters to fit
-
-        Returns:
-            np.ndarray: model function evaluated at xdata
-        """
 
     def plot(self):
         """Method used to plot the results of an experiment.
