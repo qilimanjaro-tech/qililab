@@ -88,13 +88,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
-        if sequencer not in self._cache:
-            acquisition = self._generate_acquisitions()
-            self.device._add_acquisitions(sequencer=sequencer,acquisitions=acquisition.to_dict())
-        else:
-            self.device.delete_acquisition_data( 
-                sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-            )
+        if sequencer in self._cache:
+            self.device.delete_acquisition_data(sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer))
         return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:

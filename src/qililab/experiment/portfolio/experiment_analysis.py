@@ -121,8 +121,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             args = list(inspect.signature(self.func).parameters.keys())[1:]
             text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
             axes.plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
-
-        axes.legend(loc="upper right")
+            axes.legend(loc="upper right")
         return fig
 
     def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
