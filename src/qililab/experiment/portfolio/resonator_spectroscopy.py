@@ -1,5 +1,5 @@
 """This file contains a pre-defined version of a resonator spectroscopy experiment."""
-from qibo.gates import M, X
+from qibo.gates import M
 from qibo.models import Circuit
 
 from qililab.platform import Platform
@@ -37,6 +37,9 @@ class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
         circuit.add(M(qubit))
 
         control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+
+        # Set sync to False, because we are only using the readout bus
+        readout_bus.set_parameter(parameter=Parameter.SYNC_ENABLED, value=False)
 
         # Define loop used in the experiment
         loop = Loop(alias=readout_bus.alias, parameter=Parameter.LO_FREQUENCY, options=loop_options)
