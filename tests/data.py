@@ -39,7 +39,6 @@ from qililab.typings.enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
     ResetMethod,
@@ -835,7 +834,6 @@ experiment = {
                     PULSEBUSSCHEDULE.TIMELINE: [
                         {
                             PULSEEVENT.PULSE: {
-                                PULSE.NAME: PulseName.READOUT_PULSE.value,
                                 PULSE.AMPLITUDE: 1,
                                 PULSE.FREQUENCY: 1e9,
                                 PULSE.PHASE: 0,

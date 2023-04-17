@@ -7,7 +7,7 @@ from qililab.chip import Chip
 from qililab.pulse import CircuitToPulses, PulseSchedule, PulseShape
 from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
 from qililab.settings import RuncardSchema
-from qililab.typings import Parameter, PulseName
+from qililab.typings import Parameter
 
 
 @pytest.fixture(name="platform_settings")
@@ -156,10 +156,8 @@ class TestTranslation:
             assert pulse.phase == gate_settings.phase
 
             if gate_settings.name == "M":
-                assert pulse.name == PulseName.READOUT_PULSE
                 frequency = chip.get_node_from_alias(alias="resonator").frequency
             else:
-                assert pulse.name == PulseName.PULSE
                 frequency = chip.get_node_from_alias(alias="qubit").frequency
 
             assert pulse.frequency == frequency
