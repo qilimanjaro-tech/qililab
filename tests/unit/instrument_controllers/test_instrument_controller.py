@@ -1,8 +1,11 @@
 """This file tests the the ``InstrumentController`` class"""
 import pytest
+import copy
 
-from unittest.mock import MagicMock
 from qililab.instrument_controllers import SingleInstrumentController
+from tests.data import Galadriel
+from qililab.platform import Platform
+from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 
 class MiController(SingleInstrumentController):
     def _check_supported_modules(self):
@@ -11,21 +14,20 @@ class MiController(SingleInstrumentController):
     def _initialize_device(self):
         pass
 
+@pytest.fixture(name="rohde_schwarz_controller_0")
+def fixture_rohde_schwarz_controller_0(platform: Platform):
+    """Return connected instance of rohde_schwarz_controller_0 class"""
+    settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
+    settings.pop("name")
+    return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
 
 class TestConnection:
     """This class contains the unit tests for the ``InstrumentController`` class."""
     
-    def test_error_raises_when_no_modules(self):
-        with pytest.raises(ValueError) as e:
-            test = MiController(settings = {'id_':'test', 'category':'test', 'connection':'test', 'modules':'test', 'subcategory':'test'}, loaded_instruments = [])
-            test.name = "test"
-            test.modules = []
-            assert str(e.value) == "The test Instrument Controller requires at least ONE module."
+    def test_error_raises_when_no_modules(self, rohde_schwarz_controller_0 : SGS100AController):
+        with pytest.raises(ValueError, match="The test Instrument Controller requires at least ONE module."):
+            rohde_schwarz_controller_0.modules = []
         
-    def test_error_raises_when_no_compatible_number_modules(self):
-        with pytest.raises(ValueError) as e:
-            test = MiController(settings = {'id_':'test', 'category':'test', 'connection':'test', 'modules':'test', 'subcategory':'test'}, loaded_instruments = ['test'])
-            test.name = "test"
-            test.modules = ['1', '2']
-            assert str(e.value) == "The test Instrument Controller only supports 1 module/s."
-            + "You have connected 2 modules."
+    def test_error_raises_when_no_compatible_number_modules(self, rohde_schwarz_controller_0 : SGS100AController):
+        with pytest.raises(ValueError, match="The test Instrument Controller requires at least ONE module."):
+            rohde_schwarz_controller_0.modules = ['1', '2']
