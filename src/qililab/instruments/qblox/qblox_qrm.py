@@ -83,20 +83,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
         """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
         the cache and the saved sequences.
-
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
-        # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-        if hasattr(self, "device"):
-            self.device._delete_acquisition(  # pylint: disable=protected-access
-                sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-            )
-            acquisition = self._generate_acquisitions()
-            self.device._add_acquisitions(  # pylint: disable=protected-access
-                sequencer=sequencer, acquisitions=acquisition.to_dict()
-            )
+        if sequencer in self.sequences:
+            sequence_uploaded = self.sequences[sequencer][1]
+            if sequence_uploaded:
+                self.device.delete_acquisition_data(
+                    sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
+                )
         return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:
