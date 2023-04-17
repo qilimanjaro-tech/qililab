@@ -10,17 +10,11 @@ from tests.data import Galadriel
 from qililab.platform import Platform
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 
-class MiController(SingleInstrumentController):
-    def _check_supported_modules(self):
-        pass
-
-    def _initialize_device(self):
-        pass
 
 class TestConnection:
     """This class contains the unit tests for the ``InstrumentController`` class."""
     
-    def test_error_raises_when_no_modules2(self, platform: Platform):
+    def test_error_raises_when_no_modules(self, platform: Platform):
         settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
         settings[INSTRUMENTCONTROLLER.MODULES] = []
         name = settings.pop(RUNCARD.NAME)
