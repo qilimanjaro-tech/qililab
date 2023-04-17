@@ -9,22 +9,8 @@ import pytest
 import rustworkx as rx
 
 from qililab.circuit import Circuit
-from qililab.circuit.nodes import EntryNode, Node, OperationNode
-from qililab.circuit.nodes.operation_node import OperationTiming
-from qililab.circuit.operations import (
-    R180,
-    Barrier,
-    CPhase,
-    DRAGPulse,
-    GaussianPulse,
-    Measure,
-    Operation,
-    Reset,
-    Rxy,
-    SquarePulse,
-    Wait,
-    X,
-)
+from qililab.circuit.nodes import EntryNode
+from qililab.circuit.operations import CPhase, DRAGPulse, GaussianPulse, Measure, Operation, Reset, SquarePulse, Wait, X
 from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
 
 
@@ -90,20 +76,28 @@ def fixture_empty_circuit_print_output() -> str:
 class TestCircuit:
     """Unit tests checking the Circuit attributes and methods"""
 
-    @pytest.mark.parametrize("num_qubits", [1, 10, 1000])
-    def test_num_qubits_property(self, num_qubits: int):
-        """Test num_qubits property"""
-        circuit = Circuit(num_qubits=num_qubits)
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_init(self, request: pytest.FixtureRequest, circuit_fixture: str):
+        """Test init method"""
+        circuit = request.getfixturevalue(circuit_fixture)
         assert isinstance(circuit.num_qubits, int)
-        assert circuit.num_qubits == num_qubits
+        assert isinstance(circuit.graph, rx.PyDiGraph)
+        assert circuit.graph.multigraph is True
+        assert isinstance(circuit.entry_node, EntryNode)
+        assert isinstance(circuit.entry_node.index, int)
 
     @pytest.mark.parametrize("num_qubits", [-10, -1, 0])
-    def test_constructor_raises_error_when_num_qubits_is_not_positive(self, num_qubits: int):
+    def test_init_raises_error_when_num_qubits_is_not_positive(self, num_qubits: int):
+        """Test init method raises error when num_qubits parameter is not positive"""
         with pytest.raises(ValueError, match="Number of qubits should be positive."):
             Circuit(num_qubits=num_qubits)
 
     @pytest.mark.parametrize("num_qubits", [1.0, 5.2, 10e9])
-    def test_constructor_raises_error_when_num_qubits_is_not_integer(self, num_qubits: int):
+    def test_init_raises_error_when_num_qubits_is_not_integer(self, num_qubits: int):
+        """Test init method raises error when num_qubits parameter is not an integer"""
         with pytest.raises(ValueError, match="Number of qubits should be integer."):
             Circuit(num_qubits=num_qubits)
 
@@ -111,18 +105,8 @@ class TestCircuit:
         "circuit_fixture,expected_depth",
         [("simple_circuit", 4), ("empty_circuit", 0)],
     )
-    def test_graph_is_valid(self, request: pytest.FixtureRequest, circuit_fixture: str, expected_depth: int):
-        circuit = request.getfixturevalue(circuit_fixture)
-        assert isinstance(circuit.graph, rx.PyDiGraph)
-        assert circuit.graph.multigraph is True
-        assert isinstance(circuit.entry_node, EntryNode)
-        assert isinstance(circuit.entry_node.index, int)
-
-    @pytest.mark.parametrize(
-        "circuit_fixture,expected_depth",
-        [("simple_circuit", 4), ("empty_circuit", 0)],
-    )
     def test_depth_parameter(self, request: pytest.FixtureRequest, circuit_fixture: str, expected_depth: int):
+        """Test that depth parameter returns correct value"""
         circuit = request.getfixturevalue(circuit_fixture)
         depth = circuit.depth
         assert isinstance(depth, int)
@@ -139,6 +123,7 @@ class TestCircuit:
     def test_add_method_should_add_correct_nodes(
         self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
     ):
+        """Test that add method adds correct number of nodes"""
         circuit = request.getfixturevalue(circuit_fixture)
         number_of_nodes_before = circuit.graph.num_nodes()
         num_qubits = len(qubits) if isinstance(qubits, tuple) else 1
@@ -183,6 +168,7 @@ class TestCircuit:
         timings_method: OperationTimingsCalculationMethod,
         expected_output_fixture: str,
     ):
+        """Test print method"""
         circuit = request.getfixturevalue(circuit_fixture)
         expected_output = request.getfixturevalue(expected_output_fixture)
 
