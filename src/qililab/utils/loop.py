@@ -20,6 +20,7 @@ class Loop:
     options: LoopOptions
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
+    # Add values
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
