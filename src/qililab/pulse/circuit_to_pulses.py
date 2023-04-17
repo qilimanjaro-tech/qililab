@@ -102,7 +102,7 @@ class CircuitToPulses:
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
@@ -173,14 +173,15 @@ class CircuitToPulses:
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
     def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
-            port (int): Index of the chip port.
+            time (Dict[int, int]): Dictionary with the time of each qubit.
+            qubit_idx (int): Index of the qubit.
             pulse_time (int): Duration of the puls + wait time.
         """
         if qubit_idx not in time:
