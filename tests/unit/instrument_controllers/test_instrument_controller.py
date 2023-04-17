@@ -2,6 +2,9 @@
 import pytest
 import copy
 
+from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD, INSTRUMENTREFERENCE
+from qililab.typings.enums import Category
+
 from qililab.instrument_controllers import SingleInstrumentController
 from tests.data import Galadriel
 from qililab.platform import Platform
@@ -14,20 +17,28 @@ class MiController(SingleInstrumentController):
     def _initialize_device(self):
         pass
 
-@pytest.fixture(name="rohde_schwarz_controller_0")
-def fixture_rohde_schwarz_controller_0(platform: Platform):
-    """Return connected instance of rohde_schwarz_controller_0 class"""
-    settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
-    settings.pop("name")
-    return SGS100AController(settings=settings, loaded_instruments=platform.instruments)
-
 class TestConnection:
     """This class contains the unit tests for the ``InstrumentController`` class."""
     
-    def test_error_raises_when_no_modules(self, rohde_schwarz_controller_0 : SGS100AController):
-        with pytest.raises(ValueError, match="The test Instrument Controller requires at least ONE module."):
-            rohde_schwarz_controller_0.modules = []
-        
-    def test_error_raises_when_no_compatible_number_modules(self, rohde_schwarz_controller_0 : SGS100AController):
-        with pytest.raises(ValueError, match="The test Instrument Controller requires at least ONE module."):
-            rohde_schwarz_controller_0.modules = ['1', '2']
+    def test_error_raises_when_no_modules2(self, platform: Platform):
+        settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
+        settings[INSTRUMENTCONTROLLER.MODULES] = []
+        name = settings.pop(RUNCARD.NAME)
+        with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller requires at least ONE module."):
+            SGS100AController(settings=settings, loaded_instruments=platform.instruments)
+
+    def test_error_raises_when_no_compatible_number_modules(self, platform: Platform):
+        settings = copy.deepcopy(Galadriel.rohde_schwarz_controller_0)
+        settings[INSTRUMENTCONTROLLER.MODULES] = [
+            {
+                Category.SIGNAL_GENERATOR.value: "rs_0",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            },
+            {
+                Category.SIGNAL_GENERATOR.value: "rs_1",
+                INSTRUMENTREFERENCE.SLOT_ID: 1,
+            }
+        ]
+        name = settings.pop(RUNCARD.NAME)
+        with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller only supports 1 module/s.You have loaded 2 modules."):
+            SGS100AController(settings=settings, loaded_instruments=platform.instruments)
