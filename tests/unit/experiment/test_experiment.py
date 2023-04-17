@@ -25,7 +25,6 @@ from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.live_plot import LivePlot
 from tests.data import experiment_params, simulated_experiment_circuit
-from tests.side_effect import yaml_safe_load_side_effect
 from tests.utils import mock_instruments
 
 
@@ -91,8 +90,7 @@ class TestProperties:
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment_all_platforms(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -327,8 +325,7 @@ class TestSetParameter:
 
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_experiment_reset(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
