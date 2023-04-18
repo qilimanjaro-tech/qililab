@@ -26,4 +26,3 @@ class OperationNode(Node):
     qubits: Tuple[int, ...]
     alias: str | None = None
     timing: OperationTiming | None = None
-    transpiled_pulse_operation: PulseOperation | None = None

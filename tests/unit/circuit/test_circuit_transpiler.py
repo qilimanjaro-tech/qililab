@@ -7,8 +7,12 @@ import pytest
 
 from qililab.circuit import Circuit
 from qililab.circuit.circuit_transpiler import CircuitTranspiler
+from qililab.circuit.nodes.entry_node import EntryNode
+from qililab.circuit.nodes.operation_node import OperationNode
 from qililab.circuit.operations import Barrier, Measure, Reset, SquarePulse, Wait, X
 from qililab.circuit.operations.operation import Operation
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
+from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.platform import Platform
 from qililab.settings.runcard_schema import RuncardSchema
 from qililab.typings.enums import OperationMultiplicity, OperationName, OperationTimingsCalculationMethod
@@ -73,6 +77,23 @@ class TestCircuitTranspiler:
         "circuit_fixture",
         ["simple_circuit", "empty_circuit"],
     )
+    def test_remove_special_operations_method(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
+    ):
+        """Test translate_to_pulses method"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(settings=platform.settings)
+        transpiled_circuit = transpiler.remove_special_operations(circuit=circuit)
+        assert isinstance(transpiled_circuit, Circuit)
+        assert transpiled_circuit.has_special_operations_removed is True
+        for node in transpiled_circuit.graph.nodes():
+            if isinstance(node, OperationNode):
+                assert isinstance(node.operation, SpecialOperation) is False
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
     def test_translate_to_pulse_operations_method(
         self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
     ):
@@ -81,8 +102,10 @@ class TestCircuitTranspiler:
         transpiler = CircuitTranspiler(settings=platform.settings)
         transpiled_circuit = transpiler.transpile_to_pulse_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
-        assert transpiled_circuit.depth == circuit.depth
         assert transpiled_circuit.has_transpiled_to_pulses is True
+        for node in transpiled_circuit.graph.nodes():
+            if isinstance(node, OperationNode):
+                assert isinstance(node.operation, PulseOperation)
 
     def test_calculate_timings_method_raises_error_when_operation_not_supported(self, platform: Platform):
         """Test num_qubits property"""

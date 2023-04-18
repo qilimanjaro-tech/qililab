@@ -6,6 +6,7 @@ from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
+from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
@@ -79,6 +80,35 @@ class CircuitTranspiler:
         circuit.has_timings_calculated = True
         return circuit
 
+    def remove_special_operations(self, circuit: Circuit) -> Circuit:
+        """Removes special operations (Wait, Barrier, Passive Reset) from the circuit
+
+        Args:
+            circuit (Circuit): The quantum circuit
+
+        Returns:
+            Circuit: New circuit with special operations removed
+        """
+        circuit = deepcopy(circuit)
+        if not circuit.has_timings_calculated:
+            circuit = self.calculate_timings(circuit)
+        layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
+        for layer in layers:
+            for operation_node in layer:
+                if isinstance(operation_node.operation, SpecialOperation):
+                    predecessors = circuit.graph.predecessors(operation_node.index)
+                    successors = circuit.graph.successors(operation_node.index)
+                    for predecessor in predecessors:
+                        for successor in successors:
+                            predecessor_qubits = set(predecessor.qubits)
+                            successor_qubits = set(successor.qubits)
+                            node_qubits = set(operation_node.qubits)
+                            if predecessor_qubits & successor_qubits & node_qubits:
+                                circuit.graph.add_edge(predecessor.index, successor.index, None)
+                    circuit.graph.remove_node(operation_node.index)
+        circuit.has_special_operations_removed = True
+        return circuit
+
     def transpile_to_pulse_operations(self, circuit: Circuit) -> Circuit:
         """
         Transpiles the given quantum circuit into pulse operations.
@@ -91,10 +121,11 @@ class CircuitTranspiler:
         """
         circuit = deepcopy(circuit)
         if not circuit.has_timings_calculated:
-            # TODO: Discuss if we should raise an error instead
             circuit = self.calculate_timings(circuit)
+        if not circuit.has_special_operations_removed:
+            circuit = self.remove_special_operations(circuit)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
-        for index, layer in enumerate(layers):
+        for layer in layers:
             for operation_node in layer:
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
@@ -106,6 +137,6 @@ class CircuitTranspiler:
                         **pulse_operation_settings.parameters,
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
-                    operation_node.transpiled_pulse_operation = pulse_operation
+                    operation_node.operation = pulse_operation
         circuit.has_transpiled_to_pulses = True
         return circuit
