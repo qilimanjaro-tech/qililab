@@ -131,4 +131,4 @@ class SystemControl(BusElement, ABC):
             with contextlib.suppress(ParameterNotFound):
                 instrument.set_parameter(parameter, value, channel_id)
                 return
-        raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name.value}")
+        raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
