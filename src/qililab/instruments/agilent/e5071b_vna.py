@@ -57,7 +57,7 @@ class E5071B(VectorNetworkAnalyzer):
         i_0 = serialized_data.find(b"#")
         number_digits = int(serialized_data[i_0 + 1 : i_0 + 2])
         number_bytes = int(serialized_data[i_0 + 2 : i_0 + 2 + number_digits])
-        number_data = number_data = number_bytes // 4
+        number_data = number_bytes // 4
         number_points = number_data // 2
         v_data = np.frombuffer(
             serialized_data[(i_0 + 2 + number_digits) : (i_0 + 2 + number_digits + number_bytes)],
