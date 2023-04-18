@@ -4,7 +4,7 @@ from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to_pulse_operation import (
     TranslatableToPulseOperation,
 )
-from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.typings.enums import OperationName, Qubits
 from qililab.utils import classproperty
 
 
@@ -23,10 +23,10 @@ class Measure(TranslatableToPulseOperation):
         return OperationName.MEASURE
 
     @classproperty
-    def multiplicity(self) -> OperationMultiplicity:
-        """Get operation's multiplicity
+    def num_qubits(self) -> Qubits:
+        """Get number of qubits the operation can act upon
 
         Returns:
-            OperationMultiplicity: The operation's multiplicity
+            Qubits: The number of qubits the operation can act upon
         """
-        return OperationMultiplicity.MULTIPLEXED
+        return Qubits.ANY

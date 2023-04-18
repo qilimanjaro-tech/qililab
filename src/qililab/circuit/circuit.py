@@ -12,7 +12,7 @@ from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
 from qililab.circuit.operations import Operation
-from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
+from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 
 
 class Circuit:
@@ -53,34 +53,13 @@ class Circuit:
         """
         self.has_timings_calculated = False
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
-        if operation.multiplicity == OperationMultiplicity.PARALLEL:
-            self._add_parallel_operation(qubits=qubits, operation=operation, alias=alias)
-        elif operation.multiplicity in [OperationMultiplicity.CONTROLLED, OperationMultiplicity.MULTIPLEXED]:
-            self._add_multiplexed_operation(qubits=qubits, operation=operation, alias=alias)
+        if (operation.num_qubits == Qubits.ONE and len(qubits) != 1) or (
+            operation.num_qubits == Qubits.TWO and len(qubits) != 2
+        ):
+            raise ValueError("Number of qubits does not match operation's num_qubits attribute")
+        self._add_operation(qubits=qubits, operation=operation, alias=alias)
 
-    @property
-    def depth(self) -> int:
-        """Get the depth of the circuit which is essentially the number of operation layers
-
-        Returns:
-            int: The depth of the circuit
-        """
-        return len(rx.layers(self.graph, [self.entry_node.index])) - 1  # pylint: disable=no-member
-
-    def _add_parallel_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
-        """Add an operation node for each qubit
-
-        Args:
-            qubits (Tuple[int, ...]): The qubits the operations acts on
-            operation (Operation): The operation to add
-            alias (str | None, optional): Optional alias for the operation. Defaults to None.
-        """
-        for qubit in qubits:
-            _, last_operation_node = self._last_operation_of_qubit(qubit=qubit)
-            new_operation_node = self._add_operation_node(qubits=(qubit,), operation=operation, alias=alias)
-            self.graph.add_edge(last_operation_node.index, new_operation_node.index, None)
-
-    def _add_multiplexed_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
+    def _add_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
         """Adds one operation node for all qubits
 
         Args:
@@ -132,6 +111,15 @@ class Circuit:
                 if qubit in operation.qubits:
                     return index, operation
         return 0, self.entry_node
+
+    @property
+    def depth(self) -> int:
+        """Get the depth of the circuit which is essentially the number of operation layers
+
+        Returns:
+            int: The depth of the circuit
+        """
+        return len(rx.layers(self.graph, [self.entry_node.index])) - 1  # pylint: disable=no-member
 
     def get_operation_layers(
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE

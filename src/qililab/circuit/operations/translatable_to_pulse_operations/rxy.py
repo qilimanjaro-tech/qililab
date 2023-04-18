@@ -5,7 +5,7 @@ from qililab.circuit.operations.translatable_to_pulse_operations.translatable_to
     TranslatableToPulseOperation,
 )
 from qililab.typings import OperationName
-from qililab.typings.enums import OperationMultiplicity
+from qililab.typings.enums import Qubits
 from qililab.utils import classproperty
 
 
@@ -27,13 +27,13 @@ class Rxy(TranslatableToPulseOperation):
         return OperationName.RXY
 
     @classproperty
-    def multiplicity(self) -> OperationMultiplicity:
-        """Get operation's multiplicity
+    def num_qubits(self) -> Qubits:
+        """Get number of qubits the operation can act upon
 
         Returns:
-            OperationMultiplicity: The operation's multiplicity
+            Qubits: The number of qubits the operation can act upon
         """
-        return OperationMultiplicity.PARALLEL
+        return Qubits.ONE
 
     @property
     def parameters(self):

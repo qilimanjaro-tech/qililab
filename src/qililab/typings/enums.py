@@ -466,10 +466,10 @@ class Node(str, Enum):
     QUBIT_INDEX = "qubit_index"
 
 
-class OperationMultiplicity(str, Enum):
-    PARALLEL = "parallel"
-    MULTIPLEXED = "multiplexed"
-    CONTROLLED = "controlled"
+class Qubits(str, Enum):
+    ANY = "any"
+    ONE = "one"
+    TWO = "two"
 
 
 class OperationName(str, Enum):

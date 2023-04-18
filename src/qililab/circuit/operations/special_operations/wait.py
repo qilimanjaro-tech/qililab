@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
-from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.typings.enums import OperationName, Qubits
 from qililab.utils import classproperty
 
 
@@ -27,13 +27,13 @@ class Wait(SpecialOperation):
         return OperationName.WAIT
 
     @classproperty
-    def multiplicity(self) -> OperationMultiplicity:
-        """Get operation's multiplicity
+    def num_qubits(self) -> Qubits:
+        """Get number of qubits the operation can act upon
 
         Returns:
-            OperationMultiplicity: The operation's multiplicity
+            Qubits: The number of qubits the operation can act upon
         """
-        return OperationMultiplicity.MULTIPLEXED
+        return Qubits.ANY
 
     @property
     def parameters(self):

@@ -13,7 +13,7 @@ import rustworkx as rx
 from qililab.circuit import Circuit
 from qililab.circuit.nodes import EntryNode
 from qililab.circuit.operations import CPhase, DRAGPulse, GaussianPulse, Measure, Operation, Reset, SquarePulse, Wait, X
-from qililab.typings.enums import OperationMultiplicity, OperationTimingsCalculationMethod
+from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 
 
 @pytest.fixture(name="parallel_circuit")
@@ -128,13 +128,25 @@ class TestCircuit:
         """Test that add method adds correct number of nodes"""
         circuit = request.getfixturevalue(circuit_fixture)
         number_of_nodes_before = circuit.graph.num_nodes()
-        num_qubits = len(qubits) if isinstance(qubits, tuple) else 1
-        number_of_nodes_that_should_be_added = (
-            num_qubits if operation.multiplicity == OperationMultiplicity.PARALLEL else 1
-        )
         circuit.add(qubits=qubits, operation=operation)
         number_of_nodes_after = circuit.graph.num_nodes()
-        assert number_of_nodes_after == number_of_nodes_before + number_of_nodes_that_should_be_added
+        assert number_of_nodes_after == number_of_nodes_before + 1
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    @pytest.mark.parametrize(
+        "qubits,operation",
+        [((0, 1), X()), (0, CPhase(theta=90))],
+    )
+    def test_add_method_should_raise_error_when_num_qubits_dont_match(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
+    ):
+        """Test that add method raises error if trying to add an operation with less/more qubits than possible"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        with pytest.raises(ValueError):
+            circuit.add(qubits=qubits, operation=operation)
 
     @pytest.mark.parametrize(
         "circuit_fixture,timings_method,expected_output_fixture",

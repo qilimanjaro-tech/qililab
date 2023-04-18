@@ -16,7 +16,7 @@ from qililab.circuit.operations import (
     X,
 )
 from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
-from qililab.typings.enums import OperationMultiplicity
+from qililab.typings.enums import Qubits
 
 
 @pytest.fixture(
@@ -64,9 +64,9 @@ class TestOperation:
         values = operation.parameters_values
         assert isinstance(values, tuple)
 
-    def test_multiplicity_property(self, operation: Operation):
-        multiplicity = operation.multiplicity
-        assert isinstance(multiplicity, OperationMultiplicity)
+    def test_num_qubits_property(self, operation: Operation):
+        num_qubits = operation.num_qubits
+        assert isinstance(num_qubits, Qubits)
 
     def test_get_parameter_method(self, operation: Operation):
         """Test get_parameter method returns correct value"""

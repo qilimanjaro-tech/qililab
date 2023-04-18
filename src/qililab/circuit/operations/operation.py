@@ -14,7 +14,7 @@ from typing import Dict, Tuple
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.typings import OperationName
-from qililab.typings.enums import OperationMultiplicity
+from qililab.typings.enums import Qubits
 from qililab.utils import classproperty
 
 ParameterValue = int | float | bool
@@ -34,7 +34,7 @@ class Operation(ABC):
 
     @classproperty
     @abstractmethod
-    def multiplicity(self) -> OperationMultiplicity:
+    def num_qubits(self) -> Qubits:
         """Abstract property for the operation multiplicity."""
 
     @property

@@ -15,7 +15,7 @@ from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOpe
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.platform import Platform
 from qililab.settings.runcard_schema import RuncardSchema
-from qililab.typings.enums import OperationMultiplicity, OperationName, OperationTimingsCalculationMethod
+from qililab.typings.enums import OperationName, OperationTimingsCalculationMethod, Qubits
 from qililab.utils import classproperty
 
 
@@ -117,8 +117,8 @@ class TestCircuitTranspiler:
                 return OperationName.X
 
             @classproperty
-            def multiplicity(self) -> OperationMultiplicity:
-                return OperationMultiplicity.PARALLEL
+            def num_qubits(self) -> Qubits:
+                return Qubits.ONE
 
             @property
             def parameters(self):

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
-from qililab.typings.enums import OperationMultiplicity, OperationName
+from qililab.typings.enums import OperationName, Qubits
 from qililab.utils import classproperty
 
 
@@ -33,13 +33,13 @@ class DRAGPulse(PulseOperation):
         return OperationName.DRAG
 
     @classproperty
-    def multiplicity(self) -> OperationMultiplicity:
-        """Get operation's multiplicity
+    def num_qubits(self) -> Qubits:
+        """Get number of qubits the operation can act upon
 
         Returns:
-            OperationMultiplicity: The operation's multiplicity
+            Qubits: The number of qubits the operation can act upon
         """
-        return OperationMultiplicity.PARALLEL
+        return Qubits.ONE
 
     @property
     def parameters(self):
