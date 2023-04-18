@@ -47,7 +47,7 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-- The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
+* The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
 
