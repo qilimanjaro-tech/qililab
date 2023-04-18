@@ -1,4 +1,3 @@
-from qibo.gates.abstract import Gate, ParametrizedGate
 from qibo.gates.gates import _Un_
 
 

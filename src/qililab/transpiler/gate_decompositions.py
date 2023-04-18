@@ -28,16 +28,14 @@ class GateDecompositions:
         return [g.on_qubits({i: q for i, q in enumerate(gate.qubits)}) for g in decomposition]
 
 
-def translate_gate(ngates) -> list[qibo.gates.Gate]:  # TODO edit doc
-    """Maps Qibo gates to a hardware native implementation.
+def translate_gate(ngates) -> list[qibo.gates.Gate]:
+    """Maps Qibo gates to a hardware native implementation (CZ, RZ and RMW)
 
     Args:
-        gate (qibo.gates.abstract.Gate): gate to be decomposed.
-        native_gates (list): List of two qubit native gates
-            supported by the quantum hardware ("CZ" and/or "iSWAP").
+        ngates (list[qibo.gates.abstract.Gate]): list of gates to be decomposed.
 
     Returns:
-        Shortest list of native gates
+        list of native gates
     """
 
     # define supported gates (native qpu gates + virtual z + measurement)
@@ -47,47 +45,44 @@ def translate_gate(ngates) -> list[qibo.gates.Gate]:  # TODO edit doc
     if not isinstance(ngates, list):
         raise Exception("argument ngates must be a list of gates")
 
-    new_gates = []
-    # iterate through all gates
-
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
 
+    new_gates = []
+    # iterate through all gates
+    # TODO: use only one function for all gate decompositions? (consider why qibolab distinguishes nqubit gates)
     if sum(to_translate) != 0:
         for gate, tt in zip(ngates, to_translate):
             if not tt:
                 new_gates.append(gate)  # append already native gates
+            # distinguish 1 or 2 qubit gates
             elif len(gate.qubits) == 1:
                 new_gates += onequbit_dec(gate)
-            elif len(gate.qubits) == 2:
+            elif (len(gate.qubits) == 2) or (gate.name == "ccx"):
                 new_gates += cz_dec(gate)
             else:
-                raise Exception("{} qubit gates not supported".format(len(gate.qubits)))
+                raise Exception("{} qubit gates not supported (except toffoli for 3 qubits)".format(len(gate.qubits)))
         ngates = new_gates.copy()
         return translate_gate(ngates)
     return ngates
 
 
-"""
-    if isinstance(gate, gates.M):
-        return gate
-
-    if len(gate.qubits) == 1:
-        return onequbit_dec(gate)
-
-    elif len(gate.qubits) == 2:
-        return cz_dec(gate)
-"""
-
-
 def native_gates():
+    """List of native hardware gates
+
+    Returns:
+        Native gates as a tuple
+    """
     return (RMW, gates.CZ)
 
+
+# TODO: dictionary / list of supported gates
 
 # Mind that the order of the gates is "the inverse" of the operators
 # i.e. to perform the operation AB|psi> the order of the operators
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
 onequbit_dec = GateDecompositions()
+onequbit_dec.add(gates.I, [gates.RZ(0, 0)])
 onequbit_dec.add(gates.H, [RMW(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
 onequbit_dec.add(gates.X, [RMW(0, np.pi, 0)])
 onequbit_dec.add(
@@ -98,32 +93,16 @@ onequbit_dec.add(
     ],
 )
 onequbit_dec.add(gates.Z, [gates.RZ(0, np.pi)])
-onequbit_dec.add(
-    gates.RX,
-    lambda gate: [
-        RMW(0, np.pi / 2, np.pi / 2),
-        RMW(0, np.pi / 2, gate.parameters[0] / 2 - np.pi / 2),
-        gates.RZ(0, -gate.parameters[0] / 2),
-    ],
-)
-onequbit_dec.add(
-    gates.RY,
-    lambda gate: [
-        RMW(0, np.pi / 2, np.pi),
-        RMW(0, np.pi / 2, gate.parameters[0] / 2),
-        gates.RZ(0, -gate.parameters[0] / 2),
-    ],
-)
 
+onequbit_dec.add(gates.RX, lambda gate: [RMW(0, gate.parameters[0], 0)])
+onequbit_dec.add(gates.RY, lambda gate: [RMW(0, gate.parameters[0], np.pi / 2)])
 onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0] / 2)])
 onequbit_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
-onequbit_dec.add(
-    gates.U2, lambda gate: [RMW(0, np.pi / 2, gate.parameters[0]), gates.RZ(0, gate.parameters[0] + gate.parameters[1])]
-)
+onequbit_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
 onequbit_dec.add(
     gates.U3,
     lambda gate: [
-        RMW(0, gate.parameters[0], -gate.parameters[2]),
+        RMW(0, gate.parameters[0], -gate.parameters[2] + np.pi / 2),  # qibo's U3 is different from standard U3
         gates.RZ(0, gate.parameters[1] + gate.parameters[2]),
     ],
 )
