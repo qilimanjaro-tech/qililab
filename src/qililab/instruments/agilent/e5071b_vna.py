@@ -31,7 +31,7 @@ class E5071B(VectorNetworkAnalyzer):
 
     @VectorNetworkAnalyzer.electrical_delay.setter  # type: ignore
     def electrical_delay(self, time: float):
-        """Set electrical delay in channel 1hannel 1
+        """Set electrical delay in channel 1
 
         Input:
             value (str) : Electrical delay in ns
