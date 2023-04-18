@@ -10,6 +10,8 @@ from qililab.pulse import PulseBusSchedule
 from qililab.system_control import SystemControl
 from qililab.typings.enums import Category
 
+from qililab.instruments.instrument import ParameterNotFound
+
 
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
@@ -125,3 +127,8 @@ class TestProperties:
     def test_instruments_property(self, system_control: SystemControl):
         """Test instruments property."""
         assert system_control.instruments == system_control.settings.instruments
+
+    def test_error_raises_instrument_not_connected(self, system_control: SystemControl):
+        """"Test Parameter error raises if the parameter is not found."""
+        with pytest.raises(ValueError, match="Instrument QCM is not connected and cannot set the new value: 45 to the parameter voltage."):
+            system_control.set_parameter(parameter = 'voltage', value = '45', channel_id = 1)
