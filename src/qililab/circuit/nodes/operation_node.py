@@ -8,6 +8,8 @@ from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOpe
 
 @dataclass
 class OperationTiming:
+    """Class to store timings of an operation"""
+
     start: int
     end: int
 

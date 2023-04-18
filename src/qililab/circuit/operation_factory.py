@@ -1,3 +1,4 @@
+"""OperationFactory class"""
 from typing import Callable, Dict, Type
 
 
