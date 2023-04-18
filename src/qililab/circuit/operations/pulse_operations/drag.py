@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation

@@ -1,3 +1,4 @@
+"""EntryNode class"""
 from dataclasses import dataclass
 
 from qililab.circuit.nodes.node import Node

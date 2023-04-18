@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
+"""OperationNode class"""
+from dataclasses import dataclass
 from typing import Tuple
 
 from qililab.circuit.nodes.node import Node
 from qililab.circuit.operations import Operation
-from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 
 
 @dataclass
