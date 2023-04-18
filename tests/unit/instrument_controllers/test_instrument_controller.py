@@ -5,7 +5,6 @@ import copy
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD, INSTRUMENTREFERENCE
 from qililab.typings.enums import Category
 
-from qililab.instrument_controllers import SingleInstrumentController
 from tests.data import Galadriel
 from qililab.platform import Platform
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
