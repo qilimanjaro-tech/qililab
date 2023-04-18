@@ -17,7 +17,7 @@ from tests.utils import mock_instruments
 
 
 class TestExecutionManager:
-    """Unit tests checking the ExperimentManager attributes and methods."""
+    """Unit tests checking the ExecutionManager attributes and methods."""
 
     def test_waveforms_method(self, execution_manager: ExecutionManager):
         """Test waveforms method."""
