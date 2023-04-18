@@ -20,7 +20,7 @@ from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 def fixture_parallel_circuit() -> Circuit:
     """Return a circuit with parallel operations only"""
     circuit = Circuit(2)
-    circuit.add(0, SquarePulse(amplitude=1.0, duration=40, resolution=1.0))
+    circuit.add(0, SquarePulse(amplitude=1.0, duration=40))
     circuit.add(0, GaussianPulse(amplitude=1.0, duration=40, sigma=1.0))
     circuit.add(1, DRAGPulse(amplitude=1.0, duration=40, sigma=1.0, delta=2.0))
     return circuit

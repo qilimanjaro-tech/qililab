@@ -80,7 +80,7 @@ class Galadriel:
             },
             {
                 RUNCARD.NAME: "Measure",
-                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {"resolution": 1}},
+                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
             },
         ],
         "gates": [

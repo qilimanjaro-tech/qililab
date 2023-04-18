@@ -18,8 +18,6 @@ class DRAGPulse(PulseOperation):
         delta (float): delta coefficient
     """
 
-    amplitude: float
-    duration: int
     sigma: float
     delta: float
 

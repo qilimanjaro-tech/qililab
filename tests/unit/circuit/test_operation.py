@@ -30,7 +30,7 @@ from qililab.typings.enums import Qubits
         Measure(),
         Reset(),
         DRAGPulse(amplitude=1.0, duration=40, sigma=1, delta=1),
-        SquarePulse(amplitude=1.0, duration=40, resolution=1.0),
+        SquarePulse(amplitude=1.0, duration=40),
         GaussianPulse(amplitude=1.0, duration=40, sigma=1.0),
         CPhase(theta=90),
         Parking(),

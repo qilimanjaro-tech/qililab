@@ -17,8 +17,6 @@ class GaussianPulse(PulseOperation):
         sigma (float): sigma coefficient
     """
 
-    amplitude: float
-    duration: int
     sigma: float
 
     @classproperty

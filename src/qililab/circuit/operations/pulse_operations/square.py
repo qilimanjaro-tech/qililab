@@ -17,10 +17,6 @@ class SquarePulse(PulseOperation):
         resolution (float): resolution
     """
 
-    amplitude: float
-    duration: int
-    resolution: float
-
     @classproperty
     def name(self) -> OperationName:
         """Get operation's name
@@ -38,12 +34,3 @@ class SquarePulse(PulseOperation):
             Qubits: The number of qubits the operation can act upon
         """
         return Qubits.ONE
-
-    @property
-    def parameters(self):
-        """Get the names and values of all parameters as dictionary
-
-        Returns:
-            Parameters: The parameters of the operation
-        """
-        return {"amplitude": self.amplitude, "duration": self.duration, "resolution": self.resolution}
