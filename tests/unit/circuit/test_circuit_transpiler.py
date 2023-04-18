@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import pytest
 
 from qililab.circuit import Circuit
+from qililab.circuit.circuit_transpiler import CircuitTranspiler
 from qililab.circuit.operations import Barrier, Measure, Reset, SquarePulse, Wait, X
 from qililab.circuit.operations.operation import Operation
-from qililab.execution.circuit_transpiler import CircuitTranspiler
 from qililab.platform import Platform
 from qililab.settings.runcard_schema import RuncardSchema
 from qililab.typings.enums import OperationMultiplicity, OperationName, OperationTimingsCalculationMethod

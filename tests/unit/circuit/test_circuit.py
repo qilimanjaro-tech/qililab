@@ -2,8 +2,10 @@
 
 """Tests for the Operation class."""
 import io
+import os
 from contextlib import redirect_stdout
 from typing import Tuple
+from unittest.mock import patch
 
 import pytest
 import rustworkx as rx
@@ -178,3 +180,26 @@ class TestCircuit:
             printed_output = buf.getvalue()
 
         assert printed_output == expected_output
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_draw_save_to_file(self, tmpdir, request: pytest.FixtureRequest, circuit_fixture: str):
+        """Test that draw method is saving to file when filename is provided"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        output_file = str(tmpdir.join(f"{circuit_fixture}.png"))
+        circuit.draw(filename=output_file)
+        assert os.path.exists(output_file), f"Output file {output_file} does not exist."
+        os.remove(output_file)
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_draw_display_image(self, monkeypatch, request: pytest.FixtureRequest, circuit_fixture: str):
+        """Test that draw method is displaying the image when filename is not provided"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        with patch("PIL.Image.Image.show") as mock_show:
+            circuit.draw()
+            mock_show.assert_called_once()

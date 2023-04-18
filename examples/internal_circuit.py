@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from qililab import Circuit, Measure, QiliQasmConverter, Wait, X, build_platform
-from qililab.execution.circuit_transpiler import CircuitTranspiler
+from qililab.circuit.circuit_transpiler import CircuitTranspiler
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import OperationTimingsCalculationMethod
 

@@ -37,6 +37,58 @@ This document contains the changes of the current release.
 - Added `get_bus_by_qubit_index` method to the `Platform` class.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
+- Added `circuit` module, which contains everything related to Qililab's internal circuit representation.
+
+  The module contains the following submodules:
+
+  - `circuit/converters`: Contains classes that can convert from external circuit representation to Qililab's internal circuit representation and vice versa.
+  - `circuit/nodes`: Contains classes representing graph nodes that are used in circuit's internal graph data structure.
+  - `circuit/operations`: Contains classes representing operations that can be added to the circuit.
+    [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
+- Added `Circuit` class for representing quantum circuits. The class stores the quantum circuit as a directed acyclic graph (DAG) using the `rustworkx` library for manipulation. It offers methods to add operations to the circuit, calculate the circuit's depth, and visualize the circuit. Example usage:
+
+  ```python
+  # create a Circuit with two qubits
+  circuit = Circuit(2)
+
+  # add operations
+  for qubit in [0, 1]:
+      circuit.add(qubit, X())
+  circuit.add(0, Wait(t=100))
+  circuit.add(0, X())
+  circuit.add((0, 1), Measure())
+
+  # print depth of circuit
+  print(f"Depth: {circuit.depth}")
+
+  # print circuit
+  circuit.print()
+
+  # draw circuit's graph
+  circuit.draw()
+  ```
+
+  [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
+- Added `OperationFactory` class to register and retrieve operation classes based on their names.
+  [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
+- Added `CircuitTranspiler` class for calculating operation timings and transpiling quantum circuits into pulse operations. The `calculate_timings()` method annotates operations in the circuit with timing information by evaluating start and end times for each operation. The `transpile_to_pulse_operations()` method then transpiles the quantum circuit operations into pulse operations, taking into account the calculated timings. Example usage:
+
+  ```python
+  # create the transpiler
+  transpiler = CircuitTranspiler(settings=platform.settings)
+
+  # calculate timings
+  circuit_ir1 = transpiler.calculate_timings(circuit)
+
+  # transpile operations to pulse operations
+  circuit_ir2 = transpiler.transpile_to_pulse_operations(circuit_ir1)
+  ```
+
+  [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
