@@ -35,9 +35,6 @@ class E5071B(VectorNetworkAnalyzer):
 
         Input:
             value (str) : Electrical delay in ns
-
-        Example:
-            value = '100E-9' for 100ns
         """
         self.settings.electrical_delay = time
         self.send_command("CALC:MEAS:CORR:EDEL:TIME", f"{time}")

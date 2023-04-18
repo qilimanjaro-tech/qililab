@@ -80,7 +80,6 @@ class E5080B(VectorNetworkAnalyzer):
 
         Input:
             value (str) : Electrical delay in ns
-                example: value = '100E-9' for 100ns
         """
         self.settings.electrical_delay = value
         etime = f"{self.settings.electrical_delay:.12f}"

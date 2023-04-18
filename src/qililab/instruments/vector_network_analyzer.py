@@ -175,12 +175,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):
     @scattering_parameter.setter
     def scattering_parameter(self, value: str, channel=1):
         """sets the scattering parameter"""
-        if value in {"S11", "S12", "S21", "S22"}:
-            self.settings.scattering_parameter = VNAScatteringParameters(value)
-            scat_par = self.settings.scattering_parameter.value
-            self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
-            return
-        raise ValueError(f"Invalid swescattering parameter value: {value}")
+        self.settings.scattering_parameter = VNAScatteringParameters(value)
+        scat_par = self.settings.scattering_parameter.value
+        self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
 
     @property
     def frequency_span(self):
