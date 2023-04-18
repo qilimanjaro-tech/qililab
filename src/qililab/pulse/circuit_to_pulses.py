@@ -50,7 +50,7 @@ class CircuitToPulses:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-            if readout_gate is not None:
+            for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(
                         time=time, readout_gate=readout_gate, qubit_idx=qubit_idx, chip=chip
