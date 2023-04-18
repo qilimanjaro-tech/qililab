@@ -192,7 +192,7 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=self.nshots)
+        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
@@ -217,7 +217,7 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=self.nshots)
+        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())

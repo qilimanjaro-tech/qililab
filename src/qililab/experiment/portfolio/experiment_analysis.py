@@ -1,6 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-from abc import ABC, abstractmethod
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
@@ -11,9 +10,12 @@ from scipy.optimize import curve_fit
 from qililab.experiment.experiment import Experiment
 from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
+from qililab.utils import Loop
+
+from .fitting_models import FittingModel
 
 
-class ExperimentAnalysis(ABC, Experiment):
+class ExperimentAnalysis(Experiment, FittingModel):
     """Class used to analyze the results of an experiment. The analysis of an experiment consist of the following steps:
 
     1. Acquire results: either by running an experiment or loading one.
@@ -27,6 +29,9 @@ class ExperimentAnalysis(ABC, Experiment):
         options (ExperimentOptions): options of the experiment
         control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
         readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
+        experiment_loop (Loop, optional): external loop used in the experiment. This argument can be used for
+            experiments that use a loop to define multiple circuits, such as the Flipping Sequence experiment.
+            Defaults to None.
     """
 
     post_processed_results: np.ndarray
@@ -39,7 +44,17 @@ class ExperimentAnalysis(ABC, Experiment):
         options: ExperimentOptions,
         control_bus: Bus | None = None,  # TODO: This will probably change for 2-qubit experiments
         readout_bus: Bus | None = None,
+        experiment_loop: Loop | None = None,
     ):
+        if experiment_loop is None:
+            if options.loops is None:
+                raise ValueError(
+                    "A loop must be provided. Either an experiment loop in the `ExperimentOptions` class, or "
+                    "an external loop in the `experiment_loop` argument."
+                )
+            self.loop = options.loops[0]  # TODO: Support nested loops
+        else:
+            self.loop = experiment_loop
         self.control_bus = control_bus
         self.readout_bus = readout_bus
         super().__init__(platform=platform, circuits=circuits, options=options)
@@ -76,33 +91,12 @@ class ExperimentAnalysis(ABC, Experiment):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-        # TODO: Support nested loops
-        loops = self.options.loops
-        if loops is None:
-            raise ValueError("The experiment must have at least one loop.")
-        if len(loops) > 1:
-            raise ValueError("Analysis of nested loops is not supported.")
+
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=loops[0].range, ydata=self.post_processed_results, p0=p0
+            self.func, xdata=self.loop.range, ydata=self.post_processed_results, p0=p0
         )
 
         return self.popt
-
-    @staticmethod
-    @abstractmethod
-    def func(xdata: np.ndarray, *args):
-        """The model function, func(x, …) used to fit the post-processed data.
-
-        It must take the independent variable as the first argument and the parameters to fit as separate remaining
-        arguments.
-
-        Args:
-            xdata (np.ndarray): independent variable
-            *args: parameters to fit
-
-        Returns:
-            np.ndarray: model function evaluated at xdata
-        """
 
     def plot(self):
         """Method used to plot the results of an experiment.
@@ -114,30 +108,20 @@ class ExperimentAnalysis(ABC, Experiment):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-        # Get loop data
-        # TODO: Support nested loops
-        loops = self.options.loops
-        if loops is None:
-            raise ValueError("The experiment must have at least one loop.")
-        if len(loops) > 1:
-            raise ValueError("Analysis of nested loops is not supported.")
-
-        loop = loops[0]
-        x_axis = loop.range
+        xdata = self.loop.range
 
         # Plot data
         fig, axes = plt.subplots(figsize=(9, 7))
         axes.set_title(self.options.name)
-        axes.set_xlabel(f"{loop.alias}: {loop.parameter.value}")
+        axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
         axes.set_ylabel(f"{self.options.plot_y_label}")
-        axes.scatter(x_axis, self.post_processed_results, color="blue")
+        axes.scatter(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
             # Create label text
             args = list(inspect.signature(self.func).parameters.keys())[1:]
             text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
-            axes.plot(x_axis, self.func(x_axis, *self.popt), "--", label=text, color="red")
-
-        axes.legend(loc="upper right")
+            axes.plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
+            axes.legend(loc="upper right")
         return fig
 
     def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:

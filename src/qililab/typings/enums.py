@@ -353,6 +353,7 @@ class Parameter(str, Enum):
     OFFSET_OUT2 = "offset_out2"
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
+    NUM_FLIPS = "num_flips"
 
 
 class ResultName(str, Enum):

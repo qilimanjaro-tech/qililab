@@ -192,6 +192,7 @@ class Experiment:
         """
         if loops is None or len(loops) == 0:
             self.execution.compile(idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration)
+            self.execution.upload()
             result = self.execution.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)
