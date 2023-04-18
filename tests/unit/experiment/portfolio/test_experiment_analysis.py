@@ -8,7 +8,7 @@ from qibo.models import Circuit
 
 from qililab import build_platform
 from qililab.experiment.portfolio import ExperimentAnalysis, FittingModel
-from qililab.typings import ExperimentOptions, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel
 
@@ -49,7 +49,7 @@ def fixture_experiment_analysis():
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=START, stop=STOP, num=NUM),
+        range=np.linspace(start=START, stop=STOP, num=NUM),
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
