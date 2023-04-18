@@ -72,11 +72,6 @@ class LoopOptions:
             dict: Dictionary representation of the class.
         """
         return {
-            LOOP.START: self.start,
-            LOOP.STOP: self.stop,
-            LOOP.NUM: self.num,
-            LOOP.STEP: self.step,
-            LOOP.LOGARITHMIC: self.logarithmic,
             LOOP.CHANNEL_ID: self.channel_id,
-            LOOP.VALUES: list(self.values) if self.values is not None else None,
+            LOOP.RANGE: list(self.values) if self.values is not None else None,
         }

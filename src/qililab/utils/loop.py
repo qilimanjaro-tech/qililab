@@ -1,14 +1,13 @@
 """Loop class."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
 
 from qililab.constants import LOOP
 from qililab.typings.enums import Parameter
-from qililab.typings.loop import LoopOptions
 
 
 @dataclass
@@ -17,39 +16,19 @@ class Loop:
 
     alias: str
     parameter: Parameter
-    options: LoopOptions
+    range: np.ndarray
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
-    # Add values
+    channel_id: int | None = None
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""
-        if isinstance(self.options, dict):
-            self.options = LoopOptions(**self.options)  # pylint: disable=not-a-mapping
         if self.loop is not None:
             if isinstance(self.loop, dict):
                 self.loop = Loop(**self.loop)
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
-
-    @property
-    def range(self) -> np.ndarray:
-        """Loop 'range' property.
-
-        Returns:
-            ndarray: Range of values of first loop.
-        """
-        if self.values is not None:
-            return self.values
-        if self.logarithmic and self.num is not None:
-            return np.geomspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
-        if self.num is not None:
-            return np.linspace(start=self.start, stop=self.stop, num=self.num)  # type: ignore
-        if self.step is not None:
-            return np.arange(start=self.start, stop=self.stop, step=self.step)
-
-        raise ValueError("Please specify either 'step' or 'num' arguments.")
 
     @property
     def ranges(self) -> np.ndarray:
@@ -71,10 +50,7 @@ class Loop:
         shape = []
         loop: Loop | None = self
         while loop is not None:
-            if loop.num is not None:
-                shape.append(int(loop.num))
-            elif loop.step is not None:
-                shape.append(int(np.ceil((loop.stop - loop.start) / loop.step)))
+            shape.append(int(loop.num))
             loop = loop.loop
         return shape
 
@@ -124,45 +100,22 @@ class Loop:
         return {
             LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.OPTIONS: asdict(self.options),
+            LOOP.RANGE: self.range,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
+            LOOP.CHANNEL_ID: self.channel_id,
         }
 
     @property
     def start(self):
         """returns 'start' options property."""
-        if self.options.start is None:
-            raise ValueError("'start' cannot be None")
-        return self.options.start
+        return self.range[0]
 
     @property
     def stop(self):
         """returns 'stop' options property."""
-        if self.options.stop is None:
-            raise ValueError("'stop' cannot be None")
-        return self.options.stop
+        return self.range[-1]
 
     @property
     def num(self):
         """returns 'num' options property."""
-        return self.options.num
-
-    @property
-    def step(self):
-        """returns 'step' options property."""
-        return self.options.step
-
-    @property
-    def logarithmic(self):
-        """returns 'logarithmic' options property."""
-        return self.options.logarithmic
-
-    @property
-    def channel_id(self):
-        """returns 'channel_id' options property."""
-        return self.options.channel_id
-
-    @property
-    def values(self):
-        """returns 'values' options property."""
-        return self.options.values
+        return len(self.range)

@@ -127,16 +127,10 @@ class LOOP:
 
     LOOP = "loop"
     PARAMETER = "parameter"
-    START = "start"
-    STOP = "stop"
     ALIAS = "alias"
-    NUM = "num"
-    STEP = "step"
-    LOGARITHMIC = "logarithmic"
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
-    VALUES = "values"
-    OPTIONS = "options"
+    RANGE = "range"
 
 
 class PULSESCHEDULES:
