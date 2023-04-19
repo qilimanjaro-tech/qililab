@@ -90,9 +90,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         if sequencer in self.sequences:
             sequence_uploaded = self.sequences[sequencer][1]
             if sequence_uploaded:
-                self.device.delete_acquisition_data(
-                    sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-                )
+                self.device.delete_acquisition_data(sequencer=sequencer, name="default")
         return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:
@@ -169,6 +167,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
+        scope_already_stored = False
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             flags = self.device.get_sequencer_state(
@@ -180,14 +179,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
             if sequencer.scope_store_enabled:
-                self.device.store_scope_acquisition(
-                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
-                )
+                if scope_already_stored:
+                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+                scope_already_stored = True
+                self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)[
-                self.acquisition_name(sequencer_id=sequencer.identifier)
-            ]["acquisition"]
+            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
             for sequencer in self.awg_sequencers
         ]
 
@@ -196,10 +194,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = (
-            0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
-        )  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        loop.append_component(Acquire(acq_index=0, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -215,18 +210,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             int: settings.integration_length.
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
-
-    def acquisition_name(self, sequencer_id: int) -> str:
-        """QbloxPulsarQRM 'acquisition_name' property:
-
-        Returns:
-            str: Name of the acquisition. Options are "single" or "binning".
-        """
-        return (
-            "single"
-            if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging
-            else "binning"
-        )
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
