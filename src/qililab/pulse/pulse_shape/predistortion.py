@@ -13,7 +13,7 @@ from qililab.utils import Factory
 
 @Factory.register
 @dataclass(unsafe_hash=True, eq=True)
-class Predistortion(PulseShape):
+class Predistortion(PulseShape, frozen = True):
     """Predistortion pulse shape (bias tee + filter)."""
 
     name = PulseShapeName.PREDISTORTION
