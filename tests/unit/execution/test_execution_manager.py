@@ -274,7 +274,7 @@ class TestWorkflow:
         # Test that the run method returns a ``Result`` object
         result = mocked_execution_manager.run(plot=None, path=None)
         assert isinstance(result, QbloxResult)
-        assert result.qblox_raw_results == [qblox_acquisition["single"]["acquisition"]]
+        assert result.qblox_raw_results == [qblox_acquisition["default"]["acquisition"]]
 
         # Make sure the mocked devices were called
         readout_awgs = [
