@@ -205,6 +205,11 @@ class PulseShapeSettingsName(str, Enum):
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
     TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    TAU_EXPONENTIAL1 = "tau_exponential1"
+    TAU_EXPONENTIAL2 = "tau_exponential2"
+    AMP = "amp"
+    B = "b"
 
 
 class NodeName(str, Enum):
