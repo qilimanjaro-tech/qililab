@@ -23,7 +23,7 @@ class BiasTeeCorrection(PulseShape):
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Distorted square envelope.
         
-        Corrects for a bias tee using a linear IIR filter with time connstant tau.
+        Corrects for a bias tee using a linear IIR filter with time constant tau.
         
         Args:
             duration (int): Duration of the pulse (ns).
