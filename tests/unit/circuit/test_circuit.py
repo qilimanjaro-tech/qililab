@@ -138,6 +138,26 @@ class TestCircuit:
     )
     @pytest.mark.parametrize(
         "qubits,operation",
+        [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset()), ((0, 1), Measure()), ((0, 1), CPhase(theta=90))],
+    )
+    def test_add_method_should_reset_transpilation_flags(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
+    ):
+        circuit: Circuit = request.getfixturevalue(circuit_fixture)
+        circuit.has_timings_calculated = True
+        circuit.has_special_operations_removed = True
+        circuit.has_transpiled_to_pulses = True
+        circuit.add(qubits=qubits, operation=operation)
+        assert circuit.has_timings_calculated is False
+        assert circuit.has_special_operations_removed is False
+        assert circuit.has_transpiled_to_pulses is False
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    @pytest.mark.parametrize(
+        "qubits,operation",
         [((0, 1), X()), (0, CPhase(theta=90))],
     )
     def test_add_method_should_raise_error_when_num_qubits_dont_match(

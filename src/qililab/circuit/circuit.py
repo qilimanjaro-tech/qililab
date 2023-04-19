@@ -51,7 +51,7 @@ class Circuit:
             operation (Operation): The operation to add
             alias (str | None, optional): Optional alias for the operation. Defaults to None.
         """
-        self.has_timings_calculated = False
+        self._reset_transpilation_flags()
         qubits = qubits if isinstance(qubits, tuple) else (qubits,)
         if (operation.num_qubits == Qubits.ONE and len(qubits) != 1) or (
             operation.num_qubits == Qubits.TWO and len(qubits) != 2
@@ -111,6 +111,12 @@ class Circuit:
                 if qubit in operation.qubits:
                     return index, operation
         return 0, self.entry_node
+
+    def _reset_transpilation_flags(self) -> None:
+        """Reset the flags used for transpilation process"""
+        self.has_timings_calculated = False
+        self.has_special_operations_removed = False
+        self.has_transpiled_to_pulses = False
 
     @property
     def depth(self) -> int:
