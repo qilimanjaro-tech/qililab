@@ -40,6 +40,7 @@ def fixture_qrm_two_scopes():
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
     extra_sequencer = copy.deepcopy(settings[AWGTypes.AWG_SEQUENCERS.value][0])
     extra_sequencer[AWGSequencerTypes.IDENTIFIER.value] = 1
+    settings[Parameter.NUM_SEQUENCERS.value] += 1
     settings[AWGTypes.AWG_SEQUENCERS.value].append(extra_sequencer)
     settings.pop("name")
     return QbloxQRM(settings=settings)
