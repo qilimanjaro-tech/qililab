@@ -143,6 +143,7 @@ class TestCircuit:
     def test_add_method_should_reset_transpilation_flags(
         self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
     ):
+        """Test that add method resets transpilation flags"""
         circuit: Circuit = request.getfixturevalue(circuit_fixture)
         circuit.has_timings_calculated = True
         circuit.has_special_operations_removed = True
