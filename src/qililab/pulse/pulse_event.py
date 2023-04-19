@@ -17,14 +17,17 @@ class PulseEvent:
 
     @property
     def duration(self) -> int:
+        """Duration of the pulse in ns."""
         return self.pulse.duration
 
     @property
     def end_time(self) -> int:
+        """End time of the pulse in ns."""
         return self.start_time + self.duration
 
     @property
     def frequency(self) -> float:
+        """Frequency of the pulse in Hz."""
         return self.pulse.frequency
 
     def modulated_waveforms(self, resolution: float = 1.0, frequency: float = 0.0) -> Waveforms:

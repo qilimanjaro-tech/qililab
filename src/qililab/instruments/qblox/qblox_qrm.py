@@ -26,6 +26,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """
 
     name = InstrumentName.QBLOX_QRM
+    _scoping_sequencer: int | None = None
 
     @dataclass
     class QbloxQRMSettings(
@@ -80,6 +81,19 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
+    def _obtain_scope_sequencer(self):
+        """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
+
+        Raises:
+            ValueError: The scope can only be stores in one sequencer at a time.
+        """
+        for sequencer in self.awg_sequencers:
+            if sequencer.scope_store_enabled:
+                if self._scoping_sequencer is None:
+                    self._scoping_sequencer = sequencer.identifier
+                else:
+                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+
     def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
         """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
         the cache and the saved sequences.
@@ -120,6 +134,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not string
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
@@ -146,6 +162,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not bool
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
