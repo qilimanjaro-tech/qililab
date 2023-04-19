@@ -157,7 +157,7 @@ class Instrument(BusElement, ABC):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name.value}")
+        raise ParameterNotFound(f"Could not find parameter {parameter} in instrument {self.name}")
 
     @CheckDeviceInitialized
     @abstractmethod
