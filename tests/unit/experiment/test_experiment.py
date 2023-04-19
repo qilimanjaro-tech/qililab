@@ -132,7 +132,7 @@ class TestMethods:
         # Check that the ``pulse_schedules`` attribute is NOT empty
         assert len(experiment.pulse_schedules) == len(experiment.circuits)
         # Check that new attributes are created
-        assert isinstance(experiment.execution, ExecutionManager)
+        assert isinstance(experiment.execution_manager, ExecutionManager)
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         if experiment.platform.connection is None:
@@ -148,7 +148,7 @@ class TestMethods:
         assert isinstance(sequences, list)
         assert len(sequences) == len(experiment.circuits)
         sequence = sequences[0]
-        buses = experiment.execution.buses
+        buses = experiment.execution_manager.buses
         assert len(sequence) == len(buses)
         for alias, bus_sequences in sequence.items():
             assert alias in {bus.alias for bus in buses}
@@ -162,7 +162,7 @@ class TestMethods:
     def test_compile_raises_error(self, experiment: Experiment):
         """Test that the ``compile`` method of the ``Experiment`` class raises an error when ``build_execution`` is
         not called."""
-        with pytest.raises(ValueError, match="Please build the execution before compilation"):
+        with pytest.raises(ValueError, match="Please build the execution_manager before compilation"):
             experiment.compile()
 
     def test_run_without_data_path_raises_error(self, experiment: Experiment):
@@ -193,7 +193,7 @@ class TestMethods:
 
     def test_run_raises_error(self, experiment: Experiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution before running an experiment"):
+        with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             experiment.run()
 
     def test_turn_on_instruments(self, connected_experiment: Experiment):
@@ -205,7 +205,7 @@ class TestMethods:
 
     def test_turn_on_instruments_raises_error(self, experiment: Experiment):
         """Test that the ``turn_on_instruments`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution before turning on the instruments"):
+        with pytest.raises(ValueError, match="Please build the execution_manager before turning on the instruments"):
             experiment.turn_on_instruments()
 
     def test_turn_off_instruments(self, connected_experiment: Experiment):
@@ -217,7 +217,7 @@ class TestMethods:
 
     def test_turn_off_instruments_raises_error(self, experiment: Experiment):
         """Test that the ``turn_off_instruments`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution before turning off the instruments"):
+        with pytest.raises(ValueError, match="Please build the execution_manager before turning off the instruments"):
             experiment.turn_off_instruments()
 
     def test_disconnect(self, experiment: Experiment):
@@ -252,7 +252,7 @@ class TestMethods:
 
     def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution before drawing the experiment"):
+        with pytest.raises(ValueError, match="Please build the execution_manager before drawing the experiment"):
             experiment.draw()
 
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
