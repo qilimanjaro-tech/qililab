@@ -268,7 +268,7 @@ class QbloxModule(AWG):
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
 
         Returns:
