@@ -9,4 +9,5 @@ from .exponential_decay_correction_v2 import ExponentialCorrectionV2
 from .exponential_decay_correction_v3 import ExponentialCorrectionV3
 from .exponential_decay_correction_loop import ExponentialCorrectionLoop
 from .exponential_decay_correction_loop_v2 import ExponentialCorrectionLoopV2
+from .flux_predistortion import FluxPredistortion
 from .predistortion import Predistortion
