@@ -19,7 +19,7 @@ circuit.add((0, 1), Barrier())
 circuit.add(0, X())
 circuit.add(1, X())
 circuit.add((0, 1), Measure())
-circuit.add((0, 1), Reset())
+# circuit.add((0, 1), Reset())
 
 # circuit = Circuit(2)
 # circuit.add((0, 1), X())
@@ -57,7 +57,7 @@ circuit_ir1 = transpiler.calculate_timings(circuit)
 circuit_ir1.draw()
 
 # remove special operations
-circuit_ir2 = transpiler.remove_special_operations(circuit)
+circuit_ir2 = transpiler.remove_special_operations(circuit_ir1)
 circuit_ir2.draw()
 # print(circuit_ir2.graph.nodes())
 

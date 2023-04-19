@@ -24,8 +24,7 @@ settings:
         name: Square
         amplitude: 1.0
         duration: 6000
-        parameters:
-          resolution: 1.0
+        parameters: {}
   gates:
     - name: M
       amplitude: 1.0
