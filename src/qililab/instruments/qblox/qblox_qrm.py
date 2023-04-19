@@ -201,7 +201,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
-        scope_already_stored = False
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             flags = self.device.get_sequencer_state(
@@ -213,9 +212,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
             if sequencer.scope_store_enabled:
-                if scope_already_stored:
-                    raise ValueError("The scope can only be stored in one sequencer at a time.")
-                scope_already_stored = True
                 self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [

@@ -11,6 +11,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQRM
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
@@ -30,6 +31,16 @@ def fixture_pulsar_controller_qrm(platform: Platform):
 def fixture_qrm_no_device():
     """Return an instance of QbloxQRM class"""
     settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+    settings.pop("name")
+    return QbloxQRM(settings=settings)
+
+
+@pytest.fixture(name="qrm_two_scopes")
+def fixture_qrm_two_scopes():
+    settings = copy.deepcopy(Galadriel.qblox_qrm_0)
+    extra_sequencer = copy.deepcopy(settings[AWGTypes.AWG_SEQUENCERS.value][0])
+    extra_sequencer[AWGSequencerTypes.IDENTIFIER.value] = 1
+    settings[AWGTypes.AWG_SEQUENCERS.value].append(extra_sequencer)
     settings.pop("name")
     return QbloxQRM(settings=settings)
 
@@ -104,6 +115,11 @@ class TestQbloxQRM:
         qrm.device.sequencer0.sync_en.assert_called_with(qrm.awg_sequencers[0].sync_enabled)
         qrm.device.sequencer0.demod_en_acq.assert_called()
         qrm.device.sequencer0.integration_length_acq.assert_called()
+
+    def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
+        """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
+        with pytest.raises(ValueError, match="The scope can only be stored in one sequencer at a time."):
+            qrm_two_scopes._obtain_scope_sequencer()
 
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
