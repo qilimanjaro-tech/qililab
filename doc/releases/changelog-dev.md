@@ -13,8 +13,8 @@ This document contains the changes of the current release.
 - Added `Rabi` portfolio experiment. Here is a usage example:
 
   ```python
-  loop_options = LoopOptions(start=0, stop=1, step=0.1)
-  rabi = Rabi(platform=platform, qubit=0, loop_options=loop_options)
+  loop_range = np.linspace(start=0, stop=1, step=0.1)
+  rabi = Rabi(platform=platform, qubit=0, range=loop_range)
   rabi.turn_on_instruments()
 
   bus_parameters = {Parameter.GAIN: 0.8, Parameter.FREQUENCY: 5e9}

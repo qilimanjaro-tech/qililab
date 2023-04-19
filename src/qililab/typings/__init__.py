@@ -30,5 +30,4 @@ from .instruments import (
     QcmQrm,
     RohdeSchwarzSGS100A,
 )
-from .loop import LoopOptions
 from .yaml_type import yaml

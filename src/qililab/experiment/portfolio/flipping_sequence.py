@@ -4,7 +4,7 @@ from qibo.gates import RX, M, X
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
@@ -21,7 +21,7 @@ class FlippingSequence(ExperimentAnalysis, CosFunc):
     Args:
         platform (Platform): platform used to run the experiment
         qubit (int): qubit index used in the experiment
-        loop_options (LoopOptions): options of the loop used in the experiment, which determines the number of flips
+        loop_range (numpy.ndarray): range of values to loop through in the experiment, which determines the number of flips
         repetition_duration (int, optional): duration of a single repetition in nanoseconds. Defaults to 10000.
         hardware_average (int, optional): number of repetitions used to average the result. Defaults to 10000.
     """
@@ -30,12 +30,12 @@ class FlippingSequence(ExperimentAnalysis, CosFunc):
         self,
         platform: Platform,
         qubit: int,
-        loop_options: LoopOptions,
+        loop_range: np.ndarray,
         repetition_duration=10000,
         hardware_average=10000,
     ):
         # Define circuits used in this experiment
-        loop = Loop(alias="N", parameter=Parameter.NUM_FLIPS, options=loop_options)
+        loop = Loop(alias="N", parameter=Parameter.NUM_FLIPS, range=loop_range)
         circuits = []
         for n in loop.range:
             circuit = Circuit(1)
