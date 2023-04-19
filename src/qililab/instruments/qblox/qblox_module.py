@@ -116,6 +116,23 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
+    def _split_schedule_for_sequencers(self, pulse_bus_schedule: PulseBusSchedule) -> List[PulseBusSchedule]:
+        """Returns a list of single-frequency PulseBusSchedules for each sequencer.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): schedule to split.
+
+        Raises:
+            IndexError: if the number of sequencers does not match the number of AWG Sequencers
+
+        Returns:
+            List[PulseBusSchedule]: list of single-frequency PulseBusSchedules for each sequencer.
+        """
+        frequencies = pulse_bus_schedule.frequencies()
+        if len(frequencies) > self._NUM_MAX_SEQUENCERS:
+            raise IndexError(f"The number of frequencies must be less or equal than {self._NUM_MAX_SEQUENCERS}")
+        return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
+
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
@@ -137,11 +154,12 @@ class QbloxModule(AWG):
             self.repetition_duration = repetition_duration
             self.clear_cache()
 
+        sequencers_pulse_bus_schedule = self._split_schedule_for_sequencers(pulse_bus_schedule=pulse_bus_schedule)
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer in sequencers:
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
-                sequence = self._compile(pulse_bus_schedule, sequencer)
+                sequence = self._compile(sequencers_pulse_bus_schedule[sequencer], sequencer)
                 compiled_sequences.append(sequence)
             else:
                 compiled_sequences.append(self.sequences[sequencer][0])
@@ -154,6 +172,10 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
+        if (n_freqs := len(pulse_bus_schedule.frequencies())) != 1:
+            raise ValueError(
+                f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
+            )
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         self._cache[sequencer] = pulse_bus_schedule
         self.sequences[sequencer] = (sequence, False)
@@ -259,8 +281,7 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
-        # acquisitions.add(name="bins", num_bins=self._MAX_BINS, index=1)
+        acquisitions.add(name="default", num_bins=1, index=0)
         return acquisitions
 
     @abstractmethod

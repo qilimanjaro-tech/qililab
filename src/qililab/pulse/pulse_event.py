@@ -17,26 +17,30 @@ class PulseEvent:
 
     @property
     def duration(self) -> int:
+        """Duration of the pulse in ns."""
         return self.pulse.duration
 
     @property
     def end_time(self) -> int:
+        """End time of the pulse in ns."""
         return self.start_time + self.duration
 
     @property
     def frequency(self) -> float:
+        """Frequency of the pulse in Hz."""
         return self.pulse.frequency
 
-    def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
+    def modulated_waveforms(self, resolution: float = 1.0, frequency: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
+            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
-        return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time)
+        return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time, frequency=frequency)
 
     def to_dict(self):
         """Return dictionary of pulse.

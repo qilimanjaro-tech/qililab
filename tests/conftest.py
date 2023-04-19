@@ -122,6 +122,29 @@ def fixture_pulse_event() -> PulseEvent:
     return PulseEvent(pulse=pulse, start_time=0)
 
 
+@pytest.fixture(name="big_pulse_bus_schedule")
+def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
+    """Load PulseBusSchedule with 10 different frequencies.
+
+    Returns:
+        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
+    """
+    timeline = [
+        PulseEvent(
+            pulse=Pulse(
+                amplitude=1,
+                phase=0,
+                duration=1000,
+                frequency=7.0e9 + n * 0.1e9,
+                pulse_shape=Gaussian(num_sigmas=5),
+            ),
+            start_time=0,
+        )
+        for n in range(10)
+    ]
+    return PulseBusSchedule(timeline=timeline, port=0)
+
+
 @pytest.fixture(name="simulated_platform")
 @patch("qililab.system_control.simulated_system_control.Evolution", autospec=True)
 def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:

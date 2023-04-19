@@ -37,6 +37,12 @@ This document contains the changes of the current release.
 - Added `get_bus_by_qubit_index` method to the `Platform` class.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
+- Added support for automatic classification of Pulses with different frequency to different sequencers.
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+  
+- Added an optional parameter "frequency" to the "modulated_waveforms" method of the Pulse and PulseEvent classes, allowing for specification of a modulation frequencydifferent from that of the Pulse.
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
