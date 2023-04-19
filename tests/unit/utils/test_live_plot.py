@@ -2,11 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qiboconnection.api import API
 
 from qililab.typings.enums import Parameter
-from qililab.typings.loop import LoopOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
@@ -27,7 +27,7 @@ def fixture_create_one_loop() -> Loop:
     Returns:
         Loop: created loop
     """
-    return Loop(alias="rs_0", parameter=Parameter.LO_FREQUENCY, options=LoopOptions(start=0.2, stop=1.2, num=10))
+    return Loop(alias="rs_0", parameter=Parameter.LO_FREQUENCY, range=np.linspace(start=0.2, stop=1.2, num=10))
 
 
 @pytest.fixture(name="another_loop")
@@ -36,7 +36,7 @@ def fixture_create_another_loop() -> Loop:
     Returns:
         Loop: created loop
     """
-    return Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+    return Loop(alias="X", parameter=Parameter.GAIN, range=np.linspace(start=100, stop=1000, num=50))
 
 
 class TestLivePlot:
@@ -55,9 +55,7 @@ class TestLivePlot:
 
     def test_live_plot_ranges_with_two_loops(self, connection: API, one_loop: Loop):
         """test live plot ranges with two loops"""
-        loop = Loop(
-            alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50), loop=one_loop
-        )
+        loop = Loop(alias="X", parameter=Parameter.GAIN, range=np.linspace(start=100, stop=1000, num=50), loop=one_loop)
         plot = LivePlot(connection=connection, loops=[loop], num_schedules=1)
         assert len(list(plot.x_iterator_ranges)) == len(one_loop.range) * len(loop.range)
         assert len(list(plot.y_iterator_ranges)) == len(one_loop.range) * len(loop.range)

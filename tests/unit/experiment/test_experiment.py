@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from matplotlib.figure import Figure
 from qibo.gates import M
@@ -21,7 +22,6 @@ from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
-from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 from qililab.utils.live_plot import LivePlot
 from tests.data import experiment_params, simulated_experiment_circuit
@@ -337,11 +337,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.LO_FREQUENCY,
-        options=LoopOptions(
-            start=3544000000,
-            stop=3744000000,
-            num=2,
-        ),
+        range=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(

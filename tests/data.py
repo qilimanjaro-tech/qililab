@@ -592,11 +592,13 @@ results_two_loops = {
             RUNCARD.ALIAS: "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
             LOOP.RANGE: np.arange(start=15, stop=90, step=1),
+            LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
                 LOOP.PARAMETER: Node.FREQUENCY.value,
                 LOOP.RANGE: np.arange(start=7342000000, stop=7352000000, step=100000),
                 LOOP.LOOP: None,
+                LOOP.CHANNEL_ID: None,
             },
         },
     ],
@@ -648,6 +650,7 @@ results_one_loops = {
             LOOP.PARAMETER: Node.FREQUENCY.value,
             LOOP.RANGE: np.arange(start=7342000000, stop=7352000000, step=100000),
             LOOP.LOOP: None,
+            LOOP.CHANNEL_ID: None,
         }
     ],
     EXPERIMENT.RESULTS: [
