@@ -68,7 +68,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             # Remove all acquisition data
-            self.device.delete_acquisition_data(sequencer=sequencer, all=True)
+            self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
                 value=cast(AWGQbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
             )
