@@ -50,3 +50,5 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- Fixed bug where acquisition data was not deleted when compiling the same sequence twice.
