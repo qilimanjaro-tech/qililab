@@ -208,8 +208,10 @@ class PulseShapeSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     TAU_EXPONENTIAL1 = "tau_exponential1"
     TAU_EXPONENTIAL2 = "tau_exponential2"
-    AMP = "amp"
     B = "b"
+    AMP = "amp"
+    AMP1 = "amp1"
+    AMP2 = "amp2"
 
 
 class NodeName(str, Enum):
