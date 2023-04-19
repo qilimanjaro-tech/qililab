@@ -1,13 +1,11 @@
-import copy
+from typing import Callable
 
 import numpy as np
-import qibo
-from native_gates import RMW
-from qibo import gates
-from qibo.backends import NumpyBackend
-from qibo.config import raise_error
 
-backend = NumpyBackend()
+# from native_gates import Drag
+from qibo import gates
+
+from qililab.transpiler.native_gates import Drag
 
 
 class GateDecompositions:
@@ -16,26 +14,40 @@ class GateDecompositions:
     def __init__(self):
         self.decompositions = {}
 
-    def add(self, gate, decomposition):
-        """Register a decomposition for a gate."""
+    def add(self, gate: gates.Gate, decomposition: list[gates.Gate] | Callable[[gates.Gate], list[gates.Gate]]):
+        """Register a decomposition for a gate. Note that the decomposition list can have
+        non-native gates
+
+        Args:
+            gate (gates.Gate): gate to be decomposed
+            decomposition (list(gates.Gate)): list of gates for the decomposition
+
+        """
         self.decompositions[gate] = decomposition
 
-    def __call__(self, gate):
-        """Decompose a gate."""
+    def __call__(self, gate: gates.Gate) -> list[gates.Gate]:
+        """Decompose a gate into native gates
+
+        Args:
+            gate (gates.Gate): gate to decompose
+
+        Returns:
+            list[gates.Gate]: list of gates corresponding to the decomposition of the given gate
+        """
         decomposition = self.decompositions[gate.__class__]
         if callable(decomposition):
             decomposition = decomposition(gate)
         return [g.on_qubits({i: q for i, q in enumerate(gate.qubits)}) for g in decomposition]
 
 
-def translate_gate(ngates) -> list[qibo.gates.Gate]:
-    """Maps Qibo gates to a hardware native implementation (CZ, RZ and RMW)
+def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
+    """Maps Qibo gates to a hardware native implementation (CZ, RZ, Drag and M (Measurement))
 
     Args:
-        ngates (list[qibo.gates.abstract.Gate]): list of gates to be decomposed.
+        ngates (list[gates.Gate]): list of gates to be decomposed.
 
     Returns:
-        list of native gates
+        list[gates.Gate]: list of native gates corresponding to input gates
     """
 
     # define supported gates (native qpu gates + virtual z + measurement)
@@ -61,9 +73,8 @@ def translate_gate(ngates) -> list[qibo.gates.Gate]:
             elif (len(gate.qubits) == 2) or (gate.name == "ccx"):
                 new_gates += cz_dec(gate)
             else:
-                raise Exception("{} qubit gates not supported (except toffoli for 3 qubits)".format(len(gate.qubits)))
-        ngates = new_gates.copy()
-        return translate_gate(ngates)
+                raise Exception(f"{len(gate.qubits)} qubit gates not supported (except toffoli for 3 qubits)")
+        return translate_gates(new_gates)
     return ngates
 
 
@@ -71,9 +82,9 @@ def native_gates():
     """List of native hardware gates
 
     Returns:
-        Native gates as a tuple
+        tuple[gates.Gate]: Hardware native gates
     """
-    return (RMW, gates.CZ)
+    return (Drag, gates.CZ)
 
 
 # TODO: dictionary / list of supported gates
@@ -83,26 +94,26 @@ def native_gates():
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
 onequbit_dec = GateDecompositions()
 onequbit_dec.add(gates.I, [gates.RZ(0, 0)])
-onequbit_dec.add(gates.H, [RMW(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
-onequbit_dec.add(gates.X, [RMW(0, np.pi, 0)])
+onequbit_dec.add(gates.H, [Drag(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
+onequbit_dec.add(gates.X, [Drag(0, np.pi, 0)])
 onequbit_dec.add(
     gates.Y,
     [
-        RMW(0, np.pi, 0),
+        Drag(0, np.pi, 0),
         gates.RZ(0, np.pi),
     ],
 )
 onequbit_dec.add(gates.Z, [gates.RZ(0, np.pi)])
 
-onequbit_dec.add(gates.RX, lambda gate: [RMW(0, gate.parameters[0], 0)])
-onequbit_dec.add(gates.RY, lambda gate: [RMW(0, gate.parameters[0], np.pi / 2)])
+onequbit_dec.add(gates.RX, lambda gate: [Drag(0, gate.parameters[0], 0)])
+onequbit_dec.add(gates.RY, lambda gate: [Drag(0, gate.parameters[0], np.pi / 2)])
 onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0] / 2)])
 onequbit_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
 onequbit_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
 onequbit_dec.add(
     gates.U3,
     lambda gate: [
-        RMW(0, gate.parameters[0], -gate.parameters[2] + np.pi / 2),  # qibo's U3 is different from standard U3
+        Drag(0, gate.parameters[0], -gate.parameters[2] + np.pi / 2),  # qibo's U3 is different from standard U3
         gates.RZ(0, gate.parameters[1] + gate.parameters[2]),
     ],
 )
