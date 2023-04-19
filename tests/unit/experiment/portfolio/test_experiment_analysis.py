@@ -1,5 +1,4 @@
 """Unit tests for the ``ExperimentAnalysis`` class."""
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,8 +7,7 @@ from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models import Circuit
 
 from qililab import build_platform
-from qililab.experiment.portfolio import ExperimentAnalysis
-from qililab.platform import Platform
+from qililab.experiment.portfolio import ExperimentAnalysis, FittingModel
 from qililab.typings import ExperimentOptions, LoopOptions, Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel
@@ -30,12 +28,14 @@ i = 5 * np.sin(7 * x)
 q = 9 * np.sin(7 * x)
 
 
-class DummyExperimentAnalysis(ExperimentAnalysis):
-    """Dummy class used to test the ``ExperimentAnalysis`` class."""
-
+class DummyFittingModel(FittingModel):
     @staticmethod
-    def func(xdata: np.ndarray, a: float, b: float) -> np.ndarray:  # type: ignore # pylint: disable=arguments-differ
+    def func(xdata: np.ndarray, a: float, b: float):  # type: ignore  # pylint: disable=arguments-differ
         return a * np.sin(b * xdata)
+
+
+class DummyExperimentAnalysis(ExperimentAnalysis, DummyFittingModel):
+    """Dummy class used to test the ``ExperimentAnalysis`` class."""
 
 
 @pytest.fixture(name="experiment_analysis")
@@ -64,6 +64,15 @@ def fixture_experiment_analysis():
 class TestExperimentAnalysis:
     """Unit tests for the ``ExperimentAnalysis`` class."""
 
+    def test_init_raises_error_when_no_loops(self):
+        """Test that the ``__init__`` method raises an error when no loops are provided."""
+        with pytest.raises(
+            ValueError,
+            match="A loop must be provided. Either an experiment loop in the `ExperimentOptions` class, "
+            "or an external loop in the `experiment_loop` argument.",
+        ):
+            DummyExperimentAnalysis(platform=MagicMock(), circuits=[circuit], options=ExperimentOptions())
+
     def test_post_process_results(self, experiment_analysis: DummyExperimentAnalysis):
         """Test post_process_results method."""
         res = experiment_analysis.post_process_results()
@@ -78,26 +87,6 @@ class TestExperimentAnalysis:
     def test_fit_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``fit`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
-            experiment_analysis.fit(p0=(8, 7.5))
-
-    def test_fit_raises_error_when_no_loops(self, experiment_analysis: DummyExperimentAnalysis):
-        """Test that the ``fit`` method raises an error when the results are not post processed."""
-        experiment_analysis.options.loops = None
-        experiment_analysis.post_processed_results = q
-        with pytest.raises(ValueError, match="The experiment must have at least one loop."):
-            experiment_analysis.fit(p0=(8, 7.5))
-
-    def test_fit_raises_error_more_than_one_loop(self, experiment_analysis: DummyExperimentAnalysis):
-        """Test that the ``fit`` method raises an error when the results are not post processed."""
-        experiment_analysis.options.loops.append(
-            Loop(
-                alias="Y",
-                parameter=Parameter.DURATION,
-                options=LoopOptions(start=START, stop=STOP, num=NUM),
-            )
-        )
-        experiment_analysis.post_processed_results = q
-        with pytest.raises(ValueError, match="Analysis of nested loops is not supported."):
             experiment_analysis.fit(p0=(8, 7.5))
 
     def test_plot(self, experiment_analysis: DummyExperimentAnalysis):
@@ -116,26 +105,6 @@ class TestExperimentAnalysis:
     def test_plot_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
-            experiment_analysis.plot()
-
-    def test_plot_raises_error_when_no_loops(self, experiment_analysis: DummyExperimentAnalysis):
-        """Test that the ``plot`` method raises an error when the results are not post processed."""
-        experiment_analysis.options.loops = None
-        experiment_analysis.post_processed_results = q
-        with pytest.raises(ValueError, match="The experiment must have at least one loop."):
-            experiment_analysis.plot()
-
-    def test_plot_raises_error_more_than_one_loop(self, experiment_analysis: DummyExperimentAnalysis):
-        """Test that the ``plot`` method raises an error when the results are not post processed."""
-        experiment_analysis.options.loops.append(
-            Loop(
-                alias="Y",
-                parameter=Parameter.DURATION,
-                options=LoopOptions(start=START, stop=STOP, num=NUM),
-            )
-        )
-        experiment_analysis.post_processed_results = q
-        with pytest.raises(ValueError, match="Analysis of nested loops is not supported."):
             experiment_analysis.plot()
 
     def test_bus_setup_with_control_true(self, experiment_analysis: DummyExperimentAnalysis):
@@ -157,14 +126,14 @@ class TestExperimentAnalysis:
 
     def test_control_gate_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``control_gate_setup`` method."""
-        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis.gate_setup(gate="X", parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis.platform.get_element("X").amplitude == 123
 
     def test_measurement_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``measurement_setup`` method."""
-        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis.gate_setup(gate="M", parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis.platform.get_element("M").amplitude == 123

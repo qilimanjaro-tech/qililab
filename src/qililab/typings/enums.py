@@ -357,6 +357,7 @@ class Parameter(str, Enum):
     SWEEP_MODE = "sweep_mode"
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
+    NUM_FLIPS = "num_flips"
 
 
 class ResultName(str, Enum):
