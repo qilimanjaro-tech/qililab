@@ -118,9 +118,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if sequencer in self.sequences:
                 sequence_uploaded = self.sequences[sequencer][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(
-                        sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-                    )
+                    self.device.delete_acquisition_data(sequencer=sequencer, name="default")
         return super().compile(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
