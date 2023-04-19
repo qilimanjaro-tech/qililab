@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire
 
@@ -25,6 +26,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """
 
     name = InstrumentName.QBLOX_QRM
+    _scoping_sequencer: int | None = None
 
     @dataclass
     class QbloxQRMSettings(
@@ -79,23 +81,31 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ) -> None:
-        if (pulse_bus_schedule, nshots, repetition_duration) == self._cache:
-            # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-            for sequencer in self.awg_sequencers:
-                sequencer_id = sequencer.identifier
-                self.device._delete_acquisition(  # pylint: disable=protected-access
-                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
-                )
-                acquisition = self._generate_acquisitions()
-                self.device._add_acquisitions(  # pylint: disable=protected-access
-                    sequencer=sequencer_id, acquisitions=acquisition.to_dict()
-                )
-        super().generate_program_and_upload(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-        )
+    def _obtain_scope_sequencer(self):
+        """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
+
+        Raises:
+            ValueError: The scope can only be stores in one sequencer at a time.
+        """
+        for sequencer in self.awg_sequencers:
+            if sequencer.scope_store_enabled:
+                if self._scoping_sequencer is None:
+                    self._scoping_sequencer = sequencer.identifier
+                else:
+                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
+        """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
+        the cache and the saved sequences.
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+            sequencer (int): index of the sequencer to generate the program
+        """
+        if sequencer in self.sequences:
+            sequence_uploaded = self.sequences[sequencer][1]
+            if sequence_uploaded:
+                self.device.delete_acquisition_data(sequencer=sequencer, name="default")
+        return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
@@ -124,6 +134,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not string
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
@@ -150,6 +162,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not bool
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
@@ -171,6 +185,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
+        scope_already_stored = False
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             flags = self.device.get_sequencer_state(
@@ -182,14 +197,13 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
             if sequencer.scope_store_enabled:
-                self.device.store_scope_acquisition(
-                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
-                )
+                if scope_already_stored:
+                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+                scope_already_stored = True
+                self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)[
-                self.acquisition_name(sequencer_id=sequencer.identifier)
-            ]["acquisition"]
+            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
             for sequencer in self.awg_sequencers
         ]
 
@@ -198,10 +212,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = (
-            0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
-        )  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        loop.append_component(Acquire(acq_index=0, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -217,18 +228,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             int: settings.integration_length.
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
-
-    def acquisition_name(self, sequencer_id: int) -> str:
-        """QbloxPulsarQRM 'acquisition_name' property:
-
-        Returns:
-            str: Name of the acquisition. Options are "single" or "binning".
-        """
-        return (
-            "single"
-            if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging
-            else "binning"
-        )
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):

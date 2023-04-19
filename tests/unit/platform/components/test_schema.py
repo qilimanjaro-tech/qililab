@@ -1,5 +1,17 @@
 """Tests for the Schema class."""
-from qililab.platform import Schema
+import pytest
+
+from qililab.platform import Platform, Schema
+
+
+@pytest.fixture(name="schema")
+def fixture_schema(platform: Platform) -> Schema:
+    """Load Schema.
+
+    Returns:
+        Schema: Instance of the Schema class.
+    """
+    return platform.schema
 
 
 class Testschema:

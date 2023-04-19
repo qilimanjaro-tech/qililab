@@ -50,18 +50,18 @@ class Chip(DDBBElement):
         return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
     def get_node_from_qubit_idx(self, idx: int, readout: bool) -> Qubit | Resonator:
-        """Get control/readout port number from qubit index.
+        """Get node class from qubit index.
 
         Args:
             idx (int): Qubit index.
-            readout (bool): If True, return readout port and resonator frequency,
-            if False return control port and qubit frequency.
+            readout (bool): If True, return readout port and resonator frequency, if False return control port and qubit
+                frequency.
 
         Raises:
-            ValueError: If qubit doesn't have a control/readout port.
+            ValueError: if qubit doesn't have a readout line
 
         Returns:
-            int: Control/readout port.
+            Qubit | Resonator: qubit/resonator with the given qubit index
         """
         qubit = self._get_qubit(idx=idx)
         if not readout:
@@ -72,7 +72,7 @@ class Chip(DDBBElement):
                 return node
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
 
-    def get_port(self, node: Node) -> Port:
+    def get_port(self, node: Node) -> int:
         """Find node's port (if exists).
 
         Args:
@@ -82,12 +82,12 @@ class Chip(DDBBElement):
             ValueError: If no node is found.
 
         Returns:
-            Port: Port class.
+            int: port index
         """
         adj_nodes = self._get_adjacent_nodes(node)
         for adj_node in adj_nodes:
             if isinstance(adj_node, Port):
-                return adj_node
+                return adj_node.id_
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
     def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler | Coil]:

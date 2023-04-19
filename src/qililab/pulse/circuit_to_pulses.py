@@ -6,15 +6,13 @@ import numpy as np
 from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip import Chip, Node
+from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.readout_event import ReadoutEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory, qibo_gates
@@ -59,8 +57,7 @@ class CircuitToPulses:
                 )
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-                wait_of_next_pulse_event = 0
-            if readout_gate is not None:
+            for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(
                         time=time,
@@ -77,7 +74,7 @@ class CircuitToPulses:
         return pulse_schedule_list
 
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
-        """Build Pulse Shape from Gate seetings"""
+        """Build Pulse Shape from Gate settings"""
         shape_settings = gate_settings.shape.copy()
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
@@ -117,7 +114,7 @@ class CircuitToPulses:
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
@@ -151,15 +148,18 @@ class CircuitToPulses:
         return gate_settings
 
     def _readout_gate_to_pulse_event(
-        self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip, wait_time: int
-    ) -> Tuple[ReadoutEvent | None, int]:
+        self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
+    ) -> Tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
-            gate (Gate): Qibo Gate.
+            time: Dict[int, int]: time.
+            readout_gate (Gate): Qibo Gate.
+            qubit_id (int): qubit number.
+            chip (Chip): chip object.
 
         Returns:
-            Pulse: Pulse object.
+            Tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
@@ -174,8 +174,8 @@ class CircuitToPulses:
         )
 
         return (
-            ReadoutEvent(
-                pulse=ReadoutPulse(
+            PulseEvent(
+                pulse=Pulse(
                     amplitude=gate_settings.amplitude,
                     phase=gate_settings.phase,
                     duration=gate_settings.duration,
@@ -186,20 +186,24 @@ class CircuitToPulses:
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
     def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int, wait_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
-            port (int): Index of the chip port.
+            time (Dict[int, int]): Dictionary with the time of each qubit.
+            qubit_idx (int): Index of the qubit.
             pulse_time (int): Duration of the puls + wait time.
         """
         if qubit_idx not in time:
             time[qubit_idx] = 0
-        old_time = wait_time + time[qubit_idx]
-        time[qubit_idx] += wait_time + pulse_time
+        old_time = time[qubit_idx]
+        residue = pulse_time % self.settings.minimum_clock_time
+        if residue != 0:
+            pulse_time += self.settings.minimum_clock_time - residue
+        time[qubit_idx] += pulse_time
         return old_time
 
     def _instantiate_gates_from_settings(self):

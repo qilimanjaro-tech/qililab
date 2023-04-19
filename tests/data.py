@@ -37,7 +37,6 @@ from qililab.typings.enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
     SystemControlName,
@@ -55,7 +54,8 @@ class Galadriel:
         PLATFORM.DEVICE_ID: 9,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 40,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
@@ -78,7 +78,7 @@ class Galadriel:
                 RUNCARD.NAME: "X",
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
-                "duration": PLATFORM.MASTER_DURATION_GATE,
+                "duration": 50,
                 EXPERIMENT.SHAPE: {
                     RUNCARD.NAME: "drag",
                     "num_sigmas": 4,
@@ -190,7 +190,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
-        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23, 12.3, 0],
+        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
@@ -466,6 +466,7 @@ class FluxQubitSimulator:
         RUNCARD.NAME: "flux_qubit",
         PLATFORM.DEVICE_ID: 9,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
@@ -792,7 +793,6 @@ experiment = {
                     PULSEBUSSCHEDULE.TIMELINE: [
                         {
                             PULSEEVENT.PULSE: {
-                                PULSE.NAME: PulseName.READOUT_PULSE.value,
                                 PULSE.AMPLITUDE: 1,
                                 PULSE.FREQUENCY: 1e9,
                                 PULSE.PHASE: 0,

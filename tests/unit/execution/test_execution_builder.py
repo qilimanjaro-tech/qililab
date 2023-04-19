@@ -3,7 +3,7 @@ import pytest
 
 from qililab.execution import EXECUTION_BUILDER
 from qililab.platform import Platform
-from qililab.pulse import Pulse, PulseSchedule
+from qililab.pulse import PulseEvent, PulseSchedule
 
 
 class TestExecutionBuilder:
@@ -14,9 +14,9 @@ class TestExecutionBuilder:
         EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
     def test_build_method_with_wrong_pulse_bus_schedule(
-        self, platform: Platform, pulse_schedule: PulseSchedule, pulse: Pulse
+        self, platform: Platform, pulse_schedule: PulseSchedule, pulse_event: PulseEvent
     ):
         """Test build method with wrong pulse sequence."""
-        pulse_schedule.add(pulse=pulse, start_time=0, port=1234)
+        pulse_schedule.add_event(pulse_event=pulse_event, port=1234)
         with pytest.raises(ValueError):
             EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])

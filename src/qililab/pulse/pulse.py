@@ -1,47 +1,40 @@
 """Pulse class."""
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
-from typing import ClassVar
 
 import numpy as np
 
 from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseName
 from qililab.utils import Factory, Waveforms
 from qililab.utils.signal_processing import modulate
 
 
-@dataclass(unsafe_hash=True, eq=True)
+@dataclass(frozen=True, eq=True)
 class Pulse:
     """Describes a single pulse to be added to waveform array."""
 
-    name: ClassVar[PulseName] = PulseName.PULSE
     amplitude: float
     phase: float
     duration: int
     frequency: float
     pulse_shape: PulseShape
 
-    def __post_init__(self):
-        """Create Pulse Shape"""
-        if isinstance(self.pulse_shape, dict):
-            self.pulse_shape = Factory.get(name=self.pulse_shape.pop(RUNCARD.NAME))(
-                **self.pulse_shape,  # pylint: disable=not-a-mapping
-            )
-
-    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(
+        self, resolution: float = 1.0, start_time: float = 0.0, frequency: float = 0.0
+    ) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
             start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
+            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
+        frequency = frequency or self.frequency
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)
@@ -70,6 +63,9 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
+        pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
+        pulse_shape = Factory.get(name=pulse_shape_dict.pop(RUNCARD.NAME))(**pulse_shape_dict)
+        dictionary[PULSE.PULSE_SHAPE] = pulse_shape
         return cls(**dictionary)
 
     def to_dict(self):
@@ -79,7 +75,6 @@ class Pulse:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSE.NAME: self.name.value,
             PULSE.AMPLITUDE: self.amplitude,
             PULSE.FREQUENCY: self.frequency,
             PULSE.PHASE: self.phase,

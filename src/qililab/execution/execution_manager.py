@@ -9,7 +9,7 @@ import numpy as np
 
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
-from qililab.execution.execution_buses import PulseScheduledBus
+from qililab.execution import BusExecution
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings import yaml
@@ -21,7 +21,7 @@ class ExecutionManager:
     """ExecutionManager class."""
 
     num_schedules: int
-    buses: List[PulseScheduledBus] = field(default_factory=list)
+    buses: List[BusExecution] = field(default_factory=list)
 
     def __post_init__(self):
         """check that the number of schedules matches all the schedules for each bus"""
@@ -36,32 +36,31 @@ class ExecutionManager:
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
 
-    def generate_program_and_upload(self, idx: int, nshots: int, repetition_duration: int) -> None:
-        """For each Bus (with a pulse schedule), translate it to an AWG program and upload it
+    def compile(self, idx: int, nshots: int, repetition_duration: int) -> dict:
+        """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs.
 
         Args:
-            idx (int): index of the pulse schedule to generate and upload
+            idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
-        """
-        for pulse_scheduled_bus in self.buses:
-            pulse_scheduled_bus.generate_program_and_upload(
-                idx=idx, nshots=nshots, repetition_duration=repetition_duration
-            )
 
-    def traspile_circuit_to_buses(self):  # should take care of coordination (wait between gates and sync sequencers)
+        Returns:
+            list: list of compiled assembly programs
         """
-        Function that converts input circuit for n qubits into m circuits one for each bus
+        programs = {}
+        for bus in self.buses:
+            bus_programs = bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+            programs[bus.alias] = bus_programs
+        return programs
 
-        Args: n qubit circuit
-              metadata on how qubits are mapped to buses
-        Output: m circuits, one for each bus.
-        """
+    def upload(self):
+        """Uploads all previously compiled programs into its corresponding instruments."""
+        for bus in self.buses:
+            bus.upload()
 
     def run(self, plot: LivePlot | None, path: Path) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
-        # FIXME: run in parallel
         for bus in self.buses:
             bus.run()
 
@@ -77,16 +76,6 @@ class ExecutionManager:
         if not results:
             raise ValueError("No Results acquired")
         return results[0]
-
-    def _asynchronous_bus_run(self, bus: PulseScheduledBus):
-        """run pulse uploaded program asynchronously"""
-
-        def _threaded_function(bus: PulseScheduledBus):
-            """Asynchronous thread."""
-            bus.run()
-
-        thread = Thread(target=_threaded_function, args=[bus])
-        thread.start()
 
     def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None):
         """Asynchronously dumps data in file and plots the data.
@@ -152,7 +141,7 @@ class ExecutionManager:
         plt.tight_layout()
         return figure
 
-    def _plot_acquire_time(self, bus: PulseScheduledBus, sequence_idx: int):
+    def _plot_acquire_time(self, bus: BusExecution, sequence_idx: int):
         """Return acquire time of bus. Return None if bus is of subcategory control.
 
         Args:
@@ -166,7 +155,7 @@ class ExecutionManager:
             plt.axvline(x=bus.acquire_time(idx=sequence_idx), color="red", label="Acquire time")
 
     def __iter__(self):
-        """Redirect __iter__ magic method to pulse_scheduled_buses."""
+        """Redirect __iter__ magic method to buses."""
         return self.buses.__iter__()
 
     def __getitem__(self, key):
@@ -174,10 +163,10 @@ class ExecutionManager:
         return self.buses.__getitem__(key)
 
     @property
-    def readout_buses(self) -> List[PulseScheduledBus]:
+    def readout_buses(self) -> List[BusExecution]:
         """Returns a list of all the readout buses.
 
         Returns:
-            List[PulseScheduledBus]: list of readout buses
+            List[BusExecution]: list of readout buses
         """
         return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]

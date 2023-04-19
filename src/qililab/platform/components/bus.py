@@ -4,6 +4,7 @@ from typing import List
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
+from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
@@ -139,4 +140,9 @@ class Bus:
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        try:
+            self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+        except ParameterNotFound as error:
+            raise ParameterNotFound(
+                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+            ) from error

@@ -164,18 +164,6 @@ class Instrument(BusElement, ABC):
     def turn_on(self):
         """Turn on an instrument."""
 
-    def generate_program_and_upload(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
-    ) -> None:
-        """Generate program to execute and upload it to the instrument.
-
-        In some cases this method might do nothing."""
-
-    def run(self) -> None:
-        """Run the sequence previously uploaded to the instrument.
-
-        In some cases this method might do nothing."""
-
     def acquire_result(self) -> Result | None:
         """Acquire results of the measurement.
 

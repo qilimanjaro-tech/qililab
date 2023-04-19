@@ -1,8 +1,43 @@
 """Tests for the Keithley2600 class."""
-import pytest
+import copy
+from unittest.mock import MagicMock, patch
 
+import pytest
+from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
+
+from qililab.instrument_controllers.keithley.keithley_2600_controller import Keithley2600Controller
 from qililab.instruments import Keithley2600
+from qililab.platform import Platform
 from qililab.typings import Parameter
+from tests.data import Galadriel
+
+
+@pytest.fixture(name="keithley_2600_controller")
+def fixture_keithley_2600_controller(platform: Platform):
+    """Return connected instance of Keithley2600Controller class"""
+    settings = copy.deepcopy(Galadriel.keithley_2600_controller_0)
+    settings.pop("name")
+    return Keithley2600Controller(settings=settings, loaded_instruments=platform.instruments)
+
+
+@pytest.fixture(name="keithley_2600_no_device")
+def fixture_keithley_2600_no_device():
+    """Return connected instance of Keithley2600 class"""
+    settings = copy.deepcopy(Galadriel.keithley_2600)
+    settings.pop("name")
+    return Keithley2600(settings=settings)
+
+
+@pytest.fixture(name="keithley_2600")
+@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+def fixture_keithley_2600(mock_driver: MagicMock, keithley_2600_controller: Keithley2600Controller):
+    """Return connected instance of Keithley2600 class"""
+    mock_instance = mock_driver.return_value
+    mock_instance.smua = MagicMock(KeithleyChannel)
+    mock_instance.smua.mock_add_spec(["limiti", "limitv", "doFastSweep"])
+    keithley_2600_controller.connect()
+    mock_driver.assert_called()
+    return keithley_2600_controller.modules[0]
 
 
 class TestKeithley2600:
