@@ -139,6 +139,7 @@ class GateName(str, Enum):
 
 class MasterGateSettingsName(str, Enum):
     """Master Gate Settings names.
+    
     Args:
         enum (str): Available types of master gate settings names:
         * master_amplitude_gate
@@ -196,6 +197,7 @@ class PulseShapeName(str, Enum):
 
 class PulseShapeSettingsName(str, Enum):
     """Pulse Shape Settings names.
+    
     Args:
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
