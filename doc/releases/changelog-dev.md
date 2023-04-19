@@ -52,3 +52,4 @@ This document contains the changes of the current release.
 ### Bug fixes
 
 - Fixed bug where acquisition data was not deleted when compiling the same sequence twice.
+  [#264](https://github.com/qilimanjaro-tech/qililab/pull/264)
