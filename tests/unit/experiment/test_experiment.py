@@ -14,10 +14,8 @@ from qililab import build_platform
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution import Execution
 from qililab.experiment import Experiment
-from qililab.instruments import AWG
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
-from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions

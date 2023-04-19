@@ -225,6 +225,17 @@ class TestQbloxQRM:
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
 
+    def test_acquisition_data_is_removed_when_calling_compile_twice(self, qrm, pulse_bus_schedule):
+        """Test that the acquisition data of the QRM device is deleted when calling compile twice."""
+        pulse_bus_schedule.port = 1  # change port to target the resonator
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qrm.upload()
+        sequences2 = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        assert len(sequences) == 1
+        assert len(sequences2) == 1
+        assert sequences[0] is sequences2[0]
+        qrm.device.delete_acquisition_data.assert_called_once()
+
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""
         with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
