@@ -17,6 +17,7 @@ settings:
         name: Gaussian
         amplitude: 1.0
         duration: 40
+        phase: 0
         parameters:
           sigma: 2
     - name: Measure
@@ -24,6 +25,7 @@ settings:
         name: Square
         amplitude: 1.0
         duration: 6000
+        phase: 0
         parameters: {}
   gates:
     - name: M
@@ -50,16 +52,25 @@ schema:
       - name: port
         id_: 1
         nodes: [2]
+      - name: port
+        id_: 5
+        nodes: [4]
       - name: resonator
         alias: resonator
         id_: 2
         frequency: 8.0726e+09
-        nodes: [1, 3]
+        nodes: [1, 3, 4]
       - name: qubit
         alias: qubit
         id_: 3
         qubit_index: 0
-        frequency: 6.5328e+09
+        frequency: 6.5e+09
+        nodes: [0, 2]
+      - name: qubit
+        alias: qubit
+        id_: 4
+        qubit_index: 1
+        frequency: 7.2e+09
         nodes: [0, 2]
   instruments:
     - name: QRM

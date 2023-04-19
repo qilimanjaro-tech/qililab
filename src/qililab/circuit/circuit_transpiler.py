@@ -2,6 +2,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 
+from qililab.chip import Chip
 from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
@@ -17,6 +18,7 @@ class CircuitTranspiler:
     """CircuitTranspiler class."""
 
     settings: RuncardSchema.PlatformSettings
+    chip: Chip
 
     def calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
@@ -128,12 +130,17 @@ class CircuitTranspiler:
         for layer in layers:
             for operation_node in layer:
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
+                    is_measurement = isinstance(operation_node.operation, Measure)
+                    # TODO: Change this for multiplexed readout
+                    node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
                     pulse_operation_settings = operation_settings.pulse
                     pulse_operation_name = pulse_operation_settings.name
                     pulse_operation_parameters = {
                         "amplitude": pulse_operation_settings.amplitude,
                         "duration": pulse_operation_settings.duration,
+                        "phase": pulse_operation_settings.phase,
+                        "frequency": node.frequency,
                         **pulse_operation_settings.parameters,
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)

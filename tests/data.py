@@ -68,19 +68,37 @@ class Galadriel:
         "operations": [
             {
                 RUNCARD.NAME: "Rxy",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "parameters": {"sigma": 2},
+                },
             },
             {
                 RUNCARD.NAME: "R180",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "parameters": {"sigma": 2},
+                },
             },
             {
                 RUNCARD.NAME: "X",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "parameters": {"sigma": 2},
+                },
             },
             {
                 RUNCARD.NAME: "Measure",
-                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
+                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "phase": 0.0, "parameters": {}},
             },
         ],
         "gates": [
@@ -389,22 +407,31 @@ class Galadriel:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
         Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [0]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [1]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 2, Node.NODES.value: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
-                RUNCARD.ID: 2,
+                RUNCARD.ID: 10,
                 RUNCARD.ALIAS: NodeName.PORT.value,
                 Node.FREQUENCY.value: 7.34730e09,
-                Node.NODES.value: [1, 3],
+                Node.NODES.value: [0, 11, 12],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
-                RUNCARD.ID: 3,
+                RUNCARD.ID: 11,
                 RUNCARD.ALIAS: NodeName.QUBIT.value,
                 Node.QUBIT_INDEX.value: 0,
-                Node.FREQUENCY.value: 3.451e09,
-                Node.NODES.value: [0, 2],
+                Node.FREQUENCY.value: 6.5e9,
+                Node.NODES.value: [1, 10],
+            },
+            {
+                RUNCARD.NAME: NodeName.QUBIT.value,
+                RUNCARD.ID: 12,
+                RUNCARD.ALIAS: NodeName.QUBIT.value,
+                Node.QUBIT_INDEX.value: 1,
+                Node.FREQUENCY.value: 7.2e09,
+                Node.NODES.value: [2, 10],
             },
         ],
     }
@@ -501,15 +528,36 @@ class FluxQubitSimulator:
         "operations": [
             {
                 RUNCARD.NAME: "Rxy",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "frequency": 8.5e9,
+                    "parameters": {"sigma": 2},
+                },
             },
             {
                 RUNCARD.NAME: "R180",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "frequency": 8.5e9,
+                    "parameters": {"sigma": 2},
+                },
             },
             {
                 RUNCARD.NAME: "X",
-                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+                "pulse": {
+                    RUNCARD.NAME: "Gaussian",
+                    "amplitude": 1.0,
+                    "duration": 40,
+                    "phase": 0.0,
+                    "frequency": 8.5e9,
+                    "parameters": {"sigma": 2},
+                },
             },
         ],
         "gates": [

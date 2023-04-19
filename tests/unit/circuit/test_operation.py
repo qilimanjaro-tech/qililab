@@ -4,6 +4,7 @@ import pytest
 from qililab.circuit.operations import (
     R180,
     Barrier,
+    CPhase,
     DRAGPulse,
     GaussianPulse,
     Measure,
@@ -15,7 +16,6 @@ from qililab.circuit.operations import (
     Wait,
     X,
 )
-from qililab.circuit.operations.translatable_to_pulse_operations.cphase import CPhase
 from qililab.typings.enums import Qubits
 
 
@@ -29,9 +29,9 @@ from qililab.typings.enums import Qubits
         Barrier(),
         Measure(),
         Reset(),
-        DRAGPulse(amplitude=1.0, duration=40, sigma=1, delta=1),
-        SquarePulse(amplitude=1.0, duration=40),
-        GaussianPulse(amplitude=1.0, duration=40, sigma=1.0),
+        DRAGPulse(amplitude=1.0, duration=40, phase=0.0, frequency=8.5e9, sigma=1, delta=1),
+        SquarePulse(amplitude=1.0, duration=40, phase=0.0, frequency=8.5e9),
+        GaussianPulse(amplitude=1.0, duration=40, phase=0.0, frequency=8.5e9, sigma=1.0),
         CPhase(theta=90),
         Parking(),
     ],

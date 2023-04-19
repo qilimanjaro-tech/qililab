@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import numpy as np
+
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.typings.enums import OperationName, Qubits
@@ -13,8 +15,9 @@ class SquarePulse(PulseOperation):
 
     Args:
         amplitude (float): amplitude of the pulse
-        duration (int): duration of the pulse in ns
-        resolution (float): resolution
+        duration (int): duration of the pulse (ns)
+        phase (float): phase of the pulse
+        frequency (float): frequency of the pulse (Hz)
     """
 
     @classproperty
@@ -34,3 +37,14 @@ class SquarePulse(PulseOperation):
             Qubits: The number of qubits the operation can act upon
         """
         return Qubits.ONE
+
+    def envelope(self, resolution: float = 1.0):
+        """Constant amplitude envelope.
+
+        Args:
+            resolution (float): Resolution of the time steps (ns).
+
+        Returns:
+            ndarray: Amplitude of the envelope for each time step.
+        """
+        return self.amplitude * np.ones(round(self.duration / resolution))

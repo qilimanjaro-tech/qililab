@@ -14,28 +14,11 @@ platform = build_platform(name=runcard_name)
 circuit = Circuit(2)
 circuit.add(0, X())
 circuit.add(0, Wait(t=100))
-circuit.add(1, SquarePulse(amplitude=1.0, duration=40))
+circuit.add(1, SquarePulse(amplitude=1.0, duration=40, phase=0.0, frequency=8e9))
 circuit.add((0, 1), Barrier())
 circuit.add(0, X())
 circuit.add(1, X())
 circuit.add((0, 1), Measure())
-# circuit.add((0, 1), Reset())
-
-# circuit = Circuit(2)
-# circuit.add((0, 1), X())
-# circuit.add(0, Wait(t=100))
-# circuit.add(0, X())
-# circuit.add((0, 1), Measure())
-# circuit.add(0, X())
-# circuit.add(1, X())
-# circuit.add(1, X())
-# circuit.add(1, X())
-# circuit.add((0, 1), Barrier())
-# circuit.add((0, 1), X())
-
-# get layers with two different methods
-# print(circuit.get_operation_layers())
-# print(circuit.get_operation_layers(OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE))
 
 # print depth of circuit
 print(f"Depth: {circuit.depth}")
@@ -50,7 +33,7 @@ circuit.draw()
 # circuit.draw(filename='circuit.png')
 
 # create the transpiler
-transpiler = CircuitTranspiler(settings=platform.settings)
+transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
 
 # calculate timings
 circuit_ir1 = transpiler.calculate_timings(circuit)
