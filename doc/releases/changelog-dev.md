@@ -74,7 +74,7 @@ This document contains the changes of the current release.
 - Added `OperationFactory` class to register and retrieve operation classes based on their names.
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
-- Added `CircuitTranspiler` class for calculating operation timings and transpiling quantum circuits into pulse operations. The `calculate_timings()` method annotates operations in the circuit with timing information by evaluating start and end times for each operation. The `transpile_to_pulse_operations()` method then transpiles the quantum circuit operations into pulse operations, taking into account the calculated timings. Example usage:
+- Added `CircuitTranspiler` class for calculating operation timings and transpiling quantum circuits into pulse operations. The `calculate_timings()` method annotates operations in the circuit with timing information by evaluating start and end times for each operation. The `remove_special_operations()` method removes special operations (Barrier, Wait, Passive Reset) from the circuit after the timings have been calculated. The `transpile_to_pulse_operations()` method then transpiles the quantum circuit operations into pulse operations, taking into account the calculated timings. Example usage:
 
   ```python
   # create the transpiler
@@ -83,8 +83,24 @@ This document contains the changes of the current release.
   # calculate timings
   circuit_ir1 = transpiler.calculate_timings(circuit)
 
+  # remove special operations
+  circuit_ir2 = transpiler.remove_special_operations(circuit_ir1)
+
   # transpile operations to pulse operations
-  circuit_ir2 = transpiler.transpile_to_pulse_operations(circuit_ir1)
+  circuit_ir3 = transpiler.transpile_to_pulse_operations(circuit_ir2)
+  ```
+
+  [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
+- Added `QiliQasmConverter` class to convert a circuit from/to QiliQASM, an over-simplified QASM version. Example usage:
+
+  ```python
+  # Convert to QiliQASM
+  qasm = QiliQasmConverter.to_qasm(circuit)
+  print(qasm)
+
+  # Parse from QiliQASM
+  parsed_circuit = QiliQasmConverter.from_qasm(qasm)
   ```
 
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
