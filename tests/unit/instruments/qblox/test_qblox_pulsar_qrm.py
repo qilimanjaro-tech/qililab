@@ -239,7 +239,7 @@ class TestQbloxQRM:
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
         qrm.device.get_acquisitions.return_value = {
-            "single": {
+            "default": {
                 "index": 0,
                 "acquisition": {
                     "scope": {
@@ -276,10 +276,6 @@ class TestQbloxQRM:
     def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""
         assert qrm_no_device.integration_length(0) == qrm_no_device.awg_sequencers[0].integration_length
-
-    def test_acquisition_name_method(self, qrm_no_device: QbloxQRM):
-        """Test acquisition_name method."""
-        assert isinstance(qrm_no_device.acquisition_name(sequencer_id=0), str)
 
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""

@@ -66,6 +66,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
+        self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             self._set_integration_length(

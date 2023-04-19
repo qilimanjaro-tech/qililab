@@ -219,7 +219,7 @@ class Galadriel:
                 Parameter.SEQUENCE_TIMEOUT.value: 1,
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
-                Parameter.SCOPE_STORE_ENABLED.value: False,
+                Parameter.SCOPE_STORE_ENABLED.value: True,
             }
         ],
         AWGTypes.AWG_IQ_CHANNELS.value: [
