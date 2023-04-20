@@ -1,7 +1,7 @@
 """ExecutionBuilder class"""
 from typing import Dict, List
 
-from qililab.execution import BusExecution, Execution
+from qililab.execution import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
@@ -12,20 +12,9 @@ from qililab.utils import Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_schedules: List[PulseSchedule]) -> Execution:
-        """Build Execution class.
-
-        Returns:
-            Execution: Execution object.
-        """
-
-        return Execution(
-            execution_manager=self._build_execution_manager(platform=platform, pulse_schedules=pulse_schedules),
-            platform=platform,
-        )
-
-    def _build_execution_manager(self, platform: Platform, pulse_schedules: List[PulseSchedule]):
-        """Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusExecution class.
+    def build(self, platform: Platform, pulse_schedules: List[PulseSchedule]) -> ExecutionManager:
+        """Build ExecutionManager class.
+        Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusExecution class.
 
         Returns:
             ExecutionManager: ExecutionManager object.
@@ -41,7 +30,7 @@ class ExecutionBuilder(metaclass=Singleton):
                     continue
                 buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
-        return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules))
+        return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules), platform=platform)
 
     def _get_bus_info_from_pulse_bus_schedule_port(self, platform: Platform, pulse_bus_schedule: PulseBusSchedule):
         """get the bus information that it is connected to the port in the pulse bus schedule"""
