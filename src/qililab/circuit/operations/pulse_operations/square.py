@@ -9,7 +9,7 @@ from qililab.utils import classproperty
 
 
 @OperationFactory.register
-@dataclass
+@dataclass(unsafe_hash=True)
 class SquarePulse(PulseOperation):
     """Operation representing a DRAG pulse
 

@@ -2,6 +2,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 
+from qililab.bus import PulseEvent, PulseSchedule
 from qililab.chip import Chip
 from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
@@ -129,10 +130,13 @@ class CircuitTranspiler:
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         for layer in layers:
             for operation_node in layer:
+                # TODO: Change this for multiplexed readout
+                if isinstance(operation_node.operation, PulseOperation):
+                    is_measurement = operation_node.is_measurement
+                    chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
                     is_measurement = isinstance(operation_node.operation, Measure)
-                    # TODO: Change this for multiplexed readout
-                    node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
+                    chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
                     pulse_operation_settings = operation_settings.pulse
                     pulse_operation_name = pulse_operation_settings.name
@@ -140,10 +144,33 @@ class CircuitTranspiler:
                         "amplitude": pulse_operation_settings.amplitude,
                         "duration": pulse_operation_settings.duration,
                         "phase": pulse_operation_settings.phase,
-                        "frequency": node.frequency,
+                        "frequency": chip_node.frequency,
                         **pulse_operation_settings.parameters,
                     }
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
                     operation_node.operation = pulse_operation
+                    operation_node.is_measurement = is_measurement
+                operation_node.chip_port = self.chip.get_port(chip_node)
         circuit.has_transpiled_to_pulses = True
         return circuit
+
+    def generate_pulse_schedule(self, circuit: Circuit) -> PulseSchedule:
+        circuit = deepcopy(circuit)
+        if not circuit.has_timings_calculated:
+            circuit = self.calculate_timings(circuit=circuit)
+        if not circuit.has_special_operations_removed:
+            circuit = self.remove_special_operations(circuit=circuit)
+        if not circuit.has_transpiled_to_pulses:
+            circuit = self.transpile_to_pulse_operations(circuit=circuit)
+        layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
+        pulse_schedule = PulseSchedule()
+        for layer in layers:
+            for operation_node in layer:
+                if isinstance(operation_node.operation, PulseOperation):
+                    pulse_event = PulseEvent(
+                        pulse=operation_node.operation,
+                        start_time=operation_node.timing.start,
+                        end_time=operation_node.timing.end,
+                    )
+                    pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)
+        return pulse_schedule

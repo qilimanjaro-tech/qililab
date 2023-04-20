@@ -2,8 +2,11 @@
 from dataclasses import dataclass
 from typing import Tuple
 
+from sympy import true
+
 from qililab.circuit.nodes.node import Node
 from qililab.circuit.operations import Operation
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 
 
 @dataclass
@@ -14,7 +17,7 @@ class OperationTiming:
     end: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class OperationNode(Node):
     """Node representing an operation acting on one or more qubits
 
@@ -28,3 +31,5 @@ class OperationNode(Node):
     qubits: Tuple[int, ...]
     alias: str | None = None
     timing: OperationTiming | None = None
+    is_measurement: bool = False
+    chip_port: int | None = None

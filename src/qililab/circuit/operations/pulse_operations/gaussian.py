@@ -9,7 +9,7 @@ from qililab.utils import classproperty
 
 
 @OperationFactory.register
-@dataclass
+@dataclass(unsafe_hash=True)
 class GaussianPulse(PulseOperation):
     """Operation representing a Gaussian pulse
 

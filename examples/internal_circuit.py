@@ -3,6 +3,7 @@ from pathlib import Path
 
 from qililab import Barrier, Circuit, Measure, QiliQasmConverter, Reset, SquarePulse, Wait, X, build_platform
 from qililab.circuit.circuit_transpiler import CircuitTranspiler
+from qililab.circuit.operations.pulse_operations.gaussian import GaussianPulse
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import OperationTimingsCalculationMethod
 
@@ -14,9 +15,11 @@ platform = build_platform(name=runcard_name)
 circuit = Circuit(2)
 circuit.add(0, X())
 circuit.add(0, Wait(t=100))
-circuit.add(1, SquarePulse(amplitude=1.0, duration=40, phase=0.0, frequency=8e9))
+circuit.add(0, X())
+circuit.add(1, X())
 circuit.add((0, 1), Barrier())
 circuit.add(0, X())
+circuit.add(0, GaussianPulse(amplitude=1.0, duration=10, phase=0, frequency=8e9, sigma=1))
 circuit.add(1, X())
 circuit.add((0, 1), Measure())
 
@@ -38,16 +41,20 @@ transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
 # calculate timings
 circuit_ir1 = transpiler.calculate_timings(circuit)
 circuit_ir1.draw()
+# circuit_ir1.print()
 
 # remove special operations
 circuit_ir2 = transpiler.remove_special_operations(circuit_ir1)
 circuit_ir2.draw()
-# print(circuit_ir2.graph.nodes())
+# circuit_ir2.print()
 
 # translate operations to pulse operations
 circuit_ir3 = transpiler.transpile_to_pulse_operations(circuit_ir2)
 circuit_ir3.draw()
-# print(circuit_ir3.graph.nodes())
+# circuit_ir3.print()
+
+pulse_schedule = transpiler.generate_pulse_schedule(circuit_ir3)
+pulse_schedule.print()
 
 # Convert to QiliQASM
 qasm = QiliQasmConverter.to_qasm(circuit)
