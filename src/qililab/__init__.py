@@ -4,6 +4,7 @@ from .circuit import (
     R180,
     Barrier,
     Circuit,
+    CircuitTranspiler,
     CPhase,
     DRAGPulse,
     GaussianPulse,
