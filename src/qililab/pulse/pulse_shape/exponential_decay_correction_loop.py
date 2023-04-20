@@ -12,7 +12,7 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True, frozen = True)
+@dataclass(unsafe_hash=True, frozen=True, eq=True)
 class ExponentialCorrectionLoop(PulseShape):
     """Exponential decay correction (loop) pulse shape."""
 
