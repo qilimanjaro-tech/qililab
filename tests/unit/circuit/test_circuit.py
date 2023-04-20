@@ -230,7 +230,7 @@ class TestCircuit:
         "circuit_fixture",
         ["simple_circuit", "empty_circuit"],
     )
-    def test_draw_display_image(self, monkeypatch, request: pytest.FixtureRequest, circuit_fixture: str):
+    def test_draw_display_image(self, request: pytest.FixtureRequest, circuit_fixture: str):
         """Test that draw method is displaying the image when filename is not provided"""
         circuit = request.getfixturevalue(circuit_fixture)
         with patch("PIL.Image.Image.show") as mock_show:
