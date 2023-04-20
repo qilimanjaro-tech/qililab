@@ -47,7 +47,6 @@ class ExponentialCorrectionV2(PulseShape):
         a = [a0, a1]
         b = [b0, b1]
 
-
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr)) 
