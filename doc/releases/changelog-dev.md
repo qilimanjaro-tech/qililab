@@ -113,6 +113,9 @@ This document contains the changes of the current release.
 
 ### Breaking changes
 
+- `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
+  [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
 ### Deprecations / Removals
 
 - The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
