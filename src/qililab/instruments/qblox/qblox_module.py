@@ -129,7 +129,7 @@ class QbloxModule(AWG):
         """
         frequencies = pulse_bus_schedule.frequencies()
         if len(frequencies) > self._NUM_MAX_SEQUENCERS:
-            raise IndexError(f"The number of frequencies must be less or equal than {self._NUM_MAX_SEQUENCERS}")
+            raise IndexError(f"The number of frequencies must be less or equal than the number of sequencers. Got {len(frequencies)} frequencies and {self._NUM_MAX_SEQUENCERS} sequencers.")
         return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
 
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
