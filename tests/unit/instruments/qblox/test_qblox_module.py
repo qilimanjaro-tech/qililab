@@ -17,6 +17,7 @@ from qililab.instruments.awg_settings.typings import (
 
 from qililab.typings.enums import InstrumentName
 
+from unittest.mock import MagicMock
 
 class DummyAWG(QbloxModule):
     """Dummy AWG class."""
@@ -79,5 +80,7 @@ class TestQblox_d5a:
     """This class contains the unit tests for the ``qblox_d5a`` class."""
 
     def test_error_raises_when_no_channel_specified(self, pulsar):
-        with pytest.raises(ValueError, match="channel not specified to update instrument test"):
-            pulsar.setup(self, parameter = Parameter, value = '2', channel_id = None)
+        pulsar.settings.num_sequencers = 2
+        with pytest.raises(ValueError, match="channel not specified to update instrument"):
+            pulsar.device = MagicMock()
+            pulsar.setup(parameter = Parameter.GAIN, value = 2, channel_id = None)

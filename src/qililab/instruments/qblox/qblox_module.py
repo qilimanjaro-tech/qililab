@@ -283,7 +283,7 @@ class QbloxModule(AWG):
             if self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError(f"channel not specified to update instrument {self.name.value}")
+                raise ValueError("channel not specified to update instrument")
 
         if channel_id > self.num_sequencers - 1:
             raise ValueError(
