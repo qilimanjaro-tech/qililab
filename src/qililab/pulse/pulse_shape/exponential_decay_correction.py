@@ -1,4 +1,4 @@
-"""Exponential decay correction pulse shape."""
+"""Exponential decay correction pulse shape with both v1 and v2 together"""
 from dataclasses import dataclass
 
 import numpy as np
@@ -31,30 +31,44 @@ class ExponentialCorrection(PulseShape):
         Args:
             duration (int): Duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse.
-            
+        
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
         ysig = amplitude * np.ones(round(duration / resolution))
 
-        # Parameters
-        alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
+        if amplitude > 0.0:
+                
+            # Parameters
+            a0 = 1
+            a1 = (self.tau_exponential*(1+2*self.amp)-1)/(2*self.tau_exponential*(1+self.amp)+1)
 
+            b0 = (2*self.tau_exponential+1)/(2*self.tau_exponential+(1+self.amp)+1)
+            b1 = (-2*self.tau_exponential+1)/(2*self.tau_exponential*(1+self.amp+1))
 
-        if self.amp >= 0.0:
-            k = self.amp/(1+self.amp-alpha)
-            b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
-        else:
-            k = -self.amp/(1+self.amp)/(1-alpha)
-            b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
+            a = [a0, a1]
+            b = [b0, b1]
+        
+        elif amplitude < 0.0:
+            
+            # Parameters
+            alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
 
+            if self.amp >= 0.0:
+                k = self.amp/(1+self.amp-alpha)
+                b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
+            else:
+                k = -self.amp/(1+self.amp)/(1-alpha)
+                b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
 
-        a = [1, -(1-alpha)]
-
+            a = [1, -(1-alpha)]
+        
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr)) 
         ycorr = (1/norm)*ycorr
+
+        plt.plot(ycorr)
 
         return ycorr
 
