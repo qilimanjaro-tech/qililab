@@ -12,12 +12,12 @@ from qililab.utils import Factory
 
 
 @Factory.register
-@dataclass(unsafe_hash=True, eq=True, frozen=True)
+@dataclass(eq=True, frozen=True)
 class FluxPredistortion(PulseShape):
     """Exponential decay correction (loop) pulse shape."""
 
     name = PulseShapeName.FLUX_PREDISTORTION
-    coef : np.ndarray = field(hash=False)
+    coef : np.ndarray
     sampling_rate: float = 1.0
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
@@ -53,3 +53,9 @@ class FluxPredistortion(PulseShape):
             RUNCARD.NAME: self.name.value,
             PulseShapeSettingsName.COEF.value: self.coef,
         }
+
+    def __hash__(self) -> int:
+        return hash((self.name, tuple(self.coef), self.sampling_rate))
+    
+    def __eq__(self, other):
+        return self.name == other.name and all(self.coef == other.coef) and self.sampling_rate == other.sampling_rate

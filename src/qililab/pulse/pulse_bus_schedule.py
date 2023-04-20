@@ -146,3 +146,6 @@ class PulseBusSchedule:
         timeline = [PulseEvent.from_dict(event) for event in dictionary[PULSEBUSSCHEDULE.TIMELINE]]
         port = dictionary[PULSEBUSSCHEDULE.PORT]
         return PulseBusSchedule(timeline=timeline, port=port)
+
+    def __eq__(self, other):
+        return self.port == other.port and self.timeline == other.timeline and self._pulses == other._pulses
