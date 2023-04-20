@@ -634,6 +634,13 @@ class QbloxModule(AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+                
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.plot(real)
+                plt.plot(imag)
+                plt.title(f'{pulse_event}')
+                plt.show()
 
         return waveforms
 
