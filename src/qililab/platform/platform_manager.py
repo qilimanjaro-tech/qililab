@@ -2,6 +2,8 @@
 import os
 from abc import ABC, abstractmethod
 
+from qiboconnection.api import API
+
 from qililab.config import logger
 from qililab.constants import RUNCARDS
 from qililab.platform.platform import Platform
@@ -13,7 +15,7 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    def build(self, platform_name: str) -> Platform:
+    def build(self, platform_name: str, connection: API | None = None) -> Platform:
         """Build platform.
 
         Returns:
@@ -21,7 +23,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
         """
         logger.info("Building platform")
         platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
-        return Platform(runcard_schema=platform_schema)
+        return Platform(runcard_schema=platform_schema, connection=connection)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.

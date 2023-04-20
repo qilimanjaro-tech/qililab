@@ -5,10 +5,22 @@ on:
     branches:
       - main
   pull_request:
+    types:
+      - "opened"
+      - "edited"
+      - "reopened"
+      - "synchronize"
+      - "ready_for_review"
+
+    branches:
+      - main
 
 jobs:
   code-quality:
+    if: "! github.event.pull_request.draft"
     runs-on: ubuntu-latest
+    timeout-minutes: 7
+
     env:
       HOME_REPO: /home/repo
 
@@ -33,11 +45,11 @@ jobs:
 
       - name: Code Quality
         run: |
-          isort .
-          black . --check
+          isort . -l 120 --check
+          black . -l 120 --check
           flake8
-          pylint src -E
-          mypy
+          pylint src tests -E
+          mypy src
           interrogate -vv --fail-under=80
           bandit -r src -c .bandit
           mdformat .

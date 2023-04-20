@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
-from qililab.execution import EXECUTION_BUILDER, Execution
+from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.result.result import Result
@@ -29,7 +29,7 @@ class Experiment:
     """Experiment class"""
 
     # Specify the types of the attributes that are not defined during initialization
-    execution: Execution
+    execution_manager: ExecutionManager
     results: Results
     results_path: Path
     _plot: LivePlot
@@ -47,44 +47,39 @@ class Experiment:
         self.pulse_schedules = pulse_schedules or []
         self.options = options
 
-    def connect(self):
+    def connect(self, manual_override=False):
         """Connects to the instruments and blocks the device."""
-        self.platform.connect(
-            connection=self.options.connection,
-            device_id=self.options.device_id,
-            manual_override=self.options.remote_device_manual_override,
-        )
+        self.platform.connect(manual_override=manual_override)
 
     def initial_setup(self):
         """Configure each instrument with the values defined in the runcard."""
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed), creates the ``Execution`` class,
-        generates the live plotting and prepares the `Results` class and the `results.yml` file.
+        """Translates the list of circuits to pulse sequences (if needed), creates the ``ExecutionManager`` class,
+        and generates the live plotting.
         """
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules += translator.translate(circuits=self.circuits, chip=self.platform.chip)
-        # Build ``Execution`` class
-        self.execution = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
+            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+        # Build ``ExecutionManager`` class
+        self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
-        if self.options.connection is None:
+        if self.platform.connection is None:
             self._plot = None
         else:
             self._plot = LivePlot(
-                connection=self.options.connection,
+                connection=self.platform.connection,
                 loops=self.options.loops,
                 plot_y_label=self.options.plot_y_label,
-                num_schedules=self.execution.num_schedules,
+                num_schedules=self.execution_manager.num_schedules,
                 title=self.options.name,
             )
-        # Prepares the results
-        self.results, self.results_path = self.prepare_results()
 
-    def run(self):
+    def run(self) -> Results:
         """This method is responsible for:
+        * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
             * Executing the circuit.
@@ -93,9 +88,11 @@ class Experiment:
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
-        if not hasattr(self, "execution"):
-            raise ValueError("Please build the execution before running an experiment.")
-        num_schedules = self.execution.num_schedules
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before running an experiment.")
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results()
+        num_schedules = self.execution_manager.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
@@ -105,28 +102,45 @@ class Experiment:
         if self.options.remote_save:
             self.remote_save_experiment()
 
+        return self.results
+
+    def compile(self) -> List[dict]:
+        """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
+        experiment.
+
+        Returns:
+            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+                compiled sequences as values.
+        """
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before compilation.")
+        return [
+            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            for schedule_idx in range(len(self.pulse_schedules))
+        ]
+
     def turn_on_instruments(self):
         """Turn on instruments."""
-        if not hasattr(self, "execution"):
-            raise ValueError("Please build the execution before turning on the instruments.")
-        self.execution.turn_on_instruments()
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before turning on the instruments.")
+        self.execution_manager.turn_on_instruments()
 
     def turn_off_instruments(self):
         """Turn off instruments."""
-        if not hasattr(self, "execution"):
-            raise ValueError("Please build the execution before turning off the instruments.")
-        self.execution.turn_off_instruments()
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before turning off the instruments.")
+        self.execution_manager.turn_off_instruments()
 
     def disconnect(self):
         """Disconnects from the instruments and releases the device."""
-        self.platform.disconnect(self.options.connection, self.options.device_id)
+        self.platform.disconnect()
 
     def execute(self) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
             * Connect to the instruments.
             * Apply settings of the runcard to the instruments.
-            * Translate circuit into pulses and create the ``Execution`` class.
+            * Translate circuit into pulses and create the ``ExecutionManager`` class.
             * Turn on instruments.
             * Create the results files & class and connect to live plotting.
             * Runs the experiment.
@@ -141,10 +155,10 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        self.run()
+        results = self.run()
         self.turn_off_instruments()
         self.disconnect()
-        return self.results
+        return results
 
     def remote_save_experiment(self) -> None:
         """Saves the experiment and the results to the remote database and updates the ``_remote_id`` attribute.
@@ -152,35 +166,20 @@ class Experiment:
         Raises:
             ValueError: if connection is not specified
         """
-        if self.options.connection is None:
+        if self.platform.connection is None:
             return
 
         logger.debug("Sending experiment and results to remote database.")
-        self._remote_id = self.options.connection.save_experiment(
+        self._remote_id = self.platform.connection.save_experiment(
             name=self.options.name,
             description=self.options.description,
             experiment_dict=self.to_dict(),
             results_dict=self.results.to_dict(),
-            device_id=self.options.device_id,
-            user_id=self.options.connection.user_id,
+            device_id=self.platform.device_id,
+            user_id=self.platform.connection.user_id,
             qililab_version=__version__,
             favorite=False,
         )
-
-    def _generate_program_upload_and_execute(self, idx: int) -> Result | None:
-        """Given a loop index, generates and uploads the assembly program of the corresponding circuit,
-        executes it and returns the results.
-
-        Args:
-            idx (int): loop index to execute
-
-        Returns:
-            Result: Result object for one program execution.
-        """
-        self.execution.generate_program_and_upload(
-            idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
-        )
-        return self.execution.run(plot=self._plot, path=self.results_path)
 
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
         """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
@@ -188,11 +187,15 @@ class Experiment:
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            result = self._generate_program_upload_and_execute(idx=idx)
+            self.execution_manager.compile(
+                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+            )
+            self.execution_manager.upload()
+            result = self.execution_manager.run(plot=self._plot, path=self.results_path)
             if result is not None:
                 self.results.add(result)
             return
@@ -205,7 +208,7 @@ class Experiment:
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the loop
+            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
@@ -253,11 +256,7 @@ class Experiment:
 
         for value, loop, element in zip(values, loops, elements):
             self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=value,
-                channel_id=loop.channel_id,
+                element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
             )
 
     def set_parameter(
@@ -277,14 +276,13 @@ class Experiment:
             channel_id (int | None): channel id
         """
         if element is None:
-            self.platform.set_parameter(
-                alias=alias,
-                parameter=Parameter(parameter),
-                value=value,
-                channel_id=channel_id,
-            )
+            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.build_execution()
+        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+            element.set_parameter(parameter=parameter, value=value)
+            self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
@@ -297,9 +295,9 @@ class Experiment:
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
-        if not hasattr(self, "execution"):
-            raise ValueError("Please build the execution before drawing the experiment.")
-        return self.execution.draw(resolution=resolution, idx=idx)
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before drawing the experiment.")
+        return self.execution_manager.draw(resolution=resolution, idx=idx)
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -390,7 +388,7 @@ class Experiment:
         # Create the ``Results`` class
         results = Results(
             software_average=self.options.settings.software_average,
-            num_schedules=self.execution.num_schedules,
+            num_schedules=self.execution_manager.num_schedules,
             loops=self.options.loops,
         )
         # Create the folders & files needed to save the results locally
@@ -446,7 +444,7 @@ class Experiment:
 
         data = {
             EXPERIMENT.SOFTWARE_AVERAGE: self.options.settings.software_average,
-            EXPERIMENT.NUM_SCHEDULES: self.execution.num_schedules,
+            EXPERIMENT.NUM_SCHEDULES: self.execution_manager.num_schedules,
             EXPERIMENT.SHAPE: [] if self.options.loops is None else compute_shapes_from_loops(loops=self.options.loops),
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.options.loops]
             if self.options.loops is not None

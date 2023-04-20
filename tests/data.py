@@ -28,9 +28,6 @@ from qililab.instruments.awg_settings.typings import (
 )
 from qililab.typings.enums import (
     AcquireTriggerMode,
-    BusCategory,
-    BusName,
-    BusSubCategory,
     Category,
     ConnectionName,
     InstrumentControllerName,
@@ -40,12 +37,9 @@ from qililab.typings.enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
-    SystemControlCategory,
     SystemControlName,
-    SystemControlSubCategory,
 )
 
 
@@ -57,9 +51,11 @@ class Galadriel:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
+        PLATFORM.DEVICE_ID: 9,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
-        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BETWEEN_PULSES: 40,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
@@ -82,7 +78,7 @@ class Galadriel:
                 RUNCARD.NAME: "X",
                 "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
                 "phase": 0,
-                "duration": PLATFORM.MASTER_DURATION_GATE,
+                "duration": 50,
                 EXPERIMENT.SHAPE: {
                     RUNCARD.NAME: "drag",
                     "num_sigmas": 4,
@@ -129,6 +125,7 @@ class Galadriel:
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
+        AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
@@ -193,6 +190,7 @@ class Galadriel:
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
+        AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
@@ -390,37 +388,25 @@ class Galadriel:
     buses = [
         {
             RUNCARD.ID: 0,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_CONTROL_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
-            RUNCARD.BUS_SUBCATEGORY: BusSubCategory.CONTROL.value,
             RUNCARD.ALIAS: "drive_line_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_CONTROL_SYSTEM_CONTROL,
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
-                RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
-                RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.CONTROL.value,
-                Category.AWG.value: InstrumentName.QBLOX_QCM.value,
-                Category.SIGNAL_GENERATOR.value: "rs_0",
+                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 0,
         },
         {
             RUNCARD.ID: 1,
-            RUNCARD.NAME: BusName.TIME_DOMAIN_READOUT_BUS,
             RUNCARD.CATEGORY: Category.BUS.value,
-            RUNCARD.BUS_CATEGORY: BusCategory.TIME_DOMAIN.value,
-            RUNCARD.BUS_SUBCATEGORY: BusSubCategory.TIME_DOMAIN_READOUT.value,
             RUNCARD.ALIAS: "feedline_input_output_bus",
             Category.SYSTEM_CONTROL.value: {
                 RUNCARD.ID: 1,
-                RUNCARD.NAME: SystemControlName.TIME_DOMAIN_READOUT_SYSTEM_CONTROL,
+                RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
-                RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.TIME_DOMAIN.value,
-                RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.TIME_DOMAIN_READOUT.value,
-                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
-                Category.SIGNAL_GENERATOR.value: "rs_1",
+                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
         },
@@ -478,7 +464,9 @@ class FluxQubitSimulator:
     platform = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
+        PLATFORM.DEVICE_ID: 9,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
@@ -549,17 +537,12 @@ class FluxQubitSimulator:
         SCHEMA.BUSES: [
             {
                 RUNCARD.ID: 0,
-                RUNCARD.NAME: BusName.SIMULATED_BUS,
                 RUNCARD.CATEGORY: Category.BUS.value,
-                RUNCARD.BUS_CATEGORY: BusCategory.SIMULATED.value,
-                RUNCARD.BUS_SUBCATEGORY: BusCategory.SIMULATED.value,
                 RUNCARD.ALIAS: "simulated_bus",
                 Category.SYSTEM_CONTROL.value: {
                     RUNCARD.ID: 0,
                     RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL,
                     RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
-                    RUNCARD.SYSTEM_CONTROL_CATEGORY: SystemControlCategory.SIMULATED.value,
-                    RUNCARD.SYSTEM_CONTROL_SUBCATEGORY: SystemControlSubCategory.SIMULATED.value,
                     RUNCARD.ALIAS: "simulated_system_control",
                     NodeName.QUBIT.value: "csfq4jj",
                     "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
@@ -810,7 +793,6 @@ experiment = {
                     PULSEBUSSCHEDULE.TIMELINE: [
                         {
                             PULSEEVENT.PULSE: {
-                                PULSE.NAME: PulseName.READOUT_PULSE.value,
                                 PULSE.AMPLITUDE: 1,
                                 PULSE.FREQUENCY: 1e9,
                                 PULSE.PHASE: 0,

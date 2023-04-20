@@ -8,6 +8,7 @@ class AWGTypes(Enum):
 
     AWG_SEQUENCERS = "awg_sequencers"
     AWG_IQ_CHANNELS = "awg_iq_channels"
+    OUT_OFFSETS = "out_offsets"
 
 
 class AWGSequencerTypes(Enum):

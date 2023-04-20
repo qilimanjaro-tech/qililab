@@ -2,19 +2,11 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from qililab.instrument_controllers.single_instrument_controller import (
-    SingleInstrumentController,
-)
-from qililab.instrument_controllers.utils.instrument_controller_factory import (
-    InstrumentControllerFactory,
-)
+from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
+from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.keithley.keithley_2600 import Keithley2600
 from qililab.typings import Keithley2600Driver
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentTypeName,
-)
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
 
 
 @InstrumentControllerFactory.register

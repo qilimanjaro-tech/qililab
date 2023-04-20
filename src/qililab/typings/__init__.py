@@ -2,8 +2,6 @@
 from .enums import (
     AcquireTriggerMode,
     AcquisitionName,
-    BusCategory,
-    BusSubCategory,
     Category,
     ConnectionName,
     GateName,
@@ -13,13 +11,10 @@ from .enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
     ResultName,
     SchemaDrawOptions,
-    SystemControlCategory,
-    SystemControlSubCategory,
 )
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement
@@ -35,4 +30,5 @@ from .instruments import (
     QcmQrm,
     RohdeSchwarzSGS100A,
 )
+from .loop import LoopOptions
 from .yaml_type import yaml
