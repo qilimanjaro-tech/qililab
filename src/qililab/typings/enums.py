@@ -202,7 +202,7 @@ class PulseShapeName(str, Enum):
     EXPONENTIAL_CORRECTION = "exponential"
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     PREDISTORTION = "predistortion"
-    FLUX_PREDISTORTION = "flux_predistortion"
+    
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -222,7 +222,7 @@ class PulseShapeSettingsName(str, Enum):
     AMP = "amp"
     AMP1 = "amp1"
     AMP2 = "amp2"
-    COEF = "coef"
+ 
 
 
 class NodeName(str, Enum):
@@ -391,7 +391,7 @@ class Parameter(str, Enum):
     AMP = "amp"
     AMP1 = "amp1"
     AMP2 = "amp2"
-    COEF = "coef"
+   
 
 
 class ResultName(str, Enum):
