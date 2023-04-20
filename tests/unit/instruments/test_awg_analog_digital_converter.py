@@ -20,6 +20,7 @@ from qililab.instruments.awg_settings.typings import (
     AWGTypes)
 
 from qililab.typings.enums import InstrumentName
+from unittest.mock import MagicMock
 
 class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
@@ -97,5 +98,6 @@ class TestAWGAnalogDigitalConverter:
     
     def test_error_raises_when_no_channel_specified(self, awg: AWG):
         awg.settings.num_sequencers = 2
-        with pytest.raises(ValueError, match="channel not specified to update instrument awg"):
-            awg.setup(self, parameter = Parameter, value = '2', channel_id = None)
+        with pytest.raises(ValueError, match="channel not specified to update instrument"):
+            awg.device = MagicMock()
+            awg.setup(parameter = Parameter.ACQUISITION_DELAY_TIME, value = 2, channel_id = None)

@@ -42,7 +42,7 @@ class AWGAnalogDigitalConverter(AWG):
             if self.num_sequencers == 1:
                 channel_id = 0
             else:
-                raise ValueError(f"channel not specified to update instrument {self.name.value}")
+                raise ValueError("channel not specified to update instrument")
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             self._set_acquisition_delay_time(value=value)
             return
