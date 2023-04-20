@@ -10,6 +10,7 @@ import numpy as np
 from qililab.config import logger
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import BusExecution
+from qililab.platform import Platform
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings import yaml
@@ -21,7 +22,16 @@ class ExecutionManager:
     """ExecutionManager class."""
 
     num_schedules: int
+    platform: Platform
     buses: List[BusExecution] = field(default_factory=list)
+
+    def turn_on_instruments(self):
+        """Start/Turn on the instruments."""
+        self.platform.turn_on_instruments()
+
+    def turn_off_instruments(self):
+        """Start/Turn on the instruments."""
+        self.platform.turn_off_instruments()
 
     def __post_init__(self):
         """check that the number of schedules matches all the schedules for each bus"""
