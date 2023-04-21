@@ -6,7 +6,7 @@ class Drag(_Un_):
     Inherits from qibo unitary gates class
     """
 
-    def __init__(self, q, theta, phi, trainable=False):
+    def __init__(self, q: int, theta: float, phi: float, trainable: bool = False):
         """init method
 
         Args:
@@ -16,7 +16,7 @@ class Drag(_Un_):
             trainable (bool): whether parameters are trainable (set to false)
         """
         super().__init__(q, trainable=trainable)
-        self.name = "drag"  # TODO change name, check that it does not break other functions
+        self.name = "drag"
         self.nparams = 2
         self._theta, self._phi = None, None
         self.init_kwargs = {"theta": theta, "phi": phi, "trainable": trainable}

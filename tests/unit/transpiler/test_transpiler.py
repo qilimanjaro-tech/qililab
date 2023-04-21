@@ -27,7 +27,7 @@ def random_circuit(
 
     # get list available gates
     if gates_list is None:
-        gates_list = get_default_gates()
+        gates_list = default_gates
 
     # init circuit
     c = Circuit(nqubits)
@@ -56,48 +56,6 @@ def random_circuit(
         c.add(gate)
 
     return c
-
-
-def get_default_gates():
-    """Get list of transpilable gates. Gates are initialized so properties can be accessed
-
-    Returns:
-        default_gates: (list[gates.Gate])
-    """
-    # init gates
-    default_gates = [
-        gates.I(0),
-        gates.X(0),
-        gates.Y(0),
-        gates.Z(0),
-        gates.H(0),
-        gates.RX(0, 0),
-        gates.RY(0, 0),
-        gates.RZ(0, 0),
-        gates.U1(0, 0),
-        gates.U2(0, 0, 0),
-        gates.U3(0, 0, 0, 0),
-        gates.S(0),
-        gates.SDG(0),
-        gates.T(0),
-        gates.TDG(0),
-        gates.CNOT(0, 1),
-        gates.CZ(0, 1),
-        gates.SWAP(0, 1),
-        gates.iSWAP(0, 1),
-        gates.CRX(0, 1, 0),
-        gates.CRY(0, 1, 0),
-        gates.CRZ(0, 1, 0),
-        gates.CU1(0, 1, 0),
-        gates.CU2(0, 1, 0, 0),
-        gates.CU3(0, 1, 0, 0, 0),
-        gates.FSWAP(0, 1),
-        gates.RXX(0, 1, 0),
-        gates.RYY(0, 1, 0),
-        gates.RZZ(0, 1, 0),
-        gates.TOFFOLI(0, 1, 2),
-    ]
-    return default_gates
 
 
 def apply_circuit(circuit: Circuit) -> np.ndarray:
@@ -171,7 +129,7 @@ def test_transpiler():
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
-            ngates=len(get_default_gates()),
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
@@ -192,14 +150,14 @@ def test_transpiler():
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
-            ngates=len(get_default_gates()),
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
         )
         c2 = random_circuit(
             nqubits=nqubits,
-            ngates=len(get_default_gates()),
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
@@ -213,3 +171,38 @@ def test_transpiler():
         # check that states differ
         if np.allclose(1, compare_circuits(c1, c2, nqubits)):
             raise Exception("final states differ!")
+
+
+# transpilable gates
+default_gates = [
+    gates.I(0),
+    gates.X(0),
+    gates.Y(0),
+    gates.Z(0),
+    gates.H(0),
+    gates.RX(0, 0),
+    gates.RY(0, 0),
+    gates.RZ(0, 0),
+    gates.U1(0, 0),
+    gates.U2(0, 0, 0),
+    gates.U3(0, 0, 0, 0),
+    gates.S(0),
+    gates.SDG(0),
+    gates.T(0),
+    gates.TDG(0),
+    gates.CNOT(0, 1),
+    gates.CZ(0, 1),
+    gates.SWAP(0, 1),
+    gates.iSWAP(0, 1),
+    gates.CRX(0, 1, 0),
+    gates.CRY(0, 1, 0),
+    gates.CRZ(0, 1, 0),
+    gates.CU1(0, 1, 0),
+    gates.CU2(0, 1, 0, 0),
+    gates.CU3(0, 1, 0, 0, 0),
+    gates.FSWAP(0, 1),
+    gates.RXX(0, 1, 0),
+    gates.RYY(0, 1, 0),
+    gates.RZZ(0, 1, 0),
+    gates.TOFFOLI(0, 1, 2),
+]
