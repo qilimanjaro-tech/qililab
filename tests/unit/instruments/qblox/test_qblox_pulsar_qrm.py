@@ -13,6 +13,7 @@ from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPu
 from qililab.instruments import QbloxQRM
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
+from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, Rectangular
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
@@ -90,6 +91,29 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
     # connect to instrument
     pulsar_controller_qrm.connect()
     return pulsar_controller_qrm.modules[0]
+
+
+@pytest.fixture(name="multiplexed_pulse_bus_schedule")
+def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
+    """Load PulseBusSchedule with 10 different frequencies.
+
+    Returns:
+        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
+    """
+    timeline = [
+        PulseEvent(
+            pulse=Pulse(
+                amplitude=1,
+                phase=0,
+                duration=1000,
+                frequency=7.0e9 + n * 0.1e9,
+                pulse_shape=Rectangular(),
+            ),
+            start_time=0,
+        )
+        for n in range(2)
+    ]
+    return PulseBusSchedule(timeline=timeline, port=0)
 
 
 class TestQbloxQRM:
@@ -241,6 +265,24 @@ class TestQbloxQRM:
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
+
+    def test_compile_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
+        """Test compile method with a multiplexed pulse bus schedule."""
+        multiplexed_pulse_bus_schedule.port = 1  # change port to target the resonator
+        sequences = qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        assert isinstance(sequences, list)
+        assert len(sequences) == 2
+        for sequence in sequences:
+            assert isinstance(sequence, Sequence)
+
+    def test_cache_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
+        """Checks the cache after compiling a multiplexed pulse bus schedule."""
+        multiplexed_pulse_bus_schedule.port = 1  # change port to target the resonator
+        qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        frequencies = multiplexed_pulse_bus_schedule.frequencies()
+        assert len(qrm._cache) == len(frequencies)
+        for schedule, frequency in zip(qrm._cache.values(), frequencies):
+            assert schedule.frequencies()[0] == frequency
 
     def test_acquisition_data_is_removed_when_calling_compile_twice(self, qrm, pulse_bus_schedule):
         """Test that the acquisition data of the QRM device is deleted when calling compile twice."""
