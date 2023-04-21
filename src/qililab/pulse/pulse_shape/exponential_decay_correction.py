@@ -37,8 +37,19 @@ class ExponentialCorrection(PulseShape):
         """
         ysig = amplitude * np.ones(round(duration / resolution))
 
-        if amplitude > 0.0:
-                
+        if self.amp > 0.0:
+            
+            # Parameters
+            alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
+
+            k = self.amp/(1+self.amp-alpha)
+            b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
+
+            a = [1, -(1-alpha)]    
+            
+        
+        elif self.amp < 0.0:
+            
             # Parameters
             a0 = 1
             a1 = (self.tau_exponential*(1+2*self.amp)-1)/(2*self.tau_exponential*(1+self.amp)+1)
@@ -48,20 +59,6 @@ class ExponentialCorrection(PulseShape):
 
             a = [a0, a1]
             b = [b0, b1]
-        
-        elif amplitude < 0.0:
-            
-            # Parameters
-            alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
-
-            if self.amp >= 0.0:
-                k = self.amp/(1+self.amp-alpha)
-                b = [(1-k + k*alpha), -(1-k)*(1-alpha)]
-            else:
-                k = -self.amp/(1+self.amp)/(1-alpha)
-                b = [(1+k - k*alpha), -(1-k)*(1-alpha)]
-
-            a = [1, -(1-alpha)]
         
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
