@@ -1,5 +1,6 @@
 """This file tests the the ``InstrumentController`` class"""
 import copy
+
 import pytest
 
 from qililab.constants import INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
