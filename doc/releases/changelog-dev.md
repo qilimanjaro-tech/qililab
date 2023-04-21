@@ -37,6 +37,15 @@ This document contains the changes of the current release.
 - Added `get_bus_by_qubit_index` method to the `Platform` class.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
+- Added `range` and `channel_id` attribute to the `Loop` class.
+  Here is an example on how a loop is created now:
+
+  ```python
+  new_loop = Loop(alias="loop", parameter=Parameter.POWER, range=np.linspace(1, 10, 10))
+  ```
+
+  [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -47,9 +56,11 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-* The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
+- The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
+
+- The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values` attribute which is now in the `Loop` class renamed as `range`. [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
 ### Documentation
 
