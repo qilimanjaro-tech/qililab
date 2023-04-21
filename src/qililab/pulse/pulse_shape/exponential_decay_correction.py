@@ -37,7 +37,7 @@ class ExponentialCorrection(PulseShape):
         """
         ysig = amplitude * np.ones(round(duration / resolution))
 
-        if self.amp > 0.0:
+        if self.amp >= 0.0:
             
             # Parameters
             alpha = 1 - np.exp(-1/(self.sampling_rate*self.tau_exponential*(1+self.amp)))
