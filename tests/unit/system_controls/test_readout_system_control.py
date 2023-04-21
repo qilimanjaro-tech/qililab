@@ -1,11 +1,6 @@
 """This file tests the the ``InstrumentController`` class"""
 import pytest
-import copy
 
-from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD, INSTRUMENTREFERENCE
-from qililab.typings.enums import Category
-
-from tests.data import Galadriel
 from qililab.platform import Platform
 from qililab.system_control.readout_system_control import ReadoutSystemControl
 

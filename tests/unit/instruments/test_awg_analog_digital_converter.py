@@ -1,25 +1,19 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
 import pytest
-import copy
-
 
 from qililab.instruments import AWG
-from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD, INSTRUMENTREFERENCE
+from qililab.constants import RUNCARD
 from qililab.typings.enums import Category, Parameter
-
-from tests.data import Galadriel
-from qililab.platform import Platform
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.typings.enums import AcquireTriggerMode
-
 from qililab.instruments.awg_settings.typings import (
     AWGChannelMappingTypes,
     AWGIQChannelTypes,
     AWGSequencerPathTypes,
     AWGSequencerTypes,
     AWGTypes)
-
 from qililab.typings.enums import InstrumentName
+
 from unittest.mock import MagicMock
 
 class DummyAWG(AWGAnalogDigitalConverter):

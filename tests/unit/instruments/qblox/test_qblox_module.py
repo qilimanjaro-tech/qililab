@@ -2,7 +2,7 @@
 import pytest
 
 
-from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD, INSTRUMENTREFERENCE
+from qililab.constants import RUNCARD
 
 from qililab.typings.enums import Parameter, Category
 from qililab.instruments.qblox import QbloxModule
