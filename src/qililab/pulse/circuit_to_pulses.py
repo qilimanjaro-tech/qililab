@@ -45,7 +45,6 @@ class CircuitToPulses:
             control_gates = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
-            _, readout_gate = readout_gates[0] if len(readout_gates) > 0 else (None, None)
             for gate in control_gates:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:

@@ -156,9 +156,9 @@ class QbloxModule(AWG):
         sequencers_pulse_bus_schedule = self._split_schedule_for_sequencers(pulse_bus_schedule=pulse_bus_schedule)
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        for sequencer in sequencers:
+        for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
-                sequence = self._compile(sequencers_pulse_bus_schedule[sequencer], sequencer)
+                sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
                 compiled_sequences.append(self.sequences[sequencer][0])
