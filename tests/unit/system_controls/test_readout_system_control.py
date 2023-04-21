@@ -16,7 +16,13 @@ def fixture_system_control(platform: Platform):
 
 class TestReadoutSystemControl:
     """This class contains the unit tests for the ``ReadoutSystemControl`` class."""
-    
-    def test_error_raises_when_no_AWG(self, system_control):
-        with pytest.raises(ValueError, match=f"The system control readout_system_control doesn't have an AWG instrument."):
-            system_control.acquisition_delay_time
+
+    def test_error_raises_when_no_awg(self, system_control):
+        """Testing that an error raises if a readout system control does not have an AWG
+
+        Args:
+            system_control (_type_): _description_
+        """
+        with pytest.raises(ValueError, match="The system control readout_system_control "
+                           + "doesn't have an AWG instrument."):
+            system_control.acquisition_delay_time # pylint: disable=pointless-statement

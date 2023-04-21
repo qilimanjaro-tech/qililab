@@ -1,23 +1,21 @@
 """This file tests the the ``qblox_d5a`` class"""
+
+from unittest.mock import MagicMock
+
 import pytest
-
-
-from qililab.constants import RUNCARD
-
-from qililab.typings.enums import Parameter, Category
-from qililab.instruments.qblox import QbloxModule
 from qpysequence.program import Loop, Register
 
+from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.typings import (
     AWGChannelMappingTypes,
     AWGIQChannelTypes,
     AWGSequencerPathTypes,
     AWGSequencerTypes,
-    AWGTypes)
+    AWGTypes,
+)
+from qililab.instruments.qblox import QbloxModule
+from qililab.typings.enums import Category, InstrumentName, Parameter
 
-from qililab.typings.enums import InstrumentName
-
-from unittest.mock import MagicMock
 
 class DummyAWG(QbloxModule):
     """Dummy AWG class."""
@@ -27,6 +25,7 @@ class DummyAWG(QbloxModule):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         pass
+
 
 @pytest.fixture(name="pulsar")
 def fixture_pulsar_controller_qcm():
@@ -76,11 +75,17 @@ def fixture_pulsar_controller_qcm():
     }
     return DummyAWG(settings=settings)
 
-class TestQblox_d5a:
+
+class TestQbloxD5a:
     """This class contains the unit tests for the ``qblox_d5a`` class."""
 
     def test_error_raises_when_no_channel_specified(self, pulsar):
+        """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
+
+        Args:
+            pulsar (_type_): pulsar
+        """
         pulsar.settings.num_sequencers = 2
         with pytest.raises(ValueError, match="channel not specified to update instrument"):
             pulsar.device = MagicMock()
-            pulsar.setup(parameter = Parameter.GAIN, value = 2, channel_id = None)
+            pulsar.setup(parameter=Parameter.GAIN, value=2, channel_id=None)

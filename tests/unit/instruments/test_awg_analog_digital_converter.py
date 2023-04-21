@@ -1,4 +1,5 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
+from unittest.mock import MagicMock
 import pytest
 
 from qililab.instruments import AWG
@@ -13,17 +14,18 @@ from qililab.instruments.awg_settings.typings import (
     AWGSequencerTypes,
     AWGTypes)
 from qililab.typings.enums import InstrumentName
+from qililab.pulse import PulseBusSchedule
 
-from unittest.mock import MagicMock
 
 class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
 
-    def compile(self):
-            return []
-    
+    def compile(self,
+                pulse_bus_schedule: PulseBusSchedule,
+                nshots: int, repetition_duration: int) -> list: # pylint disable=arguments-differ
+        return []
     def run(self):
-         pass
+        pass
 
     def acquire_result(self):
         return []
@@ -89,8 +91,12 @@ def fixture_awg():
 
 class TestAWGAnalogDigitalConverter:
     """This class contains the unit tests for the ``AWGAnalogDigitalConverte`` class."""
-    
     def test_error_raises_when_no_channel_specified(self, awg: AWG):
+        """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
+
+        Args:
+            awg (AWG): _description_
+        """
         awg.settings.num_sequencers = 2
         with pytest.raises(ValueError, match="channel not specified to update instrument"):
             awg.device = MagicMock()
