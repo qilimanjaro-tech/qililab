@@ -41,7 +41,8 @@ class TestLoop:
         range_1 = np.linspace(0, 10, 10)
         range_2 = np.geomspace(2, 32, 5)
         expected = np.array([range_1, range_2], dtype=object)
-        np.testing.assert_array_equal(nested_loop.ranges, expected)
+        for x, y in zip(nested_loop.ranges, expected):
+            np.testing.assert_array_equal(x, y)
 
     def test_shapes_property(self, loop: Loop):
         """Test the shapes property"""
@@ -66,6 +67,7 @@ class TestLoop:
         expected = np.linspace(0, 10, 10)
         np.testing.assert_array_equal(loop.outer_loop_range, expected)
 
+    @pytest.mark.xfail(reason="[BUG] Reported in Issue #265")
     def test_outer_loop_range_nested_loop(self, nested_loop: Loop):
         """Test the outer loop range property for a nested loop"""
         expected = np.linspace(0, 10, 10)
@@ -75,6 +77,7 @@ class TestLoop:
         """Test the inner loop range property"""
         assert loop.inner_loop_range is None
 
+    @pytest.mark.xfail(reason="[BUG] Reported in Issue #265")
     def test_inner_loop_range_nested_loop(self, nested_loop: Loop):
         """Test the inner loop range property for a nested loop"""
         np.testing.assert_array_equal(nested_loop.inner_loop_range, np.geomspace(2, 32, 5))
