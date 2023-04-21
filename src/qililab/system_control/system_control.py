@@ -9,7 +9,7 @@ from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform.components.bus_element import BusElement
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse_schedule import PulseBusSchedule
 from qililab.settings import DDBBElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory

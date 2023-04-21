@@ -1,8 +1,7 @@
 """CircuitTranspiler class."""
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from qililab.bus import PulseEvent, PulseSchedule
 from qililab.chip import Chip
 from qililab.circuit import Circuit
 from qililab.circuit.nodes.operation_node import OperationTiming
@@ -10,6 +9,7 @@ from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
+from qililab.pulse_schedule import PulseEvent, PulseSchedule
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
 
@@ -173,4 +173,11 @@ class CircuitTranspiler:
                         end_time=operation_node.timing.end,
                     )
                     pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)
+        return pulse_schedule
+
+    def transpile(self, circuit: Circuit) -> PulseSchedule:
+        circuit_ir1 = self.calculate_timings(circuit)
+        circuit_ir2 = self.remove_special_operations(circuit_ir1)
+        circuit_ir3 = self.transpile_to_pulse_operations(circuit_ir2)
+        pulse_schedule = self.generate_pulse_schedule(circuit_ir3)
         return pulse_schedule

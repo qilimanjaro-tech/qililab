@@ -2,8 +2,8 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from qililab.bus.pulse_bus_schedule import PulseBusSchedule
-from qililab.bus.pulse_event import PulseEvent
+from qililab.pulse_schedule.pulse_bus_schedule import PulseBusSchedule
+from qililab.pulse_schedule.pulse_event import PulseEvent
 
 
 @dataclass

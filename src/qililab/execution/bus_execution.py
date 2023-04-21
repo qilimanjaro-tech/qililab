@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 
 from qililab.platform import Bus
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse_schedule import PulseBusSchedule
 from qililab.result.result import Result
 from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl, SystemControl
 from qililab.utils import Waveforms

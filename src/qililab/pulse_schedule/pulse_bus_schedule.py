@@ -7,8 +7,8 @@ from typing import List, Set
 
 import numpy as np
 
-from qililab.bus.pulse_event import PulseEvent
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
+from qililab.pulse_schedule.pulse_event import PulseEvent
 from qililab.utils import Waveforms
 
 
