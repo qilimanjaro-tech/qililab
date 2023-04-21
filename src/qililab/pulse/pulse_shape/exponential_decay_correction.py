@@ -47,7 +47,7 @@ class ExponentialCorrection(PulseShape):
 
             a = [1, -(1-alpha)]    
             
-        
+        # TODO: Check if there should be another if here, or just a else.
         elif self.amp < 0.0:
             
             # Parameters

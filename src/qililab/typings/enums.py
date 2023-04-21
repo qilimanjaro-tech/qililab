@@ -188,7 +188,6 @@ class PulseShapeName(str, Enum):
     RECTANGULAR = "rectangular"
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
-    PREDISTORTION = "predistortion"
 
 
 class PulseShapeSettingsName(str, Enum):
