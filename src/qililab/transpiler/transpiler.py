@@ -4,6 +4,8 @@ from qibo.models import Circuit
 
 from qililab.transpiler.gate_decompositions import translate_gates
 
+# TODO do not add any Z gates at the end
+
 
 def translate_circuit(circuit: Circuit, optimize: bool = False) -> Circuit:
     """Converts circuit with qibo gates to circuit with native gates

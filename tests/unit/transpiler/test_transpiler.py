@@ -5,7 +5,10 @@ from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.models import Circuit
 
-from qililab.transpiler import translate_circuit
+from qililab.transpiler.transpiler import (  # TODO translate_circuit should be imported from qililab.transpiler since it's in __init__
+    optimize_transpilation,
+    translate_circuit,
+)
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -159,7 +162,7 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
     return np.abs(np.dot(np.conjugate(state_t), state_q))
 
 
-def test_transpiler():
+def test_translate_circuit():
     """Test that the transpiled circuit outputs same result if
     circuits are the same, and different results if circuits are
     not the same
@@ -212,4 +215,90 @@ def test_transpiler():
 
         # check that states differ
         if np.allclose(1, compare_circuits(c1, c2, nqubits)):
+            raise Exception("final states should differ!")
+
+
+def test_optimize_transpilation():
+    """Test that the transpiled circuit outputs same result if
+    circuits are the same, and different results if circuits are
+    not the same
+    """
+    rng = np.random.default_rng(seed=42)  # init random number generator
+
+    # circuits are the same
+    for i in range(0, 1000):
+        nqubits = np.random.randint(4, 10)
+        c1 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(get_default_gates()),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+
+        # get transpiled circuit
+        c1 = translate_circuit(c1)
+        # optimize it directly and using optimize_transpilation
+        c3_gates = optimize_transpilation(c1.nqubits, c1.queue)
+        c3 = translate_circuit(c1, True)
+
+        # check that both c1, c3 are qibo.Circuit
+        assert isinstance(c1, Circuit)
+        assert isinstance(c3, Circuit)
+
+        # check that c2, c3 have the same gates
+        for gate2, gate3 in zip(c3_gates, c3.queue):
+            assert gate2.name == gate3.name
+
+        # check that states for c1, c3 are equivalent up to a global phase
+        if not np.allclose(1, compare_circuits(c1, c3, nqubits)):
             raise Exception("final states differ!")
+
+    # circuits are not the same
+    for i in range(0, 1000):
+        nqubits = np.random.randint(4, 10)
+        c1 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(get_default_gates()),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+        c2 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(get_default_gates()),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+        c3 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(get_default_gates()),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+
+        # get transpiled circuit
+        c1 = translate_circuit(c1)
+        # optimize it directly and using optimize_transpilation
+        # translate c2, c3
+        c2 = translate_circuit(c2)
+        c3 = translate_circuit(c2)
+        # c2 = optimize_transpilation(c2.nqubits, c2.queue)
+        c3 = translate_circuit(c3, True)
+
+        # check that both c1, c3 are qibo.Circuit
+        assert isinstance(c1, Circuit)
+        assert isinstance(c3, Circuit)
+
+        # check that c2, c3 do not have the same gates overall
+        assert sum([gate2.name == gate3.name for gate2, gate3 in zip(c2.queue, c3.queue)] != len(gate2.queue))
+
+        # check that states for c1, c2, c3 are not equivalent
+        for c in [c1, c2, c3]:
+            # if np.allclose(1, compare_circuits(c1, c3, nqubits)):
+            raise Exception("final states should differ!")
+
+        # TODO test that no Z gates
+        # TODO combine test 1,2
