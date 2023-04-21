@@ -12,7 +12,7 @@ from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADC
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
-from qililab.pulse_schedule import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 

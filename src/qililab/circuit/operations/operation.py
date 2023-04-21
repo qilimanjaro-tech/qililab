@@ -10,9 +10,11 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import Signature, signature
+from multiprocessing.pool import RUN
 from typing import Dict, Tuple
 
 from qililab.circuit.operation_factory import OperationFactory
+from qililab.constants import RUNCARD
 from qililab.typings import OperationName
 from qililab.typings.enums import Qubits
 from qililab.utils import classproperty
@@ -153,3 +155,24 @@ class Operation(ABC):
             return operation_class(**parameters)
         else:
             raise ValueError(f"Invalid string representation: {string_representation}")
+
+    @classmethod
+    def from_dict(cls, dictionary: dict):
+        """Load Pulse object from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the Pulse object.
+
+        Returns:
+            Pulse: Loaded class.
+        """
+        operation_class = OperationFactory.get(dictionary.pop(RUNCARD.NAME))
+        return operation_class(**dictionary)
+
+    def to_dict(self):
+        """Return dictionary of pulse.
+
+        Returns:
+            dict: Dictionary describing the pulse.
+        """
+        return {RUNCARD.NAME: self.name} | self.parameters

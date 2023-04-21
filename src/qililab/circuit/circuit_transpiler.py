@@ -9,7 +9,7 @@ from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
-from qililab.pulse_schedule import PulseEvent, PulseSchedule
+from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
 
@@ -167,11 +167,7 @@ class CircuitTranspiler:
         for layer in layers:
             for operation_node in layer:
                 if isinstance(operation_node.operation, PulseOperation):
-                    pulse_event = PulseEvent(
-                        pulse=operation_node.operation,
-                        start_time=operation_node.timing.start,
-                        end_time=operation_node.timing.end,
-                    )
+                    pulse_event = PulseEvent(pulse=operation_node.operation, start_time=operation_node.timing.start)
                     pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)
         return pulse_schedule
 

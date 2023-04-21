@@ -2,18 +2,19 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
+from qililab.circuit import GaussianPulse
+from qililab.pulse import PulseBusSchedule, PulseEvent
 
 
 @pytest.fixture(name="mux_pulse_bus_schedule")
 def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
     """Return multiplexed PulseBusSchedule instance."""
     pulse_event_1 = PulseEvent(
-        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.0, pulse_shape=Gaussian(num_sigmas=5)),
+        pulse=GaussianPulse(amplitude=1.0, phase=0, duration=50, frequency=1e9, sigma=4),
         start_time=0,
     )
     pulse_event_2 = PulseEvent(
-        pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
+        pulse=GaussianPulse(amplitude=1.0, phase=0, duration=50, frequency=1e9, sigma=4),
         start_time=0,
     )
     return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)

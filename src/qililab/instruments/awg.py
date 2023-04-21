@@ -8,7 +8,7 @@ from qililab.instruments.awg_settings.awg_iq_channel import AWGIQChannel
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGTypes
 from qililab.instruments.instrument import Instrument
-from qililab.pulse_schedule import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule
 from qililab.utils.asdict_factory import dict_factory
 
 

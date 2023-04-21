@@ -4,11 +4,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import build_platform
+from qililab.circuit import CircuitTranspiler, GaussianPulse
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
+from qililab.pulse import PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -27,7 +29,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitTranspiler(settings=platform.settings, chip=platform.chip).transpile(circuit=circuit)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -100,14 +102,13 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
 
 
 @pytest.fixture(name="pulse")
-def fixture_pulse() -> Pulse:
+def fixture_pulse() -> PulseOperation:
     """Load Pulse.
 
     Returns:
         Pulse: Instance of the Pulse class.
     """
-    pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return GaussianPulse(amplitude=1.0, phase=0, duration=50, frequency=1e9, sigma=4)
 
 
 @pytest.fixture(name="pulse_event")
@@ -117,8 +118,7 @@ def fixture_pulse_event() -> PulseEvent:
     Returns:
         PulseEvent: Instance of the PulseEvent class.
     """
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse = GaussianPulse(amplitude=1.0, phase=0, duration=50, frequency=1e9, sigma=4)
     return PulseEvent(pulse=pulse, start_time=0)
 
 

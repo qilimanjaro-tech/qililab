@@ -3,9 +3,7 @@ import copy
 from multiprocessing.pool import RUN
 from typing import Dict, List, Type
 
-from qibo.gates import RX, RY, I, M, X, Y
-from qibo.models.circuit import Circuit
-
+from qililab.circuit import Circuit, Measure, X
 from qililab.constants import (
     CONNECTION,
     EXPERIMENT,
@@ -38,6 +36,7 @@ from qililab.typings.enums import (
     IntegrationMode,
     Node,
     NodeName,
+    OperationName,
     Parameter,
     PulseShapeName,
     ReferenceClock,
@@ -73,6 +72,7 @@ class Galadriel:
                     "amplitude": 1.0,
                     "duration": 40,
                     "phase": 0.0,
+                    "frequency": 8e9,
                     "parameters": {"sigma": 2},
                 },
             },
@@ -83,6 +83,7 @@ class Galadriel:
                     "amplitude": 1.0,
                     "duration": 40,
                     "phase": 0.0,
+                    "frequency": 8e9,
                     "parameters": {"sigma": 2},
                 },
             },
@@ -93,12 +94,20 @@ class Galadriel:
                     "amplitude": 1.0,
                     "duration": 40,
                     "phase": 0.0,
+                    "frequency": 8e9,
                     "parameters": {"sigma": 2},
                 },
             },
             {
                 RUNCARD.NAME: "Measure",
-                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "phase": 0.0, "parameters": {}},
+                "pulse": {
+                    RUNCARD.NAME: "Square",
+                    "amplitude": 1.0,
+                    "duration": 6000,
+                    "phase": 0.0,
+                    "frequency": 8e9,
+                    "parameters": {},
+                },
             },
         ],
         "gates": [
@@ -654,22 +663,14 @@ class FluxQubitSimulator:
 experiment_params: List[List[str | Circuit | List[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
-    circuit.add(I(0))
-    circuit.add(X(0))
-    circuit.add(Y(0))
-    circuit.add(RX(0, 23))
-    circuit.add(RY(0, 15))
+    circuit.add(0, X())
     if platform == Galadriel:
-        circuit.add(M(0))
+        circuit.add(0, Measure())
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
 
 # Circuit used for simulator
 simulated_experiment_circuit: Circuit = Circuit(1)
-simulated_experiment_circuit.add(I(0))
-simulated_experiment_circuit.add(X(0))
-simulated_experiment_circuit.add(Y(0))
-simulated_experiment_circuit.add(RX(0, 23))
-simulated_experiment_circuit.add(RY(0, 15))
+simulated_experiment_circuit.add(0, X())
 
 results_two_loops = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
@@ -882,11 +883,11 @@ experiment = {
                     PULSEBUSSCHEDULE.TIMELINE: [
                         {
                             PULSEEVENT.PULSE: {
+                                RUNCARD.NAME: OperationName.SQUARE.value,
                                 PULSE.AMPLITUDE: 1,
                                 PULSE.FREQUENCY: 1e9,
                                 PULSE.PHASE: 0,
                                 PULSE.DURATION: 2000,
-                                PULSE.PULSE_SHAPE: {RUNCARD.NAME: PulseShapeName.RECTANGULAR.value},
                             },
                             PULSEEVENT.START_TIME: 40,
                         }

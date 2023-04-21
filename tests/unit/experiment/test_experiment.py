@@ -6,11 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from matplotlib.figure import Figure
-from qibo.gates import M
-from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
 from qililab import build_platform
+from qililab.circuit import Circuit, Measure
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
@@ -261,10 +260,11 @@ class TestMethods:
     def test_draw_method_with_one_bus(self, platform: Platform):
         """Test draw method with only one measurement gate."""
         circuit = Circuit(1)
-        circuit.add(M(0))
+        circuit.add(0, Measure())
         experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.build_execution()
-        experiment.draw()
+        fig = experiment.draw()
+        assert isinstance(fig, Figure)
 
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method."""

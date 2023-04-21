@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.constants import PULSEEVENT
-from qililab.pulse.pulse import Pulse
 from qililab.utils.waveforms import Waveforms
 
 
@@ -12,7 +12,7 @@ from qililab.utils.waveforms import Waveforms
 class PulseEvent:
     """Object representing a Pulse starting at a certain time."""
 
-    pulse: Pulse
+    pulse: PulseOperation
     start_time: int
 
     @property
@@ -57,8 +57,7 @@ class PulseEvent:
             PulseEvent: Loaded class.
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
-        print(dictionary)
-        pulse = Pulse.from_dict(pulse_settings)
+        pulse = PulseOperation.from_dict(pulse_settings)
         start_time = dictionary[PULSEEVENT.START_TIME]
         return PulseEvent(pulse=pulse, start_time=start_time)
 

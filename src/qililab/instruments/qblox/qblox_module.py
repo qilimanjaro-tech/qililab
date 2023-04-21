@@ -18,7 +18,7 @@ from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
 from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.pulse_schedule import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 

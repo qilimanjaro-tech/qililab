@@ -74,6 +74,13 @@ class TestOperation:
             retrieved_value = operation.get_parameter(name)
             assert value == retrieved_value
 
+    def test_to_dict_method(self, operation: Operation):
+        """Test to_dict method"""
+        dictionary = operation.to_dict()
+        assert isinstance(dictionary, dict)
+        other_operation = Operation.from_dict(dictionary=dictionary)
+        assert isinstance(other_operation, Operation)
+
     def test_get_paramater_raises_error_when_parameter_does_not_exist(self, operation: Operation):
         """Test get_parameter method raises a ValueError when parameter does not exist"""
         non_existant_parameter_name = "non_existant"

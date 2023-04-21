@@ -4,7 +4,7 @@ from typing import Dict, List
 from qililab.execution import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
-from qililab.pulse_schedule import PulseBusSchedule, PulseSchedule
+from qililab.pulse import PulseBusSchedule, PulseSchedule
 from qililab.utils import Singleton
 
 

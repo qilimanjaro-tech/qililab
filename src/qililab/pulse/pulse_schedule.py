@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import List
 
 from qililab.constants import PULSESCHEDULES
-from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -29,6 +28,13 @@ class PulseSchedule:
                 pulse_sequence.add_event(pulse_event=pulse_event)
                 return
         self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
+
+    def print(self) -> None:
+        for element in self.elements:
+            print(f"Port {element.port}: ", end="")
+            for event in element:
+                print(f"{event.pulse.name:->10s}", end="")
+            print()
 
     def to_dict(self):
         """Return dictionary representation of the class.

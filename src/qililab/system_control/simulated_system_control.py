@@ -8,7 +8,7 @@ from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.constants import RUNCARD
 from qililab.instruments import Instrument, Instruments
-from qililab.pulse_schedule import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
 from qililab.typings.enums import SystemControlName
 from qililab.utils.factory import Factory

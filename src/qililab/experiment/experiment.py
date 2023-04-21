@@ -10,11 +10,12 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.circuit.circuit_transpiler import CircuitTranspiler
+from qililab.circuit.converters.qili_qasm_converter import QiliQasmConverter
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
-from qililab.pulse_schedule import PulseSchedule
+from qililab.pulse import PulseSchedule
 from qililab.result.result import Result
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
@@ -310,8 +311,8 @@ class Experiment:
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
-            # EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
+            EXPERIMENT.CIRCUITS: [QiliQasmConverter.to_qasm(circuit) for circuit in self.circuits],
+            EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
 
@@ -325,20 +326,20 @@ class Experiment:
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
         circuits = (
-            [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
+            [QiliQasmConverter.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
             if EXPERIMENT.CIRCUITS in dictionary
             else []
         )
-        # pulse_schedules = (
-        #     [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
-        #     if EXPERIMENT.PULSE_SCHEDULES in dictionary
-        #     else []
-        # )
+        pulse_schedules = (
+            [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
+            if EXPERIMENT.PULSE_SCHEDULES in dictionary
+            else []
+        )
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
         return Experiment(
             platform=platform,
             circuits=circuits,
-            # pulse_schedules=pulse_schedules,
+            pulse_schedules=pulse_schedules,
             options=experiment_options,
         )
 
