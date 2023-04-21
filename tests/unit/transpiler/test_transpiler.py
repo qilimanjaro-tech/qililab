@@ -34,19 +34,19 @@ def random_circuit(
 
     # get list of gates to use
     if not exhaustive:
-        gates = rng.choice(gates_list, ngates)
+        list_gates = rng.choice(gates_list, ngates)
     # if exhaustive = True then add all the gates available
     else:
         if ngates < len(gates_list):
             raise Exception("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
-        gates = []
+        list_gates = []  # TODO change name so it does not match gates from qibo.gates
         for k in range(ngates // len(gates_list)):
-            gates.extend(gates_list)
-        gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
-        rng.shuffle(gates)
+            list_gates.extend(gates_list)
+        list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
+        rng.shuffle(list_gates)
 
     # add gates iteratively
-    for gate in gates:
+    for gate in list_gates:
         # apply gate to random qubits
         new_qubits = rng.choice([i for i in range(0, nqubits)], len(gate.qubits), replace=False)
         gate = gate.on_qubits({i: q for i, q in enumerate(new_qubits)})
@@ -170,7 +170,7 @@ def test_transpiler():
     for i in range(0, 1000):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
-            nqubits=5,
+            nqubits=nqubits,
             ngates=len(get_default_gates()),
             rng=rng,
             gates_list=None,
@@ -191,14 +191,14 @@ def test_transpiler():
     for i in range(0, 200):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
-            nqubits=5,
+            nqubits=nqubits,
             ngates=len(get_default_gates()),
             rng=rng,
             gates_list=None,
             exhaustive=True,
         )
         c2 = random_circuit(
-            nqubits=5,
+            nqubits=nqubits,
             ngates=len(get_default_gates()),
             rng=rng,
             gates_list=None,
