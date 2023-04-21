@@ -47,6 +47,13 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
+* The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
+  Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
+  [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
+
 ### Documentation
 
 ### Bug fixes
+
+- Fixed bug where acquisition data was not deleted when compiling the same sequence twice.
+  [#264](https://github.com/qilimanjaro-tech/qililab/pull/264)

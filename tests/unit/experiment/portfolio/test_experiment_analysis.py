@@ -126,14 +126,14 @@ class TestExperimentAnalysis:
 
     def test_control_gate_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``control_gate_setup`` method."""
-        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis.gate_setup(gate="X", parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis.platform.get_element("X").amplitude == 123
 
     def test_measurement_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``measurement_setup`` method."""
-        assert not hasattr(experiment_analysis, "execution")  # ``build_execution`` has not been called
+        assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis.gate_setup(gate="M", parameters={Parameter.AMPLITUDE: 123})
-        assert hasattr(experiment_analysis, "execution")  # ``build_execution`` has been called
+        assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis.platform.get_element("M").amplitude == 123
