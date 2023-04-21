@@ -131,7 +131,7 @@ class TestQbloxQRM:
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
         [
-            (Parameter.GAIN, 0.02, None),
+            (Parameter.GAIN, 0.02, 0),
             (Parameter.GAIN_PATH0, 0.03, 0),
             (Parameter.GAIN_PATH1, 0.01, 0),
             (Parameter.OFFSET_I, 0.9, 0),
@@ -157,7 +157,7 @@ class TestQbloxQRM:
             (Parameter.INTEGRATION_MODE, "ssb", 0),
             (Parameter.SEQUENCE_TIMEOUT, 2, 0),
             (Parameter.ACQUISITION_TIMEOUT, 2, 0),
-            (Parameter.ACQUISITION_DELAY_TIME, 200, None),
+            (Parameter.ACQUISITION_DELAY_TIME, 200, 0),
         ],
     )
     def test_setup_method(  # pylint: disable=too-many-branches # noqa: C901
@@ -220,7 +220,7 @@ class TestQbloxQRM:
     def test_setup_raises_error(self, qrm: QbloxQRM):
         """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
         sequencers."""
-        with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 1"):
+        with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 2"):
             qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
 
     def test_turn_off_method(self, qrm: QbloxQRM):
@@ -251,7 +251,7 @@ class TestQbloxQRM:
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
-        qrm.device.delete_acquisition_data.assert_called_once()
+        assert qrm.device.delete_acquisition_data.call_count == 2
 
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""
@@ -262,7 +262,7 @@ class TestQbloxQRM:
         """Test upload method"""
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
         qrm.upload()
-        qrm.device.sequencer0.sequence.assert_called_once()
+        assert qrm.device.sequencer0.sequence.call_count == 2
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""

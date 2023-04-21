@@ -236,7 +236,7 @@ class TestQbloxQCM:
 
     def test_max_frequencies_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
         """Test split_schedule_for_sequencers method raises error when handling more frequencies than it can support."""
-        expected_error_message = f"The number of frequencies must be less or equal than {qcm._NUM_MAX_SEQUENCERS}"
+        expected_error_message = f"The number of frequencies must be less or equal than the number of sequencers. Got {len(big_pulse_bus_schedule.frequencies())} frequencies and {qcm._NUM_MAX_SEQUENCERS} sequencers."
         with pytest.raises(IndexError, match=expected_error_message):
             qcm._split_schedule_for_sequencers(pulse_bus_schedule=big_pulse_bus_schedule)
 
