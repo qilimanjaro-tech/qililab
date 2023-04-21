@@ -192,7 +192,7 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=self.nshots)
+        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
@@ -217,18 +217,18 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=self.nshots)
+        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
-        if timeline[0].start != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start)))
+        if timeline[0].start_time != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+            avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
-            wait_time = timeline[i + 1].start - pulse_event.start if (i < (len(timeline) - 1)) else 4
+            wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
             avg_loop.append_component(
                 Play(

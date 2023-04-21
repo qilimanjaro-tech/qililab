@@ -8,31 +8,14 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import (
-    CircuitToPulses,
-    Gaussian,
-    Pulse,
-    PulseBusSchedule,
-    PulseEvent,
-    PulseSchedule,
-    ReadoutEvent,
-    ReadoutPulse,
-)
+from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
-from .data import (
-    FluxQubitSimulator,
-    Galadriel,
-    SauronYokogawa,
-    circuit,
-    experiment_params,
-    simulated_experiment_circuit,
-)
-from .side_effect import yaml_safe_load_side_effect
+from .data import FluxQubitSimulator, Galadriel, SauronYokogawa, circuit, experiment_params
 
 
 @pytest.fixture(name="platform")
@@ -74,16 +57,13 @@ def fixture_experiment(request: pytest.FixtureRequest):
         options=LoopOptions(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
-@patch("qililab.platform.platform_manager_yaml.yaml.safe_load", side_effect=yaml_safe_load_side_effect)
-def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureRequest):
+def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -109,11 +89,9 @@ def fixture_nested_experiment(mock_load: MagicMock, request: pytest.FixtureReque
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = Experiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
-    mock_load.assert_called()
-    return experiment
 
 
 @pytest.fixture(name="execution_manager")
@@ -124,7 +102,7 @@ def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
         ExecutionManager: Instance of the ExecutionManager class.
     """
     experiment.build_execution()
-    return experiment.execution.execution_manager  # pylint: disable=protected-access
+    return experiment.execution_manager  # pylint: disable=protected-access
 
 
 @pytest.fixture(name="pulse")
@@ -148,17 +126,6 @@ def fixture_pulse_event() -> PulseEvent:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="readout_event")
-def fixture_readout_event() -> ReadoutEvent:
-    """Load ReadoutEvent.
-
-    Returns:
-        ReadoutEvent: Instance of the PulseEvent class.
-    """
-    pulse = ReadoutPulse(amplitude=1, phase=0, duration=50, frequency=1e9)
-    return ReadoutEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="simulated_platform")

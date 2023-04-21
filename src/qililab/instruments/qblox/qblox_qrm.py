@@ -67,6 +67,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         super().initial_setup()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
+            # Remove all acquisition data
+            self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
                 value=cast(AWGQbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
             )
@@ -80,24 +82,33 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
-        """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
-        the cache and the saved sequences.
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+        """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
+
+        This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
+        compiled and added into the cache.
+
+        If the number of shots or the repetition duration changes, the cache will be cleared.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            sequencer (int): index of the sequencer to generate the program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetition duration
+
+        Returns:
+            list[QpySequence]: list of compiled assembly programs
         """
-        # TODO: Right now the only way of deleting the acquisition data is to re-upload the acquisition dictionary.
-        if hasattr(self, "device"):
-            self.device._delete_acquisition(  # pylint: disable=protected-access
-                sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-            )
-            acquisition = self._generate_acquisitions()
-            self.device._add_acquisitions(  # pylint: disable=protected-access
-                sequencer=sequencer, acquisitions=acquisition.to_dict()
-            )
-        return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        for sequencer in sequencers:
+            if sequencer in self.sequences:
+                sequence_uploaded = self.sequences[sequencer][1]
+                if sequence_uploaded:
+                    self.device.delete_acquisition_data(
+                        sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
+                    )
+        return super().compile(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+        )
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument

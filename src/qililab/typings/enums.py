@@ -174,19 +174,6 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
-class PulseName(str, Enum):
-    """Pulse names.
-
-    Args:
-        Enum (str): Available types of Pulse names:
-        * pulse
-        * readout_pulse
-    """
-
-    PULSE = "pulse"
-    READOUT_PULSE = "readout_pulse"
-
-
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -370,6 +357,7 @@ class Parameter(str, Enum):
     OFFSET_OUT2 = "offset_out2"
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
+    NUM_FLIPS = "num_flips"
     SOURCE_MODE = "source_mode"
     OUTPUT_STATUS = "output_status"
     CURRENT_VALUE = "current_value"

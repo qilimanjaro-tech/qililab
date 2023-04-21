@@ -11,7 +11,6 @@ from .enums import (
     Node,
     NodeName,
     Parameter,
-    PulseName,
     PulseShapeName,
     ReferenceClock,
     ResultName,
@@ -32,4 +31,5 @@ from .instruments import (
     RohdeSchwarzSGS100A,
     YokogawaGS200,
 )
+from .loop import LoopOptions
 from .yaml_type import yaml
