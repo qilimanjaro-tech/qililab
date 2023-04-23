@@ -274,6 +274,8 @@ class TestQbloxQRM:
         assert len(sequences) == 2
         for sequence in sequences:
             assert isinstance(sequence, Sequence)
+        for s1, s2 in zip(sequences, qrm.sequences.values()):
+            assert s1 is s2[0]
 
     def test_cache_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Checks the cache after compiling a multiplexed pulse bus schedule."""
