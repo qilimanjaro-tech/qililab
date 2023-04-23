@@ -280,9 +280,10 @@ class TestQbloxQRM:
         multiplexed_pulse_bus_schedule.port = 1  # change port to target the resonator
         qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000)
         frequencies = multiplexed_pulse_bus_schedule.frequencies()
-        assert len(qrm._cache) == len(frequencies)
-        for schedule, frequency in zip(qrm._cache.values(), frequencies):
-            assert schedule.frequencies()[0] == frequency
+        single_freq_schedules = [multiplexed_pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
+        assert len(qrm._cache) == len(single_freq_schedules)
+        for cache_schedule, expected_schedule in zip(qrm._cache.values(), single_freq_schedules):
+            assert cache_schedule == expected_schedule
 
     def test_acquisition_data_is_removed_when_calling_compile_twice(self, qrm, pulse_bus_schedule):
         """Test that the acquisition data of the QRM device is deleted when calling compile twice."""
