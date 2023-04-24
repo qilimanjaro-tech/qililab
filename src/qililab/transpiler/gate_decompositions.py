@@ -88,8 +88,6 @@ def native_gates():
     return (Drag, gates.CZ)
 
 
-# TODO: dictionary / list of supported gates
-
 # Mind that the order of the gates is "the inverse" of the operators
 # i.e. to perform the operation AB|psi> the order of the operators
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
