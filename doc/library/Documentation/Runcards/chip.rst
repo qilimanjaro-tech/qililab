@@ -1,4 +1,4 @@
-Chip 
+Chip
 +++++++++++
 On this part of the runcard, we determinate the architecture of our chip and how it is connected to the different ports.
 So, via text, we describe the different elements of our chip and how are they connected.
@@ -36,7 +36,7 @@ Which is represented in the next diagram:
 
 .. image:: ../../img/Simple_Chip.png
     :align: center
-    
+
 |
 
 In this example, we have a qubit, a resonator, and the two ports from where we manipulate them.
@@ -51,7 +51,7 @@ Advanced example
 --------------------
 
 .. raw:: html
-    
+
    <div style="height: 500px; overflow: auto;">
     <div class="highlight-defalut notraslate">
             <div class="highlight">
@@ -189,7 +189,7 @@ Advanced example
                 </pre>
             </div>
         </div>
-       
+
    </div>
 
 |
