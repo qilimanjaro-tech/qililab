@@ -45,7 +45,7 @@ class Pulse:
         Returns:
             List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
-        # FIXME: Should we let the same varibale arise in two different ways, through Pulse class definition, or through the envelope definition (I don't think so)? And if so, why/how would we prioritize one duration/amplitude over the other?
+        # FIXME: Should we let the same variable arise in two different ways, through Pulse class definition, or through the envelope definition (I don't think so)? And if so, why/how would we prioritize one duration/amplitude over the other?
 
         if amplitude is None:
             amplitude = self.amplitude
