@@ -35,7 +35,7 @@ class GateDecompositions:
 
         # check that a decomposition exists
         if type(gate) not in self.decompositions:
-            raise Exception(
+            raise NotImplementedError(
                 f"Gate of type {gate.__class__} is not supported for transpilation. Supported gates are {self.decompositions.keys()}"
             )
 
@@ -60,7 +60,7 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
 
     # parse single gate input
     if not isinstance(ngates, list):
-        raise Exception("argument ngates must be a list of gates")
+        raise TypeError(f"Argument ngates must be a list of gates and not {type(ngates)}")
 
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
