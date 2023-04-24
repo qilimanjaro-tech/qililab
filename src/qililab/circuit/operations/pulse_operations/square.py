@@ -38,7 +38,7 @@ class SquarePulse(PulseOperation):
         """
         return Qubits.ONE
 
-    def envelope(self, resolution: float = 1.0):
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Constant amplitude envelope.
 
         Args:
@@ -47,4 +47,5 @@ class SquarePulse(PulseOperation):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        return self.amplitude * np.ones(round(self.duration / resolution))
+        amplitude = amplitude or self.amplitude
+        return amplitude * np.ones(round(self.duration / resolution))

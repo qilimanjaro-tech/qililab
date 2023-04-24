@@ -12,12 +12,13 @@ from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
 
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
 from qililab.instruments.instrument import Instrument, ParameterNotFound
-from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.pulse import Pulse, PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
 from qililab.typings.instruments import Pulsar, QcmQrm
 
@@ -251,7 +252,8 @@ class QbloxModule(AWG):
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
-            waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
+            name = pulse_event.pulse.label() if isinstance(pulse_event.pulse, Pulse) else str(pulse_event.pulse)
+            waveform_pair = waveforms.find_pair_by_name(name)
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
             avg_loop.append_component(
@@ -644,14 +646,23 @@ class QbloxModule(AWG):
         waveforms = Waveforms()
 
         unique_pulses: List[Tuple[int, PulseShape]] = []
+        unique_pulse_operations: List[Tuple[int, PulseOperation]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
-            if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
-                unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                envelope = pulse_event.pulse.envelope(amplitude=1)
-                real = np.real(envelope)
-                imag = np.imag(envelope)
-                waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+            if isinstance(pulse_event.pulse, Pulse):
+                if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
+                    unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
+                    envelope = pulse_event.pulse.envelope(amplitude=1)
+                    real = np.real(envelope)
+                    imag = np.imag(envelope)
+                    waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+            else:
+                if (pulse_event.duration, pulse_event.pulse) not in unique_pulse_operations:
+                    unique_pulse_operations.append((pulse_event.duration, pulse_event.pulse))
+                    envelope = pulse_event.pulse.envelope(amplitude=1)
+                    real = np.real(envelope)
+                    imag = np.imag(envelope)
+                    waveforms.add_pair((real, imag), name=str(pulse_event.pulse))
 
         return waveforms
 

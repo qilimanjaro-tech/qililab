@@ -7,6 +7,7 @@ from typing import List, Set
 
 import numpy as np
 
+from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.constants import PULSEBUSSCHEDULE
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
@@ -19,7 +20,7 @@ class PulseBusSchedule:
 
     port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: List[PulseEvent] = field(default_factory=list)
-    _pulses: Set[Pulse] = field(init=False, default_factory=set)
+    _pulses: Set[Pulse | PulseOperation] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Sort timeline and add used pulses to the pulses set if timeline is not empty."""

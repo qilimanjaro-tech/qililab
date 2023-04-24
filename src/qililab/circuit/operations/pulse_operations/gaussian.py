@@ -50,7 +50,7 @@ class GaussianPulse(PulseOperation):
         """
         return super().parameters | {"sigma": self.sigma}
 
-    def envelope(self, resolution: float = 1.0):
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Gaussian envelope centered with respect to the pulse.
 
         Args:
@@ -59,8 +59,9 @@ class GaussianPulse(PulseOperation):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+        amplitude = amplitude or self.amplitude
         sigma = self.duration / self.sigma
         time = np.arange(self.duration / resolution) * resolution
         mu_ = self.duration / 2
-        gaussian = self.amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
+        gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0

@@ -54,7 +54,7 @@ circuit_ir3.draw()
 # circuit_ir3.print()
 
 pulse_schedule = transpiler.generate_pulse_schedule(circuit_ir3)
-pulse_schedule.print()
+# pulse_schedule.print()
 
 # Convert to QiliQASM
 qasm = QiliQasmConverter.to_qasm(circuit)

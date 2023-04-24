@@ -38,7 +38,9 @@ class PulseOperation(Operation):
             "frequency": self.frequency,
         }
 
-    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(
+        self, resolution: float = 1.0, start_time: float = 0.0, frequency: float = 0.0
+    ) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
@@ -48,6 +50,7 @@ class PulseOperation(Operation):
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
+        frequency = frequency or self.frequency
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)
@@ -57,7 +60,7 @@ class PulseOperation(Operation):
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     @abstractmethod
-    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
         Args:
