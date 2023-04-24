@@ -99,6 +99,7 @@ class EXPERIMENT:
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
     CIRCUITS = "circuits"
+    QILICIRCUITS = "qili_circuits"
     PULSE_SCHEDULES = "pulse_schedules"
     REMOTE_SAVE = "remote_save"
     DESCRIPTION = "description"
@@ -177,6 +178,7 @@ class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
+    PULSE_OPERATION = "pulse_operation"
     START_TIME = "start_time"
 
 

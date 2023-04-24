@@ -49,7 +49,11 @@ class PulseEvent:
         Returns:
             dict: Dictionary describing the pulse.
         """
-        return {PULSEEVENT.PULSE: self.pulse.to_dict(), PULSEEVENT.START_TIME: self.start_time}
+        return {
+            PULSEEVENT.PULSE: self.pulse.to_dict() if isinstance(self.pulse, Pulse) else {},
+            PULSEEVENT.PULSE_OPERATION: self.pulse.to_dict() if isinstance(self.pulse, PulseOperation) else {},
+            PULSEEVENT.START_TIME: self.start_time,
+        }
 
     @classmethod
     def from_dict(cls, dictionary: dict):
@@ -61,8 +65,12 @@ class PulseEvent:
         Returns:
             PulseEvent: Loaded class.
         """
-        pulse_settings = dictionary[PULSEEVENT.PULSE]
-        pulse = Pulse.from_dict(pulse_settings)
+        if len(dictionary[PULSEEVENT.PULSE]) > 0:
+            pulse_settings = dictionary[PULSEEVENT.PULSE]
+            pulse = Pulse.from_dict(pulse_settings)
+        else:
+            pulse_settings = dictionary[PULSEEVENT.PULSE_OPERATION]
+            pulse = PulseOperation.from_dict(pulse_settings)
         start_time = dictionary[PULSEEVENT.START_TIME]
         return PulseEvent(pulse=pulse, start_time=start_time)
 

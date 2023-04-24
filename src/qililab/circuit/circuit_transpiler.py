@@ -170,3 +170,10 @@ class CircuitTranspiler:
                     pulse_event = PulseEvent(pulse=operation_node.operation, start_time=operation_node.timing.start)  # type: ignore[union-attr]
                     pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)  # type: ignore[arg-type]
         return pulse_schedule
+
+    def transpile(self, circuit: Circuit) -> PulseSchedule:
+        circuit_ir1 = self.calculate_timings(circuit)
+        circuit_ir2 = self.remove_special_operations(circuit_ir1)
+        circuit_ir3 = self.transpile_to_pulse_operations(circuit_ir2)
+        pulse_schedule = self.generate_pulse_schedule(circuit_ir3)
+        return pulse_schedule

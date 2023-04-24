@@ -9,6 +9,8 @@ from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
+from qililab.circuit import Circuit as QiliCircuit
+from qililab.circuit import CircuitTranspiler, QiliQasmConverter
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
@@ -38,7 +40,7 @@ class Experiment:
     def __init__(
         self,
         platform: Platform,
-        circuits: List[Circuit] | None = None,
+        circuits: List[Circuit | QiliCircuit] | None = None,
         pulse_schedules: List[PulseSchedule] | None = None,
         options: ExperimentOptions = ExperimentOptions(),
     ):
@@ -61,8 +63,15 @@ class Experiment:
         """
         # Translate circuits into pulses if needed
         if self.circuits:
-            translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            if isinstance(self.circuits[0], Circuit):
+                translator = CircuitToPulses(settings=self.platform.settings)
+                self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            else:
+                transpiler = CircuitTranspiler(settings=self.platform.settings, chip=self.platform.chip)
+                for circuit in self.circuits:
+                    pulse_schedule = transpiler.transpile(circuit)
+                    self.pulse_schedules.append(pulse_schedule)
+
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
         # Generate live plotting
@@ -307,7 +316,10 @@ class Experiment:
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
+            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits if isinstance(circuit, Circuit)],
+            EXPERIMENT.QILICIRCUITS: [
+                QiliQasmConverter.to_qasm(circuit) for circuit in self.circuits if isinstance(circuit, QiliCircuit)
+            ],
             EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
@@ -324,6 +336,8 @@ class Experiment:
         circuits = (
             [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
             if EXPERIMENT.CIRCUITS in dictionary
+            else [QiliQasmConverter.from_qasm(settings) for settings in dictionary[EXPERIMENT.QILICIRCUITS]]
+            if EXPERIMENT.QILICIRCUITS in dictionary
             else []
         )
         pulse_schedules = (
