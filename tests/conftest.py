@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import build_platform
+from qililab.circuit.operations.pulse_operations.gaussian import GaussianPulse
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
@@ -110,15 +111,20 @@ def fixture_pulse() -> Pulse:
     return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
+@pytest.fixture(
+    name="pulse_event",
+    params=[
+        Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4)),
+        GaussianPulse(amplitude=1, phase=0, duration=50, frequency=1e9, sigma=4),
+    ],
+)
+def fixture_pulse_event(request: pytest.FixtureRequest) -> PulseEvent:
     """Load PulseEvent.
 
     Returns:
         PulseEvent: Instance of the PulseEvent class.
     """
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse = request.param
     return PulseEvent(pulse=pulse, start_time=0)
 
 
