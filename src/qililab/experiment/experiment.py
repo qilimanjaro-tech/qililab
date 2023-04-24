@@ -333,13 +333,17 @@ class Experiment:
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        circuits = (
+        qibo_circuits = (
             [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
             if EXPERIMENT.CIRCUITS in dictionary
-            else [QiliQasmConverter.from_qasm(settings) for settings in dictionary[EXPERIMENT.QILICIRCUITS]]
+            else []
+        )
+        qili_circuits = (
+            [QiliQasmConverter.from_qasm(settings) for settings in dictionary[EXPERIMENT.QILICIRCUITS]]
             if EXPERIMENT.QILICIRCUITS in dictionary
             else []
         )
+        circuits = qibo_circuits + qili_circuits
         pulse_schedules = (
             [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
             if EXPERIMENT.PULSE_SCHEDULES in dictionary

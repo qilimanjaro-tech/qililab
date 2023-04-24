@@ -6,6 +6,8 @@ from typing import Dict, List, Type
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models.circuit import Circuit
 
+import qililab
+from qililab.circuit import Circuit as QiliCircuit
 from qililab.constants import (
     CONNECTION,
     EXPERIMENT,
@@ -690,7 +692,7 @@ class FluxQubitSimulator:
     }
 
 
-experiment_params: List[List[str | Circuit | List[Circuit]]] = []
+experiment_params: List[List[str | Circuit | List[Circuit] | QiliCircuit | List[QiliCircuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
@@ -700,7 +702,14 @@ for platform in [Galadriel]:
     circuit.add(RY(0, 15))
     if platform == Galadriel:
         circuit.add(M(0))
-    experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
+
+    qili_circuit = QiliCircuit(1)
+    qili_circuit.add(0, qililab.circuit.X())
+    qili_circuit.add(0, qililab.circuit.Wait(t=100))
+    qili_circuit.add(0, qililab.circuit.X())
+    if platform == Galadriel:
+        qili_circuit.add(0, qililab.circuit.Measure())
+    experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]], [platform.runcard, qili_circuit]])  # type: ignore
 
 # Circuit used for simulator
 simulated_experiment_circuit: Circuit = Circuit(1)
