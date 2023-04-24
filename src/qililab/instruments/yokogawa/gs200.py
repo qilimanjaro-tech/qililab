@@ -114,7 +114,7 @@ class GS200(CurrentSource):
     def current_value(self, value):
         """Sets the current_value"""
         self.settings.current_value = value
-        self.device.ramp_current(value, value, 0)
+        self.device.ramp_current(value, abs(value), 0)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
