@@ -142,8 +142,7 @@ def test_transpiler():
         assert isinstance(c2, Circuit)
 
         # check that states are equivalent up to a global phase
-        if not np.allclose(1, compare_circuits(c1, c2, nqubits)):
-            raise Exception("final states differ!")
+        assert np.allclose(1, compare_circuits(c1, c2, nqubits))
 
     # circuits are not the same
     for i in range(0, 200):
@@ -169,8 +168,7 @@ def test_transpiler():
         assert isinstance(c2, Circuit)
 
         # check that states differ
-        if np.allclose(1, compare_circuits(c1, c2, nqubits)):
-            raise Exception("final states differ!")
+        assert not np.allclose(1, compare_circuits(c1, c2, nqubits))
 
 
 # transpilable gates

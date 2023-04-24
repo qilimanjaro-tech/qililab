@@ -1,8 +1,6 @@
 from collections.abc import Callable
 
 import numpy as np
-
-# from native_gates import Drag
 from qibo import gates
 
 from .native_gates import Drag

@@ -12,22 +12,20 @@ def get_gates() -> list[gates.Gate]:
     return test_gates
 
 
-@pytest.fixture(name="decomposed_gates")
-def test_GateDecompositions(test_gates: list[gates.Gate]):
+def test_gatedecompositions(test_gates: list[gates.Gate]):
     """Test that class GateDecompositions creates a dictionary of gate translations
 
     Args:
         test_gates (list[gates.Gate]): list of gates to be translated
-        decomposed_gates (list[gates.Gate]) : corresponding decomposition for test_gates
     """
     decomp = GateDecompositions()
     # add some fake decompositions
     decomp.add(gates.RY, lambda gate: [gates.U3(0, gate.parameters[0], 2, 0)])
-    decomp.add(gates.X, [gates.Y(0)])
+    decomp.add(gates.X, [gates.Y(0), gates.Z(0)])
     decomp.add(gates.CNOT, lambda gate: [gates.SWAP(0, 1)])
 
     # decomposed gates from fixture should look like this
-    decomposed_gates = [gates.Y(0), gates.SWAP(0, 1), gates.U3(0, 2.5, 2, 0)]
+    decomposed_gates = [gates.Y(0), gates.Z(0), gates.SWAP(0, 1), gates.U3(0, 2.5, 2, 0)]
 
     assert isinstance(decomp.decompositions, dict)
     for gate, test_dec_gate in zip(test_gates, decomposed_gates):
@@ -42,7 +40,6 @@ def test_translate_gates(test_gates: list[gates.Gate]):
 
     Args:
         test_gates (gates.Gate): list of gates to be translated
-        decomposed_gates (list[gates.Gate]) : corresponding decomposition for test_gates
     """
 
     tr_gates = translate_gates(test_gates)
@@ -67,13 +64,4 @@ def test_translate_gates(test_gates: list[gates.Gate]):
 def test_native_gates():
     """Test native gates output is the intended set of gates"""
 
-    # because of qibo things we have to initizlize the gate first
-    # otherwise the return is a class, not an object
-    nat_gates = native_gates()
-
-    # test Drag
-    drag = nat_gates[0](0, 0, 0)
-    assert isinstance(drag, Drag)
-    # test CZ
-    cz = nat_gates[1](0, 1)
-    assert isinstance(cz, gates.Gate)
+    assert native_gates() == (Drag, gates.CZ)
