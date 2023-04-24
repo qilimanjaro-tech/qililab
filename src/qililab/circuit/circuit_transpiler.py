@@ -167,6 +167,6 @@ class CircuitTranspiler:
         for layer in layers:
             for operation_node in layer:
                 if isinstance(operation_node.operation, PulseOperation):
-                    pulse_event = PulseEvent(pulse=operation_node.operation, start_time=operation_node.timing.start)
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)
+                    pulse_event = PulseEvent(pulse=operation_node.operation, start_time=operation_node.timing.start)  # type: ignore[union-attr]
+                    pulse_schedule.add_event(pulse_event=pulse_event, port=operation_node.chip_port)  # type: ignore[arg-type]
         return pulse_schedule
