@@ -1,11 +1,9 @@
 from collections.abc import Callable
 
 import numpy as np
-
-# from native_gates import Drag
 from qibo import gates
 
-from qililab.transpiler.native_gates import Drag
+from .native_gates import Drag
 
 
 class GateDecompositions:

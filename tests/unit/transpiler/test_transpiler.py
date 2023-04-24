@@ -5,10 +5,7 @@ from qibo import gates
 from qibo.backends import NumpyBackend
 from qibo.models import Circuit
 
-from qililab.transpiler.transpiler import (  # TODO translate_circuit should be imported from qililab.transpiler since it's in __init__
-    optimize_transpilation,
-    translate_circuit,
-)
+from qililab.transpiler import translate_circuit
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -30,26 +27,26 @@ def random_circuit(
 
     # get list available gates
     if gates_list is None:
-        gates_list = get_default_gates()
+        gates_list = default_gates
 
     # init circuit
     c = Circuit(nqubits)
 
     # get list of gates to use
     if not exhaustive:
-        gates = rng.choice(gates_list, ngates)
+        list_gates = rng.choice(gates_list, ngates)
     # if exhaustive = True then add all the gates available
     else:
         if ngates < len(gates_list):
             raise Exception("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
-        gates = []
+        list_gates = []  # TODO change name so it does not match gates from qibo.gates
         for k in range(ngates // len(gates_list)):
-            gates.extend(gates_list)
-        gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
-        rng.shuffle(gates)
+            list_gates.extend(gates_list)
+        list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
+        rng.shuffle(list_gates)
 
     # add gates iteratively
-    for gate in gates:
+    for gate in list_gates:
         # apply gate to random qubits
         new_qubits = rng.choice([i for i in range(0, nqubits)], len(gate.qubits), replace=False)
         gate = gate.on_qubits({i: q for i, q in enumerate(new_qubits)})
@@ -59,48 +56,6 @@ def random_circuit(
         c.add(gate)
 
     return c
-
-
-def get_default_gates():
-    """Get list of transpilable gates. Gates are initialized so properties can be accessed
-
-    Returns:
-        default_gates: (list[gates.Gate])
-    """
-    # init gates
-    default_gates = [
-        gates.I(0),
-        gates.X(0),
-        gates.Y(0),
-        gates.Z(0),
-        gates.H(0),
-        gates.RX(0, 0),
-        gates.RY(0, 0),
-        gates.RZ(0, 0),
-        gates.U1(0, 0),
-        gates.U2(0, 0, 0),
-        gates.U3(0, 0, 0, 0),
-        gates.S(0),
-        gates.SDG(0),
-        gates.T(0),
-        gates.TDG(0),
-        gates.CNOT(0, 1),
-        gates.CZ(0, 1),
-        gates.SWAP(0, 1),
-        gates.iSWAP(0, 1),
-        gates.CRX(0, 1, 0),
-        gates.CRY(0, 1, 0),
-        gates.CRZ(0, 1, 0),
-        gates.CU1(0, 1, 0),
-        gates.CU2(0, 1, 0, 0),
-        gates.CU3(0, 1, 0, 0, 0),
-        gates.FSWAP(0, 1),
-        gates.RXX(0, 1, 0),
-        gates.RYY(0, 1, 0),
-        gates.RZZ(0, 1, 0),
-        gates.TOFFOLI(0, 1, 2),
-    ]
-    return default_gates
 
 
 def apply_circuit(circuit: Circuit) -> np.ndarray:
@@ -162,7 +117,7 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
     return np.abs(np.dot(np.conjugate(state_t), state_q))
 
 
-def test_translate_circuit():
+def test_transpiler():
     """Test that the transpiled circuit outputs same result if
     circuits are the same, and different results if circuits are
     not the same
@@ -173,8 +128,8 @@ def test_translate_circuit():
     for i in range(0, 1000):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
-            nqubits=5,
-            ngates=len(get_default_gates()),
+            nqubits=nqubits,
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
@@ -187,22 +142,21 @@ def test_translate_circuit():
         assert isinstance(c2, Circuit)
 
         # check that states are equivalent up to a global phase
-        if not np.allclose(1, compare_circuits(c1, c2, nqubits)):
-            raise Exception("final states differ!")
+        assert np.allclose(1, compare_circuits(c1, c2, nqubits))
 
     # circuits are not the same
     for i in range(0, 200):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
-            nqubits=5,
-            ngates=len(get_default_gates()),
+            nqubits=nqubits,
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
         )
         c2 = random_circuit(
-            nqubits=5,
-            ngates=len(get_default_gates()),
+            nqubits=nqubits,
+            ngates=len(default_gates),
             rng=rng,
             gates_list=None,
             exhaustive=True,
@@ -214,91 +168,39 @@ def test_translate_circuit():
         assert isinstance(c2, Circuit)
 
         # check that states differ
-        if np.allclose(1, compare_circuits(c1, c2, nqubits)):
-            raise Exception("final states should differ!")
+        assert not np.allclose(1, compare_circuits(c1, c2, nqubits))
 
 
-def test_optimize_transpilation():
-    """Test that the transpiled circuit outputs same result if
-    circuits are the same, and different results if circuits are
-    not the same
-    """
-    rng = np.random.default_rng(seed=42)  # init random number generator
-
-    # circuits are the same
-    for i in range(0, 1000):
-        nqubits = np.random.randint(4, 10)
-        c1 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(get_default_gates()),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-
-        # get transpiled circuit
-        c1 = translate_circuit(c1)
-        # optimize it directly and using optimize_transpilation
-        c3_gates = optimize_transpilation(c1.nqubits, c1.queue)
-        c3 = translate_circuit(c1, True)
-
-        # check that both c1, c3 are qibo.Circuit
-        assert isinstance(c1, Circuit)
-        assert isinstance(c3, Circuit)
-
-        # check that c2, c3 have the same gates
-        for gate2, gate3 in zip(c3_gates, c3.queue):
-            assert gate2.name == gate3.name
-
-        # check that states for c1, c3 are equivalent up to a global phase
-        if not np.allclose(1, compare_circuits(c1, c3, nqubits)):
-            raise Exception("final states differ!")
-
-    # circuits are not the same
-    for i in range(0, 1000):
-        nqubits = np.random.randint(4, 10)
-        c1 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(get_default_gates()),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c2 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(get_default_gates()),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c3 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(get_default_gates()),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-
-        # get transpiled circuit
-        c1 = translate_circuit(c1)
-        # optimize it directly and using optimize_transpilation
-        # translate c2, c3
-        c2 = translate_circuit(c2)
-        c3 = translate_circuit(c2)
-        # c2 = optimize_transpilation(c2.nqubits, c2.queue)
-        c3 = translate_circuit(c3, True)
-
-        # check that both c1, c3 are qibo.Circuit
-        assert isinstance(c1, Circuit)
-        assert isinstance(c3, Circuit)
-
-        # check that c2, c3 do not have the same gates overall
-        assert sum([gate2.name == gate3.name for gate2, gate3 in zip(c2.queue, c3.queue)] != len(gate2.queue))
-
-        # check that states for c1, c2, c3 are not equivalent
-        for c in [c1, c2, c3]:
-            # if np.allclose(1, compare_circuits(c1, c3, nqubits)):
-            raise Exception("final states should differ!")
-
-        # TODO test that no Z gates
-        # TODO combine test 1,2
+# transpilable gates
+default_gates = [
+    gates.I(0),
+    gates.X(0),
+    gates.Y(0),
+    gates.Z(0),
+    gates.H(0),
+    gates.RX(0, 0),
+    gates.RY(0, 0),
+    gates.RZ(0, 0),
+    gates.U1(0, 0),
+    gates.U2(0, 0, 0),
+    gates.U3(0, 0, 0, 0),
+    gates.S(0),
+    gates.SDG(0),
+    gates.T(0),
+    gates.TDG(0),
+    gates.CNOT(0, 1),
+    gates.CZ(0, 1),
+    gates.SWAP(0, 1),
+    gates.iSWAP(0, 1),
+    gates.CRX(0, 1, 0),
+    gates.CRY(0, 1, 0),
+    gates.CRZ(0, 1, 0),
+    gates.CU1(0, 1, 0),
+    gates.CU2(0, 1, 0, 0),
+    gates.CU3(0, 1, 0, 0, 0),
+    gates.FSWAP(0, 1),
+    gates.RXX(0, 1, 0),
+    gates.RYY(0, 1, 0),
+    gates.RZZ(0, 1, 0),
+    gates.TOFFOLI(0, 1, 2),
+]
