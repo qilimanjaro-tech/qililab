@@ -2,6 +2,7 @@
 Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
+from locale import currency
 
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -148,5 +149,11 @@ class GS200(CurrentSource):
                 The time between finishing one step and starting
                 another in seconds.
         """
+        turn_on_again = False
+        if self.output_status:
+            self.stop()
+            turn_on_again = True
         self.settings.current_value = ramp_to
         self.device.ramp_current(ramp_to, step, delay)
+        if turn_on_again:
+            self.start()
