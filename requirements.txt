@@ -18,3 +18,4 @@ qilimanjaro-qilisimulator-library@ git+https://github.com/qilimanjaro-tech/qilis
 dummy-qblox@ git+https://github.com/qilimanjaro-tech/qililab-tools.git@0.3.2#subdirectory=services/dummy_qblox
 lmfit==1.1.0
 deepdiff==6.2.3
+rustworkx==0.12.1

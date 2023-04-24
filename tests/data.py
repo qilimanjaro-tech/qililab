@@ -1,5 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
+from multiprocessing.pool import RUN
 from typing import Dict, List, Type
 
 from qibo.gates import RX, RY, I, M, X, Y
@@ -26,6 +27,7 @@ from qililab.instruments.awg_settings.typings import (
     AWGSequencerTypes,
     AWGTypes,
 )
+from qililab.platform.platform import Platform
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -39,6 +41,7 @@ from qililab.typings.enums import (
     Parameter,
     PulseShapeName,
     ReferenceClock,
+    ResetMethod,
     SystemControlName,
 )
 
@@ -59,6 +62,27 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "Measure",
+                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",
@@ -500,6 +524,23 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",
