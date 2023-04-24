@@ -620,7 +620,7 @@ class QbloxModule(AWG):
         waveforms = Waveforms()
 
         unique_pulses: List[Tuple[int, PulseShape]] = []
-        # FIXME: Here we are giving the "duration" through pulse_event instead than pulse, which to me would make more sense, and would be more compatible with the changes I've done.
+        # FIXME: Here we are giving the "duration" through pulse_event instead than pulse, and I would like to understand how this works and how is this compatible with my changes.
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
