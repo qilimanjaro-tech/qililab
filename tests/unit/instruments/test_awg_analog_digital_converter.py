@@ -1,29 +1,29 @@
 """This file tests the the ``AWGAnalogDigitalConverter`` class"""
 from unittest.mock import MagicMock
+
 import pytest
 
-from qililab.instruments import AWG
 from qililab.constants import RUNCARD
-from qililab.typings.enums import Category, Parameter
-from qililab.instruments import AWGAnalogDigitalConverter
-from qililab.typings.enums import AcquireTriggerMode
+from qililab.instruments import AWG, AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings.typings import (
     AWGChannelMappingTypes,
     AWGIQChannelTypes,
     AWGSequencerPathTypes,
     AWGSequencerTypes,
-    AWGTypes)
-from qililab.typings.enums import InstrumentName
+    AWGTypes,
+)
 from qililab.pulse import PulseBusSchedule
+from qililab.typings.enums import AcquireTriggerMode, Category, InstrumentName, Parameter
 
 
 class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
 
-    def compile(self,
-                pulse_bus_schedule: PulseBusSchedule,
-                nshots: int, repetition_duration: int) -> list: # pylint disable=arguments-differ
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+    ) -> list:  # pylint disable=arguments-differ
         return []
+
     def run(self):
         pass
 
@@ -50,7 +50,7 @@ def fixture_awg():
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
-        'acquisition_delay_time' : 100,
+        "acquisition_delay_time": 100,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,
         AWGTypes.AWG_SEQUENCERS.value: [
@@ -89,8 +89,10 @@ def fixture_awg():
     }
     return DummyAWG(settings=settings)  # pylint: disable=abstract-class-instantiated
 
+
 class TestAWGAnalogDigitalConverter:
     """This class contains the unit tests for the ``AWGAnalogDigitalConverte`` class."""
+
     def test_error_raises_when_no_channel_specified(self, awg: AWG):
         """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
 
@@ -100,4 +102,4 @@ class TestAWGAnalogDigitalConverter:
         awg.settings.num_sequencers = 2
         with pytest.raises(ValueError, match="channel not specified to update instrument"):
             awg.device = MagicMock()
-            awg.setup(parameter = Parameter.ACQUISITION_DELAY_TIME, value = 2, channel_id = None)
+            awg.setup(parameter=Parameter.ACQUISITION_DELAY_TIME, value=2, channel_id=None)

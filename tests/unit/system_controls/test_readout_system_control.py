@@ -4,6 +4,7 @@ import pytest
 from qililab.platform import Platform
 from qililab.system_control.readout_system_control import ReadoutSystemControl
 
+
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
@@ -14,6 +15,7 @@ def fixture_system_control(platform: Platform):
     }
     return ReadoutSystemControl(settings=settings, platform_instruments=platform.instruments)
 
+
 class TestReadoutSystemControl:
     """This class contains the unit tests for the ``ReadoutSystemControl`` class."""
 
@@ -23,6 +25,7 @@ class TestReadoutSystemControl:
         Args:
             system_control (_type_): _description_
         """
-        with pytest.raises(ValueError, match="The system control readout_system_control "
-                           + "doesn't have an AWG instrument."):
-            system_control.acquisition_delay_time # pylint: disable=pointless-statement
+        with pytest.raises(
+            ValueError, match="The system control readout_system_control " + "doesn't have an AWG instrument."
+        ):
+            system_control.acquisition_delay_time  # pylint: disable=pointless-statement

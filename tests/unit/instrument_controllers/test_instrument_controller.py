@@ -12,6 +12,7 @@ from tests.data import Galadriel
 
 class TestConnection:
     """This class contains the unit tests for the ``InstrumentController`` class."""
+
     def test_error_raises_when_no_modules(self, platform: Platform):
         """Test that ensures an error raises when there is no module specifyed
 
@@ -40,9 +41,11 @@ class TestConnection:
             {
                 Category.SIGNAL_GENERATOR.value: "rs_1",
                 INSTRUMENTREFERENCE.SLOT_ID: 1,
-            }
+            },
         ]
         name = settings.pop(RUNCARD.NAME)
-        with pytest.raises(ValueError, match=f"The {name.value} Instrument Controller only supports 1 module/s."
-                           + "You have loaded 2 modules."):
+        with pytest.raises(
+            ValueError,
+            match=f"The {name.value} Instrument Controller only supports 1 module/s.You have loaded 2 modules.",
+        ):
             SGS100AController(settings=settings, loaded_instruments=platform.instruments)
