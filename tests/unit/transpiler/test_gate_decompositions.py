@@ -28,11 +28,15 @@ def test_gatedecompositions(test_gates: list[gates.Gate]):
     decomposed_gates = [gates.Y(0), gates.Z(0), gates.SWAP(0, 1), gates.U3(0, 2.5, 2, 0)]
 
     assert isinstance(decomp.decompositions, dict)
-    for gate, test_dec_gate in zip(test_gates, decomposed_gates):
-        dec_gate = decomp(gate)[0]
-        assert isinstance(dec_gate, gates.Gate)
-        assert dec_gate.name == test_dec_gate.name
-        assert dec_gate.parameters == test_dec_gate.parameters
+
+    # check that decomposed gates is the same as decomposed_gates
+    new_gates = []
+    for gate in test_gates:
+        new_gates.extend(decomp(gate))
+    for gate, dec_gate in zip(new_gates, decomposed_gates):
+        assert isinstance(gate, gates.Gate)
+        assert gate.name == dec_gate.name
+        assert gate.parameters == dec_gate.parameters
 
 
 def test_translate_gates(test_gates: list[gates.Gate]):

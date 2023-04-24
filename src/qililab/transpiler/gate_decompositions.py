@@ -34,8 +34,10 @@ class GateDecompositions:
         """
 
         # check that a decomposition exists
-        if not type(gate) in self.decompositions:
-            raise Exception("Gate of type {gate.__class__} is not supported for transpilation")
+        if type(gate) not in self.decompositions:
+            raise Exception(
+                f"Gate of type {gate.__class__} is not supported for transpilation. Supported gates are {self.decompositions.keys()}"
+            )
 
         decomposition = self.decompositions[gate.__class__]
         if callable(decomposition):
@@ -125,7 +127,6 @@ qili_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
 
 
 # register CZ decompositions
-qili_dec = GateDecompositions()
 qili_dec.add(gates.CNOT, [gates.H(1), gates.CZ(0, 1), gates.H(1)])
 qili_dec.add(gates.CZ, [gates.CZ(0, 1)])
 qili_dec.add(
