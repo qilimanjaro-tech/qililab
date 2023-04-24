@@ -14,7 +14,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
     mock_pulsar_instance = mock_pulsar.return_value
     mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
         {
-            "single": {
+            "default": {
                 "index": 0,
                 "acquisition": {
                     "scope": {
