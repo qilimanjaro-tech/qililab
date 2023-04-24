@@ -105,6 +105,12 @@ This document contains the changes of the current release.
 
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
+- Pulses with different frequencies will be automatically sent and read by different sequencers (multiplexed readout).
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
+- Added an optional parameter "frequency" to the "modulated_waveforms" method of the Pulse and PulseEvent classes, allowing for specification of a modulation frequency different from that of the Pulse.
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
