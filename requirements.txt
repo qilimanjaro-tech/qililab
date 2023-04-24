@@ -3,7 +3,7 @@
 # example:
 # scipy==1.8.0
 pandas==1.5.3
-qibo==0.1.10
+qibo==0.1.12
 PyYAML==6.0
 typeguard==2.13.3
 qblox-instruments==0.8.1
