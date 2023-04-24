@@ -29,6 +29,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install Graphviz
+        run: |
+          sudo apt-get install -y graphviz
+
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:

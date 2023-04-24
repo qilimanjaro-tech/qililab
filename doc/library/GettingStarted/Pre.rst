@@ -18,7 +18,7 @@ To verify that python is operational in your machine try executing it in your te
 
 To verify pip is installed and on the path:
 ::
-    
+
     pip install numpy
 
 Virtual Environment
