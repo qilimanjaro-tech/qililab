@@ -37,6 +37,12 @@ This document contains the changes of the current release.
 - Added `get_bus_by_qubit_index` method to the `Platform` class.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
+- Pulses with different frequencies will be automatically sent and read by different sequencers (multiplexed readout).
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
+- Added an optional parameter "frequency" to the "modulated_waveforms" method of the Pulse and PulseEvent classes, allowing for specification of a modulation frequency different from that of the Pulse.
+  [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -47,7 +53,7 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-* The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
+- The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
 
