@@ -174,6 +174,15 @@ class SchemaDrawOptions(str, Enum):
     PRINT = "print"
     FILE = "file"
 
+class PulsePredistortionName(str, Enum):
+    """Pulse predistortion options.
+
+    Args:
+        Enum (str): Available types of PulsePredistortion options:
+        * gaussian
+    """
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
 
 class PulseShapeName(str, Enum):
     """Pulse shape options.
@@ -186,8 +195,6 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
-    BIAS_TEE_CORRECTION = "bias_tee"
-    EXPONENTIAL_CORRECTION = "exponential"
 
 
 class PulseShapeSettingsName(str, Enum):

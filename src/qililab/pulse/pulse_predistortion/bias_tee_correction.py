@@ -1,26 +1,25 @@
 """Bias tee correction pulse shape."""
 from dataclasses import dataclass
+from turtle import ycor
 
 import numpy as np
 from scipy import signal
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName
+from qililab.typings import PulsePredistortionName
 from qililab.typings.enums import PulseShapeSettingsName
-from qililab.utils import Factory
+from .predistorted_pulse import PredistortedPulse
 
 
-@Factory.register
 @dataclass(unsafe_hash=True, frozen=True, eq=True)
-class BiasTeeCorrection(PulseShape):
+class BiasTeeCorrection(PredistortedPulse):
     """Bias tee correction pulse shape."""
 
-    name = PulseShapeName.BIAS_TEE_CORRECTION
+    name = PulsePredistortionName.BIAS_TEE_CORRECTION
     tau_bias_tee: float
     sampling_rate: float = 1.0
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Distorted square envelope.
         
         Corrects for a bias tee using a linear IIR filter with time constant tau.
@@ -32,7 +31,8 @@ class BiasTeeCorrection(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        ysig = amplitude * np.ones(round(duration / resolution))
+        
+        ysig = amplitude * np.ones(round(self.duration() / resolution))
 
         k = 2 * self.tau_bias_tee*self.sampling_rate
         a = [1, -1]
@@ -41,8 +41,10 @@ class BiasTeeCorrection(PulseShape):
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr))
         ycorr = ycorr/norm
+        
+        amplitude = amplitude * ycorr/ysig
 
-        return ycorr
+        return self.pulse.envelope(amplitude=amplitude, resolution=resolution)
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
