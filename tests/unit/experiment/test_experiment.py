@@ -11,6 +11,7 @@ from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
 from qililab import build_platform
+from qililab.circuit import Circuit as QiliCircuit
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
@@ -58,7 +59,7 @@ class TestAttributes:
         assert isinstance(experiment.circuits, list)
         if len(experiment.circuits) > 0:
             for circuit in experiment.circuits:
-                assert isinstance(circuit, Circuit)
+                assert isinstance(circuit, (Circuit, QiliCircuit))
         assert isinstance(experiment.pulse_schedules, list)
         if len(experiment.pulse_schedules) > 0:
             for pulse_schedule in experiment.pulse_schedules:

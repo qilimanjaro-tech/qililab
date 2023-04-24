@@ -73,7 +73,7 @@ class TestPlatform:
 
     def test_qubit_0_instance(self, platform: Platform):
         """Test qubit 1 instance."""
-        element = platform.get_element(alias="qubit")
+        element = platform.get_element(alias="qubit_0")
         assert isinstance(element, Qubit)
 
     def test_bus_0_awg_instance(self, platform: Platform):
