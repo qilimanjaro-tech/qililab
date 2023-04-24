@@ -31,14 +31,19 @@ def translate_circuit(circuit: Circuit, optimize: bool = False) -> Circuit:
 
 
 def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates.Gate]:
-    """Optimizes transpiled circuit by moving all RZ to the left as a single RZ
+    """Optimizes transpiled circuit by moving all RZ to the left of all operators as a single RZ
+    This RZ can afterwards be removed since the next operation is going to be a measurement,
+    which happens on the Z basis and is therefore invariant under rotations around the Z axis
+
+    Mind that moving an operator to the left is equivalent to applying this operator last so
+    it is actually moved to the _right_ of Circuit.queue (last element of list)
 
     Args:
-        nqubits
-        ngates
+        nqubits (int) : number of qubits in the circuit
+        ngates (list[gates.Gate]) : list of gates in the circuit
 
-    Out:
-        list[gates.Gate]
+    Returns:
+        list[gates.Gate] : list of re-ordered gates
     """
     # TODO: we are ignoring measurement gates so far (i.e. treating them as an identity)
     supported_gates = ["rz", "drag", "cz", "measure"]
@@ -55,9 +60,5 @@ def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates
             if gate.name == "drag":
                 gate.parameters = (gate.parameters[0], gate.parameters[1] - shift[gate.qubits[0]])
             new_gates.append(gate)
-    # add shifts in z as one
-
-    for qubit in shift.keys():
-        new_gates.append(gates.RZ(qubit, shift[qubit]))
 
     return new_gates
