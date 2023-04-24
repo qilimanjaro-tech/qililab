@@ -47,7 +47,7 @@ class Pulse:
         """
         if amplitude is None:
             amplitude = self.amplitude
-        # FIXME: Why would we prioritize one duration over the other? How can two different arise?
+        # FIXME: Why would we prioritize one duration over the other? How can two different values arise, should we let two different values arise if they can (I don't think so)?
         if duration is None:
             duration = self.duration
         return self.pulse_shape.envelope(duration=duration, amplitude=amplitude, resolution=resolution)
