@@ -881,7 +881,7 @@ experiment = {
 
 
 class SauronVNA:
-    """Test data of the galadriel platform."""
+    """Test data of the sauron platform."""
 
     name = "sauron_vna"
 
@@ -896,7 +896,11 @@ class SauronVNA:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
         "gates": [],
+        "operations": [],
     }
 
     keysight_e5080b_controller = {
