@@ -39,7 +39,7 @@ class Pulse:
         imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
-    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
+    def envelope(self, duration: int | None = None, amplitude: float | None = None, resolution: float = 1.0):
         """Pulse 'envelope' property.
 
         Returns:
@@ -47,7 +47,10 @@ class Pulse:
         """
         if amplitude is None:
             amplitude = self.amplitude
-        return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
+        # FIXME: Why would we prioritize one duration over the other? How can two different arise?
+        if duration is None:
+            duration = self.duration
+        return self.pulse_shape.envelope(duration=duration, amplitude=amplitude, resolution=resolution)
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> Pulse:
