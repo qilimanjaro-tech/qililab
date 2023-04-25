@@ -115,9 +115,9 @@ class TestExecutionManagerPlatform:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.options.loops[0].range,  # type: ignore
-                    nested_experiment.options.loops[0].loop.range,  # type: ignore
-                    nested_experiment.options.loops[0].loop.loop.range,  # type: ignore
+                    nested_experiment.options.loops[0].values,  # type: ignore
+                    nested_experiment.options.loops[0].loop.values,  # type: ignore
+                    nested_experiment.options.loops[0].loop.loop.values,  # type: ignore
                 ]
             )
         ).all()

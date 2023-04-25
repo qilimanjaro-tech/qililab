@@ -13,8 +13,8 @@ This document contains the changes of the current release.
 - Added `Rabi` portfolio experiment. Here is a usage example:
 
   ```python
-  loop_options = LoopOptions(start=0, stop=1, step=0.1)
-  rabi = Rabi(platform=platform, qubit=0, loop_options=loop_options)
+  loop_range = np.linspace(start=0, stop=1, step=0.1)
+  rabi = Rabi(platform=platform, qubit=0, range=loop_range)
   rabi.turn_on_instruments()
 
   bus_parameters = {Parameter.GAIN: 0.8, Parameter.FREQUENCY: 5e9}
@@ -111,6 +111,15 @@ This document contains the changes of the current release.
 - Added an optional parameter "frequency" to the "modulated_waveforms" method of the Pulse and PulseEvent classes, allowing for specification of a modulation frequency different from that of the Pulse.
   [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
 
+- Added `values` and `channel_id` attribute to the `Loop` class.
+  Here is an example on how a loop is created now:
+
+  ```python
+  new_loop = Loop(alias="loop", parameter=Parameter.POWER, values=np.linspace(1, 10, 10))
+  ```
+
+  [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -127,6 +136,8 @@ This document contains the changes of the current release.
 - The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
+
+- The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values` attribute which is now in the `Loop` class. [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
 ### Documentation
 
