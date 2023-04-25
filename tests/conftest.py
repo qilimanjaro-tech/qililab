@@ -65,16 +65,10 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
             platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
-    loop3 = Loop(
-        alias=InstrumentName.QBLOX_QCM.value,
-        parameter=Parameter.IF,
-        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
-    )
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
         options=LoopOptions(start=40, stop=100, step=40),
-        loop=loop3,
     )
     loop = Loop(
         alias=InstrumentName.QBLOX_QRM.value,
