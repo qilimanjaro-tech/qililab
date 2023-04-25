@@ -11,6 +11,7 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -202,7 +203,7 @@ class QbloxModule(AWG):
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
         weights = self._generate_weights()
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
         """Generate Q1ASM program
@@ -282,13 +283,13 @@ class QbloxModule(AWG):
         return acquisitions
 
     @abstractmethod
-    def _generate_weights(self) -> dict:
+    def _generate_weights(self) -> Weights:
         """Generate acquisition weights.
 
         Returns:
             dict: Acquisition weights.
         """
-        return {}
+        return Weights()
 
     @abstractmethod
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
