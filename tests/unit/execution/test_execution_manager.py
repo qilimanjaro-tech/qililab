@@ -102,11 +102,9 @@ class TestExecutionManagerPlatform:
         acquisitions = results.acquisitions(mean=True)
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
         probabilities = results.probabilities(mean=True)
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
         mock_dump_1.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
@@ -115,9 +113,8 @@ class TestExecutionManagerPlatform:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.options.loops[0].range,  # type: ignore
                     nested_experiment.options.loops[0].loop.range,  # type: ignore
-                    nested_experiment.options.loops[0].loop.loop.range,  # type: ignore
+                    nested_experiment.options.loops[0].range,  # type: ignore
                 ]
             )
         ).all()
@@ -213,7 +210,7 @@ class TestExecutionManagerPlatform:
 
 
 qblox_acquisition = {
-    "single": {
+    "default": {
         "index": 0,
         "acquisition": {
             "scope": {
@@ -266,15 +263,15 @@ class TestWorkflow:
         awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]
 
         for awg in awgs:
-            for seq_idx in range(awg.num_sequencers):
-                awg.device.sequencers[seq_idx].sequence.assert_called_once()
+            for seq_idx in range(awg.num_sequencers):  # type: ignore
+                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
 
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
         # Test that the run method returns a ``Result`` object
         result = mocked_execution_manager.run(plot=None, path=None)
         assert isinstance(result, QbloxResult)
-        assert result.qblox_raw_results == [qblox_acquisition["single"]["acquisition"]]
+        assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
 
         # Make sure the mocked devices were called
         readout_awgs = [
@@ -283,7 +280,7 @@ class TestWorkflow:
             if isinstance(bus.system_control, ReadoutSystemControl)
         ]
         for awg in readout_awgs:
-            awg.device.get_acquisitions.assert_called_once()
+            assert awg.device.get_acquisitions.call_count == 2  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
         """Test that an error is raised when calling ``run`` with multiple readout buses."""

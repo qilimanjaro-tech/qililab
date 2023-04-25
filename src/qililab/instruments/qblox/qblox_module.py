@@ -130,7 +130,9 @@ class QbloxModule(AWG):
         """
         frequencies = pulse_bus_schedule.frequencies()
         if len(frequencies) > self._NUM_MAX_SEQUENCERS:
-            raise IndexError(f"The number of frequencies must be less or equal than {self._NUM_MAX_SEQUENCERS}")
+            raise IndexError(
+                f"The number of frequencies must be less or equal than the number of sequencers. Got {len(frequencies)} frequencies and {self._NUM_MAX_SEQUENCERS} sequencers."
+            )
         return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
 
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
@@ -157,9 +159,9 @@ class QbloxModule(AWG):
         sequencers_pulse_bus_schedule = self._split_schedule_for_sequencers(pulse_bus_schedule=pulse_bus_schedule)
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        for sequencer in sequencers:
+        for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
-                sequence = self._compile(sequencers_pulse_bus_schedule[sequencer], sequencer)
+                sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
                 compiled_sequences.append(self.sequences[sequencer][0])
@@ -273,7 +275,7 @@ class QbloxModule(AWG):
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
 
         Returns:

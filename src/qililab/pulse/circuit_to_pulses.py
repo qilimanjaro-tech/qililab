@@ -45,8 +45,6 @@ class CircuitToPulses:
             control_gates = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
-            _, readout_gate = readout_gates[0] if len(readout_gates) > 0 else (None, None)
-            wait_of_next_pulse_event = 0
             for gate in control_gates:
                 if isinstance(gate, qibo_gates.Wait):
                     wait_of_next_pulse_event = gate.parameters[0]
@@ -56,7 +54,6 @@ class CircuitToPulses:
                 )
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-                wait_of_next_pulse_event = 0
             for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(

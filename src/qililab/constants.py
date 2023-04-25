@@ -10,8 +10,6 @@ EXPERIMENT_FILENAME = "experiment.yml"
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
 
-DEFAULT_PLOT_Y_LABEL = "Sequence idx"
-
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
 
@@ -51,6 +49,9 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+    TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
+    RESET_METHOD = "reset_method"
+    PASSIVE_RESET_DURATION = "passive_reset_duration"
     DEVICE_ID = "device_id"
     MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
@@ -92,7 +93,6 @@ class EXPERIMENT:
     LOOPS = "loops"
     OPTIONS = "options"
     DEVICE_ID = "device_id"
-    PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
     CIRCUITS = "circuits"

@@ -66,6 +66,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
+        self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             # Remove all acquisition data
@@ -117,9 +118,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if sequencer in self.sequences:
                 sequence_uploaded = self.sequences[sequencer][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(
-                        sequencer=sequencer, name="default"
-                    )
+                    self.device.delete_acquisition_data(sequencer=sequencer, name="default")
         return super().compile(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
@@ -214,9 +213,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
             if sequencer.scope_store_enabled:
-                if scope_already_stored:
-                    raise ValueError("The scope can only be stored in one sequencer at a time.")
-                scope_already_stored = True
                 self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [

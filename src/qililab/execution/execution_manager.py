@@ -1,6 +1,7 @@
 """ExecutionManager class."""
 from dataclasses import dataclass, field
 from pathlib import Path
+from queue import Empty, Queue
 from threading import Thread
 from typing import Dict, List
 
@@ -74,10 +75,13 @@ class ExecutionManager:
         for bus in self.buses:
             bus.run()
 
+        data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._asynchronous_data_handling(queue=data_queue, path=path, plot=plot)
+
         results = []
         for bus in self.readout_buses:
             result = bus.acquire_result()
-            self._asynchronous_data_handling(result=result, path=path, plot=plot)
+            data_queue.put_nowait(item=result)
             results.append(result)
 
         # FIXME: set multiple readout buses
@@ -87,29 +91,38 @@ class ExecutionManager:
             raise ValueError("No Results acquired")
         return results[0]
 
-    def _asynchronous_data_handling(self, result: Result, path: Path, plot: LivePlot | None):
-        """Asynchronously dumps data in file and plots the data.
+    def _asynchronous_data_handling(self, queue: Queue, path: Path, plot: LivePlot | None):
+        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
+        and saves them to a file.
+
+        If no items are received in the queue for 5 seconds, the thread will exit.
 
         Args:
-            path (Path): Filepath.
-            plot (Plot | None): Plot object.
-            x_value (float): Plot's x axis value.
+            queue (Queue): Queue used to store the experiment results.
+            path (Path): Path where the results will be saved.
+            plot (LivePlot, optional): Live plot to send the results to. Defaults to None.
         """
 
-        def _threaded_function(result: Result, path: Path, plot: LivePlot | None):
+        def _threaded_function():
             """Asynchronous thread."""
-            if plot is not None:
-                probs = result.probabilities()
-                # get zero prob and converting to a float to plot the value
-                # is a numpy.float32, so it is needed to convert it to float
-                if len(probs) > 0:
-                    zero_prob = float(probs[RESULTSDATAFRAME.P0].iloc[0])
-                    plot.send_points(value=zero_prob)
-            with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                result_dict = result.to_dict()
-                yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+            while True:
+                try:
+                    result = queue.get(timeout=5)  # get new result from the queue
+                except Empty:
+                    return  # exit thread if no results are received for 5 seconds
 
-        thread = Thread(target=_threaded_function, args=(result, path, plot))
+                if plot is not None:
+                    probs = result.probabilities()
+                    # get zero prob and converting to a float to plot the value
+                    # is a numpy.float32, so it is needed to convert it to float
+                    if len(probs) > 0:
+                        zero_prob = float(probs[RESULTSDATAFRAME.P0].iloc[0])
+                        plot.send_points(value=zero_prob)
+                with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
+                    result_dict = result.to_dict()
+                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+
+        thread = Thread(target=_threaded_function)
         thread.start()
 
     def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
