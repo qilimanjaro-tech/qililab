@@ -84,6 +84,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             self._set_hardware_demodulation(
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
+            self._set_threshold(value=cast(AWGQbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
 
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
@@ -184,6 +185,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
+
+    def _set_device_threshold(self, value: float, sequencer_id: int):
+        """Sets the threshold for classification at the specific channel.
+
+        Args:
+            value (float): Normalized threshold value.
+            sequencer_id (int): sequencer to update the value
+        """
+        integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
+        self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""

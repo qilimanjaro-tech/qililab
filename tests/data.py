@@ -247,6 +247,7 @@ class Galadriel:
                 Parameter.WEIGHTS_PATH0.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHTS_PATH1.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHED_ACQ_ENABLED.value: True,
+                Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
@@ -278,7 +279,8 @@ class Galadriel:
                 Parameter.SCOPE_STORE_ENABLED.value: False,
                 Parameter.WEIGHTS_PATH0.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHTS_PATH1.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHED_ACQ_ENABLED.value: True,
+                Parameter.WEIGHED_ACQ_ENABLED.value: False,
+                Parameter.THRESHOLD.value: 0.5,
             },
         ],
         AWGTypes.AWG_IQ_CHANNELS.value: [

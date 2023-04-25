@@ -358,6 +358,7 @@ class Parameter(str, Enum):
     WEIGHTS_PATH0 = "weights_path0"
     WEIGHTS_PATH1 = "weights_path1"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
+    THRESHOLD = "threshold"
 
 
 class ResultName(str, Enum):
