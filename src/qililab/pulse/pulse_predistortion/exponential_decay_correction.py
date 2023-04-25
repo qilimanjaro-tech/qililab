@@ -34,17 +34,9 @@ class ExponentialCorrection(PredistortedPulse):
             ndarray: Amplitude of the envelope for each time step.
         """
 
-        # FIXME: This is a bit of a hack, but it works.
-        duration = self.pulse.initial_duration()
+        ysig = self.pulse.envelope(amplitude, resolution)
 
-        if amplitude is None:
-            raise AttributeError("Sorry, can't predistort the Pulse without an amplitude.")
-
-        if duration is None:
-            raise AttributeError("Sorry, can't predistort the Pulse without a duration.")
-
-        ysig = amplitude * np.ones(round(duration / resolution))
-
+        # FIXME: Check if is actually redundant, since this would test that amp is a float better than only having 1 if.
         if self.amp >= 0.0:
             # Parameters
             alpha = 1 - np.exp(-1 / (self.sampling_rate * self.tau_exponential * (1 + self.amp)))
@@ -54,7 +46,6 @@ class ExponentialCorrection(PredistortedPulse):
 
             a = [1, -(1 - alpha)]
 
-        # FIXME: Check if there should be another if here, or just a else.
         elif self.amp < 0.0:
             # Parameters
             a0 = 1

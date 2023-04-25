@@ -46,17 +46,6 @@ class PredistortedPulse(ABC):
     #     """
     #     return cls.pulse.from_dict(dictionary)
 
-    # FIXME: This is a bit of a hack, but it works.
-    def initial_duration(self):
-        """
-        Returns:
-            int: duration of the initial pulse.
-        """
-        if self.pulse is Pulse:
-            return self.pulse.duration
-        else:
-            return self.pulse.initial_duration()
-
     def to_dict(self):
         """Return dictionary of pulse.
 

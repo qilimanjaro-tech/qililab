@@ -31,16 +31,8 @@ class BiasTeeCorrection(PredistortedPulse):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        # FIXME: This is a bit of a hack, but it works.
-        duration = self.pulse.initial_duration()
 
-        if amplitude is None:
-            raise AttributeError("Sorry, can't predistort the Pulse without an amplitude.")
-
-        if duration is None:
-            raise AttributeError("Sorry, can't predistort the Pulse without a duration.")
-
-        ysig = amplitude * np.ones(round(duration / resolution))
+        ysig = self.pulse.envelope(amplitude, resolution)
 
         k = 2 * self.tau_bias_tee * self.sampling_rate
         a = [1, -1]

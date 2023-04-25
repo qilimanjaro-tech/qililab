@@ -54,14 +54,6 @@ class Pulse:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
-    # FIXME: This is a bit of a hack, but it works.
-    def initial_duration(self):
-        """
-        Returns:
-            float: duration of the initial pulse.
-        """
-        return self.duration
-
     @classmethod
     def from_dict(cls, dictionary: dict) -> Pulse:
         """Load Pulse object from dictionary.

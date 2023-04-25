@@ -20,7 +20,6 @@ from qililab.utils import Waveforms
 duration = 50
 amplitude = 1.0
 
-# FIXME: Do this in a better way with fixtures???
 list_shapes = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
 params = []
 for shape in list_shapes:
@@ -62,7 +61,6 @@ class TestPredistortedPulse:
         label = predistorted_pulse.label()
         assert isinstance(label, str)
 
-    # FIXME: We need to give a duration manually to the envelope, if not we get an error... (Think about it)
     def test_envelope_no_null(self, predistorted_pulse: PredistortedPulse):
         """Test that envelope returns a non-empty result"""
         envelope = predistorted_pulse.envelope(amplitude=amplitude, resolution=0.1)
@@ -86,8 +84,11 @@ class TestPredistortedPulse:
     def test_to_dict_result(self, predistorted_pulse: PredistortedPulse):
         """Test that to_dict method returns the expected type"""
         dictionary = predistorted_pulse.to_dict()
-        assert list(dictionary.keys()) == [
-            RUNCARD.NAME,
-            PulseShapeSettingsName.TAU_EXPONENTIAL.value,
-            PulseShapeSettingsName.AMP.value,
-        ] or list(dictionary.keys()) == [RUNCARD.NAME, PulseShapeSettingsName.TAU_BIAS_TEE.value]
+        assert list(dictionary.keys()) in [
+            [
+                RUNCARD.NAME,
+                PulseShapeSettingsName.TAU_EXPONENTIAL.value,
+                PulseShapeSettingsName.AMP.value,
+            ],
+            [RUNCARD.NAME, PulseShapeSettingsName.TAU_BIAS_TEE.value],
+        ]
