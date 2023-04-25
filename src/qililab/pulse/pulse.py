@@ -21,16 +21,20 @@ class Pulse:
     frequency: float
     pulse_shape: PulseShape
 
-    def modulated_waveforms(self, resolution: float = 1.0, start_time: float = 0.0) -> Waveforms:
+    def modulated_waveforms(
+        self, resolution: float = 1.0, start_time: float = 0.0, frequency: float = 0.0
+    ) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
             start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
+            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
+        frequency = frequency or self.frequency
         envelope = self.envelope(resolution=resolution)
         i = np.real(envelope)
         q = np.imag(envelope)

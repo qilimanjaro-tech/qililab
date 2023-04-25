@@ -1,5 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
+from multiprocessing.pool import RUN
 from typing import Dict, List, Type
 
 from qibo.gates import RX, RY, I, M, X, Y
@@ -26,6 +27,7 @@ from qililab.instruments.awg_settings.typings import (
     AWGSequencerTypes,
     AWGTypes,
 )
+from qililab.platform.platform import Platform
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -39,6 +41,7 @@ from qililab.typings.enums import (
     Parameter,
     PulseShapeName,
     ReferenceClock,
+    ResetMethod,
     SystemControlName,
 )
 
@@ -59,6 +62,27 @@ class Galadriel:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "Measure",
+                "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",
@@ -146,7 +170,7 @@ class Galadriel:
                 Parameter.OFFSET_PATH1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            }
+            },
         ],
         AWGTypes.AWG_IQ_CHANNELS.value: [
             {
@@ -188,7 +212,7 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
+        Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
         AWGTypes.OUT_OFFSETS.value: [0.123, 1.23],
         AWGTypes.AWG_SEQUENCERS.value: [
@@ -219,8 +243,37 @@ class Galadriel:
                 Parameter.SEQUENCE_TIMEOUT.value: 1,
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
+                Parameter.SCOPE_STORE_ENABLED.value: True,
+            },
+            {
+                AWGSequencerTypes.IDENTIFIER.value: 1,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                AWGSequencerTypes.PATH0.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
+                },
+                AWGSequencerTypes.PATH1.value: {
+                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
+                },
+                Parameter.NUM_BINS.value: 1,
+                Parameter.IF.value: 200_000_000,
+                Parameter.GAIN_PATH0.value: 1,
+                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_PATH0.value: 0,
+                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+                Parameter.SYNC_ENABLED.value: True,
+                Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
+                Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
+                Parameter.SAMPLING_RATE.value: 1.0e09,
+                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
+                Parameter.SEQUENCE_TIMEOUT.value: 1,
+                Parameter.ACQUISITION_TIMEOUT.value: 1,
+                Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-            }
+            },
         ],
         AWGTypes.AWG_IQ_CHANNELS.value: [
             {
@@ -471,6 +524,23 @@ class FluxQubitSimulator:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 10,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [
+            {
+                RUNCARD.NAME: "Rxy",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "R180",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+            {
+                RUNCARD.NAME: "X",
+                "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
+            },
+        ],
         "gates": [
             {
                 RUNCARD.NAME: "M",
