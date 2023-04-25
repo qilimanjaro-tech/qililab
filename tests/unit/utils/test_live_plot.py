@@ -87,26 +87,29 @@ class TestLivePlot:
         loop = Loop(
             alias="X", parameter=Parameter.GAIN, values=np.linspace(start=100, stop=1000, num=50), loop=one_loop
         )
-        plot = LivePlot(connection=connection, loops=[loop, one_loop], num_schedules=7)
+        plot = LivePlot(connection=connection, loops=[one_loop, loop], num_schedules=7)
         ranges = np.meshgrid(one_loop.values, loop.values)
         assert np.allclose(list(plot.x_iterator), ranges[0].flatten())
         assert np.allclose(list(plot.y_iterator), ranges[1].flatten())
 
     def test_3_nested_loops_raises_error(self, connection: API):
-        """Test that instantiating a ``LivePlot`` class with 3 loops raises an error."""
+        """Test that instantiating a ``LivePlot`` class with 3 loops raises a warning."""
         loop3 = Loop(alias="X", parameter=Parameter.GAIN, values=np.linspace(start=100, stop=1000, num=50))
         loop2 = Loop(alias="X", parameter=Parameter.GAIN, values=np.linspace(start=100, stop=1000, num=50), loop=loop3)
         loop1 = Loop(alias="X", parameter=Parameter.GAIN, values=np.linspace(start=100, stop=1000, num=50), loop=loop2)
         with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
+            # Cause all warnings to al ways be triggered.
             warnings.simplefilter("always")
-            _ = LivePlot(connection=connection, loops=[loop1], num_schedules=1)
+            plot = LivePlot(connection=connection, loops=[loop1], num_schedules=1)
             assert len(w) == 1
             assert issubclass(w[-1].category, UserWarning)
             assert (
                 "The experiment contains 3 dimensions. Live plotting only supports 1D and 2D plots. The remaining dimensions won't be plotted"
                 in str(w[-1].message)
             )
+        ranges = np.meshgrid(loop2.values, loop1.values)
+        assert np.allclose(list(plot.x_iterator), ranges[0].flatten())
+        assert np.allclose(list(plot.y_iterator), ranges[1].flatten())
 
     def test_send_points_with_one_loop(self, connection: API):
         """Test the ``send_points`` method with a ``LivePlot`` that contains one loop."""

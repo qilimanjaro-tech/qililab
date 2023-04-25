@@ -16,7 +16,8 @@ class LivePlot:
     This class supports 1D and 2D plots. When running multiple sequences, the sequencer index will always be plotted
     in the x axis.
 
-    When running loops in parallel, the plotted values will correspond to the first loop.
+    When running loops in parallel, the plotted values will correspond to the loop with more nested loops. If all of
+    them have the same amount of nested loops, the first one will be plotted.
 
     Args:
         connection (API): QiboConnection API object.
@@ -28,7 +29,8 @@ class LivePlot:
     def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
         self.connection = connection
         self.num_schedules = num_schedules
-        self.loop = None if loops is None else loops[0]
+        # We use the loop with more nested loops, or the first loop if all of them have the same amount of nested loops
+        self.loop = None if loops is None else loops[np.argmax([loop.num_loops for loop in loops])]
         self.plot_dim = max(loop.num_loops for loop in loops) if loops is not None else 0
         self.plot_dim += 1 if num_schedules > 1 else 0
         if self.plot_dim not in {1, 2}:
@@ -68,7 +70,7 @@ class LivePlot:
             tuple[Iterator, Iterator]: Iterators for the X and Y axis respectively.
         """
         if self.y_values is not None:
-            if self.loop is not None and self.loop.num_loops == 2:
+            if self.loop is not None and self.loop.num_loops >= 2:
                 ranges = np.meshgrid(self.x_values, self.y_values)
                 return iter(ranges[0].flatten()), iter(ranges[1].flatten())
             return iter(self.x_values), iter(self.y_values)
