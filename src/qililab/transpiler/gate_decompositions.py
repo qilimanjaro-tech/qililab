@@ -32,6 +32,13 @@ class GateDecompositions:
         Returns:
             list[gates.Gate]: list of gates corresponding to the decomposition of the given gate
         """
+
+        # check that a decomposition exists
+        if type(gate) not in self.decompositions:
+            raise NotImplementedError(
+                f"Gate of type {gate.__class__} is not supported for transpilation. Supported gates are {self.decompositions.keys()}"
+            )
+
         decomposition = self.decompositions[gate.__class__]
         if callable(decomposition):
             decomposition = decomposition(gate)
@@ -51,10 +58,6 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     # define supported gates (native qpu gates + virtual z + measurement)
     supported_gates = native_gates() + (gates.RZ, gates.M)
 
-    # parse single gate input
-    if not isinstance(ngates, list):
-        raise Exception("argument ngates must be a list of gates")
-
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
 
@@ -66,12 +69,8 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
             if not tt:
                 new_gates.append(gate)  # append already native gates
             # distinguish 1 or 2 qubit gates
-            elif len(gate.qubits) == 1:
-                new_gates += onequbit_dec(gate)
-            elif (len(gate.qubits) == 2) or (gate.name == "ccx"):
-                new_gates += cz_dec(gate)
             else:
-                raise Exception(f"{len(gate.qubits)} qubit gates not supported (except toffoli for 3 qubits)")
+                new_gates += qili_dec(gate)
         return translate_gates(new_gates)
     return ngates
 
@@ -85,49 +84,46 @@ def native_gates():
     return (Drag, gates.CZ)
 
 
-# TODO: dictionary / list of supported gates
-
 # Mind that the order of the gates is "the inverse" of the operators
 # i.e. to perform the operation AB|psi> the order of the operators
 # returned as a list must be  [B, A] so that B is applied to |psi> 1st
-onequbit_dec = GateDecompositions()
-onequbit_dec.add(gates.I, [gates.RZ(0, 0)])
-onequbit_dec.add(gates.H, [Drag(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
-onequbit_dec.add(gates.X, [Drag(0, np.pi, 0)])
-onequbit_dec.add(
+qili_dec = GateDecompositions()
+qili_dec.add(gates.I, [gates.RZ(0, 0)])
+qili_dec.add(gates.H, [Drag(0, np.pi / 2, -np.pi / 2), gates.RZ(0, np.pi)])
+qili_dec.add(gates.X, [Drag(0, np.pi, 0)])
+qili_dec.add(
     gates.Y,
     [
         Drag(0, np.pi, 0),
         gates.RZ(0, np.pi),
     ],
 )
-onequbit_dec.add(gates.Z, [gates.RZ(0, np.pi)])
+qili_dec.add(gates.Z, [gates.RZ(0, np.pi)])
 
-onequbit_dec.add(gates.RX, lambda gate: [Drag(0, gate.parameters[0], 0)])
-onequbit_dec.add(gates.RY, lambda gate: [Drag(0, gate.parameters[0], np.pi / 2)])
-onequbit_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0] / 2)])
-onequbit_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
-onequbit_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
-onequbit_dec.add(
+qili_dec.add(gates.RX, lambda gate: [Drag(0, gate.parameters[0], 0)])
+qili_dec.add(gates.RY, lambda gate: [Drag(0, gate.parameters[0], np.pi / 2)])
+qili_dec.add(gates.RZ, lambda gate: [gates.RZ(0, gate.parameters[0] / 2)])
+qili_dec.add(gates.U1, lambda gate: [gates.RZ(0, gate.parameters[0])])
+qili_dec.add(gates.U2, lambda gate: [gates.U3(0, np.pi / 2, gate.parameters[0], gate.parameters[1])])
+qili_dec.add(
     gates.U3,
     lambda gate: [
         Drag(0, gate.parameters[0], -gate.parameters[2] + np.pi / 2),  # qibo's U3 is different from standard U3
         gates.RZ(0, gate.parameters[1] + gate.parameters[2]),
     ],
 )
-onequbit_dec.add(gates.S, [gates.RZ(0, np.pi / 2)])
-onequbit_dec.add(gates.SDG, [gates.RZ(0, -np.pi / 2)])
-onequbit_dec.add(gates.T, [gates.RZ(0, np.pi / 4)])
-onequbit_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
+qili_dec.add(gates.S, [gates.RZ(0, np.pi / 2)])
+qili_dec.add(gates.SDG, [gates.RZ(0, -np.pi / 2)])
+qili_dec.add(gates.T, [gates.RZ(0, np.pi / 4)])
+qili_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
 
 # TODO: raise error if gate not implemented
 
 
 # register CZ decompositions
-cz_dec = GateDecompositions()
-cz_dec.add(gates.CNOT, [gates.H(1), gates.CZ(0, 1), gates.H(1)])
-cz_dec.add(gates.CZ, [gates.CZ(0, 1)])
-cz_dec.add(
+qili_dec.add(gates.CNOT, [gates.H(1), gates.CZ(0, 1), gates.H(1)])
+qili_dec.add(gates.CZ, [gates.CZ(0, 1)])
+qili_dec.add(
     gates.SWAP,
     [
         gates.H(1),
@@ -141,7 +137,7 @@ cz_dec.add(
         gates.H(1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.iSWAP,
     [
         gates.U3(0, np.pi / 2.0, 0, -np.pi / 2.0),
@@ -154,7 +150,7 @@ cz_dec.add(
         gates.H(1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CRX,
     lambda gate: [
         gates.RX(1, gate.parameters[0] / 2.0),
@@ -163,7 +159,7 @@ cz_dec.add(
         gates.CZ(0, 1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CRY,
     lambda gate: [
         gates.RY(1, gate.parameters[0] / 2.0),
@@ -172,7 +168,7 @@ cz_dec.add(
         gates.CZ(0, 1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CRZ,
     lambda gate: [
         gates.RZ(1, gate.parameters[0] / 2.0),
@@ -183,7 +179,7 @@ cz_dec.add(
         gates.H(1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CU1,
     lambda gate: [
         gates.RZ(0, gate.parameters[0] / 2.0),
@@ -195,7 +191,7 @@ cz_dec.add(
         gates.RZ(1, gate.parameters[0] / 2.0),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CU2,
     lambda gate: [
         gates.RZ(1, (gate.parameters[1] - gate.parameters[0]) / 2.0),
@@ -209,7 +205,7 @@ cz_dec.add(
         gates.U3(1, np.pi / 4, gate.parameters[0], 0),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.CU3,
     lambda gate: [
         gates.RZ(1, (gate.parameters[2] - gate.parameters[1]) / 2.0),
@@ -223,7 +219,7 @@ cz_dec.add(
         gates.U3(1, gate.parameters[0] / 2.0, gate.parameters[1], 0),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.FSWAP,
     [
         gates.U3(0, np.pi / 2, -np.pi / 2, -np.pi),
@@ -236,7 +232,7 @@ cz_dec.add(
         gates.U3(1, np.pi / 2, 0, -np.pi),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.RXX,
     lambda gate: [
         gates.H(0),
@@ -246,7 +242,7 @@ cz_dec.add(
         gates.H(0),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.RYY,
     lambda gate: [
         gates.RX(0, np.pi / 2),
@@ -258,7 +254,7 @@ cz_dec.add(
         gates.U3(1, np.pi / 2, 0, np.pi / 2),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.RZZ,
     lambda gate: [
         gates.H(1),
@@ -268,7 +264,7 @@ cz_dec.add(
         gates.H(1),
     ],
 )
-cz_dec.add(
+qili_dec.add(
     gates.TOFFOLI,
     [
         gates.CZ(1, 2),
