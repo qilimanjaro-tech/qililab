@@ -17,14 +17,12 @@ from qililab.pulse import (
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Waveforms
 
-# FIXME: Do this in a better way with fixtures???
-list_shapes = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
-params = []
-
 duration = 50
 amplitude = 1.0
 
-
+# FIXME: Do this in a better way with fixtures???
+list_shapes = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+params = []
 for shape in list_shapes:
     pulse = Pulse(amplitude=amplitude, phase=0.0, duration=duration, frequency=1.0, pulse_shape=shape)
     params.extend(
@@ -33,8 +31,6 @@ for shape in list_shapes:
             ExponentialCorrection(pulse=pulse, tau_exponential=1.0, amp=1.0),
         ]
     )
-
-print(params)
 
 
 @pytest.fixture(name="predistorted_pulse", params=params)
