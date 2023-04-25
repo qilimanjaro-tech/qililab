@@ -142,12 +142,12 @@ This document contains the changes of the current release.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
 
-- The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
-  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
-
 - The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values`
   attribute which is now in the `Loop` class.
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
+- The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
 
 ### Documentation
 
