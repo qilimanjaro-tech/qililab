@@ -24,7 +24,7 @@ Here is an example of a complete settings section of a simple runcard:
 Several settings have to be addressed to create a platform:
 
 * ``id_`` : no ho se
-* ``category`` : 
+* ``category`` :
 * ``name`` : the name with which the platform is going to be referred as
 * ``delay_between_pulses`` : the minimum delay between pulses
 * ``delay_before_readout`` : the minimum delay before readout
