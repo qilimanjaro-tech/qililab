@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
 from qililab.utils import Factory
@@ -26,3 +27,11 @@ class Rectangular(PulseShape):
             ndarray: Amplitude of the envelope for each time step.
         """
         return amplitude * np.ones(round(duration / resolution))
+
+    def to_dict(self):
+        """Return dictionary representation of the pulse shape.
+
+        Returns:
+            dict: Dictionary.
+        """
+        return {RUNCARD.NAME: self.name.value}
