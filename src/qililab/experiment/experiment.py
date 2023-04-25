@@ -70,9 +70,8 @@ class Experiment:
         else:
             self._plot = LivePlot(
                 connection=self.platform.connection,
-                loops=self.options.loops,
-                plot_y_label=self.options.plot_y_label,
-                num_schedules=self.execution_manager.num_schedules,
+                loops=self.options.loops or [],
+                num_schedules=len(self.pulse_schedules),
                 title=self.options.name,
             )
 

@@ -58,7 +58,6 @@ class TestFlippingSequence:
         assert flipping_sequence.options.loops is None
         assert flipping_sequence.options.settings.repetition_duration == 10000
         assert flipping_sequence.options.settings.hardware_average == 10000
-        assert flipping_sequence.options.plot_y_label == "|S21| [dB]"
 
     def test_func(self, flipping_sequence: FlippingSequence):
         """Test the ``func`` method."""

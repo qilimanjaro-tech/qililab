@@ -1,67 +1,79 @@
 """LivePlot class."""
-from dataclasses import InitVar, dataclass, field
+from collections.abc import Iterator
 from itertools import count
-from typing import Iterator, List
 
 import numpy as np
 from qiboconnection.api import API
 
-from qililab.constants import DEFAULT_PLOT_Y_LABEL
 from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
-from qililab.utils.util_loops import find_minimum_inner_range_from_loops, find_minimum_outer_range_from_loops
 
 
-@dataclass
 class LivePlot:
-    """Plot class."""
+    """Class used to live plot experiment results.
 
-    connection: API
-    num_schedules: int
-    loops: List[Loop] | None = None
-    plot_id: int = field(init=False)
-    x_iterator_ranges: Iterator = field(init=False)
-    y_iterator_ranges: Iterator = field(init=False)
-    plot_y_label: str | None = None
-    title: InitVar[str] = ""
+    This class supports 1D and 2D plots. When running multiple sequences, the sequencer index will always be plotted
+    in the x axis.
 
-    def __post_init__(self, title: str):
-        """Generate iterators that iterate over loop ranges."""
-        self.x_iterator_ranges, self.y_iterator_ranges = self._build_plot_ranges_from_loop_ranges(
-            num_schedules=self.num_schedules
-        )
+    Args:
+        connection (API): QiboConnection API object.
+        num_schedules (int): Number of circuits/pulse schedules.
+        title (str): Title of the plot.
+        loops (list[Loop]): List of loops.
+    """
+
+    def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
+        self.connection = connection
+        self.num_schedules = num_schedules
+        self.all_loops = [] if loops is None else [inner_loop for loop in loops for inner_loop in loop.loops]
+        # Flatten all parallel and inner loops
+        if len(self.all_loops) > 2:
+            raise ValueError(
+                f"Cannot create a live plot with {len(self.all_loops)} loops. Only 1D and 2D plots are supported."
+            )
+        if not self.all_loops and num_schedules == 1:
+            raise ValueError("Cannot create a live plot with 1 pulse schedule and no loops.")
+        self.x_values, self.y_values = self._axis_values()
+        self.x_iterator, self.y_iterator = self._iterator_values()
         self.plot_id = self.create_live_plot(title=title)
 
-    def _build_plot_ranges_from_loop_ranges(self, num_schedules: int) -> List[Iterator]:
-        """build plot ranges from loop ranges"""
-        return (
-            (self._build_empty_iterator(), self._build_empty_iterator())
-            if self.loops is None
-            else self._build_plot_ranges_from_defined_loop_ranges(num_schedules=num_schedules)
-        )
+    def _axis_values(self) -> tuple[list, list | None]:
+        """Generate the values for the X and Y axes.
 
-    def _build_empty_iterator(self):
-        """build empty iterator"""
-        return count()
+        When plotting more than one sequence, the X axis will correspond to the sequence index. Otherwise, the X axis
+        will correspond to the range of the first (outer) loop.
 
-    def _build_plot_ranges_from_defined_loop_ranges(self, num_schedules: int):
-        """build plot ranges from defined loop ranges"""
-        x_loop_range = np.tile(find_minimum_outer_range_from_loops(loops=self.loops), num_schedules)
-        y_loop_range = np.tile(find_minimum_inner_range_from_loops(loops=self.loops), num_schedules)
+        If there is only one loop, the Y axis will be None. Otherwise, the Y axis will correspond to the range of the
+        second (inner) loop.
 
-        if y_loop_range is None or len(y_loop_range) <= 0:
-            return (iter(x_loop_range), self._build_empty_iterator())
+        Returns:
+            tuple[list, list | None]: Values for the X and Y axes respectively.
+        """
+        if self.num_schedules > 1:
+            x_values = list(range(self.num_schedules))
+            return x_values, None if len(self.all_loops) == 0 else list(self.all_loops[0].range)
+        x_values = list(self.all_loops[0].range)
+        if len(self.all_loops) == 1:
+            return x_values, None
+        y_values = list(self.all_loops[1].range)
+        return x_values, y_values
 
-        ranges_meshgrid = np.meshgrid(x_loop_range, y_loop_range)
-        return iter(ranges_meshgrid[0].ravel()), iter(ranges_meshgrid[1].ravel())
+    def _iterator_values(self) -> tuple[Iterator, Iterator]:
+        """Returns the iterators used to send data to the plot.
+
+        Returns:
+            tuple[Iterator, Iterator]: Iterators for the X and Y axis respectively.
+        """
+        if self.y_values is not None:
+            ranges = np.meshgrid(self.x_values, self.y_values)
+            return iter(ranges[0].flatten()), iter(ranges[1].flatten())
+        return iter(self.x_values), count()
 
     def create_live_plot(self, title: str) -> int:
-        """Create live plot
+        """Create live plot.
 
         Args:
             title (str): Title of the plot.
-            x_label (str): Label of the x axis.
-            y_label (str): Label of the y axis.
         """
         return self.connection.create_liveplot(
             title=title,
@@ -69,39 +81,30 @@ class LivePlot:
             y_label=self.y_label,
             z_label=self.z_label,
             plot_type=self.plot_type.value,
-            x_axis=self.x_axis,
-            y_axis=self.y_axis,
+            x_axis=self.x_values,
+            y_axis=self.y_values or None,
         )
 
     def send_points(self, value: float):
-        """Send plot points.
+        """Send points to the live plot.
+
+        This function gathers the X and Y coordinates from the iterators generated in the class constructor.
 
         Args:
-            value (float): value to send to the plot
+            value (float): Value to send to the plot.
         """
-        if self.plot_type in [LivePlotTypes.SCATTER, LivePlotTypes.LINES]:
-            x_value = next(self.x_iterator_ranges)
+        if self.y_values is None:
+            x_value = next(self.x_iterator)
             self.connection.send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
             return
-        if self.plot_type == LivePlotTypes.HEATMAP:
-            x_value = next(self.x_iterator_ranges)
-            y_value = next(self.y_iterator_ranges)
-            self.connection.send_plot_points(
-                plot_id=self.plot_id,
-                x=float(x_value),
-                y=float(y_value),
-                z=value,
-            )
-            return
-        raise ValueError(
-            f"PlotType {self.plot_type.value} not supported. Plot valid types are: "
-            + f"{[plot_type.value for plot_type in LivePlotTypes]}"
+        x_value = next(self.x_iterator)
+        y_value = next(self.y_iterator)
+        self.connection.send_plot_points(
+            plot_id=self.plot_id,
+            x=float(x_value),
+            y=float(y_value),
+            z=value,
         )
-
-    @property
-    def total_inner_loops(self):
-        """return total inner loops"""
-        return 0 if self.loops is None else max(loop.num_loops for loop in self.loops)
 
     @property
     def plot_type(self) -> LivePlotTypes:
@@ -110,33 +113,7 @@ class LivePlot:
         Returns:
             LivePlotTypes: Type of the LivePlot
         """
-        if self.loops is None or self.total_inner_loops <= 1:
-            return LivePlotTypes.SCATTER
-        return LivePlotTypes.HEATMAP
-
-    @property
-    def x_axis(self):
-        """Loop 'x_axis' property.
-
-        Returns:
-            List[int]: Values of the x axis.
-        """
-        if self.loops is None:
-            return None
-        return find_minimum_outer_range_from_loops(loops=self.loops)
-
-    @property
-    def y_axis(self):
-        """Loop 'y_axis' property.
-
-        Returns:
-            List[int]: Values of the y axis.
-        """
-        if self.loops is None:
-            return None
-        if self.loops[0].inner_loop_range is None:
-            return None
-        return find_minimum_inner_range_from_loops(loops=self.loops)
+        return LivePlotTypes.SCATTER if self.y_values is None else LivePlotTypes.HEATMAP
 
     @property
     def y_label(self):
@@ -145,18 +122,10 @@ class LivePlot:
         Returns:
             str: Y label.
         """
-        if self.plot_y_label is not None:
-            return self.plot_y_label
-        if self._has_multiple_loops():
-            for loop in self.loops:
-                if loop.inner_loop_range is not None:
-                    return self.label(loop=loop.loops[-2])
+        if self.y_values is not None:
+            return self.label(loop=self.all_loops[1])
 
-        return DEFAULT_PLOT_Y_LABEL
-
-    def _has_multiple_loops(self):
-        """check if loops variable has multiple loops"""
-        return self.loops is not None and self.total_inner_loops > 1
+        return "Amplitude"
 
     @property
     def z_label(self) -> str | None:
@@ -165,7 +134,7 @@ class LivePlot:
         Returns:
             str: Z label.
         """
-        return "Amplitude" if self._has_multiple_loops() else None
+        return "Amplitude" if len(self.all_loops) > 1 else None
 
     @property
     def x_label(self) -> str:
@@ -174,16 +143,10 @@ class LivePlot:
         Returns:
             str: X label.
         """
-        if self.loops is None:
+        if len(self.all_loops) == 0:
             return "Sequence idx"
 
-        minimum_outer_loop_range_length = len(self.loops[0].outer_loop_range)
-        index = 0
-        for loop in self.loops:
-            if len(loop.outer_loop_range) < minimum_outer_loop_range_length:
-                minimum_outer_loop_range_length = len(loop.outer_loop_range)
-                index += 1
-        return self.label(loop=self.loops[index].loops[-1])
+        return self.label(loop=self.all_loops[0])
 
     def label(self, loop: Loop) -> str:
         """Return plot label from loop object.
