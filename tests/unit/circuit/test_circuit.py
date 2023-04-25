@@ -145,13 +145,13 @@ class TestCircuit:
     ):
         """Test that add method resets transpilation flags"""
         circuit: Circuit = request.getfixturevalue(circuit_fixture)
-        circuit.has_timings_calculated = True
-        circuit.has_special_operations_removed = True
-        circuit.has_transpiled_to_pulses = True
+        circuit._has_timings_calculated = True
+        circuit._has_special_operations_removed = True
+        circuit._has_transpiled_to_pulses = True
         circuit.add(qubits=qubits, operation=operation)
-        assert circuit.has_timings_calculated is False
-        assert circuit.has_special_operations_removed is False
-        assert circuit.has_transpiled_to_pulses is False
+        assert circuit._has_timings_calculated is False
+        assert circuit._has_special_operations_removed is False
+        assert circuit._has_transpiled_to_pulses is False
 
     @pytest.mark.parametrize(
         "circuit_fixture",

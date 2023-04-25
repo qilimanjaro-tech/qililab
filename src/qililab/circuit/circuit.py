@@ -35,9 +35,11 @@ class Circuit:
 
         self.num_qubits: int = num_qubits
         self.graph: rx.PyDiGraph = rx.PyDiGraph(multigraph=True)  # pylint: disable=no-member
-        self.has_timings_calculated: bool = False
-        self.has_special_operations_removed: bool = False
-        self.has_transpiled_to_pulses: bool = False
+
+        # Flags used in transpilation procedure
+        self._has_timings_calculated: bool = False
+        self._has_special_operations_removed: bool = False
+        self._has_transpiled_to_pulses: bool = False
 
         index = self.graph.add_node(EntryNode())
         self.graph[index].index = index
@@ -114,9 +116,9 @@ class Circuit:
 
     def _reset_transpilation_flags(self) -> None:
         """Reset the flags used for transpilation process"""
-        self.has_timings_calculated = False
-        self.has_special_operations_removed = False
-        self.has_transpiled_to_pulses = False
+        self._has_timings_calculated = False
+        self._has_special_operations_removed = False
+        self._has_transpiled_to_pulses = False
 
     @property
     def depth(self) -> int:

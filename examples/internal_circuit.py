@@ -39,21 +39,21 @@ circuit.draw()
 transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
 
 # calculate timings
-circuit_ir1 = transpiler.calculate_timings(circuit)
+circuit_ir1 = transpiler._calculate_timings(circuit)
 circuit_ir1.draw()
 # circuit_ir1.print()
 
 # remove special operations
-circuit_ir2 = transpiler.remove_special_operations(circuit_ir1)
+circuit_ir2 = transpiler._remove_special_operations(circuit_ir1)
 circuit_ir2.draw()
 # circuit_ir2.print()
 
 # translate operations to pulse operations
-circuit_ir3 = transpiler.transpile_to_pulse_operations(circuit_ir2)
+circuit_ir3 = transpiler._transpile_to_pulse_operations(circuit_ir2)
 circuit_ir3.draw()
 # circuit_ir3.print()
 
-pulse_schedule = transpiler.generate_pulse_schedule(circuit_ir3)
+pulse_schedule = transpiler._generate_pulse_schedule(circuit_ir3)
 # pulse_schedule.print()
 
 # Convert to QiliQASM

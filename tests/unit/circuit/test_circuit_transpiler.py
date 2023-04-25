@@ -68,10 +68,10 @@ class TestCircuitTranspiler:
         settings = platform.settings
         settings.timings_calculation_method = timings_calculation_method
         transpiler = CircuitTranspiler(settings=settings, chip=platform.chip)
-        transpiled_circuit = transpiler.calculate_timings(circuit=circuit)
+        transpiled_circuit = transpiler._calculate_timings(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit.depth == circuit.depth
-        assert transpiled_circuit.has_timings_calculated is True
+        assert transpiled_circuit._has_timings_calculated is True
 
     @pytest.mark.parametrize(
         "circuit_fixture",
@@ -83,9 +83,9 @@ class TestCircuitTranspiler:
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
         transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
-        transpiled_circuit = transpiler.remove_special_operations(circuit=circuit)
+        transpiled_circuit = transpiler._remove_special_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
-        assert transpiled_circuit.has_special_operations_removed is True
+        assert transpiled_circuit._has_special_operations_removed is True
         for node in transpiled_circuit.graph.nodes():
             if isinstance(node, OperationNode):
                 assert isinstance(node.operation, SpecialOperation) is False
@@ -100,9 +100,9 @@ class TestCircuitTranspiler:
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
         transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
-        transpiled_circuit = transpiler.transpile_to_pulse_operations(circuit=circuit)
+        transpiled_circuit = transpiler._transpile_to_pulse_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
-        assert transpiled_circuit.has_transpiled_to_pulses is True
+        assert transpiled_circuit._has_transpiled_to_pulses is True
         for node in transpiled_circuit.graph.nodes():
             if isinstance(node, OperationNode):
                 assert isinstance(node.operation, PulseOperation)
@@ -128,4 +128,4 @@ class TestCircuitTranspiler:
         circuit.add(0, UnkownOperation())
         transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
         with pytest.raises(ValueError):
-            transpiler.calculate_timings(circuit=circuit)
+            transpiler._calculate_timings(circuit=circuit)

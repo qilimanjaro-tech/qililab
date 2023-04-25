@@ -21,11 +21,20 @@ class CircuitTranspiler:
     settings: RuncardSchema.PlatformSettings
     chip: Chip
 
-    def calculate_timings(self, circuit: Circuit) -> Circuit:
+    _WRONG_TRANSPILATION_ORDER_MESSAGE = (
+        "Transpilation methods we called in incorrect order. If you need to manually execute the procedure, you should run:"
+        "1. _calculate_timings()"
+        "2. _remove_special_operations()"
+        "3. _transpile_to_pulse_operations()"
+        "4. _generate_pulse_schedule()"
+    )
+
+    def _calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
 
         Args:
             circuit (Circuit): The quantum circuit for which timings need to be calculated.
+
         Returns:
             Circuit: The circuit with annotated operations that contain timing information.
 
@@ -80,21 +89,24 @@ class CircuitTranspiler:
                 operation_node.timing = OperationTiming(start=start_time, end=end_time)
                 for qubit in operation_node.qubits:
                     qubits_last_end_timings[qubit] = end_time
-        circuit.has_timings_calculated = True
+        circuit._has_timings_calculated = True
         return circuit
 
-    def remove_special_operations(self, circuit: Circuit) -> Circuit:
+    def _remove_special_operations(self, circuit: Circuit) -> Circuit:
         """Removes special operations (Wait, Barrier, Passive Reset) from the circuit
 
         Args:
             circuit (Circuit): The quantum circuit
 
+        Raises:
+            ValueError: If the previous transpilation steps have not been executed
+
         Returns:
             Circuit: New circuit with special operations removed
         """
         circuit = deepcopy(circuit)
-        if not circuit.has_timings_calculated:
-            circuit = self.calculate_timings(circuit)
+        if not circuit._has_timings_calculated:
+            raise ValueError(self._WRONG_TRANSPILATION_ORDER_MESSAGE)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         for layer in layers:
             for operation_node in layer:
@@ -109,24 +121,25 @@ class CircuitTranspiler:
                             if predecessor_qubits & successor_qubits & node_qubits:
                                 circuit.graph.add_edge(predecessor.index, successor.index, None)
                     circuit.graph.remove_node(operation_node.index)
-        circuit.has_special_operations_removed = True
+        circuit._has_special_operations_removed = True
         return circuit
 
-    def transpile_to_pulse_operations(self, circuit: Circuit) -> Circuit:
+    def _transpile_to_pulse_operations(self, circuit: Circuit) -> Circuit:
         """
         Transpiles the given quantum circuit into pulse operations.
 
         Args:
             circuit (Circuit): The quantum circuit to be transpiled into pulse operations.
 
+        Raises:
+            ValueError: If the previous transpilation steps have not been executed
+
         Returns:
             Circuit: The transpiled circuit with pulse operations.
         """
         circuit = deepcopy(circuit)
-        if not circuit.has_timings_calculated:
-            circuit = self.calculate_timings(circuit)
-        if not circuit.has_special_operations_removed:
-            circuit = self.remove_special_operations(circuit)
+        if not (circuit._has_timings_calculated and circuit._has_special_operations_removed):
+            raise ValueError(self._WRONG_TRANSPILATION_ORDER_MESSAGE)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         for layer in layers:
             for operation_node in layer:
@@ -151,17 +164,28 @@ class CircuitTranspiler:
                     operation_node.operation = pulse_operation
                     operation_node.is_measurement = is_measurement
                 operation_node.chip_port = self.chip.get_port(chip_node)
-        circuit.has_transpiled_to_pulses = True
+        circuit._has_transpiled_to_pulses = True
         return circuit
 
-    def generate_pulse_schedule(self, circuit: Circuit) -> PulseSchedule:
+    def _generate_pulse_schedule(self, circuit: Circuit) -> PulseSchedule:
+        """Transpiles the circuit into PulseSchedule
+
+        Args:
+            circuit (Circuit): The quantum circuit to be transpiled into PulseSchedule
+
+        Raises:
+            ValueError: If the previous transpilation steps have not been executed
+
+        Returns:
+            PulseSchedule: The equivalent PulseSchedule
+        """
         circuit = deepcopy(circuit)
-        if not circuit.has_timings_calculated:
-            circuit = self.calculate_timings(circuit=circuit)
-        if not circuit.has_special_operations_removed:
-            circuit = self.remove_special_operations(circuit=circuit)
-        if not circuit.has_transpiled_to_pulses:
-            circuit = self.transpile_to_pulse_operations(circuit=circuit)
+        if not (
+            circuit._has_timings_calculated
+            and circuit._has_special_operations_removed
+            and circuit._has_transpiled_to_pulses
+        ):
+            raise ValueError(self._WRONG_TRANSPILATION_ORDER_MESSAGE)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
         pulse_schedule = PulseSchedule()
         for layer in layers:
@@ -172,8 +196,8 @@ class CircuitTranspiler:
         return pulse_schedule
 
     def transpile(self, circuit: Circuit) -> PulseSchedule:
-        circuit_ir1 = self.calculate_timings(circuit)
-        circuit_ir2 = self.remove_special_operations(circuit_ir1)
-        circuit_ir3 = self.transpile_to_pulse_operations(circuit_ir2)
-        pulse_schedule = self.generate_pulse_schedule(circuit_ir3)
+        circuit_ir1 = self._calculate_timings(circuit)
+        circuit_ir2 = self._remove_special_operations(circuit_ir1)
+        circuit_ir3 = self._transpile_to_pulse_operations(circuit_ir2)
+        pulse_schedule = self._generate_pulse_schedule(circuit_ir3)
         return pulse_schedule
