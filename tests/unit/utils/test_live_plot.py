@@ -97,6 +97,51 @@ class TestLivePlot:
         with pytest.raises(ValueError, match="Cannot create a live plot with 1 pulse schedule and no loops"):
             _ = LivePlot(connection=connection, num_schedules=1)
 
+    def test_send_points_with_one_loop(self, connection: API):
+        """Test the ``send_points`` method with a ``LivePlot`` that contains one loop."""
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+        plot = LivePlot(connection=connection, loops=[loop], num_schedules=1)
+        plot.send_points(value=4)
+        x_value = float(loop.range[0])
+        connection.send_plot_points.assert_called_once_with(plot_id=plot.plot_id, x=x_value, y=4)
+
+    def test_send_points_with_two_loops(self, connection: API):
+        """Test the ``send_points`` method with a ``LivePlot`` that contains one loop."""
+        loop2 = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50), loop=loop2)
+        plot = LivePlot(connection=connection, loops=[loop], num_schedules=1)
+        plot.send_points(value=4)
+        x_value = float(loop.range[0])
+        y_value = float(loop2.range[0])
+        connection.send_plot_points.assert_called_once_with(plot_id=plot.plot_id, x=x_value, y=y_value, z=4)
+
+    def test_send_all_points_of_a_plot_with_one_loop(self, connection: API):
+        """Test calling the ``send_points`` multiple times until the iterators finish."""
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+        plot = LivePlot(connection=connection, loops=[loop], num_schedules=1)
+        idx = 0
+        while True:
+            if idx == 50:
+                with pytest.raises(StopIteration):
+                    plot.send_points(value=5)
+                break
+            plot.send_points(value=5)
+            idx += 1
+
+    def test_send_all_points_of_a_plot_with_two_loops(self, connection: API):
+        """Test calling the ``send_points`` multiple times until the iterators finish."""
+        loop2 = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50), loop=loop2)
+        plot = LivePlot(connection=connection, loops=[loop], num_schedules=1)
+        idx = 0
+        while True:
+            if idx == 50 * 50:
+                with pytest.raises(StopIteration):
+                    plot.send_points(value=5)
+                break
+            plot.send_points(value=5)
+            idx += 1
+
     def test_create_live_plot(self, connection: API):
         """Test the ``create_live_plot`` method."""
         plot = LivePlot(connection=connection, num_schedules=10)

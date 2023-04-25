@@ -105,7 +105,6 @@ class LivePlot:
             y=float(y_value),
             z=value,
         )
-        return
 
     @property
     def plot_type(self) -> LivePlotTypes:
