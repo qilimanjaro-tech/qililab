@@ -1,6 +1,7 @@
 """Pytest configuration fixtures."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab import build_platform
@@ -12,7 +13,6 @@ from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, Pu
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
-from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
 from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
@@ -48,7 +48,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=4, stop=1000, step=40),
+        values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     return Experiment(
@@ -68,12 +68,13 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
-        options=LoopOptions(start=40, stop=100, step=40),
+        values=np.arange(start=40, stop=100, step=40),
     )
     loop = Loop(
         alias=InstrumentName.QBLOX_QRM.value,
         parameter=Parameter.GAIN,
-        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
+        values=np.linspace(start=0, stop=1, num=2),
+        channel_id=0,
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])

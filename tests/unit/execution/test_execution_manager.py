@@ -4,11 +4,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 import pytest
-from qibo.gates import RX, RY, I, M, X, Y
-from qibo.models import Circuit
 from qpysequence import Sequence
 
-from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
@@ -16,9 +13,6 @@ from qililab.instruments import AWG
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings import ExperimentOptions, InstrumentName, LoopOptions, Parameter
-from qililab.utils import Loop
-from tests.data import Galadriel
 from tests.utils import mock_instruments
 
 
@@ -119,8 +113,8 @@ class TestExecutionManagerPlatform:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.options.loops[0].loop.range,  # type: ignore
-                    nested_experiment.options.loops[0].range,  # type: ignore
+                    nested_experiment.options.loops[0].loop.values,  # type: ignore
+                    nested_experiment.options.loops[0].values,  # type: ignore
                 ]
             )
         ).all()

@@ -57,9 +57,9 @@ class LivePlot:
             return list(range(self.num_schedules)), None
         if self.loop.loop is None:
             if self.num_schedules == 1:
-                return list(self.loop.range), None
-            return list(range(self.num_schedules)), list(self.loop.range)
-        return list(self.loop.loop.range), list(self.loop.range)
+                return list(self.loop.values), None
+            return list(range(self.num_schedules)), list(self.loop.values)
+        return list(self.loop.loop.values), list(self.loop.values)
 
     def _iterator_values(self) -> tuple[Iterator, Iterator]:
         """Returns the iterators used to send data to the plot.
