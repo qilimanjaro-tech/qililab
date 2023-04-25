@@ -101,20 +101,6 @@ class Loop:
             loop = loop.loop
         return loops
 
-    @property
-    def outer_loop_range(self) -> np.ndarray:
-        """return the values of the outer loop"""
-        if len(self.loops) <= 0:
-            raise ValueError("Loop MUST contain at least one loop")
-        return self.loops[-1].values
-
-    @property
-    def inner_loop_range(self) -> np.ndarray | None:
-        """Return the values of the inner loop or None
-        when there are not exactly two loops.
-        """
-        return None if len(self.loops) != 2 else self.loops[-2].values
-
     def to_dict(self) -> dict:
         """Convert class to a dictionary.
 

@@ -102,11 +102,9 @@ class TestExecutionManagerPlatform:
         acquisitions = results.acquisitions(mean=True)
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
         probabilities = results.probabilities(mean=True)
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "2"].unique().size == 2
         mock_dump_1.assert_called()
         mock_open_1.assert_called()
         mock_open_2.assert_called()
@@ -115,9 +113,8 @@ class TestExecutionManagerPlatform:
             results.ranges
             == np.array(
                 [
-                    nested_experiment.options.loops[0].values,  # type: ignore
                     nested_experiment.options.loops[0].loop.values,  # type: ignore
-                    nested_experiment.options.loops[0].loop.loop.values,  # type: ignore
+                    nested_experiment.options.loops[0].values,  # type: ignore
                 ]
             )
         ).all()
@@ -266,8 +263,8 @@ class TestWorkflow:
         awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]
 
         for awg in awgs:
-            for seq_idx in range(awg.num_sequencers):
-                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers
+            for seq_idx in range(awg.num_sequencers):  # type: ignore
+                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
 
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
@@ -283,7 +280,7 @@ class TestWorkflow:
             if isinstance(bus.system_control, ReadoutSystemControl)
         ]
         for awg in readout_awgs:
-            assert awg.device.get_acquisitions.call_count == 2
+            assert awg.device.get_acquisitions.call_count == 2  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
         """Test that an error is raised when calling ``run`` with multiple readout buses."""

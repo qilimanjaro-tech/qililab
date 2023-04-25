@@ -114,7 +114,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         fig, axes = plt.subplots(figsize=(9, 7))
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
-        axes.set_ylabel(f"{self.options.plot_y_label}")
+        axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
         axes.scatter(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
             # Create label text
