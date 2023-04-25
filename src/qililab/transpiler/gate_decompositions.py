@@ -58,10 +58,6 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
     # define supported gates (native qpu gates + virtual z + measurement)
     supported_gates = native_gates() + (gates.RZ, gates.M)
 
-    # parse single gate input
-    if not isinstance(ngates, list):
-        raise TypeError(f"Argument ngates must be a list of gates and not {type(ngates)}")
-
     # check which gates are native gates and if not all of them are so, translate
     to_translate = [not isinstance(gate, supported_gates) for gate in ngates]
 
