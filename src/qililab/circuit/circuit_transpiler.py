@@ -21,13 +21,13 @@ class CircuitTranspiler:
     settings: RuncardSchema.PlatformSettings
     chip: Chip
 
-    _WRONG_TRANSPILATION_ORDER_MESSAGE = (
-        "Transpilation methods we called in incorrect order. If you need to manually execute the procedure, you should run:"
-        "1. _calculate_timings()"
-        "2. _remove_special_operations()"
-        "3. _transpile_to_pulse_operations()"
-        "4. _generate_pulse_schedule()"
-    )
+    _WRONG_TRANSPILATION_ORDER_MESSAGE = """
+    Transpilation methods were called in incorrect order. If you need to manually execute the transpilation procedure, you should run:
+        1. _calculate_timings()
+        2. _remove_special_operations()
+        3. _transpile_to_pulse_operations()
+        4. _generate_pulse_schedule()
+    """
 
     def _calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.

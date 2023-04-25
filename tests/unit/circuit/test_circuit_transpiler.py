@@ -1,6 +1,7 @@
 # pylint: disable=no-member
 
 """Tests for the Operation class."""
+import re
 from dataclasses import dataclass
 
 import pytest
@@ -14,6 +15,7 @@ from qililab.circuit.operations.operation import Operation
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.platform import Platform
+from qililab.pulse import PulseSchedule
 from qililab.settings.runcard_schema import RuncardSchema
 from qililab.typings.enums import OperationName, OperationTimingsCalculationMethod, Qubits
 from qililab.utils import classproperty
@@ -83,7 +85,8 @@ class TestCircuitTranspiler:
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
         transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
-        transpiled_circuit = transpiler._remove_special_operations(circuit=circuit)
+        circuit_ir1 = transpiler._calculate_timings(circuit=circuit)
+        transpiled_circuit = transpiler._remove_special_operations(circuit=circuit_ir1)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit._has_special_operations_removed is True
         for node in transpiled_circuit.graph.nodes():
@@ -94,21 +97,82 @@ class TestCircuitTranspiler:
         "circuit_fixture",
         ["simple_circuit", "empty_circuit"],
     )
-    def test_translate_to_pulse_operations_method(
+    def test_remove_special_operations_method_raises_error_when_transpilation_order_is_wrong(
         self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
     ):
-        """Test translate_to_pulses method"""
+        """Test translate_to_pulses method raises an error when transpilation method order is wrong"""
         circuit = request.getfixturevalue(circuit_fixture)
         transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
-        transpiled_circuit = transpiler._transpile_to_pulse_operations(circuit=circuit)
+        with pytest.raises(ValueError, match=re.escape(transpiler._WRONG_TRANSPILATION_ORDER_MESSAGE)):
+            transpiler._remove_special_operations(circuit=circuit)
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_transpile_to_pulse_operations_method(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
+    ):
+        """Test transpile_to_pulses method"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
+        circuit_ir1 = transpiler._calculate_timings(circuit=circuit)
+        circuit_ir2 = transpiler._remove_special_operations(circuit=circuit_ir1)
+        transpiled_circuit = transpiler._transpile_to_pulse_operations(circuit=circuit_ir2)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit._has_transpiled_to_pulses is True
         for node in transpiled_circuit.graph.nodes():
             if isinstance(node, OperationNode):
                 assert isinstance(node.operation, PulseOperation)
 
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_transpile_to_pulse_operations_method_raises_error_when_transpilation_order_is_wrong(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
+    ):
+        """Test transpile_to_pulse_operations method raises an error when transpilation method order is wrong"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
+        with pytest.raises(ValueError, match=re.escape(transpiler._WRONG_TRANSPILATION_ORDER_MESSAGE)):
+            transpiler._transpile_to_pulse_operations(circuit=circuit)
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_generate_pulse_schedule_method(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
+    ):
+        """Test generate_pulse_schedule method"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
+        circuit_ir1 = transpiler._calculate_timings(circuit=circuit)
+        circuit_ir2 = transpiler._remove_special_operations(circuit=circuit_ir1)
+        circuit_ir3 = transpiler._transpile_to_pulse_operations(circuit=circuit_ir2)
+        pulse_schedule = transpiler._generate_pulse_schedule(circuit=circuit_ir3)
+        assert isinstance(pulse_schedule, PulseSchedule)
+        pulse_events_count = 0
+        for element in pulse_schedule.elements:
+            pulse_events_count += len(element.timeline)
+        assert pulse_events_count == len(circuit_ir3.graph.nodes()) - 1
+
+    @pytest.mark.parametrize(
+        "circuit_fixture",
+        ["simple_circuit", "empty_circuit"],
+    )
+    def test_generate_pulse_schedule_method_raises_error_when_transpilation_order_is_wrong(
+        self, request: pytest.FixtureRequest, circuit_fixture: str, platform: Platform
+    ):
+        """Test generate_pulse_schedule method raises an error when transpilation method order is wrong"""
+        circuit = request.getfixturevalue(circuit_fixture)
+        transpiler = CircuitTranspiler(settings=platform.settings, chip=platform.chip)
+        with pytest.raises(ValueError, match=re.escape(transpiler._WRONG_TRANSPILATION_ORDER_MESSAGE)):
+            transpiler._generate_pulse_schedule(circuit=circuit)
+
     def test_calculate_timings_method_raises_error_when_operation_not_supported(self, platform: Platform):
-        """Test num_qubits property"""
+        """Test calculate_timings method raises error when operation is not supported"""
 
         @dataclass
         class UnkownOperation(Operation):
