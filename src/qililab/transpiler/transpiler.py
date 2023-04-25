@@ -4,6 +4,8 @@ from qibo.models import Circuit
 
 from qililab.transpiler.gate_decompositions import translate_gates
 
+from .native_gates import Drag
+
 # TODO do not add any Z gates at the end
 
 
@@ -52,13 +54,16 @@ def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates
     # TODO: check that the order is right
     for gate in ngates:
         if gate.name not in supported_gates:
-            raise Exception(f"{gate.name} not part of supported gates {supported_gates}")
-        if gate.name == "rz":
+            raise TypeError(f"{gate.name} not part of supported gates {supported_gates}")
+        if isinstance(gate, gates.RZ):
             shift[gate.qubits[0]] += gate.parameters[0]
         else:
             # if gate is drag pulse, shift parameters by accumulated Zs
-            if gate.name == "drag":
-                gate.parameters = (gate.parameters[0], gate.parameters[1] - shift[gate.qubits[0]])
+            if isinstance(gate, Drag):
+                # create new drag pulse rather than modify parameters of the old one
+                gate = Drag(gate.qubits[0], gate.parameters[0], gate.parameters[1] - shift[gate.qubits[0]])
+
+            # append gate to optimized list
             new_gates.append(gate)
 
     return new_gates

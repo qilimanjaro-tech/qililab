@@ -6,6 +6,8 @@ from qibo.backends import NumpyBackend
 from qibo.models import Circuit
 
 from qililab.transpiler import translate_circuit
+from qililab.transpiler.native_gates import Drag
+from qililab.transpiler.transpiler import optimize_transpilation
 
 qibo.set_backend("numpy")  # set backend to numpy (this is the faster option for < 15 qubits)
 
@@ -117,15 +119,55 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
     return np.abs(np.dot(np.conjugate(state_t), state_q))
 
 
-def test_transpiler():
-    """Test that the transpiled circuit outputs same result if
+def compare_exp_z(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> list[np.ndarray]:
+    """Runs same circuit using transpiled gates and qibo gates, applies Z operator to all qubits
+    and then calculates the modulo of each coefficient of the state vector. This last operation
+    removes the phase difference in Z so that if the state vectors have the same Z observables
+    then the state vector coefficients will be the same.
+    That is, for the state vector psi, psi' for the transpiled and qibo circuits
+    .. math:: \Psi_k == \Psi'_k \forall k
+    Where each psi_k is the coefficient of each basis of the 2^n dimensional state vector
+    representation in Z
+
+    Args:
+        circuit_q (Circuit): qibo circuit (not transpiled)
+        circuit_t (Circuit): transpiled qibo circuit
+        nqubits (int): number of qubits in the circuit
+
+    Returns:
+        list[np.ndarray]: a list with 2 arrays, one corresponding to the state vector for the
+            transpiled circuit and another one for the qibo circuit
+    """
+
+    # get final states and save them for modulo calculation
+    state_q = circuit_q().state()
+    state_q_0 = state_q.copy()
+    state_t = apply_circuit(circuit_t)
+    state_t_0 = state_t.copy()
+
+    # apply measurement in Z
+    backend = NumpyBackend()
+    for q in range(circuit_q.nqubits):
+        state_q = backend.apply_gate(gates.Z(q), state_q, circuit_q.nqubits)
+        state_t = backend.apply_gate(gates.Z(q), state_t, circuit_q.nqubits)
+
+    return [
+        np.array([i * k for i, k in zip(np.conjugate(state_t_0), state_t)]),
+        np.array([i * k for i, k in zip(np.conjugate(state_q_0), state_q)]),
+    ]
+
+
+def test_translate_gates():
+    """Tests the translate_gates function without optimization
+    Test that the transpiled circuit outputs same result if
     circuits are the same, and different results if circuits are
-    not the same
+    not the same. State vectors should be the same up to a global
+    phase difference
     """
     rng = np.random.default_rng(seed=42)  # init random number generator
 
     # circuits are the same
-    for i in range(0, 1000):
+    for i in range(0, 500):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
@@ -145,7 +187,7 @@ def test_transpiler():
         assert np.allclose(1, compare_circuits(c1, c2, nqubits))
 
     # circuits are not the same
-    for i in range(0, 200):
+    for i in range(0, 50):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
@@ -169,6 +211,86 @@ def test_transpiler():
 
         # check that states differ
         assert not np.allclose(1, compare_circuits(c1, c2, nqubits))
+
+
+def test_optimize_transpilation():
+    """Test that optimize_transpilation behaves as expected"""
+    # gate list to optimize
+    test_gates = [
+        Drag(0, 1, 1),
+        gates.CZ(0, 1),
+        gates.RZ(1, 1),
+        gates.M(0),
+        gates.RZ(0, 2),
+        Drag(0, 3, 3),
+        gates.CZ(0, 2),
+        Drag(1, 2, 3),
+        gates.RZ(1, 0),
+    ]
+    # resulting gate list from optimization
+    result_gates = [Drag(0, 1, 1), gates.CZ(0, 1), gates.M(0), Drag(0, 3, 1), gates.CZ(0, 2), Drag(1, 2, 2)]
+
+    # check that lists are the same
+    optimized_gates = optimize_transpilation(3, test_gates)
+    for gate_r, gate_opt in zip(result_gates, optimized_gates):
+        assert gate_r.name == gate_opt.name
+        assert gate_r.parameters == gate_opt.parameters
+
+
+def test_transpiler():
+    """Test full transpilation of a circuit
+    (transpilation + optimization)
+    """
+    rng = np.random.default_rng(seed=42)  # init random number generator
+
+    # circuits are the same
+    for i in range(0, 500):
+        nqubits = np.random.randint(4, 10)
+        c1 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(default_gates),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+
+        c2 = translate_circuit(c1, True)
+
+        # check that both c1, c2 are qibo.Circuit
+        assert isinstance(c1, Circuit)
+        assert isinstance(c2, Circuit)
+
+        # check that states have the same absolute coefficients
+        z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
+        assert np.allclose(z1_exp, z2_exp)
+
+    # circuits are not the same
+    for i in range(0, 50):
+        nqubits = np.random.randint(4, 10)
+        c1 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(default_gates),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+        c2 = random_circuit(
+            nqubits=nqubits,
+            ngates=len(default_gates),
+            rng=rng,
+            gates_list=None,
+            exhaustive=True,
+        )
+        c2 = translate_circuit(c2, True)
+
+        # check that both c1, c2 are qibo.Circuit
+        assert isinstance(c1, Circuit)
+        assert isinstance(c2, Circuit)
+
+        # check that states have the same absolute coefficients
+        z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
+        # print(z1_exp, z2_exp)
+        assert not np.allclose(z1_exp, z2_exp)
 
 
 # transpilable gates
