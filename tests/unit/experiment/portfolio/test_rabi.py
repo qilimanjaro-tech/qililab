@@ -57,7 +57,6 @@ class TestRabi:
         assert rabi.loop.num == NUM
         assert rabi.options.settings.repetition_duration == 10000
         assert rabi.options.settings.hardware_average == 10000
-        assert rabi.options.plot_y_label == "|S21| [dB]"
 
     def test_func(self, rabi: Rabi):
         """Test the ``func`` method."""

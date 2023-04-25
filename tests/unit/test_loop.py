@@ -62,26 +62,6 @@ class TestLoop:
         assert all(isinstance(x, Loop) for x in nested_loop.loops)
         assert len(nested_loop.loops) == 2
 
-    def test_outer_loop_range(self, loop: Loop):
-        """Test the outer loop range property"""
-        expected = np.linspace(0, 10, 10)
-        np.testing.assert_array_equal(loop.outer_loop_range, expected)
-
-    @pytest.mark.xfail(reason="[BUG] Reported in Issue #265")
-    def test_outer_loop_range_nested_loop(self, nested_loop: Loop):
-        """Test the outer loop range property for a nested loop"""
-        expected = np.linspace(0, 10, 10)
-        np.testing.assert_array_equal(nested_loop.outer_loop_range, expected)
-
-    def test_inner_loop_range(self, loop: Loop):
-        """Test the inner loop range property"""
-        assert loop.inner_loop_range is None
-
-    @pytest.mark.xfail(reason="[BUG] Reported in Issue #265")
-    def test_inner_loop_range_nested_loop(self, nested_loop: Loop):
-        """Test the inner loop range property for a nested loop"""
-        np.testing.assert_array_equal(nested_loop.inner_loop_range, np.geomspace(2, 32, 5))
-
     def test_start_property(self, loop: Loop):
         """ "Test the start property"""
         assert loop.start == 0.0

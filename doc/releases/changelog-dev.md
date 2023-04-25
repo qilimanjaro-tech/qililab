@@ -126,6 +126,11 @@ This document contains the changes of the current release.
   `id_` attribute of the `Port` class to obtain the port index.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
+- The asynchronous data handling used to save results and send data to the live plotting has been improved. Now we are
+  saving the results in a queue, and there is only ONE thread which retrieves the results from the queue, sends them to
+  the live plotting and saves them to a file.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
+
 ### Breaking changes
 
 - `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
@@ -137,7 +142,12 @@ This document contains the changes of the current release.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
 
-- The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values` attribute which is now in the `Loop` class. [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+- The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values`
+  attribute which is now in the `Loop` class.
+  [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
+- The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
 
 ### Documentation
 
@@ -145,3 +155,6 @@ This document contains the changes of the current release.
 
 - Fixed bug where acquisition data was not deleted when compiling the same sequence twice.
   [#264](https://github.com/qilimanjaro-tech/qililab/pull/264)
+
+- Fixed bug where the live plotting created a new plot when using parallel loops.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)

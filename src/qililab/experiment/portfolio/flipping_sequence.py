@@ -51,7 +51,6 @@ class FlippingSequence(ExperimentAnalysis, CosFunc):
         experiment_options = ExperimentOptions(
             name="Flipping Sequence",
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
-            plot_y_label="|S21| [dB]",
         )
 
         # Initialize experiment
