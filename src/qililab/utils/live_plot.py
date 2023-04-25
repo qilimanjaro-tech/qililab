@@ -1,6 +1,7 @@
 """LivePlot class."""
 from collections.abc import Iterator
 from itertools import count
+from warnings import warn
 
 import numpy as np
 from qiboconnection.api import API
@@ -15,6 +16,8 @@ class LivePlot:
     This class supports 1D and 2D plots. When running multiple sequences, the sequencer index will always be plotted
     in the x axis.
 
+    When running loops in parallel, the plotted values will correspond to the first loop.
+
     Args:
         connection (API): QiboConnection API object.
         num_schedules (int): Number of circuits/pulse schedules.
@@ -25,14 +28,15 @@ class LivePlot:
     def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
         self.connection = connection
         self.num_schedules = num_schedules
-        self.all_loops = [] if loops is None else [inner_loop for loop in loops for inner_loop in loop.loops]
-        # Flatten all parallel and inner loops
-        if len(self.all_loops) > 2:
-            raise ValueError(
-                f"Cannot create a live plot with {len(self.all_loops)} loops. Only 1D and 2D plots are supported."
+        self.loop = None if loops is None else loops[0]
+        self.plot_dim = max(loop.num_loops for loop in loops) if loops is not None else 0
+        self.plot_dim += 1 if num_schedules > 1 else 0
+        if self.plot_dim not in {1, 2}:
+            warn(
+                message=f"The experiment contains {self.plot_dim} dimensions. Live plotting only supports 1D and 2D plots."
+                " The remaining dimensions won't be plotted.",
+                category=UserWarning,
             )
-        if not self.all_loops and num_schedules == 1:
-            raise ValueError("Cannot create a live plot with 1 pulse schedule and no loops.")
         self.x_values, self.y_values = self._axis_values()
         self.x_iterator, self.y_iterator = self._iterator_values()
         self.plot_id = self.create_live_plot(title=title)
@@ -49,15 +53,13 @@ class LivePlot:
         Returns:
             tuple[list, list | None]: Values for the X and Y axes respectively.
         """
-        if self.num_schedules > 1:
-            x_values = list(range(self.num_schedules))
-            return x_values, None if len(self.all_loops) == 0 else list(self.all_loops[0].range)
-        if len(self.all_loops) == 1:
-            x_values = list(self.all_loops[0].range)
-            return x_values, None
-        x_values = list(self.all_loops[1].range)
-        y_values = list(self.all_loops[0].range)
-        return x_values, y_values
+        if self.loop is None:
+            return list(range(self.num_schedules)), None
+        if self.loop.loop is None:
+            if self.num_schedules == 1:
+                return list(self.loop.range), None
+            return list(range(self.num_schedules)), list(self.loop.range)
+        return list(self.loop.loop.range), list(self.loop.range)
 
     def _iterator_values(self) -> tuple[Iterator, Iterator]:
         """Returns the iterators used to send data to the plot.
@@ -117,16 +119,30 @@ class LivePlot:
         return LivePlotTypes.SCATTER if self.y_values is None else LivePlotTypes.HEATMAP
 
     @property
+    def x_label(self) -> str:
+        """Create x label for live plotting.
+
+        Returns:
+            str: X label.
+        """
+        if self.loop is None:
+            return "Sequence idx"
+        if self.loop.loop is None:
+            return self.label(loop=self.loop)
+        return self.label(loop=self.loop.loop)
+
+    @property
     def y_label(self):
         """Create y label for live plotting.
 
         Returns:
             str: Y label.
         """
-        if self.y_values is not None:
-            return self.label(loop=self.all_loops[1])
-
-        return "Amplitude"
+        if self.loop is None:
+            return "Amplitude"
+        if self.loop.loop is None:
+            return "Amplitude"
+        return self.label(loop=self.loop)
 
     @property
     def z_label(self) -> str | None:
@@ -135,19 +151,7 @@ class LivePlot:
         Returns:
             str: Z label.
         """
-        return "Amplitude" if len(self.all_loops) > 1 else None
-
-    @property
-    def x_label(self) -> str:
-        """Create x label for live plotting.
-
-        Returns:
-            str: X label.
-        """
-        if len(self.all_loops) == 0:
-            return "Sequence idx"
-
-        return self.label(loop=self.all_loops[0])
+        return "Amplitude" if self.plot_dim == 2 else None
 
     def label(self, loop: Loop) -> str:
         """Return plot label from loop object.
