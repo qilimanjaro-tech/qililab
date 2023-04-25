@@ -49,13 +49,18 @@ class TestLivePlot:
         plot = LivePlot(connection=connection, num_schedules=10)
         assert isinstance(plot, LivePlot)
 
-    def test_live_plot_ranges_with_one_loop(self, connection: API, one_loop: Loop):
+    def test_ranges_with_one_loop(self, connection: API, one_loop: Loop):
         """test live plot ranges with one loop"""
 
         plot = LivePlot(connection=connection, loops=[one_loop], num_schedules=1)
         assert len(list(plot.x_iterator)) == len(one_loop.range)
 
-    def test_live_plot_ranges_with_two_nested_loops(self, connection: API, one_loop: Loop):
+    def test_ranges_with_no_loops(self, connection: API):
+        """Test the X and Y ranges when no loops are defined."""
+        plot = LivePlot(connection=connection, num_schedules=7)
+        assert np.allclose(list(plot.x_iterator), list(range(7)))
+
+    def test_ranges_with_two_nested_loops(self, connection: API, one_loop: Loop):
         """test live plot ranges with two loops"""
         loop = Loop(
             alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50), loop=one_loop
@@ -65,11 +70,28 @@ class TestLivePlot:
         assert np.allclose(list(plot.x_iterator), ranges[0].flatten())
         assert np.allclose(list(plot.y_iterator), ranges[1].flatten())
 
-    def test_live_plot_ranges_with_two_parallel_loops(self, connection: API, one_loop: Loop):
+    def test_ranges_with_two_parallel_loops(self, connection: API, one_loop: Loop):
         """test live plot ranges with two loops"""
         loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
         plot = LivePlot(connection=connection, loops=[loop, one_loop], num_schedules=1)
         assert np.allclose(list(plot.x_iterator), loop.range)
+
+    def test_ranges_with_two_parallel_loops_and_multiple_sequences(self, connection: API, one_loop: Loop):
+        """test live plot ranges with two loops"""
+        loop = Loop(alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50))
+        plot = LivePlot(connection=connection, loops=[loop, one_loop], num_schedules=7)
+        assert np.allclose(list(plot.x_iterator), list(range(7)))
+        assert np.allclose(list(plot.y_iterator), loop.range)
+
+    def test_ranges_with_two_nested_loops_and_multiple_sequences(self, connection: API, one_loop: Loop):
+        """test live plot ranges with two loops"""
+        loop = Loop(
+            alias="X", parameter=Parameter.GAIN, options=LoopOptions(start=100, stop=1000, num=50), loop=one_loop
+        )
+        plot = LivePlot(connection=connection, loops=[loop, one_loop], num_schedules=7)
+        ranges = np.meshgrid(one_loop.range, loop.range)
+        assert np.allclose(list(plot.x_iterator), ranges[0].flatten())
+        assert np.allclose(list(plot.y_iterator), ranges[1].flatten())
 
     def test_3_nested_loops_raises_error(self, connection: API):
         """Test that instantiating a ``LivePlot`` class with 3 loops raises an error."""
