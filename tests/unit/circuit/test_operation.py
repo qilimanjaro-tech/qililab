@@ -1,4 +1,6 @@
 """Tests for the Operation class."""
+from webbrowser import Opera
+
 import pytest
 
 from qililab.circuit.operations import (
@@ -110,11 +112,13 @@ class TestOperation:
 
     @pytest.mark.parametrize("string_representation", ["X", "Wait(t=1000)", "Rxy(theta=180,phi=45)"])
     def test_parse_method(self, string_representation: str):
+        """Test parse method"""
         operation = Operation.parse(string_representation=string_representation)
         assert isinstance(operation, Operation)
 
     @pytest.mark.parametrize("string_representation", ["Wait(time=1000)", "Rxy(omikron=180,phi=45)"])
     def test_parse_method_raises_error_when_operation_has_different_parameter(self, string_representation: str):
+        """Test parse method raises error when wrong parameters are given"""
         with pytest.raises(ValueError):
             Operation.parse(string_representation=string_representation)
 
@@ -122,5 +126,13 @@ class TestOperation:
     def test_parse_method_raises_error_when_string_representation_does_not_match_regex(
         self, string_representation: str
     ):
+        """Test parse method raises error when the string representation is not correct"""
         with pytest.raises(ValueError):
             Operation.parse(string_representation=string_representation)
+
+    def test_from_dict_method(self, operation: Operation):
+        """Test from_dict method"""
+        dictionary = operation.to_dict()
+        new_operation = Operation.from_dict(dictionary=dictionary)
+        assert isinstance(new_operation, Operation)
+        assert new_operation == operation
