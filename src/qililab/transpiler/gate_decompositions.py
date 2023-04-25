@@ -63,7 +63,6 @@ def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:
 
     new_gates = []
     # iterate through all gates
-    # TODO: use only one function for all gate decompositions? (consider why qibolab distinguishes nqubit gates)
     if sum(to_translate) != 0:
         for gate, tt in zip(ngates, to_translate):
             if not tt:
@@ -116,9 +115,6 @@ qili_dec.add(gates.S, [gates.RZ(0, np.pi / 2)])
 qili_dec.add(gates.SDG, [gates.RZ(0, -np.pi / 2)])
 qili_dec.add(gates.T, [gates.RZ(0, np.pi / 4)])
 qili_dec.add(gates.TDG, [gates.RZ(0, -np.pi / 4)])
-
-# TODO: raise error if gate not implemented
-
 
 # register CZ decompositions
 qili_dec.add(gates.CNOT, [gates.H(1), gates.CZ(0, 1), gates.H(1)])
