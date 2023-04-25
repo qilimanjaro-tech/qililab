@@ -25,6 +25,7 @@ class ExecutionManager:
     num_schedules: int
     platform: Platform
     buses: List[BusExecution] = field(default_factory=list)
+    program_duration: float = field(init=False)
 
     def turn_on_instruments(self):
         """Start/Turn on the instruments."""
@@ -62,6 +63,8 @@ class ExecutionManager:
         for bus in self.buses:
             bus_programs = bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
             programs[bus.alias] = bus_programs
+        # we save the duration of the program (in seconds) to use it as a timeout for the queue
+        self.program_duration = repetition_duration * nshots * 1e-9
         return programs
 
     def upload(self):
@@ -107,9 +110,9 @@ class ExecutionManager:
             """Asynchronous thread."""
             while True:
                 try:
-                    result = queue.get(timeout=5)  # get new result from the queue
+                    result = queue.get(timeout=10 * self.program_duration)  # get new result from the queue
                 except Empty:
-                    return  # exit thread if no results are received for 5 seconds
+                    return  # exit thread if no results are received for 10 times the duration of the program
 
                 if plot is not None:
                     probs = result.probabilities()
