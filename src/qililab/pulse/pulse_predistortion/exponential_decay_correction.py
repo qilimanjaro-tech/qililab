@@ -20,7 +20,7 @@ class ExponentialCorrection(PredistortedPulse):
     amp: float
     sampling_rate: float = 1.0
 
-    def envelope(self, duration: int | None = None, amplitude: float | None = None, resolution: float = 1.0):
+    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Distorted square envelope.
 
         Corrects an exponential decay using a linear IIR filter.
@@ -33,6 +33,9 @@ class ExponentialCorrection(PredistortedPulse):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+
+        # FIXME: This is a bit of a hack, but it works.
+        duration = self.pulse.initial_duration()
 
         if amplitude is None:
             raise AttributeError("Sorry, can't predistort the Pulse without an amplitude.")
