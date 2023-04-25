@@ -10,8 +10,6 @@ EXPERIMENT_FILENAME = "experiment.yml"
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
 
-DEFAULT_PLOT_Y_LABEL = "Sequence idx"
-
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
 
@@ -95,7 +93,6 @@ class EXPERIMENT:
     LOOPS = "loops"
     OPTIONS = "options"
     DEVICE_ID = "device_id"
-    PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
     CIRCUITS = "circuits"
@@ -131,16 +128,10 @@ class LOOP:
 
     LOOP = "loop"
     PARAMETER = "parameter"
-    START = "start"
-    STOP = "stop"
     ALIAS = "alias"
-    NUM = "num"
-    STEP = "step"
-    LOGARITHMIC = "logarithmic"
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
-    OPTIONS = "options"
 
 
 class PULSESCHEDULES:

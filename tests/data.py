@@ -3,6 +3,7 @@ import copy
 from multiprocessing.pool import RUN
 from typing import Dict, List, Type
 
+import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -727,28 +728,14 @@ results_two_loops = {
         {
             RUNCARD.ALIAS: "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 15,
-                LOOP.STOP: 90,
-                LOOP.NUM: None,
-                LOOP.STEP: 1,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: np.arange(start=15, stop=90, step=1),
+            LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
                 LOOP.PARAMETER: Node.FREQUENCY.value,
-                LOOP.OPTIONS: {
-                    LOOP.START: 7342000000,
-                    LOOP.STOP: 7352000000,
-                    LOOP.NUM: None,
-                    LOOP.STEP: 100000,
-                    LOOP.LOGARITHMIC: False,
-                    LOOP.CHANNEL_ID: None,
-                    LOOP.VALUES: None,
-                },
+                LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
                 LOOP.LOOP: None,
+                LOOP.CHANNEL_ID: None,
             },
         },
     ],
@@ -798,16 +785,9 @@ results_one_loops = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 7342000000,
-                LOOP.STOP: 7352000000,
-                LOOP.NUM: None,
-                LOOP.STEP: 100000,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
             LOOP.LOOP: None,
+            LOOP.CHANNEL_ID: None,
         }
     ],
     EXPERIMENT.RESULTS: [
@@ -856,15 +836,7 @@ results_one_loops_empty = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 7342000000,
-                LOOP.STOP: 7352000000,
-                LOOP.NUM: None,
-                LOOP.STEP: 100000,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
             LOOP.LOOP: None,
         }
     ],
@@ -878,39 +850,16 @@ experiment = {
             {
                 RUNCARD.ALIAS: "qblox_qrm",
                 LOOP.PARAMETER: Parameter.GAIN.value,
-                LOOP.OPTIONS: {
-                    LOOP.START: 0.1,
-                    LOOP.STOP: 1,
-                    LOOP.NUM: None,
-                    LOOP.STEP: 0.3,
-                    LOOP.LOGARITHMIC: False,
-                    LOOP.CHANNEL_ID: 0,
-                    LOOP.VALUES: None,
-                },
+                LOOP.VALUES: np.arange(start=0.1, stop=1, step=0.3),
+                LOOP.CHANNEL_ID: 0,
                 LOOP.LOOP: {
                     RUNCARD.ALIAS: "attenuator",
                     LOOP.PARAMETER: Parameter.ATTENUATION.value,
-                    LOOP.OPTIONS: {
-                        LOOP.START: 15,
-                        LOOP.STOP: 90,
-                        LOOP.NUM: None,
-                        LOOP.STEP: 1,
-                        LOOP.LOGARITHMIC: False,
-                        LOOP.CHANNEL_ID: None,
-                        LOOP.VALUES: None,
-                    },
+                    LOOP.VALUES: np.arange(start=15, stop=90, step=1),
                     LOOP.LOOP: {
                         RUNCARD.ALIAS: "rs_1",
                         LOOP.PARAMETER: Node.FREQUENCY.value,
-                        LOOP.OPTIONS: {
-                            LOOP.START: 7342000000,
-                            LOOP.STOP: 7352000000,
-                            LOOP.NUM: None,
-                            LOOP.STEP: 100000,
-                            LOOP.LOGARITHMIC: False,
-                            LOOP.CHANNEL_ID: None,
-                            LOOP.VALUES: None,
-                        },
+                        LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
                         LOOP.LOOP: None,
                     },
                 },
