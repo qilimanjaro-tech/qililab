@@ -52,10 +52,11 @@ class LivePlot:
         if self.num_schedules > 1:
             x_values = list(range(self.num_schedules))
             return x_values, None if len(self.all_loops) == 0 else list(self.all_loops[0].range)
-        x_values = list(self.all_loops[0].range)
         if len(self.all_loops) == 1:
+            x_values = list(self.all_loops[0].range)
             return x_values, None
-        y_values = list(self.all_loops[1].range)
+        x_values = list(self.all_loops[1].range)
+        y_values = list(self.all_loops[0].range)
         return x_values, y_values
 
     def _iterator_values(self) -> tuple[Iterator, Iterator]:
@@ -81,8 +82,8 @@ class LivePlot:
             y_label=self.y_label,
             z_label=self.z_label,
             plot_type=self.plot_type.value,
-            x_axis=self.x_values,
-            y_axis=self.y_values or None,
+            x_axis=np.array(self.x_values),
+            y_axis=np.array(self.y_values) if self.y_values is not None else None,
         )
 
     def send_points(self, value: float):
