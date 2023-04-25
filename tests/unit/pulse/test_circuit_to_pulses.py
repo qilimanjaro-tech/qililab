@@ -23,6 +23,10 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
         "delay_before_readout": 0,
         "master_amplitude_gate": 1,
         "master_duration_gate": 40,
+        "reset_method": "passive",
+        "passive_reset_duration": 100,
+        "timings_calculation_method": "as_soon_as_possible",
+        "operations": [],
         "gates": [
             {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
             {"name": "M", "amplitude": 1, "phase": 0, "duration": 100, "shape": {"name": "rectangular"}},
