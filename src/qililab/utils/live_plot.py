@@ -68,8 +68,10 @@ class LivePlot:
             tuple[Iterator, Iterator]: Iterators for the X and Y axis respectively.
         """
         if self.y_values is not None:
-            ranges = np.meshgrid(self.x_values, self.y_values)
-            return iter(ranges[0].flatten()), iter(ranges[1].flatten())
+            if self.loop is not None and self.loop.num_loops == 2:
+                ranges = np.meshgrid(self.x_values, self.y_values)
+                return iter(ranges[0].flatten()), iter(ranges[1].flatten())
+            return iter(self.x_values), iter(self.y_values)
         return iter(self.x_values), count()
 
     def create_live_plot(self, title: str) -> int:
