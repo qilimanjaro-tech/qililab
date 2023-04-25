@@ -81,8 +81,8 @@ class LivePlot:
             y_label=self.y_label,
             z_label=self.z_label,
             plot_type=self.plot_type.value,
-            x_axis=self.x_values,
-            y_axis=self.y_values or None,
+            x_axis=np.array(self.x_values),
+            y_axis=np.array(self.y_values) or None,
         )
 
     def send_points(self, value: float):
