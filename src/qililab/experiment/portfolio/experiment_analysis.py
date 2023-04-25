@@ -93,7 +93,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             )
 
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.loop.range, ydata=self.post_processed_results, p0=p0
+            self.func, xdata=self.loop.values, ydata=self.post_processed_results, p0=p0
         )
 
         return self.popt
@@ -108,7 +108,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-        xdata = self.loop.range
+        xdata = self.loop.values
 
         # Plot data
         fig, axes = plt.subplots(figsize=(9, 7))

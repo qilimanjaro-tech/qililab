@@ -130,7 +130,7 @@ class LOOP:
     ALIAS = "alias"
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
-    RANGE = "range"
+    VALUES = "values"
 
 
 class PULSESCHEDULES:

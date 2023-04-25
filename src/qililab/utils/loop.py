@@ -12,11 +12,35 @@ from qililab.typings.enums import Parameter
 
 @dataclass
 class Loop:
-    """Loop class."""
+    """Class used to loop a parameter over the given array values.
+
+    Args:
+        alias (str): Alias of the object holding the parameter to loop over.
+        parameter (Parameter): Parameter to loop.
+        values (ndarray): Array of values to loop over.
+        loop (Loop | None): Inner loop. If not None, a nested loop is created. Defaults to None.
+
+    **Examples**:
+    Here is an example to create a loop over the frequency of the instrument 'AWG' with the given values:
+    >>> loop = Loop(alias='AWG', parameter=Parameter.FREQUENCY, values=np.linspace(7e9, 8e9, num=10))
+
+    Any array of values can be used. For example, one can use `np.logsapce` or `np.geomspace` to create a logarithmic
+    loop:
+    >>> loop = Loop(alias='AWG', parameter=Parameter.FREQUENCY, values=np.logspace(7e9, 8e9, num=10))
+
+    The difference between `np.logspace` or `np.geomspace` is that geomspace specifies the exact start and stop
+    points while logspace specifies the exponent of the start and stop given a base. See below:
+    np.logspace(start=1, stop=5, num=5, base=2) -> [base**start .. base**stop] -> [2,4,8,16,32]
+    np.geomspace(start=2, stop=32, num=5) -> [start .. stop] -> [2,4,8,16,32]
+
+    One can also create nested loops:
+    >>> inner_loop = Loop(alias='AWG', parameter=Parameter.FREQUENCY, values=np.arange(7e9, 8e9, step=10))
+    >>> outer_loop = Loop(alias='AWG', parameter=Parameter.POWER, values=np.linspace(0, 10, num=10), loop=inner_loop)
+    """
 
     alias: str
     parameter: Parameter
-    range: np.ndarray
+    values: np.ndarray
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
     channel_id: int | None = None
@@ -31,14 +55,14 @@ class Loop:
             self.parameter = Parameter(self.parameter)
 
     @property
-    def ranges(self) -> np.ndarray:
-        """Loop 'ranges' property.
+    def all_values(self) -> np.ndarray:
+        """Loop 'all_values' property.
 
         Returns:
-            list: Range of values of all loops.
+            list: Values of all loops.
         """
-        ranges = [loop.range for loop in self.loops]
-        return np.array(ranges, dtype=object)
+        all_values = [loop.values for loop in self.loops]
+        return np.array(all_values, dtype=object)
 
     @property
     def shape(self) -> List[int]:
@@ -79,17 +103,17 @@ class Loop:
 
     @property
     def outer_loop_range(self) -> np.ndarray:
-        """return the range of the outer loop"""
+        """return the values of the outer loop"""
         if len(self.loops) <= 0:
             raise ValueError("Loop MUST contain at least one loop")
-        return self.loops[-1].range
+        return self.loops[-1].values
 
     @property
     def inner_loop_range(self) -> np.ndarray | None:
-        """Return the range of the inner loop or None
+        """Return the values of the inner loop or None
         when there are not exactly two loops.
         """
-        return None if len(self.loops) != 2 else self.loops[-2].range
+        return None if len(self.loops) != 2 else self.loops[-2].values
 
     def to_dict(self) -> dict:
         """Convert class to a dictionary.
@@ -100,7 +124,7 @@ class Loop:
         return {
             LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.RANGE: self.range,
+            LOOP.VALUES: self.values,
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             LOOP.CHANNEL_ID: self.channel_id,
         }
@@ -108,14 +132,14 @@ class Loop:
     @property
     def start(self):
         """returns 'start' options property."""
-        return self.range[0]
+        return self.values[0]
 
     @property
     def stop(self):
         """returns 'stop' options property."""
-        return self.range[-1]
+        return self.values[-1]
 
     @property
     def num(self):
         """returns 'num' options property."""
-        return len(self.range)
+        return len(self.values)

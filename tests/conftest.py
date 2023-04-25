@@ -48,7 +48,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        range=np.arange(start=4, stop=1000, step=40),
+        values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     return Experiment(
@@ -68,19 +68,19 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
     loop3 = Loop(
         alias=InstrumentName.QBLOX_QCM.value,
         parameter=Parameter.IF,
-        range=np.linspace(start=0, stop=1, num=2),
+        values=np.linspace(start=0, stop=1, num=2),
         channel_id=0,
     )
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
-        range=np.arange(start=40, stop=100, step=40),
+        values=np.arange(start=40, stop=100, step=40),
         loop=loop3,
     )
     loop = Loop(
         alias=InstrumentName.QBLOX_QRM.value,
         parameter=Parameter.GAIN,
-        range=np.linspace(start=0, stop=1, num=2),
+        values=np.linspace(start=0, stop=1, num=2),
         channel_id=0,
         loop=loop2,
     )

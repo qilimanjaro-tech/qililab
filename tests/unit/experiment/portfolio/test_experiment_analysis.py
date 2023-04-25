@@ -49,7 +49,7 @@ def fixture_experiment_analysis():
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        range=np.linspace(start=START, stop=STOP, num=NUM),
+        values=np.linspace(start=START, stop=STOP, num=NUM),
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)

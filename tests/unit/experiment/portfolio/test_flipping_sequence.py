@@ -26,7 +26,7 @@ def fixture_flipping_sequence():
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    analysis = FlippingSequence(platform=platform, qubit=0, loop_range=np.arange(start=START, stop=STOP, step=STEP))
+    analysis = FlippingSequence(platform=platform, qubit=0, loop_values=np.arange(start=START, stop=STOP, step=STEP))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
         "i": i,

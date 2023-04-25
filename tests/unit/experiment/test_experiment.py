@@ -335,7 +335,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     loop = Loop(
         alias="rs_0",
         parameter=Parameter.LO_FREQUENCY,
-        range=np.linspace(start=3544000000, stop=3744000000, num=2),
+        values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
     options = ExperimentOptions(loops=[loop])
     experiment = Experiment(
