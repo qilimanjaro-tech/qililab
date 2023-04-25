@@ -11,6 +11,7 @@ from qpysequence.waveforms import Waveforms
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
 from qililab.platform import Platform
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
@@ -76,6 +77,29 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
     )
     pulsar_controller_qcm.connect()
     return pulsar_controller_qcm.modules[0]
+
+
+@pytest.fixture(name="big_pulse_bus_schedule")
+def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
+    """Load PulseBusSchedule with 10 different frequencies.
+
+    Returns:
+        PulseBusSchedule: PulseBusSchedule with 10 different frequencies.
+    """
+    timeline = [
+        PulseEvent(
+            pulse=Pulse(
+                amplitude=1,
+                phase=0,
+                duration=1000,
+                frequency=7.0e9 + n * 0.1e9,
+                pulse_shape=Gaussian(num_sigmas=5),
+            ),
+            start_time=0,
+        )
+        for n in range(10)
+    ]
+    return PulseBusSchedule(timeline=timeline, port=0)
 
 
 class TestQbloxQCM:
@@ -209,3 +233,15 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
+
+    def test_max_frequencies_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
+        """Test split_schedule_for_sequencers method raises error when handling more frequencies than it can support."""
+        expected_error_message = f"The number of frequencies must be less or equal than the number of sequencers. Got {len(big_pulse_bus_schedule.frequencies())} frequencies and {qcm._NUM_MAX_SEQUENCERS} sequencers."
+        with pytest.raises(IndexError, match=expected_error_message):
+            qcm._split_schedule_for_sequencers(pulse_bus_schedule=big_pulse_bus_schedule)
+
+    def test_compile_not_single_freq_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
+        """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
+        expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
+        with pytest.raises(ValueError, match=expected_error_message):
+            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)
