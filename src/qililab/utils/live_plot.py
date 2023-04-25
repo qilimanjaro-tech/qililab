@@ -97,8 +97,8 @@ class LivePlot:
             x_value = next(self.x_iterator)
             self.connection.send_plot_points(plot_id=self.plot_id, x=float(x_value), y=value)
             return
-        x_value = next(self.x_iterator)
-        y_value = next(self.y_iterator)
+        y_value = next(self.x_iterator)
+        x_value = next(self.y_iterator)
         self.connection.send_plot_points(
             plot_id=self.plot_id,
             x=float(x_value),
