@@ -366,6 +366,7 @@ class Parameter(str, Enum):
     OFFSET_OUT2 = "offset_out2"
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
+    OPERATION_PARAMETER = "operation_parameter"
     NUM_FLIPS = "num_flips"
 
 
@@ -476,3 +477,48 @@ class Node(str, Enum):
     NODES = "nodes"
     FREQUENCY = "frequency"
     QUBIT_INDEX = "qubit_index"
+
+
+class Qubits(str, Enum):
+    ANY = "any"
+    ONE = "one"
+    TWO = "two"
+
+
+class OperationName(str, Enum):
+    """Operation names.
+
+    Args:
+        enum (str): Available types of operation names:
+        * RXY
+        * R180
+        * X
+        * WAIT
+        * RESET
+        * MEASURE
+        * BARRIER
+    """
+
+    RXY = "Rxy"  # noqa: E741
+    R180 = "R180"
+    X = "X"
+    CPHASE = "CPhase"
+    WAIT = "Wait"
+    RESET = "Reset"
+    MEASURE = "Measure"
+    BARRIER = "Barrier"
+    PARKING = "Parking"
+    PULSE = "Pulse"
+    GAUSSIAN = "Gaussian"
+    DRAG = "DRAG"
+    SQUARE = "Square"
+
+
+class OperationTimingsCalculationMethod(str, Enum):
+    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
+    AS_LATE_AS_POSSIBLE = "as_late_as_possible"
+
+
+class ResetMethod(str, Enum):
+    PASSIVE = "passive"
+    ACTIVE = "active"

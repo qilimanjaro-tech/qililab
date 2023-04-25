@@ -26,6 +26,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     """
 
     name = InstrumentName.QBLOX_QRM
+    _scoping_sequencer: int | None = None
 
     @dataclass
     class QbloxQRMSettings(
@@ -65,8 +66,11 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
+        self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
+            # Remove all acquisition data
+            self.device.delete_acquisition_data(sequencer=sequencer_id, all=True)
             self._set_integration_length(
                 value=cast(AWGQbloxADCSequencer, sequencer).integration_length, sequencer_id=sequencer_id
             )
@@ -80,21 +84,44 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
-        """Deletes the old acquisition data, compiles the ``PulseBusSchedule`` into an assembly program and updates
-        the cache and the saved sequences.
+    def _obtain_scope_sequencer(self):
+        """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
+
+        Raises:
+            ValueError: The scope can only be stores in one sequencer at a time.
+        """
+        for sequencer in self.awg_sequencers:
+            if sequencer.scope_store_enabled:
+                if self._scoping_sequencer is None:
+                    self._scoping_sequencer = sequencer.identifier
+                else:
+                    raise ValueError("The scope can only be stored in one sequencer at a time.")
+
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+        """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
+
+        This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
+        compiled and added into the cache.
+
+        If the number of shots or the repetition duration changes, the cache will be cleared.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-            sequencer (int): index of the sequencer to generate the program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetition duration
+
+        Returns:
+            list[QpySequence]: list of compiled assembly programs
         """
-        if sequencer in self.sequences:
-            sequence_uploaded = self.sequences[sequencer][1]
-            if sequence_uploaded:
-                self.device.delete_acquisition_data(
-                    sequencer=sequencer, name=self.acquisition_name(sequencer_id=sequencer)
-                )
-        return super()._compile(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
+        for sequencer in sequencers:
+            if sequencer in self.sequences:
+                sequence_uploaded = self.sequences[sequencer][1]
+                if sequence_uploaded:
+                    self.device.delete_acquisition_data(sequencer=sequencer, name="default")
+        return super().compile(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+        )
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
@@ -123,6 +150,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not string
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_trigger_mode_path0(mode.value)
         self.device.scope_acq_trigger_mode_path1(mode.value)
@@ -149,6 +178,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Raises:
             ValueError: when value type is not bool
         """
+        if sequencer_id != self._scoping_sequencer:
+            return
         self.device.scope_acq_sequencer_select(sequencer_id)
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
@@ -181,14 +212,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             )
 
             if sequencer.scope_store_enabled:
-                self.device.store_scope_acquisition(
-                    sequencer=sequencer_id, name=self.acquisition_name(sequencer_id=sequencer_id)
-                )
+                self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)[
-                self.acquisition_name(sequencer_id=sequencer.identifier)
-            ]["acquisition"]
+            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
             for sequencer in self.awg_sequencers
         ]
 
@@ -197,10 +224,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        acquisition_idx = (
-            0 if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging else 1
-        )  # use binned acquisition if averaging is false
-        loop.append_component(Acquire(acq_index=acquisition_idx, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        loop.append_component(Acquire(acq_index=0, bin_index=register, wait_time=self._MIN_WAIT_TIME))
 
     def _generate_weights(self) -> dict:
         """Generate acquisition weights.
@@ -216,18 +240,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             int: settings.integration_length.
         """
         return cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).integration_length
-
-    def acquisition_name(self, sequencer_id: int) -> str:
-        """QbloxPulsarQRM 'acquisition_name' property:
-
-        Returns:
-            str: Name of the acquisition. Options are "single" or "binning".
-        """
-        return (
-            "single"
-            if cast(AWGQbloxADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging
-            else "binning"
-        )
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
