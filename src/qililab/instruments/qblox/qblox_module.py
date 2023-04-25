@@ -202,7 +202,7 @@ class QbloxModule(AWG):
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
-        weights = self._generate_weights()
+        weights = self._generate_weights(sequencer_id=sequencer)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
@@ -262,7 +262,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         wait_time = self.repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
@@ -283,16 +283,15 @@ class QbloxModule(AWG):
         return acquisitions
 
     @abstractmethod
-    def _generate_weights(self) -> Weights:
+    def _generate_weights(self, sequencer_id: int) -> Weights:
         """Generate acquisition weights.
 
         Returns:
             dict: Acquisition weights.
         """
-        return Weights()
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):

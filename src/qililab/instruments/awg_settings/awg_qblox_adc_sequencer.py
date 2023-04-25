@@ -10,3 +10,7 @@ from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequenc
 @dataclass
 class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
     """AWG Qblox ADC Sequencer"""
+
+    weights_path0: list[float]
+    weights_path1: list[float]
+    weighed_acq_enabled: bool

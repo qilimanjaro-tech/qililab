@@ -4,7 +4,7 @@ from typing import Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Register
-from qpysequence.program.instructions import Acquire
+from qpysequence.program.instructions import Acquire, AcquireWeighed
 from qpysequence.weights import Weights
 
 from qililab.config import logger
@@ -223,17 +223,28 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         # FIXME: using the integration length of the first sequencer
         return QbloxResult(pulse_length=self.integration_length(sequencer_id=0), qblox_raw_results=results)
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        loop.append_component(Acquire(acq_index=0, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        weighed_acq = self.awg_sequencers[sequencer_id].weighed_acq_enabled
+        acq_instruction = (
+            AcquireWeighed(
+                acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME
+            )
+            if weighed_acq
+            else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+        )
+        loop.append_component(acq_instruction)
 
-    def _generate_weights(self) -> Weights:
+    def _generate_weights(self, sequencer_id: int) -> Weights:
         """Generate acquisition weights.
 
         Returns:
-            dict: Acquisition weights.
+            Weights: Acquisition weights.
         """
-        return Weights()
+        sequencer = self.awg_sequencers[sequencer_id]
+        weights = Weights()
+        weights.add_pair(pair=(sequencer.weights_path0, sequencer.weights_path1), indices=(0, 1))
+        return weights
 
     def integration_length(self, sequencer_id: int):
         """QbloxPulsarQRM 'integration_length' property.

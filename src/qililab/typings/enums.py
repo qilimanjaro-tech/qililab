@@ -355,6 +355,9 @@ class Parameter(str, Enum):
     RF_ON = "rf_on"
     OPERATION_PARAMETER = "operation_parameter"
     NUM_FLIPS = "num_flips"
+    WEIGHTS_PATH0 = "weights_path0"
+    WEIGHTS_PATH1 = "weights_path1"
+    WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
 
 
 class ResultName(str, Enum):
