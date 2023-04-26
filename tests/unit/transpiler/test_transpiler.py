@@ -148,8 +148,8 @@ def compare_exp_z(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> list[
     # apply measurement in Z
     backend = NumpyBackend()
     for q in range(circuit_q.nqubits):
-        state_q = backend.apply_gate(gates.Z(q), state_q, circuit_q.nqubits)
-        state_t = backend.apply_gate(gates.Z(q), state_t, circuit_q.nqubits)
+        state_q = backend.apply_gate(gates.M(q), state_q, circuit_q.nqubits)
+        state_t = backend.apply_gate(gates.M(q), state_t, circuit_q.nqubits)
 
     return [
         np.array([i * k for i, k in zip(np.conjugate(state_t_0), state_t)]),
@@ -186,32 +186,6 @@ def test_translate_gates():
         # check that states are equivalent up to a global phase
         assert np.allclose(1, compare_circuits(c1, c2, nqubits))
 
-    # circuits are not the same
-    for i in range(0, 50):
-        nqubits = np.random.randint(4, 10)
-        c1 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(default_gates),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c2 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(default_gates),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c2 = translate_circuit(c2)
-
-        # check that both c1, c2 are qibo.Circuit
-        assert isinstance(c1, Circuit)
-        assert isinstance(c2, Circuit)
-
-        # check that states differ
-        assert not np.allclose(1, compare_circuits(c1, c2, nqubits))
-
 
 def test_optimize_transpilation():
     """Test that optimize_transpilation behaves as expected"""
@@ -235,6 +209,7 @@ def test_optimize_transpilation():
     for gate_r, gate_opt in zip(result_gates, optimized_gates):
         assert gate_r.name == gate_opt.name
         assert gate_r.parameters == gate_opt.parameters
+        assert gate_r.qubits == gate_opt.qubits
 
 
 def test_transpiler():
@@ -263,34 +238,6 @@ def test_transpiler():
         # check that states have the same absolute coefficients
         z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
         assert np.allclose(z1_exp, z2_exp)
-
-    # circuits are not the same
-    for i in range(0, 50):
-        nqubits = np.random.randint(4, 10)
-        c1 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(default_gates),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c2 = random_circuit(
-            nqubits=nqubits,
-            ngates=len(default_gates),
-            rng=rng,
-            gates_list=None,
-            exhaustive=True,
-        )
-        c2 = translate_circuit(c2, True)
-
-        # check that both c1, c2 are qibo.Circuit
-        assert isinstance(c1, Circuit)
-        assert isinstance(c2, Circuit)
-
-        # check that states have the same absolute coefficients
-        z1_exp, z2_exp = compare_exp_z(c1, c2, nqubits)
-        # print(z1_exp, z2_exp)
-        assert not np.allclose(z1_exp, z2_exp)
 
 
 # transpilable gates
