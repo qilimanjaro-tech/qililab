@@ -39,10 +39,9 @@ class ExponentialCorrection(PredistortedPulse):
         if self.amp >= 0.0:
             # Parameters
             alpha = 1 - np.exp(-1 / (self.sampling_rate * self.tau_exponential * (1 + self.amp)))
-
             k = self.amp / (1 + self.amp - alpha)
-            b = [(1 - k + k * alpha), -(1 - k) * (1 - alpha)]
 
+            b = [(1 - k + k * alpha), -(1 - k) * (1 - alpha)]
             a = [1, -(1 - alpha)]
 
         else:
@@ -59,11 +58,9 @@ class ExponentialCorrection(PredistortedPulse):
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr))
-        ycorr = (1 / norm) * ycorr
+        ycorr = ycorr / norm
 
-        amplitude = amplitude * ycorr / ysig
-
-        return self.pulse.envelope(amplitude=amplitude, resolution=resolution)
+        return ycorr
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.

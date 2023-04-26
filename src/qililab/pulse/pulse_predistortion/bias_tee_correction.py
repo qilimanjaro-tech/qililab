@@ -34,17 +34,18 @@ class BiasTeeCorrection(PredistortedPulse):
 
         ysig = self.pulse.envelope(amplitude, resolution)
 
+        # Parameters
         k = 2 * self.tau_bias_tee * self.sampling_rate
+
         a = [1, -1]
         b = [(k + 1) / k, -(k - 1) / k]
 
+        # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)
         norm = np.amax(np.abs(ycorr))
         ycorr = ycorr / norm
 
-        amplitude = amplitude * ycorr / ysig
-
-        return self.pulse.envelope(amplitude=amplitude, resolution=resolution)
+        return ycorr
 
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
