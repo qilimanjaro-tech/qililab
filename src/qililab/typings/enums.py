@@ -367,6 +367,10 @@ class Parameter(str, Enum):
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
     OPERATION_PARAMETER = "operation_parameter"
+    DEVICE_TIMEOUT = "device_timeout"
+    SWEEP_MODE = "sweep_mode"
+    ELECTRICAL_DELAY = "electrical_delay"
+    TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
 
 
@@ -463,6 +467,23 @@ class VNAScatteringParameters(str, Enum):
     S12 = "S12"
     S22 = "S22"
     S21 = "S21"
+
+
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Modes
+
+    Args:
+        enum (str): Available types of sweeping modes:
+        * hold
+        * cont
+        * single
+        * group
+    """
+
+    HOLD = "hold"
+    CONT = "cont"
+    SING = "single"
+    GRO = "group"
 
 
 class Node(str, Enum):
