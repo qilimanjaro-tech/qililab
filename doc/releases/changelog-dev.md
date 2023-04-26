@@ -12,7 +12,7 @@ This document contains the changes of the current release.
   correction_2 = BiasTeeCorrection(pulse=correction_1)
   ```
 
-  \[#279\] (https://github.com/qilimanjaro-tech/qililab/pull/279)
+  [#279](https://github.com/qilimanjaro-tech/qililab/pull/279)
 
 - Added `experiment/portfolio/` submodule, which will contain pre-defined experiments and their analysis.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
