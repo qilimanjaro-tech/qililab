@@ -706,7 +706,7 @@ for platform in [Galadriel]:
 
     qili_circuit = QiliCircuit(1)
     qili_circuit.add(0, qililab.circuit.X())
-    qili_circuit.add(0, qililab.circuit.Wait(t=100))
+    qili_circuit.add(0, qililab.circuit.Wait(t=100), alias="wait_operation")
     qili_circuit.add(0, qililab.circuit.X())
     if platform == Galadriel:
         qili_circuit.add(0, qililab.circuit.Measure())

@@ -13,6 +13,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.circuit import Circuit as QiliCircuit
+from qililab.circuit.nodes import OperationNode
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
@@ -326,6 +327,19 @@ class TestSetParameter:
         """Test the ``set_parameter`` method with a parameter of an operation."""
         experiment.set_parameter(alias="Measure", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.settings.get_operation_settings(name="Measure").pulse.duration == 123
+
+    def test_set_parameter_method_with_circuit_operation_parameter_value(self, experiment: Experiment):
+        """Test the ``set_parameter`` method with a parameter of an operation."""
+        experiment.set_parameter(alias="wait_operation.t", parameter=Parameter.OPERATION_PARAMETER, value=123)
+        for circuit in experiment.circuits:
+            if isinstance(circuit, QiliCircuit):
+                operations = [
+                    node.operation
+                    for node in circuit.graph.nodes()
+                    if isinstance(node, OperationNode) and node.alias == "wait_operation"
+                ]
+                for operation in operations:
+                    assert operation.get_parameter("t") == 123
 
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)

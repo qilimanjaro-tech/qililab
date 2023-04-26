@@ -279,11 +279,17 @@ class Experiment:
 
         Args:
             parameter (Parameter): name of the parameter to change
-            value (float): new value
+            value (float | str | bool): new value
             alias (str): alias of the element that contains the given parameter
             channel_id (int | None): channel id
         """
-        if element is None:
+        if parameter == Parameter.OPERATION_PARAMETER:
+            alias, parameter_name = alias.split(".")
+            for circuit in self.circuits:
+                if isinstance(circuit, QiliCircuit):
+                    circuit.set_operation_parameter(alias=alias, parameter_name=parameter_name, parameter_value=value)  # type: ignore[arg-type]
+            self.build_execution()
+        elif element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
