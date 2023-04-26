@@ -4,6 +4,16 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added `pulse/pulse_predistortion/` module, which contains a base class to predistort a pulse -> pulse, and two examples of predistortion child classes to apply, for example:
+
+  ```python
+  pulse = Pulse("example_one")
+  correction_1 = BiasTeeCorrection(pulse=pulse)
+  correction_2 = BiasTeeCorrection(pulse=correction_1)
+  ```
+
+  \[#279\] (https://github.com/qilimanjaro-tech/qililab/pull/279)
+
 - Added `experiment/portfolio/` submodule, which will contain pre-defined experiments and their analysis.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 
