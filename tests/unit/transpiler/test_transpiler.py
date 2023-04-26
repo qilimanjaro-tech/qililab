@@ -148,8 +148,8 @@ def compare_exp_z(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> list[
     # apply measurement in Z
     backend = NumpyBackend()
     for q in range(circuit_q.nqubits):
-        state_q = backend.apply_gate(gates.M(q), state_q, circuit_q.nqubits)
-        state_t = backend.apply_gate(gates.M(q), state_t, circuit_q.nqubits)
+        state_q = backend.apply_gate(gates.Z(q), state_q, circuit_q.nqubits)
+        state_t = backend.apply_gate(gates.Z(q), state_t, circuit_q.nqubits)
 
     return [
         np.array([i * k for i, k in zip(np.conjugate(state_t_0), state_t)]),
