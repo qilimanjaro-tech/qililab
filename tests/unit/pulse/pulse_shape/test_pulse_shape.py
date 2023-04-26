@@ -1,10 +1,9 @@
 """Tests for the PulseShape class."""
-from unittest.mock import MagicMock, patch
-
 import numpy as np
 import pytest
 
-from qililab.pulse import Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+
 
 @pytest.fixture(
     name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
@@ -12,6 +11,7 @@ from qililab.pulse import Drag, Gaussian, PulseShape, Rectangular
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
     return request.param  # type: ignore
+
 
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
