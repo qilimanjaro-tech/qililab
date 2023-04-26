@@ -76,14 +76,20 @@ class RuncardSchema:
                 """PulseSchema class"""
 
                 name: str
-                amplitude: float | Literal[MasterGateSettingsName.MASTER_AMPLITUDE_GATE]
-                duration: int | Literal[MasterGateSettingsName.MASTER_DURATION_GATE]
+                amplitude: float
+                duration: int
                 phase: float
                 frequency: float
                 parameters: dict
 
             name: str
             pulse: PulseSettings
+
+            def set_parameter(self, parameter: Parameter, value: float | str | bool):
+                """Change an operation parameter with the given value."""
+                if not hasattr(self, parameter.value):
+                    self.pulse.parameters[parameter.value] = value
+                setattr(self.pulse, parameter.value, value)
 
         @dataclass
         class GateSettings:
@@ -140,14 +146,11 @@ class RuncardSchema:
             """build the Gate Settings based on the master settings"""
             self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
 
-        def get_operation_settings(self, name: str) -> OperationSettings:
+        def get_operation_settings(self, name: str) -> OperationSettings | None:
             """Get OperationSettings by operation's name
 
             Args:
                 name (str): Name of the operation
-
-            Raises:
-                ValueError: If no operation is found
 
             Returns:
                 OperationSettings: Operation's settings
@@ -158,21 +161,19 @@ class RuncardSchema:
                     operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
-            raise ValueError(f"Operation {name} not found in platform settings.")
+            return None
 
-        def get_gate(self, name: str):
+        def get_gate(self, name: str) -> GateSettings | None:
             """Get gate with the given name.
             Args:
                 name (str): Name of the gate.
-            Raises:
-                ValueError: If no gate is found.
             Returns:
-                GateSettings: GateSettings class.
+                GateSettings: GateSettings class or None.
             """
             for gate in self.gates:
                 if gate.name == name:
                     return gate
-            raise ValueError(f"Gate {name} not found in settings.")
+            return None
 
         @property
         def gate_names(self) -> List[str]:
@@ -181,6 +182,20 @@ class RuncardSchema:
                 List[str]: List of the names of all the defined gates.
             """
             return [gate.name for gate in self.gates]
+
+        @property
+        def operation_names(self) -> list[str]:
+            """Get the names of all operations in the PlatformSettings
+
+            Returns:
+                List[str]: List of all operation names
+            """
+            return [
+                RuncardSchema.PlatformSettings.OperationSettings(**operation).name
+                if isinstance(operation, dict)
+                else operation.name
+                for operation in self.operations
+            ]
 
         def set_parameter(
             self,
@@ -194,7 +209,11 @@ class RuncardSchema:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
             gate_settings = self.get_gate(name=alias)
-            gate_settings.set_parameter(parameter, value)
+            if gate_settings is not None:
+                gate_settings.set_parameter(parameter=parameter, value=value)
+            operation_settings = self.get_operation_settings(name=alias)
+            if operation_settings is not None:
+                operation_settings.set_parameter(parameter=parameter, value=value)
 
     settings: PlatformSettings
     schema: Schema
