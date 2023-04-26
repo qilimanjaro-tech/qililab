@@ -13,8 +13,8 @@ This document contains the changes of the current release.
 - Added `Rabi` portfolio experiment. Here is a usage example:
 
   ```python
-  loop_options = LoopOptions(start=0, stop=1, step=0.1)
-  rabi = Rabi(platform=platform, qubit=0, loop_options=loop_options)
+  loop_range = np.linspace(start=0, stop=1, step=0.1)
+  rabi = Rabi(platform=platform, qubit=0, range=loop_range)
   rabi.turn_on_instruments()
 
   bus_parameters = {Parameter.GAIN: 0.8, Parameter.FREQUENCY: 5e9}
@@ -128,11 +128,25 @@ This document contains the changes of the current release.
 - Experiment can now accept both Qibo circuits and Qililab circuits.
   [#267](https://github.com/qilimanjaro-tech/qililab/pull/267)
 
+- Added `values` and `channel_id` attribute to the `Loop` class.
+  Here is an example on how a loop is created now:
+
+  ```python
+  new_loop = Loop(alias="loop", parameter=Parameter.POWER, values=np.linspace(1, 10, 10))
+  ```
+
+  [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
   `id_` attribute of the `Port` class to obtain the port index.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
+
+- The asynchronous data handling used to save results and send data to the live plotting has been improved. Now we are
+  saving the results in a queue, and there is only ONE thread which retrieves the results from the queue, sends them to
+  the live plotting and saves them to a file.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
 
 ### Breaking changes
 
@@ -145,9 +159,19 @@ This document contains the changes of the current release.
   Please use `ExecutionManager`instead. The `ExecutionBuilder` returns now an instance of `ExecutionManager`.
   [#246](https://github.com/qilimanjaro-tech/qililab/pull/246)
 
+- The `LoopOptions` class has been removed. It was used to create a numpy array and store this array in the `values`
+  attribute which is now in the `Loop` class.
+  [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
+
+- The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
+
 ### Documentation
 
 ### Bug fixes
 
 - Fixed bug where acquisition data was not deleted when compiling the same sequence twice.
   [#264](https://github.com/qilimanjaro-tech/qililab/pull/264)
+
+- Fixed bug where the live plotting created a new plot when using parallel loops.
+  [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)

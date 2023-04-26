@@ -80,9 +80,8 @@ class Experiment:
         else:
             self._plot = LivePlot(
                 connection=self.platform.connection,
-                loops=self.options.loops,
-                plot_y_label=self.options.plot_y_label,
-                num_schedules=self.execution_manager.num_schedules,
+                loops=self.options.loops or [],
+                num_schedules=len(self.pulse_schedules),
                 title=self.options.name,
             )
 
@@ -191,7 +190,7 @@ class Experiment:
         )
 
     def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
-        """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
+        """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
@@ -212,7 +211,7 @@ class Experiment:
         self._process_loops(loops=loops, idx=idx, depth=depth)
 
     def _process_loops(self, loops: List[Loop], idx: int, depth: int):
-        """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
+        """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
             loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
@@ -222,8 +221,8 @@ class Experiment:
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
 
-        with tqdm(total=min(len(loop.range) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
-            loop_ranges = [loop.range for loop in loops]
+        with tqdm(total=min(len(loop.values) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
+            loop_ranges = [loop.values for loop in loops]
 
             for values in zip(*loop_ranges):
                 self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)

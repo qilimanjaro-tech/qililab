@@ -8,7 +8,6 @@ from qibo.gates import RX, M, X
 from qililab import build_platform
 from qililab.experiment import FlippingSequence
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings import LoopOptions
 from tests.data import Galadriel
 
 START = 1
@@ -27,7 +26,7 @@ def fixture_flipping_sequence():
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    analysis = FlippingSequence(platform=platform, qubit=0, loop_options=LoopOptions(start=START, stop=STOP, step=STEP))
+    analysis = FlippingSequence(platform=platform, qubit=0, loop_values=np.arange(start=START, stop=STOP, step=STEP))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
         "i": i,
@@ -58,7 +57,6 @@ class TestFlippingSequence:
         assert flipping_sequence.options.loops is None
         assert flipping_sequence.options.settings.repetition_duration == 10000
         assert flipping_sequence.options.settings.hardware_average == 10000
-        assert flipping_sequence.options.plot_y_label == "|S21| [dB]"
 
     def test_func(self, flipping_sequence: FlippingSequence):
         """Test the ``func`` method."""
