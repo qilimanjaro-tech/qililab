@@ -1,19 +1,11 @@
 """Tests for the PulseShape class."""
-from __future__ import annotations
-
 import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse import (
-    BiasTeeCorrection,
-    Drag,
-    ExponentialCorrection,
-    Gaussian,
-    PredistortedPulse,
-    Pulse,
-    Rectangular,
-)
+from qililab.pulse import Pulse
+from qililab.pulse.pulse_predistortion import BiasTeeCorrection, ExponentialCorrection, PredistortedPulse
+from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Waveforms
 
