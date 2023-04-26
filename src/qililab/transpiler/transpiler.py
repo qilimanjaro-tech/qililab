@@ -46,14 +46,12 @@ def optimize_transpilation(nqubits: int, ngates: list[gates.Gate]) -> list[gates
     Returns:
         list[gates.Gate] : list of re-ordered gates
     """
-    # TODO: we are ignoring measurement gates so far (i.e. treating them as an identity)
     supported_gates = ["rz", "drag", "cz", "measure"]
     new_gates = []
     shift = {qubit: 0 for qubit in range(nqubits)}
-    # TODO: check that the order is right
     for gate in ngates:
         if gate.name not in supported_gates:
-            raise TypeError(f"{gate.name} not part of supported gates {supported_gates}")
+            raise NotImplementedError(f"{gate.name} not part of supported gates {supported_gates}")
         if isinstance(gate, gates.RZ):
             shift[gate.qubits[0]] += gate.parameters[0]
         else:
