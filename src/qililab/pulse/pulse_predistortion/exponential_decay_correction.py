@@ -36,7 +36,6 @@ class ExponentialCorrection(PredistortedPulse):
 
         ysig = self.pulse.envelope(amplitude, resolution)
 
-        # FIXME: Check if is actually redundant, since this would test that amp is a float better than only having 1 if.
         if self.amp >= 0.0:
             # Parameters
             alpha = 1 - np.exp(-1 / (self.sampling_rate * self.tau_exponential * (1 + self.amp)))
@@ -46,7 +45,7 @@ class ExponentialCorrection(PredistortedPulse):
 
             a = [1, -(1 - alpha)]
 
-        elif self.amp < 0.0:
+        else:
             # Parameters
             a0 = 1
             a1 = (self.tau_exponential * (1 + 2 * self.amp) - 1) / (2 * self.tau_exponential * (1 + self.amp) + 1)
@@ -56,9 +55,6 @@ class ExponentialCorrection(PredistortedPulse):
 
             a = [a0, a1]
             b = [b0, b1]
-
-        else:
-            raise TypeError("Sorry, can't predistort the Pulse if amp is not a defined float.")
 
         # Filtered signal
         ycorr = signal.lfilter(b, a, ysig)

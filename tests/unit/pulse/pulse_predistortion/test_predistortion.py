@@ -20,6 +20,7 @@ for shape in list_shapes:
         [
             BiasTeeCorrection(pulse=pulse, tau_bias_tee=1.0),
             ExponentialCorrection(pulse=pulse, tau_exponential=1.0, amp=1.0),
+            ExponentialCorrection(pulse=pulse, tau_exponential=1.0, amp=-1.0),
         ]
     )
 
