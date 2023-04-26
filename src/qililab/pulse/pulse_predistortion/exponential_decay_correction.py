@@ -33,7 +33,6 @@ class ExponentialCorrection(PredistortedPulse):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-
         ysig = self.pulse.envelope(amplitude, resolution)
 
         # FIXME: Check if is actually redundant, since this would test that amp is a float better than only having 1 if.
