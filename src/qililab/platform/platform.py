@@ -233,6 +233,15 @@ class Platform:
         return self.settings.gate_names
 
     @property
+    def operation_names(self):
+        """Platform 'operation_names' property.
+
+        Returns:
+            List[str]: List of the names of all the defined operations.
+        """
+        return self.settings.operation_names
+
+    @property
     def instruments(self):
         """Platform 'instruments' property.
 

@@ -51,6 +51,12 @@ class TestPlatform:
         assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
         assert gate.name == "M"
 
+    def test_get_element_with_operation(self, platform: Platform):
+        """Test the get_element method with a gate alias."""
+        operation = platform.get_element(alias="Measure")
+        assert isinstance(operation, RuncardSchema.PlatformSettings.OperationSettings)
+        assert operation.name == "Measure"
+
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
         str(platform)
