@@ -76,7 +76,7 @@ def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
         _type_: _description_
     """
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
+    return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
 @pytest.fixture(name="qblox_result_scope")
@@ -91,7 +91,7 @@ def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
     """
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    return QbloxResult(pulse_length=1000, qblox_raw_results=[acquisition])
+    return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
 class TestsQbloxResult:

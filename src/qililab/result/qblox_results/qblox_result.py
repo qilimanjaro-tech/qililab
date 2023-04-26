@@ -36,7 +36,7 @@ class QbloxResult(Result):
     """
 
     name = ResultName.QBLOX
-    pulse_length: int | np.number
+    integration_lengths: list[int]
     qblox_raw_results: List[dict]
     qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
     qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
@@ -44,10 +44,10 @@ class QbloxResult(Result):
     def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
         self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
@@ -148,8 +148,8 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
-            if isinstance(self.pulse_length, np.number)
-            else self.pulse_length,
+            QBLOXRESULT.PULSE_LENGTH: self.integration_lengths.item()
+            if isinstance(self.integration_lengths, np.number)
+            else self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }

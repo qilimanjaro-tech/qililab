@@ -232,8 +232,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             for sequencer in self.awg_sequencers
         ]
 
-        # FIXME: using the integration length of the first sequencer
-        return QbloxResult(pulse_length=self.integration_length(sequencer_id=0), qblox_raw_results=results)
+        integration_lengths = [sequencer.used_integration_length for sequencer in self.awg_sequencers]
+
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""

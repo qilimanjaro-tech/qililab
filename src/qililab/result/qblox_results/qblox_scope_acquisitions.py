@@ -33,7 +33,7 @@ class QbloxScopeAcquisitions(Acquisitions):
     def __post_init__(self):
         """Create acquisitions"""
         i_values, q_values = self._iq_values()
-        self._acquisitions = [Acquisition(pulse_length=self.pulse_length, i_values=i_values, q_values=q_values)]
+        self._acquisitions = [Acquisition(integration_length=self.pulse_length, i_values=i_values, q_values=q_values)]
         self.data_dataframe_indices = set().union(*[acq.data_dataframe_indices for acq in self._acquisitions])
 
     def demodulated(self, frequency: float, phase_offset: float = 0.0) -> QbloxScopeAcquisitions:
