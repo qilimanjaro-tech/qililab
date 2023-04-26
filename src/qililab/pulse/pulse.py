@@ -49,7 +49,6 @@ class Pulse:
         Returns:
             List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
-
         if amplitude is None:
             amplitude = self.amplitude
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
