@@ -15,13 +15,19 @@ from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
+from .data import FluxQubitSimulator, Galadriel, SauronVNA, circuit, experiment_params
 
 
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db()
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="sauron_platform")
+def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
@@ -140,9 +146,9 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     return platform
 
 
-def platform_db() -> Platform:
+def platform_db(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name=DEFAULT_PLATFORM_NAME)
             mock_load.assert_called()
@@ -150,9 +156,9 @@ def platform_db() -> Platform:
     return platform
 
 
-def platform_yaml() -> Platform:
+def platform_yaml(runcard: dict) -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="sauron")
             mock_load.assert_called()
