@@ -102,6 +102,8 @@ class Platform:
                 return self.settings
             if alias in self.gate_names:
                 return self.settings.get_gate(name=alias)
+            if alias in self.operation_names:
+                return self.settings.get_operation_settings(name=alias)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
