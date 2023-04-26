@@ -11,7 +11,7 @@ import pytest
 import rustworkx as rx
 
 from qililab.circuit import Circuit
-from qililab.circuit.nodes import EntryNode
+from qililab.circuit.nodes import EntryNode, OperationNode
 from qililab.circuit.operations import CPhase, DRAGPulse, GaussianPulse, Measure, Operation, Reset, SquarePulse, Wait, X
 from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 
@@ -43,7 +43,7 @@ def fixture_simple_circuit() -> Circuit:
     """Return a simple circuit."""
     circuit = Circuit(2)
     circuit.add(0, X())
-    circuit.add(0, Wait(t=100))
+    circuit.add(0, Wait(t=100), alias="wait_operation")
     circuit.add(0, X())
     circuit.add(1, X())
     circuit.add((0, 1), Measure())
@@ -168,6 +168,19 @@ class TestCircuit:
         circuit = request.getfixturevalue(circuit_fixture)
         with pytest.raises(ValueError):
             circuit.add(qubits=qubits, operation=operation)
+
+    def test_set_operation_parameter_method(self, simple_circuit: Circuit):
+        """Test set_operation_parameter method"""
+        simple_circuit.add(qubits=0, operation=Wait(t=200), alias="wait_operation")
+        simple_circuit.set_operation_parameter(alias="wait_operation", parameter_name="t", parameter_value=500)
+        operations: list[Operation] = [
+            node.operation
+            for node in simple_circuit.graph.nodes()
+            if isinstance(node, OperationNode) and node.alias == "wait_operation"
+        ]
+        assert len(operations) == 2
+        for operation in operations:
+            assert operation.get_parameter(name="t") == 500
 
     @pytest.mark.parametrize(
         "circuit_fixture,timings_method,expected_output_fixture",

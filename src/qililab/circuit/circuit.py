@@ -12,6 +12,7 @@ from rustworkx.visualization import graphviz_draw
 
 from qililab.circuit.nodes import EntryNode, Node, OperationNode
 from qililab.circuit.operations import Operation
+from qililab.circuit.operations.operation import ParameterValue
 from qililab.typings.enums import OperationTimingsCalculationMethod, Qubits
 
 
@@ -163,6 +164,20 @@ class Circuit:
                     if len(next_layer_operations_on_qubit) == 0:
                         layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
             return layers
+
+    def set_operation_parameter(self, alias: str, parameter_name: str, parameter_value: ParameterValue):
+        """Find operations with the specified alias and change their parameter value
+
+        Args:
+            alias (str): The alias of the operation
+            parameter_name (str): The name of the parameter
+            parameter_value (ParameterValue): The new value of the parameter
+        """
+        operations = [
+            node.operation for node in self.graph.nodes() if isinstance(node, OperationNode) and node.alias == alias
+        ]
+        for operation in operations:
+            operation.set_parameter(name=parameter_name, value=parameter_value)
 
     def draw(self, filename: str | None = None):
         """Draws the circuit's graph.
