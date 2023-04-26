@@ -41,7 +41,7 @@ def random_circuit(
     else:
         if ngates < len(gates_list):
             raise Exception("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
-        list_gates = []  # TODO change name so it does not match gates from qibo.gates
+        list_gates = []
         for k in range(ngates // len(gates_list)):
             list_gates.extend(gates_list)
         list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
