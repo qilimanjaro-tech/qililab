@@ -137,6 +137,33 @@ This document contains the changes of the current release.
 
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
+- Added support for changing operation's settings.
+
+  ```python
+  experiment.set_parameter(alias="Measure", parameter=Parameter.DURATION, value=1000)
+  ```
+
+  [#286](https://github.com/qilimanjaro-tech/qililab/issues/286)
+
+- Added support for looping over the values of a specific group of operations in the circuit. The group is identified by the alias set when added the operation in the circuit. If more than one operations have the same alias, their values will change in sync. Example:
+
+  ```python
+  circuit = Circuit(1)
+  circuit.add(0, X())
+  circuit.add(0, Wait(t=0), alias="wait_operation")
+  circuit.add(0, X())
+  circuit.add(0, Wait(t=0), alias="wait_operation")
+  circuit.add(0, Measure())
+
+  loop = Loop(
+      alias="wait_operation.t",
+      parameter=Parameter.OPERATION_PARAMETER,
+      values=np.linspace(0, 1000, 10),
+  )
+  ```
+
+  [#286](https://github.com/qilimanjaro-tech/qililab/issues/286)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
