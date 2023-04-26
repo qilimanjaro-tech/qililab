@@ -87,7 +87,7 @@ class RuncardSchema:
 
             def set_parameter(self, parameter: Parameter, value: float | str | bool):
                 """Change an operation parameter with the given value."""
-                if not hasattr(self, parameter.value):
+                if not hasattr(self.pulse, parameter.value):
                     self.pulse.parameters[parameter.value] = value
                 setattr(self.pulse, parameter.value, value)
 
@@ -145,6 +145,11 @@ class RuncardSchema:
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
             self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
+            self.operations = (
+                [self.OperationSettings(**operation) for operation in self.operations]
+                if self.operations is not None
+                else None
+            )
 
         def get_operation_settings(self, name: str) -> OperationSettings | None:
             """Get OperationSettings by operation's name
@@ -156,9 +161,6 @@ class RuncardSchema:
                 OperationSettings: Operation's settings
             """
             for operation in self.operations:
-                # TODO: Fix bug that parses settings as dict instead of defined classes
-                if isinstance(operation, dict):
-                    operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
             return None
@@ -190,12 +192,7 @@ class RuncardSchema:
             Returns:
                 List[str]: List of all operation names
             """
-            return [
-                RuncardSchema.PlatformSettings.OperationSettings(**operation).name
-                if isinstance(operation, dict)
-                else operation.name
-                for operation in self.operations
-            ]
+            return [operation.name for operation in self.operations]
 
         def set_parameter(
             self,

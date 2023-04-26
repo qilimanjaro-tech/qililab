@@ -288,7 +288,9 @@ class Experiment:
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
-        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+        elif isinstance(
+            element, (RuncardSchema.PlatformSettings.GateSettings, RuncardSchema.PlatformSettings.OperationSettings)
+        ):
             element.set_parameter(parameter=parameter, value=value)
             self.build_execution()
         else:

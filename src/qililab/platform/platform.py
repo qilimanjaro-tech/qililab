@@ -174,7 +174,7 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if alias in ([Category.PLATFORM.value] + self.gate_names):
+        if alias in ([Category.PLATFORM.value] + self.gate_names + self.operation_names):
             self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)

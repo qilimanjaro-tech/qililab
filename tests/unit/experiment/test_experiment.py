@@ -322,6 +322,11 @@ class TestSetParameter:
         experiment.set_parameter(alias="X", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.settings.get_gate(name="X").duration == 123
 
+    def test_set_parameter_method_with_operation_value(self, experiment: Experiment):
+        """Test the ``set_parameter`` method with a parameter of an operation."""
+        experiment.set_parameter(alias="Measure", parameter=Parameter.DURATION, value=123)
+        assert experiment.platform.settings.get_operation_settings(name="Measure").pulse.duration == 123
+
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
 def fixture_experiment_reset(request: pytest.FixtureRequest):
