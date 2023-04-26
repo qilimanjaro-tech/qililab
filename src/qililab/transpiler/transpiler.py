@@ -6,14 +6,13 @@ from qililab.transpiler.gate_decompositions import translate_gates
 
 from .native_gates import Drag
 
-# TODO do not add any Z gates at the end
-
 
 def translate_circuit(circuit: Circuit, optimize: bool = False) -> Circuit:
     """Converts circuit with qibo gates to circuit with native gates
 
     Args:
         circuit (Circuit): circuit with qibo gates
+        optimize (bool): optimize the transpiled circuit using otpimize_transpilation
 
     Returns:
         new_circuit (Circuit): circuit with transpiled gates
