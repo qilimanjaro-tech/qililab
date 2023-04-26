@@ -1,6 +1,6 @@
 """CircuitTranspiler class."""
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from qililab.chip import Chip
 from qililab.circuit import Circuit
@@ -168,10 +168,10 @@ class CircuitTranspiler:
         return circuit
 
     def _generate_pulse_schedule(self, circuit: Circuit) -> PulseSchedule:
-        """Transpiles the circuit into PulseSchedule
+        """Transpiles the circuit to PulseSchedule
 
         Args:
-            circuit (Circuit): The quantum circuit to be transpiled into PulseSchedule
+            circuit (Circuit): The quantum circuit to be transpiled to PulseSchedule
 
         Raises:
             ValueError: If the previous transpilation steps have not been executed
@@ -196,6 +196,14 @@ class CircuitTranspiler:
         return pulse_schedule
 
     def transpile(self, circuit: Circuit) -> PulseSchedule:
+        """Executes the complete transpilation flow from Circuit to PulseSchedule.
+
+        Args:
+            circuit (Circuit): The quantum circuit to be transpiled to PulseSchedule
+
+        Returns:
+            PulseSchedule: The equivalent PulseSchedule
+        """
         circuit_ir1 = self._calculate_timings(circuit)
         circuit_ir2 = self._remove_special_operations(circuit_ir1)
         circuit_ir3 = self._transpile_to_pulse_operations(circuit_ir2)

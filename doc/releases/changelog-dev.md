@@ -74,23 +74,37 @@ This document contains the changes of the current release.
 - Added `OperationFactory` class to register and retrieve operation classes based on their names.
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
-- Added `CircuitTranspiler` class for calculating operation timings and transpiling quantum circuits into pulse operations. The `calculate_timings()` method annotates operations in the circuit with timing information by evaluating start and end times for each operation. The `remove_special_operations()` method removes special operations (Barrier, Wait, Passive Reset) from the circuit after the timings have been calculated. The `transpile_to_pulse_operations()` method then transpiles the quantum circuit operations into pulse operations, taking into account the calculated timings. Example usage:
+- Added `CircuitTranspiler` class for transpiling `Circuit` to `PulseSchedule`. The complete transpilation flow, that can be run by calling `transpile()` method, consists of the following steps:
+
+  1. \_calculate_timings()
+  1. \_remove_special_operations()
+  1. \_transpile_to_pulse_operations()
+  1. \_generate_pulse_schedule()
+
+  The `_calculate_timings()` method annotates operations in the circuit with timing information by evaluating start and end times for each operation. The `_remove_special_operations()` method removes special operations (Barrier, Wait, Passive Reset) from the circuit after the timings have been calculated. The `_transpile_to_pulse_operations()` method then transpiles the quantum circuit operations into pulse operations, taking into account the calculated timings. The `_generate_pulse_schedule()` method produces the equivalent `PulseSchedule`. Example usage:
 
   ```python
   # create the transpiler
   transpiler = CircuitTranspiler(settings=platform.settings)
 
   # calculate timings
-  circuit_ir1 = transpiler.calculate_timings(circuit)
+  circuit_ir1 = transpiler._calculate_timings(circuit)
 
   # remove special operations
-  circuit_ir2 = transpiler.remove_special_operations(circuit_ir1)
+  circuit_ir2 = transpiler._remove_special_operations(circuit_ir1)
 
   # transpile operations to pulse operations
-  circuit_ir3 = transpiler.transpile_to_pulse_operations(circuit_ir2)
+  circuit_ir3 = transpiler._transpile_to_pulse_operations(circuit_ir2)
+
+  # transpile to PulseSchedule
+  pulse_schedule = transpiler._generate_pulse_schedule(circuit_ir3)
+
+  # Alternatively, if you don't need inspection of intermediate representations you can run all steps with transpile
+  pulse_schedule = transpiler.transpile(circuit)
   ```
 
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+  [#267](https://github.com/qilimanjaro-tech/qililab/pull/267)
 
 - Added `QiliQasmConverter` class to convert a circuit from/to QiliQASM, an over-simplified QASM version. Example usage:
 
@@ -110,6 +124,9 @@ This document contains the changes of the current release.
 
 - Added an optional parameter "frequency" to the "modulated_waveforms" method of the Pulse and PulseEvent classes, allowing for specification of a modulation frequency different from that of the Pulse.
   [#242](https://github.com/qilimanjaro-tech/qililab/pull/242)
+
+- Experiment can now accept both Qibo circuits and Qililab circuits.
+  [#267](https://github.com/qilimanjaro-tech/qililab/pull/267)
 
 ### Improvements
 

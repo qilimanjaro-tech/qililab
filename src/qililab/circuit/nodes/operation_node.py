@@ -2,11 +2,8 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-from sympy import true
-
 from qililab.circuit.nodes.node import Node
 from qililab.circuit.operations import Operation
-from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 
 
 @dataclass
