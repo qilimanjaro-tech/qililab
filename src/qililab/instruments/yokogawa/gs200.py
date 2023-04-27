@@ -112,7 +112,7 @@ class GS200(CurrentSource):
     def current(self, value: float):
         """Sets the current_value"""
         self.settings.current[0] = value
-        self.device.ramp_current(value, abs(value), 0)
+        self.ramp_current(value, value, 0)
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -149,6 +149,6 @@ class GS200(CurrentSource):
         """
         if self.settings.ramping_enabled[0]:
             self.settings.current[0] = ramp_to
-            self.device.ramp_current(ramp_to, step, delay)
+            self.device.ramp_current(ramp_to, abs(step), delay)
             return
-        raise ValueError("Ramping is not enabled")
+        raise ValueError("Ramping is not enabled, check runcard scecifications")
