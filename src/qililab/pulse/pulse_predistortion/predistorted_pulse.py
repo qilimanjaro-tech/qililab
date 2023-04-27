@@ -34,17 +34,17 @@ class PredistortedPulse(ABC):
         """
 
     # TODO: Implement from_dict method.
-    # @classmethod
-    # def from_dict(cls, dictionary: dict) -> Pulse:
-    #     """Load Pulse object from dictionary.
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> Pulse:
+        """Load Pulse object from dictionary.
 
-    #     Args:
-    #         dictionary (dict): Dictionary representation of the Pulse object.
+        Args:
+            dictionary (dict): Dictionary representation of the Pulse object.
 
-    #     Returns:
-    #         Pulse: Loaded class.
-    #     """
-    #     return cls.pulse.from_dict(dictionary)
+        Returns:
+            Pulse: Loaded class.
+        """
+        raise NotImplementedError
 
     def to_dict(self):
         """Return dictionary of pulse.

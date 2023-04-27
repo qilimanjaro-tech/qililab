@@ -9,79 +9,82 @@ from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Waveforms
 
-duration = 50
-amplitude = 1.0
-
-list_shapes = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
-params = []
-for shape in list_shapes:
-    pulse = Pulse(amplitude=amplitude, phase=0.0, duration=duration, frequency=1.0, pulse_shape=shape)
-    params.extend(
-        [
-            BiasTeeCorrection(pulse=pulse, tau_bias_tee=1.0),
-            ExponentialCorrection(pulse=pulse, tau_exponential=1.0, amp=1.0),
-            ExponentialCorrection(pulse=pulse, tau_exponential=1.0, amp=-1.0),
-        ]
-    )
+# Parameters of the Pulse
+AMPLITUDE = 0.9
+PHASE = [0, np.pi / 3, 2 * np.pi, 3 * np.pi]
+DURATION = [1, 2, 47]  # TODO: Add 0 to this test?
+FREQUENCY = 0.7e9
 
 
-@pytest.fixture(name="predistorted_pulse", params=params)
-def fixture_predistorted_pulse(request: pytest.FixtureRequest) -> PredistortedPulse:
-    """Fixture for the PredistortedPulse class."""
-    return request.param  # type: ignore
+@pytest.fixture(
+    name="predistorted_pulses", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+)
+def fixture_predistorted_pulses(request: pytest.FixtureRequest) -> list[BiasTeeCorrection | ExponentialCorrection]:
+    """Fixture for the ExponentialCorrection predistortion class."""
+    shape = request.param
+    predistortions: list[BiasTeeCorrection | ExponentialCorrection] = []
+
+    for phase in PHASE:
+        for duration in DURATION:
+            pulse = Pulse(amplitude=AMPLITUDE, phase=phase, duration=duration, frequency=FREQUENCY, pulse_shape=shape)
+            predist = BiasTeeCorrection(
+                ExponentialCorrection(pulse=pulse, tau_exponential=0.9, amp=0.8), tau_bias_tee=1.3
+            )
+            predist2 = BiasTeeCorrection(
+                ExponentialCorrection(pulse=pulse, tau_exponential=0.8, amp=-1.2), tau_bias_tee=1.3
+            )
+            predist3 = ExponentialCorrection(
+                BiasTeeCorrection(pulse=pulse, tau_bias_tee=1.3), tau_exponential=0.8, amp=-1.2
+            )
+            predist4 = ExponentialCorrection(predist2, tau_exponential=0.4, amp=0.5)
+            predist5 = ExponentialCorrection(predist4, tau_exponential=1.8, amp=-2.5)
+
+            predistortions.extend([predist, predist2, predist3, predist4, predist5])
+
+    return predistortions
 
 
-class TestPredistortedPulse:
-    """Unit tests checking the PredistortedPulse attributes and methods"""
+class TestExponentialCorrection:
+    """Unit tests checking the ExponentialCorrection attributes and methods"""
 
-    def test_modulated_waveforms(self, predistorted_pulse: PredistortedPulse):
-        """Test that modulated_waveforms returns a non-empty result"""
-        waveforms = predistorted_pulse.modulated_waveforms(resolution=0.1, start_time=0.0)
-        assert waveforms is not None
+    def test_modulated_waveforms(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
+        """Test for the modulated_waveforms method."""
+        for resolution in [0.1, 1.0]:
+            for start_time in [0.0, 0.1]:
+                for predistorted_pulse in predistorted_pulses:
+                    waveforms = predistorted_pulse.modulated_waveforms(resolution=resolution, start_time=start_time)
+                    assert waveforms is not None
+                    assert isinstance(waveforms, Waveforms)
 
-    def test_modulated_waveforms_type(self, predistorted_pulse: PredistortedPulse):
-        """Test that modulated_waveforms returns a non-empty result"""
-        waveforms = predistorted_pulse.modulated_waveforms(resolution=0.1, start_time=0.0)
-        assert isinstance(waveforms, Waveforms)
+    def test_label(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
+        """Test for the label method."""
+        for predistorted_pulse in predistorted_pulses:
+            label = predistorted_pulse.label()
+            assert isinstance(label, str)
+            assert label is not None
 
-    def test_label_no_null(self, predistorted_pulse: PredistortedPulse):
-        """Test that label returns a non-empty result"""
-        label = predistorted_pulse.label()
-        assert label is not None
+    def test_envelope(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
+        """Test for the envelope method."""
+        for predistorted_pulse in predistorted_pulses:
+            for resolution in [0.1, 1.0]:
+                envelope = predistorted_pulse.envelope(amplitude=AMPLITUDE, resolution=resolution)
+                assert envelope is not None
+                assert isinstance(envelope, np.ndarray)
 
-    def test_label_type(self, predistorted_pulse: PredistortedPulse):
-        """Test that label returns the expected type"""
-        label = predistorted_pulse.label()
-        assert isinstance(label, str)
-
-    def test_envelope_no_null(self, predistorted_pulse: PredistortedPulse):
-        """Test that envelope returns a non-empty result"""
-        envelope = predistorted_pulse.envelope(amplitude=amplitude, resolution=0.1)
-        assert envelope is not None
-
-    def test_envelope_type(self, predistorted_pulse: PredistortedPulse):
-        """Test that envelope method returns the expected type"""
-        envelope = predistorted_pulse.envelope(amplitude=amplitude, resolution=0.1)
-        assert isinstance(envelope, np.ndarray)
-
-    def test_to_dict_no_null(self, predistorted_pulse: PredistortedPulse):
-        """Test that to_dict returns a non-empty result"""
-        result = predistorted_pulse.to_dict()
-        assert result is not None
-
-    def test_to_dict_type(self, predistorted_pulse: PredistortedPulse):
-        """Test that to_dict method returns the expected type"""
-        dictionary = predistorted_pulse.to_dict()
-        assert isinstance(dictionary, dict)
-
-    def test_to_dict_result(self, predistorted_pulse: PredistortedPulse):
-        """Test that to_dict method returns the expected type"""
-        dictionary = predistorted_pulse.to_dict()
-        assert list(dictionary.keys()) in [
-            [
-                RUNCARD.NAME,
-                PulseShapeSettingsName.TAU_EXPONENTIAL.value,
-                PulseShapeSettingsName.AMP.value,
-            ],
-            [RUNCARD.NAME, PulseShapeSettingsName.TAU_BIAS_TEE.value],
-        ]
+    def test_to_dict(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
+        """Test for the to_dict method."""
+        for predistorted_pulse in predistorted_pulses:
+            dictionary = predistorted_pulse.to_dict()
+            assert dictionary is not None
+            assert isinstance(dictionary, dict)
+            assert list(dictionary.keys()) in [
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_EXPONENTIAL.value,
+                    PulseShapeSettingsName.AMP.value,
+                ],
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_BIAS_TEE.value,
+                ],
+            ]
