@@ -10,7 +10,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import Signature, signature
-from typing import Dict, Tuple
+from typing import Tuple
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.typings import OperationName
@@ -18,7 +18,7 @@ from qililab.typings.enums import Qubits
 from qililab.utils import classproperty
 
 ParameterValue = int | float | bool
-Parameters = Dict[str, ParameterValue]
+Parameters = dict[str, ParameterValue]
 
 
 @dataclass(kw_only=True)

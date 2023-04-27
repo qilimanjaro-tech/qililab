@@ -1,5 +1,5 @@
 """InstrumentFactory class."""
-from typing import Dict, Type, TypeVar
+from typing import Type, TypeVar
 
 from qililab.instruments.instrument import Instrument
 from qililab.typings.enums import InstrumentName
@@ -10,7 +10,7 @@ Element = TypeVar("Element", bound=Instrument)
 class InstrumentFactory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: Dict[str, Type[Instrument]] = {}
+    handlers: dict[str, Type[Instrument]] = {}
 
     @classmethod
     def register(cls, handler_cls: Type[Element]) -> Type[Instrument]:

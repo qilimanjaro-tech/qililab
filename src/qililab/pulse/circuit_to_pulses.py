@@ -1,6 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from qibo.gates import Gate, M
@@ -40,7 +40,7 @@ class CircuitToPulses:
         pulse_schedule_list: List[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
-            time: Dict[int, int] = {}  # restart time
+            time: dict[int, int] = {}  # restart time
             readout_gates = circuit.gates_of_type(M)
             control_gates = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
@@ -67,7 +67,7 @@ class CircuitToPulses:
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
     def _control_gate_to_pulse_event(
-        self, time: Dict[int, int], control_gate: Gate, chip: Chip
+        self, time: dict[int, int], control_gate: Gate, chip: Chip
     ) -> Tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse event.
 
@@ -135,12 +135,12 @@ class CircuitToPulses:
         return gate_settings
 
     def _readout_gate_to_pulse_event(
-        self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
+        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
     ) -> Tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
-            time: Dict[int, int]: time.
+            time: dict[int, int]: time.
             readout_gate (Gate): Qibo Gate.
             qubit_id (int): qubit number.
             chip (Chip): chip object.
@@ -175,7 +175,7 @@ class CircuitToPulses:
             port,
         )
 
-    def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int):
+    def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:

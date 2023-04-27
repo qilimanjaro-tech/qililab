@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
-from typing import Dict, List
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -128,14 +128,14 @@ class ExecutionManager:
         thread = Thread(target=_threaded_function)
         thread.start()
 
-    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
+    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
         """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+            dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
         return {bus.id_: bus.waveforms(resolution=resolution, idx=idx) for bus in self.buses}
 

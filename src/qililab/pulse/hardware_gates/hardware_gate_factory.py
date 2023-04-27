@@ -1,5 +1,5 @@
 """PulsedGateFactory class."""
-from typing import Dict, Type
+from typing import Type
 
 from qibo.gates import Gate
 
@@ -9,7 +9,7 @@ from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 class HardwareGateFactory:
     """Contains the gates that can be directly translated into a pulse."""
 
-    pulsed_gates: Dict[str, Type[HardwareGate]] = {}
+    pulsed_gates: dict[str, Type[HardwareGate]] = {}
 
     @classmethod
     def register(cls, handler_cls: Type[HardwareGate]):

@@ -1,6 +1,6 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-from typing import Dict, List
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -124,7 +124,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             axes.legend(loc="upper right")
         return fig
 
-    def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
+    def bus_setup(self, parameters: dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
 
             * Parameter.CURRENT
@@ -135,7 +135,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.POWER
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             control (bool, optional): whether to change the parameters of the control bus (True) or the readout
                 bus (False)
@@ -148,7 +148,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         for parameter, value in parameters.items():
             bus.set_parameter(parameter=parameter, value=value)
 
-    def gate_setup(self, parameters: Dict[Parameter, float | str | bool], gate: str) -> None:
+    def gate_setup(self, parameters: dict[Parameter, float | str | bool], gate: str) -> None:
         """Method used to change the parameters of the given gate. Some possible gate parameters are:
 
             * Parameter.AMPLITUDE
@@ -156,7 +156,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.PHASE
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             gate (str): name of the gate to change
         """
