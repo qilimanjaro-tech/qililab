@@ -90,7 +90,7 @@ class TestExponentialCorrection:
             ]
 
     def test_to_dict_predistortion(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
-        """Test for the to_dict method."""
+        """Test for the .pulse.to_dict method."""
         for predistorted_pulse in predistorted_pulses:
             dictionary = predistorted_pulse.pulse.to_dict()
             dictionary2 = predistorted_pulse.pulse.pulse.to_dict()
