@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from bisect import insort
 from dataclasses import dataclass, field
-from typing import Set
 
 import numpy as np
 
@@ -19,7 +18,7 @@ class PulseBusSchedule:
 
     port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
     timeline: list[PulseEvent] = field(default_factory=list)
-    _pulses: Set[Pulse] = field(init=False, default_factory=set)
+    _pulses: set[Pulse] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Sort timeline and add used pulses to the pulses set if timeline is not empty."""

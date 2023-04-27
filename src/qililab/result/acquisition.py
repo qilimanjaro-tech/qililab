@@ -1,7 +1,6 @@
 """ Acquisition Result """
 
 from dataclasses import dataclass, field
-from typing import Set
 
 import numpy as np
 import numpy.typing as npt
@@ -28,7 +27,7 @@ class Acquisition:
     amplitude_values: npt.NDArray[np.float32] = field(init=False)
     phase_values: npt.NDArray[np.float32] = field(init=False)
     acquisition: pd.DataFrame = field(init=False)
-    data_dataframe_indices: Set = field(init=False, default_factory=set)
+    data_dataframe_indices: set = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Create acquisitions"""

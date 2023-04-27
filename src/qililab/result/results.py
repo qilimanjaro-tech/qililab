@@ -1,7 +1,6 @@
 """Results class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Set
 
 import numpy as np
 import pandas as pd
@@ -26,7 +25,7 @@ class Results:
     shape: list[int] = field(default_factory=list)
     results: list[Result] = field(default_factory=list)
     _computed_dataframe_indices: list[str] = field(init=False, default_factory=list)
-    _data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
+    _data_dataframe_indices: set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Add num_schedules to shape."""
