@@ -132,14 +132,14 @@ class TestPlatformSettings:
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        settings.set_parameter(alias="0.M", parameter=Parameter.DURATION, value=1234)
+        settings.set_parameter(alias="M.0", parameter=Parameter.DURATION, value=1234)
         assert settings.get_gate("M", qubits=0).duration == 1234
 
-        settings.set_parameter(alias="0.Y", parameter=Parameter.PHASE, value=1234)
+        settings.set_parameter(alias="Y.0", parameter=Parameter.PHASE, value=1234)
         assert settings.get_gate("Y", qubits=0).phase == 1234
 
-        settings.set_parameter(alias="0.I", parameter=Parameter.AMPLITUDE, value=1234)
+        settings.set_parameter(alias="I.0", parameter=Parameter.AMPLITUDE, value=1234)
         assert settings.get_gate("I", qubits=0).amplitude == 1234
 
-        settings.set_parameter(alias="0.X", parameter=Parameter.DRAG_COEFFICIENT, value=1234)
+        settings.set_parameter(alias="X.0", parameter=Parameter.DRAG_COEFFICIENT, value=1234)
         assert settings.get_gate("X", qubits=0).shape["drag_coefficient"] == 1234

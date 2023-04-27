@@ -47,7 +47,7 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gate = platform.get_element(alias="0.M")
+        gate = platform.get_element(alias="M.0")
         assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
         assert gate.name == "M"
 

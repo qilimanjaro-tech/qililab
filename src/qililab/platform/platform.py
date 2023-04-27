@@ -102,7 +102,7 @@ class Platform:
             if alias == Category.PLATFORM.value:
                 return self.settings
             if any(gate_name == alias_element for alias_element in alias.split(".") for gate_name in self.gate_names):
-                qubits_str, name = alias.split(".")
+                name, qubits_str = alias.split(".")
                 qubits = ast.literal_eval(qubits_str)
                 if name in self.gate_names:
                     return self.settings.get_gate(name=name, qubits=qubits)

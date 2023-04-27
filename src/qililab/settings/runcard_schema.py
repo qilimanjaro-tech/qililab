@@ -202,7 +202,7 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            qubits_str, name = alias.split(".")
+            name, qubits_str = alias.split(".")
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
             gate_settings.set_parameter(parameter, value)

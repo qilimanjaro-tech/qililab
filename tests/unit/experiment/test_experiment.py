@@ -303,7 +303,7 @@ class TestSetParameter:
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
-        experiment.set_parameter(alias="0.M", parameter=Parameter.AMPLITUDE, value=0.3)
+        experiment.set_parameter(alias="M.0", parameter=Parameter.AMPLITUDE, value=0.3)
         assert experiment.platform.settings.get_gate(name="M", qubits=0).amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, experiment: Experiment):
@@ -318,7 +318,7 @@ class TestSetParameter:
 
     def test_set_parameter_method_with_gate_value(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate."""
-        experiment.set_parameter(alias="0.X", parameter=Parameter.DURATION, value=123)
+        experiment.set_parameter(alias="X.0", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
 
