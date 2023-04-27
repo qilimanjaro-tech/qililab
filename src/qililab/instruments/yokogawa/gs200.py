@@ -151,4 +151,4 @@ class GS200(CurrentSource):
             self.settings.current[0] = ramp_to
             self.device.ramp_current(ramp_to, abs(step), delay)
             return
-        raise ValueError("Ramping is not enabled, check runcard scecifications")
+        raise ValueError("Ramping is not enabled, check runcard specifications")
