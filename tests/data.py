@@ -696,7 +696,7 @@ results_two_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -713,7 +713,7 @@ results_two_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -754,7 +754,7 @@ results_one_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -771,7 +771,7 @@ results_one_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {

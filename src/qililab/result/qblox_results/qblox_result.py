@@ -148,7 +148,7 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.integration_lengths.item()
+            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths.item()
             if isinstance(self.integration_lengths, np.number)
             else self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
