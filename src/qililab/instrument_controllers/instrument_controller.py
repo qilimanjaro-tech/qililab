@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, List, Sequence, Type, get_type_hints
+from typing import Callable, Sequence, Type, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
@@ -24,12 +24,12 @@ class InstrumentControllerSettings(DDBBElement):
     Args:
         subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
-        modules: (List[InstrumentReference]): List of the Instrument References that links to the actual Instruments
+        modules: (list[InstrumentReference]): List of the Instrument References that links to the actual Instruments
                                                 to be managed by the Instrument Controller.
     """
 
     connection: Connection
-    modules: List[InstrumentReference]
+    modules: list[InstrumentReference]
     subcategory: InstrumentControllerSubCategory  # a subtype of settings must be specified by the subclass
     reset: bool = True
 
@@ -54,7 +54,7 @@ class InstrumentController(BusElement, ABC):
         device (Device): Driver instance of the instrument to operate the instrument controller.
         number_available_modules (int): Number of modules available in the Instrument Controller.
         modules (Sequence[Instrument]): Actual Instruments classes that manages the Instrument Controller.
-        connected_modules_slot_ids (List[int]): List with the slot ids from the connected instruments
+        connected_modules_slot_ids (list[int]): List with the slot ids from the connected instruments
     """
 
     name: InstrumentControllerName
@@ -62,7 +62,7 @@ class InstrumentController(BusElement, ABC):
     device: Device  # a subtype of device must be specified by the subclass
     number_available_modules: int  # to be set by child classes
     modules: Sequence[Instrument]
-    connected_modules_slot_ids: List[int]  # slot_id represents the number displayed in the cluster
+    connected_modules_slot_ids: list[int]  # slot_id represents the number displayed in the cluster
 
     class CheckConnected:
         """Property used to check if the connection has established with an instrument."""
@@ -111,7 +111,7 @@ class InstrumentController(BusElement, ABC):
                 + f"the available modules: {len(self.modules)}."
             )
 
-    def _set_connected_modules_slot_ids(self) -> List[int]:
+    def _set_connected_modules_slot_ids(self) -> list[int]:
         """Initialize the modules slot ids from the settings"""
         return [instrument_reference.slot_id for instrument_reference in self.settings.modules]
 

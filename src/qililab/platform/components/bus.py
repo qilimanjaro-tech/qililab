@@ -1,6 +1,5 @@
 """Bus class."""
 from dataclasses import InitVar, dataclass
-from typing import List
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
@@ -21,7 +20,7 @@ class Bus:
         settings (BusSettings): Bus settings.
     """
 
-    targets: List[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
+    targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
     class BusSettings(DDBBElement):
@@ -111,7 +110,7 @@ class Bus:
         """Bus 'target_freqs' property.
 
         Returns:
-            List[float]: Frequencies of the nodes that have frequencies
+            list[float]: Frequencies of the nodes that have frequencies
         """
         return list(
             filter(

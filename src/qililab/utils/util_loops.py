@@ -1,12 +1,12 @@
 """ Utilities for Loops """
-from typing import List
+
 
 import numpy as np
 
 from qililab.utils.loop import Loop
 
 
-def _find_minimum_range_from_loops(loops: List[Loop] | None):
+def _find_minimum_range_from_loops(loops: list[Loop] | None):
     """find minimum range from same level loops"""
     if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
@@ -19,12 +19,12 @@ def _find_minimum_range_from_loops(loops: List[Loop] | None):
     return minimum_range
 
 
-def _create_loops_from_inner_loops(loops: List[Loop]):
+def _create_loops_from_inner_loops(loops: list[Loop]):
     """create sequence of loops from inner loops (if exist)"""
     return list(filter(None, [loop.loop for loop in loops]))
 
 
-def compute_ranges_from_loops(loops: List[Loop] | None):
+def compute_ranges_from_loops(loops: list[Loop] | None):
     """compute ranges from a list of loops that may have inner loops"""
     if loops is None or len(loops) <= 0:
         return []
@@ -33,7 +33,7 @@ def compute_ranges_from_loops(loops: List[Loop] | None):
     return ranges
 
 
-def compute_shapes_from_loops(loops: List[Loop] | None):
+def compute_shapes_from_loops(loops: list[Loop] | None):
     """compute the shapes from a list of loops that may have inner loops"""
     if loops is None:
         return []

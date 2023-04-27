@@ -1,6 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 from dataclasses import asdict, dataclass
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 from qibo.gates import Gate, M
@@ -27,17 +27,17 @@ class CircuitToPulses:
         """Post init."""
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: List[Circuit], chip: Chip) -> List[PulseSchedule]:
+    def translate(self, circuits: list[Circuit], chip: Chip) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
         Args:
-            circuits (List[Circuit]): List of Qibo Circuit classes.
+            circuits (list[Circuit]): List of Qibo Circuit classes.
 
         Returns:
-            List[PulseSequences]: List of PulseSequences classes.
+            list[PulseSequences]: List of PulseSequences classes.
         """
-        pulse_schedule_list: List[PulseSchedule] = []
+        pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time

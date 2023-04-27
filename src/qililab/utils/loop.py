@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
 
 import numpy as np
 
@@ -65,7 +64,7 @@ class Loop:
         return np.array(all_values, dtype=object)
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> list[int]:
         """Return number of points of all loops.
 
         Returns:
@@ -88,11 +87,11 @@ class Loop:
         return len(self.loops)
 
     @property
-    def loops(self) -> List[Loop]:
+    def loops(self) -> list[Loop]:
         """Loop 'loops' property.
 
         Returns:
-            List[Loop]: List of loop objects.
+            list[Loop]: List of loop objects.
         """
         loops = []
         loop: Loop | None = self

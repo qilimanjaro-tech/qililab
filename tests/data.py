@@ -1,7 +1,7 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-from typing import List, Type
+from typing import Type
 
 import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
@@ -633,7 +633,7 @@ class FluxQubitSimulator:
     }
 
 
-experiment_params: List[List[str | Circuit | List[Circuit]]] = []
+experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))

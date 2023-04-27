@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from bisect import insort
 from dataclasses import dataclass, field
-from typing import List, Set
+from typing import Set
 
 import numpy as np
 
@@ -18,7 +18,7 @@ class PulseBusSchedule:
     """Container of Pulse objects addressed to the same bus."""
 
     port: int  # FIXME: we may have one port being used by more than one bus. Use virtual ports instead
-    timeline: List[PulseEvent] = field(default_factory=list)
+    timeline: list[PulseEvent] = field(default_factory=list)
     _pulses: Set[Pulse] = field(init=False, default_factory=set)
 
     def __post_init__(self):
@@ -36,11 +36,11 @@ class PulseBusSchedule:
         self._pulses.add(pulse_event.pulse)
         insort(self.timeline, pulse_event)
 
-    def frequencies(self) -> List[float]:
+    def frequencies(self) -> list[float]:
         """Frequencies of the pulses in the sequence.
 
         Returns:
-            List[float]: List of the frequencies in ascending order.
+            list[float]: List of the frequencies in ascending order.
         """
         frequencies_set = {pulse.frequency for pulse in self._pulses}
         return sorted(frequencies_set)

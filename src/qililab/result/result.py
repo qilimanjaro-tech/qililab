@@ -1,6 +1,6 @@
 """Result class."""
 from dataclasses import asdict, dataclass, field
-from typing import List, Set, Tuple
+from typing import Set, Tuple
 
 import pandas as pd
 

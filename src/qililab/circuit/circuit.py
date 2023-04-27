@@ -5,7 +5,7 @@ This file provides the Circuit class for representing quantum circuits.
 It stores the circuit as a Directed Acyclic Graph and uses the rustworkx library for its manipulation.
 It offers methods to add operations to the circuit, calculate the circuit's depth, and visualize the circuit.
 """
-from typing import List, Tuple
+from typing import Tuple
 
 import rustworkx as rx
 from rustworkx.visualization import graphviz_draw
@@ -129,14 +129,14 @@ class Circuit:
 
     def get_operation_layers(
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
-    ) -> List[List[OperationNode]]:
+    ) -> list[list[OperationNode]]:
         """Get the layers of operation nodes. Each layer represents an advancement in time.
 
         Args:
             method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. If set to `OperationTimingsCalcuationMethod.AS_LATE_AS_POSSIBLE, we rearrange the layers, moving operations to the largest layer index possible. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
 
         Returns:
-            List[List[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
+            list[list[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
         """
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]  # pylint: disable=no-member
         for layer in layers:

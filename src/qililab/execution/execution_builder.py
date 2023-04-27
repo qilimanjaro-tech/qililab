@@ -1,5 +1,5 @@
 """ExecutionBuilder class"""
-from typing import List
+
 
 from qililab.execution import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
@@ -12,7 +12,7 @@ from qililab.utils import Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_schedules: List[PulseSchedule]) -> ExecutionManager:
+    def build(self, platform: Platform, pulse_schedules: list[PulseSchedule]) -> ExecutionManager:
         """Build ExecutionManager class.
         Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusExecution class.
 

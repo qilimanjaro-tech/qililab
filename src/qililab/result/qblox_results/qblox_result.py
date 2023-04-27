@@ -1,7 +1,7 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -37,7 +37,7 @@ class QbloxResult(Result):
 
     name = ResultName.QBLOX
     pulse_length: int | np.number
-    qblox_raw_results: List[dict]
+    qblox_raw_results: list[dict]
     qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
     qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
@@ -97,7 +97,7 @@ class QbloxResult(Result):
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
         integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[list[float], list[float]]:
         """Acquisitions Scope
 
         Args:
@@ -110,7 +110,7 @@ class QbloxResult(Result):
             DataUnavailable: Scope data is not available since it was not stored for this acquisition.
 
         Returns:
-            Tuple[List[float], List[float]]
+            Tuple[list[float], list[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
@@ -124,7 +124,7 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> list[Tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
@@ -133,11 +133,11 @@ class QbloxResult(Result):
         return self.qblox_bins_acquisitions.probabilities()
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> list[int]:
         """QbloxResult 'shape' property.
 
         Returns:
-            List[int]: Shape of the acquisitions.
+            list[int]: Shape of the acquisitions.
         """
         return list(self.acquisitions().shape)
 

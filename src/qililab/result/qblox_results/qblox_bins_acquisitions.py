@@ -1,7 +1,7 @@
 """ Qblox Bins Acquisitions Result """
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,11 +16,11 @@ from qililab.result.qblox_results.qblox_bins_acquisition import QbloxBinAcquisit
 class QbloxBinsAcquisitions(Acquisitions):
     """Qblox Bins Acquisitions Results
     Args:
-        bins: List[BinData]
+        bins: list[BinData]
         pulse_length (int): Duration (in ns) of the pulse
     """
 
-    bins: List[BinData]
+    bins: list[BinData]
     pulse_length: int
 
     def __post_init__(self):

@@ -64,7 +64,7 @@ class Acquisition:
         which should be the same as the pulse length.
 
         Args:
-            data (List[float]): I or Q data from acquisition.
+            data (list[float]): I or Q data from acquisition.
 
         Returns:
             NDArray[flaot]: Normalized data

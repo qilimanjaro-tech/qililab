@@ -2,7 +2,7 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, cast
+from typing import Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -42,11 +42,11 @@ class QbloxModule(AWG):
 
         Args:
             awg_sequencers (Sequence[AWGQbloxSequencer]): list of settings for each sequencer
-            out_offsets (List[float]): list of offsets for each output of the qblox module
+            out_offsets (list[float]): list of offsets for each output of the qblox module
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
-        out_offsets: List[float]
+        out_offsets: list[float]
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -115,7 +115,7 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def _split_schedule_for_sequencers(self, pulse_bus_schedule: PulseBusSchedule) -> List[PulseBusSchedule]:
+    def _split_schedule_for_sequencers(self, pulse_bus_schedule: PulseBusSchedule) -> list[PulseBusSchedule]:
         """Returns a list of single-frequency PulseBusSchedules for each sequencer.
 
         Args:
@@ -125,7 +125,7 @@ class QbloxModule(AWG):
             IndexError: if the number of sequencers does not match the number of AWG Sequencers
 
         Returns:
-            List[PulseBusSchedule]: list of single-frequency PulseBusSchedules for each sequencer.
+            list[PulseBusSchedule]: list of single-frequency PulseBusSchedules for each sequencer.
         """
         frequencies = pulse_bus_schedule.frequencies()
         if len(frequencies) > self._NUM_MAX_SEQUENCERS:
@@ -134,7 +134,7 @@ class QbloxModule(AWG):
             )
         return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
+    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -148,7 +148,7 @@ class QbloxModule(AWG):
             repetition_duration (int): repetition duration
 
         Returns:
-            List[QpySequence]: list of compiled assembly programs
+            list[QpySequence]: list of compiled assembly programs
         """
         if nshots != self.nshots or repetition_duration != self.repetition_duration:
             self.nshots = nshots
@@ -643,7 +643,7 @@ class QbloxModule(AWG):
         """
         waveforms = Waveforms()
 
-        unique_pulses: List[Tuple[int, PulseShape]] = []
+        unique_pulses: list[Tuple[int, PulseShape]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:

@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +23,7 @@ class ExecutionManager:
 
     num_schedules: int
     platform: Platform
-    buses: List[BusExecution] = field(default_factory=list)
+    buses: list[BusExecution] = field(default_factory=list)
     program_duration: float = field(init=False)
 
     def turn_on_instruments(self):
@@ -189,10 +188,10 @@ class ExecutionManager:
         return self.buses.__getitem__(key)
 
     @property
-    def readout_buses(self) -> List[BusExecution]:
+    def readout_buses(self) -> list[BusExecution]:
         """Returns a list of all the readout buses.
 
         Returns:
-            List[BusExecution]: list of readout buses
+            list[BusExecution]: list of readout buses
         """
         return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]

@@ -1,7 +1,7 @@
 """ Acquisitions Result """
 
 from dataclasses import dataclass, field
-from typing import List, Set, Tuple
+from typing import Set, Tuple
 
 import pandas as pd
 
@@ -14,11 +14,11 @@ from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_i
 class Acquisitions:
     """Acquisitions Results
     Args:
-        acquisitions (List[Acquisition]): list of all the acquisition results
+        acquisitions (list[Acquisition]): list of all the acquisition results
 
     """
 
-    _acquisitions: List[Acquisition] = field(init=False)
+    _acquisitions: list[Acquisition] = field(init=False)
     data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
     def acquisitions(self) -> pd.DataFrame:

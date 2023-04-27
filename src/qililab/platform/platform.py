@@ -228,7 +228,7 @@ class Platform:
         """Platform 'gate_names' property.
 
         Returns:
-            List[str]: List of the names of all the defined gates.
+            list[str]: List of the names of all the defined gates.
         """
         return self.settings.gate_names
 

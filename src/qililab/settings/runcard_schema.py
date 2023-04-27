@@ -1,6 +1,6 @@
 """PlatformSchema class."""
 from dataclasses import dataclass
-from typing import List, Literal
+from typing import Literal
 
 from qililab.circuit.operations.special_operations.reset import Reset
 from qililab.constants import PLATFORM
@@ -50,13 +50,13 @@ class RuncardSchema:
 
             id_: int
             category: str
-            nodes: List[dict]
+            nodes: list[dict]
             alias: str | None = None
 
         chip: ChipSchema | None
-        buses: List[BusSchema]
-        instruments: List[dict]
-        instrument_controllers: List[dict]
+        buses: list[BusSchema]
+        instruments: list[dict]
+        instrument_controllers: list[dict]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
@@ -131,8 +131,8 @@ class RuncardSchema:
         ]
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
-        operations: List[OperationSettings]
-        gates: List[GateSettings]
+        operations: list[OperationSettings]
+        gates: list[GateSettings]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
@@ -173,10 +173,10 @@ class RuncardSchema:
             raise ValueError(f"Gate {name} not found in settings.")
 
         @property
-        def gate_names(self) -> List[str]:
+        def gate_names(self) -> list[str]:
             """PlatformSettings 'gate_names' property.
             Returns:
-                List[str]: List of the names of all the defined gates.
+                list[str]: List of the names of all the defined gates.
             """
             return [gate.name for gate in self.gates]
 
