@@ -1,7 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-from typing import Type
 
 import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
@@ -979,13 +978,13 @@ class SauronVNA:
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: dict[str, Type[Galadriel] | Type[FluxQubitSimulator]] = {
+    handlers: dict[str, type[Galadriel] | type[FluxQubitSimulator]] = {
         "galadriel": Galadriel,
         "flux_qubit": FluxQubitSimulator,
     }
 
     @classmethod
-    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubitSimulator]):
+    def register(cls, handler_cls: type[Galadriel] | type[FluxQubitSimulator]):
         """Register handler in the factory.
 
         Args:

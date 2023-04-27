@@ -1,6 +1,6 @@
 """InstrumentFactory class."""
 from enum import Enum
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from qililab.instrument_controllers.instrument_controller import InstrumentController
 
@@ -10,10 +10,10 @@ Element = TypeVar("Element", bound=InstrumentController)
 class InstrumentControllerFactory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: dict[str, Type[InstrumentController]] = {}
+    handlers: dict[str, type[InstrumentController]] = {}
 
     @classmethod
-    def register(cls, handler_cls: Type[Element]) -> Type[InstrumentController]:
+    def register(cls, handler_cls: type[Element]) -> type[InstrumentController]:
         """Register handler in the factory.
 
         Args:
@@ -23,6 +23,6 @@ class InstrumentControllerFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str | Enum) -> Type[InstrumentController]:
+    def get(cls, name: str | Enum) -> type[InstrumentController]:
         """Return class attribute."""
         return cls.handlers[name.value] if isinstance(name, Enum) else cls.handlers[name]

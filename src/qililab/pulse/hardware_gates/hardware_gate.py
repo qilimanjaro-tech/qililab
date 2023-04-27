@@ -1,7 +1,7 @@
 """PulsedGates class. Contains the gates that can be directly translated into a pulse."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Literal, Type
+from typing import Literal
 
 import numpy as np
 from qibo.gates import Gate
@@ -45,7 +45,7 @@ class HardwareGate(ABC, metaclass=SingletonABC):
         shape: dict
 
     name: GateName
-    class_type: Type[Gate]
+    class_type: type[Gate]
     settings: HardwareGateSettings | None = None
 
     @classmethod

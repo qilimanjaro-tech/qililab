@@ -3,7 +3,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import Type, get_type_hints
+from typing import get_type_hints
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
@@ -36,7 +36,7 @@ class SystemControl(BusElement, ABC):
     settings: SystemControlSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
-        settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
+        settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:

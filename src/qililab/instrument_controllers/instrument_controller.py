@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Sequence, Type, get_type_hints
+from typing import Callable, Sequence, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import INSTRUMENTCONTROLLER, RUNCARD
@@ -86,7 +86,7 @@ class InstrumentController(BusElement, ABC):
             return self._method(ref, *args, **kwargs)
 
     def __init__(self, settings: dict, loaded_instruments: Instruments):
-        settings_class: Type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[InstrumentControllerSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
         self.modules = Loader().replace_modules_from_settings_with_instrument_objects(
             instruments=loaded_instruments,
