@@ -1,6 +1,7 @@
 """Pytest configuration fixtures."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab import build_platform
@@ -12,10 +13,9 @@ from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, Pu
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
-from qililab.typings.loop import LoopOptions
 from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, Galadriel, SauronYokogawa, circuit, experiment_params
+from .data import FluxQubitSimulator, Galadriel, SauronVNA, SauronYokogawa, circuit, experiment_params
 
 
 @pytest.fixture(name="platform")
@@ -24,8 +24,14 @@ def fixture_platform() -> Platform:
     return platform_db(runcard=Galadriel.runcard)
 
 
-@pytest.fixture(name="sauron_yoko_platform")
+@pytest.fixture(name="sauron_platform")
 def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronVNA.runcard)
+
+
+@pytest.fixture(name="sauron_yoko_platform")
+def fixture_sauron_yoko_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=SauronYokogawa.runcard)
 
@@ -54,7 +60,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     loop = Loop(
         alias="X",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=4, stop=1000, step=40),
+        values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
     return Experiment(
@@ -71,21 +77,16 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
             platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
-    loop3 = Loop(
-        alias=InstrumentName.QBLOX_QCM.value,
-        parameter=Parameter.IF,
-        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
-    )
     loop2 = Loop(
         alias="platform",
         parameter=Parameter.DELAY_BEFORE_READOUT,
-        options=LoopOptions(start=40, stop=100, step=40),
-        loop=loop3,
+        values=np.arange(start=40, stop=100, step=40),
     )
     loop = Loop(
         alias=InstrumentName.QBLOX_QRM.value,
         parameter=Parameter.GAIN,
-        options=LoopOptions(start=0, stop=1, num=2, channel_id=0),
+        values=np.linspace(start=0, stop=1, num=2),
+        channel_id=0,
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])

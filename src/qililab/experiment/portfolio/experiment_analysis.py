@@ -93,7 +93,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             )
 
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.loop.range, ydata=self.post_processed_results, p0=p0
+            self.func, xdata=self.loop.values, ydata=self.post_processed_results, p0=p0
         )
 
         return self.popt
@@ -108,13 +108,13 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-        xdata = self.loop.range
+        xdata = self.loop.values
 
         # Plot data
         fig, axes = plt.subplots(figsize=(9, 7))
         axes.set_title(self.options.name)
         axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
-        axes.set_ylabel(f"{self.options.plot_y_label}")
+        axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
         axes.scatter(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
             # Create label text
