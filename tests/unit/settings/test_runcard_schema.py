@@ -55,8 +55,9 @@ class TestPlatformSettings:
         assert isinstance(settings.delay_before_readout, int)
         assert isinstance(settings.master_amplitude_gate, (int, float))
         assert isinstance(settings.master_duration_gate, int)
-        assert isinstance(settings.gates, list)
-        assert isinstance(settings.gates[0], settings.GateSettings)
+        assert isinstance(settings.gates, dict)
+        assert isinstance(settings.gates[0], list)
+        assert isinstance(settings.gates[0][0], settings.GateSettings)
         assert isinstance(settings.reset_method, str)
         assert isinstance(settings.passive_reset_duration, int)
         assert isinstance(settings.operations, list)
@@ -85,8 +86,9 @@ class TestPlatformSettings:
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        for gate in settings.gates:
-            assert settings.get_gate(name=gate.name) is gate
+        for qubit, gate_list in settings.gates.items():
+            for gate in gate_list:
+                assert settings.get_gate(name=gate.name, qubits=qubit) is gate
 
     def test_get_gate_raises_error(self):
         """Test that the ``get_gate`` method raises an error when the name is not found."""
@@ -94,16 +96,17 @@ class TestPlatformSettings:
         settings = runcard.settings
 
         name = "test"
+        qubits = 0
 
-        with pytest.raises(ValueError, match=f"Gate {name} not found in settings"):
-            settings.get_gate(name)
+        with pytest.raises(ValueError, match=f"Gate {name} for qubits {qubits} not found in settings"):
+            settings.get_gate(name, qubits=qubits)
 
     def test_gate_names(self):
         """Test the ``gate_names`` method of the PlatformSettings class."""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        expected_names = [g.name for g in settings.gates]
+        expected_names = list({gate.name for gates in settings.gates.values() for gate in gates})
 
         assert settings.gate_names == expected_names
 
@@ -129,14 +132,14 @@ class TestPlatformSettings:
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        settings.set_parameter(alias="M", parameter=Parameter.DURATION, value=1234)
-        assert settings.get_gate("M").duration == 1234
+        settings.set_parameter(alias="0.M", parameter=Parameter.DURATION, value=1234)
+        assert settings.get_gate("M", qubits=0).duration == 1234
 
-        settings.set_parameter(alias="Y", parameter=Parameter.PHASE, value=1234)
-        assert settings.get_gate("Y").phase == 1234
+        settings.set_parameter(alias="0.Y", parameter=Parameter.PHASE, value=1234)
+        assert settings.get_gate("Y", qubits=0).phase == 1234
 
-        settings.set_parameter(alias="I", parameter=Parameter.AMPLITUDE, value=1234)
-        assert settings.get_gate("I").amplitude == 1234
+        settings.set_parameter(alias="0.I", parameter=Parameter.AMPLITUDE, value=1234)
+        assert settings.get_gate("I", qubits=0).amplitude == 1234
 
-        settings.set_parameter(alias="X", parameter=Parameter.DRAG_COEFFICIENT, value=1234)
-        assert settings.get_gate("X").shape["drag_coefficient"] == 1234
+        settings.set_parameter(alias="0.X", parameter=Parameter.DRAG_COEFFICIENT, value=1234)
+        assert settings.get_gate("X", qubits=0).shape["drag_coefficient"] == 1234

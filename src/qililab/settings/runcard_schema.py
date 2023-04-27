@@ -1,4 +1,5 @@
 """PlatformSchema class."""
+import ast
 from dataclasses import dataclass
 from typing import List, Literal
 
@@ -132,11 +133,15 @@ class RuncardSchema:
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
         operations: List[OperationSettings]
-        gates: List[GateSettings]
+        gates: dict[int | tuple[int, int], list[GateSettings]]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = [self.GateSettings(**gate) for gate in self.gates] if self.gates is not None else None
+            self.gates = (
+                {qubit: [self.GateSettings(**gate) for gate in gate_list] for qubit, gate_list in self.gates.items()}
+                if self.gates is not None
+                else None
+            )
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name
@@ -158,27 +163,33 @@ class RuncardSchema:
                     return operation
             raise ValueError(f"Operation {name} not found in platform settings.")
 
-        def get_gate(self, name: str):
-            """Get gate with the given name.
+        def get_gate(self, name: str, qubits: int | tuple[int, int]):
+            """Get gate with the given name for the given qubit(s).
+
             Args:
                 name (str): Name of the gate.
+                qubits (int |  tuple[int, int]): The qubits the gate is acting on.
+
             Raises:
                 ValueError: If no gate is found.
+
             Returns:
                 GateSettings: GateSettings class.
             """
-            for gate in self.gates:
-                if gate.name == name:
-                    return gate
-            raise ValueError(f"Gate {name} not found in settings.")
+            if qubits in self.gates:
+                for gate in self.gates[qubits]:
+                    if gate.name == name:
+                        return gate
+            raise ValueError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
-        def gate_names(self) -> List[str]:
+        def gate_names(self) -> list[str]:
             """PlatformSettings 'gate_names' property.
+
             Returns:
-                List[str]: List of the names of all the defined gates.
+                list[str]: List of the names of all the defined gates.
             """
-            return [gate.name for gate in self.gates]
+            return list({gate.name for gates in self.gates.values() for gate in gates})
 
         def set_parameter(
             self,
@@ -191,7 +202,9 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            gate_settings = self.get_gate(name=alias)
+            qubits_str, name = alias.split(".")
+            qubits = ast.literal_eval(qubits_str)
+            gate_settings = self.get_gate(name=name, qubits=qubits)
             gate_settings.set_parameter(parameter, value)
 
     settings: PlatformSettings

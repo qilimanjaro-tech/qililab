@@ -1,4 +1,5 @@
 """Platform class."""
+import ast
 from dataclasses import asdict
 from typing import Tuple
 
@@ -100,8 +101,11 @@ class Platform:
         if alias is not None:
             if alias == Category.PLATFORM.value:
                 return self.settings
-            if alias in self.gate_names:
-                return self.settings.get_gate(name=alias)
+            if any(gate_name == alias_element for alias_element in alias.split(".") for gate_name in self.gate_names):
+                qubits_str, name = alias.split(".")
+                qubits = ast.literal_eval(qubits_str)
+                if name in self.gate_names:
+                    return self.settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -172,7 +176,9 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if alias in ([Category.PLATFORM.value] + self.gate_names):
+        if alias == Category.PLATFORM.value or any(
+            gate_name == alias_element for alias_element in alias.split(".") for gate_name in self.gate_names
+        ):
             self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)

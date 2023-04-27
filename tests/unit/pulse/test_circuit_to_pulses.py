@@ -27,63 +27,28 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
         "passive_reset_duration": 100,
         "timings_calculation_method": "as_soon_as_possible",
         "operations": [],
-        "gates": [
-            {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
-            {"name": "M", "amplitude": 1, "phase": 0, "duration": 100, "shape": {"name": "rectangular"}},
-            {
-                "name": "X",
-                "amplitude": 0.8,
-                "phase": 0,
-                "duration": 45,
-                "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-            },
-            {
-                "name": "Y",
-                "amplitude": 0.3,
-                "phase": 90,
-                "duration": 40,
-                "shape": {"name": "gaussian", "num_sigmas": 4},
-            },
-        ],
+        "gates": {
+            0: [
+                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+                {"name": "M", "amplitude": 1, "phase": 0, "duration": 100, "shape": {"name": "rectangular"}},
+                {
+                    "name": "X",
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "duration": 45,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                },
+                {
+                    "name": "Y",
+                    "amplitude": 0.3,
+                    "phase": 90,
+                    "duration": 40,
+                    "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+            ]
+        },
     }
     return RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
-
-
-class TestInitialization:
-    """Unit tests for the initialization of a ``CircuitToPulses`` class."""
-
-    def test_gate_settings_are_set_during_instantiation(self, platform_settings: RuncardSchema.PlatformSettings):
-        """Test that during initialization of the ``CircuitToPulses`` class we set the settings of all the hardware
-        gates."""
-        _ = CircuitToPulses(settings=platform_settings)
-
-        for gate in HardwareGateFactory.pulsed_gates.values():
-            if gate.name not in platform_settings.gate_names:
-                # Some gates derive from others (such as RY from Y), thus they have no settings
-                assert gate.settings is None
-            else:
-                settings = platform_settings.get_gate(name=gate.name)
-                assert isinstance(gate.settings, HardwareGate.HardwareGateSettings)
-                assert gate.settings.amplitude == settings.amplitude
-                assert gate.settings.duration == settings.duration
-                assert gate.settings.phase == settings.phase
-                assert isinstance(gate.settings.shape, dict)
-                assert gate.settings.shape == settings.shape
-
-    def test_gate_settings_are_updated_during_instantiation(self, platform_settings: RuncardSchema.PlatformSettings):
-        """Test that gate settings are updated if the ``CircuitToPulses`` class is re-instantiated with
-        different settings."""
-        X = HardwareGateFactory.get(name="X")
-
-        _ = CircuitToPulses(settings=platform_settings)
-
-        assert X.settings.amplitude == 0.8
-
-        platform_settings.set_parameter(alias="X", parameter=Parameter.AMPLITUDE, value=123)
-
-        _ = CircuitToPulses(settings=platform_settings)
-
-        assert X.settings.amplitude == 123
 
 
 @pytest.fixture(name="chip")
@@ -109,6 +74,46 @@ def fixture_chip():
     return Chip(**settings)
 
 
+class TestInitialization:
+    """Unit tests for the initialization of a ``CircuitToPulses`` class."""
+
+    def test_gate_settings_are_set_during_instantiation(
+        self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip
+    ):
+        """Test that during initialization of the ``CircuitToPulses`` class we set the settings of all the hardware
+        gates."""
+        _ = CircuitToPulses(settings=platform_settings)
+
+        for gate in HardwareGateFactory.pulsed_gates.values():
+            if gate.name not in platform_settings.gate_names:
+                # Some gates derive from others (such as RY from Y), thus they have no settings
+                assert gate.settings is None
+            else:
+                for qubit in range(chip.num_qubits):
+                    settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
+                    assert isinstance(gate.settings[qubit], HardwareGate.HardwareGateSettings)
+                    assert gate.settings[qubit].amplitude == settings.amplitude
+                    assert gate.settings[qubit].duration == settings.duration
+                    assert gate.settings[qubit].phase == settings.phase
+                    assert isinstance(gate.settings[qubit].shape, dict)
+                    assert gate.settings[qubit].shape == settings.shape
+
+    def test_gate_settings_are_updated_during_instantiation(self, platform_settings: RuncardSchema.PlatformSettings):
+        """Test that gate settings are updated if the ``CircuitToPulses`` class is re-instantiated with
+        different settings."""
+        X = HardwareGateFactory.get(name="X")
+
+        _ = CircuitToPulses(settings=platform_settings)
+
+        assert X.settings[0].amplitude == 0.8
+
+        platform_settings.set_parameter(alias="0.X", parameter=Parameter.AMPLITUDE, value=123)
+
+        _ = CircuitToPulses(settings=platform_settings)
+
+        assert X.settings[0].amplitude == 123
+
+
 class TestTranslation:
     """Unit tests for the ``translate`` method of the ``CircuitToPulses`` class."""
 
@@ -122,9 +127,9 @@ class TestTranslation:
         circuit.add(M(0))
 
         pulsed_gates = [
-            platform_settings.get_gate(name="X"),
-            platform_settings.get_gate(name="Y"),
-            platform_settings.get_gate(name="M"),
+            platform_settings.get_gate(name="X", qubits=0),
+            platform_settings.get_gate(name="Y", qubits=0),
+            platform_settings.get_gate(name="M", qubits=0),
         ]
 
         pulse_schedules = translator.translate(circuits=[circuit], chip=chip)

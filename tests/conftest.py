@@ -52,7 +52,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="X",
+        alias="0.X",
         parameter=Parameter.DURATION,
         values=np.arange(start=4, stop=1000, step=40),
     )
