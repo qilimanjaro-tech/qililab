@@ -1,7 +1,6 @@
 """ Qblox Bins Acquisitions Result """
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -38,7 +37,7 @@ class QbloxBinsAcquisitions(Acquisitions):
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         acquisitions = self.acquisitions()
         probs_df = pd.DataFrame()

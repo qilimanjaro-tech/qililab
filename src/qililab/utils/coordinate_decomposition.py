@@ -1,10 +1,8 @@
-from typing import Tuple
-
 import numpy as np
 import numpy.typing as npt
 
 
-def product(array: npt.NDArray | list | Tuple, start: int = 0, stop: int = -1):
+def product(array: npt.NDArray | list | tuple, start: int = 0, stop: int = -1):
     """Takes in an array and does the product-of-a-sequence of the elements between `start_index` and `end_index`"""
     if stop == -1:
         stop = len(array)
@@ -12,7 +10,7 @@ def product(array: npt.NDArray | list | Tuple, start: int = 0, stop: int = -1):
     return 1 if stop - start <= 0 else np.prod(array[start:stop])
 
 
-def summation(array: npt.NDArray | list | Tuple, start: int = 0, stop: int = -1):
+def summation(array: npt.NDArray | list | tuple, start: int = 0, stop: int = -1):
     """Takes in an array and does the summation of the elements between `start_index` and `end_index`"""
     if stop == -1:
         stop = len(array)
@@ -20,13 +18,13 @@ def summation(array: npt.NDArray | list | Tuple, start: int = 0, stop: int = -1)
     return 0 if stop - start <= 0 else np.sum(array[start:stop])
 
 
-def _do_target_dimensions_check(new_dimension_shape: npt.NDArray | list | Tuple):
+def _do_target_dimensions_check(new_dimension_shape: npt.NDArray | list | tuple):
     """Checks that all target dimensions should have at least one element."""
     if any(size < 1 for size in new_dimension_shape):
         raise ValueError(f"Sizes of of target array should not be 0 nor negative: {str(new_dimension_shape)}")
 
 
-def _do_size_match_check(original_size: int, new_dimension_shape: npt.NDArray | list | Tuple):
+def _do_size_match_check(original_size: int, new_dimension_shape: npt.NDArray | list | tuple):
     """Checks that sizes of original and target spaces are compatible."""
     new_space_size = np.prod(new_dimension_shape)
     if new_space_size != original_size:
@@ -37,7 +35,7 @@ def _do_size_match_check(original_size: int, new_dimension_shape: npt.NDArray | 
         )
 
 
-def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: npt.NDArray | list | Tuple):
+def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: npt.NDArray | list | tuple):
     """Perform some checks before applying the algorithm"""
     _do_target_dimensions_check(new_dimension_shape=new_dimension_shape)
     _do_size_match_check(original_size=original_size, new_dimension_shape=new_dimension_shape)
@@ -45,9 +43,9 @@ def _coordinate_decomposition_checks(original_size: int, new_dimension_shape: np
 
 def _get_nth_coordinate(
     coord_elem_idx: int,
-    new_indices: npt.NDArray | list | Tuple,
+    new_indices: npt.NDArray | list | tuple,
     original_idx: int,
-    new_dimension_shape: npt.NDArray | list | Tuple,
+    new_dimension_shape: npt.NDArray | list | tuple,
     number_of_dimensions: int,
 ):
     """Builds precisely the i_k by using:
@@ -65,7 +63,7 @@ def _get_nth_coordinate(
 
 
 def coordinate_decompose(
-    new_dimension_shape: npt.NDArray | list | Tuple,
+    new_dimension_shape: npt.NDArray | list | tuple,
     original_size: int,
     original_idx: int,
 ):

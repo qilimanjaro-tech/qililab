@@ -23,7 +23,7 @@ class X(HardwareGate):  # pylint: disable=invalid-name
         """Translate gate into pulse.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the pulse.
+            tuple[float, float]: Amplitude and phase of the pulse.
         """
         return cls.parameters(
             master_amplitude_gate=master_amplitude_gate,

@@ -66,7 +66,7 @@ class HardwareGate(ABC, metaclass=SingletonABC):
         """Translate gate into pulse.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the pulse.
+            tuple[float, float]: Amplitude and phase of the pulse.
         """
 
     @classmethod

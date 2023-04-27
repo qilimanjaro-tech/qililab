@@ -1,6 +1,5 @@
 """Module containing utilities for the tests."""
 import copy
-from typing import Tuple
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -83,15 +82,15 @@ def name_generator(base: str):
 
 
 def compare_pair_of_arrays(
-    pair_a: Tuple[list[float], list[float]],
-    pair_b: Tuple[list[float], list[float]],
+    pair_a: tuple[list[float], list[float]],
+    pair_b: tuple[list[float], list[float]],
     tolerance: float,
 ) -> bool:
     """Compares two pairs of arrays of the same length up to a given tolerance.
 
     Args:
-        pair_a (Tuple[list[float], list[float]]): First pair of arrays.
-        pair_b (Tuple[list[float], list[float]]): Second pair of arrays.
+        pair_a (tuple[list[float], list[float]]): First pair of arrays.
+        pair_b (tuple[list[float], list[float]]): Second pair of arrays.
         tolerance (float): Absolute amount up to which the arrays can differ to be considered equal.
 
     Returns:

@@ -2,7 +2,7 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Sequence, Tuple, cast
+from typing import Sequence, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
@@ -85,7 +85,7 @@ class QbloxModule(AWG):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
         # the sequence has been uploaded or not
-        self.sequences: dict[int, Tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        self.sequences: dict[int, tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
         # TODO: Set this attribute during initialization of the instrument
         self.nshots: int | None = None
         self.repetition_duration: int | None = None
@@ -643,7 +643,7 @@ class QbloxModule(AWG):
         """
         waveforms = Waveforms()
 
-        unique_pulses: list[Tuple[int, PulseShape]] = []
+        unique_pulses: list[tuple[int, PulseShape]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:

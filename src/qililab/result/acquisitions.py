@@ -1,7 +1,7 @@
 """ Acquisitions Result """
 
 from dataclasses import dataclass, field
-from typing import Set, Tuple
+from typing import Set
 
 import pandas as pd
 
@@ -35,6 +35,6 @@ class Acquisitions:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError

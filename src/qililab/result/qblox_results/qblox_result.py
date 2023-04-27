@@ -1,7 +1,6 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -96,21 +95,21 @@ class QbloxResult(Result):
         demod_freq: float = 0.0,
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
-        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[list[float], list[float]]:
+        integration_range: tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> tuple[list[float], list[float]]:
         """Acquisitions Scope
 
         Args:
             demod_freq (float, optional): _description_. Defaults to 0.0.
             demod_phase_offset (float, optional): _description_. Defaults to 0.0.
             integrate (bool, optional): _description_. Defaults to False.
-            integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
+            integration_range (tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
 
         Raises:
             DataUnavailable: Scope data is not available since it was not stored for this acquisition.
 
         Returns:
-            Tuple[list[float], list[float]]
+            tuple[list[float], list[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
@@ -124,11 +123,11 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> list[Tuple[float, float]]:
+    def probabilities(self) -> list[tuple[float, float]]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         return self.qblox_bins_acquisitions.probabilities()
 

@@ -1,6 +1,5 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 from dataclasses import asdict, dataclass
-from typing import Tuple
 
 import numpy as np
 from qibo.gates import Gate, M
@@ -68,7 +67,7 @@ class CircuitToPulses:
 
     def _control_gate_to_pulse_event(
         self, time: dict[int, int], control_gate: Gate, chip: Chip
-    ) -> Tuple[PulseEvent | None, int]:
+    ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse event.
 
         Args:
@@ -136,7 +135,7 @@ class CircuitToPulses:
 
     def _readout_gate_to_pulse_event(
         self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> Tuple[PulseEvent | None, int]:
+    ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
@@ -146,7 +145,7 @@ class CircuitToPulses:
             chip (Chip): chip object.
 
         Returns:
-            Tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
+            tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()

@@ -3,7 +3,6 @@ import itertools
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple
 
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
@@ -225,7 +224,7 @@ class Experiment:
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
                 self._execute_recursive_loops(idx=idx, loops=inner_loops, depth=depth + 1)
 
-    def _update_tqdm_bar(self, loops: list[Loop], values: Tuple[float], pbar):
+    def _update_tqdm_bar(self, loops: list[Loop], values: tuple[float], pbar):
         """Updates TQDM bar"""
         description = []
         for value, loop in zip(values, loops):
@@ -236,7 +235,7 @@ class Experiment:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: list[Loop]):
+    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")

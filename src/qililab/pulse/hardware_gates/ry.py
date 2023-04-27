@@ -25,7 +25,7 @@ class RY(HardwareGate):
         """Translate gate into pulse.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the pulse.
+            tuple[float, float]: Amplitude and phase of the pulse.
         """
         y_params = Y.parameters(
             master_amplitude_gate=master_amplitude_gate,

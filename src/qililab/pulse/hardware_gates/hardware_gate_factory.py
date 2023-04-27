@@ -36,7 +36,7 @@ class HardwareGateFactory:
             gate (Gate): Qibo Gate class.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the translated pulse.
+            tuple[float, float]: Amplitude and phase of the translated pulse.
         """
         for pulsed_gate in cls.pulsed_gates.values():
             if isinstance(gate, pulsed_gate.class_type):
