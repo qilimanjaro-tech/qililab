@@ -921,6 +921,10 @@ class SauronYokogawa:
         PLATFORM.DELAY_BEFORE_READOUT: 40,
         PLATFORM.MASTER_AMPLITUDE_GATE: 1,
         PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "operations": [],
         "gates": [],
     }
 
@@ -942,14 +946,45 @@ class SauronYokogawa:
         ],
     }
 
+    yokogawa_gs200_controller_ramping_dissabled = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentControllerName.YOKOGAWA,
+        RUNCARD.ALIAS: "yokogawa_gs200_controller_ramping_dissabled",
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.15",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.CURRENT_SOURCE.value: "yokogawa_gs200_ramping_dissabled",
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
     yokogawa_gs200 = {
         RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
         RUNCARD.ALIAS: InstrumentName.YOKOGAWA_GS200.value,
         RUNCARD.CATEGORY: Category.CURRENT_SOURCE.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
-        Parameter.CURRENT.value: [0.0, 0.0],
-        Parameter.CURRENT_VALUE.value: 0.0,
+        Parameter.CURRENT.value: [0.0],
+        Parameter.SPAN.value: ["range_max_bi"],
+        Parameter.RAMPING_ENABLED.value: [True],
+        Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
+        Parameter.OUTPUT_STATUS.value: False,
+        "dacs": [0, 1],
+    }
+
+    yokogawa_gs200_ramping_dissabled = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.YOKOGAWA_GS200,
+        RUNCARD.ALIAS: "yokogawa_gs200_ramping_dissabled",
+        RUNCARD.CATEGORY: Category.CURRENT_SOURCE.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.CURRENT.value: [0.0],
         Parameter.SPAN.value: ["range_max_bi"],
         Parameter.RAMPING_ENABLED.value: [False],
         Parameter.RAMPING_RATE.value: [0.0001, 0.0001],
@@ -957,7 +992,7 @@ class SauronYokogawa:
         "dacs": [0, 1],
     }
 
-    instruments = [yokogawa_gs200]
+    instruments = [yokogawa_gs200, yokogawa_gs200_ramping_dissabled]
     instrument_controllers = [yokogawa_gs200_controller]
 
     chip = {

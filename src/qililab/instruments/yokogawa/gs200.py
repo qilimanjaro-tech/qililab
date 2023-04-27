@@ -2,7 +2,6 @@
 Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
-from locale import currency
 
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -29,7 +28,6 @@ class GS200(CurrentSource):
         """Contains the settings of a specific signal generator."""
 
         output_status: bool
-        current_value: float
         source_mode: YokogawaSourceModes = YokogawaSourceModes.CURR
 
     settings: YokogawaGS200Settings
@@ -71,8 +69,8 @@ class GS200(CurrentSource):
             parameter (Parameter): settings parameter to be updated
             value (float): new value
         """
-        if parameter == Parameter.CURRENT_VALUE:
-            self.current_value = value
+        if parameter == Parameter.CURRENT:
+            self.current = value
             return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
@@ -102,18 +100,18 @@ class GS200(CurrentSource):
         return self.settings.output_status
 
     @property
-    def current_value(self):
+    def current(self):
         """Yokogawa gs200 'current_value' property.
 
         Returns:
             float: settings.current_value.
         """
-        return self.settings.current_value
+        return self.settings.current[0]
 
-    @current_value.setter
-    def current_value(self, value):
+    @current.setter
+    def current(self, value: float):
         """Sets the current_value"""
-        self.settings.current_value = value
+        self.settings.current[0] = value
         self.device.ramp_current(value, abs(value), 0)
 
     @Instrument.CheckDeviceInitialized
@@ -149,5 +147,8 @@ class GS200(CurrentSource):
                 The time between finishing one step and starting
                 another in seconds.
         """
-        self.settings.current_value = ramp_to
-        self.device.ramp_current(ramp_to, step, delay)
+        if self.settings.ramping_enabled[0]:
+            self.settings.current[0] = ramp_to
+            self.device.ramp_current(ramp_to, step, delay)
+            return
+        raise ValueError("Ramping is not enabled")
