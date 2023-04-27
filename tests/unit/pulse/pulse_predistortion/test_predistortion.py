@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from qililab.constants import RUNCARD
+from qililab.constants import PULSE, RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_predistortion import BiasTeeCorrection, ExponentialCorrection, PredistortedPulse
 from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
@@ -87,4 +87,39 @@ class TestExponentialCorrection:
                     RUNCARD.NAME,
                     PulseShapeSettingsName.TAU_BIAS_TEE.value,
                 ],
+            ]
+
+    def test_to_dict_predistortion(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
+        """Test for the to_dict method."""
+        for predistorted_pulse in predistorted_pulses:
+            dictionary = predistorted_pulse.pulse.to_dict()
+            dictionary2 = predistorted_pulse.pulse.pulse.to_dict()
+
+            assert dictionary is not None
+            assert dictionary2 is not None
+            assert isinstance(dictionary, dict)
+            assert isinstance(dictionary2, dict)
+            assert list(dictionary.keys()) in [
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_EXPONENTIAL.value,
+                    PulseShapeSettingsName.AMP.value,
+                ],
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_BIAS_TEE.value,
+                ],
+                [PULSE.AMPLITUDE, PULSE.FREQUENCY, PULSE.PHASE, PULSE.DURATION, PULSE.PULSE_SHAPE],
+            ]
+            assert list(dictionary2.keys()) in [
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_EXPONENTIAL.value,
+                    PulseShapeSettingsName.AMP.value,
+                ],
+                [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_BIAS_TEE.value,
+                ],
+                [PULSE.AMPLITUDE, PULSE.FREQUENCY, PULSE.PHASE, PULSE.DURATION, PULSE.PULSE_SHAPE],
             ]
