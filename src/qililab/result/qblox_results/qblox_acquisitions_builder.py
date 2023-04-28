@@ -3,7 +3,7 @@
 
 from typing import List
 
-from qililab.result.qblox_results.bin_data import BinData
+from qililab.result.qblox_results.bins_data import BinsData
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
 from qililab.result.qblox_results.scope_data import ScopeData
@@ -28,7 +28,8 @@ class QbloxAcquisitionsBuilder:
         """Cast dictionaries to their corresponding class."""
         bins_data = [sequencer_acq["bins"] for sequencer_acq in qblox_raw_results]
         return QbloxBinsAcquisitions(
-            integration_lengths=integration_lengths, bins=[BinData(**bin_data) for bin_data in bins_data]
+            integration_lengths=integration_lengths,
+            bins=[BinsData(**sequencer_bins_data) for sequencer_bins_data in bins_data],
         )
 
     @classmethod

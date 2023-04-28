@@ -124,7 +124,7 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> List[Tuple[float, float]]:
+    def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
@@ -148,8 +148,6 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths.item()
-            if isinstance(self.integration_lengths, np.number)
-            else self.integration_lengths,
+            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }
