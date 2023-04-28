@@ -4,7 +4,8 @@ import pytest
 
 from qililab.constants import PULSE, RUNCARD
 from qililab.pulse import Pulse
-from qililab.pulse.pulse_predistortion import BiasTeeCorrection, ExponentialCorrection, PredistortedPulse
+from qililab.pulse.pulse_predistortion import BiasTeeCorrection, ExponentialCorrection
+from qililab.pulse.pulse_predistortion.predistorted_pulse import PredistortedPulse
 from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Waveforms
@@ -72,54 +73,72 @@ class TestExponentialCorrection:
                 assert isinstance(envelope, np.ndarray)
 
     def test_to_dict(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
-        """Test for the to_dict method."""
-        for predistorted_pulse in predistorted_pulses:
-            dictionary = predistorted_pulse.to_dict()
-            assert dictionary is not None
-            assert isinstance(dictionary, dict)
-            assert list(dictionary.keys()) in [
-                [
-                    RUNCARD.NAME,
-                    PulseShapeSettingsName.TAU_EXPONENTIAL.value,
-                    PulseShapeSettingsName.AMP.value,
-                ],
-                [
-                    RUNCARD.NAME,
-                    PulseShapeSettingsName.TAU_BIAS_TEE.value,
-                ],
-            ]
-
-    def test_to_dict_predistortion(self, predistorted_pulses: list[BiasTeeCorrection | ExponentialCorrection]):
         """Test for the .pulse.to_dict method."""
         for predistorted_pulse in predistorted_pulses:
-            dictionary = predistorted_pulse.pulse.to_dict()
+            dictionary = predistorted_pulse.to_dict()
+            dictionary1 = predistorted_pulse.pulse.to_dict()
             dictionary2 = predistorted_pulse.pulse.pulse.to_dict()
 
             assert dictionary is not None
+            assert dictionary1 is not None
             assert dictionary2 is not None
             assert isinstance(dictionary, dict)
+            assert isinstance(dictionary1, dict)
             assert isinstance(dictionary2, dict)
-            assert list(dictionary.keys()) in [
-                [
+            if type(predistorted_pulse) == PredistortedPulse:
+                assert list(dictionary.keys()) == [
+                    PULSE.AMPLITUDE,
+                    PULSE.FREQUENCY,
+                    PULSE.PHASE,
+                    PULSE.DURATION,
+                    PULSE.PULSE_SHAPE,
+                ]
+            if type(predistorted_pulse) == BiasTeeCorrection:
+                assert list(dictionary.keys()) == [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_BIAS_TEE.value,
+                ]
+            if type(predistorted_pulse) == ExponentialCorrection:
+                assert list(dictionary.keys()) == [
                     RUNCARD.NAME,
                     PulseShapeSettingsName.TAU_EXPONENTIAL.value,
                     PulseShapeSettingsName.AMP.value,
-                ],
-                [
+                ]
+            if type(predistorted_pulse.pulse) == PredistortedPulse:
+                assert list(dictionary1.keys()) == [
+                    PULSE.AMPLITUDE,
+                    PULSE.FREQUENCY,
+                    PULSE.PHASE,
+                    PULSE.DURATION,
+                    PULSE.PULSE_SHAPE,
+                ]
+            if type(predistorted_pulse.pulse) == BiasTeeCorrection:
+                assert list(dictionary1.keys()) == [
                     RUNCARD.NAME,
                     PulseShapeSettingsName.TAU_BIAS_TEE.value,
-                ],
-                [PULSE.AMPLITUDE, PULSE.FREQUENCY, PULSE.PHASE, PULSE.DURATION, PULSE.PULSE_SHAPE],
-            ]
-            assert list(dictionary2.keys()) in [
-                [
+                ]
+            if type(predistorted_pulse.pulse) == ExponentialCorrection:
+                assert list(dictionary1.keys()) == [
                     RUNCARD.NAME,
                     PulseShapeSettingsName.TAU_EXPONENTIAL.value,
                     PulseShapeSettingsName.AMP.value,
-                ],
-                [
+                ]
+            if type(predistorted_pulse.pulse.pulse) == PredistortedPulse:
+                assert list(dictionary2.keys()) == [
+                    PULSE.AMPLITUDE,
+                    PULSE.FREQUENCY,
+                    PULSE.PHASE,
+                    PULSE.DURATION,
+                    PULSE.PULSE_SHAPE,
+                ]
+            if type(predistorted_pulse.pulse.pulse) == BiasTeeCorrection:
+                assert list(dictionary2.keys()) == [
                     RUNCARD.NAME,
                     PulseShapeSettingsName.TAU_BIAS_TEE.value,
-                ],
-                [PULSE.AMPLITUDE, PULSE.FREQUENCY, PULSE.PHASE, PULSE.DURATION, PULSE.PULSE_SHAPE],
-            ]
+                ]
+            if type(predistorted_pulse.pulse.pulse) == ExponentialCorrection:
+                assert list(dictionary2.keys()) == [
+                    RUNCARD.NAME,
+                    PulseShapeSettingsName.TAU_EXPONENTIAL.value,
+                    PulseShapeSettingsName.AMP.value,
+                ]
