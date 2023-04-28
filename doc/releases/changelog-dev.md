@@ -120,6 +120,57 @@ This document contains the changes of the current release.
 
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
+- Gate settings can be set for each qubit individually, or tuple of qubits in case of two-qubit gates.
+  Example of updated runcard schema:
+
+  ```
+  gates:
+    0:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+    1:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+    (0,1):
+      - name: CPhase
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+  ```
+
+  To change settings with set_parameter methods, use the alias format "GATE.QUBIT". For example:
+
+  ```python
+  platform.set_parameter(alias="X.0", parameter=Parameter.DURATION, value=40)
+  platform.set_parameter(alias="CPhase.(0,1)", parameter=Parameter.DURATION, value=80)
+  ```
+
+  [#289](https://github.com/qilimanjaro-tech/qililab/issues/289)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -135,6 +186,9 @@ This document contains the changes of the current release.
 
 - `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
+
+- `gate` property of runcard must be updated to provide a list of gate settings for each qubit individually.
+  [#289](https://github.com/qilimanjaro-tech/qililab/issues/289)
 
 ### Deprecations / Removals
 
