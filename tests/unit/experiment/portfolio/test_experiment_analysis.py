@@ -47,7 +47,7 @@ def fixture_experiment_analysis():
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="X",
+        alias="X.0",
         parameter=Parameter.DURATION,
         values=np.linspace(start=START, stop=STOP, num=NUM),
     )
