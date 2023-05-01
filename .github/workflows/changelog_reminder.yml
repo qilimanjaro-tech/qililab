@@ -1,6 +1,6 @@
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [ready_for_review]
 
 name: Changelog Reminder
 
@@ -19,6 +19,5 @@ jobs:
             Please edit [`changelog-dev.md`](/qilimanjaro-tech/qililab/tree/main/doc/releases/changelog-dev.md) with:
             * A one-to-two sentence description of the change. You may include a small working example for new features.
             * A link back to this PR.
-            * Your name (or GitHub username) in the contributors section.
         env:
           GITHUB_TOKEN: "${{ secrets.CHANGELOG_REMINDER_TOKEN }}"
