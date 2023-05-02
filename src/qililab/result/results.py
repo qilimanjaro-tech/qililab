@@ -1,4 +1,5 @@
 """Results class."""
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List, Set
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from qililab.constants import EXPERIMENT, RESULTSDATAFRAME, RUNCARD
+from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
@@ -128,20 +130,22 @@ class Results:
 
         return result_dataframe
 
-    def probabilities(self, mean: bool = True) -> pd.DataFrame:
+    def probabilities(self) -> dict[str, float]:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
         Returns:
             np.ndarray: List of probabilities of each executed loop and sequence.
         """
+        return self.counts().probabilities()
 
-        self._fill_missing_values()
-
-        result_probabilities_df = self._concatenate_probabilities_dataframes()
-        expanded_probabilities_df = self._add_meaningful_probabilities_indices(
-            result_probabilities_dataframe=result_probabilities_df
-        )
-        return self._process_probabilities_dataframe_if_needed(result_dataframe=expanded_probabilities_df, mean=mean)
+    def counts(self) -> Counts:
+        if len(self.results) == 0:
+            return Counts(n_qubits=0)
+        n_qubits = self.results[0].counts().n_qubits
+        all_counts = Counts(n_qubits=n_qubits)
+        for result in self.results:
+            all_counts += result.counts()
+        return all_counts
 
     def to_dataframe(self) -> pd.DataFrame:
         """Returns a single dataframe containing the info for the dataframes of all results. In the process, it adds an

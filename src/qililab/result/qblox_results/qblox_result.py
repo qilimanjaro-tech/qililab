@@ -10,6 +10,7 @@ import pandas as pd
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
+from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
@@ -131,6 +132,9 @@ class QbloxResult(Result):
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         return self.qblox_bins_acquisitions.probabilities()
+
+    def counts(self) -> Counts:
+        return self.qblox_bins_acquisitions.counts()
 
     @property
     def shape(self) -> List[int]:

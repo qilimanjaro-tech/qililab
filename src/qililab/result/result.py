@@ -1,10 +1,12 @@
 """Result class."""
+from collections import Counter
 from dataclasses import asdict, dataclass, field
 from typing import List, Set, Tuple
 
 import pandas as pd
 
 from qililab.constants import RUNCARD
+from qililab.result.counts import Counts
 from qililab.typings.enums import ResultName
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import nested_dict_to_pandas_dataframe
@@ -18,12 +20,15 @@ class Result(FactoryElement):
     name: ResultName = field(init=False)
     data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
 
-    def probabilities(self) -> pd.DataFrame:
+    def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
             Tuple[float, float]: Probabilities of being in the ground and excited state.
         """
+        return self.counts().probabilities()
+
+    def counts(self) -> Counts:
         raise NotImplementedError
 
     def to_dict(self) -> dict:

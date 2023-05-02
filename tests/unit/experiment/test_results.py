@@ -34,4 +34,4 @@ class TestsResults:
         """Tests to_dataframe() serialization of results gives a valid dataframe."""
         results = Results.from_dict(results_dict)
         probabilities_df = results.probabilities()
-        assert isinstance(probabilities_df, pd.DataFrame)
+        assert isinstance(probabilities_df, dict)
