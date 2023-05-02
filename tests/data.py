@@ -122,7 +122,45 @@ class Galadriel:
                         "drag_coefficient": 0,
                     },
                 },
-            ]
+            ],
+            1: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
         },
     }
 

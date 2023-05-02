@@ -45,11 +45,14 @@ class TestPlatform:
         element = platform.get_element(alias="ABC")
         assert element is None
 
-    def test_get_element_with_gate(self, platform: Platform):
+    @pytest.mark.parametrize("qubit", [0, 1])
+    @pytest.mark.parametrize("gate_name", ["I", "M", "X", "Y"])
+    def test_get_element_with_gate(self, platform: Platform, qubit: int, gate_name: str):
         """Test the get_element method with a gate alias."""
-        gate = platform.get_element(alias="M.0")
+        alias = f"{gate_name}.{qubit}"
+        gate = platform.get_element(alias=alias)
         assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
-        assert gate.name == "M"
+        assert gate.name == gate_name
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
