@@ -1,39 +1,52 @@
+import random
+
 import pytest
-from pytest_bdd import given, scenarios, then, when
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from qililab.circuit import Circuit, Operation, X
 
 scenarios("circuit_flow.feature")
 
 
-# @pytest.fixture
-# def circuit() -> Circuit:
-#     return Circuit(2)
+@given(parsers.parse("There is a circuit with {num_qubits:d} qubits"), target_fixture="circuit")
+def there_is_a_circuit(num_qubits):
+    return Circuit(num_qubits=num_qubits)
 
 
-# @pytest.fixture
-# def operation() -> Operation:
-#     return X()
+@given(parsers.parse("There is a circuit with random qubits"), target_fixture="circuit")
+def there_is_a_random_circuit():
+    num_qubits = random.randint(1, 5)
+    return Circuit(num_qubits=num_qubits)
 
 
-@given("There is a circuit", target_fixture="circuit")
-def there_is_a_circuit():
-    return Circuit(2)
+@given("There is the operation <operation_str>", target_fixture="operation")
+@given(parsers.parse("There is the operation {operation_str}"), target_fixture="operation")
+def there_is_an_operation(operation_str):
+    return Operation.parse(operation_str)
 
 
-@given("There is an operation", target_fixture="operation")
-def there_is_an_operation():
-    return X()
+@when(parsers.parse("The user adds the operation to the circuit at qubit {qubit:d}"))
+def add_operation(qubit, circuit, operation):
+    circuit.add(qubit, operation)
 
 
-@when("The user adds the operation to the circuit")
-def add_operation(circuit, operation):
-    circuit.add(0, operation)
+@when(parsers.parse("The user adds the operation to the circuit at a random qubit"), target_fixture="qubit")
+def add_operation_random_qubit(circuit, operation):
+    qubit = random.randint(0, circuit.num_qubits - 1)
+    circuit.add(qubit, operation)
+    return qubit
 
 
-@then("The circuit contains the operation")
-def circuit_contains_operation(circuit, operation):
+@then(parsers.parse("The circuit contains the operation at the same qubit"))
+@then(parsers.parse("The circuit contains the operation at qubit {qubit:d}"))
+def circuit_contains_operation(qubit, circuit, operation):
     assert (
-        any([node.operation.name == operation.name for layer in circuit.get_operation_layers() for node in layer])
+        any(
+            [
+                node.qubits == (qubit,) and node.operation == operation
+                for layer in circuit.get_operation_layers()
+                for node in layer
+            ]
+        )
         is True
     )
