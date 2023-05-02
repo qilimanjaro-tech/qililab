@@ -5,21 +5,8 @@ import pytest
 
 from qililab import build_platform
 from qililab.platform import Platform
-from qililab.pulse import Gaussian, Pulse, PulseEvent
 
 from .data import FluxQubitSimulator
-
-
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
-    """Load PulseEvent.
-
-    Returns:
-        PulseEvent: Instance of the PulseEvent class.
-    """
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="simulated_platform")

@@ -9,12 +9,24 @@ from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instruments import AWG
-from qililab.pulse import PulseBusSchedule, PulseEvent
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
 from tests.utils import mock_instruments
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="execution_manager")
