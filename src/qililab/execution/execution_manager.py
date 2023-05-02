@@ -119,7 +119,8 @@ class ExecutionManager:
                     # get zero prob and converting to a float to plot the value
                     # is a numpy.float32, so it is needed to convert it to float
                     if len(probs) > 0:
-                        zero_prob = float(probs[RESULTSDATAFRAME.P0].iloc[0])
+                        # TODO: Returning probability of |00...0> state.
+                        zero_prob = list(probs.values())[0]
                         plot.send_points(value=zero_prob)
                 with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
                     result_dict = result.to_dict()
