@@ -187,7 +187,7 @@ This document contains the changes of the current release.
 - `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
-- `gate` property of runcard must be updated to provide a list of gate settings for each qubit individually.
+- `gates` property of runcard must be updated to provide a list of gate settings for each qubit individually.
   [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
 
 ### Deprecations / Removals
