@@ -8,13 +8,13 @@ from qililab import build_platform
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
+from .data import FluxQubitSimulator, Galadriel, experiment_params
 from .utils import platform_db
 
 
@@ -22,12 +22,6 @@ from .utils import platform_db
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="pulse_schedule", params=experiment_params)
-def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
-    """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 @pytest.fixture(name="pulse_bus_schedule")

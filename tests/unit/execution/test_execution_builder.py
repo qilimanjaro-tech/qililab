@@ -3,8 +3,8 @@ import pytest
 
 from qililab.execution import EXECUTION_BUILDER
 from qililab.platform import Platform
-from qililab.pulse import PulseEvent, PulseSchedule
-from tests.data import Galadriel
+from qililab.pulse import CircuitToPulses, PulseEvent, PulseSchedule
+from tests.data import Galadriel, circuit, experiment_params
 from tests.utils import platform_db
 
 
@@ -12,6 +12,12 @@ from tests.utils import platform_db
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="pulse_schedule", params=experiment_params)
+def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
+    """Return PulseSchedule instance."""
+    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
 
 
 class TestExecutionBuilder:
