@@ -18,6 +18,7 @@ from qililab.constants import (
     PULSEBUSSCHEDULE,
     PULSEEVENT,
     PULSESCHEDULES,
+    PULSESHAPE,
     RUNCARD,
     SCHEMA,
 )
@@ -160,6 +161,24 @@ class Galadriel:
                         "drag_coefficient": 0,
                     },
                 },
+            ],
+            (0, 1): [
+                {
+                    RUNCARD.NAME: "CPhase",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 90,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+            (1, 0): [
+                {
+                    RUNCARD.NAME: "CPhase",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 90,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
             ],
         },
     }
