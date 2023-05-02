@@ -179,11 +179,8 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if alias == Category.PLATFORM.value:
-            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
-            return
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if regex_match is not None:
+        if alias == Category.PLATFORM.value or regex_match is not None:
             self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
