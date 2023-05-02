@@ -15,10 +15,38 @@ from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings import Parameter
+from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
 from tests.utils import mock_instruments
+
+
+@pytest.fixture(name="nested_experiment", params=experiment_params)
+def fixture_nested_experiment(request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop2 = Loop(
+        alias="platform",
+        parameter=Parameter.DELAY_BEFORE_READOUT,
+        values=np.arange(start=40, stop=100, step=40),
+    )
+    loop = Loop(
+        alias=InstrumentName.QBLOX_QRM.value,
+        parameter=Parameter.GAIN,
+        values=np.linspace(start=0, stop=1, num=2),
+        channel_id=0,
+        loop=loop2,
+    )
+    options = ExperimentOptions(loops=[loop])
+    return Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
 
 
 @pytest.fixture(name="experiment", params=experiment_params)

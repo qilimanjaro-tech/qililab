@@ -1,7 +1,6 @@
 """Pytest configuration fixtures."""
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from qililab import build_platform
@@ -9,39 +8,8 @@ from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseEvent
-from qililab.typings import Parameter
-from qililab.typings.enums import InstrumentName
-from qililab.typings.experiment import ExperimentOptions
-from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, experiment_params
-
-
-@pytest.fixture(name="nested_experiment", params=experiment_params)
-def fixture_nested_experiment(request: pytest.FixtureRequest):
-    """Return Experiment object."""
-    runcard, circuits = request.param  # type: ignore
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    loop2 = Loop(
-        alias="platform",
-        parameter=Parameter.DELAY_BEFORE_READOUT,
-        values=np.arange(start=40, stop=100, step=40),
-    )
-    loop = Loop(
-        alias=InstrumentName.QBLOX_QRM.value,
-        parameter=Parameter.GAIN,
-        values=np.linspace(start=0, stop=1, num=2),
-        channel_id=0,
-        loop=loop2,
-    )
-    options = ExperimentOptions(loops=[loop])
-    return Experiment(
-        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
-    )
+from .data import FluxQubitSimulator
 
 
 @pytest.fixture(name="execution_manager")
