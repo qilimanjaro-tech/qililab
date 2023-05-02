@@ -12,7 +12,7 @@ from .enums import (
     NodeName,
     OperationName,
     Parameter,
-    PulsePredistortionName,
+    PulseDistortionName,
     PulseShapeName,
     ReferenceClock,
     ResultName,

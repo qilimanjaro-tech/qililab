@@ -164,10 +164,17 @@ class PULSESHAPE:
     NAME = "name"
 
 
+class PULSEDISTORTION:
+    """PulsePredecessor attribute names."""
+
+    NAME = "name"
+
+
 class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
+    PULSEDISTORTIONS = "pulse_distortions"
     START_TIME = "start_time"
 
 

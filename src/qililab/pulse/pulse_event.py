@@ -1,10 +1,13 @@
 """PulseEvent class."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+import numpy as np
 
 from qililab.constants import PULSEEVENT
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_distortion import PulseDistortion
 from qililab.utils.waveforms import Waveforms
 
 
@@ -14,6 +17,7 @@ class PulseEvent:
 
     pulse: Pulse
     start_time: int
+    distortions: list[PulseDistortion] | None = None
 
     @property
     def duration(self) -> int:
@@ -42,13 +46,38 @@ class PulseEvent:
         """
         return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time, frequency=frequency)
 
+    def envelope(self, resolution: float = 1.0) -> np.ndarray:
+        """Returns the pulse envelope with the corresponding distortions applied.
+
+        Args:
+            amplitude (float, optional): Amplitude of the envelope. Defaults to None.
+            resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
+
+        Returns:
+            np.ndarray: Envelope.
+        """
+        amplitude = self.pulse.amplitude
+        distortions = self.distortions
+
+        envelope = self.pulse.envelope(amplitude=amplitude, resolution=resolution)
+
+        if distortions is not None:
+            for distortion in distortions:
+                envelope = distortion.apply(envelope)
+
+        return envelope
+
     def to_dict(self):
         """Return dictionary of pulse.
 
         Returns:
             dict: Dictionary describing the pulse.
         """
-        return {PULSEEVENT.PULSE: self.pulse.to_dict(), PULSEEVENT.START_TIME: self.start_time}
+        return {
+            PULSEEVENT.PULSE: self.pulse.to_dict(),
+            PULSEEVENT.START_TIME: self.start_time,
+            PULSEEVENT.PULSEDISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
+        }
 
     @classmethod
     def from_dict(cls, dictionary: dict):
@@ -62,9 +91,10 @@ class PulseEvent:
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
         print(dictionary)
-        pulse = Pulse.from_dict(pulse_settings)
-        start_time = dictionary[PULSEEVENT.START_TIME]
-        return PulseEvent(pulse=pulse, start_time=start_time)
+        pulse: Pulse = Pulse.from_dict(pulse_settings)
+        start_time: int = dictionary[PULSEEVENT.START_TIME]
+        distortions_list: list[PulseDistortion] = []  # TODO: Add distortions list from_dict
+        return PulseEvent(pulse=pulse, start_time=start_time, distortions=distortions_list)
 
     def __lt__(self, other: PulseEvent):
         """Returns True if and only if self.start_time is less than other.start_time

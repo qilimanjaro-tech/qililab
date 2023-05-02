@@ -175,16 +175,31 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
-class PulsePredistortionName(str, Enum):
-    """Pulse predistortion options.
+class PulseDistortionName(str, Enum):
+    """Pulse distortion options.
 
     Args:
-        Enum (str): Available types of PulsePredistortion options:
+        Enum (str): Available types of PulseDistortion options:
         * gaussian
     """
 
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+
+
+class PulseDistortionSettingsName(str, Enum):
+    """Pulse Shape Settings names.
+
+    Args:
+        enum (str): Available types of pulse distortion settings names:
+        * tau_bias_tee
+        * tau_exponential
+        * amp
+    """
+
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    AMP = "amp"
 
 
 class PulseShapeName(str, Enum):
@@ -211,9 +226,6 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
-    TAU_BIAS_TEE = "tau_bias_tee"
-    TAU_EXPONENTIAL = "tau_exponential"
-    AMP = "amp"
 
 
 class NodeName(str, Enum):

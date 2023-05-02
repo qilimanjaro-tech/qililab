@@ -5,37 +5,33 @@ import numpy as np
 from scipy import signal
 
 from qililab.constants import RUNCARD
-from qililab.typings import PulsePredistortionName
-from qililab.typings.enums import PulseShapeSettingsName
+from qililab.typings import PulseDistortionName
+from qililab.typings.enums import PulseDistortionSettingsName
 
-from .predistorted_pulse import PredistortedPulse
+from .pulse_distortion import PulseDistortion
 
 
 @dataclass(unsafe_hash=True, frozen=True, eq=True)
-class ExponentialCorrection(PredistortedPulse):
-    """Exponential decay correction pulse shape."""
+class ExponentialCorrection(PulseDistortion):
+    """Exponential decay distortion."""
 
-    name = PulsePredistortionName.EXPONENTIAL_CORRECTION
+    name = PulseDistortionName.EXPONENTIAL_CORRECTION
     tau_exponential: float
     amp: float
     sampling_rate: float = 1.0
 
-    def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
-        """Distorted square envelope.
+    def apply(self, envelope: np.ndarray) -> np.ndarray:
+        """Mainly to distort square envelopes.
 
         Corrects an exponential decay using a linear IIR filter.
         Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
         Args:
-            duration (int): Duration of the pulse (ns).
-            amplitude (float): Maximum amplitude of the pulse.
+            envelope (ndarray): Square envelopes.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-
-        ysig = self.pulse.envelope(amplitude, resolution)
-
         if self.amp >= 0.0:
             # Parameters
             alpha = 1 - np.exp(-1 / (self.sampling_rate * self.tau_exponential * (1 + self.amp)))
@@ -56,20 +52,20 @@ class ExponentialCorrection(PredistortedPulse):
             b = [b0, b1]
 
         # Filtered signal
-        ycorr = signal.lfilter(b, a, ysig)
-        norm = np.amax(np.abs(ycorr))
-        ycorr = ycorr / norm
+        corr_envelope = signal.lfilter(b, a, envelope)
+        norm = np.amax(np.abs(corr_envelope))
+        corr_envelope = corr_envelope / norm
 
-        return ycorr
+        return corr_envelope
 
     def to_dict(self):
-        """Return dictionary representation of the pulse shape.
+        """Return dictionary representation of the distortion.
 
         Returns:
             dict: Dictionary.
         """
         return {
             RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
-            PulseShapeSettingsName.AMP.value: self.amp,
+            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
+            PulseDistortionSettingsName.AMP.value: self.amp,
         }
