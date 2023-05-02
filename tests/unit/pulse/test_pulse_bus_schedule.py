@@ -5,6 +5,12 @@ import pytest
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 
 
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
+
+
 @pytest.fixture(name="mux_pulse_bus_schedule")
 def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
     """Return multiplexed PulseBusSchedule instance."""

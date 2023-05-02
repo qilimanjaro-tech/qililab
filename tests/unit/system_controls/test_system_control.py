@@ -6,7 +6,7 @@ from qpysequence import Sequence
 
 from qililab.instruments import AWG, Instrument
 from qililab.platform import Platform
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule, PulseEvent
 from qililab.system_control import SystemControl
 from qililab.typings.enums import Category
 from tests.data import Galadriel
@@ -17,6 +17,12 @@ from tests.utils import platform_db
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="system_control")

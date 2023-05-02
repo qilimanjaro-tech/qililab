@@ -6,10 +6,16 @@ import pytest
 from qilisimulator.evolution import Evolution
 
 from qililab.platform import Platform
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule, PulseEvent
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_control import SimulatedSystemControl
 from qililab.typings.enums import SystemControlName
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="simulated_system_control")

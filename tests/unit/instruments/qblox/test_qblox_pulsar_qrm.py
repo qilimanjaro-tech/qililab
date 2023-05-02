@@ -27,6 +27,12 @@ def fixture_platform() -> Platform:
     return platform_db(runcard=Galadriel.runcard)
 
 
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
+
+
 @pytest.fixture(name="pulsar_controller_qrm")
 def fixture_pulsar_controller_qrm(platform: Platform):
     """Return an instance of QbloxPulsarController class"""

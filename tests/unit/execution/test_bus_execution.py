@@ -6,8 +6,14 @@ from qpysequence import Sequence
 
 from qililab.execution import BusExecution, ExecutionManager
 from qililab.instruments import AWG
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import PulseBusSchedule, PulseEvent
 from tests.utils import mock_instruments
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
