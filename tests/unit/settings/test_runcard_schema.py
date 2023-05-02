@@ -106,7 +106,7 @@ class TestPlatformSettings:
 
     def test_gate_names(self):
         """Test the ``gate_names`` method of the PlatformSettings class."""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
         expected_names = list({gate.name for gates in settings.gates.values() for gate in gates})
@@ -115,7 +115,7 @@ class TestPlatformSettings:
 
     def test_set_platform_parameters(self):
         """Test that with ``set_parameter`` we can change all settings of the platform."""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
         settings.set_parameter(parameter=Parameter.DELAY_BEFORE_READOUT, value=1234)
@@ -133,7 +133,7 @@ class TestPlatformSettings:
     @pytest.mark.parametrize("alias", ["X(0)", "X(1)", "M(0)", "M(1)", "M(0,1)", "M(1,0)"])
     def test_set_gate_parameters(self, alias: str):
         """Test that with ``set_parameter`` we can change all settings of the platform's gates."""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
@@ -155,7 +155,7 @@ class TestPlatformSettings:
     @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str):
         """Test that with ``set_parameter`` will raise error when alias has incorrect format"""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
         with pytest.raises(ValueError, match=f"Alias {alias} has incorrect format"):
