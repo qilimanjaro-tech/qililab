@@ -26,6 +26,26 @@ from tests.data import Galadriel, experiment_params, simulated_experiment_circui
 from tests.utils import mock_instruments, platform_db
 
 
+@pytest.fixture(name="experiment", params=experiment_params)
+def fixture_experiment(request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop = Loop(
+        alias="X",
+        parameter=Parameter.DURATION,
+        values=np.arange(start=4, stop=1000, step=40),
+    )
+    options = ExperimentOptions(loops=[loop])
+    return Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
+
+
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
