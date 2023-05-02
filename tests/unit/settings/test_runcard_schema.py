@@ -158,5 +158,5 @@ class TestPlatformSettings:
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        with pytest.raises(ValueError, match=f"Alias {alias} has incorrect format"):
+        with pytest.raises(ValueError, match=re.escape(f"Alias {alias} has incorrect format")):
             settings.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
