@@ -134,11 +134,16 @@ class Results:
         """Probabilities of being in the ground and excited state of all the nested Results classes.
 
         Returns:
-            np.ndarray: List of probabilities of each executed loop and sequence.
+            dict[str, float]: Dictionary containing the probabilities (value) of being measured in each state (key).
         """
         return self.counts().probabilities()
 
     def counts(self) -> Counts:
+        """Returns a Counts object containing the number of measurements (counts) of each state.
+
+        Returns:
+            Counts: Counts object containing the number of measurements (counts) of each state.
+        """
         if len(self.results) == 0:
             return Counts(n_qubits=0)
         n_qubits = self.results[0].counts().n_qubits

@@ -31,4 +31,9 @@ class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
 
     @property
     def used_integration_length(self) -> int:
+        """Final integration length used by the AWG in the integration.
+
+        Returns:
+            int: Length of the weights if weighed acquisition is enabled, configured `integration_length` if disabled.
+        """
         return len(self.weights_path0) if self.weighed_acq_enabled else self.integration_length

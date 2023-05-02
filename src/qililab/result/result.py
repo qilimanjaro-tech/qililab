@@ -29,6 +29,14 @@ class Result(FactoryElement):
         return self.counts().probabilities()
 
     def counts(self) -> Counts:
+        """Returns a Counts object containing the amount of times each state was measured.
+
+        Raises:
+            NotImplementedError: Not implemented.
+
+        Returns:
+            Counts: Counts object containing the amount of times each state was measured.
+        """
         raise NotImplementedError
 
     def to_dict(self) -> dict:

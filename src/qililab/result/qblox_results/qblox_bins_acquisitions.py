@@ -44,7 +44,7 @@ class QbloxBinsAcquisitions(Acquisitions):
         """Return the counts of measurements in each state.
 
         Returns:
-            Counter[str]: Counter with the number of measurements in that state.
+            Counts: Counts object with the number of measurements in that state.
         """
         # TODO: Assuming that all sequencers are used for multiplexed readout then having the same number of bins, where each index corresponds to a simultaneous measurement with a different sequencer.
         # Check that all sequencers have the same number of bins.
@@ -59,4 +59,9 @@ class QbloxBinsAcquisitions(Acquisitions):
         return counts_object
 
     def probabilities(self) -> dict[str, float]:
+        """Return the probabilities of measurements in each state.
+
+        Returns:
+            dict[str, float]: Dictionary with the probabilities of measurements in each state.
+        """
         return self.counts().probabilities()

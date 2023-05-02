@@ -129,11 +129,16 @@ class QbloxResult(Result):
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            dict[str, float]: Dictionary containing the probabilities (value) of each state (key).
         """
         return self.qblox_bins_acquisitions.probabilities()
 
     def counts(self) -> Counts:
+        """Returns a Counts object containing the counts of each state.
+
+        Returns:
+            Counts: Counts object containing the counts of each state.
+        """
         return self.qblox_bins_acquisitions.counts()
 
     @property
