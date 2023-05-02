@@ -13,12 +13,24 @@ from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPu
 from qililab.instruments import QbloxQRM
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, Rectangular
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
 from tests.utils import platform_db
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="platform")

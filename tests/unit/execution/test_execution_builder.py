@@ -3,9 +3,21 @@ import pytest
 
 from qililab.execution import EXECUTION_BUILDER
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseEvent, PulseSchedule
+from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseEvent, PulseSchedule
 from tests.data import Galadriel, circuit, experiment_params
 from tests.utils import platform_db
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="platform")
