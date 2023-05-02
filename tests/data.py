@@ -164,19 +164,19 @@ class Galadriel:
             ],
             (0, 1): [
                 {
-                    RUNCARD.NAME: "CPhase",
+                    RUNCARD.NAME: "M",
                     "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                    "phase": 90,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "phase": 0,
+                    "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 }
             ],
             (1, 0): [
                 {
-                    RUNCARD.NAME: "CPhase",
+                    RUNCARD.NAME: "M",
                     "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                    "phase": 90,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "phase": 0,
+                    "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 }
             ],

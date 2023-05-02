@@ -107,7 +107,7 @@ class TestInitialization:
 
         assert X.settings[0].amplitude == 0.8
 
-        platform_settings.set_parameter(alias="X.0", parameter=Parameter.AMPLITUDE, value=123)
+        platform_settings.set_parameter(alias="X(0)", parameter=Parameter.AMPLITUDE, value=123)
 
         _ = CircuitToPulses(settings=platform_settings)
 

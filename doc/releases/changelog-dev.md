@@ -162,11 +162,11 @@ This document contains the changes of the current release.
           name: rectangular
   ```
 
-  To change settings with set_parameter methods, use the alias format "GATE.QUBIT". For example:
+  To change settings with set_parameter methods, use the alias format "GATE(QUBITs)". For example:
 
   ```python
-  platform.set_parameter(alias="X.0", parameter=Parameter.DURATION, value=40)
-  platform.set_parameter(alias="CPhase.(0,1)", parameter=Parameter.DURATION, value=80)
+  platform.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=40)
+  platform.set_parameter(alias="CPhase(0,1)", parameter=Parameter.DURATION, value=80)
   ```
 
   [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)

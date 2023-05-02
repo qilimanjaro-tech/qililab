@@ -1,10 +1,11 @@
 """PlatformSchema class."""
 import ast
+import re
 from dataclasses import dataclass
 from typing import List, Literal
 
 from qililab.circuit.operations.special_operations.reset import Reset
-from qililab.constants import PLATFORM
+from qililab.constants import GATE_ALIAS_REGEX, PLATFORM
 from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings.enums import (
     Category,
@@ -202,7 +203,11 @@ class RuncardSchema:
             if alias is None or alias == Category.PLATFORM.value:
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
-            name, qubits_str = alias.split(".")
+            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            if regex_match is None:
+                raise ValueError(f"Alias {alias} has incorrect format")
+            name = regex_match.group("gate")
+            qubits_str = regex_match.group("qubits")
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
             gate_settings.set_parameter(parameter, value)

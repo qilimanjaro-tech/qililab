@@ -49,7 +49,7 @@ class TestPlatform:
         """Test the get_element method with a gate alias."""
         for qubit, gate_settings_list in platform.settings.gates.items():
             for gate_settings in gate_settings_list:
-                alias = f"{gate_settings.name}.{qubit}"
+                alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
                 gate = platform.get_element(alias=alias)
                 assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
                 assert gate.name == gate_settings.name

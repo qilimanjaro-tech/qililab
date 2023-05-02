@@ -12,6 +12,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+GATE_ALIAS_REGEX = "(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
 # TODO: Distribute constants over different classes
 
