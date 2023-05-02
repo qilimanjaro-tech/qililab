@@ -14,7 +14,7 @@ from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 
-from .data import FluxQubitSimulator, Galadriel, SauronVNA, circuit, experiment_params
+from .data import FluxQubitSimulator, Galadriel, circuit, experiment_params
 from .utils import platform_db
 
 
@@ -22,12 +22,6 @@ from .utils import platform_db
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="sauron_platform")
-def fixture_sauron_platform() -> Platform:
-    """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
