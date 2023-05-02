@@ -22,8 +22,14 @@ from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from qililab.utils.live_plot import LivePlot
-from tests.data import experiment_params, simulated_experiment_circuit
-from tests.utils import mock_instruments
+from tests.data import Galadriel, experiment_params, simulated_experiment_circuit
+from tests.utils import mock_instruments, platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="connected_experiment")

@@ -4,6 +4,14 @@ import pytest
 from qililab.execution import EXECUTION_BUILDER
 from qililab.platform import Platform
 from qililab.pulse import PulseEvent, PulseSchedule
+from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 class TestExecutionBuilder:

@@ -9,6 +9,14 @@ from qililab.platform import Platform
 from qililab.pulse import PulseBusSchedule
 from qililab.system_control import SystemControl
 from qililab.typings.enums import Category
+from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="system_control")
