@@ -169,7 +169,7 @@ This document contains the changes of the current release.
   platform.set_parameter(alias="CPhase.(0,1)", parameter=Parameter.DURATION, value=80)
   ```
 
-  [#289](https://github.com/qilimanjaro-tech/qililab/issues/289)
+  [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
 
 ### Improvements
 
@@ -188,7 +188,7 @@ This document contains the changes of the current release.
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
 - `gate` property of runcard must be updated to provide a list of gate settings for each qubit individually.
-  [#289](https://github.com/qilimanjaro-tech/qililab/issues/289)
+  [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
 
 ### Deprecations / Removals
 
