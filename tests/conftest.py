@@ -4,23 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from qililab import build_platform
-from qililab.execution.execution_manager import ExecutionManager
-from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseEvent
 
 from .data import FluxQubitSimulator
-
-
-@pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
-    """Load ExecutionManager.
-
-    Returns:
-        ExecutionManager: Instance of the ExecutionManager class.
-    """
-    experiment.build_execution()
-    return experiment.execution_manager  # pylint: disable=protected-access
 
 
 @pytest.fixture(name="pulse")

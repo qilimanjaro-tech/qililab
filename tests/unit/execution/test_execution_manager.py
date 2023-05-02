@@ -22,6 +22,17 @@ from tests.data import experiment_params
 from tests.utils import mock_instruments
 
 
+@pytest.fixture(name="execution_manager")
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+    """Load ExecutionManager.
+
+    Returns:
+        ExecutionManager: Instance of the ExecutionManager class.
+    """
+    experiment.build_execution()
+    return experiment.execution_manager  # pylint: disable=protected-access
+
+
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
     """Return Experiment object."""
