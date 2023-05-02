@@ -235,6 +235,7 @@ class InstrumentName(str, Enum):
         * QCM -> Exactly as Qblox InstrumentType
         * QRM -> Exactly as Qblox InstrumentType
         * rohde_schwarz
+        * erasynth_plus_plus
         * mini_circuits
         * keithley_2600
         * qblox_D5a
@@ -246,6 +247,7 @@ class InstrumentName(str, Enum):
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
     ROHDE_SCHWARZ = "rohde_schwarz"
+    ERASYNTH = "erasynth"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
     QBLOX_D5A = "D5a"
@@ -268,6 +270,7 @@ class InstrumentControllerName(str, Enum):
         * agilent_e5071B
     """
 
+    ERASYNTH = "erasynth"
     QBLOX_PULSAR = "qblox_pulsar"
     QBLOX_CLUSTER = "qblox_cluster"
     ROHDE_SCHWARZ = "rohde_schwarz"
@@ -421,6 +424,7 @@ class InstrumentTypeName(str, Enum):
         * QbloxS4g
     """
 
+    ERA = "EraSynthPlusPlus"
     QBLOX_QCM = "QbloxQCM"
     QBLOX_QRM = "QbloxQRM"
     ROHDE_SCHWARZ = "SGS100A"

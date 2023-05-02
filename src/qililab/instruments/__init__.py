@@ -2,6 +2,7 @@
 from .agilent import E5071B
 from .awg import AWG
 from .awg_analog_digital_converter import AWGAnalogDigitalConverter
+from .era.erasynthplusplus import EraSynthPlusPlus
 from .instrument import Instrument
 from .instruments import Instruments
 from .keithley import Keithley2600
