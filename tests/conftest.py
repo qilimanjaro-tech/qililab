@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from qililab import build_platform
-from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
@@ -16,6 +15,7 @@ from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 
 from .data import FluxQubitSimulator, Galadriel, SauronVNA, circuit, experiment_params
+from .utils import platform_db
 
 
 @pytest.fixture(name="platform")
@@ -141,26 +141,6 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
     ) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             platform = build_platform(name="flux_qubit")
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return platform
-
-
-def platform_db(runcard: dict) -> Platform:
-    """Return PlatformBuilderDB instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name=DEFAULT_PLATFORM_NAME)
-            mock_load.assert_called()
-            mock_open.assert_called()
-    return platform
-
-
-def platform_yaml(runcard: dict) -> Platform:
-    """Return PlatformBuilderYAML instance with loaded platform."""
-    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
-        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
