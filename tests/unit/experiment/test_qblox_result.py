@@ -94,6 +94,35 @@ def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
 
+@pytest.fixture(name="qblox_asymmetric_bins_result")
+def fixture_qblox_asymmetric_bins_result():
+    qblox_raw_results = [
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [0.0, 0.0], "path1": [0.0, 0.0]},
+                "threshold": [0.0, 1.0],
+                "avg_cnt": [1, 1],
+            },
+        },
+        {
+            "scope": {
+                "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+            },
+            "bins": {
+                "integration": {"path0": [0.0, 0.0, 0.0], "path1": [0.0, 0.0, 0.0]},
+                "threshold": [1.0, 0.0, 1.0],
+                "avg_cnt": [1, 1, 1],
+            },
+        },
+    ]
+    return QbloxResult(integration_lengths=[1000, 1000], qblox_raw_results=qblox_raw_results)
+
+
 class TestsQbloxResult:
     """Test `QbloxResults` functionalities."""
 
@@ -228,3 +257,12 @@ class TestsQbloxResult:
             qblox_result_scope.acquisitions_scope(demod_freq=10e6, integrate=True, integration_range=(0, 1000))
         except DataUnavailable as exc:
             assert False, f"acquisitions_scope raised an exception {exc}"
+
+    def test_qblox_result_asymmetric_bins_raise_error(self, qblox_asymmetric_bins_result: QbloxResult):
+        """Tests if IndexError exception is raised when sequencers have different number of bins.
+
+        Args:
+            qblox_asymmetric_bins_result (QbloxResult): QbloxResult instance with different number of bins on each sequencer.
+        """
+        with pytest.raises(IndexError, match="Sequencers must have the same number of bins."):
+            qblox_asymmetric_bins_result.counts()

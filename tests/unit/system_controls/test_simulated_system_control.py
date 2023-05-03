@@ -60,3 +60,14 @@ class TestSimulatedSystemControl:
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""
         assert simulated_system_control.name == SystemControlName.SIMULATED_SYSTEM_CONTROL
+
+    def test_probabilities(
+        self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule
+    ):
+        """Test probabilities method."""
+        simulated_system_control._evo = MagicMock()
+        simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
+        simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
+        simulated_system_control.run()
+        result = simulated_system_control.acquire_result()
+        assert isinstance(result.probabilities(), dict)
