@@ -25,6 +25,16 @@ class PulseShape(FactoryElement):
         """
         raise NotImplementedError
 
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "PulseShape":
+        """Return dictionary representation of the pulse shape.
+        Args:
+            dictionary (dict): Dictionary representation of the PulseShape object.
+        Returns:
+            PulseShape: Loaded class.
+        """
+        raise NotImplementedError
+
     def to_dict(self):
         """Return dictionary representation of the pulse shape.
 

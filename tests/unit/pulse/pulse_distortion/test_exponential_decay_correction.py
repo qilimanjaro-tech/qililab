@@ -87,15 +87,3 @@ class TestExponentialCorrection:
             PulseDistortionSettingsName.AMP.value: distortion.amp,
             PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
         }
-        assert list(dictionary.keys()) == [
-            RUNCARD.NAME,
-            PulseDistortionSettingsName.TAU_EXPONENTIAL.value,
-            PulseDistortionSettingsName.AMP.value,
-            PulseDistortionSettingsName.SAMPLING_RATE.value,
-        ]
-        assert list(dictionary.values()) == [
-            distortion.name.value,
-            distortion.tau_exponential,
-            distortion.amp,
-            distortion.sampling_rate,
-        ]

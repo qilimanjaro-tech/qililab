@@ -1,6 +1,4 @@
 """Pulse class."""
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import numpy as np
@@ -54,7 +52,7 @@ class Pulse:
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> Pulse:
+    def from_dict(cls, dictionary: dict) -> "Pulse":
         """Load Pulse object from dictionary.
 
         Args:

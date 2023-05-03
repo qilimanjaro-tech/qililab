@@ -20,13 +20,12 @@ class BiasTeeCorrection(PulseDistortion):
     sampling_rate: float = 1.0
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """Mainly to distort square envelopes.
+        """Distorts envelopes (originally created to distort square envelopes).
 
-        Corrects an exponential decay using a linear IIR filter.
-        Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
+        Corrects for a bias tee using a linear IIR filter with time constant tau.
 
         Args:
-            envelope (ndarray): Square envelopes.
+            envelope (ndarray): array representing the envelope of a pulse for each time step.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
@@ -46,14 +45,14 @@ class BiasTeeCorrection(PulseDistortion):
         return corr_envelope
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> PulseDistortion:
-        """Load PulseDistortion object from dictionary.
+    def from_dict(cls, dictionary: dict) -> "BiasTeeCorrection":
+        """Load BiasTeeCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the PulseDistortion object.
+            dictionary (dict): Dictionary representation of the BiasTeeCorrection object.
 
         Returns:
-            PulseDistortion: Loaded class.
+            BiasTeeCorrection: Loaded class.
         """
         tau_bias_tee = dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value]
 

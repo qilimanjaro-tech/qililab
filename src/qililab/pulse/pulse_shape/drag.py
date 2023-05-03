@@ -37,8 +37,20 @@ class Drag(PulseShape):
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
         return gaussian + 1j * self.drag_coefficient * (-(time - mu_) / sigma**2) * gaussian
 
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "Drag":
+        """Load Drag object/shape from dictionary.
+        Args:
+            dictionary (dict): Dictionary representation of the Drag object/shape.
+        Returns:
+            Drag: Loaded class.
+        """
+        num_sigmas = dictionary[PulseShapeSettingsName.NUM_SIGMAS.value]
+        drag_coefficient = dictionary[PulseShapeSettingsName.DRAG_COEFFICIENT.value]
+        return cls(num_sigmas=num_sigmas, drag_coefficient=drag_coefficient)
+
     def to_dict(self):
-        """Return dictionary representation of the pulse shape.
+        """Return dictionary representation of the Drag object/shape.
 
         Returns:
             dict: Dictionary.

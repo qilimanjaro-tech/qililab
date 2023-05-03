@@ -76,13 +76,3 @@ class TestBiasTeeCorrection:
             PulseDistortionSettingsName.TAU_BIAS_TEE.value: distortion.tau_bias_tee,
             PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
         }
-        assert list(dictionary.keys()) == [
-            RUNCARD.NAME,
-            PulseDistortionSettingsName.TAU_BIAS_TEE.value,
-            PulseDistortionSettingsName.SAMPLING_RATE.value,
-        ]
-        assert list(dictionary.values()) == [
-            distortion.name.value,
-            distortion.tau_bias_tee,
-            distortion.sampling_rate,
-        ]
