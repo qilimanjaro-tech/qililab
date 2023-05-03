@@ -57,11 +57,3 @@ class QbloxBinsAcquisitions(Acquisitions):
             measurement = "".join(str(bit) for bit in measurement_as_list)
             counts_object.add_measurement(state=measurement)
         return counts_object
-
-    def probabilities(self) -> dict[str, float]:
-        """Return the probabilities of measurements in each state.
-
-        Returns:
-            dict[str, float]: Dictionary with the probabilities of measurements in each state.
-        """
-        return self.counts().probabilities()
