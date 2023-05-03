@@ -37,8 +37,10 @@ class Gaussian(PulseShape):
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":
         """Load Gaussian object/shape from dictionary.
+
         Args:
             dictionary (dict): Dictionary representation of the Gaussian object.
+
         Returns:
             Gaussian: Loaded class.
         """
@@ -47,6 +49,7 @@ class Gaussian(PulseShape):
 
     def to_dict(self):
         """Return dictionary representation of the Gaussian shape.
+
         Returns:
             dict: Dictionary.
         """

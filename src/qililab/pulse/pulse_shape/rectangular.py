@@ -31,8 +31,10 @@ class Rectangular(PulseShape):
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Rectangular":
         """Load Rectangular object/shape from dictionary.
+
         Args:
             dictionary (dict): Dictionary representation of the Rectangular object/shape.
+
         Returns:
             Rectangular: Loaded class.
         """
@@ -40,6 +42,7 @@ class Rectangular(PulseShape):
 
     def to_dict(self):
         """Return dictionary representation of the Rectangular object/shape.
+
         Returns:
             dict: Dictionary.
         """

@@ -40,8 +40,10 @@ class Drag(PulseShape):
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":
         """Load Drag object/shape from dictionary.
+
         Args:
             dictionary (dict): Dictionary representation of the Drag object/shape.
+
         Returns:
             Drag: Loaded class.
         """

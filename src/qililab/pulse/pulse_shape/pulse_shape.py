@@ -28,8 +28,10 @@ class PulseShape(FactoryElement):
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseShape":
         """Return dictionary representation of the pulse shape.
+
         Args:
             dictionary (dict): Dictionary representation of the PulseShape object.
+
         Returns:
             PulseShape: Loaded class.
         """
