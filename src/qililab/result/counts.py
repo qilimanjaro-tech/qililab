@@ -29,6 +29,9 @@ class Counts:
         """
         return self._counter
 
+    def as_dict(self) -> dict[str, int]:
+        return dict(self._counter)
+
     @property
     def total_measurements(self) -> int:
         """Number of total measurements held by the Counts object.
@@ -61,7 +64,7 @@ class Counts:
             raise IndexError(
                 f"Counts object with {counts.n_qubits} can't be added to Counts object with {self.n_qubits} qubits."
             )
-        self._counter += counts.counter
+        self._counter.update(counts.counter)
         self._total_measurements += counts.total_measurements
 
     def probabilities(self) -> dict[str, float]:
@@ -93,7 +96,7 @@ class Counts:
         Returns:
             str: String representation of the Counts object.
         """
-        return self._counter.__str__()
+        return str(self.as_dict())
 
     def __iadd__(self, other: Counts) -> Counts:
         """In-place addition of two Counts objects (self += other). Adds the `other` Counts object to itself.

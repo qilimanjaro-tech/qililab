@@ -362,6 +362,7 @@ class TestAWGQbloxADCSequencer:
     """Unit tests for AWGQbloxADCSequencer class."""
 
     def test_verify_weights(self):
+        """Test the _verify_weights method."""
         mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
         mock_sequencer.weights_path0 = [1.0]
         mock_sequencer.weights_path1 = [1.0, 1.0]
