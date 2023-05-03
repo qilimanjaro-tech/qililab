@@ -3,6 +3,8 @@ import itertools
 import os
 from datetime import datetime
 from pathlib import Path
+from queue import Empty, Queue
+from threading import Thread
 from typing import List, Tuple
 
 from qibo.models.circuit import Circuit
@@ -10,7 +12,7 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import __version__, logger
-from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
+from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RESULTSDATAFRAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
@@ -92,16 +94,56 @@ class Experiment:
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
         num_schedules = self.execution_manager.num_schedules
+
+        data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._asynchronous_data_handling(queue=data_queue)
+
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
         ):
-            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+            self._execute_recursive_loops(loops=self.options.loops, idx=idx, queue=data_queue)
 
         if self.options.remote_save:
             self.remote_save_experiment()
 
         return self.results
+
+    def _asynchronous_data_handling(self, queue: Queue):
+        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
+        and saves them to a file.
+
+        If no items are received in the queue for 5 seconds, the thread will exit.
+
+        Args:
+            queue (Queue): Queue used to store the experiment results.
+            path (Path): Path where the results will be saved.
+            plot (LivePlot, optional): Live plot to send the results to. Defaults to None.
+        """
+
+        def _threaded_function():
+            """Asynchronous thread."""
+            while True:
+                try:
+                    result = queue.get(
+                        timeout=10 * self.execution_manager.program_duration
+                    )  # get new result from the queue
+                except Empty:
+                    return  # exit thread if no results are received for 10 times the duration of the program
+
+                if self._plot is not None:
+                    probs = result.probabilities()
+                    # get zero prob and converting to a float to plot the value
+                    # is a numpy.float32, so it is needed to convert it to float
+                    if len(probs) > 0:
+                        zero_prob = float(probs[RESULTSDATAFRAME.P0].iloc[0])
+                        self._plot.send_points(value=zero_prob)
+                with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                    result_dict = result.to_dict()
+                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+
+        thread = Thread(target=_threaded_function)
+        thread.start()
 
     def compile(self) -> List[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
@@ -180,7 +222,7 @@ class Experiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
+    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, queue: Queue, depth=0):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
@@ -194,14 +236,14 @@ class Experiment:
                 idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
             )
             self.execution_manager.upload()
-            result = self.execution_manager.run(plot=self._plot, path=self.results_path)
+            result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
 
-        self._process_loops(loops=loops, idx=idx, depth=depth)
+        self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: List[Loop], idx: int, depth: int):
+    def _process_loops(self, loops: List[Loop], idx: int, queue: Queue, depth: int):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
@@ -223,7 +265,7 @@ class Experiment:
                 )
                 self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
-                self._execute_recursive_loops(idx=idx, loops=inner_loops, depth=depth + 1)
+                self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
 
     def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
         """Updates TQDM bar"""
