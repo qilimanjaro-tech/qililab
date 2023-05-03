@@ -1,6 +1,4 @@
 """PulseDistortion abstract base class."""
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -24,7 +22,7 @@ class PulseDistortion(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, dictionary: dict) -> PulseDistortion:
+    def from_dict(cls, dictionary: dict) -> "PulseDistortion":
         """Load PulseDistortion object from dictionary.
 
         Args:

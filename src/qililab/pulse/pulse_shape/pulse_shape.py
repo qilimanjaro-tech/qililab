@@ -1,18 +1,19 @@
 """PulseShape abstract base class."""
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
 
 import numpy as np
 
-from qililab.typings import FactoryElement, PulseShapeName
+from qililab.typings import PulseShapeName
 
 
 @dataclass(frozen=True, eq=True)
-class PulseShape(FactoryElement):
+class PulseShape(ABC):
     """Pulse shape abstract base class."""
 
     name: PulseShapeName = field(init=False)
 
+    @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
@@ -23,16 +24,23 @@ class PulseShape(FactoryElement):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        raise NotImplementedError
 
-    def to_dict(self):
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, dictionary: dict) -> "PulseShape":
+        """Return dictionary representation of the pulse shape.
+
+        Args:
+            dictionary (dict): Dictionary representation of the PulseShape object.
+
+        Returns:
+            PulseShape: Loaded class.
+        """
+
+    @abstractmethod
+    def to_dict(self) -> dict:
         """Return dictionary representation of the pulse shape.
 
         Returns:
             dict: Dictionary.
         """
-        dictionary = self.__dict__.copy()
-        for key, value in dictionary.items():
-            if isinstance(value, Enum):
-                dictionary[key] = value.value
-        return dictionary

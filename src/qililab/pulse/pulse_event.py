@@ -1,15 +1,11 @@
 """PulseEvent class."""
-from __future__ import annotations
-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from qililab.constants import PULSEEVENT, RUNCARD
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_distortion import PulseDistortion
-from qililab.pulse.pulse_distortion.bias_tee_correction import BiasTeeCorrection
-from qililab.pulse.pulse_distortion.exponential_decay_correction import ExponentialCorrection
+from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection, PulseDistortion
 from qililab.typings import PulseDistortionName
 from qililab.utils.waveforms import Waveforms
 
@@ -20,7 +16,7 @@ class PulseEvent:
 
     pulse: Pulse
     start_time: int
-    distortions: list[PulseDistortion] | None = None
+    distortions: list[PulseDistortion] = field(default_factory=list)
 
     @property
     def duration(self) -> int:
@@ -61,9 +57,8 @@ class PulseEvent:
         """
         envelope = self.pulse.envelope(amplitude=amplitude, resolution=resolution)
 
-        if self.distortions is not None:
-            for distortion in self.distortions:
-                envelope = distortion.apply(envelope)
+        for distortion in self.distortions:
+            envelope = distortion.apply(envelope)
 
         return envelope
 
@@ -80,7 +75,7 @@ class PulseEvent:
         }
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> PulseEvent:
+    def from_dict(cls, dictionary: dict) -> "PulseEvent":
         """Load PulseEvent object from dictionary.
 
         Args:
@@ -94,16 +89,16 @@ class PulseEvent:
         start_time: int = dictionary[PULSEEVENT.START_TIME]
         distortions_list: list[PulseDistortion] = []
 
-        for distortion in dictionary[PULSEEVENT.PULSE_DISTORTIONS]:
-            if distortion[RUNCARD.NAME] == PulseDistortionName.BIAS_TEE_CORRECTION:
-                distortions_list.append(BiasTeeCorrection.from_dict(distortion))
+        for distortion_dict in dictionary[PULSEEVENT.PULSE_DISTORTIONS]:
+            if distortion_dict[RUNCARD.NAME] == PulseDistortionName.BIAS_TEE_CORRECTION:
+                distortions_list.append(BiasTeeCorrection.from_dict(distortion_dict))
 
-            if distortion[RUNCARD.NAME] == PulseDistortionName.EXPONENTIAL_CORRECTION:
-                distortions_list.append(ExponentialCorrection.from_dict(distortion))
+            if distortion_dict[RUNCARD.NAME] == PulseDistortionName.EXPONENTIAL_CORRECTION:
+                distortions_list.append(ExponentialCorrection.from_dict(distortion_dict))
 
         return cls(pulse=pulse, start_time=start_time, distortions=distortions_list)
 
-    def __lt__(self, other: PulseEvent):
+    def __lt__(self, other: "PulseEvent"):
         """Returns True if and only if self.start_time is less than other.start_time
 
         Args:

@@ -1,13 +1,13 @@
 """Pulse class."""
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import numpy as np
 
 from qililab.constants import PULSE, RUNCARD
+from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.utils import Factory, Waveforms
+from qililab.typings import PulseShapeName
+from qililab.utils import Waveforms
 from qililab.utils.signal_processing import modulate
 
 
@@ -54,7 +54,7 @@ class Pulse:
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> Pulse:
+    def from_dict(cls, dictionary: dict) -> "Pulse":
         """Load Pulse object from dictionary.
 
         Args:
@@ -63,10 +63,29 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
+        pulse_amplitude = dictionary[PULSE.PULSE_SHAPE]
+        pulse_frequency = dictionary[PULSE.FREQUENCY]
+        pulse_phase = dictionary[PULSE.PHASE]
+        pulse_duration = dictionary[PULSE.DURATION]
         pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
-        pulse_shape = Factory.get(name=pulse_shape_dict.pop(RUNCARD.NAME))(**pulse_shape_dict)
-        dictionary[PULSE.PULSE_SHAPE] = pulse_shape
-        return cls(**dictionary)
+        pulse_shape: PulseShape
+
+        if pulse_shape_dict[RUNCARD.NAME] == PulseShapeName.GAUSSIAN:
+            pulse_shape = Gaussian.from_dict(pulse_shape_dict)
+
+        elif pulse_shape_dict[RUNCARD.NAME] == PulseShapeName.DRAG:
+            pulse_shape = Drag.from_dict(pulse_shape_dict)
+
+        elif pulse_shape_dict[RUNCARD.NAME] == PulseShapeName.RECTANGULAR:
+            pulse_shape = Rectangular.from_dict(pulse_shape_dict)
+
+        return cls(
+            amplitude=pulse_amplitude,
+            phase=pulse_phase,
+            duration=pulse_duration,
+            frequency=pulse_frequency,
+            pulse_shape=pulse_shape,
+        )
 
     def to_dict(self):
         """Return dictionary of pulse.
