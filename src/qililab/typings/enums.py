@@ -200,6 +200,7 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_BIAS_TEE = "tau_bias_tee"
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
+    SAMPLING_RATE = "sampling_rate"
 
 
 class PulseShapeName(str, Enum):

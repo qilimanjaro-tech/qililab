@@ -1,4 +1,5 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
+import platform
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
@@ -22,6 +23,7 @@ class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     settings: RuncardSchema.PlatformSettings
+    # platform: RuncardSchema.PlatformSettings
 
     def __post_init__(self):
         """Post init."""

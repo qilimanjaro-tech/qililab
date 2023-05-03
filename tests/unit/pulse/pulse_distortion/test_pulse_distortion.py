@@ -1,6 +1,5 @@
 """Tests for the pulse distortion class."""
 import itertools
-from tokenize import Exponent
 
 import numpy as np
 import pytest
@@ -8,6 +7,7 @@ import pytest
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection
+from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
@@ -33,7 +33,7 @@ def fixture_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
 class TestPulseDistortion:
     """Unit tests checking the PulseDistortion attributes and methods"""
 
-    def test_apply(self, distortion: BiasTeeCorrection | ExponentialCorrection):
+    def test_apply(self, distortion: PulseDistortion):
         """Test for the apply method."""
         # Parameters of the Pulse and its envelope.
         AMPLITUDE = [0.9]
@@ -68,10 +68,24 @@ class TestPulseDistortion:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
 
-    def test_to_dict(self, distortion: BiasTeeCorrection | ExponentialCorrection):
+    def test_from_dict(self, distortion: PulseDistortion):
         """Test for the to_dict method."""
-
         dictionary = distortion.to_dict()
+
+        if isinstance(distortion, BiasTeeCorrection):
+            distortion2 = BiasTeeCorrection.from_dict(dictionary)
+            assert isinstance(distortion2, BiasTeeCorrection)
+
+        if isinstance(distortion, ExponentialCorrection):
+            distortion2 = ExponentialCorrection.from_dict(dictionary)
+            assert isinstance(distortion2, ExponentialCorrection)
+
+        assert distortion2 is not None
+
+    def test_to_dict(self, distortion: PulseDistortion):
+        """Test for the to_dict method."""
+        dictionary = distortion.to_dict()
+
         assert dictionary is not None
         assert isinstance(dictionary, dict)
 
@@ -79,14 +93,17 @@ class TestPulseDistortion:
             assert dictionary == {
                 RUNCARD.NAME: distortion.name.value,
                 PulseDistortionSettingsName.TAU_BIAS_TEE.value: distortion.tau_bias_tee,
+                PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
             }
             assert list(dictionary.keys()) == [
                 RUNCARD.NAME,
                 PulseDistortionSettingsName.TAU_BIAS_TEE.value,
+                PulseDistortionSettingsName.SAMPLING_RATE.value,
             ]
             assert list(dictionary.values()) == [
                 distortion.name.value,
                 distortion.tau_bias_tee,
+                distortion.sampling_rate,
             ]
 
         if isinstance(distortion, ExponentialCorrection):
@@ -94,14 +111,17 @@ class TestPulseDistortion:
                 RUNCARD.NAME: distortion.name.value,
                 PulseDistortionSettingsName.TAU_EXPONENTIAL.value: distortion.tau_exponential,
                 PulseDistortionSettingsName.AMP.value: distortion.amp,
+                PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
             }
             assert list(dictionary.keys()) == [
                 RUNCARD.NAME,
                 PulseDistortionSettingsName.TAU_EXPONENTIAL.value,
                 PulseDistortionSettingsName.AMP.value,
+                PulseDistortionSettingsName.SAMPLING_RATE.value,
             ]
             assert list(dictionary.values()) == [
                 distortion.name.value,
                 distortion.tau_exponential,
                 distortion.amp,
+                distortion.sampling_rate,
             ]

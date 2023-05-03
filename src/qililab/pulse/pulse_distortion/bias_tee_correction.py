@@ -45,7 +45,26 @@ class BiasTeeCorrection(PulseDistortion):
 
         return corr_envelope
 
-    def to_dict(self):
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> PulseDistortion:
+        """Load PulseDistortion object from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the PulseDistortion object.
+
+        Returns:
+            PulseDistortion: Loaded class.
+        """
+        tau_bias_tee = dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value]
+
+        if dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]:
+            sampling_rate = dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]
+        else:
+            sampling_rate = 1.0
+
+        return cls(tau_bias_tee=tau_bias_tee, sampling_rate=sampling_rate)
+
+    def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.
 
         Returns:
@@ -54,4 +73,5 @@ class BiasTeeCorrection(PulseDistortion):
         return {
             RUNCARD.NAME: self.name.value,
             PulseDistortionSettingsName.TAU_BIAS_TEE.value: self.tau_bias_tee,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: self.sampling_rate,
         }

@@ -58,7 +58,27 @@ class ExponentialCorrection(PulseDistortion):
 
         return corr_envelope
 
-    def to_dict(self):
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> PulseDistortion:
+        """Load PulseDistortion object from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the PulseDistortion object.
+
+        Returns:
+            PulseDistortion: Loaded class.
+        """
+        tau_exponential = dictionary[PulseDistortionSettingsName.TAU_EXPONENTIAL.value]
+        amp = dictionary[PulseDistortionSettingsName.AMP.value]
+
+        if dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]:
+            sampling_rate = dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]
+        else:
+            sampling_rate = 1.0
+
+        return cls(tau_exponential=tau_exponential, amp=amp, sampling_rate=sampling_rate)
+
+    def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.
 
         Returns:
@@ -68,4 +88,5 @@ class ExponentialCorrection(PulseDistortion):
             RUNCARD.NAME: self.name.value,
             PulseDistortionSettingsName.TAU_EXPONENTIAL.value: self.tau_exponential,
             PulseDistortionSettingsName.AMP.value: self.amp,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: self.sampling_rate,
         }

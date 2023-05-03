@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 
 import numpy as np
 
@@ -23,8 +22,8 @@ class PulseDistortion(ABC):
             np.ndarray: Distorted pulse envelope.
         """
 
-    # TODO: Implement from_dict method.
     @classmethod
+    @abstractmethod
     def from_dict(cls, dictionary: dict) -> PulseDistortion:
         """Load PulseDistortion object from dictionary.
 
@@ -34,16 +33,11 @@ class PulseDistortion(ABC):
         Returns:
             PulseDistortion: Loaded class.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def to_dict(self) -> dict:
         """Return dictionary of PulseDistortion.
 
         Returns:
             dict: Dictionary describing the pulse distortion.
         """
-        dictionary = self.__dict__.copy()
-        for key, value in dictionary.items():
-            if isinstance(value, Enum):
-                dictionary[key] = value.value
-        return dictionary

@@ -24,6 +24,12 @@ class TestPulseEvent:
         dictionary = pulse_event.to_dict()
         assert isinstance(dictionary, dict)
 
+    def test_from_dict_method(self, pulse_event: PulseEvent):
+        """Test to_dict method"""
+        dictionary = pulse_event.to_dict()
+        pulse_event2 = PulseEvent.from_dict(dictionary)
+        assert isinstance(pulse_event2, PulseEvent)
+
     def test_end_time(self, pulse_event: PulseEvent):
         """Test end_time property."""
         assert pulse_event.duration == pulse_event.end_time - pulse_event.start_time

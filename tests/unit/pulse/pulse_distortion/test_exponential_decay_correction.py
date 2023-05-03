@@ -67,14 +67,35 @@ class TestExponentialCorrection:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
 
+    def test_from_dict(self, distortion: ExponentialCorrection):
+        """Test for the to_dict method."""
+        dictionary = distortion.to_dict()
+        distortion2 = ExponentialCorrection.from_dict(dictionary)
+
+        assert distortion2 is not None
+        assert isinstance(distortion2, ExponentialCorrection)
+
     def test_to_dict(self, distortion: ExponentialCorrection):
         """Test for the to_dict method."""
-
         dictionary = distortion.to_dict()
+
         assert dictionary is not None
         assert isinstance(dictionary, dict)
+        assert dictionary == {
+            RUNCARD.NAME: distortion.name.value,
+            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: distortion.tau_exponential,
+            PulseDistortionSettingsName.AMP.value: distortion.amp,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+        }
         assert list(dictionary.keys()) == [
             RUNCARD.NAME,
             PulseDistortionSettingsName.TAU_EXPONENTIAL.value,
             PulseDistortionSettingsName.AMP.value,
+            PulseDistortionSettingsName.SAMPLING_RATE.value,
+        ]
+        assert list(dictionary.values()) == [
+            distortion.name.value,
+            distortion.tau_exponential,
+            distortion.amp,
+            distortion.sampling_rate,
         ]

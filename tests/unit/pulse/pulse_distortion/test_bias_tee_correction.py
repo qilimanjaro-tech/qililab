@@ -57,13 +57,32 @@ class TestBiasTeeCorrection:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
 
+    def test_from_dict(self, distortion: BiasTeeCorrection):
+        """Test for the to_dict method."""
+        dictionary = distortion.to_dict()
+        distortion2 = BiasTeeCorrection.from_dict(dictionary)
+
+        assert distortion2 is not None
+        assert isinstance(distortion2, BiasTeeCorrection)
+
     def test_to_dict(self, distortion: BiasTeeCorrection):
         """Test for the to_dict method."""
-
         dictionary = distortion.to_dict()
+
         assert dictionary is not None
         assert isinstance(dictionary, dict)
+        assert dictionary == {
+            RUNCARD.NAME: distortion.name.value,
+            PulseDistortionSettingsName.TAU_BIAS_TEE.value: distortion.tau_bias_tee,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+        }
         assert list(dictionary.keys()) == [
             RUNCARD.NAME,
             PulseDistortionSettingsName.TAU_BIAS_TEE.value,
+            PulseDistortionSettingsName.SAMPLING_RATE.value,
+        ]
+        assert list(dictionary.values()) == [
+            distortion.name.value,
+            distortion.tau_bias_tee,
+            distortion.sampling_rate,
         ]

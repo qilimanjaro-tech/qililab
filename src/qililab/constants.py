@@ -174,7 +174,7 @@ class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
-    PULSEDISTORTIONS = "pulse_distortions"
+    PULSE_DISTORTIONS = "pulse_distortions"
     START_TIME = "start_time"
 
 
