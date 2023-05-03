@@ -1,7 +1,7 @@
 """Test for the QbloxQRM class."""
 import copy
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from qpysequence.acquisitions import Acquisitions
@@ -11,6 +11,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQRM
+from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
 from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, Rectangular
@@ -355,3 +356,15 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
+
+
+class TestAWGQbloxADCSequencer:
+    """Unit tests for AWGQbloxADCSequencer class."""
+
+    def test_verify_weights(self):
+        mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
+        mock_sequencer.weights_path0 = [1.0]
+        mock_sequencer.weights_path1 = [1.0, 1.0]
+
+        with pytest.raises(IndexError, match="The length of weights_path0 and weights_path1 must be equal."):
+            AWGQbloxADCSequencer._verify_weights(mock_sequencer)
