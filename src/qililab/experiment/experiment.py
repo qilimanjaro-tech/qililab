@@ -126,7 +126,7 @@ class Experiment:
             while True:
                 try:
                     result = queue.get(
-                        timeout=10 * self.execution_manager.program_duration
+                        timeout=self.hardware_average * self.repetition_duration * 1e-8
                     )  # get new result from the queue
                 except Empty:
                     return  # exit thread if no results are received for 10 times the duration of the program

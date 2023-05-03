@@ -1,4 +1,5 @@
 """Tests for the ExecutionManager class."""
+from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -35,7 +36,6 @@ class TestExecutionManager:
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
 @patch("qililab.experiment.experiment.yaml.safe_dump")
-@patch("qililab.execution.execution_manager.open")
 @patch("qililab.experiment.experiment.open")
 @patch("qililab.experiment.experiment.os.makedirs")
 class TestExecutionManagerPlatform:
@@ -47,7 +47,6 @@ class TestExecutionManagerPlatform:
         mocked_remote_connection: MagicMock,
         mock_makedirs: MagicMock,
         mock_open_0: MagicMock,
-        mock_open_1: MagicMock,
         mock_dump_0: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -76,14 +75,12 @@ class TestExecutionManagerPlatform:
         mock_urllib.request.urlopen.assert_called()
         mock_dump_0.assert_called()
         mock_open_0.assert_called()
-        mock_open_1.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_nested_loop(
         self,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -107,7 +104,6 @@ class TestExecutionManagerPlatform:
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
         mock_dump_1.assert_called()
         mock_open_1.assert_called()
-        mock_open_2.assert_called()
         mock_makedirs.assert_called()
         assert (
             results.ranges
@@ -123,7 +119,6 @@ class TestExecutionManagerPlatform:
         self,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -145,14 +140,12 @@ class TestExecutionManagerPlatform:
         assert isinstance(acquisitions, pd.DataFrame)
         mock_dump_1.assert_called()
         mock_open_1.assert_called()
-        mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_from_dict_experiment(
         self,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -178,14 +171,12 @@ class TestExecutionManagerPlatform:
         assert isinstance(acquisitions, pd.DataFrame)
         mock_dump_1.assert_called()
         mock_open_1.assert_called()
-        mock_open_2.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_keyboard_interrupt(
         self,
         mock_makedirs: MagicMock,
         mock_open_1: MagicMock,
-        mock_open_2: MagicMock,
         mock_dump_1: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
@@ -205,7 +196,6 @@ class TestExecutionManagerPlatform:
             assert isinstance(results, Results)
             mock_open_1.assert_called()
             mock_dump_1.assert_not_called()
-            mock_open_2.assert_not_called()
             mock_makedirs.assert_called()
 
 
@@ -266,10 +256,12 @@ class TestWorkflow:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
                 assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
 
+    @patch("qililab.execution.execution_manager.queue.Queue")
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
         # Test that the run method returns a ``Result`` object
-        result = mocked_execution_manager.run(plot=None, path=None)
+        test_queue: Queue = Queue()
+        result = mocked_execution_manager.run(queue=test_queue)
         assert isinstance(result, QbloxResult)
         assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
 
@@ -287,7 +279,7 @@ class TestWorkflow:
         readout_bus = mocked_execution_manager.readout_buses[0]
         mocked_execution_manager.buses += [readout_bus]  # add extra readout bus
         with patch("qililab.execution.execution_manager.logger") as mocked_logger:
-            mocked_execution_manager.run(plot=None, path=None)
+            mocked_execution_manager.run(queue=Queue())
             mocked_logger.error.assert_called_once_with(
                 "Only One Readout Bus allowed. Reading only from the first one."
             )
@@ -296,4 +288,4 @@ class TestWorkflow:
         """Test that an error is raised when calling ``run`` with no readout buses."""
         mocked_execution_manager.buses = []
         with pytest.raises(ValueError, match="No Results acquired"):
-            mocked_execution_manager.run(plot=None, path=None)
+            mocked_execution_manager.run(queue=Queue())
