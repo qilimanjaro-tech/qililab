@@ -37,6 +37,13 @@ class TestsResults:
         assert isinstance(probabilities, dict)
 
     @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops, results_one_loops_empty])
+    def test_counts_method(self, results_dict: dict):
+        """Tests the counts method gives a valid dictionary."""
+        results = Results.from_dict(results_dict)
+        counts = results.counts()
+        assert isinstance(counts, dict)
+
+    @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops, results_one_loops_empty])
     def test_single_probabilities_method(self, results_dict: dict):
         """Tests the probabilities method for each result inside the Results objects."""
         results = Results.from_dict(results_dict)

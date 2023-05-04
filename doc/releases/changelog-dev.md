@@ -120,8 +120,20 @@ This document contains the changes of the current release.
 
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
-- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_path0` and `weights_path1`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`.
-  [#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
+- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_path0` and `weights_path1`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`. Note: the `integration_length` parameter will be ignored if `weighed_acq_enabled` is set to `true`, and the length of the weights arrays will be used instead.
+
+```yaml
+awg_sequencers:
+  - identifier: 0
+    chip_port_id: 1
+    intermediate_frequency: 1.e+08
+    weights_path0: [0.98, ...]  # <-- new line
+    weights_path1: [0.72, ...]  # <-- new line
+    weighed_acq_enabled: true   # <-- new line
+    threshold: 0.5              # <-- new line
+```
+
+[#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
 
 - `Result`, `Results` and `Acquisitions` classes implement the `counts` method, which returns a dictionary-like object containing the counts of each measurement based in the discretization of the instrument via the `threshold` sequencer parameter. Alternatively, the `probabilities` method can also be used, which returns a normalized version of the same counts object.
 

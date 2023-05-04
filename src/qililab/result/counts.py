@@ -5,20 +5,17 @@ from dataclasses import dataclass, field
 from typing import Counter as TCounter
 
 
-@dataclass
 class Counts:
     """
     Class representing the number of times (counts) each state was measured.
     """
 
-    n_qubits: int
-    _counter: TCounter[str] = field(init=False)
-    _total_measurements: int = field(init=False, default=0)
-
-    def __post_init__(self):
-        """Initialize the Counter object."""
+    def __init__(self, n_qubits: int):
+        self.n_qubits = n_qubits
         n_states = 2**self.n_qubits if self.n_qubits > 0 else 0
+        # Initialize counter with all n-qubits basis elements as keys and 0 as values.
         self._counter = Counter({bin(i)[2:].zfill(self.n_qubits): 0 for i in range(n_states)})
+        self._total_measurements = 0
 
     @property
     def counter(self) -> TCounter[str]:
@@ -29,7 +26,12 @@ class Counts:
         """
         return self._counter
 
-    def as_dict(self) -> dict[str, int]:
+    def as_dict(self):
+        """Dictionary representation of the Counts object
+
+        Returns:
+            dict[str, int]: Dictionary containing the number of measurements (value) at each state (key).
+        """
         return dict(self._counter)
 
     @property

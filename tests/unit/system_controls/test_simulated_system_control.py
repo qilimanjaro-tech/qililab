@@ -70,4 +70,4 @@ class TestSimulatedSystemControl:
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.run()
         result = simulated_system_control.acquire_result()
-        assert isinstance(result.probabilities(), dict)
+        assert result.probabilities() == {}

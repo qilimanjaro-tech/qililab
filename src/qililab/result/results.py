@@ -59,9 +59,17 @@ class Results:
         Returns:
             dict[str, float]: Dictionary containing the probabilities (value) of being measured in each state (key).
         """
-        return self.counts().probabilities()
+        return self._counts_object().probabilities()
 
-    def counts(self) -> Counts:
+    def counts(self):
+        """Returns the counts dictionary containing the number of measurements (counts) of each state.
+
+        Returns:
+            dict[str, int]: Dictionary containing the number of measurements (value) in each state (key).
+        """
+        return self._counts_object().as_dict()
+
+    def _counts_object(self) -> Counts:
         """Returns a Counts object containing the number of measurements (counts) of each state.
 
         Returns:
