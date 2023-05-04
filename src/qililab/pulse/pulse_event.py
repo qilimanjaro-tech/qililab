@@ -89,12 +89,13 @@ class PulseEvent:
         start_time: int = dictionary[PULSEEVENT.START_TIME]
         distortions_list: list[PulseDistortion] = []
 
-        for distortion_dict in dictionary[PULSEEVENT.PULSE_DISTORTIONS]:
-            if distortion_dict[RUNCARD.NAME] == PulseDistortionName.BIAS_TEE_CORRECTION:
-                distortions_list.append(BiasTeeCorrection.from_dict(distortion_dict))
+        if PULSEEVENT.PULSE_DISTORTIONS in dictionary:
+            for distortion_dict in dictionary[PULSEEVENT.PULSE_DISTORTIONS]:
+                if distortion_dict[RUNCARD.NAME] == PulseDistortionName.BIAS_TEE_CORRECTION:
+                    distortions_list.append(BiasTeeCorrection.from_dict(distortion_dict))
 
-            if distortion_dict[RUNCARD.NAME] == PulseDistortionName.EXPONENTIAL_CORRECTION:
-                distortions_list.append(ExponentialCorrection.from_dict(distortion_dict))
+                if distortion_dict[RUNCARD.NAME] == PulseDistortionName.EXPONENTIAL_CORRECTION:
+                    distortions_list.append(ExponentialCorrection.from_dict(distortion_dict))
 
         return cls(pulse=pulse, start_time=start_time, distortions=distortions_list)
 
