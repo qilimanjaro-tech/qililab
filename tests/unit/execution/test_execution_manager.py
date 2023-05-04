@@ -256,13 +256,13 @@ class TestWorkflow:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
                 assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
 
-    @patch("qililab.execution.execution_manager.queue.Queue")
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
         # Test that the run method returns a ``Result`` object
-        test_queue: Queue = Queue()
-        result = mocked_execution_manager.run(queue=test_queue)
+        mocked_queue = MagicMock()
+        result = mocked_execution_manager.run(queue=mocked_queue)
         assert isinstance(result, QbloxResult)
+        # mocked_queue.put_nowait.assert_called_with(result)
         assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
 
         # Make sure the mocked devices were called
