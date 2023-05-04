@@ -117,8 +117,6 @@ class Experiment:
 
         Args:
             queue (Queue): Queue used to store the experiment results.
-            path (Path): Path where the results will be saved.
-            plot (LivePlot, optional): Live plot to send the results to. Defaults to None.
         """
 
         def _threaded_function():

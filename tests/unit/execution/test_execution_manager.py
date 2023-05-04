@@ -46,8 +46,8 @@ class TestExecutionManagerPlatform:
         self,
         mocked_remote_connection: MagicMock,
         mock_makedirs: MagicMock,
-        mock_open_0: MagicMock,
-        mock_dump_0: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -73,15 +73,15 @@ class TestExecutionManagerPlatform:
 
         mock_urllib.request.Request.assert_called()
         mock_urllib.request.urlopen.assert_called()
-        mock_dump_0.assert_called()
-        mock_open_0.assert_called()
+        mock_dump.assert_called()
+        mock_open.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_nested_loop(
         self,
         mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump_1: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -102,8 +102,8 @@ class TestExecutionManagerPlatform:
         probabilities = results.probabilities(mean=True)
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        mock_dump_1.assert_called()
-        mock_open_1.assert_called()
+        mock_dump.assert_called()
+        mock_open.assert_called()
         mock_makedirs.assert_called()
         assert (
             results.ranges
@@ -118,8 +118,8 @@ class TestExecutionManagerPlatform:
     def test_execute_method_with_instruments(
         self,
         mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump_1: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -138,15 +138,15 @@ class TestExecutionManagerPlatform:
         acquisitions = results.acquisitions()
         assert isinstance(probabilities, pd.DataFrame)
         assert isinstance(acquisitions, pd.DataFrame)
-        mock_dump_1.assert_called()
-        mock_open_1.assert_called()
+        mock_dump.assert_called()
+        mock_open.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_from_dict_experiment(
         self,
         mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump_1: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -169,15 +169,15 @@ class TestExecutionManagerPlatform:
         acquisitions = results.acquisitions()
         assert isinstance(probabilities, pd.DataFrame)
         assert isinstance(acquisitions, pd.DataFrame)
-        mock_dump_1.assert_called()
-        mock_open_1.assert_called()
+        mock_dump.assert_called()
+        mock_open.assert_called()
         mock_makedirs.assert_called()
 
     def test_execute_method_with_keyboard_interrupt(
         self,
         mock_makedirs: MagicMock,
-        mock_open_1: MagicMock,
-        mock_dump_1: MagicMock,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
@@ -194,8 +194,8 @@ class TestExecutionManagerPlatform:
             mock_rs.assert_called()
             mock_pulsar.assert_called()
             assert isinstance(results, Results)
-            mock_open_1.assert_called()
-            mock_dump_1.assert_not_called()
+            mock_open.assert_called()
+            mock_dump.assert_not_called()
             mock_makedirs.assert_called()
 
 
