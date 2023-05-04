@@ -123,7 +123,7 @@ This document contains the changes of the current release.
 - Gate settings can be set for each qubit individually, or tuple of qubits in case of two-qubit gates.
   Example of updated runcard schema:
 
-  ```
+  ```yaml
   gates:
     0:
       - name: M
