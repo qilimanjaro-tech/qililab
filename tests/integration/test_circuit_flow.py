@@ -39,7 +39,7 @@ def add_operation_random_qubit(circuit, operation):
 
 @then(parsers.parse("The circuit contains the operation at the same qubit"))
 @then(parsers.parse("The circuit contains the operation at qubit {qubit:d}"))
-def circuit_contains_operation(qubit, circuit, operation):
+def circuit_contains_operation(circuit, operation, qubit):
     assert (
         any(
             [
@@ -50,3 +50,10 @@ def circuit_contains_operation(qubit, circuit, operation):
         )
         is True
     )
+
+
+@then("The circuit has all transpilation flags set to False")
+def circuit_has_transpilation_flags_set_to(circuit: Circuit):
+    assert circuit.has_timings_calculated is False
+    assert circuit.has_special_operations_removed is False
+    assert circuit.has_transpiled_to_pulses is False

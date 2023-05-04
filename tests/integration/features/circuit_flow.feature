@@ -11,6 +11,7 @@ Scenario Outline: Random operation is added to a random circuit
     And There is the operation <operation_str>
     When The user adds the operation to the circuit at a random qubit
     Then The circuit contains the operation at the same qubit
+    And The circuit has all transpilation flags set to False
 
     Examples: Operation
         | operation_str             |

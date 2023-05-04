@@ -1,8 +1,11 @@
 """Tests for the Pulse class."""
+import random
+
 import numpy as np
 import pytest
 
-from qililab.pulse import Pulse
+from qililab.constants import PULSE
+from qililab.pulse import Drag, Gaussian, Pulse, PulseShape, Rectangular
 from qililab.utils import Waveforms
 
 
