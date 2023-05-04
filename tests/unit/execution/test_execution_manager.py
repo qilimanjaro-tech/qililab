@@ -262,7 +262,7 @@ class TestWorkflow:
         mocked_queue = MagicMock()
         result = mocked_execution_manager.run(queue=mocked_queue)
         assert isinstance(result, QbloxResult)
-        # mocked_queue.put_nowait.assert_called_with(result)
+        mocked_queue.put_nowait.assert_called_with(item=result)
         assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
 
         # Make sure the mocked devices were called

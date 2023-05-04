@@ -64,7 +64,7 @@ class TestAttributes:
             for pulse_schedule in experiment.pulse_schedules:
                 assert isinstance(pulse_schedule, PulseSchedule)
         assert isinstance(experiment.options, ExperimentOptions)
-        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "execution_manager")
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
@@ -121,7 +121,7 @@ class TestMethods:
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
         # Check that attributes don't exist
-        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "execution_manager")
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
