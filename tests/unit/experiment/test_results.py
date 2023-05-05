@@ -19,7 +19,8 @@ class TestsResults:
     @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops])
     def test_to_dict_method(self, results_dict: dict):
         """Tests to_dict() serialization of results gives the intended dictionary."""
-        results_final = Results.from_dict(results_dict).to_dict()
+        results = Results.from_dict(results_dict)
+        results_final = results.to_dict()
         assert results_final == results_dict
 
     @pytest.mark.parametrize("results_dict", [results_one_loops, results_two_loops, results_one_loops_empty])

@@ -7,13 +7,14 @@ from queue import Empty, Queue
 from threading import Thread
 from typing import List, Tuple
 
+import numpy as np
 from qibo.models.circuit import Circuit
 from sympy import Q
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import __version__, logger
-from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RESULTSDATAFRAME, RUNCARD
+from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
@@ -34,7 +35,7 @@ class Experiment:
     execution_manager: ExecutionManager
     results: Results
     results_path: Path
-    _plot: LivePlot
+    _plot: LivePlot | None
     _remote_id: int
 
     def __init__(
@@ -58,9 +59,7 @@ class Experiment:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed), creates the ``ExecutionManager`` class,
-        and generates the live plotting.
-        """
+        """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
@@ -70,6 +69,7 @@ class Experiment:
 
     def run(self) -> Results:
         """This method is responsible for:
+        * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
@@ -132,7 +132,7 @@ class Experiment:
                     acq = result.acquisitions()
                     i = np.array(acq["i"])
                     q = np.array(acq["q"])
-                    amplitude = 20 * np.log10(np.abs(i + 1j*q)).astype(np.float64)
+                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                     self._plot.send_points(value=amplitude[0])
                 with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                     result_dict = result.to_dict()
