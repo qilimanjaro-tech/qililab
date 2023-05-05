@@ -13,11 +13,12 @@ from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
+from tests.data import Galadriel
 
 from ...conftest import platform_db, platform_yaml
 
 
-@pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])
+@pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
 

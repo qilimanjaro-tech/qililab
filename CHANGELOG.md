@@ -47,6 +47,13 @@
 - Added support for setting output offsets of a qblox module.
   [#199](https://github.com/qilimanjaro-tech/qililab/pull/199)
 
+- Added gate to native gate transpiler. Contains method `translate_circuit` which translates a qibo.Circuit to a qibo.Circuit with
+  native gates (Drag pulses, C-phase), virtual Zs and measurement gates only.
+  [#244](https://github.com/qilimanjaro-tech/qililab/pull/244)
+
+- Added optimizer for the native gate transpiler. Shifts all Z, RZ gates to the left and removes them before measurement.
+  [#269](https://github.com/qilimanjaro-tech/qililab/pull/269)
+
 ### Improvements
 
 - Added support for the execution of pulses with durations that are not multiples of 4. For this, a new

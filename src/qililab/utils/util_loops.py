@@ -10,12 +10,12 @@ def _find_minimum_range_from_loops(loops: List[Loop] | None):
     """find minimum range from same level loops"""
     if loops is None or len(loops) <= 0:
         return np.array([], dtype=object)
-    minimum_range = loops[0].range
-    minimum_range_length = len(loops[0].range)
+    minimum_range = loops[0].values
+    minimum_range_length = len(loops[0].values)
     for loop in loops:
-        if len(loop.range) < minimum_range_length:
-            minimum_range = loop.range
-            minimum_range_length = len(loop.range)
+        if len(loop.values) < minimum_range_length:
+            minimum_range = loop.values
+            minimum_range_length = len(loop.values)
     return minimum_range
 
 
