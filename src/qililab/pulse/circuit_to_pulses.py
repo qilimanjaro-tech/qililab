@@ -1,5 +1,4 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
-import platform
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
