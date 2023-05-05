@@ -54,7 +54,7 @@ class Loop:
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
         if isinstance(self.values, list):
-            self.values = np.array(self.values)
+            self.values = np.array(self.values, dtype=object)
 
     @property
     def all_values(self) -> np.ndarray:
@@ -131,3 +131,13 @@ class Loop:
     def num(self):
         """returns 'num' options property."""
         return len(self.values)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Loop):
+            return False
+        return (
+            self.alias == other.alias
+            and self.parameter == other.parameter
+            and self.loop == other.loop
+            and (self.values == other.values).all()
+        )
