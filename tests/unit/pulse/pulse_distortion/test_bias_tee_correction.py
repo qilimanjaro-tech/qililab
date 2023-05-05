@@ -60,10 +60,14 @@ class TestBiasTeeCorrection:
     def test_from_dict(self, distortion: BiasTeeCorrection):
         """Test for the to_dict method."""
         dictionary = distortion.to_dict()
-        distortion2 = BiasTeeCorrection.from_dict(dictionary)
+        distortions = [BiasTeeCorrection.from_dict(dictionary)]
 
-        assert distortion2 is not None
-        assert isinstance(distortion2, BiasTeeCorrection)
+        dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
+        distortions.append(BiasTeeCorrection.from_dict(dictionary))
+
+        for distortion in distortions:
+            assert distortion is not None
+            assert isinstance(distortion, BiasTeeCorrection)
 
     def test_to_dict(self, distortion: BiasTeeCorrection):
         """Test for the to_dict method."""

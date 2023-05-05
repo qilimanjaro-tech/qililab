@@ -44,8 +44,9 @@ class Gaussian(PulseShape):
         Returns:
             Gaussian: Loaded class.
         """
-        dictionary.pop(RUNCARD.NAME)
-        return cls(**dictionary)
+        local_dictionary = dictionary.copy()
+        local_dictionary.pop(RUNCARD.NAME)
+        return cls(**local_dictionary)
 
     def to_dict(self):
         """Return dictionary representation of the Gaussian object/shape.
