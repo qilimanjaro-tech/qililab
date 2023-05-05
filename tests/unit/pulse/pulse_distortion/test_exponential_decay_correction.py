@@ -70,10 +70,22 @@ class TestExponentialCorrection:
     def test_from_dict(self, distortion: ExponentialCorrection):
         """Test for the to_dict method."""
         dictionary = distortion.to_dict()
-        distortion2 = ExponentialCorrection.from_dict(dictionary)
+        distortions = [ExponentialCorrection.from_dict(dictionary)]
 
-        assert distortion2 is not None
-        assert isinstance(distortion2, ExponentialCorrection)
+        dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
+        distortions.append(ExponentialCorrection.from_dict(dictionary))
+
+        dictionary.pop(RUNCARD.NAME)
+        distortions.append(ExponentialCorrection.from_dict(dictionary))
+
+        dictionary[PulseDistortionSettingsName.TAU_EXPONENTIAL.value] = 0.5
+        dictionary[PulseDistortionSettingsName.AMP.value] = 1.2
+        dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
+        distortions.append(ExponentialCorrection.from_dict(dictionary))
+
+        for distortion in distortions:
+            assert distortion is not None
+            assert isinstance(distortion, ExponentialCorrection)
 
     def test_to_dict(self, distortion: ExponentialCorrection):
         """Test for the to_dict method."""

@@ -68,6 +68,10 @@ class TestBiasTeeCorrection:
         dictionary.pop(RUNCARD.NAME)
         distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
+        dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value] = 0.5
+        dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
+        distortions.append(BiasTeeCorrection.from_dict(dictionary))
+
         for distortion in distortions:
             assert distortion is not None
             assert isinstance(distortion, BiasTeeCorrection)
