@@ -133,6 +133,7 @@ class Loop:
         return len(self.values)
 
     def __eq__(self, other: object) -> bool:
+        """Equality operator"""
         if not isinstance(other, Loop):
             return False
         return (
