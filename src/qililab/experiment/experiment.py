@@ -8,6 +8,7 @@ from threading import Thread
 from typing import List, Tuple
 
 from qibo.models.circuit import Circuit
+from sympy import Q
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
@@ -24,7 +25,7 @@ from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
-
+import numpy as np
 
 class Experiment:
     """Experiment class"""
@@ -128,13 +129,11 @@ class Experiment:
                     return  # exit thread if no results are received for 10 times the duration of the program
 
                 if self._plot is not None:
-                    probs = result.probabilities()
-                    # get zero prob and converting to a float to plot the value
-                    # is a numpy.float32, so it is needed to convert it to float
-                    if len(probs) > 0:
-                        # TODO: Returning only the probability of |00...0> state.
-                        zero_prob = list(probs.values())[0]
-                        self._plot.send_points(value=zero_prob)
+                    acq = result.acquisitions()
+                    i = np.array(acq["i"])
+                    q = np.array(acq["q"])
+                    amplitude = 20 * np.log10(np.abs(i + 1j*q)).astype(np.float64)
+                    self._plot.send_points(value=amplitude[0])
                 with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                     result_dict = result.to_dict()
                     yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
