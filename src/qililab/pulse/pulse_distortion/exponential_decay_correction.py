@@ -70,11 +70,9 @@ class ExponentialCorrection(PulseDistortion):
         Returns:
             ExponentialCorrection: Loaded class.
         """
-        if not dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]:
-            dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 1.0
-
-        dictionary.pop(RUNCARD.NAME)
-        return cls(**dictionary)
+        local_dictionary = dictionary.copy()
+        local_dictionary.pop(RUNCARD.NAME)
+        return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.
