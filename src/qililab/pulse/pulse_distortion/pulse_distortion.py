@@ -1,13 +1,17 @@
 """PulseDistortion abstract base class."""
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from abc import abstractmethod
+from dataclasses import dataclass, field
 
 import numpy as np
 
+from qililab.typings import FactoryElement, PulseDistortionName
+
 
 @dataclass(frozen=True, eq=True)
-class PulseDistortion(ABC):
+class PulseDistortion(FactoryElement):
     """Base class for the pulse distortions."""
+
+    name: PulseDistortionName = field(init=False)
 
     @abstractmethod
     def apply(self, envelope: np.ndarray) -> np.ndarray:

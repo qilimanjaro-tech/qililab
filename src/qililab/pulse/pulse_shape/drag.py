@@ -47,9 +47,8 @@ class Drag(PulseShape):
         Returns:
             Drag: Loaded class.
         """
-        num_sigmas = dictionary[PulseShapeSettingsName.NUM_SIGMAS.value]
-        drag_coefficient = dictionary[PulseShapeSettingsName.DRAG_COEFFICIENT.value]
-        return cls(num_sigmas=num_sigmas, drag_coefficient=drag_coefficient)
+        dictionary.pop(RUNCARD.NAME)
+        return cls(**dictionary)
 
     def to_dict(self):
         """Return dictionary representation of the Drag object/shape.

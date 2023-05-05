@@ -7,11 +7,13 @@ from scipy import signal
 from qililab.constants import RUNCARD
 from qililab.typings import PulseDistortionName
 from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.utils import Factory
 
 from .pulse_distortion import PulseDistortion
 
 
-@dataclass(unsafe_hash=True, frozen=True, eq=True)
+@Factory.register
+@dataclass(frozen=True, eq=True)
 class BiasTeeCorrection(PulseDistortion):
     """Bias tee distortion."""
 
@@ -30,7 +32,6 @@ class BiasTeeCorrection(PulseDistortion):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-
         # Parameters
         k = 2 * self.tau_bias_tee * self.sampling_rate
 
@@ -54,14 +55,11 @@ class BiasTeeCorrection(PulseDistortion):
         Returns:
             BiasTeeCorrection: Loaded class.
         """
-        tau_bias_tee = dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value]
+        if not dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]:
+            dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 1.0
 
-        if dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]:
-            sampling_rate = dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value]
-        else:
-            sampling_rate = 1.0
-
-        return cls(tau_bias_tee=tau_bias_tee, sampling_rate=sampling_rate)
+        dictionary.pop(RUNCARD.NAME)
+        return cls(**dictionary)
 
     def to_dict(self) -> dict:
         """Return dictionary representation of the distortion.

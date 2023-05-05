@@ -62,8 +62,8 @@ class Pulse:
             Pulse: Loaded class.
         """
         pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
-        pulse_shape = Factory.get(name=pulse_shape_dict.pop(RUNCARD.NAME))(**pulse_shape_dict)
-        dictionary[PULSE.PULSE_SHAPE] = pulse_shape
+        dictionary[PULSE.PULSE_SHAPE] = Factory.get(name=pulse_shape_dict[RUNCARD.NAME]).from_dict(pulse_shape_dict)
+
         return cls(**dictionary)
 
     def to_dict(self):

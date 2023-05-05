@@ -1,6 +1,6 @@
 """PulseShape abstract base class."""
+from abc import abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
 
 import numpy as np
 
@@ -13,6 +13,7 @@ class PulseShape(FactoryElement):
 
     name: PulseShapeName = field(init=False)
 
+    @abstractmethod
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0) -> np.ndarray:
         """Compute the amplitudes of the pulse shape envelope.
 
@@ -23,9 +24,9 @@ class PulseShape(FactoryElement):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def from_dict(cls, dictionary: dict) -> "PulseShape":
         """Return dictionary representation of the pulse shape.
 
@@ -35,16 +36,11 @@ class PulseShape(FactoryElement):
         Returns:
             PulseShape: Loaded class.
         """
-        raise NotImplementedError
 
-    def to_dict(self):
+    @abstractmethod
+    def to_dict(self) -> dict:
         """Return dictionary representation of the pulse shape.
 
         Returns:
             dict: Dictionary.
         """
-        dictionary = self.__dict__.copy()
-        for key, value in dictionary.items():
-            if isinstance(value, Enum):
-                dictionary[key] = value.value
-        return dictionary

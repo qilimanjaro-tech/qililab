@@ -44,8 +44,8 @@ class Gaussian(PulseShape):
         Returns:
             Gaussian: Loaded class.
         """
-        num_sigmas = dictionary[PulseShapeSettingsName.NUM_SIGMAS.value]
-        return cls(num_sigmas=num_sigmas)
+        dictionary.pop(RUNCARD.NAME)
+        return cls(**dictionary)
 
     def to_dict(self):
         """Return dictionary representation of the Gaussian shape.
