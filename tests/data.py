@@ -298,12 +298,16 @@ class Galadriel:
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
                 Parameter.SAMPLING_RATE.value: 1.0e09,
-                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
                 Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
                 Parameter.SEQUENCE_TIMEOUT.value: 1,
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.WEIGHTS_PATH0.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_PATH1.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHED_ACQ_ENABLED.value: True,
+                Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
@@ -333,6 +337,10 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
+                Parameter.WEIGHTS_PATH0.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_PATH1.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHED_ACQ_ENABLED.value: False,
+                Parameter.THRESHOLD.value: 0.5,
             },
         ],
         AWGTypes.AWG_IQ_CHANNELS.value: [
@@ -732,7 +740,7 @@ results_two_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -749,7 +757,7 @@ results_two_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -783,7 +791,7 @@ results_one_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -800,7 +808,7 @@ results_one_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
