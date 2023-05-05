@@ -1,7 +1,7 @@
 """Test for the QbloxQRM class."""
 import copy
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from qpysequence.acquisitions import Acquisitions
@@ -11,6 +11,7 @@ from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQRM
+from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
 from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, Rectangular
@@ -86,6 +87,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "mixer_corr_gain_ratio",
             "offset_awg_path0",
             "offset_awg_path1",
+            "discretization_threshold_acq",
         ]
     )
     # connect to instrument
@@ -140,6 +142,7 @@ class TestQbloxQRM:
         qrm.device.sequencer0.sync_en.assert_called_with(qrm.awg_sequencers[0].sync_enabled)
         qrm.device.sequencer0.demod_en_acq.assert_called()
         qrm.device.sequencer0.integration_length_acq.assert_called()
+        qrm.device.sequencer0.discretization_threshold_acq.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
@@ -353,3 +356,16 @@ class TestQbloxQRM:
     def tests_firmware_property(self, qrm_no_device: QbloxQRM):
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
+
+
+class TestAWGQbloxADCSequencer:
+    """Unit tests for AWGQbloxADCSequencer class."""
+
+    def test_verify_weights(self):
+        """Test the _verify_weights method."""
+        mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
+        mock_sequencer.weights_path0 = [1.0]
+        mock_sequencer.weights_path1 = [1.0, 1.0]
+
+        with pytest.raises(IndexError, match="The length of weights_path0 and weights_path1 must be equal."):
+            AWGQbloxADCSequencer._verify_weights(mock_sequencer)
