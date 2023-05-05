@@ -53,6 +53,8 @@ class Loop:
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
+        if isinstance(self.values, list):
+            self.values = np.array(self.values)
 
     @property
     def all_values(self) -> np.ndarray:
