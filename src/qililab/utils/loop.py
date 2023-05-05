@@ -110,7 +110,7 @@ class Loop:
         return {
             LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.VALUES: self.values,
+            LOOP.VALUES: self.values.tolist(),
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             LOOP.CHANNEL_ID: self.channel_id,
         }
