@@ -99,9 +99,10 @@ class TestExecutionManagerPlatform:
         acquisitions = results.acquisitions(mean=True)
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
-        probabilities = results.probabilities(mean=True)
-        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "0"].unique().size == 2
-        assert probabilities[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
+        probabilities = results.probabilities()
+        for qubit_string in probabilities.keys():
+            assert len(qubit_string) == 2
+        assert sum(probabilities.values()) == 1.0
         mock_dump.assert_called()
         mock_open.assert_called()
         mock_makedirs.assert_called()
@@ -136,7 +137,7 @@ class TestExecutionManagerPlatform:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, pd.DataFrame)
+        assert isinstance(probabilities, dict)
         assert isinstance(acquisitions, pd.DataFrame)
         mock_dump.assert_called()
         mock_open.assert_called()
@@ -167,7 +168,7 @@ class TestExecutionManagerPlatform:
         assert isinstance(results, Results)
         probabilities = results.probabilities()
         acquisitions = results.acquisitions()
-        assert isinstance(probabilities, pd.DataFrame)
+        assert isinstance(probabilities, dict)
         assert isinstance(acquisitions, pd.DataFrame)
         mock_dump.assert_called()
         mock_open.assert_called()

@@ -193,7 +193,7 @@ class INSTRUMENTREFERENCE:
 class QBLOXRESULT:
     """Qblox Results attribute names."""
 
-    PULSE_LENGTH = "pulse_length"
+    INTEGRATION_LENGTHS = "integration_lengths"
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
