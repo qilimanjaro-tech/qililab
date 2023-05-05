@@ -39,5 +39,10 @@ def compute_shapes_from_loops(loops: List[Loop] | None):
         return []
     all_shapes = [loop.shape for loop in loops]
     max_len = max(len(shape) for shape in all_shapes)
-    all_shapes_with_same_length = [shape + [0] * (max_len - len(shape)) for shape in all_shapes]
-    return [min(values) for values in zip(*all_shapes_with_same_length)]
+    final_shape: list[None | int] = [None] * max_len
+    for shape in all_shapes:
+        for i, dim in enumerate(shape):
+            if final_shape[i] is None or dim < final_shape[i]:
+                final_shape[i] = dim
+        
+    return final_shape
