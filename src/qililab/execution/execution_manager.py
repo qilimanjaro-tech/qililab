@@ -1,21 +1,17 @@
 """ExecutionManager class."""
 from dataclasses import dataclass, field
-from pathlib import Path
-from queue import Empty, Queue
-from threading import Thread
+from queue import Queue
 from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.config import logger
-from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import BusExecution
 from qililab.platform import Platform
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings import yaml
-from qililab.utils import LivePlot, Waveforms
+from qililab.utils import Waveforms
 
 
 @dataclass
@@ -25,7 +21,6 @@ class ExecutionManager:
     num_schedules: int
     platform: Platform
     buses: List[BusExecution] = field(default_factory=list)
-    program_duration: float = field(init=False)
 
     def turn_on_instruments(self):
         """Start/Turn on the instruments."""
@@ -63,8 +58,6 @@ class ExecutionManager:
         for bus in self.buses:
             bus_programs = bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
             programs[bus.alias] = bus_programs
-        # we save the duration of the program (in seconds) to use it as a timeout for the queue
-        self.program_duration = repetition_duration * nshots * 1e-9
         return programs
 
     def upload(self):
@@ -72,19 +65,16 @@ class ExecutionManager:
         for bus in self.buses:
             bus.upload()
 
-    def run(self, plot: LivePlot | None, path: Path) -> Result | None:
+    def run(self, queue: Queue) -> Result | None:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
         for bus in self.buses:
             bus.run()
 
-        data_queue: Queue = Queue()  # queue used to store the experiment results
-        self._asynchronous_data_handling(queue=data_queue, path=path, plot=plot)
-
         results = []
         for bus in self.readout_buses:
             result = bus.acquire_result()
-            data_queue.put_nowait(item=result)
+            queue.put_nowait(item=result)
             results.append(result)
 
         # FIXME: set multiple readout buses
@@ -93,41 +83,6 @@ class ExecutionManager:
         if not results:
             raise ValueError("No Results acquired")
         return results[0]
-
-    def _asynchronous_data_handling(self, queue: Queue, path: Path, plot: LivePlot | None):
-        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
-        and saves them to a file.
-
-        If no items are received in the queue for 5 seconds, the thread will exit.
-
-        Args:
-            queue (Queue): Queue used to store the experiment results.
-            path (Path): Path where the results will be saved.
-            plot (LivePlot, optional): Live plot to send the results to. Defaults to None.
-        """
-
-        def _threaded_function():
-            """Asynchronous thread."""
-            while True:
-                try:
-                    result = queue.get(timeout=10 * self.program_duration)  # get new result from the queue
-                except Empty:
-                    return  # exit thread if no results are received for 10 times the duration of the program
-
-                if plot is not None:
-                    probs = result.probabilities()
-                    # get zero prob and converting to a float to plot the value
-                    # is a numpy.float32, so it is needed to convert it to float
-                    if len(probs) > 0:
-                        # TODO: Returning probability of |00...0> state.
-                        zero_prob = list(probs.values())[0]
-                        plot.send_points(value=zero_prob)
-                with open(file=path / "results.yml", mode="a", encoding="utf8") as data_file:
-                    result_dict = result.to_dict()
-                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
-
-        thread = Thread(target=_threaded_function)
-        thread.start()
 
     def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
         """Get pulses of each bus.

@@ -165,6 +165,10 @@ awg_sequencers:
   the live plotting and saves them to a file.
   [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
 
+- The asynchronous data handling used to save results and send data to the live plotting has been improved.
+  Previously we only had ONE active thread retrieving the results and saving them but was created and killed after processing one result of the total `Results` object. Now we are creating the thread just ONCE, so threading is handled at the `Experiment` level instead of what was done previously at the `Exution_Manager` level.
+  [#298](https://github.com/qilimanjaro-tech/qililab/pull/298)
+
 ### Breaking changes
 
 - `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
