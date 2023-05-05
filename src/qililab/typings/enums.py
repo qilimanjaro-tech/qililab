@@ -389,6 +389,10 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
+    WEIGHTS_PATH0 = "weights_path0"
+    WEIGHTS_PATH1 = "weights_path1"
+    WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
+    THRESHOLD = "threshold"
 
 
 class ResultName(str, Enum):

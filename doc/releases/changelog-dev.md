@@ -138,6 +138,40 @@ This document contains the changes of the current release.
 
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
+- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_path0` and `weights_path1`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`. Note: the `integration_length` parameter will be ignored if `weighed_acq_enabled` is set to `true`, and the length of the weights arrays will be used instead.
+
+```yaml
+awg_sequencers:
+  - identifier: 0
+    chip_port_id: 1
+    intermediate_frequency: 1.e+08
+    weights_path0: [0.98, ...]  # <-- new line
+    weights_path1: [0.72, ...]  # <-- new line
+    weighed_acq_enabled: true   # <-- new line
+    threshold: 0.5              # <-- new line
+```
+
+[#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
+
+- `Result`, `Results` and `Acquisitions` classes implement the `counts` method, which returns a dictionary-like object containing the counts of each measurement based in the discretization of the instrument via the `threshold` sequencer parameter. Alternatively, the `probabilities` method can also be used, which returns a normalized version of the same counts object.
+
+  ```python
+  counts = result.counts()
+  probabilities = result.probabilities()
+
+  print(f"Counts: {counts}")
+  print(f"Probabilities: {probabilities}")
+  ```
+
+  Output:
+
+  ```
+  > Counts: {'00': 502, '01': 23, '10': 19, '11': 480}
+  > Probabilities: {'00': 0.49023438, '01': 0.02246094, '10': 0.01855469, '11': 0.46875}
+  ```
+
+  [#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -148,6 +182,10 @@ This document contains the changes of the current release.
   saving the results in a queue, and there is only ONE thread which retrieves the results from the queue, sends them to
   the live plotting and saves them to a file.
   [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
+
+- The asynchronous data handling used to save results and send data to the live plotting has been improved.
+  Previously we only had ONE active thread retrieving the results and saving them but was created and killed after processing one result of the total `Results` object. Now we are creating the thread just ONCE, so threading is handled at the `Experiment` level instead of what was done previously at the `Exution_Manager` level.
+  [#298](https://github.com/qilimanjaro-tech/qililab/pull/298)
 
 ### Breaking changes
 
@@ -166,6 +204,9 @@ This document contains the changes of the current release.
 
 - The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
   [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
+
+- All the `probabilities` methods that returned a `pandas.DataFrame` return now a `dict[str, float]`. All the methods related to the construction of such dataframes have been removed.
+  [#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
 
 ### Documentation
 
