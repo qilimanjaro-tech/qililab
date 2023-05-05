@@ -3,7 +3,7 @@ from qibo.gates import M
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis

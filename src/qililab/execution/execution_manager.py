@@ -74,9 +74,6 @@ class ExecutionManager:
         for bus in self.buses:
             bus.run()
 
-        data_queue: Queue = Queue()  # queue used to store the experiment results
-        self._asynchronous_data_handling(queue=data_queue, path=path, plot=plot)
-
         results = []
         for bus in self.readout_buses:
             result = bus.acquire_result()
