@@ -35,7 +35,7 @@ class BinsData:
         self.avg_cnt = [value for value in self.avg_cnt if not np.isnan(value)]
 
     def __len__(self) -> int:
-        r"""Returns the length of the QbloxIntegrationData, corresponding to the number of bins.
+        """Returns the length of the QbloxIntegrationData, corresponding to the number of bins.
 
         Returns:
             int: Length of the QbloxIntegrationData.
