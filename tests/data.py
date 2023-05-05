@@ -18,6 +18,7 @@ from qililab.constants import (
     PULSEBUSSCHEDULE,
     PULSEEVENT,
     PULSESCHEDULES,
+    PULSESHAPE,
     RUNCARD,
     SCHEMA,
 )
@@ -84,44 +85,102 @@ class Galadriel:
                 "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 50,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 1.5707963267948966,
-                "duration": PLATFORM.MASTER_DURATION_GATE,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-        ],
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            1: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            (0, 1): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+            (1, 0): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+        },
     }
 
     pulsar_controller_qcm_0 = {
@@ -550,48 +609,46 @@ class FluxQubitSimulator:
                 "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": 1,
-                "phase": 1.5707963267948966,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-        ],
+            ]
+        },
     }
 
     chip = {
@@ -856,7 +913,7 @@ class SauronVNA:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": [],
+        "gates": {},
         "operations": [],
     }
 

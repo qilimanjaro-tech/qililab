@@ -25,4 +25,7 @@ class I(HardwareGate):  # pylint: disable=invalid-name # noqa: E742
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
-        return cls.parameters(master_amplitude_gate=master_amplitude_gate, master_duration_gate=master_duration_gate)
+        qubit = gate.target_qubits[0]
+        return cls.parameters(
+            qubits=qubit, master_amplitude_gate=master_amplitude_gate, master_duration_gate=master_duration_gate
+        )
