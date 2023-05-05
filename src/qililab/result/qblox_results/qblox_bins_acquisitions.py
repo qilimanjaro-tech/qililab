@@ -46,13 +46,14 @@ class QbloxBinsAcquisitions(Acquisitions):
         Returns:
             Counts: Counts object with the number of measurements in that state.
         """
-        # TODO: Assuming that all sequencers are used for multiplexed readout then having the same number of bins, where each index corresponds to a simultaneous measurement with a different sequencer.
         # Check that all sequencers have the same number of bins.
         if any(len(seq_bins) != (num_bins := len(self.bins[0])) for seq_bins in self.bins):
             raise IndexError("Sequencers must have the same number of bins.")
         # TODO: Add limitations to check we are doing single-shot for multi qubit?
         counts_object = Counts(n_qubits=len(self.bins))
         for bin_idx in range(num_bins):
+            # The threshold inside of a qblox bin is the name they use for already classified data as a value between
+            # 0 and 1, not the value used in the comparator to perform such classification.
             measurement_as_list = [int(bins_data.threshold[bin_idx]) for bins_data in self.bins]
             measurement = "".join(str(bit) for bit in measurement_as_list)
             counts_object.add_measurement(state=measurement)
