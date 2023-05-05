@@ -4,7 +4,8 @@ from typing import Sequence, cast
 
 from qpysequence import Sequence as QpySequence
 from qpysequence.program import Loop, Register
-from qpysequence.program.instructions import Acquire
+from qpysequence.program.instructions import Acquire, AcquireWeighed
+from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
@@ -83,6 +84,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             self._set_hardware_demodulation(
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
+            self._set_threshold(value=cast(AWGQbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
 
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
@@ -184,6 +186,17 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         self.device.scope_acq_avg_mode_en_path0(value)
         self.device.scope_acq_avg_mode_en_path1(value)
 
+    def _set_device_threshold(self, value: float, sequencer_id: int):
+        """Sets the threshold for classification at the specific channel.
+
+        Args:
+            value (float): Normalized threshold value.
+            sequencer_id (int): sequencer to update the value
+        """
+        integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
+        # TODO: Change the parameter to `thresholded_acq_threshold` when qblox-instruments is updated to >= 0.9.0
+        self.device.sequencers[sequencer_id].discretization_threshold_acq(integer_value)
+
     def _set_nco(self, sequencer_id: int):
         """Enable modulation/demodulation of pulses and setup NCO frequency."""
         super()._set_nco(sequencer_id=sequencer_id)
@@ -219,20 +232,32 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             for sequencer in self.awg_sequencers
         ]
 
-        # FIXME: using the integration length of the first sequencer
-        return QbloxResult(pulse_length=self.integration_length(sequencer_id=0), qblox_raw_results=results)
+        integration_lengths = [sequencer.used_integration_length for sequencer in self.awg_sequencers]
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        loop.append_component(Acquire(acq_index=0, bin_index=register, wait_time=self._MIN_WAIT_TIME))
+        weighed_acq = self.awg_sequencers[sequencer_id].weighed_acq_enabled
+        acq_instruction = (
+            AcquireWeighed(
+                acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME
+            )
+            if weighed_acq
+            else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+        )
+        loop.append_component(acq_instruction)
 
-    def _generate_weights(self) -> dict:
+    def _generate_weights(self, sequencer_id: int) -> Weights:
         """Generate acquisition weights.
 
         Returns:
-            dict: Acquisition weights.
+            Weights: Acquisition weights.
         """
-        return {}
+        sequencer = self.awg_sequencers[sequencer_id]
+        weights = Weights()
+        weights.add_pair(pair=(sequencer.weights_path0, sequencer.weights_path1), indices=(0, 1))
+        return weights
 
     def integration_length(self, sequencer_id: int):
         """QbloxPulsarQRM 'integration_length' property.
