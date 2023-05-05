@@ -140,5 +140,6 @@ class Loop:
             self.alias == other.alias
             and self.parameter == other.parameter
             and self.loop == other.loop
+            and self.channel_id == other.channel_id
             and (self.values == other.values).all()
         )
