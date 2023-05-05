@@ -118,14 +118,13 @@ class Experiment:
         Args:
             queue (Queue): Queue used to store the experiment results.
         """
+        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * 1e-9)
 
         def _threaded_function():
             """Asynchronous thread."""
             while True:
                 try:
-                    result = queue.get(
-                        timeout=self.hardware_average * self.repetition_duration * 1e-8
-                    )  # get new result from the queue
+                    result = queue.get(timeout=timeout)  # get new result from the queue
                 except Empty:
                     return  # exit thread if no results are received for 10 times the duration of the program
 
