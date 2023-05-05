@@ -14,7 +14,10 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
+from qililab.transpiler import Drag
 from qililab.utils import Factory
+
+# TODO fix docstrings
 
 
 @dataclass
@@ -41,8 +44,8 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: Dict[int, int] = {}  # restart time
-            readout_gates = circuit.gates_of_type(M)
-            control_gates = [
+            readout_gates = circuit.gates_of_type(M)  # TODO why dont we just call them measurement gates
+            control_gates = [  # TODO do we want to call these control gates?
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
             for gate in control_gates:
@@ -72,15 +75,22 @@ class CircuitToPulses:
         """Translate a gate into a pulse event.
 
         Args:
-            gate (Gate): Qibo Gate.
+            time (??)
+            control_gate (Gate): qibo gate applied to the circuit
+            chip (??)
 
         Returns:
-            PulseEvent: PulseEvent object.
+            PulseEvent: PulseEvent object. (no, really)
+
+        For a Drag pulse R(a,b) the corresponding pulse will have amplitude a/pi * qubit_pi_amp
+        where qubit_pi_amp is the amplitude of the pi pulse for the given qubit calibrated from Rabi.
+        The phase will correspond to the rotation around Z from b in R(a,b)
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Adapt this code to translate two-qubit gates.
-        qubit_idx = control_gate.target_qubits[0]
+        # note that for cphase we only need to control one gate though...
+        qubit_idx = control_gate.target_qubits[0]  # ...so this should also be allright for cphase (cz)
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
         port = chip.get_port(node)
         old_time = self._update_time(
@@ -88,21 +98,43 @@ class CircuitToPulses:
             qubit_idx=qubit_idx,
             pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
         )
-        return (
-            PulseEvent(
-                pulse=Pulse(
-                    amplitude=float(gate_settings.amplitude),
-                    phase=float(gate_settings.phase),
-                    duration=gate_settings.duration,
-                    pulse_shape=pulse_shape,
-                    frequency=node.frequency,
-                ),
-                start_time=old_time,
+        if isinstance(control_gate, Drag):
+            return (
+                PulseEvent(
+                    pulse=Pulse(
+                        amplitude=(
+                            control_gate.parameters[0] / np.pi * gate_settings.amplitude
+                        ),  # TODO: note that the amplitude from gate in runcard
+                        # should be that of the pi pulse calibration
+                        phase=float(control_gate.parameters[1]),  # TODO: drag pulses should not have a defined phase
+                        # phase for drag should always be user defined, either in circuit or Drag(amp, phase)
+                        # TODO: why do we have conversion to float?
+                        duration=gate_settings.duration,
+                        pulse_shape=pulse_shape,
+                        frequency=node.frequency,
+                    ),
+                    start_time=old_time,
+                )
+                if gate_settings.duration > 0
+                else None,
+                port,
             )
-            if gate_settings.duration > 0
-            else None,
-            port,
-        )
+        else:
+            return (
+                PulseEvent(
+                    pulse=Pulse(
+                        amplitude=float(gate_settings.amplitude),
+                        phase=float(gate_settings.phase),
+                        duration=gate_settings.duration,
+                        pulse_shape=pulse_shape,
+                        frequency=node.frequency,
+                    ),
+                    start_time=old_time,
+                )
+                if gate_settings.duration > 0
+                else None,
+                port,
+            )
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
         """get gate settings with master values"""
@@ -112,6 +144,7 @@ class CircuitToPulses:
             master_duration_gate=self.settings.master_duration_gate,
         )
         if (
+            # TODO what and why
             not isinstance(gate_settings.amplitude, float)
             and not isinstance(gate_settings.amplitude, int)
             and not isinstance(gate_settings.amplitude, np.number)
@@ -130,6 +163,7 @@ class CircuitToPulses:
                 f"Value duration: {gate_settings.duration} MUST be an integer. "
                 f"Current type is {type(gate_settings.duration)}."
             )
+        # TODO why must duration be an int and is converting to int safe? (shouldnt we raise an error?)
         if isinstance(gate_settings.duration, float):
             gate_settings.duration = int(gate_settings.duration)
         return gate_settings
@@ -194,10 +228,7 @@ class CircuitToPulses:
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for qubit, gate_settings_list in self.settings.gates.items():
-            for gate_settings in gate_settings_list:
-                settings_dict = asdict(gate_settings)
-                gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
-                if not gate_class.settings:
-                    gate_class.settings = {}
-                gate_class.settings[qubit] = gate_class.HardwareGateSettings(**settings_dict)
+        for gate_settings in self.settings.gates:
+            settings_dict = asdict(gate_settings)
+            gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
+            gate_class.settings = gate_class.HardwareGateSettings(**settings_dict)
