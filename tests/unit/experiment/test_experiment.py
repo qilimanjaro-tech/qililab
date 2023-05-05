@@ -174,22 +174,27 @@ class TestMethods:
     def test_run(self, connected_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
         connected_experiment.build_execution()
+        connected_experiment.platform.connection = MagicMock()  # mock connection
         assert not hasattr(connected_experiment, "_plot")
         assert not hasattr(connected_experiment, "results")
         with patch("qililab.execution.open") as mock_open:
             with patch("qililab.experiment.experiment.open") as mock_open:
                 with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
-                    # Build execution
-                    connected_experiment.run()
-                    # Assert that the mocks are called when building the execution (such that NO files are created)
-                    mock_open.assert_called()
-                    mock_makedirs.assert_called()
-                    mock_open.assert_called()
+                    with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                        # Build execution
+                        connected_experiment.run()
+                        # Assert that the mocks are called when building the execution (such that NO files are created)
+                        mock_open.assert_called()
+                        mock_makedirs.assert_called()
+                        mock_open.assert_called()
+                        mock_plot.assert_called_once_with(
+                            connection=connected_experiment.platform.connection,
+                            loops=connected_experiment.options.loops or [],
+                            num_schedules=len(connected_experiment.pulse_schedules),
+                            title=connected_experiment.options.name,
+                        )
+                        mock_plot.assert_called_once()
         assert len(connected_experiment.results.results) > 0
-        if connected_experiment.platform.connection is None:
-            assert connected_experiment._plot is None
-        else:
-            assert isinstance(connected_experiment._plot, LivePlot)
 
     def test_run_raises_error(self, experiment: Experiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
