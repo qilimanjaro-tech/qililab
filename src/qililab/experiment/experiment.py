@@ -66,16 +66,6 @@ class Experiment:
             self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
-        # Generate live plotting
-        if self.platform.connection is None:
-            self._plot = None
-        else:
-            self._plot = LivePlot(
-                connection=self.platform.connection,
-                loops=self.options.loops or [],
-                num_schedules=len(self.pulse_schedules),
-                title=self.options.name,
-            )
 
     def run(self) -> Results:
         """This method is responsible for:
@@ -88,6 +78,16 @@ class Experiment:
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
+        # Generate live plotting
+        if self.platform.connection is None:
+            self._plot = None
+        else:
+            self._plot = LivePlot(
+                connection=self.platform.connection,
+                loops=self.options.loops or [],
+                num_schedules=len(self.pulse_schedules),
+                title=self.options.name,
+            )
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
