@@ -71,7 +71,7 @@ class ExponentialCorrection(PulseDistortion):
             ExponentialCorrection: Loaded class.
         """
         local_dictionary = dictionary.copy()
-        local_dictionary.pop(RUNCARD.NAME)
+        local_dictionary.pop(RUNCARD.NAME, None)
         return cls(**local_dictionary)
 
     def to_dict(self) -> dict:
