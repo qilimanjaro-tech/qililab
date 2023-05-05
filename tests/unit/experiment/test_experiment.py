@@ -133,10 +133,7 @@ class TestMethods:
         assert isinstance(experiment.execution_manager, ExecutionManager)
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
-        if experiment.platform.connection is None:
-            assert experiment._plot is None
-        else:
-            assert isinstance(experiment._plot, LivePlot)
+        assert not hasattr(experiment, "_plot")
         assert not hasattr(experiment, "_remote_id")
 
     def test_compile(self, experiment: Experiment):
@@ -177,6 +174,7 @@ class TestMethods:
     def test_run(self, connected_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
         connected_experiment.build_execution()
+        assert not hasattr(connected_experiment, "_plot")
         assert not hasattr(connected_experiment, "results")
         with patch("qililab.execution.open") as mock_open:
             with patch("qililab.experiment.experiment.open") as mock_open:
@@ -188,6 +186,10 @@ class TestMethods:
                     mock_makedirs.assert_called()
                     mock_open.assert_called()
         assert len(connected_experiment.results.results) > 0
+        if connected_experiment.platform.connection is None:
+            assert connected_experiment._plot is None
+        else:
+            assert isinstance(connected_experiment._plot, LivePlot)
 
     def test_run_raises_error(self, experiment: Experiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
