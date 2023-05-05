@@ -61,18 +61,6 @@ class PulseEvent:
 
         return envelope
 
-    def to_dict(self):
-        """Return dictionary of pulse.
-
-        Returns:
-            dict: Dictionary describing the pulse.
-        """
-        return {
-            PULSEEVENT.PULSE: self.pulse.to_dict(),
-            PULSEEVENT.START_TIME: self.start_time,
-            PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in self.pulse_distortions],
-        }
-
     @classmethod
     def from_dict(cls, dictionary: dict) -> "PulseEvent":
         """Load PulseEvent object from dictionary.
@@ -97,6 +85,18 @@ class PulseEvent:
         dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
 
         return cls(**dictionary)
+
+    def to_dict(self):
+        """Return dictionary of pulse.
+
+        Returns:
+            dict: Dictionary describing the pulse.
+        """
+        return {
+            PULSEEVENT.PULSE: self.pulse.to_dict(),
+            PULSEEVENT.START_TIME: self.start_time,
+            PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in self.pulse_distortions],
+        }
 
     def __lt__(self, other: "PulseEvent"):
         """Returns True if and only if self.start_time is less than other.start_time
