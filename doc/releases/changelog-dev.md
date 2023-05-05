@@ -20,6 +20,8 @@ This document contains the changes of the current release.
   This would apply them like: BiasTeeCorrection_0.8(BiasTeeCorrection_1.0(original_pulse)), so the first one gets applied first and so on...
   (If you write their composition, it will be in reverse order respect the list)
 
+  Also along the way modified/refactored the to_dict() and from_dict() methods of PulseEvent, Pulse, PulseShape...
+
   [#279](https://github.com/qilimanjaro-tech/qililab/pull/279)
 
 - Added `experiment/portfolio/` submodule, which will contain pre-defined experiments and their analysis.
