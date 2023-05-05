@@ -26,19 +26,20 @@ settings:
         duration: 6000
         parameters: {}
   gates:
-    - name: M
-      amplitude: 1.0
-      phase: 0
-      duration: 6000
-      shape:
-        name: rectangular
-    - name: X
-      amplitude: 1.0
-      phase: 0
-      duration: 100
-      shape:
-        name: gaussian
-        num_sigmas: 4
+    0:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
 schema:
   chip:
     id_: 0
