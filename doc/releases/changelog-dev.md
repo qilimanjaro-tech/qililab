@@ -120,6 +120,91 @@ This document contains the changes of the current release.
 
   [#254](https://github.com/qilimanjaro-tech/qililab/pull/254)
 
+- Gate settings can be set for each qubit individually, or tuple of qubits in case of two-qubit gates.
+  Example of updated runcard schema:
+
+  ```yaml
+  gates:
+    0:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+    1:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+    (0,1):
+      - name: CPhase
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+  ```
+
+  To change settings with set_parameter methods, use the alias format "GATE(QUBITs)". For example:
+
+  ```python
+  platform.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=40)
+  platform.set_parameter(alias="CPhase(0,1)", parameter=Parameter.DURATION, value=80)
+  ```
+
+  [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
+
+- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_path0` and `weights_path1`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`. Note: the `integration_length` parameter will be ignored if `weighed_acq_enabled` is set to `true`, and the length of the weights arrays will be used instead.
+
+```yaml
+awg_sequencers:
+  - identifier: 0
+    chip_port_id: 1
+    intermediate_frequency: 1.e+08
+    weights_path0: [0.98, ...]  # <-- new line
+    weights_path1: [0.72, ...]  # <-- new line
+    weighed_acq_enabled: true   # <-- new line
+    threshold: 0.5              # <-- new line
+```
+
+[#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
+
+- `Result`, `Results` and `Acquisitions` classes implement the `counts` method, which returns a dictionary-like object containing the counts of each measurement based in the discretization of the instrument via the `threshold` sequencer parameter. Alternatively, the `probabilities` method can also be used, which returns a normalized version of the same counts object.
+
+  ```python
+  counts = result.counts()
+  probabilities = result.probabilities()
+
+  print(f"Counts: {counts}")
+  print(f"Probabilities: {probabilities}")
+  ```
+
+  Output:
+
+  ```
+  > Counts: {'00': 502, '01': 23, '10': 19, '11': 480}
+  > Probabilities: {'00': 0.49023438, '01': 0.02246094, '10': 0.01855469, '11': 0.46875}
+  ```
+
+  [#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
+
 ### Improvements
 
 - Return an integer (instead of the `Port` class) when calling `Chip.get_port`. This is to avoid using the private
@@ -140,6 +225,9 @@ This document contains the changes of the current release.
 - `draw()` method of `Circuit` uses Graphviz internally. To be able to call the method Graphviz must be installed. In Ubuntu-based distros a simple `sudo apt-get install graphviz` is sufficient. For detailed installation information for your OS please consult Graphviz's [installation page](https://graphviz.org/download/).
   [#175](https://github.com/qilimanjaro-tech/qililab/issues/175)
 
+- `gates` property of runcard must be updated to provide a list of gate settings for each qubit individually.
+  [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
+
 ### Deprecations / Removals
 
 - The `Execution` class has been removed. Its functionality is now added to the `ExecutionManager` class.
@@ -152,6 +240,9 @@ This document contains the changes of the current release.
 
 - The `plot_y_label` argument of the `ExperimentOptions` class has been removed.
   [#282](https://github.com/qilimanjaro-tech/qililab/pull/282)
+
+- All the `probabilities` methods that returned a `pandas.DataFrame` return now a `dict[str, float]`. All the methods related to the construction of such dataframes have been removed.
+  [#283](https://github.com/qilimanjaro-tech/qililab/pull/283)
 
 ### Documentation
 
