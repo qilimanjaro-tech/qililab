@@ -11,6 +11,7 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.config import logger
@@ -202,8 +203,8 @@ class QbloxModule(AWG):
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
-        weights = self._generate_weights()
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        weights = self._generate_weights(sequencer_id=sequencer)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
         """Generate Q1ASM program
@@ -263,7 +264,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         wait_time = self.repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
@@ -284,16 +285,15 @@ class QbloxModule(AWG):
         return acquisitions
 
     @abstractmethod
-    def _generate_weights(self) -> dict:
+    def _generate_weights(self, sequencer_id: int) -> Weights:
         """Generate acquisition weights.
 
         Returns:
             dict: Acquisition weights.
         """
-        return {}
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):

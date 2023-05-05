@@ -12,6 +12,7 @@ GALADRIEL_DEVICE_ID = 9
 
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+GATE_ALIAS_REGEX = "(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
 # TODO: Distribute constants over different classes
 
@@ -195,7 +196,7 @@ class INSTRUMENTREFERENCE:
 class QBLOXRESULT:
     """Qblox Results attribute names."""
 
-    PULSE_LENGTH = "pulse_length"
+    INTEGRATION_LENGTHS = "integration_lengths"
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 
