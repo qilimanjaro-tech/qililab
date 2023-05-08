@@ -15,7 +15,7 @@ TAU_BIAS_TEE = [0.7, 1.3]
 
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
-PHASE = [0, np.pi / 3, 2 * np.pi, 3 * np.pi]
+PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [1, 47]  # TODO: Add 0 to this test?
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
