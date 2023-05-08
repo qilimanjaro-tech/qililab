@@ -53,9 +53,12 @@ class TestPulse:
         """Test to_dict method"""
         dictionary = pulse.to_dict()
         pulse2 = Pulse.from_dict(dictionary)
+        dictionary2 = pulse2.to_dict()
 
         assert pulse2 is not None
         assert isinstance(pulse2, Pulse)
+        assert pulse == pulse2
+        assert dictionary == dictionary2
 
     def test_to_dict_method(self, pulse: Pulse):
         """Test to_dict method"""

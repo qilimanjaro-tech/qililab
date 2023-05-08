@@ -77,9 +77,12 @@ class TestPulseEvent:
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
         dictionary = pulse_event.to_dict()
         pulse_event2 = PulseEvent.from_dict(dictionary)
+        dictionary2 = pulse_event2.to_dict()
 
         assert pulse_event2 is not None
         assert isinstance(pulse_event2, PulseEvent)
+        assert pulse_event == pulse_event2
+        assert dictionary == dictionary2
 
     def test_to_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
