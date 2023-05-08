@@ -63,6 +63,7 @@ class TestPulse:
     def test_to_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
         dictionary = pulse.to_dict()
+
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
