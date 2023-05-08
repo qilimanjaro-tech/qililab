@@ -1,12 +1,15 @@
 """Platform class."""
+import ast
+import re
 from dataclasses import asdict
+from typing import Tuple
 
 from qiboconnection.api import API
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
+from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
+from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
-from qililab.platform.components.schema import Schema
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Parameter
 from qililab.typings.yaml_type import yaml
@@ -21,14 +24,15 @@ class Platform:
         buses (Buses): Container of Bus objects.
     """
 
-    def __init__(self, runcard_schema: RuncardSchema):
+    def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
         self.settings = runcard_schema.settings
         self.schema = Schema(**asdict(runcard_schema.schema))
+        self.connection = connection
         self._connected_to_instruments: bool = False
         self._initial_setup_applied: bool = False
         self._instruments_turned_on: bool = False
 
-    def connect(self, connection: API | None = None, device_id: int | None = None, manual_override=False):
+    def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
 
         Args:
@@ -41,8 +45,8 @@ class Platform:
             logger.info("Already connected to the instruments")
             return
 
-        if connection is not None and not manual_override:
-            connection.block_device_id(device_id=device_id)
+        if self.connection is not None and not manual_override:
+            self.connection.block_device_id(device_id=self.device_id)
 
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
@@ -75,14 +79,14 @@ class Platform:
         self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
-    def disconnect(self, connection: API | None = None, device_id: int | None = None):
+    def disconnect(self):
         """Close connection to the instrument controllers."""
+        if self.connection is not None:
+            self.connection.release_device(device_id=self.device_id)
         if not self._connected_to_instruments:
             logger.info("Already disconnected from the instruments")
             return
         self.instrument_controllers.disconnect()
-        if connection is not None:
-            connection.release_device(device_id=device_id)
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
@@ -98,8 +102,13 @@ class Platform:
         if alias is not None:
             if alias == Category.PLATFORM.value:
                 return self.settings
-            if alias in self.gate_names:
-                return self.settings.get_gate(name=alias)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            if regex_match is not None:
+                name = regex_match.group("gate")
+                qubits_str = regex_match.group("qubits")
+                qubits = ast.literal_eval(qubits_str)
+                if name in self.gate_names:
+                    return self.settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -107,13 +116,10 @@ class Platform:
         if element is None:
             element = self.get_bus_by_alias(alias=alias)
         if element is None:
-            try:
-                element = self.chip.get_node_from_alias(alias=alias)
-            except ValueError as error:
-                raise ValueError(f"Could not find element with alias {alias}.") from error
+            element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int):
+    def get_bus(self, port: int) -> Tuple[int, Bus] | Tuple[list, None]:
         """Find bus associated with the specified port.
 
         Args:
@@ -127,19 +133,34 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_alias(self, alias: str | None = None, category: Category | None = None, id_: int | None = None):
-        """Get bus given an alias or id_ and category"""
-        if alias is not None:
-            return next(
-                (element for element in self.buses if element.settings.alias == alias),
-                None,
+    def get_bus_by_qubit_index(self, qubit_index: int) -> Tuple[Bus, Bus]:
+        """Find bus associated with the given qubit index.
+
+        Args:
+            qubit_index (int): qubit index
+
+        Returns:
+            Tuple[Bus, Bus]: Returns a tuple of Bus objects containing the control and readout buses of the given qubit
+        """
+        control_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=False)
+        readout_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=True)
+        control_bus = self.get_bus(port=self.chip.get_port(node=control_port))[1]
+        readout_bus = self.get_bus(port=self.chip.get_port(node=readout_port))[1]
+        if readout_bus is None or control_bus is None:
+            raise ValueError(
+                f"Could not find buses for qubit {qubit_index} connected to the ports "
+                f"{readout_port} and {control_port}."
             )
+        return control_bus, readout_bus
+
+    def get_bus_by_alias(self, alias: str | None = None):
+        """Get bus given an alias or id_ and category"""
+        for bus in self.buses:
+            if bus.alias == alias:
+                return bus
+
         return next(
-            (
-                element
-                for element in self.buses
-                if element.id_ == id_ and element.settings.category == Category(category)
-            ),
+            (element for element in self.buses if element.settings.alias == alias),
             None,
         )
 
@@ -158,11 +179,9 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if alias in ([Category.PLATFORM.value] + self.gate_names):
-            if alias == Category.PLATFORM.value:
-                self.settings.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-            else:
-                self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+        regex_match = re.search(GATE_ALIAS_REGEX, alias)
+        if alias == Category.PLATFORM.value or regex_match is not None:
+            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -247,6 +266,15 @@ class Platform:
             InstrumentControllers: List of all instrument controllers.
         """
         return self.schema.instrument_controllers
+
+    @property
+    def device_id(self):
+        """Returns the id of the platform device.
+
+        Returns:
+            int: id of the platform device
+        """
+        return self.settings.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""

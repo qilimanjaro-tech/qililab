@@ -6,17 +6,14 @@ import numpy as np
 from qibo.gates import Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip import Chip, Node
+from qililab.chip import Chip
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.pulse.readout_event import ReadoutEvent
-from qililab.pulse.readout_pulse import ReadoutPulse
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import PulseShapeName
 from qililab.utils import Factory
 
 
@@ -48,12 +45,11 @@ class CircuitToPulses:
             control_gates = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
-            _, readout_gate = readout_gates[0] if len(readout_gates) > 0 else (None, None)
             for gate in control_gates:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-            if readout_gate is not None:
+            for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(
                         time=time, readout_gate=readout_gate, qubit_idx=qubit_idx, chip=chip
@@ -66,7 +62,7 @@ class CircuitToPulses:
         return pulse_schedule_list
 
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
-        """Build Pulse Shape from Gate seetings"""
+        """Build Pulse Shape from Gate settings"""
         shape_settings = gate_settings.shape.copy()
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
@@ -84,9 +80,13 @@ class CircuitToPulses:
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Adapt this code to translate two-qubit gates.
-        port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], readout=False)
+        qubit_idx = control_gate.target_qubits[0]
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
+        port = chip.get_port(node)
         old_time = self._update_time(
-            time=time, chip=chip, node=port, pulse_time=gate_settings.duration + self.settings.delay_between_pulses
+            time=time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
         )
         return (
             PulseEvent(
@@ -95,12 +95,13 @@ class CircuitToPulses:
                     phase=float(gate_settings.phase),
                     duration=gate_settings.duration,
                     pulse_shape=pulse_shape,
+                    frequency=node.frequency,
                 ),
                 start_time=old_time,
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
@@ -135,55 +136,68 @@ class CircuitToPulses:
 
     def _readout_gate_to_pulse_event(
         self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> Tuple[ReadoutEvent | None, int]:
+    ) -> Tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
-            gate (Gate): Qibo Gate.
+            time: Dict[int, int]: time.
+            readout_gate (Gate): Qibo Gate.
+            qubit_id (int): qubit number.
+            chip (Chip): chip object.
 
         Returns:
-            Pulse: Pulse object.
+            Tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-        port = chip.get_port_from_qubit_idx(idx=qubit_idx, readout=True)
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
+        port = chip.get_port(node)
         old_time = self._update_time(
-            time=time, chip=chip, node=port, pulse_time=gate_settings.duration + self.settings.delay_before_readout
+            time=time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
         )
 
         return (
-            ReadoutEvent(
-                pulse=ReadoutPulse(
+            PulseEvent(
+                pulse=Pulse(
                     amplitude=gate_settings.amplitude,
                     phase=gate_settings.phase,
                     duration=gate_settings.duration,
+                    frequency=node.frequency,
                     pulse_shape=pulse_shape,
                 ),
                 start_time=old_time + self.settings.delay_before_readout,
             )
             if gate_settings.duration > 0
             else None,
-            port.id_,
+            port,
         )
 
-    def _update_time(self, time: Dict[int, int], chip: Chip, node: Node, pulse_time: int):
+    def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
-            port (int): Index of the chip port.
+            time (Dict[int, int]): Dictionary with the time of each qubit.
+            qubit_idx (int): Index of the qubit.
             pulse_time (int): Duration of the puls + wait time.
         """
-        qubit_idx = chip.get_qubit_idx_from_node(node=node)
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
+        residue = pulse_time % self.settings.minimum_clock_time
+        if residue != 0:
+            pulse_time += self.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for gate_settings in self.settings.gates:
-            settings_dict = asdict(gate_settings)
-            gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
-            gate_class.settings = gate_class.HardwareGateSettings(**settings_dict)
+        for qubit, gate_settings_list in self.settings.gates.items():
+            for gate_settings in gate_settings_list:
+                settings_dict = asdict(gate_settings)
+                gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
+                if not gate_class.settings:
+                    gate_class.settings = {}
+                gate_class.settings[qubit] = gate_class.HardwareGateSettings(**settings_dict)

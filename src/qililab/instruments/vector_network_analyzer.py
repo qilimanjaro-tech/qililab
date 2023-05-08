@@ -1,17 +1,15 @@
 """VectorNetworkAnalyzer class."""
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from qililab.instruments.instrument import Instrument
-from qililab.result.vna_result import VNAResult
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
-from qililab.typings.instruments.vector_network_analyzer import (
-    VectorNetworkAnalyzerDriver,
-)
+from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument):
+class VectorNetworkAnalyzer(Instrument, ABC):
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
@@ -19,11 +17,22 @@ class VectorNetworkAnalyzer(Instrument):
         """Contains the settings of a specific signal generator.
 
         Args:
-            power (float): Power of the instrument. Value range is (-120, 25).
+            power (float): Power of the instrument in dBm
+            scatering_parameter (str): Scatering parameter of the instrument
+            frequency_span (float): Frequency span of the instrument in KHz
+            frequency_center (float): Frequency center of the instrument in Hz
+            frequency_start (float): Frequency start of the instrument in Hz
+            frequency_stop (float): Frequency stop of the instrument in Hz
+            if_bandwidth (float): Bandwidth of the instrument in Hz
+            averaging_enabled (bool): Whether averaging is enabled or not in the instrument
+            trigger_mode (str): Trigger mode of the instrument
+            number_points (int): Number of points for sweep
+            device_timeout (float): Timeout of the instrument in ms
+            electrical_delay (float): Electrical delay of the instrument in s
         """
 
         power: float
-        scattering_parameter: VNAScatteringParameters = VNAScatteringParameters.S21
+        scattering_parameter: VNAScatteringParameters = VNAScatteringParameters.S11
         frequency_span: float | None = None
         frequency_center: float | None = None
         frequency_start: float | None = None
@@ -33,17 +42,18 @@ class VectorNetworkAnalyzer(Instrument):
         number_averages: int = 1
         trigger_mode: VNATriggerModes = VNATriggerModes.INT
         number_points: int = DEFAULT_NUMBER_POINTS
+        electrical_delay: float = 0.0
 
     settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool | int, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
             parameter (Parameter): settings parameter to be updated
-            value (float | str | bool): new value
+            value (float | str | bool | int): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
         if isinstance(value, str):
@@ -58,7 +68,7 @@ class VectorNetworkAnalyzer(Instrument):
         if isinstance(value, int):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        raise ValueError(f"Invalid Parameter: {parameter} with type {type(parameter)}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
         """Set instrument settings parameter to the corresponding value
@@ -68,13 +78,13 @@ class VectorNetworkAnalyzer(Instrument):
             value (str): new value
         """
         if parameter == Parameter.SCATTERING_PARAMETER:
-            self.scattering_parameter = value
+            self.scattering_parameter = VNAScatteringParameters(value)
             return
         if parameter == Parameter.TRIGGER_MODE:
             self.settings.trigger_mode = VNATriggerModes(value)
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_bool(self, parameter: Parameter, value: bool):
         """Set instrument settings parameter to the corresponding value
@@ -87,13 +97,9 @@ class VectorNetworkAnalyzer(Instrument):
             self.averaging_enabled = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(
-        self,
-        parameter: Parameter,
-        value: float,
-    ):
+    def _set_parameter_float(self, parameter: Parameter, value: float):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -119,8 +125,11 @@ class VectorNetworkAnalyzer(Instrument):
         if parameter == Parameter.IF_BANDWIDTH:
             self.if_bandwidth = value
             return
+        if parameter == Parameter.ELECTRICAL_DELAY:
+            self.electrical_delay = value
+            return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     def _set_parameter_int(self, parameter: Parameter, value: int):
         """Set instrument settings parameter to the corresponding value
@@ -138,37 +147,37 @@ class VectorNetworkAnalyzer(Instrument):
             self.number_points = value
             return
 
-        raise ValueError(f"Invalid Parameter: {parameter}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
     @property
     def power(self):
         """VectorNetworkAnalyzer 'power' property.
 
         Returns:
-            float: settings.power.
+            float: settings.power
         """
         return self.settings.power
 
     @power.setter
-    def power(self, value: float):
-        """sets the power"""
-        self.settings.power = value
-        self.device.power(power=str(self.settings.power))
+    @abstractmethod
+    def power(self, value: float, channel=1, port=1):
+        """sets the power in dBm"""
 
     @property
     def scattering_parameter(self):
         """VectorNetworkAnalyzer 'scattering_parameter' property.
 
         Returns:
-            float: settings.scattering_parameter.
+            str: settings.scattering_parameter.
         """
         return self.settings.scattering_parameter
 
     @scattering_parameter.setter
-    def scattering_parameter(self, value: str):
+    def scattering_parameter(self, value: str, channel=1):
         """sets the scattering parameter"""
         self.settings.scattering_parameter = VNAScatteringParameters(value)
-        self.device.scattering_parameter(par=self.settings.scattering_parameter.value)
+        scat_par = self.settings.scattering_parameter.value
+        self.send_command(f"CALC1:MEAS{channel}:PAR", scat_par)
 
     @property
     def frequency_span(self):
@@ -180,10 +189,11 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.frequency_span
 
     @frequency_span.setter
-    def frequency_span(self, value: float):
-        """sets the frequency span"""
+    def frequency_span(self, value: float, channel=1):
+        """sets the frequency span in kHz"""
         self.settings.frequency_span = value
-        self.device.freq_span(freq=str(self.settings.frequency_span))
+        freq = str(self.settings.frequency_span)
+        self.send_command(f"SENS{channel}:FREQ:SPAN", freq)
 
     @property
     def frequency_center(self):
@@ -195,10 +205,11 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.frequency_center
 
     @frequency_center.setter
-    def frequency_center(self, value: float):
-        """sets the frequency center"""
+    def frequency_center(self, value: float, channel=1):
+        """sets the frequency center in Hz"""
         self.settings.frequency_center = value
-        self.device.freq_center(freq=str(self.settings.frequency_center))
+        freq = str(self.settings.frequency_center)
+        self.send_command(f"SENS{channel}:FREQ:CENT", freq)
 
     @property
     def frequency_start(self):
@@ -210,10 +221,11 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.frequency_start
 
     @frequency_start.setter
-    def frequency_start(self, value: float):
-        """sets the frequency start"""
+    def frequency_start(self, value: float, channel=1):
+        """sets the frequency start in Hz"""
         self.settings.frequency_start = value
-        self.device.freq_start(freq=str(self.settings.frequency_start))
+        freq = str(self.settings.frequency_start)
+        self.send_command(f"SENS{channel}:FREQ:STAR", freq)
 
     @property
     def frequency_stop(self):
@@ -225,10 +237,11 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.frequency_stop
 
     @frequency_stop.setter
-    def frequency_stop(self, value: float):
-        """sets the frequency stop"""
+    def frequency_stop(self, value: float, channel=1):
+        """sets the frequency stop in Hz"""
         self.settings.frequency_stop = value
-        self.device.freq_stop(freq=str(self.settings.frequency_stop))
+        freq = str(self.settings.frequency_stop)
+        self.send_command(f"SENS{channel}:FREQ:STOP", freq)
 
     @property
     def if_bandwidth(self):
@@ -240,17 +253,16 @@ class VectorNetworkAnalyzer(Instrument):
         return self.settings.if_bandwidth
 
     @if_bandwidth.setter
-    def if_bandwidth(self, value: float):
-        """sets the if bandwidth"""
-        self.settings.if_bandwidth = value
-        self.device.if_bandwidth(bandwidth=str(self.settings.if_bandwidth))
+    @abstractmethod
+    def if_bandwidth(self, value: float, channel=1):
+        """sets the if bandwidth in Hz"""
 
     @property
     def averaging_enabled(self):
         """VectorNetworkAnalyzer 'averaging_enabled' property.
 
         Returns:
-            float: settings.averaging_enabled.
+            bool: settings.averaging_enabled.
         """
         return self.settings.averaging_enabled
 
@@ -258,30 +270,29 @@ class VectorNetworkAnalyzer(Instrument):
     def averaging_enabled(self, value: bool):
         """sets the averaging enabled"""
         self.settings.averaging_enabled = value
-        # TODO: verify the exact driver method to call
-        # self.device.average_state(state=str(self.settings.averaging_enabled))
+        self._average_state(state=self.settings.averaging_enabled)
 
     @property
     def number_averages(self):
         """VectorNetworkAnalyzer 'number_averages' property.
 
         Returns:
-            float: settings.number_averages.
+            int: settings.number_averages.
         """
         return self.settings.number_averages
 
     @number_averages.setter
-    def number_averages(self, value: int):
+    def number_averages(self, value: int, channel=1):
         """sets the number averages"""
         self.settings.number_averages = value
-        self.device.average_count(count=str(self.settings.number_averages))
+        self._average_count(count=str(self.settings.number_averages), channel=channel)
 
     @property
     def trigger_mode(self):
         """VectorNetworkAnalyzer 'trigger_mode' property.
 
         Returns:
-            float: settings.trigger_mode.
+            str: settings.trigger_mode.
         """
         return self.settings.trigger_mode
 
@@ -290,15 +301,48 @@ class VectorNetworkAnalyzer(Instrument):
         """VectorNetworkAnalyzer 'number_points' property.
 
         Returns:
-            float: settings.number_points.
+            int: settings.number_points.
         """
         return self.settings.number_points
 
     @number_points.setter
-    def number_points(self, value: int):
-        """sets the number of points"""
+    def number_points(self, value: int, channel=1):
+        """sets the number of points for sweep"""
         self.settings.number_points = value
-        self.device.freq_npoints(points=str(self.settings.number_points))
+        points = str(self.settings.number_points)
+        self.send_command(f":SENS{channel}:SWE:POIN", points)
+
+    @property
+    def electrical_delay(self):
+        """VectorNetworkAnalyzer 'electrical_delay' property.
+
+        Returns:
+            float: settings.electrical_delay.
+        """
+        return self.settings.electrical_delay
+
+    @electrical_delay.setter
+    @abstractmethod
+    def electrical_delay(self, value: float):
+        """
+        Set electrical delay in channel 1
+
+        Input:
+            value (str) : Electrical delay in ns
+                example: value = '100E-9' for 100ns
+        """
+
+    def _average_state(self, state, channel=1):
+        """Set status of Average."""
+        if state:
+            self.send_command(f"SENS{channel}:AVER:STAT", "ON")
+        else:
+            self.send_command(f"SENS{channel}:AVER:STAT", "OFF")
+
+    def _average_count(self, count, channel):
+        """Set the average count"""
+        self.send_command(f"SENS{channel}:AVER:COUN", count)
+        self.send_command(command=f":SENS{channel}:AVER:CLE", arg="")
 
     def to_dict(self):
         """Return a dict representation of the VectorNetworkAnalyzer class."""
@@ -317,46 +361,55 @@ class VectorNetworkAnalyzer(Instrument):
     @Instrument.CheckDeviceInitialized
     def turn_on(self):
         """Start an instrument."""
-        self.device.start()
+        return self.send_command(command=":OUTP", arg="ON")
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
         """Stop an instrument."""
-        self.device.stop()
+        return self.send_command(command=":OUTP", arg="OFF")
 
-    def send_command(self, command: str) -> str:
-        """send a command directly to the device"""
-        return self.device.send_command(command=command, arg="")
+    def send_command(self, command: str, arg: str = "?") -> str:
+        """
+        Send a command directly to the device.
 
-    def read(self) -> str:
-        """read directly from the device"""
-        return self.device.read()
+        Input:
+            command(str): Command to send the device
+            arg(str): Argument to send the command with. Default empty string
+        Example:
+            send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
+        """
+        return self.device.send_command(command=command, arg=arg)
+
+    def send_query(self, query: str):
+        """
+        Send a query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
+        return self.device.send_query(query)
+
+    def send_binary_query(self, query: str):
+        """
+        Send a binary query directly to the device.
+
+        Input:
+            query(str): Query to send the device
+        """
+        return self.device.send_binary_query(query)
 
     def autoscale(self):
-        """autoscale"""
-        self.device.autoscale()
+        """Autoscale"""
+        self.send_command(command="DISP:WIND:TRAC:Y:AUTO", arg="")
 
-    def output(self, arg: str | int) -> str:
-        """Turns RF output power on/off
-        Give no argument to query current status.
-        Parameters
-        -----------
-        arg : int, str
-            Set state to 'ON', 'OFF', 1, 0
-        """
-        if isinstance(arg, (str, int)) and arg in ["ON", "OFF", 1, 0]:
-            return self.device.output(arg=arg)
-        raise ValueError("valid argument type must be either str or int and only valid values are ON, OFF, 1, 0")
+    def read(self) -> str:
+        """Read directly from the device"""
+        return self.device.read()
 
-    def electrical_delay(self, time: str):
-        """Set electrical delay in 1
-        example input: time = '100E-9' for 100ns"""
-        self.device.electrical_delay(time=time)
+    def read_raw(self) -> str:
+        """Read raw data directly from the device"""
+        return self.device.read_raw()
 
-    def get_data(self):
-        """get data from device"""
-        return self.device.get_data()
-
-    def acquire_result(self):
-        """Convert the data received from the device to a Result object"""
-        return VNAResult(data=self.device.get_data())
+    def set_timeout(self, value: float):
+        """Set timeout in mili seconds"""
+        self.device.set_timeout(value)

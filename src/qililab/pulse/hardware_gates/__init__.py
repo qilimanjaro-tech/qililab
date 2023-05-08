@@ -1,4 +1,5 @@
 """__init__.py"""
+from .hardware_gate import HardwareGate
 from .hardware_gate_factory import HardwareGateFactory
 from .i import I
 from .m import M

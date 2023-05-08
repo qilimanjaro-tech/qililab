@@ -3,7 +3,7 @@ bandit==1.7.4
 black==23.1.0
 commitizen==2.40.0
 coverage==6.5.0
-cryptography==38.0.3
+cryptography==39.0.1
 flake8==5.0.4
 interrogate==1.5.0
 ipykernel==6.16.0
@@ -21,8 +21,10 @@ nbconvert==7.0.0
 nbformat==5.6.1
 nbqa==1.5.2
 nbsphinx==0.8.9
+Pillow==9.5.0
 pre-commit==2.20.0
 pycodestyle==2.9.1
+pydot==1.4.2
 PyJWT==2.6.0
 pylint==2.15.3
 pytest==7.1.3

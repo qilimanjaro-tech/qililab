@@ -174,19 +174,6 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
-class PulseName(str, Enum):
-    """Pulse names.
-
-    Args:
-        Enum (str): Available types of Pulse names:
-        * pulse
-        * readout_pulse
-    """
-
-    PULSE = "pulse"
-    READOUT_PULSE = "readout_pulse"
-
-
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -210,82 +197,6 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
-
-
-class BusCategory(str, Enum):
-    """Bus categories.
-
-    Args:
-        enum (str): Available categories of Bus:
-        * time_domain
-        * continuous
-        * simulated
-    """
-
-    TIME_DOMAIN = "time_domain"
-    CONTINUOUS = "continuous"
-    SIMULATED = "simulated"
-
-
-class BusSubCategory(str, Enum):
-    """Bus subcategories.
-
-    Args:
-        enum (str): Available subcategories of Bus:
-        * baseband
-        * control
-        * time_domain_readout
-        * current_bias
-        * microwave_bias
-        * continuous_readout
-        * simulated
-    """
-
-    BASEBAND = "baseband"
-    CONTROL = "control"
-    TIME_DOMAIN_READOUT = "readout"
-    CURRENT_BIAS = "current_bias"
-    MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "readout"
-    SIMULATED = "simulated"
-
-
-class SystemControlCategory(str, Enum):
-    """SystemControl categories.
-
-    Args:
-        enum (str): Available categories of SystemControl:
-        * time_domain
-        * continuous
-        * simulated
-    """
-
-    TIME_DOMAIN = "time_domain"
-    CONTINUOUS = "continuous"
-    SIMULATED = "simulated"
-
-
-class SystemControlSubCategory(str, Enum):
-    """SystemControl subcategories.
-
-    Args:
-        enum (str): Available subcategories of SystemControl:
-        * baseband
-        * control
-        * time_domain_readout
-        * current_bias
-        * microwave_bias
-        * continuous_readout
-        * simulated
-    """
-
-    BASEBAND = "baseband"
-    CONTROL = "control"
-    TIME_DOMAIN_READOUT = "readout"
-    CURRENT_BIAS = "current_bias"
-    MICROWAVE_BIAS = "microwave_bias"
-    CONTINUOUS_READOUT = "readout"
-    SIMULATED = "simulated"
 
 
 class NodeName(str, Enum):
@@ -361,43 +272,14 @@ class SystemControlName(str, Enum):
 
     Args:
         enum (str): Available system control element names:
-        * time_domain_baseband_system_control
-        * time_domain_control_system_control
-        * time_domain_readout_system_control
-        * continuous_current_bias_system_control
-        * continuous_microwave_bias_system_control
-        * continuous_readout_system_control
+        * system_control
+        * readout_system_control
+        * simulated_system_control
     """
 
-    TIME_DOMAIN_BASEBAND_SYSTEM_CONTROL = "time_domain_baseband_system_control"
-    TIME_DOMAIN_CONTROL_SYSTEM_CONTROL = "time_domain_control_system_control"
-    TIME_DOMAIN_READOUT_SYSTEM_CONTROL = "time_domain_readout_system_control"
-    CONTINUOUS_CURRENT_BIAS_SYSTEM_CONTROL = "continuous_current_bias_system_control"
-    CONTINUOUS_MICROWAVE_BIAS_SYSTEM_CONTROL = "continuous_microwave_bias_system_control"
-    CONTINUOUS_READOUT_SYSTEM_CONTROL = "continuous_readout_system_control"
+    SYSTEM_CONTROL = "system_control"
+    READOUT_SYSTEM_CONTROL = "readout_system_control"
     SIMULATED_SYSTEM_CONTROL = "simulated_system_control"
-
-
-class BusName(str, Enum):
-    """System Control names.
-
-    Args:
-        enum (str): Available bus element names:
-        * time_domain_baseband_bus
-        * time_domain_control_bus
-        * time_domain_readout_bus
-        * continuous_current_bias_bus
-        * continuous_microwave_bias_bus
-        * continuous_readout_bus
-    """
-
-    TIME_DOMAIN_BASEBAND_BUS = "time_domain_baseband_bus"
-    TIME_DOMAIN_CONTROL_BUS = "time_domain_control_bus"
-    TIME_DOMAIN_READOUT_BUS = "time_domain_readout_bus"
-    CONTINUOUS_CURRENT_BIAS_BUS = "continuous_current_bias_bus"
-    CONTINUOUS_MICROWAVE_BIAS_BUS = "continuous_microwave_bias_bus"
-    CONTINUOUS_READOUT_BUS = "continuous_readout_bus"
-    SIMULATED_BUS = "simulated_bus"
 
 
 class Parameter(str, Enum):
@@ -466,7 +348,21 @@ class Parameter(str, Enum):
     GAIN_PATH1 = "gain_path1"
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
+    OFFSET_OUT0 = "offset_out0"
+    OFFSET_OUT1 = "offset_out1"
+    OFFSET_OUT2 = "offset_out2"
+    OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
+    OPERATION_PARAMETER = "operation_parameter"
+    DEVICE_TIMEOUT = "device_timeout"
+    SWEEP_MODE = "sweep_mode"
+    ELECTRICAL_DELAY = "electrical_delay"
+    TIMEOUT = "timeout"
+    NUM_FLIPS = "num_flips"
+    WEIGHTS_PATH0 = "weights_path0"
+    WEIGHTS_PATH1 = "weights_path1"
+    WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
+    THRESHOLD = "threshold"
 
 
 class ResultName(str, Enum):
@@ -564,6 +460,23 @@ class VNAScatteringParameters(str, Enum):
     S21 = "S21"
 
 
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Modes
+
+    Args:
+        enum (str): Available types of sweeping modes:
+        * hold
+        * cont
+        * single
+        * group
+    """
+
+    HOLD = "hold"
+    CONT = "cont"
+    SING = "single"
+    GRO = "group"
+
+
 class Node(str, Enum):
     """Node elements
 
@@ -576,3 +489,48 @@ class Node(str, Enum):
     NODES = "nodes"
     FREQUENCY = "frequency"
     QUBIT_INDEX = "qubit_index"
+
+
+class Qubits(str, Enum):
+    ANY = "any"
+    ONE = "one"
+    TWO = "two"
+
+
+class OperationName(str, Enum):
+    """Operation names.
+
+    Args:
+        enum (str): Available types of operation names:
+        * RXY
+        * R180
+        * X
+        * WAIT
+        * RESET
+        * MEASURE
+        * BARRIER
+    """
+
+    RXY = "Rxy"  # noqa: E741
+    R180 = "R180"
+    X = "X"
+    CPHASE = "CPhase"
+    WAIT = "Wait"
+    RESET = "Reset"
+    MEASURE = "Measure"
+    BARRIER = "Barrier"
+    PARKING = "Parking"
+    PULSE = "Pulse"
+    GAUSSIAN = "Gaussian"
+    DRAG = "DRAG"
+    SQUARE = "Square"
+
+
+class OperationTimingsCalculationMethod(str, Enum):
+    AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
+    AS_LATE_AS_POSSIBLE = "as_late_as_possible"
+
+
+class ResetMethod(str, Enum):
+    PASSIVE = "passive"
+    ACTIVE = "active"

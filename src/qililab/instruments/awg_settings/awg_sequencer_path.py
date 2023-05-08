@@ -4,10 +4,7 @@
 from dataclasses import dataclass
 
 from qililab.instruments.awg_settings.awg_output_channel import AWGOutputChannel
-from qililab.instruments.awg_settings.typings import (
-    AWGSequencerPathIdentifier,
-    AWGSequencerPathTypes,
-)
+from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGSequencerPathTypes
 
 
 @dataclass

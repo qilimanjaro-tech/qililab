@@ -11,7 +11,7 @@ class TestPulseEvent:
 
     def test_modulated_waveforms_method(self, pulse_event: PulseEvent):
         """Test modulated_waveforms method."""
-        waveforms = pulse_event.modulated_waveforms(frequency=1e9)
+        waveforms = pulse_event.modulated_waveforms()
         assert isinstance(waveforms, Waveforms)
 
     def test_envelope_method(self, pulse_event: PulseEvent):
@@ -23,3 +23,7 @@ class TestPulseEvent:
         """Test to_dict method"""
         dictionary = pulse_event.to_dict()
         assert isinstance(dictionary, dict)
+
+    def test_end_time(self, pulse_event: PulseEvent):
+        """Test end_time property."""
+        assert pulse_event.duration == pulse_event.end_time - pulse_event.start_time

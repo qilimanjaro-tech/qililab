@@ -3,10 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from qililab.constants import PULSEEVENT, RUNCARD
+from qililab.constants import PULSEEVENT
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.readout_pulse import ReadoutPulse
-from qililab.typings.enums import PulseName
 from qililab.utils.waveforms import Waveforms
 
 
@@ -16,36 +14,33 @@ class PulseEvent:
 
     pulse: Pulse
     start_time: int
-    end_time: int = field(init=False, repr=False)
-    duration: int = field(init=False, repr=False)
 
-    def __post_init__(self):
-        """Set the duration of the PulseEvent from that of the Pulse and calculate end_time."""
-        self.duration = self.pulse.duration
-        self.end_time = self.start_time + self.duration
+    @property
+    def duration(self) -> int:
+        """Duration of the pulse in ns."""
+        return self.pulse.duration
 
-    def modulated_waveforms(self, frequency: float, resolution: float = 1.0) -> Waveforms:
+    @property
+    def end_time(self) -> int:
+        """End time of the pulse in ns."""
+        return self.start_time + self.duration
+
+    @property
+    def frequency(self) -> float:
+        """Frequency of the pulse in Hz."""
+        return self.pulse.frequency
+
+    def modulated_waveforms(self, resolution: float = 1.0, frequency: float = 0.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
+            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
 
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
-        return self.pulse.modulated_waveforms(frequency=frequency, resolution=resolution, start_time=self.start_time)
-
-    @property
-    def start(self):
-        """Pulse 'start' property.
-
-        Raises:
-            ValueError: Is start time is not defined.
-
-        Returns:
-            int: Start time of the pulse.
-        """
-        return self.start_time
+        return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time, frequency=frequency)
 
     def to_dict(self):
         """Return dictionary of pulse.
@@ -67,11 +62,7 @@ class PulseEvent:
         """
         pulse_settings = dictionary[PULSEEVENT.PULSE]
         print(dictionary)
-        pulse = (
-            Pulse.from_dict(pulse_settings)
-            if Pulse.name == PulseName(pulse_settings.pop(RUNCARD.NAME))
-            else ReadoutPulse.from_dict(pulse_settings)
-        )
+        pulse = Pulse.from_dict(pulse_settings)
         start_time = dictionary[PULSEEVENT.START_TIME]
         return PulseEvent(pulse=pulse, start_time=start_time)
 

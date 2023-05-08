@@ -7,14 +7,16 @@ from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
-from qililab.platform import Buses, Platform, Schema
+from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
+from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
+from tests.data import Galadriel
 
 from ...conftest import platform_db, platform_yaml
 
 
-@pytest.mark.parametrize("platform", [platform_db(), platform_yaml()])
+@pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
 
@@ -38,16 +40,19 @@ class TestPlatform:
         """Test platform name."""
         assert platform.name == DEFAULT_PLATFORM_NAME
 
-    def test_get_element_method_unknown_raises_error(self, platform: Platform):
+    def test_get_element_method_unknown_returns_none(self, platform: Platform):
         """Test get_element method with unknown element."""
-        with pytest.raises(ValueError):
-            platform.get_element(alias="ABC")
+        element = platform.get_element(alias="ABC")
+        assert element is None
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gate = platform.get_element(alias="M")
-        assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
-        assert gate.name == "M"
+        for qubit, gate_settings_list in platform.settings.gates.items():
+            for gate_settings in gate_settings_list:
+                alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
+                gate = platform.get_element(alias=alias)
+                assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
+                assert gate.name == gate_settings.name
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
@@ -92,3 +97,18 @@ class TestPlatform:
         with pytest.raises(NotImplementedError):
             save_platform(platform=platform, database=True)
         mock_dump.assert_called()
+
+    def test_get_bus_by_qubit_index(self, platform: Platform):
+        """Test get_bus_by_qubit_index method."""
+        control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        assert isinstance(control_bus, Bus)
+        assert isinstance(readout_bus, Bus)
+        assert not isinstance(control_bus.system_control, ReadoutSystemControl)
+        assert isinstance(readout_bus.system_control, ReadoutSystemControl)
+
+    def test_get_bus_by_qubit_index_raises_error(self, platform: Platform):
+        """Test that the get_bus_by_qubit_index method raises an error when there is no bus connected to the port
+        of the given qubit."""
+        platform.buses[0].settings.port = 100
+        with pytest.raises(ValueError, match="Could not find buses for qubit 0 connected to the ports"):
+            platform.get_bus_by_qubit_index(0)

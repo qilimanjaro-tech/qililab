@@ -10,10 +10,9 @@ EXPERIMENT_FILENAME = "experiment.yml"
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
 
-DEFAULT_PLOT_Y_LABEL = "Sequence idx"
-
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+GATE_ALIAS_REGEX = "(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
 # TODO: Distribute constants over different classes
 
@@ -27,6 +26,7 @@ class RUNCARD:
     CATEGORY = "category"
     SUBCATEGORY = "subcategory"
     INSTRUMENT = "instrument"
+    INSTRUMENTS = "instruments"
     ELEMENTS = "elements"
     READOUT = "readout"
     SETTINGS = "settings"
@@ -41,10 +41,6 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
-    BUS_CATEGORY = "bus_category"
-    BUS_SUBCATEGORY = "bus_subcategory"
-    SYSTEM_CONTROL_CATEGORY = "system_control_category"
-    SYSTEM_CONTROL_SUBCATEGORY = "system_control_subcategory"
 
 
 class PLATFORM:
@@ -54,6 +50,11 @@ class PLATFORM:
     DELAY_BEFORE_READOUT = "delay_before_readout"
     MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
     MASTER_DURATION_GATE = "master_duration_gate"
+    TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
+    RESET_METHOD = "reset_method"
+    PASSIVE_RESET_DURATION = "passive_reset_duration"
+    DEVICE_ID = "device_id"
+    MINIMUM_CLOCK_TIME = "minimum_clock_time"
 
 
 class CURRENTSOURCE:
@@ -93,7 +94,6 @@ class EXPERIMENT:
     LOOPS = "loops"
     OPTIONS = "options"
     DEVICE_ID = "device_id"
-    PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
     CIRCUITS = "circuits"
@@ -128,16 +128,10 @@ class LOOP:
 
     LOOP = "loop"
     PARAMETER = "parameter"
-    START = "start"
-    STOP = "stop"
     ALIAS = "alias"
-    NUM = "num"
-    STEP = "step"
-    LOGARITHMIC = "logarithmic"
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
-    OPTIONS = "options"
 
 
 class PULSESCHEDULES:
@@ -200,7 +194,7 @@ class INSTRUMENTREFERENCE:
 class QBLOXRESULT:
     """Qblox Results attribute names."""
 
-    PULSE_LENGTH = "pulse_length"
+    INTEGRATION_LENGTHS = "integration_lengths"
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 

@@ -1,6 +1,7 @@
 """__init__.py"""
 from .asdict_factory import dict_factory
 from .coordinate_decomposition import coordinate_decompose
+from .decorators import classproperty
 from .factory import Factory
 from .live_plot import LivePlot
 from .loop import Loop

@@ -7,7 +7,7 @@ from typing import Any
 
 from qililab.config import logger
 from qililab.instruments.current_source import CurrentSource
-from qililab.instruments.instrument import Instrument
+from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 from qililab.typings import InstrumentName
 from qililab.typings import QbloxS4g as QbloxS4gDriver
@@ -64,7 +64,10 @@ class QbloxS4g(CurrentSource):
         """Set Qblox instrument calibration settings."""
 
         if channel_id is None:
-            raise ValueError("channel not specified to update instrument")
+            if len(self.dacs) == 1:
+                channel_id = self.dacs[0]
+            else:
+                raise ValueError("channel not specified to update instrument")
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
@@ -83,7 +86,7 @@ class QbloxS4g(CurrentSource):
         if parameter == Parameter.RAMPING_RATE:
             self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
             return
-        raise ValueError(f"Invalid Parameter: {parameter.value}")
+        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_current(self, value: float | str | bool, channel_id: int, channel: Any):
