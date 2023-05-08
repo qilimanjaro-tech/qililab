@@ -33,6 +33,9 @@ class DummyAWG(AWGAnalogDigitalConverter):
     def _set_device_scope_hardware_averaging(self, value: bool, sequencer_id: int):
         pass
 
+    def _set_device_threshold(self, value: float, sequencer_id: int):
+        pass
+
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         pass
 

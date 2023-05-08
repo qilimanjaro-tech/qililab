@@ -33,6 +33,7 @@ class TestQbloxS4g:
         Args:
             pulsar (_type_): _description_
         """
-        with pytest.raises(ValueError, match="channel not specified to update instrument S4g"):
+        name = pulsar.name
+        with pytest.raises(ValueError, match=f"channel not specified to update instrument {name}"):
             pulsar.device = MagicMock
             pulsar.setup(parameter=Parameter, value="2", channel_id=None)

@@ -21,8 +21,9 @@ class TestInstument:
 
     def test_error_raises_instrument_not_connected(self, system_control: SystemControl):
         """ "Test Parameter error raises if the parameter is not found."""
+        name = system_control.instruments[0].name
         with pytest.raises(
             ValueError,
-            match="Instrument QCM is not connected " + "and cannot set the new value: 45 to the parameter voltage.",
+            match=f"Instrument {name} is not connected and cannot set the new value: 45 to the parameter voltage.",
         ):
             system_control.set_parameter(parameter="voltage", value="45", channel_id=1)

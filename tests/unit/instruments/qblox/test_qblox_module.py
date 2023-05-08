@@ -30,7 +30,7 @@ class DummyAWG(QbloxModule):
 @pytest.fixture(name="pulsar")
 def fixture_pulsar_controller_qcm():
     """Fixture that returns an instance of a dummy QbloxD5a."""
-    settings = settings = {
+    settings = {
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
