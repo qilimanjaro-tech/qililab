@@ -8,7 +8,6 @@ from qibo.gates import M, X
 from qililab import build_platform
 from qililab.experiment import Rabi
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings import LoopOptions
 from tests.data import Galadriel
 
 START = 1
@@ -27,7 +26,7 @@ def fixture_rabi():
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    analysis = Rabi(platform=platform, qubit=0, loop_options=LoopOptions(start=START, stop=STOP, num=NUM))
+    analysis = Rabi(platform=platform, qubit=0, loop_values=np.linspace(start=START, stop=STOP, num=NUM))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
         "i": i,
@@ -51,14 +50,13 @@ class TestRabi:
         assert isinstance(rabi.readout_bus.system_control, ReadoutSystemControl)
         # Test the experiment options
         assert len(rabi.options.loops) == 1
-        assert rabi.options.loops[0].alias == "X"
-        assert rabi.options.loops[0].parameter == "amplitude"
-        assert rabi.options.loops[0].options.start == START
-        assert rabi.options.loops[0].options.stop == STOP
-        assert rabi.options.loops[0].options.num == NUM
+        assert rabi.loop.alias == "X"
+        assert rabi.loop.parameter == "amplitude"
+        assert rabi.loop.start == START
+        assert rabi.loop.stop == STOP
+        assert rabi.loop.num == NUM
         assert rabi.options.settings.repetition_duration == 10000
         assert rabi.options.settings.hardware_average == 10000
-        assert rabi.options.plot_y_label == "|S21| [dB]"
 
     def test_func(self, rabi: Rabi):
         """Test the ``func`` method."""

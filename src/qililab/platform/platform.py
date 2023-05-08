@@ -1,11 +1,13 @@
 """Platform class."""
+import ast
+import re
 from dataclasses import asdict
 from typing import Tuple
 
 from qiboconnection.api import API
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
+from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import RuncardSchema
@@ -100,8 +102,13 @@ class Platform:
         if alias is not None:
             if alias == Category.PLATFORM.value:
                 return self.settings
-            if alias in self.gate_names:
-                return self.settings.get_gate(name=alias)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            if regex_match is not None:
+                name = regex_match.group("gate")
+                qubits_str = regex_match.group("qubits")
+                qubits = ast.literal_eval(qubits_str)
+                if name in self.gate_names:
+                    return self.settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -172,7 +179,8 @@ class Platform:
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
-        if alias in ([Category.PLATFORM.value] + self.gate_names):
+        regex_match = re.search(GATE_ALIAS_REGEX, alias)
+        if alias == Category.PLATFORM.value or regex_match is not None:
             self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
