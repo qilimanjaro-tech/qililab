@@ -158,6 +158,7 @@ class Platform:
         for bus_idx, bus in enumerate(self.buses):
             if bus.alias == alias:
                 return bus_idx, bus
+        return [], None
 
         return next(
             ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.settings.alias == alias),
