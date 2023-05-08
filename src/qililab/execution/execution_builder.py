@@ -1,5 +1,6 @@
 """ExecutionBuilder class"""
 from typing import Dict, List
+from warnings import warn
 
 from qililab.execution import BusExecution
 from qililab.execution.execution_manager import ExecutionManager
@@ -39,17 +40,22 @@ class ExecutionBuilder(metaclass=Singleton):
         Returns:
             ExecutionManager: ExecutionManager object.
         """
-        buses: Dict[int, BusExecution] = {}
+        warn(
+            "|WARNING| Bus alias are not unique and can be repeated in the runcard\nThe first bus alias that matches the loop alias will be selected"
+        )
+        buses: Dict[str, BusExecution] = {}
         for loop in loops:
-            alias, bus_idx, bus = self._get_bus_info_from_loop_alias(platform, loop)
+            alias, bus = self._get_bus_info_from_loop_alias(platform, loop)
             if bus is None:
                 raise ValueError(
-                    f"There is no bus with alias: {alias}\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
+                    f"There is no bus with alias '{alias}'\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
                 )
-            if bus_idx not in buses:
-                buses[bus_idx] = BusExecution(bus=bus, pulse_schedule=[])
-                continue
-            # buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=[])
+            elif alias in buses:
+                warn(
+                    f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
+                )
+            else:
+                buses[alias] = BusExecution(bus=bus, pulse_schedule=[])
 
         return ExecutionManager(buses=list(buses.values()), num_schedules=0, platform=platform)
 
@@ -62,5 +68,5 @@ class ExecutionBuilder(metaclass=Singleton):
     def _get_bus_info_from_loop_alias(self, platform: Platform, loop: Loop):
         """get the bus information that it is connected to the port from the loop alias. Loop alias has to be the same as the bus alias"""
         alias = loop.alias
-        bus_idx, bus = platform.get_bus_by_alias(alias=alias)
-        return alias, bus_idx, bus
+        bus = platform.get_bus_by_alias(alias=alias)
+        return alias, bus
