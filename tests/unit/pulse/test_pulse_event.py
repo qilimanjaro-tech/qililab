@@ -21,7 +21,7 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 # Parameters for the different corrections.
 TAU_BIAS_TEE = [1.3]
 TAU_EXPONENTIAL = [0.9]
-AMP = [-5.1, 1.2, 0.8, 2.0]
+AMP = [-5.1, -0.2, 0.8, 2.0]
 
 
 @pytest.fixture(
