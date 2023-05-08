@@ -12,7 +12,7 @@ from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the ExponentialCorrection.
 TAU_EXPONENTIAL = [0.7, 1.3]
-AMP = [-5.1, 1.2, 0.8, 2.0]
+AMP = [-5.1, -0.2, 0.8, 2.1]
 
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
