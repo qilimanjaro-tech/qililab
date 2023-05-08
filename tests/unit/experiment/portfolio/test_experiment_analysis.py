@@ -8,7 +8,7 @@ from qibo.models import Circuit
 
 from qililab import build_platform
 from qililab.experiment.portfolio import ExperimentAnalysis, FittingModel
-from qililab.typings import ExperimentOptions, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel
 
@@ -47,9 +47,9 @@ def fixture_experiment_analysis():
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias="X",
+        alias="X(0)",
         parameter=Parameter.DURATION,
-        options=LoopOptions(start=START, stop=STOP, num=NUM),
+        values=np.linspace(start=START, stop=STOP, num=NUM),
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
@@ -127,13 +127,13 @@ class TestExperimentAnalysis:
     def test_control_gate_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``control_gate_setup`` method."""
         assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
-        experiment_analysis.gate_setup(gate="X", parameters={Parameter.AMPLITUDE: 123})
+        experiment_analysis.gate_setup(gate="X(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
-        assert experiment_analysis.platform.get_element("X").amplitude == 123
+        assert experiment_analysis.platform.get_element("X(0)").amplitude == 123
 
     def test_measurement_setup(self, experiment_analysis: DummyExperimentAnalysis):
         """Test the ``measurement_setup`` method."""
         assert not hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has not been called
-        experiment_analysis.gate_setup(gate="M", parameters={Parameter.AMPLITUDE: 123})
+        experiment_analysis.gate_setup(gate="M(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis, "execution_manager")  # ``build_execution`` has been called
-        assert experiment_analysis.platform.get_element("M").amplitude == 123
+        assert experiment_analysis.platform.get_element("M(0)").amplitude == 123

@@ -11,6 +11,7 @@ from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -115,6 +116,25 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
+    def _split_schedule_for_sequencers(self, pulse_bus_schedule: PulseBusSchedule) -> List[PulseBusSchedule]:
+        """Returns a list of single-frequency PulseBusSchedules for each sequencer.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): schedule to split.
+
+        Raises:
+            IndexError: if the number of sequencers does not match the number of AWG Sequencers
+
+        Returns:
+            List[PulseBusSchedule]: list of single-frequency PulseBusSchedules for each sequencer.
+        """
+        frequencies = pulse_bus_schedule.frequencies()
+        if len(frequencies) > self._NUM_MAX_SEQUENCERS:
+            raise IndexError(
+                f"The number of frequencies must be less or equal than the number of sequencers. Got {len(frequencies)} frequencies and {self._NUM_MAX_SEQUENCERS} sequencers."
+            )
+        return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
+
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> List[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
@@ -136,11 +156,12 @@ class QbloxModule(AWG):
             self.repetition_duration = repetition_duration
             self.clear_cache()
 
+        sequencers_pulse_bus_schedule = self._split_schedule_for_sequencers(pulse_bus_schedule=pulse_bus_schedule)
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        for sequencer in sequencers:
+        for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
             if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
-                sequence = self._compile(pulse_bus_schedule, sequencer)
+                sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
                 compiled_sequences.append(self.sequences[sequencer][0])
@@ -153,6 +174,10 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
+        if (n_freqs := len(pulse_bus_schedule.frequencies())) != 1:
+            raise ValueError(
+                f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
+            )
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         self._cache[sequencer] = pulse_bus_schedule
         self.sequences[sequencer] = (sequence, False)
@@ -177,8 +202,8 @@ class QbloxModule(AWG):
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
         )
-        weights = self._generate_weights()
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
+        weights = self._generate_weights(sequencer_id=sequencer)
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
         """Generate Q1ASM program
@@ -237,7 +262,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         wait_time = self.repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
@@ -246,7 +271,7 @@ class QbloxModule(AWG):
         return program
 
     def _generate_acquisitions(self) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "single", with num_bins = 1
+        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
 
         Returns:
@@ -254,20 +279,19 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="single", num_bins=1, index=0)
+        acquisitions.add(name="default", num_bins=1, index=0)
         return acquisitions
 
     @abstractmethod
-    def _generate_weights(self) -> dict:
+    def _generate_weights(self, sequencer_id: int) -> Weights:
         """Generate acquisition weights.
 
         Returns:
             dict: Acquisition weights.
         """
-        return {}
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):

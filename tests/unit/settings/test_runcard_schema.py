@@ -1,8 +1,11 @@
 """Unit tests for the RuncardSchema class."""
+import ast
+import re
 from dataclasses import asdict
 
 import pytest
 
+from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import RuncardSchema
 from qililab.typings import Parameter
 from tests.data import Galadriel
@@ -55,16 +58,40 @@ class TestPlatformSettings:
         assert isinstance(settings.delay_before_readout, int)
         assert isinstance(settings.master_amplitude_gate, (int, float))
         assert isinstance(settings.master_duration_gate, int)
-        assert isinstance(settings.gates, list)
-        assert isinstance(settings.gates[0], settings.GateSettings)
+        assert isinstance(settings.gates, dict)
+        assert isinstance(settings.gates[0], list)
+        assert isinstance(settings.gates[0][0], settings.GateSettings)
+        assert isinstance(settings.reset_method, str)
+        assert isinstance(settings.passive_reset_duration, int)
+        assert isinstance(settings.operations, list)
+
+    def test_get_operation_settings(self):
+        """Test the ``get_operation_settings`` method of the PlatformSettings class."""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        for operation in settings.operations:
+            if isinstance(operation, dict):
+                operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
+            assert isinstance(settings.get_operation_settings(name=operation.name), settings.OperationSettings)
+
+    def test_get_operation_settings_raises_error_when_operation_does_not_exist(self):
+        """Test the ``get_gate`` method of the PlatformSettings class."""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        name = "unkown_operation"
+        with pytest.raises(ValueError, match=f"Operation {name} not found in platform settings."):
+            settings.get_operation_settings(name)
 
     def test_get_gate(self):
         """Test the ``get_gate`` method of the PlatformSettings class."""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        for gate in settings.gates:
-            assert settings.get_gate(name=gate.name) is gate
+        for qubit, gate_list in settings.gates.items():
+            for gate in gate_list:
+                assert settings.get_gate(name=gate.name, qubits=qubit) is gate
 
     def test_get_gate_raises_error(self):
         """Test that the ``get_gate`` method raises an error when the name is not found."""
@@ -72,16 +99,17 @@ class TestPlatformSettings:
         settings = runcard.settings
 
         name = "test"
+        qubits = 0
 
-        with pytest.raises(ValueError, match=f"Gate {name} not found in settings"):
-            settings.get_gate(name)
+        with pytest.raises(ValueError, match=f"Gate {name} for qubits {qubits} not found in settings"):
+            settings.get_gate(name, qubits=qubits)
 
     def test_gate_names(self):
         """Test the ``gate_names`` method of the PlatformSettings class."""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        expected_names = [g.name for g in settings.gates]
+        expected_names = list({gate.name for gates in settings.gates.values() for gate in gates})
 
         assert settings.gate_names == expected_names
 
@@ -102,19 +130,33 @@ class TestPlatformSettings:
         settings.set_parameter(parameter=Parameter.MASTER_DURATION_GATE, value=1234)
         assert settings.master_duration_gate == 1234
 
-    def test_set_gate_parameters(self):
+    @pytest.mark.parametrize("alias", ["X(0)", "X(1)", "M(0)", "M(1)", "M(0,1)", "M(1,0)"])
+    def test_set_gate_parameters(self, alias: str):
         """Test that with ``set_parameter`` we can change all settings of the platform's gates."""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
         settings = runcard.settings
 
-        settings.set_parameter(alias="M", parameter=Parameter.DURATION, value=1234)
-        assert settings.get_gate("M").duration == 1234
+        regex_match = re.search(GATE_ALIAS_REGEX, alias)
+        assert regex_match is not None
 
-        settings.set_parameter(alias="Y", parameter=Parameter.PHASE, value=1234)
-        assert settings.get_gate("Y").phase == 1234
+        name = regex_match.group("gate")
+        qubits_str = regex_match.group("qubits")
+        qubits = ast.literal_eval(qubits_str)
 
-        settings.set_parameter(alias="I", parameter=Parameter.AMPLITUDE, value=1234)
-        assert settings.get_gate("I").amplitude == 1234
+        settings.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits).duration == 1234
 
-        settings.set_parameter(alias="X", parameter=Parameter.DRAG_COEFFICIENT, value=1234)
-        assert settings.get_gate("X").shape["drag_coefficient"] == 1234
+        settings.set_parameter(alias=alias, parameter=Parameter.PHASE, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits).phase == 1234
+
+        settings.set_parameter(alias=alias, parameter=Parameter.AMPLITUDE, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits).amplitude == 1234
+
+    @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
+    def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str):
+        """Test that with ``set_parameter`` will raise error when alias has incorrect format"""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        with pytest.raises(ValueError, match=re.escape(f"Alias {alias} has incorrect format")):
+            settings.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
