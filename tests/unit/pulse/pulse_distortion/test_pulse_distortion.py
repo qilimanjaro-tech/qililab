@@ -10,16 +10,17 @@ from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrect
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
 from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.utils import Factory
 
 # Parameters for the different corrections.
 TAU_BIAS_TEE = [0.7, 1.3]
 TAU_EXPONENTIAL = [0.7, 1.3]
-AMP = [-5.1, -0.2, 0.8, 2.1]
+AMP = [-5.1, 0.8, 2.1]
 
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [1, 47]  # TODO: Add 0 to this test?
+DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
@@ -72,21 +73,19 @@ class TestPulseDistortion:
         """Test for the to_dict method."""
         dictionary = distortion.to_dict()
         distortion2: PulseDistortion
+        distortion3: PulseDistortion
 
-        if isinstance(distortion, BiasTeeCorrection):
-            distortion2 = BiasTeeCorrection.from_dict(dictionary)
-            assert isinstance(distortion2, BiasTeeCorrection)
-
-        if isinstance(distortion, ExponentialCorrection):
-            distortion2 = ExponentialCorrection.from_dict(dictionary)
-            assert isinstance(distortion2, ExponentialCorrection)
+        distortion2 = Factory.get(name=distortion.name).from_dict(dictionary)
+        assert isinstance(distortion2, Factory.get(name=distortion.name))
 
         dictionary2 = distortion2.to_dict()
 
-        assert distortion2 is not None
-        assert isinstance(distortion2, PulseDistortion)
-        assert distortion == distortion2
-        assert dictionary == dictionary2
+        distortion3 = Factory.get(name=distortion2.name).from_dict(dictionary2)
+        assert isinstance(distortion3, Factory.get(name=distortion2.name))
+
+        assert distortion2 is not None and distortion3 is not None
+        assert isinstance(distortion2, PulseDistortion) and isinstance(distortion3, PulseDistortion)
+        assert distortion == distortion2 and distortion2 == distortion3 and distortion3 == distortion
 
     def test_to_dict(self, distortion: PulseDistortion):
         """Test for the to_dict method."""

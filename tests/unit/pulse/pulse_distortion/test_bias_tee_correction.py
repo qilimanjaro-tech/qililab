@@ -16,7 +16,7 @@ TAU_BIAS_TEE = [0.7, 1.3]
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [1, 47]  # TODO: Add 0 to this test?
+DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]

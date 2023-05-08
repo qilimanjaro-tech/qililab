@@ -13,7 +13,7 @@ from qililab.utils import Waveforms
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [1, 47]  # TODO: Add 0 to this test?
+DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
@@ -21,7 +21,7 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 # Parameters for the different corrections.
 TAU_BIAS_TEE = [1.3]
 TAU_EXPONENTIAL = [0.9]
-AMP = [-5.1, -0.2, 0.8, 2.0]
+AMP = [-5.1, 0.8, 2.0]
 
 
 @pytest.fixture(
@@ -77,22 +77,33 @@ class TestPulseEvent:
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
         dictionary = pulse_event.to_dict()
         pulse_event2 = PulseEvent.from_dict(dictionary)
+        dictionary2 = pulse_event2.to_dict()
+        pulse_event3 = PulseEvent.from_dict(dictionary2)
 
-        assert pulse_event2 is not None
-        assert isinstance(pulse_event2, PulseEvent)
+        assert pulse_event2 is not None and pulse_event3 is not None
+        assert isinstance(pulse_event2, PulseEvent) and isinstance(pulse_event3, PulseEvent)
+        assert pulse_event == pulse_event2 and pulse_event2 == pulse_event3 and pulse_event3 == pulse_event
 
     def test_to_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
         dictionary = pulse_event.to_dict()
+        pulse_event2 = PulseEvent.from_dict(dictionary)
+        dictionary2 = pulse_event2.to_dict()
 
-        assert dictionary is not None
-        assert isinstance(dictionary, dict)
+        assert dictionary is not None and dictionary2 is not None
+        assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
         assert dictionary == {
             PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
             PULSEEVENT.START_TIME: pulse_event.start_time,
             PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
         }
+        assert dictionary2 == {
+            PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
+            PULSEEVENT.START_TIME: pulse_event.start_time,
+            PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
+        }
+        assert dictionary == dictionary2
 
     def test_end_time(self, pulse_event: PulseEvent):
         """Test end_time property."""

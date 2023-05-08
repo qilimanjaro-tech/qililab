@@ -61,10 +61,13 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
-        pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
-        dictionary[PULSE.PULSE_SHAPE] = Factory.get(name=pulse_shape_dict[RUNCARD.NAME]).from_dict(pulse_shape_dict)
+        local_dictionary = dictionary.copy()
+        pulse_shape_dict = local_dictionary[PULSE.PULSE_SHAPE]
+        local_dictionary[PULSE.PULSE_SHAPE] = Factory.get(name=pulse_shape_dict[RUNCARD.NAME]).from_dict(
+            pulse_shape_dict
+        )
 
-        return cls(**dictionary)
+        return cls(**local_dictionary)
 
     def to_dict(self):
         """Return dictionary of pulse.
