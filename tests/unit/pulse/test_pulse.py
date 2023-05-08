@@ -12,7 +12,7 @@ from qililab.utils import Waveforms
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [1, 47]  # TODO: Add 0 to this test?
+DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
@@ -54,18 +54,20 @@ class TestPulse:
         dictionary = pulse.to_dict()
         pulse2 = Pulse.from_dict(dictionary)
         dictionary2 = pulse2.to_dict()
+        pulse3 = Pulse.from_dict(dictionary2)
 
-        assert pulse2 is not None
-        assert isinstance(pulse2, Pulse)
-        assert pulse == pulse2
-        assert dictionary == dictionary2
+        assert pulse2 is not None and pulse2 is not None
+        assert isinstance(pulse2, Pulse) and isinstance(pulse3, Pulse)
+        assert pulse == pulse2 and pulse2 == pulse3 and pulse3 == pulse
 
     def test_to_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
         dictionary = pulse.to_dict()
+        pulse2 = Pulse.from_dict(dictionary)
+        dictionary2 = pulse2.to_dict()
 
-        assert dictionary is not None
-        assert isinstance(dictionary, dict)
+        assert dictionary is not None and dictionary is not None
+        assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
         assert dictionary == {
             PULSE.AMPLITUDE: pulse.amplitude,
             PULSE.FREQUENCY: pulse.frequency,
@@ -73,3 +75,11 @@ class TestPulse:
             PULSE.DURATION: pulse.duration,
             PULSE.PULSE_SHAPE: pulse.pulse_shape.to_dict(),
         }
+        assert dictionary2 == {
+            PULSE.AMPLITUDE: pulse.amplitude,
+            PULSE.FREQUENCY: pulse.frequency,
+            PULSE.PHASE: pulse.phase,
+            PULSE.DURATION: pulse.duration,
+            PULSE.PULSE_SHAPE: pulse.pulse_shape.to_dict(),
+        }
+        assert dictionary == dictionary2

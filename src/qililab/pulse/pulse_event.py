@@ -71,20 +71,21 @@ class PulseEvent:
         Returns:
             PulseEvent: Loaded class.
         """
-        pulse_settings = dictionary[PULSEEVENT.PULSE]
-        dictionary[PULSEEVENT.PULSE] = Pulse.from_dict(pulse_settings)
+        local_dictionary = dictionary.copy()
+        pulse_settings = local_dictionary[PULSEEVENT.PULSE]
+        local_dictionary[PULSEEVENT.PULSE] = Pulse.from_dict(pulse_settings)
 
         pulse_distortions_list: list[PulseDistortion] = []
 
-        if PULSEEVENT.PULSE_DISTORTIONS in dictionary:
+        if PULSEEVENT.PULSE_DISTORTIONS in local_dictionary:
             pulse_distortions_list.extend(
                 Factory.get(name=pulse_distortion_dict[RUNCARD.NAME]).from_dict(pulse_distortion_dict)
-                for pulse_distortion_dict in dictionary[PULSEEVENT.PULSE_DISTORTIONS]
+                for pulse_distortion_dict in local_dictionary[PULSEEVENT.PULSE_DISTORTIONS]
             )
 
-        dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
+        local_dictionary[PULSEEVENT.PULSE_DISTORTIONS] = pulse_distortions_list
 
-        return cls(**dictionary)
+        return cls(**local_dictionary)
 
     def to_dict(self):
         """Return dictionary of pulse.
