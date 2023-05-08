@@ -155,13 +155,13 @@ class Platform:
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        for bus in self.buses:
+        for bus_idx, bus in enumerate(self.buses):
             if bus.alias == alias:
-                return bus
+                return bus_idx, bus
 
         return next(
-            (element for element in self.buses if element.settings.alias == alias),
-            None,
+            ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.settings.alias == alias),
+            ([], None),
         )
 
     def set_parameter(
