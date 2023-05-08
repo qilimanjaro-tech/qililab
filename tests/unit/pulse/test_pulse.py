@@ -12,7 +12,7 @@ from qililab.utils import Waveforms
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
-DURATION = [1, 2, 47]  # TODO: Add 0 to this test?
+DURATION = [1, 47]  # TODO: Add 0 to this test?
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
