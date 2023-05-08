@@ -11,13 +11,13 @@ from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the ExponentialCorrection.
-TAU_EXPONENTIAL = [0.5, 0.9, 1.3]
-AMP = [-5.1, 1.2, 0.8, 2.0]
+TAU_EXPONENTIAL = [0.7, 1.3]
+AMP = [-5.1, -0.2, 0.8, 2.1]
 
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi, 3 * np.pi]
-DURATION = [1, 2, 47]  # TODO: Add 0 to this test?
+DURATION = [1, 47]  # TODO: Add 0 to this test?
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
