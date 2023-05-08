@@ -81,8 +81,12 @@ class TestPulseDistortion:
             distortion2 = ExponentialCorrection.from_dict(dictionary)
             assert isinstance(distortion2, ExponentialCorrection)
 
+        dictionary2 = distortion2.to_dict()
+
         assert distortion2 is not None
         assert isinstance(distortion2, PulseDistortion)
+        assert distortion == distortion2
+        assert dictionary == dictionary2
 
     def test_to_dict(self, distortion: PulseDistortion):
         """Test for the to_dict method."""
