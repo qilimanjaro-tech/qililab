@@ -22,8 +22,6 @@ class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     settings: RuncardSchema.PlatformSettings
-    # TODO: user implementation
-    # platform: RuncardSchema.PlatformSettings
 
     def __post_init__(self):
         """Post init."""
