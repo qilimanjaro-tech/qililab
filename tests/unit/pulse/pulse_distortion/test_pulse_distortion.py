@@ -60,7 +60,6 @@ class TestPulseDistortion:
     def test_apply(self, distortion: PulseDistortion, envelope: np.ndarray):
         """Test for the apply method."""
         corr_envelopes = [distortion.apply(envelope=envelope)]
-
         corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
         corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))

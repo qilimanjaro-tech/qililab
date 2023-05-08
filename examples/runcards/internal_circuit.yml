@@ -189,7 +189,7 @@ schema:
         instruments: [QCM, rs_2]
       port: 0
       # TODO: user implementation
-      # predistortions:
+      # distortions:
       #   - name: bias_tee_correction
       #     tau_bias_tee: 14
       #   - name: exponential_decay_correction
