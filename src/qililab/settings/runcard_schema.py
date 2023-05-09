@@ -44,7 +44,6 @@ class RuncardSchema:
             category: str
             system_control: dict
             port: int
-            # distortions: list
             alias: str | None = None
 
         @dataclass
