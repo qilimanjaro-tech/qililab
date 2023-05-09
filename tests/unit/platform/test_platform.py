@@ -116,10 +116,8 @@ class TestPlatform:
     @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
     def test_get_bus_by_alias(self, platform: Platform, alias):
         """Test get_bus_by_alias method"""
-        bus_idx, bus = platform.get_bus_by_alias(alias)
-        if bus is not None:
-            expected = platform.buses[bus_idx]
-            assert bus == expected
-        else:
+        bus = platform.get_bus_by_alias(alias)
+        if alias == "foobar":
             assert bus is None
-            assert bus_idx == []
+        if bus is not None:
+            assert bus in platform.buses
