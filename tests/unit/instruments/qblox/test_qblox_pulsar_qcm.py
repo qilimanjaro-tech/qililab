@@ -3,10 +3,7 @@ import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
 from qpysequence.sequence import Sequence
-from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
