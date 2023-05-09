@@ -302,8 +302,6 @@ class Parameter(str, Enum):
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
-    OFFSET_I = "offset_i"
-    OFFSET_Q = "offset_q"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"

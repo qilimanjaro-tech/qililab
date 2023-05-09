@@ -1,7 +1,5 @@
 """ AWG Qblox ADC Sequencer """
-
-
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from qililab.instruments.awg_settings.awg_adc_sequencer import AWGADCSequencer
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer

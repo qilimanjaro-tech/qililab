@@ -131,8 +131,6 @@ class TestQbloxQCM:
             (Parameter.GAIN, 0.02, 0),
             (Parameter.GAIN_PATH0, 0.03, 0),
             (Parameter.GAIN_PATH1, 0.01, 0),
-            (Parameter.OFFSET_I, 0.9, 0),
-            (Parameter.OFFSET_Q, 0.12, 0),
             (Parameter.OFFSET_OUT0, 1.234, None),
             (Parameter.OFFSET_OUT1, 0, None),
             (Parameter.OFFSET_OUT2, 0.123, None),
@@ -159,10 +157,6 @@ class TestQbloxQCM:
             assert qcm.awg_sequencers[channel_id].gain_path0 == value
         if parameter == Parameter.GAIN_PATH1:
             assert qcm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.OFFSET_I:
-            assert qcm.offset_i(sequencer_id=channel_id) == value
-        if parameter == Parameter.OFFSET_Q:
-            assert qcm.offset_q(sequencer_id=channel_id) == value
         if parameter == Parameter.OFFSET_PATH0:
             assert qcm.awg_sequencers[channel_id].offset_path0 == value
         if parameter == Parameter.OFFSET_PATH1:
