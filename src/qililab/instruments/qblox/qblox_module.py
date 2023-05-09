@@ -15,7 +15,7 @@ from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
-from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
+from qililab.instruments.awg_settings import AWGQbloxSequencer, AWGSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
@@ -153,14 +153,14 @@ class QbloxModule(AWG):
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
-            if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
+            if sequencer.identifier not in self._cache or pulse_bus_schedule != self._cache[sequencer.identifier]:
                 sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
-                compiled_sequences.append(self.sequences[sequencer][0])
+                compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGSequencer) -> QpySequence:
         """Compiles the ``PulseBusSchedule`` into an assembly program and updates the cache and the saved sequences.
 
         Args:
@@ -172,15 +172,15 @@ class QbloxModule(AWG):
                 f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
             )
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        self._cache[sequencer] = pulse_bus_schedule
-        self.sequences[sequencer] = (sequence, False)
+        self._cache[sequencer.identifier] = pulse_bus_schedule
+        self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int):
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGSequencer):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -190,12 +190,12 @@ class QbloxModule(AWG):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
+            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
-        weights = self._generate_weights(sequencer_id=sequencer)
+        weights = self._generate_weights(sequencer_id=sequencer.identifier)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
@@ -578,16 +578,16 @@ class QbloxModule(AWG):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
 
         for sequencer in self.awg_sequencers:
-            if sequencer.path0 is not None:
+            if sequencer.output_i is not None:
                 self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path0_out{sequencer.out_id_path0}_en", True
+                    f"channel_map_path{sequencer.path_i}_out{sequencer.output_i}_en", True
                 )
-            if sequencer.path1 is not None:
+            if sequencer.output_q is not None:
                 self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path1_out{sequencer.out_id_path1}_en", True
+                    f"channel_map_path{sequencer.path_q}_out{sequencer.output_q}_en", True
                 )
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGSequencer):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
@@ -604,7 +604,10 @@ class QbloxModule(AWG):
                 envelope = pulse_event.pulse.envelope(amplitude=1)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
-                waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+                if (sequencer.path_i, sequencer.path_q) == (0, 1):
+                    waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+                else:
+                    waveforms.add_pair((imag, real), name=pulse_event.pulse.label())
 
         return waveforms
 

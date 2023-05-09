@@ -117,10 +117,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer in sequencers:
-            if sequencer in self.sequences:
-                sequence_uploaded = self.sequences[sequencer][1]
+            if sequencer.identifier in self.sequences:
+                sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(sequencer=sequencer, name="default")
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
         return super().compile(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
