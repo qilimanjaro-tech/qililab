@@ -40,6 +40,14 @@ settings:
         shape:
           name: gaussian
           num_sigmas: 4
+      - name: Drag # mock drag gate (I have no idea on the orders of magnitude for the drag coefficient)
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 1
 schema:
   chip:
     id_: 0

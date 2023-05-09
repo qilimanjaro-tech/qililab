@@ -1,4 +1,5 @@
 """This file contains unit tests for the ``CircuitToPulses`` class."""
+import numpy as np
 import pytest
 from qibo.gates import M, X, Y
 from qibo.models import Circuit
@@ -7,6 +8,7 @@ from qililab.chip import Chip
 from qililab.pulse import CircuitToPulses, PulseSchedule, PulseShape
 from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
 from qililab.settings import RuncardSchema
+from qililab.transpiler import Drag
 from qililab.typings import Parameter
 
 
@@ -44,6 +46,13 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "phase": 90,
                     "duration": 40,
                     "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+                {
+                    "name": "Drag",
+                    "amplitude": 0.3,
+                    "phase": 90,
+                    "duration": 40,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
             ]
         },
@@ -124,11 +133,13 @@ class TestTranslation:
         circuit = Circuit(1)
         circuit.add(X(0))
         circuit.add(Y(0))
+        circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
         circuit.add(M(0))
 
         pulsed_gates = [
             platform_settings.get_gate(name="X", qubits=0),
             platform_settings.get_gate(name="Y", qubits=0),
+            platform_settings.get_gate(name="Drag", qubits=0),
             platform_settings.get_gate(name="M", qubits=0),
         ]
 
@@ -145,7 +156,7 @@ class TestTranslation:
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 
         assert control_pulse_bus_schedule.port == 0  # it targets the qubit, which is connected to port 0
-        assert len(control_pulse_bus_schedule.timeline) == 2  # it contains 2 gates
+        assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
         readout_pulse_bus_schedule = pulse_schedule.elements[1]
 
@@ -156,9 +167,16 @@ class TestTranslation:
 
         for pulse_event, gate_settings in zip(all_pulse_events, pulsed_gates):
             pulse = pulse_event.pulse
-            assert pulse.amplitude == gate_settings.amplitude
             assert pulse.duration == gate_settings.duration
-            assert pulse.phase == gate_settings.phase
+            if gate_settings.name == "Drag":
+                # drag amplitude is defined by the first parameter, in this case 1
+                drag_amplitude = (1 / np.pi) * gate_settings.amplitude
+                assert pulse.amplitude == drag_amplitude
+                # drag phase is defined by the second parameter, in this case 0.5
+                assert pulse.phase == 0.5
+            else:
+                assert pulse.amplitude == gate_settings.amplitude
+                assert pulse.phase == gate_settings.phase
 
             if gate_settings.name == "M":
                 frequency = chip.get_node_from_alias(alias="resonator").frequency
@@ -180,6 +198,7 @@ class TestTranslation:
         circuit = Circuit(1)
         circuit.add(X(0))
         circuit.add(Y(0))
+        circuit.add(Drag(0, 1, 0.5))
         circuit.add(M(0))
 
         pulse_schedule = translator.translate(circuits=[circuit], chip=chip)[0]
