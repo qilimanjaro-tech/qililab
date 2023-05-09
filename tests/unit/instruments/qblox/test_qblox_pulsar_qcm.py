@@ -238,7 +238,7 @@ class TestQbloxQCM:
         with pytest.raises(ValueError, match=expected_error_message):
             qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
 
-    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm, pulse_bus_schedule):
+    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
         # We change the dictionary and initialize the QCM
         qcm_settings = qcm.to_dict()
