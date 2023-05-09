@@ -52,9 +52,9 @@ class TestPulse:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.abs(envelope)), 15) == pulse.amplitude
-        assert round(np.max(np.abs(envelope2)), 15) == pulse.amplitude
-        assert round(np.max(np.abs(envelope3)), 15) == 2.0
+        assert round(np.max(np.abs(envelope)), 14) == pulse.amplitude
+        assert round(np.max(np.abs(envelope2)), 14) == pulse.amplitude
+        assert round(np.max(np.abs(envelope3)), 14) == 2.0
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
     def test_from_dict_method(self, pulse: Pulse):

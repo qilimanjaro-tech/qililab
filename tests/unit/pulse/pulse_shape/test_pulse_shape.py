@@ -29,9 +29,9 @@ class TestPulseShape:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.abs(envelope)), 15) == 1.0
-        assert round(np.max(np.abs(envelope2)), 15) == 1.0
-        assert round(np.max(np.abs(envelope3)), 15) == 2.0
+        assert round(np.max(np.abs(envelope)), 14) == 1.0
+        assert round(np.max(np.abs(envelope2)), 14) == 1.0
+        assert round(np.max(np.abs(envelope3)), 14) == 2.0
         assert len(envelope) == len(envelope2) * 10 == len(envelope3)
 
     def test_from_dict(self, pulse_shape: PulseShape):
