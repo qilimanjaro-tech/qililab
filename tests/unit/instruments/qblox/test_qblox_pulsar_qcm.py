@@ -2,11 +2,9 @@
 import copy
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
 from qpysequence.sequence import Sequence
-from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
@@ -239,3 +237,20 @@ class TestQbloxQCM:
         expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
         with pytest.raises(ValueError, match=expected_error_message):
             qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
+
+    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm, pulse_bus_schedule):
+        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
+        # We change the dictionary and initialize the QCM
+        qcm_settings = qcm.to_dict()
+        qcm_settings.pop("name")
+        qcm_settings["awg_sequencers"][0]["output_i"] = 1
+        qcm_settings["awg_sequencers"][0]["output_q"] = 0
+        new_qcm = QbloxQCM(settings=qcm_settings)
+        # We create a pulse bus schedule
+        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=0)
+        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
+        waveforms = sequences[0]._waveforms._waveforms
+        assert np.allclose(waveforms[0].data, 0)
+        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
