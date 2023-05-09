@@ -1,5 +1,6 @@
 """Tests for the ExecutionBuilder class."""
 from typing import List
+from warnings import catch_warnings
 
 import numpy as np
 import pytest
@@ -55,10 +56,24 @@ class TestExecutionBuilder:
         ]
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
 
-        loops.append(loops[-1])  # Repeat last alias to check for warning
-        execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
+        with catch_warnings(record=True) as w:
+            execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
+            assert len(w) == 1  # One warning is always thrown at the begining
+            assert execution_manager == expected
 
-        assert execution_manager == expected
+    def test_build_from_loops_method_repeated_alias(self, platform: Platform, loops: List[Loop]):
+        """Test build_from_loops method when two loops have the same alias"""
+        loops_alias = [loop.alias for loop in loops]
+        platform_bus_executions = [
+            BusExecution(bus=bus, pulse_schedule=[]) for bus in platform.buses if bus.alias in loops_alias
+        ]
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
+
+        loops.append(loops[-1])  # Repeat last alias to check for warning
+        with catch_warnings(record=True) as w:
+            execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
+            assert len(w) == 2  # Two warnings should be thrown: Beggining and repeated alias
+            assert execution_manager == expected
 
     def test_build_method_from_loops_with_wrong_loop_alias(self, platform: Platform, loops: List[Loop]):
         """Test build_from_loops method raises an exception with a loop whose alias does not match any bus alias"""
