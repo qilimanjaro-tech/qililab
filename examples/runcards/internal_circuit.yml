@@ -76,8 +76,8 @@ schema:
           chip_port_id: 1
           output_i: 1
           output_q: 0
-          weights_i: [1.]
-          weights_q: [1.]
+          weights_path0: [1., 1., 1., 1.]
+          weights_path1: [1., 1., 1., 1.]
           weighed_acq_enabled: false
           threshold: 0.5
           num_bins: 1
