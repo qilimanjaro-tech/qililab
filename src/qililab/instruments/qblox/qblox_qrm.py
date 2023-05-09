@@ -9,7 +9,7 @@ from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
+from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
@@ -248,15 +248,17 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         )
         loop.append_component(acq_instruction)
 
-    def _generate_weights(self, sequencer_id: int) -> Weights:
+    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.
 
         Returns:
             Weights: Acquisition weights.
         """
-        sequencer = self.awg_sequencers[sequencer_id]
         weights = Weights()
-        weights.add_pair(pair=(sequencer.weights_i, sequencer.weights_q), indices=(0, 1))
+        pair = (sequencer.weights_i, sequencer.weights_q)
+        if (sequencer.path_i, sequencer.path_q) == (1, 0):
+            pair = pair[::-1]  # swap paths
+        weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 
     def integration_length(self, sequencer_id: int):

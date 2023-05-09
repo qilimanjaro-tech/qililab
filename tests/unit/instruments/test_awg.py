@@ -30,8 +30,8 @@ def fixture_awg():
             {
                 "identifier": 0,
                 "chip_port_id": 100,
-                "path0": {"output_channel": 0},
-                "path1": {"output_channel": 1},
+                "output_i": 0,
+                "output_q": 1,
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,
@@ -44,8 +44,8 @@ def fixture_awg():
             {
                 "identifier": 1,
                 "chip_port_id": 101,
-                "path0": {"output_channel": 2},
-                "path1": {"output_channel": 3},
+                "output_i": 2,
+                "output_q": 3,
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.1,
                 "gain_q": 0.1,

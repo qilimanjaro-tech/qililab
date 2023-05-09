@@ -37,7 +37,9 @@ class AWGSequencer:
     gain_q: float
     offset_i: float
     offset_q: float
-    path_i: int = field(init=False)
+    path_i: int = field(
+        init=False,
+    )
     path_q: int = field(init=False)
 
     def __post_init__(self):
@@ -62,4 +64,8 @@ class AWGSequencer:
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""
-        return asdict(self, dict_factory=dict_factory) | {"output_i": self.output_i, "output_q": self.output_q}
+        dictionary = asdict(self, dict_factory=dict_factory) | {"output_i": self.output_i, "output_q": self.output_q}
+        # Remove values not present in the __init__ function
+        dictionary.pop("path_i")
+        dictionary.pop("path_q")
+        return dictionary

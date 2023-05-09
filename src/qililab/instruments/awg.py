@@ -90,7 +90,7 @@ class AWG(Instrument):
         """Return a dict representation of an AWG instrument."""
         return {RUNCARD.NAME: self.name.value} | self.settings.to_dict()
 
-    def get_sequencers_from_chip_port_id(self, chip_port_id: int) -> List[AWGSequencer]:
+    def get_sequencers_from_chip_port_id(self, chip_port_id: int):
         """Get sequencer ids from the chip port identifier
 
         Args:

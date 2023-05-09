@@ -357,8 +357,8 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
-    WEIGHTS_PATH0 = "weights_i"
-    WEIGHTS_PATH1 = "weights_q"
+    WEIGHTS_I = "weights_i"
+    WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
     THRESHOLD = "threshold"
 
