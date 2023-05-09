@@ -97,7 +97,7 @@ class AWG(Instrument):
             chip_port_id (int): chip port identifier
 
         Returns:
-            List[int]: list of integers containing the indices of the sequencers connected to the chip port
+            List[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
         """
         return [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]
 
