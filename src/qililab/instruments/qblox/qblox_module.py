@@ -153,7 +153,7 @@ class QbloxModule(AWG):
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
-            if sequencer.identifier not in self._cache or pulse_bus_schedule != self._cache[sequencer.identifier]:
+            if pulse_bus_schedule != self._cache.get(sequencer.identifier):
                 sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
