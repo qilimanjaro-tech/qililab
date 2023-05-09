@@ -46,7 +46,7 @@ class AWGSequencer:
             self.path_q = 1
         elif self.output_i in {1, 3, None} and self.output_q in {0, 2, None}:
             logger.warning(
-                "Cannot set `output_i=%i` and `output_q=%i` in hardware. The pulses sent to the sequencer %i will "
+                "Cannot set `output_i=%i` and `output_q=%i` in hardware. The I/Q signals sent to sequencer %i will "
                 "be swapped to allow this setting.",
                 self.output_i,
                 self.output_q,
