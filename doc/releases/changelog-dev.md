@@ -10,6 +10,9 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
+- Remove the `awg_iq_channels` from the `AWG` class. This mapping was already done within each sequencer.
+  [#323](https://github.com/qilimanjaro-tech/qililab/pull/323)
+
 ### Documentation
 
 ### Bug fixes
