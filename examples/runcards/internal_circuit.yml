@@ -78,18 +78,18 @@ schema:
             output_channel: 0
           path1:
             output_channel: 1
-          weights_path0: [1.]
-          weights_path1: [1.]
+          weights_i: [1.]
+          weights_q: [1.]
           weighed_acq_enabled: false
           threshold: 0.5
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 0.001
-          gain_path1: 0.02
+          gain_i: 0.001
+          gain_q: 0.02
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: true
           scope_acquire_trigger_mode: sequencer
@@ -125,12 +125,12 @@ schema:
             output_channel: 1
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 0.001
-          gain_path1: 0.02
+          gain_i: 0.001
+          gain_q: 0.02
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: true
     - name: rohde_schwarz

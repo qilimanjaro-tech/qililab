@@ -13,16 +13,16 @@ class AWGSequencer:
         identifier (int): The identifier of the sequencer
         chip_port_id (int | None): Port identifier of the chip where a specific sequencer is connected to.
                                     By default, using the first sequencer
-        path0 (AWGOutputChannel): AWG output channel associated with the path 0 sequencer
-        path1 (AWGOutputChannel): AWG output channel associated with the path 1 sequencer
+        output_i (int): AWG output associated with the I channel of the sequencer
+        output_q (int): AWG output associated with the Q channel of the sequencer
         intermediate_frequency (float): Frequency for each sequencer
         gain_imbalance (float): Amplitude added to the Q channel.
         phase_imbalance (float): Dephasing.
         hardware_modulation  (bool): Flag to determine if the modulation is performed by the device
-        gain_path0 (float): Gain step used by the sequencer path0.
-        gain_path1 (float): Gain step used by the sequencer path1.
-        offset_path0 (float): Path0 or I offset (unitless). amplitude + offset should be in range [0 to 1].
-        offset_path1 (float): Path1 or Q offset (unitless). amplitude + offset should be in range [0 to 1].
+        gain_i (float): Gain step used by the I channel of the sequencer.
+        gain_q (float): Gain step used by the Q channel of the sequencer.
+        offset_i (float): I offset (unitless). amplitude + offset should be in range [0 to 1].
+        offset_q (float): Q offset (unitless). amplitude + offset should be in range [0 to 1].
     """
 
     identifier: int
@@ -33,10 +33,10 @@ class AWGSequencer:
     gain_imbalance: float | None
     phase_imbalance: float | None
     hardware_modulation: bool
-    gain_path0: float
-    gain_path1: float
-    offset_path0: float
-    offset_path1: float
+    gain_i: float
+    gain_q: float
+    offset_i: float
+    offset_q: float
     path_i: int = field(init=False)
     path_q: int = field(init=False)
 

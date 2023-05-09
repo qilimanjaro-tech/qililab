@@ -256,7 +256,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         sequencer = self.awg_sequencers[sequencer_id]
         weights = Weights()
-        weights.add_pair(pair=(sequencer.weights_path0, sequencer.weights_path1), indices=(0, 1))
+        weights.add_pair(pair=(sequencer.weights_i, sequencer.weights_q), indices=(0, 1))
         return weights
 
     def integration_length(self, sequencer_id: int):

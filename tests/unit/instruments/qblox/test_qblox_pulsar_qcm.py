@@ -129,14 +129,14 @@ class TestQbloxQCM:
         "parameter, value, channel_id",
         [
             (Parameter.GAIN, 0.02, 0),
-            (Parameter.GAIN_PATH0, 0.03, 0),
-            (Parameter.GAIN_PATH1, 0.01, 0),
+            (Parameter.GAIN_I, 0.03, 0),
+            (Parameter.GAIN_Q, 0.01, 0),
             (Parameter.OFFSET_OUT0, 1.234, None),
             (Parameter.OFFSET_OUT1, 0, None),
             (Parameter.OFFSET_OUT2, 0.123, None),
             (Parameter.OFFSET_OUT3, 10, None),
-            (Parameter.OFFSET_PATH0, 0.8, 0),
-            (Parameter.OFFSET_PATH1, 0.11, 0),
+            (Parameter.OFFSET_I, 0.8, 0),
+            (Parameter.OFFSET_Q, 0.11, 0),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
@@ -151,16 +151,16 @@ class TestQbloxQCM:
         """Test setup method"""
         qcm.setup(parameter=parameter, value=value, channel_id=channel_id)
         if parameter == Parameter.GAIN:
-            assert qcm.awg_sequencers[channel_id].gain_path0 == value
-            assert qcm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.GAIN_PATH0:
-            assert qcm.awg_sequencers[channel_id].gain_path0 == value
-        if parameter == Parameter.GAIN_PATH1:
-            assert qcm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.OFFSET_PATH0:
-            assert qcm.awg_sequencers[channel_id].offset_path0 == value
-        if parameter == Parameter.OFFSET_PATH1:
-            assert qcm.awg_sequencers[channel_id].offset_path1 == value
+            assert qcm.awg_sequencers[channel_id].gain_i == value
+            assert qcm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.GAIN_I:
+            assert qcm.awg_sequencers[channel_id].gain_i == value
+        if parameter == Parameter.GAIN_Q:
+            assert qcm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.OFFSET_I:
+            assert qcm.awg_sequencers[channel_id].offset_i == value
+        if parameter == Parameter.OFFSET_Q:
+            assert qcm.awg_sequencers[channel_id].offset_q == value
         if parameter == Parameter.IF:
             assert qcm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
@@ -238,4 +238,4 @@ class TestQbloxQCM:
         """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
         expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
         with pytest.raises(ValueError, match=expected_error_message):
-            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)
+            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore

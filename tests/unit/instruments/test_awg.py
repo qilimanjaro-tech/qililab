@@ -33,12 +33,12 @@ def fixture_awg():
                 "path0": {"output_channel": 0},
                 "path1": {"output_channel": 1},
                 "intermediate_frequency": 20000000,
-                "gain_path0": 0.1,
-                "gain_path1": 0.1,
+                "gain_i": 0.1,
+                "gain_q": 0.1,
                 "gain_imbalance": 1,
                 "phase_imbalance": 0,
-                "offset_path0": 0,
-                "offset_path1": 0,
+                "offset_i": 0,
+                "offset_q": 0,
                 "hardware_modulation": True,
             },
             {
@@ -47,12 +47,12 @@ def fixture_awg():
                 "path0": {"output_channel": 2},
                 "path1": {"output_channel": 3},
                 "intermediate_frequency": 20000000,
-                "gain_path0": 0.1,
-                "gain_path1": 0.1,
+                "gain_i": 0.1,
+                "gain_q": 0.1,
                 "gain_imbalance": 1,
                 "phase_imbalance": 0,
-                "offset_path0": 0,
-                "offset_path1": 0,
+                "offset_i": 0,
+                "offset_q": 0,
                 "hardware_modulation": True,
             },
         ],
@@ -79,12 +79,12 @@ class TestInitialization:
             assert sequencer.output_i == 0 + 2 * idx
             assert sequencer.output_q == 1 + 2 * idx
             assert sequencer.intermediate_frequency == 20000000
-            assert sequencer.gain_path0 == 0.1
-            assert sequencer.gain_path1 == 0.1
+            assert sequencer.gain_i == 0.1
+            assert sequencer.gain_q == 0.1
             assert sequencer.gain_imbalance == 1
             assert sequencer.phase_imbalance == 0
-            assert sequencer.offset_path0 == 0
-            assert sequencer.offset_path1 == 0
+            assert sequencer.offset_i == 0
+            assert sequencer.offset_q == 0
             assert sequencer.hardware_modulation is True
 
 

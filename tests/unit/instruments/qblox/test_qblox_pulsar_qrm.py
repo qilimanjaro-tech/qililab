@@ -159,10 +159,10 @@ class TestQbloxQRM:
         "parameter, value, channel_id",
         [
             (Parameter.GAIN, 0.02, 0),
-            (Parameter.GAIN_PATH0, 0.03, 0),
-            (Parameter.GAIN_PATH1, 0.01, 0),
-            (Parameter.OFFSET_PATH0, 0.8, 0),
-            (Parameter.OFFSET_PATH1, 0.11, 0),
+            (Parameter.GAIN_I, 0.03, 0),
+            (Parameter.GAIN_Q, 0.01, 0),
+            (Parameter.OFFSET_I, 0.8, 0),
+            (Parameter.OFFSET_Q, 0.11, 0),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
@@ -197,16 +197,16 @@ class TestQbloxQRM:
         if channel_id is None:
             channel_id = 0
         if parameter == Parameter.GAIN:
-            assert qrm.awg_sequencers[channel_id].gain_path0 == value
-            assert qrm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.GAIN_PATH0:
-            assert qrm.awg_sequencers[channel_id].gain_path0 == value
-        if parameter == Parameter.GAIN_PATH1:
-            assert qrm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.OFFSET_PATH0:
-            assert qrm.awg_sequencers[channel_id].offset_path0 == value
-        if parameter == Parameter.OFFSET_PATH1:
-            assert qrm.awg_sequencers[channel_id].offset_path1 == value
+            assert qrm.awg_sequencers[channel_id].gain_i == value
+            assert qrm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.GAIN_I:
+            assert qrm.awg_sequencers[channel_id].gain_i == value
+        if parameter == Parameter.GAIN_Q:
+            assert qrm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.OFFSET_I:
+            assert qrm.awg_sequencers[channel_id].offset_i == value
+        if parameter == Parameter.OFFSET_Q:
+            assert qrm.awg_sequencers[channel_id].offset_q == value
         if parameter == Parameter.IF:
             assert qrm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
@@ -358,8 +358,8 @@ class TestAWGQbloxADCSequencer:
     def test_verify_weights(self):
         """Test the _verify_weights method."""
         mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
-        mock_sequencer.weights_path0 = [1.0]
-        mock_sequencer.weights_path1 = [1.0, 1.0]
+        mock_sequencer.weights_i = [1.0]
+        mock_sequencer.weights_q = [1.0, 1.0]
 
-        with pytest.raises(IndexError, match="The length of weights_path0 and weights_path1 must be equal."):
+        with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
             AWGQbloxADCSequencer._verify_weights(mock_sequencer)
