@@ -16,10 +16,7 @@ This document contains the changes of the current release.
   pulse_event = PulseEvent(
       pulse="example_pulse",
       start_time="example_start",
-      distortions=[
-          BiasTeeCorrection(tau_bias_tee=1.0),
-          BiasTeeCorrection(tau_bias_tee=0.8),
-      ],
+      distortions=[BiasTeeCorrection(tau_bias_tee=1.0), BiasTeeCorrection(tau_bias_tee=0.8)],
   )
   distorted_envelope = pulse_event.envelope()
   ```
