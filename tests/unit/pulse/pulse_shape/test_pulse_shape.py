@@ -18,10 +18,21 @@ class TestPulseShape:
 
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
-        envelope = pulse_shape.envelope(duration=50, amplitude=2.0, resolution=0.1)
+        envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
+        envelope2 = pulse_shape.envelope(duration=50, amplitude=1.0)
+        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
+
+        assert envelope is not None and envelope2 is not None and envelope3 is not None
         assert isinstance(envelope, np.ndarray)
+        assert isinstance(envelope2, np.ndarray)
+        assert isinstance(envelope3, np.ndarray)
+        assert round(np.max(np.abs(envelope)), 15) == 1.0
+        assert round(np.max(np.abs(envelope2)), 15) == 1.0
+        assert round(np.max(np.abs(envelope3)), 15) == 2.0
+        assert len(envelope) == len(envelope2) * 10 == len(envelope3)
 
     def test_to_dict_method(self, pulse_shape: PulseShape):
         """Test to_dict method"""
         dictionary = pulse_shape.to_dict()
+        assert dictionary is not None
         assert isinstance(dictionary, dict)

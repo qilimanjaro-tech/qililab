@@ -32,7 +32,10 @@ class Gaussian(PulseShape):
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        norm = np.max(np.abs(gaussian))
+
+        return gaussian * amplitude / norm
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":

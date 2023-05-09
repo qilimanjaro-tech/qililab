@@ -36,6 +36,7 @@ class Bus:
 
         system_control: SystemControl
         port: int
+        # distortions: list
         platform_instruments: InitVar[Instruments]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
