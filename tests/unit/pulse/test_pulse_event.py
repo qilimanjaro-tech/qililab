@@ -71,17 +71,18 @@ class TestPulseEvent:
         envelope2 = pulse_event.envelope(resolution=0.1)
         envelope3 = pulse_event.envelope(amplitude=2.0, resolution=0.1)
 
-        assert envelope is not None and envelope2 is not None and envelope3 is not None
-        assert isinstance(envelope, np.ndarray)
-        assert isinstance(envelope2, np.ndarray)
-        assert isinstance(envelope3, np.ndarray)
+        for env in [envelope, envelope2, envelope3]:
+            assert env is not None
+            assert isinstance(env, np.ndarray)
+
+            if pulse_distortions:
+                assert not np.array_equal(pulse.envelope(), env)
+
         assert round(np.max(np.abs(envelope)), 15) == pulse.amplitude
         assert round(np.max(np.abs(envelope2)), 15) == pulse.amplitude
         assert round(np.max(np.abs(envelope3)), 15) == 2.0
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
-        if pulse_distortions:
-            assert not np.array_equal(pulse.envelope(), envelope)
 
     def test_from_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
@@ -93,7 +94,7 @@ class TestPulseEvent:
 
         assert pulse_event2 is not None and pulse_event3 is not None
         assert isinstance(pulse_event2, PulseEvent) and isinstance(pulse_event3, PulseEvent)
-        assert pulse_event == pulse_event2 and pulse_event2 == pulse_event3 and pulse_event3 == pulse_event
+        assert pulse_event == pulse_event2 == pulse_event3
 
     def test_to_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
@@ -104,17 +105,15 @@ class TestPulseEvent:
 
         assert dictionary is not None and dictionary2 is not None
         assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
-        assert dictionary == {
-            PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
-            PULSEEVENT.START_TIME: pulse_event.start_time,
-            PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
-        }
-        assert dictionary2 == {
-            PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
-            PULSEEVENT.START_TIME: pulse_event.start_time,
-            PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
-        }
-        assert dictionary == dictionary2
+        assert (
+            dictionary
+            == dictionary2
+            == {
+                PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
+                PULSEEVENT.START_TIME: pulse_event.start_time,
+                PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
+            }
+        )
 
     def test_end_time(self, pulse_event: PulseEvent):
         """Test end_time property."""

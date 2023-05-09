@@ -48,10 +48,10 @@ class TestPulse:
         envelope2 = pulse.envelope(resolution=0.1)
         envelope3 = pulse.envelope(amplitude=2.0, resolution=0.1)
 
-        assert envelope is not None and envelope2 is not None and envelope3 is not None
-        assert isinstance(envelope, np.ndarray)
-        assert isinstance(envelope2, np.ndarray)
-        assert isinstance(envelope3, np.ndarray)
+        for env in [envelope, envelope2, envelope3]:
+            assert env is not None
+            assert isinstance(env, np.ndarray)
+
         assert round(np.max(np.abs(envelope)), 15) == pulse.amplitude
         assert round(np.max(np.abs(envelope2)), 15) == pulse.amplitude
         assert round(np.max(np.abs(envelope3)), 15) == 2.0
@@ -66,7 +66,7 @@ class TestPulse:
 
         assert pulse2 is not None and pulse2 is not None
         assert isinstance(pulse2, Pulse) and isinstance(pulse3, Pulse)
-        assert pulse == pulse2 and pulse2 == pulse3 and pulse3 == pulse
+        assert pulse == pulse2 == pulse3
 
     def test_to_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
@@ -76,18 +76,14 @@ class TestPulse:
 
         assert dictionary is not None and dictionary is not None
         assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
-        assert dictionary == {
-            PULSE.AMPLITUDE: pulse.amplitude,
-            PULSE.FREQUENCY: pulse.frequency,
-            PULSE.PHASE: pulse.phase,
-            PULSE.DURATION: pulse.duration,
-            PULSE.PULSE_SHAPE: pulse.pulse_shape.to_dict(),
-        }
-        assert dictionary2 == {
-            PULSE.AMPLITUDE: pulse.amplitude,
-            PULSE.FREQUENCY: pulse.frequency,
-            PULSE.PHASE: pulse.phase,
-            PULSE.DURATION: pulse.duration,
-            PULSE.PULSE_SHAPE: pulse.pulse_shape.to_dict(),
-        }
-        assert dictionary == dictionary2
+        assert (
+            dictionary
+            == dictionary2
+            == {
+                PULSE.AMPLITUDE: pulse.amplitude,
+                PULSE.FREQUENCY: pulse.frequency,
+                PULSE.PHASE: pulse.phase,
+                PULSE.DURATION: pulse.duration,
+                PULSE.PULSE_SHAPE: pulse.pulse_shape.to_dict(),
+            }
+        )

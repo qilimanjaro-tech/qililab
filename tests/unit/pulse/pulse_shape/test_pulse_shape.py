@@ -22,10 +22,10 @@ class TestPulseShape:
         envelope2 = pulse_shape.envelope(duration=50, amplitude=1.0)
         envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
 
-        assert envelope is not None and envelope2 is not None and envelope3 is not None
-        assert isinstance(envelope, np.ndarray)
-        assert isinstance(envelope2, np.ndarray)
-        assert isinstance(envelope3, np.ndarray)
+        for env in [envelope, envelope2, envelope3]:
+            assert env is not None
+            assert isinstance(env, np.ndarray)
+
         assert round(np.max(np.abs(envelope)), 15) == 1.0
         assert round(np.max(np.abs(envelope2)), 15) == 1.0
         assert round(np.max(np.abs(envelope3)), 15) == 2.0
