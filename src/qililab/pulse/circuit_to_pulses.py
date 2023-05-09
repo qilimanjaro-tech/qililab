@@ -14,6 +14,7 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
+from qililab.transpiler import Drag
 from qililab.utils import Factory
 
 
@@ -42,7 +43,7 @@ class CircuitToPulses:
             pulse_schedule = PulseSchedule()
             time: Dict[int, int] = {}  # restart time
             readout_gates = circuit.gates_of_type(M)
-            control_gates = [
+            control_gates = [  # TODO do we want to call these control gates?
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
             for gate in control_gates:
@@ -72,14 +73,21 @@ class CircuitToPulses:
         """Translate a gate into a pulse event.
 
         Args:
-            gate (Gate): Qibo Gate.
+            time (??)
+            control_gate (Gate): Qibo Gate. (??)
+            chip (??)
 
         Returns:
-            PulseEvent: PulseEvent object.
+            PulseEvent: PulseEvent object. (thanks docstring, very helpful)
+
+        For a Drag pulse R(a,b) the corresponding pulse will have amplitude a/pi * qubit_pi_amp
+        where qubit_pi_amp is the amplitude of the pi pulse for the given qubit calibrated from Rabi.
+        The phase will correspond to the rotation around Z from b in R(a,b)
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
-        # TODO: Adapt this code to translate two-qubit gates.
+        # TODO: Add Drag pulse gate
+        # TODO: Add CPhase gate
         qubit_idx = control_gate.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
         port = chip.get_port(node)
@@ -88,21 +96,46 @@ class CircuitToPulses:
             qubit_idx=qubit_idx,
             pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
         )
-        return (
-            PulseEvent(
-                pulse=Pulse(
-                    amplitude=float(gate_settings.amplitude),
-                    phase=float(gate_settings.phase),
-                    duration=gate_settings.duration,
-                    pulse_shape=pulse_shape,
-                    frequency=node.frequency,
-                ),
-                start_time=old_time,
+        # TODO would be better if native gates are not loaded from "gate settings" but applied as native pulses
+        # however, this is related to runcard structure so for the moment we define native gates as gates
+        if isinstance(control_gate, Drag):
+            return (
+                PulseEvent(
+                    # TODO: gate parameters are set here instead of at the Drag gate definition in hardware gates
+                    # because the gate definition is confusing (Drag is just a pulse, not an actual gate)
+                    pulse=Pulse(
+                        amplitude=(control_gate.parameters[0] / np.pi)
+                        * gate_settings.amplitude,  # TODO: note that the amplitude from gate in runcard should be that of the pi pulse calibration
+                        phase=control_gate.parameters[
+                            1
+                        ],  # TODO: phase from gate parameters should be None since it is overwritten here anyways (to avoid confusion we should check that it is None)
+                        # TODO: do we need to ensure phase is float (see below)
+                        duration=gate_settings.duration,
+                        pulse_shape=pulse_shape,
+                        frequency=node.frequency,
+                    ),
+                    start_time=old_time,
+                )
+                if gate_settings.duration > 0
+                else None,
+                port,
             )
-            if gate_settings.duration > 0
-            else None,
-            port,
-        )
+        else:
+            return (
+                PulseEvent(
+                    pulse=Pulse(
+                        amplitude=float(gate_settings.amplitude),
+                        phase=float(gate_settings.phase),  # TODO why float this (ﾉ@_@)ﾉ
+                        duration=gate_settings.duration,
+                        pulse_shape=pulse_shape,
+                        frequency=node.frequency,
+                    ),
+                    start_time=old_time,
+                )
+                if gate_settings.duration > 0
+                else None,
+                port,
+            )
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
         """get gate settings with master values"""
@@ -112,6 +145,7 @@ class CircuitToPulses:
             master_duration_gate=self.settings.master_duration_gate,
         )
         if (
+            # TODO what and why
             not isinstance(gate_settings.amplitude, float)
             and not isinstance(gate_settings.amplitude, int)
             and not isinstance(gate_settings.amplitude, np.number)
@@ -122,6 +156,8 @@ class CircuitToPulses:
             )
 
         if (
+            # TODO why must duration be an int and is converting to int safe?
+            # shouldnt we raise an error instead if this is important?
             not isinstance(gate_settings.duration, float)
             and not isinstance(gate_settings.duration, int)
             and not isinstance(gate_settings.duration, np.number)

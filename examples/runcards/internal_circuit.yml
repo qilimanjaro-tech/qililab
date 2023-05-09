@@ -78,6 +78,10 @@ schema:
             output_channel: 0
           path1:
             output_channel: 1
+          weights_path0: [1.]
+          weights_path1: [1.]
+          weighed_acq_enabled: false
+          threshold: 0.5
           num_bins: 1
           intermediate_frequency: 2.e+07
           gain_path0: 0.001
