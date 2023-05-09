@@ -13,4 +13,4 @@ class AWGSequencerPath:
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer Path."""
-        return {"path_id": self.path_id, "output_channel": self.output_channel}
+        return {"output_channel": self.output_channel}
