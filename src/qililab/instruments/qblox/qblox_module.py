@@ -6,9 +6,9 @@ from typing import Dict, List, Sequence, Tuple, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -242,7 +242,8 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
+        nshots = self.nshots or 1
+        avg_loop = Loop(name="average", begin=nshots)  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
@@ -267,9 +268,10 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
-        wait_time = self.repetition_duration - avg_loop.duration_iter
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
+        if self.repetition_duration is not None:
+            wait_time = self.repetition_duration - avg_loop.duration_iter
+            if wait_time > self._MIN_WAIT_TIME:
+                avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
