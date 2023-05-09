@@ -418,7 +418,7 @@ class QbloxModule(AWG):
         # update value in the instrument
         path = self.awg_sequencers[sequencer_id].path_i
         sequencer = self.device.sequencers[sequencer_id]
-        setattr(sequencer, f"offset_awg_path{path}", float(value))
+        getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
@@ -436,7 +436,7 @@ class QbloxModule(AWG):
         # update value in the instrument
         path = self.awg_sequencers[sequencer_id].path_q
         sequencer = self.device.sequencers[sequencer_id]
-        setattr(sequencer, f"offset_awg_path{path}", float(value))
+        getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_out_offset(self, output: int, value: float | str | bool):
@@ -474,7 +474,7 @@ class QbloxModule(AWG):
         # update value in the instrument
         path = self.awg_sequencers[sequencer_id].path_i
         sequencer = self.device.sequencers[sequencer_id]
-        setattr(sequencer, f"gain_awg_path{path}", float(value))
+        getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_q(self, value: float | str | bool, sequencer_id: int):
@@ -492,7 +492,7 @@ class QbloxModule(AWG):
         # update value in the instrument
         path = self.awg_sequencers[sequencer_id].path_q
         sequencer = self.device.sequencers[sequencer_id]
-        setattr(sequencer, f"gain_awg_path{path}", float(value))
+        getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
