@@ -55,7 +55,7 @@ class TestExecutionBuilder:
         ]
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
 
-        loops.append(loops_alias[-1])  # Repeat last alias to check for warning
+        loops.append(loops[-1])  # Repeat last alias to check for warning
         execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
 
         assert execution_manager == expected
