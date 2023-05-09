@@ -37,10 +37,8 @@ class AWGSequencer:
     gain_q: float
     offset_i: float
     offset_q: float
-    path_i: int = field(
-        init=False,
-    )
-    path_q: int = field(init=False)
+    path_i: int = field(init=False)  # sequencer path that corresponds to the I channel
+    path_q: int = field(init=False)  # sequencer path that corresponds to the Q channel
 
     def __post_init__(self):
         if self.output_i in {0, 2, None} and self.output_q in {1, 3, None}:

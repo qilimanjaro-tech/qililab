@@ -404,7 +404,7 @@ class QbloxModule(AWG):
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
-        """set offset path0
+        """Set the offset of the I channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -422,7 +422,7 @@ class QbloxModule(AWG):
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
-        """set offset path1
+        """Set the offset of the Q channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -478,7 +478,7 @@ class QbloxModule(AWG):
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_q(self, value: float | str | bool, sequencer_id: int):
-        """set gain path1
+        """Set the gain of the Q channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
