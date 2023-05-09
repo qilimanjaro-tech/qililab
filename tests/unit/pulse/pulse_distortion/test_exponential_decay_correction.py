@@ -24,13 +24,13 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 
 
 @pytest.fixture(
-    name="distortion",
+    name="pulse_distortion",
     params=[
         ExponentialCorrection(tau_exponential=tau_exponential, amp=amp)
         for tau_exponential, amp in itertools.product(TAU_EXPONENTIAL, AMP)
     ],
 )
-def fixture_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
+def fixture_pulse_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
     """Fixture for the ExponentialCorrection distortion class."""
     return request.param
 
@@ -54,9 +54,9 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
 class TestExponentialCorrection:
     """Unit tests checking the ExponentialCorrection attributes and methods"""
 
-    def test_apply(self, distortion: ExponentialCorrection, envelope: np.ndarray):
+    def test_apply(self, pulse_distortion: ExponentialCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
-        corr_envelopes = [distortion.apply(envelope=envelope)]
+        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
         corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
@@ -68,35 +68,35 @@ class TestExponentialCorrection:
             assert round(np.max(np.abs(corr_envelope)), 14) == round(np.max(np.abs(envelope)), 14)
             assert not np.array_equal(corr_envelope, envelope)
 
-    def test_from_dict(self, distortion: ExponentialCorrection):
+    def test_from_dict(self, pulse_distortion: ExponentialCorrection):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
-        distortions = [ExponentialCorrection.from_dict(dictionary)]
+        dictionary = pulse_distortion.to_dict()
+        pulse_distortions = [ExponentialCorrection.from_dict(dictionary)]
 
         dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
-        distortions.append(ExponentialCorrection.from_dict(dictionary))
+        pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
         dictionary.pop(RUNCARD.NAME)
-        distortions.append(ExponentialCorrection.from_dict(dictionary))
+        pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
         dictionary[PulseDistortionSettingsName.TAU_EXPONENTIAL.value] = 0.5
         dictionary[PulseDistortionSettingsName.AMP.value] = 1.2
         dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
-        distortions.append(ExponentialCorrection.from_dict(dictionary))
+        pulse_distortions.append(ExponentialCorrection.from_dict(dictionary))
 
-        for distortion in distortions:
+        for distortion in pulse_distortions:
             assert distortion is not None
             assert isinstance(distortion, ExponentialCorrection)
 
-    def test_to_dict(self, distortion: ExponentialCorrection):
+    def test_to_dict(self, pulse_distortion: ExponentialCorrection):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
+        dictionary = pulse_distortion.to_dict()
 
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: distortion.name.value,
-            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: distortion.tau_exponential,
-            PulseDistortionSettingsName.AMP.value: distortion.amp,
-            PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+            RUNCARD.NAME: pulse_distortion.name.value,
+            PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
+            PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
         }

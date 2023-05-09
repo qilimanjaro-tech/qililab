@@ -2,7 +2,10 @@
 import numpy as np
 import pytest
 
+from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+from qililab.typings.enums import PulseShapeSettingsName
+from qililab.utils import Factory
 
 
 @pytest.fixture(
@@ -31,8 +34,41 @@ class TestPulseShape:
         assert round(np.max(np.abs(envelope3)), 15) == 2.0
         assert len(envelope) == len(envelope2) * 10 == len(envelope3)
 
+    def test_from_dict(self, pulse_shape: PulseShape):
+        """Test for the to_dict method."""
+        dictionary = pulse_shape.to_dict()
+        pulse_shape2: PulseShape = Factory.get(name=pulse_shape.name).from_dict(dictionary)
+
+        dictionary2 = pulse_shape2.to_dict()
+        pulse_shape3: PulseShape = Factory.get(name=pulse_shape2.name).from_dict(dictionary2)
+
+        assert isinstance(pulse_shape2, Factory.get(name=pulse_shape.name))
+        assert isinstance(pulse_shape3, Factory.get(name=pulse_shape2.name))
+        assert pulse_shape2 is not None and pulse_shape3 is not None
+        assert isinstance(pulse_shape2, PulseShape) and isinstance(pulse_shape3, PulseShape)
+        assert pulse_shape == pulse_shape2 == pulse_shape3
+
     def test_to_dict_method(self, pulse_shape: PulseShape):
         """Test to_dict method"""
         dictionary = pulse_shape.to_dict()
+
         assert dictionary is not None
         assert isinstance(dictionary, dict)
+
+        if isinstance(pulse_shape, Rectangular):
+            assert dictionary == {
+                RUNCARD.NAME: pulse_shape.name.value,
+            }
+
+        if isinstance(pulse_shape, Gaussian):
+            assert dictionary == {
+                RUNCARD.NAME: pulse_shape.name.value,
+                PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
+            }
+
+        if isinstance(pulse_shape, Drag):
+            assert dictionary == {
+                RUNCARD.NAME: pulse_shape.name.value,
+                PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
+                PulseShapeSettingsName.DRAG_COEFFICIENT.value: pulse_shape.drag_coefficient,
+            }

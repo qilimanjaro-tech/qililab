@@ -27,14 +27,14 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 
 
 @pytest.fixture(
-    name="distortion",
+    name="pulse_distortion",
     params=[
         ExponentialCorrection(tau_exponential=tau_exponential, amp=amp)
         for tau_exponential, amp in itertools.product(TAU_EXPONENTIAL, AMP)
     ]
     + [BiasTeeCorrection(tau_bias_tee=tau_bias_tee) for tau_bias_tee in TAU_BIAS_TEE],
 )
-def fixture_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
+def fixture_pulse_distortion(request: pytest.FixtureRequest) -> ExponentialCorrection:
     """Fixture for the pulse distortion class."""
     return request.param
 
@@ -58,9 +58,9 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
 class TestPulseDistortion:
     """Unit tests checking the PulseDistortion attributes and methods"""
 
-    def test_apply(self, distortion: PulseDistortion, envelope: np.ndarray):
+    def test_apply(self, pulse_distortion: PulseDistortion, envelope: np.ndarray):
         """Test for the apply method."""
-        corr_envelopes = [distortion.apply(envelope=envelope)]
+        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
         corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
@@ -72,38 +72,38 @@ class TestPulseDistortion:
             assert round(np.max(np.abs(corr_envelope)), 14) == round(np.max(np.abs(envelope)), 14)
             assert not np.array_equal(corr_envelope, envelope)
 
-    def test_from_dict(self, distortion: PulseDistortion):
+    def test_from_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
-        distortion2: PulseDistortion = Factory.get(name=distortion.name).from_dict(dictionary)
+        dictionary = pulse_distortion.to_dict()
+        pulse_distortion2: PulseDistortion = Factory.get(name=pulse_distortion.name).from_dict(dictionary)
 
-        dictionary2 = distortion2.to_dict()
-        distortion3: PulseDistortion = Factory.get(name=distortion2.name).from_dict(dictionary2)
+        dictionary2 = pulse_distortion2.to_dict()
+        pulse_distortion3: PulseDistortion = Factory.get(name=pulse_distortion2.name).from_dict(dictionary2)
 
-        assert isinstance(distortion2, Factory.get(name=distortion.name))
-        assert isinstance(distortion3, Factory.get(name=distortion2.name))
-        assert distortion2 is not None and distortion3 is not None
-        assert isinstance(distortion2, PulseDistortion) and isinstance(distortion3, PulseDistortion)
-        assert distortion == distortion2 and distortion2 == distortion3 and distortion3 == distortion
+        assert isinstance(pulse_distortion2, Factory.get(name=pulse_distortion.name))
+        assert isinstance(pulse_distortion3, Factory.get(name=pulse_distortion2.name))
+        assert pulse_distortion2 is not None and pulse_distortion3 is not None
+        assert isinstance(pulse_distortion2, PulseDistortion) and isinstance(pulse_distortion3, PulseDistortion)
+        assert pulse_distortion == pulse_distortion2 == pulse_distortion3
 
-    def test_to_dict(self, distortion: PulseDistortion):
+    def test_to_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
+        dictionary = pulse_distortion.to_dict()
 
         assert dictionary is not None
         assert isinstance(dictionary, dict)
 
-        if isinstance(distortion, BiasTeeCorrection):
+        if isinstance(pulse_distortion, BiasTeeCorrection):
             assert dictionary == {
-                RUNCARD.NAME: distortion.name.value,
-                PulseDistortionSettingsName.TAU_BIAS_TEE.value: distortion.tau_bias_tee,
-                PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+                RUNCARD.NAME: pulse_distortion.name.value,
+                PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
+                PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
             }
 
-        if isinstance(distortion, ExponentialCorrection):
+        if isinstance(pulse_distortion, ExponentialCorrection):
             assert dictionary == {
-                RUNCARD.NAME: distortion.name.value,
-                PulseDistortionSettingsName.TAU_EXPONENTIAL.value: distortion.tau_exponential,
-                PulseDistortionSettingsName.AMP.value: distortion.amp,
-                PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+                RUNCARD.NAME: pulse_distortion.name.value,
+                PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
+                PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
+                PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
             }

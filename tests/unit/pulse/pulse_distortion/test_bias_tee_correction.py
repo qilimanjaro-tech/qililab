@@ -23,10 +23,10 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 
 
 @pytest.fixture(
-    name="distortion",
+    name="pulse_distortion",
     params=[BiasTeeCorrection(tau_bias_tee=tau_bias_tee) for tau_bias_tee in TAU_BIAS_TEE],
 )
-def fixture_distortion(request: pytest.FixtureRequest) -> BiasTeeCorrection:
+def fixture_pulse_distortion(request: pytest.FixtureRequest) -> BiasTeeCorrection:
     """Fixture for the BiasTeeCorrection distortion class."""
     return request.param
 
@@ -50,9 +50,9 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
 class TestBiasTeeCorrection:
     """Unit tests checking the BiasTeeCorrection attributes and methods"""
 
-    def test_apply(self, distortion: BiasTeeCorrection, envelope: np.ndarray):
+    def test_apply(self, pulse_distortion: BiasTeeCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
-        corr_envelopes = [distortion.apply(envelope=envelope)]
+        corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=1.3).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
@@ -64,33 +64,33 @@ class TestBiasTeeCorrection:
             assert round(np.max(np.abs(corr_envelope)), 14) == round(np.max(np.abs(envelope)), 14)
             assert not np.array_equal(corr_envelope, envelope)
 
-    def test_from_dict(self, distortion: BiasTeeCorrection):
+    def test_from_dict(self, pulse_distortion: BiasTeeCorrection):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
-        distortions = [BiasTeeCorrection.from_dict(dictionary)]
+        dictionary = pulse_distortion.to_dict()
+        pulse_distortions = [BiasTeeCorrection.from_dict(dictionary)]
 
         dictionary.pop(PulseDistortionSettingsName.SAMPLING_RATE.value)
-        distortions.append(BiasTeeCorrection.from_dict(dictionary))
+        pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
         dictionary.pop(RUNCARD.NAME)
-        distortions.append(BiasTeeCorrection.from_dict(dictionary))
+        pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
         dictionary[PulseDistortionSettingsName.TAU_BIAS_TEE.value] = 0.5
         dictionary[PulseDistortionSettingsName.SAMPLING_RATE.value] = 2.0
-        distortions.append(BiasTeeCorrection.from_dict(dictionary))
+        pulse_distortions.append(BiasTeeCorrection.from_dict(dictionary))
 
-        for distortion in distortions:
+        for distortion in pulse_distortions:
             assert distortion is not None
             assert isinstance(distortion, BiasTeeCorrection)
 
-    def test_to_dict(self, distortion: BiasTeeCorrection):
+    def test_to_dict(self, pulse_distortion: BiasTeeCorrection):
         """Test for the to_dict method."""
-        dictionary = distortion.to_dict()
+        dictionary = pulse_distortion.to_dict()
 
         assert dictionary is not None
         assert isinstance(dictionary, dict)
         assert dictionary == {
-            RUNCARD.NAME: distortion.name.value,
-            PulseDistortionSettingsName.TAU_BIAS_TEE.value: distortion.tau_bias_tee,
-            PulseDistortionSettingsName.SAMPLING_RATE.value: distortion.sampling_rate,
+            RUNCARD.NAME: pulse_distortion.name.value,
+            PulseDistortionSettingsName.TAU_BIAS_TEE.value: pulse_distortion.tau_bias_tee,
+            PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
         }
