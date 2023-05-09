@@ -35,7 +35,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
     def build_from_loops(self, platform: Platform, loops: List[Loop]) -> ExecutionManager:
         """Build ExecutionManager class.
-        Loop over loops, classify them by bus index and instantiate a BusExecution class.
+        Loop over loops, classify them by bus alias and instantiate a BusExecution class.
 
         Returns:
             ExecutionManager: ExecutionManager object.

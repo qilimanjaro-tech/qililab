@@ -32,7 +32,7 @@ class TestExecutionBuilder:
         for pulse_bus_schedule in pulse_schedule.elements:
             _, bus = platform.get_bus(pulse_bus_schedule.port)
             platform_bus_executions.append(BusExecution(bus=bus, pulse_schedule=[pulse_bus_schedule]))
-        # platform_bus_executions = [BusExecution(bus=platform.get_bus(pulse_bus_schedule.port), pulse_schedule=[pulse_bus_schedule]) for pulse_bus_schedule in pulse_schedule.elements]
+
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=1, platform=platform)
         execution_manager = EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
