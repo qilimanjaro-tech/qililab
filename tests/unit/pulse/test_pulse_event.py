@@ -15,7 +15,6 @@ AMPLITUDE = [0.9]
 PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
-RESOLUTION = [1.1]
 SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
 
 # Parameters for the different corrections.
@@ -41,7 +40,8 @@ def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
 @pytest.fixture(
     name="pulse_distortions",
     params=[
-        [
+        []
+        + [
             ExponentialCorrection(tau_exponential=tau_exponential, amp=amp),
             BiasTeeCorrection(tau_bias_tee=tau_bias_tee),
             ExponentialCorrection(tau_exponential=tau_exponential, amp=amp),
@@ -67,10 +67,21 @@ class TestPulseEvent:
     def test_envelope_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test envelope method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
-        envelope = pulse_event.envelope(amplitude=2.0, resolution=0.1)
+        envelope = pulse_event.envelope()
+        envelope2 = pulse_event.envelope(resolution=0.1)
+        envelope3 = pulse_event.envelope(amplitude=2.0, resolution=0.1)
 
-        assert envelope is not None
+        assert envelope is not None and envelope2 is not None and envelope3 is not None
         assert isinstance(envelope, np.ndarray)
+        assert isinstance(envelope2, np.ndarray)
+        assert isinstance(envelope3, np.ndarray)
+        assert round(np.max(np.abs(envelope)), 15) == pulse.amplitude
+        assert round(np.max(np.abs(envelope2)), 15) == pulse.amplitude
+        assert round(np.max(np.abs(envelope3)), 15) == 2.0
+        assert len(pulse.envelope()) == len(envelope)
+        assert len(envelope) * 10 == len(envelope2) == len(envelope3)
+        if pulse_distortions:
+            assert not np.array_equal(pulse.envelope(), envelope)
 
     def test_from_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""

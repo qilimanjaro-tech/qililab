@@ -64,6 +64,9 @@ class TestExponentialCorrection:
         for corr_envelope in corr_envelopes:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
+            assert len(envelope) == len(corr_envelope)
+            assert round(np.max(np.abs(corr_envelope)), 14) == round(np.max(np.abs(envelope)), 14)
+            assert not np.array_equal(corr_envelope, envelope)
 
     def test_from_dict(self, distortion: ExponentialCorrection):
         """Test for the to_dict method."""

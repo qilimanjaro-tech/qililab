@@ -44,10 +44,18 @@ class TestPulse:
 
     def test_envelope_method(self, pulse: Pulse):
         """Test envelope method"""
-        envelope = pulse.envelope(amplitude=2.0, resolution=0.1)
+        envelope = pulse.envelope()
+        envelope2 = pulse.envelope(resolution=0.1)
+        envelope3 = pulse.envelope(amplitude=2.0, resolution=0.1)
 
-        assert envelope is not None
+        assert envelope is not None and envelope2 is not None and envelope3 is not None
         assert isinstance(envelope, np.ndarray)
+        assert isinstance(envelope2, np.ndarray)
+        assert isinstance(envelope3, np.ndarray)
+        assert round(np.max(np.abs(envelope)), 15) == pulse.amplitude
+        assert round(np.max(np.abs(envelope2)), 15) == pulse.amplitude
+        assert round(np.max(np.abs(envelope3)), 15) == 2.0
+        assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
     def test_from_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
