@@ -25,7 +25,9 @@ class X(HardwareGate):  # pylint: disable=invalid-name
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
+        qubit = gate.target_qubits[0]
         return cls.parameters(
+            qubits=qubit,
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )

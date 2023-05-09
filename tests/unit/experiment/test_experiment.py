@@ -64,7 +64,7 @@ class TestAttributes:
             for pulse_schedule in experiment.pulse_schedules:
                 assert isinstance(pulse_schedule, PulseSchedule)
         assert isinstance(experiment.options, ExperimentOptions)
-        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "execution_manager")
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
@@ -121,7 +121,7 @@ class TestMethods:
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
         # Check that attributes don't exist
-        assert not hasattr(experiment, "execution")
+        assert not hasattr(experiment, "execution_manager")
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
         assert not hasattr(experiment, "_plot")
@@ -133,10 +133,7 @@ class TestMethods:
         assert isinstance(experiment.execution_manager, ExecutionManager)
         assert not hasattr(experiment, "results")
         assert not hasattr(experiment, "results_path")
-        if experiment.platform.connection is None:
-            assert experiment._plot is None
-        else:
-            assert isinstance(experiment._plot, LivePlot)
+        assert not hasattr(experiment, "_plot")
         assert not hasattr(experiment, "_remote_id")
 
     def test_compile(self, experiment: Experiment):
@@ -177,16 +174,26 @@ class TestMethods:
     def test_run(self, connected_experiment: Experiment):
         """Test the ``run`` method of the Experiment class."""
         connected_experiment.build_execution()
+        connected_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(connected_experiment, "_plot")
         assert not hasattr(connected_experiment, "results")
         with patch("qililab.execution.open") as mock_open:
             with patch("qililab.experiment.experiment.open") as mock_open:
                 with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
-                    # Build execution
-                    connected_experiment.run()
-                    # Assert that the mocks are called when building the execution (such that NO files are created)
-                    mock_open.assert_called()
-                    mock_makedirs.assert_called()
-                    mock_open.assert_called()
+                    with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                        # Build execution
+                        connected_experiment.run()
+                        # Assert that the mocks are called when building the execution (such that NO files are created)
+                        mock_open.assert_called()
+                        mock_makedirs.assert_called()
+                        mock_open.assert_called()
+                        mock_plot.assert_called_once_with(
+                            connection=connected_experiment.platform.connection,
+                            loops=connected_experiment.options.loops or [],
+                            num_schedules=len(connected_experiment.pulse_schedules),
+                            title=connected_experiment.options.name,
+                        )
+                        mock_plot.assert_called_once()
         assert len(connected_experiment.results.results) > 0
 
     def test_run_raises_error(self, experiment: Experiment):
@@ -258,11 +265,8 @@ class TestMethods:
         if experiment_all_platforms.options.loops is not None:
             print(experiment_all_platforms.options.loops[0].num_loops)
 
-    def test_draw_method_with_one_bus(self, platform: Platform):
+    def test_draw_method_with_one_bus(self, experiment: Experiment):
         """Test draw method with only one measurement gate."""
-        circuit = Circuit(1)
-        circuit.add(M(0))
-        experiment = Experiment(circuits=[circuit], platform=platform)
         experiment.build_execution()
         experiment.draw()
 
@@ -303,8 +307,8 @@ class TestSetParameter:
 
     def test_set_parameter_method_with_platform_settings(self, experiment: Experiment):
         """Test set_parameter method with platform settings."""
-        experiment.set_parameter(alias="M", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert experiment.platform.settings.get_gate(name="M").amplitude == 0.3
+        experiment.set_parameter(alias="M(0)", parameter=Parameter.AMPLITUDE, value=0.3)
+        assert experiment.platform.settings.get_gate(name="M", qubits=0).amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, experiment: Experiment):
         """Test set_parameter method with instrument controller reset."""
@@ -318,8 +322,8 @@ class TestSetParameter:
 
     def test_set_parameter_method_with_gate_value(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate."""
-        experiment.set_parameter(alias="X", parameter=Parameter.DURATION, value=123)
-        assert experiment.platform.settings.get_gate(name="X").duration == 123
+        experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
+        assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
@@ -399,20 +403,18 @@ def fixture_simulated_experiment(simulated_platform: Platform):
 
 
 @patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.experiment.experiment.yaml.safe_dump")
 @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
-@patch("qililab.execution.execution_manager.yaml.safe_dump")
-@patch("qililab.execution.execution_manager.open")
+@patch("qililab.experiment.experiment.os.makedirs")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
     def test_execute(
         self,
-        mock_open_0: MagicMock,
+        mock_open: MagicMock,
         mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
-        mock_open: MagicMock,
         simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
@@ -428,7 +430,6 @@ class TestSimulatedExecution:
         # Assert called functions
         mock_makedirs.assert_called()
         mock_open.assert_called()
-        mock_open_0.assert_called()
         mock_dump.assert_called()
 
         # Test result
