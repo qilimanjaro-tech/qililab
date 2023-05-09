@@ -188,6 +188,13 @@ schema:
         category: system_control
         instruments: [QCM, rs_2]
       port: 0
+      # TODO: user implementation
+      # distortions:
+      #   - name: bias_tee_correction
+      #     tau_bias_tee: 14
+      #   - name: exponential_decay_correction
+      #     tau_exponential: 123
+      #     amp: 123
   instrument_controllers:
     - name: qblox_cluster
       id_: 1
