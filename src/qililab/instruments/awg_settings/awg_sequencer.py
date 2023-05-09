@@ -44,7 +44,7 @@ class AWGSequencer:
         if self.output_i in {0, 2, None} and self.output_q in {1, 3, None}:
             self.path_i = 0
             self.path_q = 1
-        elif self.output_i in {1, 3, None} and self.output_i in {0, 2, None}:
+        elif self.output_i in {1, 3, None} and self.output_q in {0, 2, None}:
             logger.warning(
                 "Cannot set `output_i=%i` and `output_q=%i` in hardware. The pulses sent to the sequencer %i will "
                 "be swapped to allow this setting.",
@@ -56,8 +56,8 @@ class AWGSequencer:
             self.path_q = 0
         else:
             raise ValueError(
-                f"Cannot map both paths of the sequencer {self.identifier} into an even/odd output."
-                f" Obtained `output_i={self.output_i}` and `output_q={self.output_q}."
+                f"Cannot map both paths of sequencer {self.identifier} into an even/odd output."
+                f" Obtained `output_i={self.output_i}` and `output_q={self.output_q}`."
             )
 
     def to_dict(self):

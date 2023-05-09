@@ -74,10 +74,8 @@ schema:
       awg_sequencers:
         - identifier: 0
           chip_port_id: 1
-          path0:
-            output_channel: 0
-          path1:
-            output_channel: 1
+          output_i: 1
+          output_q: 0
           weights_i: [1.]
           weights_q: [1.]
           weighed_acq_enabled: false
@@ -101,14 +99,6 @@ schema:
           acquisition_timeout: 1
           hardware_demodulation: true
           scope_store_enabled: true
-      awg_iq_channels:
-        - identifier: 0
-          i_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 0
-          q_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 1
     - name: QCM
       alias: QCM
       id_: 2
@@ -119,10 +109,8 @@ schema:
       awg_sequencers:
         - identifier: 0
           chip_port_id: 0
-          path0:
-            output_channel: 0
-          path1:
-            output_channel: 1
+          output_i: 0
+          output_q: 1
           num_bins: 1
           intermediate_frequency: 2.e+07
           gain_i: 0.001
