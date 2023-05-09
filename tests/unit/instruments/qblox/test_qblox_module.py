@@ -1,6 +1,5 @@
 """Tests for the Qblox Module class."""
 import copy
-import math
 
 import numpy as np
 import pytest
@@ -16,10 +15,10 @@ from tests.data import Galadriel
 class DummyQbloxModule(QbloxModule):
     """Dummy QbloxModule class for testing"""
 
-    def _generate_weights(self) -> dict:
+    def _generate_weights(self, sequencer_id: int) -> dict:
         return {}
 
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register, sequencer_id: int):
         """Append an acquire instruction to the loop."""
 
 
@@ -44,7 +43,7 @@ def fixture_pulse_event() -> PulseEvent:
 
 
 @pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule() -> PulseBusSchedule:
+def fixture_pulse_bus_schedule():
     """Load simple PulseBusSchedule
 
     Returns:
@@ -70,11 +69,11 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 class TestQbloxModule:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
-    def test_amp_phase_modification(self, qblox_module: QbloxModule, pulse_bus_schedule: PulseBusSchedule):
+    def test_amp_phase_modification(self, qblox_module: QbloxModule, pulse_bus_schedule):
         """Test amplification modification of a sequencer"""
         waveforms = qblox_module._generate_waveforms(pulse_bus_schedule[0])  # pylint: disable=protected-access
-        program = qblox_module._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule[0],  # pylint: disable=protected-access
+        program = qblox_module._generate_program(  # pylint: disable=protected-access
+            pulse_bus_schedule=pulse_bus_schedule[0],
             waveforms=waveforms,
             sequencer=0,
         )

@@ -268,7 +268,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, register=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
