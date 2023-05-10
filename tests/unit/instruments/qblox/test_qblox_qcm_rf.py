@@ -1,6 +1,7 @@
 """Tests for the QbloxQCMRF class."""
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 from qblox_instruments.qcodes_drivers.cluster import Cluster, QcmQrm
 from qblox_instruments.types import ClusterType
@@ -139,6 +140,6 @@ class TestIntegration:
         qcm_rf.setup(parameter=Parameter.OUT0_ATT, value=58)
         assert qcm_rf.device.get("out0_att") == 58
         qcm_rf.setup(parameter=Parameter.GAIN, value=0.123)
-        assert qcm_rf.device.sequencers[0].get("gain_awg_path0") == 0.123
-        assert qcm_rf.device.sequencers[0].get("gain_awg_path1") == 0.123
+        assert np.allclose(qcm_rf.device.sequencers[0].get("gain_awg_path0"), 0.123)
+        assert np.allclose(qcm_rf.device.sequencers[0].get("gain_awg_path1"), 0.123)
         cluster.close()
