@@ -36,6 +36,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """Contains the settings of a specific QRM."""
 
         awg_sequencers: Sequence[AWGQbloxADCSequencer]
+        out_offsets: list[float]
 
         def __post_init__(self):
             """build AWGQbloxADCSequencer"""
@@ -67,6 +68,8 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
+        for idx, offset in enumerate(self.out_offsets):
+            self._set_out_offset(output=idx, value=offset)
         self._obtain_scope_sequencer()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
@@ -271,7 +274,31 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """set a specific parameter to the instrument"""
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
+            return
         try:
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
             QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_out_offset(self, output: int, value: float | str | bool):
+        """Set output offsets of the Qblox device.
+
+        Args:
+            output (int): output to update
+            value (float | str | bool): value to update
+
+        Raises:
+            ValueError: when value type is not float or int
+        """
+        if output > len(self.out_offsets):
+            raise IndexError(
+                f"Output {output} is out of range. The runcard has only {len(self.out_offsets)} output offsets defined."
+                " Please update the list of output offsets of the runcard such that it contains a value for each "
+                "output of the device."
+            )
+        self.out_offsets[output] = value
+        getattr(self.device, f"out{output}_offset")(float(value))

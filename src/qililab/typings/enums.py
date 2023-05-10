@@ -241,6 +241,7 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    QBLOX_QCMRF = "QbloxQCMRF"
 
 
 class InstrumentControllerName(str, Enum):

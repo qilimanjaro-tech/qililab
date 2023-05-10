@@ -45,7 +45,6 @@ class QbloxModule(AWG):
         """
 
         awg_sequencers: Sequence[AWGQbloxSequencer]
-        out_offsets: List[float]
 
         def __post_init__(self):
             """build AWGQbloxSequencer"""
@@ -100,9 +99,6 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
-
-        for idx, offset in enumerate(self.out_offsets):
-            self._set_out_offset(output=idx, value=offset)
 
     @property
     def module_type(self):
@@ -321,10 +317,6 @@ class QbloxModule(AWG):
         if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, sequencer_id=channel_id)
             return
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            self._set_out_offset(output=output, value=value)
-            return
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
             return
@@ -437,26 +429,6 @@ class QbloxModule(AWG):
         path = self.awg_sequencers[sequencer_id].path_q
         sequencer = self.device.sequencers[sequencer_id]
         getattr(sequencer, f"offset_awg_path{path}")(float(value))
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_out_offset(self, output: int, value: float | str | bool):
-        """Set output offsets of the Qblox device.
-
-        Args:
-            output (int): output to update
-            value (float | str | bool): value to update
-
-        Raises:
-            ValueError: when value type is not float or int
-        """
-        if output > len(self.out_offsets):
-            raise IndexError(
-                f"Output {output} is out of range. The runcard has only {len(self.out_offsets)} output offsets defined."
-                " Please update the list of output offsets of the runcard such that it contains a value for each "
-                "output of the device."
-            )
-        self.out_offsets[output] = value
-        getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
