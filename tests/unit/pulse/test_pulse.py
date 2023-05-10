@@ -55,7 +55,16 @@ class TestPulse:
         assert round(np.max(np.abs(envelope)), 14) == pulse.amplitude
         assert round(np.max(np.abs(envelope2)), 14) == pulse.amplitude
         assert round(np.max(np.abs(envelope3)), 14) == 2.0
+
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
+
+        if isinstance(pulse.pulse_shape, Rectangular):
+            assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
+
+        if isinstance(pulse.pulse_shape, Gaussian or Drag):
+            assert np.max(np.abs(envelope)) == np.abs(envelope[len(envelope) // 2])
+            assert np.max(np.abs(envelope)) / 2 < np.abs(envelope[len(envelope) // 4])
+            assert np.min(np.abs(envelope)) == np.abs(envelope[0])
 
     def test_from_dict_method(self, pulse: Pulse):
         """Test to_dict method"""

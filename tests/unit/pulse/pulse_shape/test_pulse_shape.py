@@ -22,7 +22,7 @@ class TestPulseShape:
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
         envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-        envelope2 = pulse_shape.envelope(duration=50, amplitude=1.0)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0)
         envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
 
         for env in [envelope, envelope2, envelope3]:
@@ -33,13 +33,15 @@ class TestPulseShape:
         assert round(np.max(np.abs(envelope2)), 14) == 1.0
         assert round(np.max(np.abs(envelope3)), 14) == 2.0
 
-        assert len(envelope) == len(envelope2) * 10 == len(envelope3)
+        assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
         if isinstance(pulse_shape, Rectangular):
             assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
 
-        # if isinstance(pulse_shape, Gaussian):
-        # assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
+        if isinstance(pulse_shape, Gaussian or Drag):
+            assert np.max(np.abs(envelope)) == np.abs(envelope[len(envelope) // 2])
+            assert np.max(np.abs(envelope)) / 2 < np.abs(envelope[len(envelope) // 4])
+            assert np.min(np.abs(envelope)) == np.abs(envelope[0])
 
     def test_from_dict(self, pulse_shape: PulseShape):
         """Test for the to_dict method."""
