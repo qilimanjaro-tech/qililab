@@ -45,17 +45,18 @@ class ExecutionBuilder(metaclass=Singleton):
         )
         buses: Dict[str, BusExecution] = {}
         for loop in loops:
-            alias, bus = self._get_bus_info_from_loop_alias(platform, loop)
-            if bus is None:
-                raise ValueError(
-                    f"There is no bus with alias '{alias}'\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
-                )
-            elif alias in buses:
-                warn(
-                    f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
-                )
-            else:
-                buses[alias] = BusExecution(bus=bus, pulse_schedule=[])
+            for _loop in loop.loops:  # Iterate over nested loops if any
+                alias, bus = self._get_bus_info_from_loop_alias(platform, _loop)
+                if bus is None:
+                    raise ValueError(
+                        f"There is no bus with alias '{alias}'\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
+                    )
+                elif alias in buses:
+                    warn(
+                        f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
+                    )
+                else:
+                    buses[alias] = BusExecution(bus=bus, pulse_schedule=[])
 
         return ExecutionManager(buses=list(buses.values()), num_schedules=0, platform=platform)
 

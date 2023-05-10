@@ -24,6 +24,21 @@ def fixture_loop() -> List[Loop]:
     ]
 
 
+@pytest.fixture(name="nested_loops")
+def fixture_nested_loop() -> List[Loop]:
+    """Return list of a loop that contain nested loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
+    loops = [
+        Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
+        for bus in Galadriel.buses
+    ]
+    nested_loops = None
+    for loop in reversed(loops):
+        loop.loop = nested_loops
+        nested_loops = loop
+
+    return [nested_loops]
+
+
 class TestExecutionBuilder:
     """Unit tests checking the ExecutoinBuilder attributes and methods."""
 
@@ -58,6 +73,22 @@ class TestExecutionBuilder:
 
         with catch_warnings(record=True) as w:
             execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=loops)
+            assert len(w) == 1  # One warning is always thrown at the begining
+            assert execution_manager == expected
+
+    def test_build_from_loops_method_nested_loops(self, platform: Platform, nested_loops: List[Loop]):
+        """Test build_from_loops method"""
+        loops_alias = []
+        for loops in nested_loops:
+            for loop in loops.loops:
+                loops_alias.append(loop.alias)
+        platform_bus_executions = [
+            BusExecution(bus=bus, pulse_schedule=[]) for bus in platform.buses if bus.alias in loops_alias
+        ]
+        expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
+
+        with catch_warnings(record=True) as w:
+            execution_manager = EXECUTION_BUILDER.build_from_loops(platform=platform, loops=nested_loops)
             assert len(w) == 1  # One warning is always thrown at the begining
             assert execution_manager == expected
 
