@@ -16,8 +16,7 @@ from qpysequence.weights import Weights
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.config import logger
 from qililab.instruments.awg import AWG
-from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
-from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
+from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import Pulse, PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
@@ -35,7 +34,6 @@ class QbloxModule(AWG):
     _MAX_BINS: int = 131072
     _NUM_MAX_SEQUENCERS: int = 6
     _NUM_MAX_AWG_OUT_CHANNELS: int = 4
-    _NUM_MAX_AWG_IQ_CHANNELS = int(_NUM_MAX_AWG_OUT_CHANNELS / 2)
     _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
@@ -73,11 +71,6 @@ class QbloxModule(AWG):
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
-            if len(self.awg_iq_channels) > QbloxModule._NUM_MAX_AWG_IQ_CHANNELS:  # pylint: disable=protected-access
-                raise ValueError(
-                    "The number of AWG IQ channels must be less or equal than "
-                    + f"{QbloxModule._NUM_MAX_AWG_IQ_CHANNELS}. Received: {len(self.awg_iq_channels)}"  # pylint: disable=protected-access
-                )
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -100,10 +93,10 @@ class QbloxModule(AWG):
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             self._set_nco(sequencer_id=sequencer_id)
-            self._set_gain_path0(value=sequencer.gain_path0, sequencer_id=sequencer_id)
-            self._set_gain_path1(value=sequencer.gain_path1, sequencer_id=sequencer_id)
-            self._set_offset_path0(value=sequencer.offset_path0, sequencer_id=sequencer_id)
-            self._set_offset_path1(value=sequencer.offset_path1, sequencer_id=sequencer_id)
+            self._set_gain_i(value=sequencer.gain_i, sequencer_id=sequencer_id)
+            self._set_gain_q(value=sequencer.gain_q, sequencer_id=sequencer_id)
+            self._set_offset_i(value=sequencer.offset_i, sequencer_id=sequencer_id)
+            self._set_offset_q(value=sequencer.offset_q, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
@@ -161,14 +154,14 @@ class QbloxModule(AWG):
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
-            if sequencer not in self._cache or pulse_bus_schedule != self._cache[sequencer]:
+            if pulse_bus_schedule != self._cache.get(sequencer.identifier):
                 sequence = self._compile(schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
-                compiled_sequences.append(self.sequences[sequencer][0])
+                compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int) -> QpySequence:
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer) -> QpySequence:
         """Compiles the ``PulseBusSchedule`` into an assembly program and updates the cache and the saved sequences.
 
         Args:
@@ -180,15 +173,15 @@ class QbloxModule(AWG):
                 f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
             )
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
-        self._cache[sequencer] = pulse_bus_schedule
-        self.sequences[sequencer] = (sequence, False)
+        self._cache[sequencer.identifier] = pulse_bus_schedule
+        self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
     def run(self):
         """Run the uploaded program"""
         self.start_sequencer()
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: int):
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -198,12 +191,12 @@ class QbloxModule(AWG):
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
-        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         acquisitions = self._generate_acquisitions()
         program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer
+            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
-        weights = self._generate_weights(sequencer_id=sequencer)
+        weights = self._generate_weights(sequencer=sequencer)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
     def _generate_empty_program(self):
@@ -285,7 +278,7 @@ class QbloxModule(AWG):
         return acquisitions
 
     @abstractmethod
-    def _generate_weights(self, sequencer_id: int) -> Weights:
+    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
         """Generate acquisition weights.
 
         Returns:
@@ -318,27 +311,21 @@ class QbloxModule(AWG):
         if parameter == Parameter.GAIN:
             self._set_gain(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.GAIN_PATH0:
-            self._set_gain_path0(value=value, sequencer_id=channel_id)
+        if parameter == Parameter.GAIN_I:
+            self._set_gain_i(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.GAIN_PATH1:
-            self._set_gain_path1(value=value, sequencer_id=channel_id)
-            return
-        if parameter == Parameter.OFFSET_PATH0:
-            self._set_offset_path0(value=value, sequencer_id=channel_id)
-            return
-        if parameter == Parameter.OFFSET_PATH1:
-            self._set_offset_path1(value=value, sequencer_id=channel_id)
-            return
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            self._set_out_offset(output=output, value=value)
+        if parameter == Parameter.GAIN_Q:
+            self._set_gain_q(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.OFFSET_I:
             self._set_offset_i(value=value, sequencer_id=channel_id)
             return
         if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, sequencer_id=channel_id)
+            return
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
@@ -418,8 +405,8 @@ class QbloxModule(AWG):
         self.device.sequencers[sequencer_id].nco_freq(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_path0(self, value: float | str | bool, sequencer_id: int):
-        """set offset path0
+    def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
+        """Set the offset of the I channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -428,12 +415,16 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].offset_path0 = float(value)
-        self.device.sequencers[sequencer_id].offset_awg_path0(float(value))
+        # update value in qililab
+        self.awg_sequencers[sequencer_id].offset_i = float(value)
+        # update value in the instrument
+        path = self.awg_sequencers[sequencer_id].path_i
+        sequencer = self.device.sequencers[sequencer_id]
+        getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_path1(self, value: float | str | bool, sequencer_id: int):
-        """set offset path1
+    def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
+        """Set the offset of the Q channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -442,8 +433,12 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].offset_path1 = float(value)
-        self.device.sequencers[sequencer_id].offset_awg_path1(float(value))
+        # update value in qililab
+        self.awg_sequencers[sequencer_id].offset_q = float(value)
+        # update value in the instrument
+        path = self.awg_sequencers[sequencer_id].path_q
+        sequencer = self.device.sequencers[sequencer_id]
+        getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_out_offset(self, output: int, value: float | str | bool):
@@ -466,8 +461,8 @@ class QbloxModule(AWG):
         getattr(self.device, f"out{output}_offset")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
-        """set offset I
+    def _set_gain_i(self, value: float | str | bool, sequencer_id: int):
+        """Set the gain of the I channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -476,15 +471,16 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        path_id = self.get_sequencer_path_id_mapped_to_i_channel(sequencer_id=sequencer_id)
-        if path_id == AWGSequencerPathIdentifier.PATH0:
-            self._set_offset_path0(value=value, sequencer_id=sequencer_id)
-            return
-        self._set_offset_path1(value=value, sequencer_id=sequencer_id)
+        # update value in qililab
+        self.awg_sequencers[sequencer_id].gain_i = float(value)
+        # update value in the instrument
+        path = self.awg_sequencers[sequencer_id].path_i
+        sequencer = self.device.sequencers[sequencer_id]
+        getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
-        """set offset Q
+    def _set_gain_q(self, value: float | str | bool, sequencer_id: int):
+        """Set the gain of the Q channel of the given sequencer.
 
         Args:
             value (float | str | bool): value to update
@@ -493,39 +489,12 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        path_id = self.get_sequencer_path_id_mapped_to_q_channel(sequencer_id=sequencer_id)
-        if path_id == AWGSequencerPathIdentifier.PATH1:
-            self._set_offset_path1(value=value, sequencer_id=sequencer_id)
-            return
-        self._set_offset_path0(value=value, sequencer_id=sequencer_id)
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain_path0(self, value: float | str | bool, sequencer_id: int):
-        """set gain path0
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        self.awg_sequencers[sequencer_id].gain_path0 = float(value)
-        self.device.sequencers[sequencer_id].gain_awg_path0(float(value))
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_gain_path1(self, value: float | str | bool, sequencer_id: int):
-        """set gain path1
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        self.awg_sequencers[sequencer_id].gain_path1 = float(value)
-        self.device.sequencers[sequencer_id].gain_awg_path1(float(value))
+        # update value in qililab
+        self.awg_sequencers[sequencer_id].gain_q = float(value)
+        # update value in the instrument
+        path = self.awg_sequencers[sequencer_id].path_q
+        sequencer = self.device.sequencers[sequencer_id]
+        getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain(self, value: float | str | bool, sequencer_id: int):
@@ -538,8 +507,8 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self._set_gain_path0(value=value, sequencer_id=sequencer_id)
-        self._set_gain_path1(value=value, sequencer_id=sequencer_id)
+        self._set_gain_i(value=value, sequencer_id=sequencer_id)
+        self._set_gain_q(value=value, sequencer_id=sequencer_id)
 
     @Instrument.CheckDeviceInitialized
     def turn_off(self):
@@ -627,16 +596,16 @@ class QbloxModule(AWG):
                 sequencer.set(f"channel_map_path{out % 2}_out{out}_en", False)
 
         for sequencer in self.awg_sequencers:
-            if sequencer.path0 is not None:
+            if sequencer.output_i is not None:
                 self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path0_out{sequencer.out_id_path0}_en", True
+                    f"channel_map_path{sequencer.path_i}_out{sequencer.output_i}_en", True
                 )
-            if sequencer.path1 is not None:
+            if sequencer.output_q is not None:
                 self.device.sequencers[sequencer.identifier].set(
-                    f"channel_map_path1_out{sequencer.out_id_path1}_en", True
+                    f"channel_map_path{sequencer.path_q}_out{sequencer.output_q}_en", True
                 )
 
-    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
+    def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
@@ -655,15 +624,20 @@ class QbloxModule(AWG):
                     envelope = pulse_event.pulse.envelope(amplitude=1)
                     real = np.real(envelope)
                     imag = np.imag(envelope)
-                    waveforms.add_pair((real, imag), name=pulse_event.pulse.label())
+                    pair = (real, imag)
+                    if (sequencer.path_i, sequencer.path_q) == (1, 0):
+                        pair = pair[::-1]  # swap paths
+                    waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
             else:
                 if (pulse_event.duration, pulse_event.pulse) not in unique_pulse_operations:
                     unique_pulse_operations.append((pulse_event.duration, pulse_event.pulse))
                     envelope = pulse_event.pulse.envelope(amplitude=1)
                     real = np.real(envelope)
                     imag = np.imag(envelope)
-                    waveforms.add_pair((real, imag), name=str(pulse_event.pulse))
-
+                    pair = (real, imag)
+                    if (sequencer.path_i, sequencer.path_q) == (1, 0):
+                        pair = pair[::-1]  # swap paths
+                    waveforms.add_pair(pair=pair, name=str(pulse_event.pulse))
         return waveforms
 
     @property

@@ -7,6 +7,7 @@ from queue import Empty, Queue
 from threading import Thread
 from typing import List, Tuple
 
+import numpy as np
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
@@ -14,11 +15,10 @@ from qililab.chip import Node
 from qililab.circuit import Circuit as QiliCircuit
 from qililab.circuit import CircuitTranspiler, QiliQasmConverter
 from qililab.config import __version__, logger
-from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RESULTSDATAFRAME, RUNCARD
+from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
-from qililab.result.result import Result
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
@@ -36,7 +36,7 @@ class Experiment:
     execution_manager: ExecutionManager
     results: Results
     results_path: Path
-    _plot: LivePlot
+    _plot: LivePlot | None
     _remote_id: int
 
     def __init__(
@@ -60,9 +60,7 @@ class Experiment:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed), creates the ``ExecutionManager`` class,
-        and generates the live plotting.
-        """
+        """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
             if isinstance(self.circuits[0], Circuit):
@@ -76,6 +74,19 @@ class Experiment:
 
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
+
+    def run(self) -> Results:
+        """This method is responsible for:
+        * Creating the live plotting (if connection is provided).
+        * Preparing the `Results` class and the `results.yml` file.
+        * Looping over all the given circuits, loops and/or software averages. And for each loop:
+            * Generating and uploading the program corresponding to the circuit.
+            * Executing the circuit.
+            * Saving the results to the ``results.yml`` file.
+            * Sending the data to the live plotting (if asked to).
+            * Save the results to the ``results`` attribute.
+            * Save the results to the remote database (if asked to).
+        """
         # Generate live plotting
         if self.platform.connection is None:
             self._plot = None
@@ -86,18 +97,6 @@ class Experiment:
                 num_schedules=len(self.pulse_schedules),
                 title=self.options.name,
             )
-
-    def run(self) -> Results:
-        """This method is responsible for:
-        * Preparing the `Results` class and the `results.yml` file.
-        * Looping over all the given circuits, loops and/or software averages. And for each loop:
-            * Generating and uploading the program corresponding to the circuit.
-            * Executing the circuit.
-            * Saving the results to the ``results.yml`` file.
-            * Sending the data to the live plotting (if asked to).
-            * Save the results to the ``results`` attribute.
-            * Save the results to the remote database (if asked to).
-        """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
@@ -138,13 +137,11 @@ class Experiment:
                     return  # exit thread if no results are received for 10 times the duration of the program
 
                 if self._plot is not None:
-                    probs = result.probabilities()
-                    # get zero prob and converting to a float to plot the value
-                    # is a numpy.float32, so it is needed to convert it to float
-                    if len(probs) > 0:
-                        # TODO: Returning only the probability of |00...0> state.
-                        zero_prob = list(probs.values())[0]
-                        self._plot.send_points(value=zero_prob)
+                    acq = result.acquisitions()
+                    i = np.array(acq["i"])
+                    q = np.array(acq["q"])
+                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
+                    self._plot.send_points(value=amplitude[0])
                 with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                     result_dict = result.to_dict()
                     yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)

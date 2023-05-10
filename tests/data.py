@@ -24,14 +24,7 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
-from qililab.instruments.awg_settings.typings import (
-    AWGChannelMappingTypes,
-    AWGIQChannelTypes,
-    AWGSequencerPathTypes,
-    AWGSequencerTypes,
-    AWGTypes,
-)
-from qililab.platform.platform import Platform
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -244,35 +237,18 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -309,20 +285,16 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -334,28 +306,24 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
-                Parameter.WEIGHTS_PATH0.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHTS_PATH1.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -367,23 +335,10 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-                Parameter.WEIGHTS_PATH0.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                Parameter.WEIGHTS_PATH1.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -793,12 +748,12 @@ results_two_loops = {
         {
             RUNCARD.ALIAS: "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.VALUES: np.arange(start=15, stop=90, step=1),
+            LOOP.VALUES: (np.arange(start=15, stop=90, step=1)).tolist(),
             LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
                 LOOP.PARAMETER: Node.FREQUENCY.value,
-                LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+                LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
                 LOOP.LOOP: None,
                 LOOP.CHANNEL_ID: None,
             },
@@ -850,7 +805,7 @@ results_one_loops = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
             LOOP.CHANNEL_ID: None,
         }

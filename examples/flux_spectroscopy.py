@@ -70,8 +70,8 @@ def run_and_plot(
     flux_spectro.set_parameter(alias="M", parameter=Parameter.DURATION, value=8000)
 
     gain = 1.0
-    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_PATH0, value=gain, channel_id=0)
-    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_PATH1, value=gain, channel_id=0)
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_I, value=gain, channel_id=0)
+    flux_spectro.set_parameter(alias="QRM", parameter=Parameter.GAIN_Q, value=gain, channel_id=0)
 
     if_freq = 2e7
     flux_spectro.set_parameter(alias="QRM", parameter=Parameter.IF, value=if_freq, channel_id=0)
