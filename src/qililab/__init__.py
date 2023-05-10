@@ -19,7 +19,8 @@ from .circuit import (
 from .config import __version__, logger
 from .experiment import Experiment
 from .platform import build_platform, save_platform
-from .result import Results
+from .result.results import Results
 from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
-from .utils import Loop, load
+from .utils import Loop
+from .utils.load_data import load
