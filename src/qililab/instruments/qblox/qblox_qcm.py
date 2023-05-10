@@ -52,9 +52,9 @@ class QbloxQCM(QbloxModule):
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
+        super().initial_setup()
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
-        super().initial_setup()
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -63,6 +63,7 @@ class QbloxQCM(QbloxModule):
             output = int(parameter.value[-1])
             self._set_out_offset(output=output, value=value)
             return
+        super().setup(parameter=parameter, value=value, channel_id=channel_id)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_out_offset(self, output: int, value: float | str | bool):
