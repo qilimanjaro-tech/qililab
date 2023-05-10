@@ -40,14 +40,45 @@ settings:
         shape:
           name: gaussian
           num_sigmas: 4
-      - name: Drag # mock drag gate (I have no idea on the orders of magnitude for the drag coefficient)
+      - name: Drag
         amplitude: 1.0
         phase: 0
         duration: 100
         shape:
           name: drag
           num_sigmas: 4
-          drag_coefficient: 1
+          drag_coefficient: 4
+    1:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+      - name: Drag
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 5
+    (0,1):
+      - name: CZ
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: snz
+          b: 0.5
+
 schema:
   chip:
     id_: 0
@@ -84,8 +115,8 @@ schema:
           chip_port_id: 1
           output_i: 1
           output_q: 0
-          weights_path0: [1., 1., 1., 1.]
-          weights_path1: [1., 1., 1., 1.]
+          weights_i: [1., 1., 1., 1.]
+          weights_q: [1., 1., 1., 1.]
           weighed_acq_enabled: false
           threshold: 0.5
           num_bins: 1
