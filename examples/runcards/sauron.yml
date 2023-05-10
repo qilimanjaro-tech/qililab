@@ -52,12 +52,12 @@ schema:
             output_channel: 1
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 0.001
-          gain_path1: 0.02
+          gain_i: 0.001
+          gain_q: 0.02
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: false
           scope_acquire_trigger_mode: sequencer
@@ -162,5 +162,5 @@ schema:
         name: tcp_ip
         address: 192.168.1.69
       modules:
-      - attenuator: attenuator
-        slot_id: 0
+        - attenuator: attenuator
+          slot_id: 0
