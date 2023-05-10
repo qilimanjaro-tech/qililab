@@ -67,6 +67,7 @@ class TestPulseEvent:
     def test_envelope_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test envelope method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
+
         envelope = pulse_event.envelope()
         envelope2 = pulse_event.envelope(resolution=0.1)
         envelope3 = pulse_event.envelope(amplitude=2.0, resolution=0.1)
@@ -81,30 +82,38 @@ class TestPulseEvent:
         assert round(np.max(np.abs(envelope)), 14) == pulse.amplitude
         assert round(np.max(np.abs(envelope2)), 14) == pulse.amplitude
         assert round(np.max(np.abs(envelope3)), 14) == 2.0
+
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
     def test_from_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
+
         dictionary = pulse_event.to_dict()
         pulse_event2 = PulseEvent.from_dict(dictionary)
+
         dictionary2 = pulse_event2.to_dict()
         pulse_event3 = PulseEvent.from_dict(dictionary2)
 
-        assert pulse_event2 is not None and pulse_event3 is not None
-        assert isinstance(pulse_event2, PulseEvent) and isinstance(pulse_event3, PulseEvent)
+        for event in [pulse_event2, pulse_event3]:
+            assert event is not None
+            assert isinstance(event, PulseEvent)
+
         assert pulse_event == pulse_event2 == pulse_event3
 
     def test_to_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test to_dict method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
         dictionary = pulse_event.to_dict()
+
         pulse_event2 = PulseEvent.from_dict(dictionary)
         dictionary2 = pulse_event2.to_dict()
 
-        assert dictionary is not None and dictionary2 is not None
-        assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
+        for dict_ in [dictionary, dictionary2]:
+            assert dict_ is not None
+            assert isinstance(dict_, dict)
+
         assert (
             dictionary
             == dictionary2
@@ -115,8 +124,11 @@ class TestPulseEvent:
             }
         )
 
-    def test_end_time(self, pulse_event: PulseEvent):
+    def test_end_time(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test end_time property."""
-        assert pulse_event.duration is not None
-        assert isinstance(pulse_event.duration, int)
-        assert pulse_event.duration == pulse_event.end_time - pulse_event.start_time
+        pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
+        duration = pulse_event.duration
+
+        assert duration is not None
+        assert isinstance(duration, int)
+        assert duration == pulse_event.end_time - pulse_event.start_time

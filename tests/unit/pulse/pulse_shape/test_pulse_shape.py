@@ -32,7 +32,14 @@ class TestPulseShape:
         assert round(np.max(np.abs(envelope)), 14) == 1.0
         assert round(np.max(np.abs(envelope2)), 14) == 1.0
         assert round(np.max(np.abs(envelope3)), 14) == 2.0
+
         assert len(envelope) == len(envelope2) * 10 == len(envelope3)
+
+        if isinstance(pulse_shape, Rectangular):
+            assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
+
+        # if isinstance(pulse_shape, Gaussian):
+        # assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
 
     def test_from_dict(self, pulse_shape: PulseShape):
         """Test for the to_dict method."""
@@ -42,33 +49,50 @@ class TestPulseShape:
         dictionary2 = pulse_shape2.to_dict()
         pulse_shape3: PulseShape = Factory.get(name=pulse_shape2.name).from_dict(dictionary2)
 
-        assert isinstance(pulse_shape2, Factory.get(name=pulse_shape.name))
-        assert isinstance(pulse_shape3, Factory.get(name=pulse_shape2.name))
-        assert pulse_shape2 is not None and pulse_shape3 is not None
-        assert isinstance(pulse_shape2, PulseShape) and isinstance(pulse_shape3, PulseShape)
+        for shape in [pulse_shape2, pulse_shape3]:
+            assert shape is not None
+            assert isinstance(shape, PulseShape)
+            assert isinstance(shape, Factory.get(name=pulse_shape.name))
+
         assert pulse_shape == pulse_shape2 == pulse_shape3
 
     def test_to_dict_method(self, pulse_shape: PulseShape):
         """Test to_dict method"""
         dictionary = pulse_shape.to_dict()
 
-        assert dictionary is not None
-        assert isinstance(dictionary, dict)
+        pulse_shape2: PulseShape = Factory.get(name=pulse_shape.name).from_dict(dictionary)
+        dictionary2 = pulse_shape2.to_dict()
+
+        for dict_ in [dictionary, dictionary2]:
+            assert dict_ is not None
+            assert isinstance(dict_, dict)
 
         if isinstance(pulse_shape, Rectangular):
-            assert dictionary == {
-                RUNCARD.NAME: pulse_shape.name.value,
-            }
+            assert (
+                dictionary
+                == dictionary2
+                == {
+                    RUNCARD.NAME: pulse_shape.name.value,
+                }
+            )
 
         if isinstance(pulse_shape, Gaussian):
-            assert dictionary == {
-                RUNCARD.NAME: pulse_shape.name.value,
-                PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
-            }
+            assert (
+                dictionary
+                == dictionary2
+                == {
+                    RUNCARD.NAME: pulse_shape.name.value,
+                    PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
+                }
+            )
 
         if isinstance(pulse_shape, Drag):
-            assert dictionary == {
-                RUNCARD.NAME: pulse_shape.name.value,
-                PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
-                PulseShapeSettingsName.DRAG_COEFFICIENT.value: pulse_shape.drag_coefficient,
-            }
+            assert (
+                dictionary
+                == dictionary2
+                == {
+                    RUNCARD.NAME: pulse_shape.name.value,
+                    PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
+                    PulseShapeSettingsName.DRAG_COEFFICIENT.value: pulse_shape.drag_coefficient,
+                }
+            )

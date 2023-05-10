@@ -61,21 +61,27 @@ class TestPulse:
         """Test to_dict method"""
         dictionary = pulse.to_dict()
         pulse2 = Pulse.from_dict(dictionary)
+
         dictionary2 = pulse2.to_dict()
         pulse3 = Pulse.from_dict(dictionary2)
 
-        assert pulse2 is not None and pulse2 is not None
-        assert isinstance(pulse2, Pulse) and isinstance(pulse3, Pulse)
+        for pulse in [pulse2, pulse3]:
+            assert pulse is not None
+            assert isinstance(pulse, Pulse)
+
         assert pulse == pulse2 == pulse3
 
     def test_to_dict_method(self, pulse: Pulse):
         """Test to_dict method"""
         dictionary = pulse.to_dict()
+
         pulse2 = Pulse.from_dict(dictionary)
         dictionary2 = pulse2.to_dict()
 
-        assert dictionary is not None and dictionary is not None
-        assert isinstance(dictionary, dict) and isinstance(dictionary2, dict)
+        for dict_ in [dictionary, dictionary2]:
+            assert dict_ is not None
+            assert isinstance(dict_, dict)
+
         assert (
             dictionary
             == dictionary2
