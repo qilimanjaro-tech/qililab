@@ -72,14 +72,26 @@ class TestMethods:
         qcm_rf.device = MagicMock()
         qcm_rf.initial_setup()
         qcm_rf.device.set.call_count == 10
-        assert qcm_rf.device.set.call_args_list == []
+        call_args = {call[0] for call in qcm_rf.device.set.call_args_list}
+        assert call_args == {
+            ("out0_lo_freq", 3700000000.0),
+            ("out0_lo_en", True),
+            ("out0_att", 10),
+            ("out0_offset_path0", 0.2),
+            ("out0_offset_path1", 0.07),
+            ("out1_lo_freq", 3900000000.0),
+            ("out1_lo_en", True),
+            ("out1_att", 6),
+            ("out1_offset_path0", 0.1),
+            ("out1_offset_path1", 0.6),
+        }
 
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQCMRF class."""
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.device = MagicMock()
         qcm_rf.setup(parameter=Parameter.OUT0_LO_FREQ, value=3.8e9)
-        qcm_rf.device.out0_lo_freq.assert_called_once_with(3.8e9)
+        qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 3.8e9)
         qcm_rf.setup(parameter=Parameter.GAIN, value=1)
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
@@ -117,6 +129,7 @@ class TestIntegration:
         assert qcm_rf.device.get("out1_att") == settings["out1_att"]
         # assert qcm_rf.device.out1_offset_path0() == settings["out1_offset_path0"]
         # assert qcm_rf.device.out1_offset_path1() == settings["out1_offset_path1"]
+        cluster.close()
 
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQCMRF class."""
@@ -128,3 +141,4 @@ class TestIntegration:
         qcm_rf.setup(parameter=Parameter.GAIN, value=0.123)
         assert qcm_rf.device.sequencers[0].get("gain_awg_path0") == 0.123
         assert qcm_rf.device.sequencers[0].get("gain_awg_path1") == 0.123
+        cluster.close()
