@@ -4,6 +4,7 @@ from .coordinate_decomposition import coordinate_decompose
 from .decorators import classproperty
 from .factory import Factory
 from .live_plot import LivePlot
+from .load_data import load
 from .loop import Loop
 from .nested_data_class import nested_dataclass
 from .nested_dict_iterator import nested_dict_to_pandas_dataframe
