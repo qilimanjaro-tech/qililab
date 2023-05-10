@@ -29,19 +29,24 @@ class TestPulseShape:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.abs(envelope)), 14) == 1.0
-        assert round(np.max(np.abs(envelope2)), 14) == 1.0
-        assert round(np.max(np.abs(envelope3)), 14) == 2.0
+        assert round(np.max(np.real(envelope)), 14) == 1.0
+        assert round(np.max(np.real(envelope2)), 14) == 1.0
+        assert round(np.max(np.real(envelope3)), 14) == 2.0
 
         assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
         if isinstance(pulse_shape, Rectangular):
-            assert np.max(np.abs(envelope)) == np.min(np.abs(envelope))
+            assert np.max(envelope) == np.min(envelope)
 
-        if isinstance(pulse_shape, Gaussian or Drag):
-            assert np.max(np.abs(envelope)) == np.abs(envelope[len(envelope) // 2])
-            assert np.max(np.abs(envelope)) / 2 < np.abs(envelope[len(envelope) // 4])
-            assert np.min(np.abs(envelope)) == np.abs(envelope[0])
+        if isinstance(pulse_shape, Gaussian):
+            assert np.max(envelope) == envelope[len(envelope) // 2]
+            assert np.max(envelope) / 2 < envelope[len(envelope) // 4]
+            assert np.min(envelope) == envelope[0]
+
+        if isinstance(pulse_shape, Drag):
+            assert np.max(np.real(envelope)) == np.real(envelope[len(envelope) // 2])
+            assert np.max(np.real(envelope)) / 2 < np.real(envelope[len(envelope) // 4])
+            assert np.min(np.real(envelope)) == np.real(envelope[0])
 
     def test_from_dict(self, pulse_shape: PulseShape):
         """Test for the to_dict method."""

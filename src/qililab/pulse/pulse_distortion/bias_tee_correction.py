@@ -33,7 +33,7 @@ class BiasTeeCorrection(PulseDistortion):
             ndarray: Amplitude of the envelope for each time step.
         """
         # Parameters
-        norm = np.max(np.abs(envelope))
+        norm = np.max(np.real(envelope))
         k = 2 * self.tau_bias_tee * self.sampling_rate
 
         a = [1, -1]
@@ -41,7 +41,7 @@ class BiasTeeCorrection(PulseDistortion):
 
         # Filtered signal
         corr_envelope = signal.lfilter(b, a, envelope)
-        corr_norm = np.max(np.abs(corr_envelope))
+        corr_norm = np.max(np.real(corr_envelope))
         corr_envelope = corr_envelope * norm / corr_norm
 
         return corr_envelope

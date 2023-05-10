@@ -79,9 +79,9 @@ class TestPulseEvent:
             if pulse_distortions:
                 assert not np.array_equal(pulse.envelope(), env)
 
-        assert round(np.max(np.abs(envelope)), 14) == pulse.amplitude
-        assert round(np.max(np.abs(envelope2)), 14) == pulse.amplitude
-        assert round(np.max(np.abs(envelope3)), 14) == 2.0
+        assert round(np.max(np.real(envelope)), 14) == pulse.amplitude
+        assert round(np.max(np.real(envelope2)), 14) == pulse.amplitude
+        assert round(np.max(np.real(envelope3)), 14) == 2.0
 
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)

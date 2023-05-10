@@ -29,16 +29,17 @@ class Drag(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-
         sigma = duration / self.num_sigmas
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
+
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
         real_norm = np.max(gaussian)
-        gaussian = gaussian + 1j * self.drag_coefficient * (-(time - mu_) / sigma**2) * gaussian
 
-        return gaussian * amplitude / real_norm
+        drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
+
+        return drag_gaussian * amplitude / real_norm
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":

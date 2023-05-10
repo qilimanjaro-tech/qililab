@@ -34,7 +34,7 @@ class ExponentialCorrection(PulseDistortion):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-        norm = np.amax(np.abs(envelope))
+        norm = np.amax(np.real(envelope))
 
         if self.amp >= 0.0:
             # Parameters
@@ -57,7 +57,7 @@ class ExponentialCorrection(PulseDistortion):
 
         # Filtered signal
         corr_envelope = signal.lfilter(b, a, envelope)
-        corr_norm = np.max(np.abs(corr_envelope))
+        corr_norm = np.max(np.real(corr_envelope))
         corr_envelope = corr_envelope * norm / corr_norm
 
         return corr_envelope
