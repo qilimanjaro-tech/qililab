@@ -16,7 +16,6 @@ from qpysequence.weights import Weights
 from qililab.config import logger
 from qililab.instruments.awg import AWG
 from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequencer
-from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPathIdentifier
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.typings.enums import Parameter
@@ -34,7 +33,6 @@ class QbloxModule(AWG):
     _MAX_BINS: int = 131072
     _NUM_MAX_SEQUENCERS: int = 6
     _NUM_MAX_AWG_OUT_CHANNELS: int = 4
-    _NUM_MAX_AWG_IQ_CHANNELS = int(_NUM_MAX_AWG_OUT_CHANNELS / 2)
     _MIN_WAIT_TIME: int = 4  # in ns
 
     @dataclass
@@ -72,11 +70,6 @@ class QbloxModule(AWG):
                 for sequencer in self.awg_sequencers
             ]
             super().__post_init__()
-            if len(self.awg_iq_channels) > QbloxModule._NUM_MAX_AWG_IQ_CHANNELS:  # pylint: disable=protected-access
-                raise ValueError(
-                    "The number of AWG IQ channels must be less or equal than "
-                    + f"{QbloxModule._NUM_MAX_AWG_IQ_CHANNELS}. Received: {len(self.awg_iq_channels)}"  # pylint: disable=protected-access
-                )
 
     settings: QbloxModuleSettings
     device: Pulsar | QcmQrm
@@ -332,12 +325,6 @@ class QbloxModule(AWG):
             output = int(parameter.value[-1])
             self._set_out_offset(output=output, value=value)
             return
-        if parameter == Parameter.OFFSET_I:
-            self._set_offset_i(value=value, sequencer_id=channel_id)
-            return
-        if parameter == Parameter.OFFSET_Q:
-            self._set_offset_q(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
             return
@@ -462,40 +449,6 @@ class QbloxModule(AWG):
             )
         self.out_offsets[output] = value
         getattr(self.device, f"out{output}_offset")(float(value))
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_i(self, value: float | str | bool, sequencer_id: int):
-        """set offset I
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        path_id = self.get_sequencer_path_id_mapped_to_i_channel(sequencer_id=sequencer_id)
-        if path_id == AWGSequencerPathIdentifier.PATH0:
-            self._set_offset_path0(value=value, sequencer_id=sequencer_id)
-            return
-        self._set_offset_path1(value=value, sequencer_id=sequencer_id)
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_offset_q(self, value: float | str | bool, sequencer_id: int):
-        """set offset Q
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not float
-        """
-        path_id = self.get_sequencer_path_id_mapped_to_q_channel(sequencer_id=sequencer_id)
-        if path_id == AWGSequencerPathIdentifier.PATH1:
-            self._set_offset_path1(value=value, sequencer_id=sequencer_id)
-            return
-        self._set_offset_path0(value=value, sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueFloatOrInt
     def _set_gain_path0(self, value: float | str | bool, sequencer_id: int):

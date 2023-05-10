@@ -161,8 +161,6 @@ class TestQbloxQRM:
             (Parameter.GAIN, 0.02, 0),
             (Parameter.GAIN_PATH0, 0.03, 0),
             (Parameter.GAIN_PATH1, 0.01, 0),
-            (Parameter.OFFSET_I, 0.9, 0),
-            (Parameter.OFFSET_Q, 0.12, 0),
             (Parameter.OFFSET_PATH0, 0.8, 0),
             (Parameter.OFFSET_PATH1, 0.11, 0),
             (Parameter.IF, 100_000, 0),
@@ -205,10 +203,6 @@ class TestQbloxQRM:
             assert qrm.awg_sequencers[channel_id].gain_path0 == value
         if parameter == Parameter.GAIN_PATH1:
             assert qrm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.OFFSET_I:
-            assert qrm.offset_i(sequencer_id=channel_id) == value
-        if parameter == Parameter.OFFSET_Q:
-            assert qrm.offset_q(sequencer_id=channel_id) == value
         if parameter == Parameter.OFFSET_PATH0:
             assert qrm.awg_sequencers[channel_id].offset_path0 == value
         if parameter == Parameter.OFFSET_PATH1:

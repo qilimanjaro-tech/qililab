@@ -4,7 +4,7 @@
 from dataclasses import asdict, dataclass
 
 from qililab.instruments.awg_settings.awg_sequencer_path import AWGSequencerPath
-from qililab.instruments.awg_settings.typings import AWGSequencerPathIdentifier, AWGSequencerTypes
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes
 from qililab.utils.asdict_factory import dict_factory
 
 
@@ -44,27 +44,23 @@ class AWGSequencer:
     def __post_init__(self):
         """Build path0 and path 1 AWGSequencerPaths"""
         if isinstance(self.path0, dict):
-            self.path0 = AWGSequencerPath(
-                path_id=AWGSequencerPathIdentifier.PATH0, **self.path0  # pylint: disable=not-a-mapping
-            )
+            self.path0 = AWGSequencerPath(path_id=0, **self.path0)  # pylint: disable=not-a-mapping
         if isinstance(self.path1, dict):
-            self.path1 = AWGSequencerPath(
-                path_id=AWGSequencerPathIdentifier.PATH1, **self.path1  # pylint: disable=not-a-mapping
-            )
+            self.path1 = AWGSequencerPath(path_id=1, **self.path1)  # pylint: disable=not-a-mapping
 
     @property
     def out_id_path0(self):
         """Return output channel identifier for path0"""
         if self.path0 is None:
             raise ValueError("path0 is not defined")
-        return self.path0.output_channel.identifier
+        return self.path0.output_channel
 
     @property
     def out_id_path1(self):
         """Return output channel identifier for path1"""
         if self.path1 is None:
             raise ValueError("path1 is not defined")
-        return self.path1.output_channel.identifier
+        return self.path1.output_channel
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""

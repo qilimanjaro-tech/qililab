@@ -7,7 +7,6 @@ class AWGTypes(Enum):
     """Typings from AWG Types"""
 
     AWG_SEQUENCERS = "awg_sequencers"
-    AWG_IQ_CHANNELS = "awg_iq_channels"
     OUT_OFFSETS = "out_offsets"
 
 
@@ -21,24 +20,6 @@ class AWGSequencerTypes(Enum):
     OFFSET_PATH0 = "offset_path0"
     OFFSET_PATH1 = "offset_path1"
     CHIP_PORT_ID = "chip_port_id"
-
-
-class AWGSequencerPathIdentifier(Enum):
-    """AWG Sequence Path Identifier
-    Options:
-        PATH0 = 0
-        PATH1 = 1
-    """
-
-    PATH0 = 0
-    PATH1 = 1
-
-
-class AWGSequencerPathTypes(Enum):
-    """Types from AWG Sequencer Path Types"""
-
-    PATH_ID = "path_id"
-    OUTPUT_CHANNEL = "output_channel"
 
 
 class AWGIQChannelTypes(Enum):
