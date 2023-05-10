@@ -9,7 +9,7 @@ from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
-from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
+from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils import InstrumentFactory
@@ -117,10 +117,10 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         """
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
         for sequencer in sequencers:
-            if sequencer in self.sequences:
-                sequence_uploaded = self.sequences[sequencer][1]
+            if sequencer.identifier in self.sequences:
+                sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(sequencer=sequencer, name="default")
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
         return super().compile(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
@@ -248,15 +248,17 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         )
         loop.append_component(acq_instruction)
 
-    def _generate_weights(self, sequencer_id: int) -> Weights:
+    def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.
 
         Returns:
             Weights: Acquisition weights.
         """
-        sequencer = self.awg_sequencers[sequencer_id]
         weights = Weights()
-        weights.add_pair(pair=(sequencer.weights_path0, sequencer.weights_path1), indices=(0, 1))
+        pair = (sequencer.weights_i, sequencer.weights_q)
+        if (sequencer.path_i, sequencer.path_q) == (1, 0):
+            pair = pair[::-1]  # swap paths
+        weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 
     def integration_length(self, sequencer_id: int):
