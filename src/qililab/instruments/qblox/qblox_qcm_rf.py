@@ -23,35 +23,16 @@ class QbloxQCMRF(QbloxModule):
 
         out0_lo_freq: float
         out0_lo_en: bool
-        out0_att: float
+        out0_att: int  # must be a multiple of 2!
         out0_offset_path0: float
         out0_offset_path1: float
         out1_lo_freq: float
         out1_lo_en: bool
-        out1_att: float
+        out1_att: int  # must be a multiple of 2!
         out1_offset_path0: float
         out1_offset_path1: float
 
     settings: QbloxQCMRFSettings
-
-    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
-        """Generate acquisition weights.
-
-        Returns:
-            dict: Acquisition weights.
-        """
-        return Weights()
-
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
-        """Append an acquire instruction to the loop."""
-
-    def acquire_result(self) -> QbloxResult:
-        """Read the result from the AWG instrument
-
-        Returns:
-            QbloxResult: Acquired Qblox result
-        """
-        raise NotImplementedError
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
@@ -72,7 +53,7 @@ class QbloxQCMRF(QbloxModule):
             "out1_offset_path1",
         }
         for parameter in parameters:
-            self.setup(Parameter(parameter), getattr(self, parameter))
+            self.setup(Parameter(parameter), getattr(self.settings, parameter))
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -83,8 +64,27 @@ class QbloxQCMRF(QbloxModule):
             value (float | str | bool): Value to set.
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
-        if not hasattr(self, parameter.value):
+        if not hasattr(self.settings, parameter.value):
             super().setup(parameter, value, channel_id)
             return
-        setattr(self, parameter.value, value)
-        getattr(self.device, parameter.value)(value=value)
+        setattr(self.settings, parameter.value, value)
+        self.device.set(parameter.value, value)
+
+    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
+        """Generate acquisition weights.
+
+        Returns:
+            dict: Acquisition weights.
+        """
+        return Weights()
+
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
+        """Append an acquire instruction to the loop."""
+
+    def acquire_result(self) -> QbloxResult:
+        """Read the result from the AWG instrument
+
+        Returns:
+            QbloxResult: Acquired Qblox result
+        """
+        raise NotImplementedError
