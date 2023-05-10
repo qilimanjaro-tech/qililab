@@ -174,15 +174,15 @@
 
   [#292](https://github.com/qilimanjaro-tech/qililab/pull/292)
 
-- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_path0` and `weights_path1`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`. Note: the `integration_length` parameter will be ignored if `weighed_acq_enabled` is set to `true`, and the length of the weights arrays will be used instead.
+- Weighted acquisition is supported. The weight arrays are set as sequencer parameters `weights_i` and `weights_q`, and the weighed acquisition can be enabled setting the sequencer parameter `weighed_acq_enabled` to `true`. Note: the `integration_length` parameter will be ignored if `weighed_acq_enabled` is set to `true`, and the length of the weights arrays will be used instead.
 
 ```yaml
 awg_sequencers:
   - identifier: 0
     chip_port_id: 1
     intermediate_frequency: 1.e+08
-    weights_path0: [0.98, ...]  # <-- new line
-    weights_path1: [0.72, ...]  # <-- new line
+    weights_i: [0.98, ...]  # <-- new line
+    weights_q: [0.72, ...]  # <-- new line
     weighed_acq_enabled: true   # <-- new line
     threshold: 0.5              # <-- new line
 ```

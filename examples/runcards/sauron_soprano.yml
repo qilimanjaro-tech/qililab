@@ -73,12 +73,12 @@ schema:
             output_channel: 1
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 1
-          gain_path1: 1
+          gain_i: 1
+          gain_q: 1
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: true
           scope_acquire_trigger_mode: sequencer
@@ -114,14 +114,14 @@ schema:
             output_channel: 1
           num_bins: 1
           intermediate_frequency: 10.e+06
-          gain_path0: 1
-          gain_path1: 1
+          gain_i: 1
+          gain_q: 1
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
           sync_enabled: true
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
       awg_iq_channels:
         - identifier: 0
           i_channel:
