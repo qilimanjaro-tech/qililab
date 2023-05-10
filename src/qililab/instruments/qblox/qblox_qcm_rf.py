@@ -6,16 +6,18 @@ from qpysequence.weights import Weights
 
 from qililab.instruments import Instrument
 from qililab.instruments.awg_settings import AWGQbloxSequencer
+from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_module import QbloxModule
 
 
+@InstrumentFactory.register
 class QbloxQCMRF(QbloxModule):
     """Qblox QCM-RF driver."""
 
-    name = InstrumentName.QBLOX_QCMRF
+    name = InstrumentName.QCMRF
 
     @dataclass
     class QbloxQCMRFSettings(QbloxModule.QbloxModuleSettings):
