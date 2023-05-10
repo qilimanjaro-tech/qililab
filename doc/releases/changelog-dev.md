@@ -162,7 +162,7 @@ This document contains the changes of the current release.
   )
   ```
 
-  [#286](https://github.com/qilimanjaro-tech/qililab/issues/286)
+  [#287](https://github.com/qilimanjaro-tech/qililab/pull/287)
 
 - Gate settings can be set for each qubit individually, or tuple of qubits in case of two-qubit gates.
   Example of updated runcard schema:
