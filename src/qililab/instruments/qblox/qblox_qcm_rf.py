@@ -1,4 +1,6 @@
 """This file contains the QbloxQCMRF class."""
+from dataclasses import dataclass
+
 from qpysequence.program import Loop, Register
 from qpysequence.weights import Weights
 
@@ -15,6 +17,7 @@ class QbloxQCMRF(QbloxModule):
 
     name = InstrumentName.QBLOX_QCMRF
 
+    @dataclass
     class QbloxQCMRFSettings(QbloxModule.QbloxModuleSettings):
         """Contains the settings of a specific Qblox QCM-RF module."""
 
@@ -49,6 +52,27 @@ class QbloxQCMRF(QbloxModule):
             QbloxResult: Acquired Qblox result
         """
         raise NotImplementedError
+
+    @Instrument.CheckDeviceInitialized
+    def initial_setup(self):
+        """Initial setup"""
+        super().initial_setup()
+        # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
+        # al the settable parameters of an instrument.
+        parameters = {
+            "out0_lo_freq",
+            "out0_lo_en",
+            "out0_att",
+            "out0_offset_path0",
+            "out0_offset_path1",
+            "out1_lo_freq",
+            "out1_lo_en",
+            "out1_att",
+            "out1_offset_path0",
+            "out1_offset_path1",
+        }
+        for parameter in parameters:
+            self.setup(Parameter(parameter), getattr(self, parameter))
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
