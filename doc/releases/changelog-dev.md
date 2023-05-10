@@ -143,7 +143,7 @@ This document contains the changes of the current release.
   experiment.set_parameter(alias="Measure", parameter=Parameter.DURATION, value=1000)
   ```
 
-  [#286](https://github.com/qilimanjaro-tech/qililab/issues/286)
+  [#287](https://github.com/qilimanjaro-tech/qililab/pull/287)
 
 - Added support for looping over the values of a specific group of operations in the circuit. The group is identified by the alias set when added the operation in the circuit. If more than one operations have the same alias, their values will change in sync. Example:
 
