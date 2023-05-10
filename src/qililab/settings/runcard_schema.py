@@ -222,6 +222,7 @@ class RuncardSchema:
             operation_settings = self.get_operation_settings(name=alias)
             if operation_settings is not None:
                 operation_settings.set_parameter(parameter=parameter, value=value)
+                return
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is None:
                 raise ValueError(f"Alias {alias} has incorrect format")
