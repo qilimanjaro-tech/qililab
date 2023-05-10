@@ -33,7 +33,7 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
-        norm = np.max(np.abs(gaussian))
+        norm = np.max(gaussian)
 
         return gaussian * amplitude / norm
 
