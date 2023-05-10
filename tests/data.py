@@ -22,14 +22,7 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
-from qililab.instruments.awg_settings.typings import (
-    AWGChannelMappingTypes,
-    AWGIQChannelTypes,
-    AWGSequencerPathTypes,
-    AWGSequencerTypes,
-    AWGTypes,
-)
-from qililab.platform.platform import Platform
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -214,12 +207,8 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                AWGSequencerTypes.PATH0.value: {"output_channel": 0},
+                AWGSequencerTypes.PATH1.value: {"output_channel": 1},
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_PATH0.value: 1,
@@ -230,19 +219,6 @@ class Galadriel:
                 Parameter.OFFSET_PATH1.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -279,12 +255,8 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                AWGSequencerTypes.PATH0.value: {"output_channel": 0},
+                AWGSequencerTypes.PATH1.value: {"output_channel": 1},
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
                 Parameter.GAIN_PATH0.value: 1,
@@ -312,12 +284,8 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                AWGSequencerTypes.PATH0.value: {"output_channel": 0},
+                AWGSequencerTypes.PATH1.value: {"output_channel": 1},
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
                 Parameter.GAIN_PATH0.value: 1,
@@ -341,19 +309,6 @@ class Galadriel:
                 Parameter.WEIGHTS_PATH1.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }

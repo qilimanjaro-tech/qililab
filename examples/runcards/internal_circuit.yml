@@ -78,6 +78,10 @@ schema:
             output_channel: 0
           path1:
             output_channel: 1
+          weights_path0: [1., 1., 1., 1.]
+          weights_path1: [1., 1., 1., 1.]
+          weighed_acq_enabled: false
+          threshold: 0.5
           num_bins: 1
           intermediate_frequency: 2.e+07
           gain_path0: 0.001
@@ -129,14 +133,6 @@ schema:
           offset_path1: 0
           hardware_modulation: true
           sync_enabled: true
-      awg_iq_channels:
-        - identifier: 0
-          i_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 0
-          q_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 1
     - name: rohde_schwarz
       alias: rs_1
       id_: 0
@@ -245,5 +241,5 @@ schema:
         name: tcp_ip
         address: 192.168.1.69
       modules:
-      - attenuator: attenuator
-        slot_id: 0
+        - attenuator: attenuator
+          slot_id: 0
