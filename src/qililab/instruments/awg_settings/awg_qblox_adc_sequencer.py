@@ -9,8 +9,8 @@ from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequenc
 class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
     """AWG Qblox ADC Sequencer"""
 
-    weights_path0: list[float]
-    weights_path1: list[float]
+    weights_i: list[float]
+    weights_q: list[float]
     weighed_acq_enabled: bool
     threshold: float
 
@@ -19,13 +19,13 @@ class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
         self._verify_weights()
 
     def _verify_weights(self):
-        """Verifies that the length of weights_path0 and weights_path1 are equal.
+        """Verifies that the length of weights_i and weights_q are equal.
 
         Raises:
-            IndexError: The length of weights_path0 and weights_path1 must be equal.
+            IndexError: The length of weights_i and weights_q must be equal.
         """
-        if len(self.weights_path0) != len(self.weights_path1):
-            raise IndexError("The length of weights_path0 and weights_path1 must be equal.")
+        if len(self.weights_i) != len(self.weights_q):
+            raise IndexError("The length of weights_i and weights_q must be equal.")
 
     @property
     def used_integration_length(self) -> int:
@@ -34,4 +34,4 @@ class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
         Returns:
             int: Length of the weights if weighed acquisition is enabled, configured `integration_length` if disabled.
         """
-        return len(self.weights_path0) if self.weighed_acq_enabled else self.integration_length
+        return len(self.weights_i) if self.weighed_acq_enabled else self.integration_length

@@ -2,7 +2,7 @@
 import pytest
 
 from qililab.instruments import AWG
-from qililab.instruments.awg_settings import AWGSequencer, AWGSequencerPath
+from qililab.instruments.awg_settings import AWGSequencer
 from qililab.pulse import PulseBusSchedule
 from qililab.typings import Category
 
@@ -30,29 +30,29 @@ def fixture_awg():
             {
                 "identifier": 0,
                 "chip_port_id": 100,
-                "path0": {"output_channel": 0},
-                "path1": {"output_channel": 1},
+                "output_i": 0,
+                "output_q": 1,
                 "intermediate_frequency": 20000000,
-                "gain_path0": 0.1,
-                "gain_path1": 0.1,
+                "gain_i": 0.1,
+                "gain_q": 0.1,
                 "gain_imbalance": 1,
                 "phase_imbalance": 0,
-                "offset_path0": 0,
-                "offset_path1": 0,
+                "offset_i": 0,
+                "offset_q": 0,
                 "hardware_modulation": True,
             },
             {
                 "identifier": 1,
                 "chip_port_id": 101,
-                "path0": {"output_channel": 2},
-                "path1": {"output_channel": 3},
+                "output_i": 2,
+                "output_q": 3,
                 "intermediate_frequency": 20000000,
-                "gain_path0": 0.1,
-                "gain_path1": 0.1,
+                "gain_i": 0.1,
+                "gain_q": 0.1,
                 "gain_imbalance": 1,
                 "phase_imbalance": 0,
-                "offset_path0": 0,
-                "offset_path1": 0,
+                "offset_i": 0,
+                "offset_q": 0,
                 "hardware_modulation": True,
             },
         ],
@@ -76,17 +76,15 @@ class TestInitialization:
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
             assert sequencer.chip_port_id == 100 + idx
-            assert isinstance(sequencer.path0, AWGSequencerPath)
-            assert isinstance(sequencer.path1.output_channel, int)
-            assert sequencer.path0.output_channel == 0 + 2 * idx
-            assert sequencer.path1.output_channel == 1 + 2 * idx
+            assert sequencer.output_i == 0 + 2 * idx
+            assert sequencer.output_q == 1 + 2 * idx
             assert sequencer.intermediate_frequency == 20000000
-            assert sequencer.gain_path0 == 0.1
-            assert sequencer.gain_path1 == 0.1
+            assert sequencer.gain_i == 0.1
+            assert sequencer.gain_q == 0.1
             assert sequencer.gain_imbalance == 1
             assert sequencer.phase_imbalance == 0
-            assert sequencer.offset_path0 == 0
-            assert sequencer.offset_path1 == 0
+            assert sequencer.offset_i == 0
+            assert sequencer.offset_q == 0
             assert sequencer.hardware_modulation is True
 
 
