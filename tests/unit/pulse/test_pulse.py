@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 
 from qililab.constants import PULSE
-from qililab.pulse import Pulse
-from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
+from qililab.pulse import Pulse, Drag, Gaussian, Rectangular
 from qililab.utils import Waveforms
 
 # Parameters for the different Pulses
@@ -30,6 +29,17 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
 def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
     """Fixture for the pulse distortion class."""
     return request.param
+
+
+@pytest.fixture(name="pulse")
+def fixture_pulse() -> Pulse:
+    """Load Pulse.
+
+    Returns:
+        Pulse: Instance of the Pulse class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 class TestPulse:

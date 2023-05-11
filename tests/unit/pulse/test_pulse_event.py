@@ -5,9 +5,8 @@ import numpy as np
 import pytest
 
 from qililab.constants import PULSEEVENT
-from qililab.pulse import Pulse, PulseEvent
-from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection, PulseDistortion
-from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
+from qililab.pulse import Pulse, PulseEvent, Drag, Gaussian, Rectangular, \
+  BiasTeeCorrection, ExponentialCorrection, PulseDistortion
 from qililab.utils import Waveforms
 
 # Parameters for the different Pulses
@@ -52,6 +51,18 @@ def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
 def fixture_pulse_distortions(request: pytest.FixtureRequest) -> ExponentialCorrection:
     """Fixture for the pulse distortion class."""
     return request.param
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 class TestPulseEvent:
