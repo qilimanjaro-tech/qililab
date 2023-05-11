@@ -48,4 +48,4 @@ types-PyYAML==6.0.12
 types-requests==2.28.11.8
 types-urllib3==1.26.25
 typing_extensions==4.3.0
-dummy-qblox@ git+https://github.com/qilimanjaro-tech/qililab-tools.git@0.2.1#subdirectory=services/dummy_qblox
+dummy-qblox@ git+https://github.com/qilimanjaro-tech/qililab-tools.git@0.3.2#subdirectory=services/dummy_qblox
