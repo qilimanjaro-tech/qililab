@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 
 from qililab.constants import PULSE
-from qililab.pulse import Pulse, Drag, Gaussian, Rectangular
-from qililab.utils import Waveforms
+from qililab.pulse import Drag, Gaussian, Pulse, Rectangular
 
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
@@ -44,13 +43,6 @@ def fixture_pulse() -> Pulse:
 
 class TestPulse:
     """Unit tests checking the Pulse attributes and methods"""
-
-    def test_modulated_waveforms_method(self, pulse: Pulse):
-        """Test modulated_waveforms method."""
-        waveforms = pulse.modulated_waveforms()
-
-        assert waveforms is not None
-        assert isinstance(waveforms, Waveforms)
 
     def test_envelope_method(self, pulse: Pulse):
         """Test envelope method"""

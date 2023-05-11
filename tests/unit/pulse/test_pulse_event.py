@@ -82,6 +82,7 @@ class TestPulseEvent:
 
         assert waveforms is not None
         assert isinstance(waveforms, Waveforms)
+        assert len(waveforms.values[0]) == len(waveforms.values[1]) == len(pulse_event.envelope())
 
     def test_envelope_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test envelope method"""

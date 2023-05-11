@@ -7,6 +7,7 @@ from qililab.constants import PULSEEVENT, RUNCARD
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_distortion import PulseDistortion
 from qililab.utils import Factory, Waveforms
+from qililab.utils.signal_processing import modulate
 
 
 @dataclass
@@ -32,8 +33,8 @@ class PulseEvent:
         """Frequency of the pulse in Hz."""
         return self.pulse.frequency
 
-    def modulated_waveforms(self, resolution: float = 1.0, frequency: float = 0.0) -> Waveforms:
-        """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
+    def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
+        """Applies digital quadrature amplitude modulation (QAM) to the envelope.
 
         Args:
             resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
@@ -42,7 +43,15 @@ class PulseEvent:
         Returns:
             Waveforms: I and Q modulated waveforms.
         """
-        return self.pulse.modulated_waveforms(resolution=resolution, start_time=self.start_time, frequency=frequency)
+        envelope = self.envelope(resolution=resolution)
+        i = np.real(envelope)
+        q = np.imag(envelope)
+
+        # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
+        phase_offset = self.pulse.phase + 2 * np.pi * self.pulse.frequency * self.start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=self.pulse.frequency, phase_offset=phase_offset)
+
+        return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0) -> np.ndarray:
         """Returns the pulse envelope with the corresponding distortions applied.
