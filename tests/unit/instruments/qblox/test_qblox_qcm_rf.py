@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-from qblox_instruments.qcodes_drivers.cluster import Cluster, QcmQrm
+from qblox_instruments.qcodes_drivers.cluster import Cluster
 from qblox_instruments.types import ClusterType
 
 from qililab.instruments import QbloxQCMRF
