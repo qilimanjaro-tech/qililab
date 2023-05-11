@@ -5,7 +5,7 @@ from qililab import save_platform
 from qililab.platform import Platform, build_platform
 from tests.data import Galadriel
 
-from ...utils import platform_db, platform_yaml
+from tests.utils import platform_db, platform_yaml
 
 
 @pytest.fixture(name="platform")
