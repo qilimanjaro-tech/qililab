@@ -1,10 +1,14 @@
 """Module containing utilities for the tests."""
 import copy
 from typing import List, Tuple
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
+
+from qililab import build_platform
+from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.platform import Platform
 
 
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: MagicMock):
@@ -119,3 +123,23 @@ def complete_array(array: List[float], filler: float, final_length: int) -> List
 
 dummy_qrm_name_generator = name_generator("dummy_qrm")
 dummy_qcm_name_generator = name_generator("dummy_qcm")
+
+
+def platform_db(runcard: dict) -> Platform:
+    """Return PlatformBuilderDB instance with loaded platform."""
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name=DEFAULT_PLATFORM_NAME)
+            mock_load.assert_called()
+            mock_open.assert_called()
+    return platform
+
+
+def platform_yaml(runcard: dict) -> Platform:
+    """Return PlatformBuilderYAML instance with loaded platform."""
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    return platform

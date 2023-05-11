@@ -1,24 +1,46 @@
 """Test for the QbloxQRM class."""
 import copy
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
+import numpy as np
 import pytest
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
 from qpysequence.sequence import Sequence
-from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQRM
 from qililab.instruments.awg_settings.awg_qblox_adc_sequencer import AWGQbloxADCSequencer
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.platform import Platform
-from qililab.pulse import Pulse, PulseBusSchedule, PulseEvent, Rectangular
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, Rectangular
 from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -159,12 +181,10 @@ class TestQbloxQRM:
         "parameter, value, channel_id",
         [
             (Parameter.GAIN, 0.02, 0),
-            (Parameter.GAIN_PATH0, 0.03, 0),
-            (Parameter.GAIN_PATH1, 0.01, 0),
-            (Parameter.OFFSET_I, 0.9, 0),
-            (Parameter.OFFSET_Q, 0.12, 0),
-            (Parameter.OFFSET_PATH0, 0.8, 0),
-            (Parameter.OFFSET_PATH1, 0.11, 0),
+            (Parameter.GAIN_I, 0.03, 0),
+            (Parameter.GAIN_Q, 0.01, 0),
+            (Parameter.OFFSET_I, 0.8, 0),
+            (Parameter.OFFSET_Q, 0.11, 0),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
@@ -199,20 +219,16 @@ class TestQbloxQRM:
         if channel_id is None:
             channel_id = 0
         if parameter == Parameter.GAIN:
-            assert qrm.awg_sequencers[channel_id].gain_path0 == value
-            assert qrm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.GAIN_PATH0:
-            assert qrm.awg_sequencers[channel_id].gain_path0 == value
-        if parameter == Parameter.GAIN_PATH1:
-            assert qrm.awg_sequencers[channel_id].gain_path1 == value
+            assert qrm.awg_sequencers[channel_id].gain_i == value
+            assert qrm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.GAIN_I:
+            assert qrm.awg_sequencers[channel_id].gain_i == value
+        if parameter == Parameter.GAIN_Q:
+            assert qrm.awg_sequencers[channel_id].gain_q == value
         if parameter == Parameter.OFFSET_I:
-            assert qrm.offset_i(sequencer_id=channel_id) == value
+            assert qrm.awg_sequencers[channel_id].offset_i == value
         if parameter == Parameter.OFFSET_Q:
-            assert qrm.offset_q(sequencer_id=channel_id) == value
-        if parameter == Parameter.OFFSET_PATH0:
-            assert qrm.awg_sequencers[channel_id].offset_path0 == value
-        if parameter == Parameter.OFFSET_PATH1:
-            assert qrm.awg_sequencers[channel_id].offset_path1 == value
+            assert qrm.awg_sequencers[channel_id].offset_q == value
         if parameter == Parameter.IF:
             assert qrm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
@@ -357,6 +373,28 @@ class TestQbloxQRM:
         """Test firmware property."""
         assert qrm_no_device.firmware == qrm_no_device.settings.firmware
 
+    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qrm):
+        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
+        # We change the dictionary and initialize the QCM
+        qrm_settings = qrm.to_dict()
+        qrm_settings.pop("name")
+        qrm_settings["awg_sequencers"][0]["output_i"] = 1
+        qrm_settings["awg_sequencers"][0]["output_q"] = 0
+        qrm_settings["awg_sequencers"][0]["weights_i"] = [1, 2, 3]
+        qrm_settings["awg_sequencers"][0]["weights_q"] = [4, 5, 6]
+        new_qcm = QbloxQRM(settings=qrm_settings)
+        # We create a pulse bus schedule
+        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=1)
+        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
+        waveforms = sequences[0]._waveforms._waveforms
+        assert np.allclose(waveforms[0].data, 0)
+        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
+        weights = sequences[0]._weights
+        assert np.allclose(weights["pair_0_I"]["data"], [4, 5, 6])
+        assert np.allclose(weights["pair_0_Q"]["data"], [1, 2, 3])
+
 
 class TestAWGQbloxADCSequencer:
     """Unit tests for AWGQbloxADCSequencer class."""
@@ -364,8 +402,8 @@ class TestAWGQbloxADCSequencer:
     def test_verify_weights(self):
         """Test the _verify_weights method."""
         mock_sequencer = Mock(spec=AWGQbloxADCSequencer)
-        mock_sequencer.weights_path0 = [1.0]
-        mock_sequencer.weights_path1 = [1.0, 1.0]
+        mock_sequencer.weights_i = [1.0]
+        mock_sequencer.weights_q = [1.0, 1.0]
 
-        with pytest.raises(IndexError, match="The length of weights_path0 and weights_path1 must be equal."):
+        with pytest.raises(IndexError, match="The length of weights_i and weights_q must be equal."):
             AWGQbloxADCSequencer._verify_weights(mock_sequencer)

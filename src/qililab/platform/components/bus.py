@@ -49,7 +49,7 @@ class Bus:
     settings: BusSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
-        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)
+        self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
         self.targets = chip.get_port_nodes(port_id=self.port)
 
     @property
