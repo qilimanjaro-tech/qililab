@@ -42,8 +42,8 @@ settings:
           num_sigmas: 4
       - name: Drag
         amplitude: 1.0
-        phase: 0
         duration: 100
+        phase: # phase should be empty
         shape:
           name: drag
           num_sigmas: 4
