@@ -27,7 +27,7 @@ class BiasTeeCorrection(PulseDistortion):
         Corrects for a bias tee using a linear IIR filter with time constant tau.
 
         Args:
-            envelope (ndarray): array representing the envelope of a pulse for each time step.
+            envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
