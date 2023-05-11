@@ -8,7 +8,7 @@ This document contains the changes of the current release.
 
   ```yaml
   - name: QCM-RF
-    alias: QCMRF0
+    alias: QCM-RF0
     id_: 2
     category: awg
     firmware: 0.7.0
@@ -28,6 +28,28 @@ This document contains the changes of the current release.
   ```
 
   [#327](https://github.com/qilimanjaro-tech/qililab/pull/327)
+
+- The `QbloxQRMRF` module has been added. To use it, please use the `QRM-RF` name inside the runcard:
+
+  ```yaml
+  - name: QRM-RF
+    alias: QRM-RF0
+    id_: 0
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 1
+    out0_in0_lo_freq: 3000000000  # <-- new line
+    out0_in0_lo_en: true  # <-- new line
+    out0_att: 34  # <-- new line
+    in0_att: 28  # <-- new line
+    out0_offset_path0: 0.123  # <-- new line
+    out0_offset_path1: 1.234  # <-- new line
+    acquisition_delay_time: 100
+    awg_sequencers:
+      ...
+  ```
+
+  [#330](https://github.com/qilimanjaro-tech/qililab/pull/330)
 
 ### Improvements
 
