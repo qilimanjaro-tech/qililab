@@ -2,6 +2,14 @@
 import pytest
 
 from qililab.platform import Platform, Schema
+from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="schema")
