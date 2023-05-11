@@ -2,11 +2,9 @@
 import copy
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
 from qpysequence.sequence import Sequence
-from qpysequence.waveforms import Waveforms
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
@@ -154,16 +152,14 @@ class TestQbloxQCM:
         "parameter, value, channel_id",
         [
             (Parameter.GAIN, 0.02, 0),
-            (Parameter.GAIN_PATH0, 0.03, 0),
-            (Parameter.GAIN_PATH1, 0.01, 0),
-            (Parameter.OFFSET_I, 0.9, 0),
-            (Parameter.OFFSET_Q, 0.12, 0),
+            (Parameter.GAIN_I, 0.03, 0),
+            (Parameter.GAIN_Q, 0.01, 0),
             (Parameter.OFFSET_OUT0, 1.234, None),
             (Parameter.OFFSET_OUT1, 0, None),
             (Parameter.OFFSET_OUT2, 0.123, None),
             (Parameter.OFFSET_OUT3, 10, None),
-            (Parameter.OFFSET_PATH0, 0.8, 0),
-            (Parameter.OFFSET_PATH1, 0.11, 0),
+            (Parameter.OFFSET_I, 0.8, 0),
+            (Parameter.OFFSET_Q, 0.11, 0),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
@@ -178,20 +174,16 @@ class TestQbloxQCM:
         """Test setup method"""
         qcm.setup(parameter=parameter, value=value, channel_id=channel_id)
         if parameter == Parameter.GAIN:
-            assert qcm.awg_sequencers[channel_id].gain_path0 == value
-            assert qcm.awg_sequencers[channel_id].gain_path1 == value
-        if parameter == Parameter.GAIN_PATH0:
-            assert qcm.awg_sequencers[channel_id].gain_path0 == value
-        if parameter == Parameter.GAIN_PATH1:
-            assert qcm.awg_sequencers[channel_id].gain_path1 == value
+            assert qcm.awg_sequencers[channel_id].gain_i == value
+            assert qcm.awg_sequencers[channel_id].gain_q == value
+        if parameter == Parameter.GAIN_I:
+            assert qcm.awg_sequencers[channel_id].gain_i == value
+        if parameter == Parameter.GAIN_Q:
+            assert qcm.awg_sequencers[channel_id].gain_q == value
         if parameter == Parameter.OFFSET_I:
-            assert qcm.offset_i(sequencer_id=channel_id) == value
+            assert qcm.awg_sequencers[channel_id].offset_i == value
         if parameter == Parameter.OFFSET_Q:
-            assert qcm.offset_q(sequencer_id=channel_id) == value
-        if parameter == Parameter.OFFSET_PATH0:
-            assert qcm.awg_sequencers[channel_id].offset_path0 == value
-        if parameter == Parameter.OFFSET_PATH1:
-            assert qcm.awg_sequencers[channel_id].offset_path1 == value
+            assert qcm.awg_sequencers[channel_id].offset_q == value
         if parameter == Parameter.IF:
             assert qcm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
@@ -269,4 +261,21 @@ class TestQbloxQCM:
         """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
         expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
         with pytest.raises(ValueError, match=expected_error_message):
-            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)
+            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
+
+    def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
+        """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
+        # We change the dictionary and initialize the QCM
+        qcm_settings = qcm.to_dict()
+        qcm_settings.pop("name")
+        qcm_settings["awg_sequencers"][0]["output_i"] = 1
+        qcm_settings["awg_sequencers"][0]["output_q"] = 0
+        new_qcm = QbloxQCM(settings=qcm_settings)
+        # We create a pulse bus schedule
+        pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=0)
+        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
+        waveforms = sequences[0]._waveforms._waveforms
+        assert np.allclose(waveforms[0].data, 0)
+        assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))

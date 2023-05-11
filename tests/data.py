@@ -18,17 +18,11 @@ from qililab.constants import (
     PULSEBUSSCHEDULE,
     PULSEEVENT,
     PULSESCHEDULES,
+    PULSESHAPE,
     RUNCARD,
     SCHEMA,
 )
-from qililab.instruments.awg_settings.typings import (
-    AWGChannelMappingTypes,
-    AWGIQChannelTypes,
-    AWGSequencerPathTypes,
-    AWGSequencerTypes,
-    AWGTypes,
-)
-from qililab.platform.platform import Platform
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -84,44 +78,102 @@ class Galadriel:
                 "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 50,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 1.5707963267948966,
-                "duration": PLATFORM.MASTER_DURATION_GATE,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-        ],
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            1: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            (0, 1): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+            (1, 0): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+        },
     }
 
     pulsar_controller_qcm_0 = {
@@ -155,35 +207,18 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -220,49 +255,45 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
                 Parameter.SAMPLING_RATE.value: 1.0e09,
-                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
                 Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
                 Parameter.SEQUENCE_TIMEOUT.value: 1,
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHED_ACQ_ENABLED.value: True,
+                Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -274,19 +305,10 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
+                Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHED_ACQ_ENABLED.value: False,
+                Parameter.THRESHOLD.value: 0.5,
             },
         ],
     }
@@ -542,48 +564,46 @@ class FluxQubitSimulator:
                 "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": 1,
-                "phase": 1.5707963267948966,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-        ],
+            ]
+        },
     }
 
     chip = {
@@ -661,12 +681,12 @@ results_two_loops = {
         {
             RUNCARD.ALIAS: "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.VALUES: np.arange(start=15, stop=90, step=1),
+            LOOP.VALUES: (np.arange(start=15, stop=90, step=1)).tolist(),
             LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
                 LOOP.PARAMETER: Node.FREQUENCY.value,
-                LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+                LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
                 LOOP.LOOP: None,
                 LOOP.CHANNEL_ID: None,
             },
@@ -675,7 +695,7 @@ results_two_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -692,7 +712,7 @@ results_two_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -718,7 +738,7 @@ results_one_loops = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
             LOOP.CHANNEL_ID: None,
         }
@@ -726,7 +746,7 @@ results_one_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -743,7 +763,7 @@ results_one_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -848,7 +868,7 @@ class SauronVNA:
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
-        "gates": [],
+        "gates": {},
         "operations": [],
     }
 
