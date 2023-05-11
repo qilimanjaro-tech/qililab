@@ -59,7 +59,7 @@ class TestExponentialCorrection:
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(ExponentialCorrection(tau_exponential=1.3, amp=2.0).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
-        corr_envelopes.append(ExponentialCorrection(tau_exponential=0.5, amp=-5.0).apply(envelope=corr_envelopes[1]))
+        corr_envelopes.append(ExponentialCorrection(tau_exponential=0.9, amp=-5.0).apply(envelope=corr_envelopes[2]))
 
         for corr_envelope in corr_envelopes:
             assert corr_envelope is not None

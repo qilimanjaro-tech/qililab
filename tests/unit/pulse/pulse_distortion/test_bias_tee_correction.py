@@ -55,7 +55,7 @@ class TestBiasTeeCorrection:
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=1.3).apply(envelope=corr_envelopes[0]))
         corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
-        corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.5).apply(envelope=corr_envelopes[1]))
+        corr_envelopes.append(BiasTeeCorrection(tau_bias_tee=0.9).apply(envelope=corr_envelopes[2]))
 
         for corr_envelope in corr_envelopes:
             assert corr_envelope is not None
