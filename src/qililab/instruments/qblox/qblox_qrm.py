@@ -194,7 +194,6 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             sequencer_id (int): sequencer to update the value
         """
         integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
-        # TODO: Change the parameter to `thresholded_acq_threshold` when qblox-instruments is updated to >= 0.9.0
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_nco(self, sequencer_id: int):
