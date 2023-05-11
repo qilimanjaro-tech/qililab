@@ -45,7 +45,7 @@ class Pulse:
         """Pulse 'envelope' property.
 
         Returns:
-            List[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
+            list[float]: Amplitudes of the envelope of the pulse. Max amplitude is fixed to 1.
         """
         if amplitude is None:
             amplitude = self.amplitude
