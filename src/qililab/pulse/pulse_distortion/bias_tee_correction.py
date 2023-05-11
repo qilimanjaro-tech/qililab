@@ -42,7 +42,7 @@ class BiasTeeCorrection(PulseDistortion):
         b = [(k + 1) / k, -(k - 1) / k]
 
         # Filtered signal
-        corr_envelope = signal.lfilter(b, a, envelope)
+        corr_envelope = signal.lfilter(b=b, a=a, x=envelope)
         corr_norm = np.max(np.real(corr_envelope))
         corr_envelope = corr_envelope * norm / corr_norm
 
