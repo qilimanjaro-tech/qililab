@@ -38,26 +38,26 @@ class QbloxQCMRF(QbloxQCM):
         )
 
     settings: QbloxQCMRFSettings
+    # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
+    # al the settable parameters of an instrument.
+    parameters = {
+        "out0_lo_freq",
+        "out0_lo_en",
+        "out0_att",
+        "out0_offset_path0",
+        "out0_offset_path1",
+        "out1_lo_freq",
+        "out1_lo_en",
+        "out1_att",
+        "out1_offset_path0",
+        "out1_offset_path1",
+    }
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
-        # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
-        # al the settable parameters of an instrument.
-        parameters = {
-            "out0_lo_freq",
-            "out0_lo_en",
-            "out0_att",
-            "out0_offset_path0",
-            "out0_offset_path1",
-            "out1_lo_freq",
-            "out1_lo_en",
-            "out1_att",
-            "out1_offset_path0",
-            "out1_offset_path1",
-        }
-        for parameter in parameters:
+        for parameter in self.parameters:
             self.setup(Parameter(parameter), getattr(self.settings, parameter))
 
     @Instrument.CheckDeviceInitialized
@@ -69,8 +69,8 @@ class QbloxQCMRF(QbloxQCM):
             value (float | str | bool): Value to set.
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
-        if not hasattr(self.settings, parameter.value):
-            super().setup(parameter, value, channel_id)
+        if parameter.value in self.parameters:
+            setattr(self.settings, parameter.value, value)
+            self.device.set(parameter.value, value)
             return
-        setattr(self.settings, parameter.value, value)
-        self.device.set(parameter.value, value)
+        super().setup(parameter, value, channel_id)
