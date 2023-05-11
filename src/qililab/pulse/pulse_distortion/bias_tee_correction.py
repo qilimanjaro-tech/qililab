@@ -30,7 +30,7 @@ class BiasTeeCorrection(PulseDistortion):
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
 
         Returns:
-            ndarray: Amplitude of the envelope for each time step.
+            numpy.ndarray: Amplitude of the envelope for each time step.
         """
         # We normalize distorted_pulses envelopes with max heights of the real parts
         norm = np.amax(np.real(envelope))
