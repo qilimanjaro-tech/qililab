@@ -234,6 +234,7 @@ class InstrumentName(str, Enum):
 
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
+    QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
