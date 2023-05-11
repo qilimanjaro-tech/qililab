@@ -1,5 +1,5 @@
 """This file contains the QbloxQCMRF class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from qililab.instruments import Instrument
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
@@ -24,6 +24,18 @@ class QbloxQRMRF(QbloxQRM):
         in0_att: int  # must be a multiple of 2!
         out0_offset_path0: float
         out0_offset_path1: float
+        out_offsets: list[float] = field(init=False, default_factory=list)
+
+    # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
+    # al the settable parameters of an instrument.
+    parameters = {
+        "out0_in0_lo_freq",
+        "out0_in0_lo_en",
+        "out0_att",
+        "in0_att",
+        "out0_offset_path0",
+        "out0_offset_path1",
+    }
 
     settings: QbloxQRMRFSettings
 
@@ -31,17 +43,7 @@ class QbloxQRMRF(QbloxQRM):
     def initial_setup(self):
         """Initial setup"""
         super().initial_setup()
-        # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
-        # al the settable parameters of an instrument.
-        parameters = {
-            "out0_in0_lo_freq",
-            "out0_in0_lo_en",
-            "out0_att",
-            "in_0_att",
-            "out0_offset_path0",
-            "out0_offset_path1",
-        }
-        for parameter in parameters:
+        for parameter in self.parameters:
             self.setup(Parameter(parameter), getattr(self.settings, parameter))
 
     @Instrument.CheckDeviceInitialized
@@ -52,8 +54,8 @@ class QbloxQRMRF(QbloxQRM):
             value (float | str | bool): Value to set.
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
-        if not hasattr(self.settings, parameter.value):
-            super().setup(parameter, value, channel_id)
+        if parameter.value in self.parameters:
+            setattr(self.settings, parameter.value, value)
+            self.device.set(parameter.value, value)
             return
-        setattr(self.settings, parameter.value, value)
-        self.device.set(parameter.value, value)
+        super().setup(parameter, value, channel_id)
