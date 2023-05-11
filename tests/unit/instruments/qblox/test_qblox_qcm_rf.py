@@ -97,18 +97,6 @@ class TestMethods:
         qcm_rf.device.sequencers[0].gain_awg_path0.assert_called_once_with(1)
         qcm_rf.device.sequencers[0].gain_awg_path1.assert_called_once_with(1)
 
-    def test_generate_weights(self, settings):
-        """Test the `generate_weights` method of the QbloxQCMRF class."""
-        qcm_rf = QbloxQCMRF(settings=settings)
-        weights = qcm_rf._generate_weights(sequencer=None)  # pylint: disable=protected-access
-        assert not weights.to_dict()  # dictionary is empty
-
-    def test_acquire_result(self, settings):
-        """Test the `acquire_result` method of the QbloxQCMRF class."""
-        qcm_rf = QbloxQCMRF(settings=settings)
-        with pytest.raises(NotImplementedError):
-            qcm_rf.acquire_result()
-
 
 class TestIntegration:
     """Integration tests of the QbloxQCMRF class."""

@@ -74,22 +74,3 @@ class QbloxQCMRF(QbloxQCM):
             return
         setattr(self.settings, parameter.value, value)
         self.device.set(parameter.value, value)
-
-    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
-        """Generate acquisition weights.
-
-        Returns:
-            dict: Acquisition weights.
-        """
-        return Weights()
-
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
-        """Append an acquire instruction to the loop."""
-
-    def acquire_result(self) -> QbloxResult:
-        """Read the result from the AWG instrument
-
-        Returns:
-            QbloxResult: Acquired Qblox result
-        """
-        raise NotImplementedError
