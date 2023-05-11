@@ -50,7 +50,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 0.3,
-                    "phase": 90,
+                    "phase": None,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },

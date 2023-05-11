@@ -1,6 +1,4 @@
 """Drag gate"""
-from qibo import gates
-
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.hardware_gates.hardware_gate_factory import HardwareGateFactory
 from qililab.transpiler import Drag as Drag_gate
@@ -8,7 +6,7 @@ from qililab.typings import GateName
 
 
 @HardwareGateFactory.register
-class Drag(HardwareGate):  # pylint: disable=invalid-name
+class Drag(HardwareGate):
     """Drag pulse gate.
 
     This is a gate representation of the Drag pulse as a native gate.
