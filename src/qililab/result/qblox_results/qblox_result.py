@@ -1,10 +1,7 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
-import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
@@ -38,7 +35,7 @@ class QbloxResult(Result):
 
     name = ResultName.QBLOX
     integration_lengths: list[int]
-    qblox_raw_results: List[dict]
+    qblox_raw_results: list[dict]
     qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
     qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
@@ -97,21 +94,21 @@ class QbloxResult(Result):
         demod_freq: float = 0.0,
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
-        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[List[float], List[float]]:
+        integration_range: tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> tuple[list[float], list[float]]:
         """Acquisitions Scope
 
         Args:
             demod_freq (float, optional): _description_. Defaults to 0.0.
             demod_phase_offset (float, optional): _description_. Defaults to 0.0.
             integrate (bool, optional): _description_. Defaults to False.
-            integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
+            integration_range (tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
 
         Raises:
             DataUnavailable: Scope data is not available since it was not stored for this acquisition.
 
         Returns:
-            Tuple[List[float], List[float]]
+            tuple[list[float], list[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
@@ -134,11 +131,11 @@ class QbloxResult(Result):
         return self.qblox_bins_acquisitions.counts()
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> list[int]:
         """QbloxResult 'shape' property.
 
         Returns:
-            List[int]: Shape of the acquisitions.
+            list[int]: Shape of the acquisitions.
         """
         return list(self.acquisitions().shape)
 
