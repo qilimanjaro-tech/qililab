@@ -29,7 +29,7 @@ class ExponentialCorrection(PulseDistortion):
         Fitting should be done to y = g*(1+amp*exp(-t/tau)), where g is ignored in the corrections.
 
         Args:
-            envelope (ndarray): array representing the envelope of a pulse for each time step.
+            envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
