@@ -84,7 +84,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "mixer_corr_gain_ratio",
             "offset_awg_path0",
             "offset_awg_path1",
-            "thresholded_acq_threshold",
+            "discretization_threshold_acq",
         ]
     )
     # connect to instrument
@@ -139,7 +139,7 @@ class TestQbloxQRM:
         qrm.device.sequencer0.sync_en.assert_called_with(qrm.awg_sequencers[0].sync_enabled)
         qrm.device.sequencer0.demod_en_acq.assert_called()
         qrm.device.sequencer0.integration_length_acq.assert_called()
-        qrm.device.sequencer0.thresholded_acq_threshold.assert_called()
+        qrm.device.sequencer0.discretization_threshold_acq.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
