@@ -5,8 +5,16 @@ import numpy as np
 import pytest
 
 from qililab.constants import PULSEEVENT
-from qililab.pulse import Pulse, PulseEvent, Drag, Gaussian, Rectangular, \
-  BiasTeeCorrection, ExponentialCorrection, PulseDistortion
+from qililab.pulse import (
+    BiasTeeCorrection,
+    Drag,
+    ExponentialCorrection,
+    Gaussian,
+    Pulse,
+    PulseDistortion,
+    PulseEvent,
+    Rectangular,
+)
 from qililab.utils import Waveforms
 
 # Parameters for the different Pulses
