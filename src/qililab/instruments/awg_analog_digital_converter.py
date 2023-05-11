@@ -89,6 +89,17 @@ class AWGAnalogDigitalConverter(AWG):
         """
 
     @abstractmethod
+    def _set_device_threshold(self, value: float, sequencer_id: int):
+        """Set threshold value for the specific channel.
+
+        Args:
+            value (float): the threshold value
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not float"""
+
+    @abstractmethod
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):
         """set hardware demodulation
 
@@ -134,6 +145,17 @@ class AWGAnalogDigitalConverter(AWG):
         """
         cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
         self._set_device_scope_hardware_averaging(value=bool(value), sequencer_id=sequencer_id)
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_threshold(self, value: float | str | bool, sequencer_id: int):
+        """Set threshold value for the specific channel.
+
+        Args:
+            value (float | str | bool): value to update
+            sequencer_id (int): sequencer to update the value
+        """
+        cast(AWGADCSequencer, self.get_sequencer(sequencer_id)).scope_hardware_averaging = bool(value)
+        self._set_device_threshold(value=float(value), sequencer_id=sequencer_id)
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_demodulation(self, value: float | str | bool, sequencer_id: int):

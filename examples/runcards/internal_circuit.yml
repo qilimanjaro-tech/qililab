@@ -26,19 +26,20 @@ settings:
         duration: 6000
         parameters: {}
   gates:
-    - name: M
-      amplitude: 1.0
-      phase: 0
-      duration: 6000
-      shape:
-        name: rectangular
-    - name: X
-      amplitude: 1.0
-      phase: 0
-      duration: 100
-      shape:
-        name: gaussian
-        num_sigmas: 4
+    0:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
 schema:
   chip:
     id_: 0
@@ -73,18 +74,20 @@ schema:
       awg_sequencers:
         - identifier: 0
           chip_port_id: 1
-          path0:
-            output_channel: 0
-          path1:
-            output_channel: 1
+          output_i: 1
+          output_q: 0
+          weights_path0: [1., 1., 1., 1.]
+          weights_path1: [1., 1., 1., 1.]
+          weighed_acq_enabled: false
+          threshold: 0.5
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 0.001
-          gain_path1: 0.02
+          gain_i: 0.001
+          gain_q: 0.02
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: true
           scope_acquire_trigger_mode: sequencer
@@ -96,14 +99,6 @@ schema:
           acquisition_timeout: 1
           hardware_demodulation: true
           scope_store_enabled: true
-      awg_iq_channels:
-        - identifier: 0
-          i_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 0
-          q_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 1
     - name: QCM
       alias: QCM
       id_: 2
@@ -114,28 +109,18 @@ schema:
       awg_sequencers:
         - identifier: 0
           chip_port_id: 0
-          path0:
-            output_channel: 0
-          path1:
-            output_channel: 1
+          output_i: 0
+          output_q: 1
           num_bins: 1
           intermediate_frequency: 2.e+07
-          gain_path0: 0.001
-          gain_path1: 0.02
+          gain_i: 0.001
+          gain_q: 0.02
           gain_imbalance: 1
           phase_imbalance: 0
-          offset_path0: 0
-          offset_path1: 0
+          offset_i: 0
+          offset_q: 0
           hardware_modulation: true
           sync_enabled: true
-      awg_iq_channels:
-        - identifier: 0
-          i_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 0
-          q_channel:
-            awg_sequencer_identifier: 0
-            awg_sequencer_path_identifier: 1
     - name: rohde_schwarz
       alias: rs_1
       id_: 0
@@ -244,5 +229,5 @@ schema:
         name: tcp_ip
         address: 192.168.1.69
       modules:
-      - attenuator: attenuator
-        slot_id: 0
+        - attenuator: attenuator
+          slot_id: 0

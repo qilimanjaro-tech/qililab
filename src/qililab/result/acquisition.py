@@ -21,7 +21,7 @@ class Acquisition:
 
     """
 
-    pulse_length: int
+    integration_length: int
     i_values: npt.NDArray[np.float32]
     q_values: npt.NDArray[np.float32]
     amplitude_values: npt.NDArray[np.float32] = field(init=False)
@@ -68,7 +68,7 @@ class Acquisition:
         Returns:
             NDArray[flaot]: Normalized data
         """
-        return np.array(data) / self.pulse_length
+        return np.array(data) / self.integration_length
 
     def _amplitudes(self, i_normalized: npt.NDArray[np.float32], q_normalized: npt.NDArray[np.float32]):
         """Computes the amplitudes of a given I and Q data

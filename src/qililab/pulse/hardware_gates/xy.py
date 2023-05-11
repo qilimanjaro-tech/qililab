@@ -28,7 +28,9 @@ class XY(HardwareGate):
             tuple[float, float]: Amplitude and phase of the pulse.
         """
         # TODO: Scale X and Y rotations independently!
+        qubit = gate.target_qubits[0]
         x_settings = X.parameters(
+            qubits=qubit,
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )

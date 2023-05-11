@@ -12,8 +12,13 @@ from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
+from tests.utils import platform_db, platform_yaml
 
-from ...conftest import platform_db, platform_yaml
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
@@ -47,9 +52,12 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        gate = platform.get_element(alias="M")
-        assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
-        assert gate.name == "M"
+        for qubit, gate_settings_list in platform.settings.gates.items():
+            for gate_settings in gate_settings_list:
+                alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
+                gate = platform.get_element(alias=alias)
+                assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
+                assert gate.name == gate_settings.name
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

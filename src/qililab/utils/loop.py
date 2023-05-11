@@ -52,6 +52,8 @@ class Loop:
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
+        if isinstance(self.values, list):
+            self.values = np.array(self.values, dtype=object)
 
     @property
     def all_values(self) -> np.ndarray:
@@ -109,7 +111,7 @@ class Loop:
         return {
             LOOP.ALIAS: self.alias,
             LOOP.PARAMETER: self.parameter.value,
-            LOOP.VALUES: self.values,
+            LOOP.VALUES: self.values.tolist(),
             LOOP.LOOP: self.loop.to_dict() if self.loop is not None else None,
             LOOP.CHANNEL_ID: self.channel_id,
         }
@@ -128,3 +130,15 @@ class Loop:
     def num(self):
         """returns 'num' options property."""
         return len(self.values)
+
+    def __eq__(self, other: object) -> bool:
+        """Equality operator"""
+        if not isinstance(other, Loop):
+            return False
+        return (
+            self.alias == other.alias
+            and self.parameter == other.parameter
+            and self.loop == other.loop
+            and self.channel_id == other.channel_id
+            and (self.values == other.values).all()
+        )

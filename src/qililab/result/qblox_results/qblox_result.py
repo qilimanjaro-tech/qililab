@@ -2,13 +2,12 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
+from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
@@ -35,7 +34,7 @@ class QbloxResult(Result):
     """
 
     name = ResultName.QBLOX
-    pulse_length: int | np.number
+    integration_lengths: list[int]
     qblox_raw_results: list[dict]
     qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
     qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
@@ -43,10 +42,10 @@ class QbloxResult(Result):
     def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
         self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
@@ -123,13 +122,13 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> list[tuple[float, float]]:
-        """Return probabilities of being in the ground and excited state.
+    def counts(self) -> Counts:
+        """Returns a Counts object containing the counts of each state.
 
         Returns:
-            tuple[float, float]: Probabilities of being in the ground and excited state.
+            Counts: Counts object containing the counts of each state.
         """
-        return self.qblox_bins_acquisitions.probabilities()
+        return self.qblox_bins_acquisitions.counts()
 
     @property
     def shape(self) -> list[int]:
@@ -147,8 +146,6 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
-            if isinstance(self.pulse_length, np.number)
-            else self.pulse_length,
+            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }

@@ -7,8 +7,8 @@ from qililab.utils.nested_data_class import nested_dataclass
 
 
 @nested_dataclass
-class BinData:
-    """Bin data."""
+class BinsData:
+    """Holds the integrated and thresholded values of all bins in a sequencer."""
 
     @dataclass
     class QbloxIntegrationData:
@@ -32,3 +32,11 @@ class BinData:
         # use always a number of bins = num_loops + 1. Thus the first bin is always a nan.
         self.threshold = [value for value in self.threshold if not np.isnan(value)]
         self.avg_cnt = [value for value in self.avg_cnt if not np.isnan(value)]
+
+    def __len__(self) -> int:
+        """Returns the length of the QbloxIntegrationData, corresponding to the number of bins.
+
+        Returns:
+            int: Length of the QbloxIntegrationData.
+        """
+        return len(self.threshold)

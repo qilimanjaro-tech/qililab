@@ -30,7 +30,7 @@ class Acquisitions:
             dataframe_list=acquisition_list, new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX
         )
 
-    def probabilities(self) -> pd.DataFrame:
+    def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:

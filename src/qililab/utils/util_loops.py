@@ -1,6 +1,4 @@
 """ Utilities for Loops """
-
-
 import numpy as np
 
 from qililab.utils.loop import Loop
@@ -33,11 +31,25 @@ def compute_ranges_from_loops(loops: list[Loop] | None):
     return ranges
 
 
-def compute_shapes_from_loops(loops: list[Loop] | None):
-    """compute the shapes from a list of loops that may have inner loops"""
+def compute_shapes_from_loops(loops: list[Loop]):
+    """Computes the shape of the results obtained from running a list of parallel loops that might contain
+    inner loops.
+
+    When running parallel loops, the shape of the results correspond to the minimum range of each nested loop.
+
+    Args:
+        loops (list[Loop]): list of parallel loops that might contain inner loops
+
+    Returns:
+        list[int]: shape of the results obtained from running the parallel loops
+    """
     if loops is None:
         return []
     all_shapes = [loop.shape for loop in loops]
     max_len = max(len(shape) for shape in all_shapes)
-    all_shapes_with_same_length = [shape + [0] * (max_len - len(shape)) for shape in all_shapes]
-    return [min(values) for values in zip(*all_shapes_with_same_length)]
+    final_shape: list[None | int] = [None] * max_len
+    for shape in all_shapes:
+        for i, dim in enumerate(shape):
+            if final_shape[i] is None or dim < final_shape[i]:  # type: ignore
+                final_shape[i] = dim
+    return final_shape

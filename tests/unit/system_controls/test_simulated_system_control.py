@@ -6,10 +6,28 @@ import pytest
 from qilisimulator.evolution import Evolution
 
 from qililab.platform import Platform
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_control import SimulatedSystemControl
 from qililab.typings.enums import SystemControlName
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="simulated_system_control")
@@ -60,3 +78,14 @@ class TestSimulatedSystemControl:
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
         """Test name property."""
         assert simulated_system_control.name == SystemControlName.SIMULATED_SYSTEM_CONTROL
+
+    def test_probabilities(
+        self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule
+    ):
+        """Test probabilities method."""
+        simulated_system_control._evo = MagicMock()
+        simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
+        simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
+        simulated_system_control.run()
+        result = simulated_system_control.acquire_result()
+        assert result.probabilities() == {}
