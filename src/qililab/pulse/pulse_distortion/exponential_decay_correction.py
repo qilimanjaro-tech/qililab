@@ -34,6 +34,7 @@ class ExponentialCorrection(PulseDistortion):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+        # We normalize distorted_pulses envelopes with max heights of the real parts
         norm = np.amax(np.real(envelope))
 
         if self.amp >= 0.0:

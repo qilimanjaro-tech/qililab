@@ -32,8 +32,10 @@ class BiasTeeCorrection(PulseDistortion):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
+        # We normalize distorted_pulses envelopes with max heights of the real parts
+        norm = np.amax(np.real(envelope))
+
         # Parameters
-        norm = np.max(np.real(envelope))
         k = 2 * self.tau_bias_tee * self.sampling_rate
 
         a = [1, -1]
