@@ -1,5 +1,5 @@
 """This file contains the QbloxQCMRF class."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from qpysequence.program import Loop, Register
 from qpysequence.weights import Weights
@@ -10,17 +10,17 @@ from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings import InstrumentName, Parameter
 
-from .qblox_module import QbloxModule
+from .qblox_qcm import QbloxQCM
 
 
 @InstrumentFactory.register
-class QbloxQCMRF(QbloxModule):
+class QbloxQCMRF(QbloxQCM):
     """Qblox QCM-RF driver."""
 
     name = InstrumentName.QCMRF
 
     @dataclass
-    class QbloxQCMRFSettings(QbloxModule.QbloxModuleSettings):
+    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):
         """Contains the settings of a specific Qblox QCM-RF module."""
 
         out0_lo_freq: float
@@ -33,6 +33,9 @@ class QbloxQCMRF(QbloxModule):
         out1_att: int  # must be a multiple of 2!
         out1_offset_path0: float
         out1_offset_path1: float
+        out_offsets: list[float] = field(
+            init=False, default_factory=list  # QCM-RF module doesn't have an `out_offsets` parameter
+        )
 
     settings: QbloxQCMRFSettings
 
