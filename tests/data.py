@@ -1,7 +1,6 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-from typing import Dict, List, Type
 
 import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
@@ -22,14 +21,7 @@ from qililab.constants import (
     RUNCARD,
     SCHEMA,
 )
-from qililab.instruments.awg_settings.typings import (
-    AWGChannelMappingTypes,
-    AWGIQChannelTypes,
-    AWGSequencerPathTypes,
-    AWGSequencerTypes,
-    AWGTypes,
-)
-from qililab.platform.platform import Platform
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -214,35 +206,18 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -279,20 +254,16 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -304,28 +275,24 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
-                Parameter.WEIGHTS_PATH0.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-                Parameter.WEIGHTS_PATH1.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -337,23 +304,10 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-                Parameter.WEIGHTS_PATH0.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
-                Parameter.WEIGHTS_PATH1.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -698,7 +652,7 @@ class FluxQubitSimulator:
     }
 
 
-experiment_params: List[List[str | Circuit | List[Circuit]]] = []
+experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
@@ -1044,13 +998,13 @@ class SauronVNA:
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, Type[Galadriel] | Type[FluxQubitSimulator]] = {
+    handlers: dict[str, type[Galadriel] | type[FluxQubitSimulator]] = {
         "galadriel": Galadriel,
         "flux_qubit": FluxQubitSimulator,
     }
 
     @classmethod
-    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubitSimulator]):
+    def register(cls, handler_cls: type[Galadriel] | type[FluxQubitSimulator]):
         """Register handler in the factory.
 
         Args:

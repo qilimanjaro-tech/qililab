@@ -1,7 +1,6 @@
 """VoltageSource class."""
 
 from dataclasses import dataclass
-from typing import List
 
 from qililab.instruments.instrument import Instrument
 
@@ -18,11 +17,11 @@ class VoltageSource(Instrument):
                 Value range is (-40, 40).
         """
 
-        voltage: List[float]
-        span: List[str]
-        ramping_enabled: List[bool]
-        ramp_rate: List[float]
-        dacs: List[int]  # indices of the dacs to use
+        voltage: list[float]
+        span: list[str]
+        ramping_enabled: list[bool]
+        ramp_rate: list[float]
+        dacs: list[int]  # indices of the dacs to use
 
     settings: VoltageSourceSettings
 

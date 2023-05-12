@@ -1,6 +1,5 @@
 """Node class"""
 from dataclasses import dataclass
-from typing import List
 
 from qililab.settings import DDBBElement
 from qililab.typings import Category, FactoryElement
@@ -11,7 +10,7 @@ class Node(DDBBElement, FactoryElement):
     """Class representing a node of the chip's graph."""
 
     category: Category = Category.NODE
-    nodes: List[int]
+    nodes: list[int]
 
     def __str__(self):
         """String representation of a node."""

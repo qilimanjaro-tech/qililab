@@ -1,7 +1,6 @@
 """ Instrument Modules Utility Loader Module."""
 
 from dataclasses import dataclass
-from typing import List
 
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
@@ -22,17 +21,17 @@ class Loader:
     def replace_modules_from_settings_with_instrument_objects(
         self,
         instruments: Instruments,
-        instrument_references: List[InstrumentReference],
+        instrument_references: list[InstrumentReference],
     ):
         """Replace dictionaries from settings into its respective instrument classes.
 
         Args:
             instruments (Instruments): Instruments loaded into the platform.
-            instrument_references (List[InstrumentReference]): List of references to the instruments
+            instrument_references (list[InstrumentReference]): List of references to the instruments
             with its category and alias to be retrieved from the Instrument Factory.
 
         Returns:
-            List[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
+            list[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
         """
         return [
             self._get_instrument_or_raise_error_when_not_found_or_not_supported_type(

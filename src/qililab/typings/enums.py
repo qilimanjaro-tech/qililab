@@ -252,6 +252,7 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    QCMRF = "QCM-RF"
 
 
 class InstrumentControllerName(str, Enum):
@@ -313,8 +314,6 @@ class Parameter(str, Enum):
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
-    OFFSET_I = "offset_i"
-    OFFSET_Q = "offset_q"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"
@@ -355,10 +354,10 @@ class Parameter(str, Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
-    GAIN_PATH0 = "gain_path0"
-    GAIN_PATH1 = "gain_path1"
-    OFFSET_PATH0 = "offset_path0"
-    OFFSET_PATH1 = "offset_path1"
+    GAIN_I = "gain_i"
+    GAIN_Q = "gain_q"
+    OFFSET_I = "offset_i"
+    OFFSET_Q = "offset_q"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
     OFFSET_OUT2 = "offset_out2"
@@ -384,8 +383,20 @@ class Parameter(str, Enum):
     AMP2 = "amp2"
     WEIGHTS_PATH0 = "weights_path0"
     WEIGHTS_PATH1 = "weights_path1"
+    WEIGHTS_I = "weights_i"
+    WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
     THRESHOLD = "threshold"
+    OUT0_LO_FREQ = "out0_lo_freq"
+    OUT1_LO_FREQ = "out1_lo_freq"
+    OUT0_LO_EN = "out0_lo_en"
+    OUT1_LO_EN = "out1_lo_en"
+    OUT0_ATT = "out0_att"
+    OUT1_ATT = "out1_att"
+    OUT0_OFFSET_PATH0 = "out0_offset_path0"
+    OUT1_OFFSET_PATH0 = "out1_offset_path0"
+    OUT0_OFFSET_PATH1 = "out0_offset_path1"
+    OUT1_OFFSET_PATH1 = "out1_offset_path1"
 
 
 class ResultName(str, Enum):

@@ -2,7 +2,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import List, Type, get_type_hints
+from typing import get_type_hints
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
@@ -24,7 +24,7 @@ class SystemControl(BusElement, ABC):
     class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
-        instruments: List[Instrument]
+        instruments: list[Instrument]
         platform_instruments: InitVar[Instruments]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
@@ -35,7 +35,7 @@ class SystemControl(BusElement, ABC):
     settings: SystemControlSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
-        settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
+        settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
@@ -114,7 +114,7 @@ class SystemControl(BusElement, ABC):
         return self.settings.category
 
     @property
-    def instruments(self) -> List[Instrument]:
+    def instruments(self) -> list[Instrument]:
         """Instruments controlled by this system control."""
         return self.settings.instruments
 

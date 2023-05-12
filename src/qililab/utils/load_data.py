@@ -2,7 +2,6 @@
 import glob
 import os
 from pathlib import Path
-from typing import Tuple
 
 import yaml
 
@@ -29,7 +28,7 @@ def _get_last_created_experiment_path() -> Path:
     return _get_last_created_path(folderpath=last_daily_directory_path)
 
 
-def load(path: str | None = None, load_experiment: bool = False) -> Tuple[Experiment | None, Results | None]:
+def load(path: str | None = None, load_experiment: bool = False) -> tuple[Experiment | None, Results | None]:
     """Load Experiment and Results from yaml data.
 
     Args:
