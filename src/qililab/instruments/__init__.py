@@ -8,6 +8,6 @@ from .keithley import Keithley2600
 from .keysight import E5080B
 from .mini_circuits import Attenuator
 from .qblox import QbloxD5a, QbloxQCM, QbloxQCMRF, QbloxQRM, QbloxQRMRF, QbloxS4g
-from .rohde_schwarz.sgs100a import SGS100A
+from .rohde_schwarz import SGS100A
 from .signal_generator import SignalGenerator
 from .utils import InstrumentFactory

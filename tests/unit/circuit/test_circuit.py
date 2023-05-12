@@ -4,7 +4,6 @@
 import io
 import os
 from contextlib import redirect_stdout
-from typing import Tuple
 from unittest.mock import patch
 
 import pytest
@@ -123,7 +122,7 @@ class TestCircuit:
         [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset()), ((0, 1), Measure()), ((0, 1), CPhase(theta=90))],
     )
     def test_add_method_should_add_correct_nodes(
-        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | tuple[int, ...], operation: Operation
     ):
         """Test that add method adds correct number of nodes"""
         circuit = request.getfixturevalue(circuit_fixture)
@@ -141,7 +140,7 @@ class TestCircuit:
         [(0, X()), (1, X()), (0, Reset()), ((0, 1), Reset()), ((0, 1), Measure()), ((0, 1), CPhase(theta=90))],
     )
     def test_add_method_should_reset_transpilation_flags(
-        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | tuple[int, ...], operation: Operation
     ):
         """Test that add method resets transpilation flags"""
         circuit: Circuit = request.getfixturevalue(circuit_fixture)
@@ -162,7 +161,7 @@ class TestCircuit:
         [((0, 1), X()), (0, CPhase(theta=90))],
     )
     def test_add_method_should_raise_error_when_num_qubits_dont_match(
-        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | Tuple[int, ...], operation: Operation
+        self, request: pytest.FixtureRequest, circuit_fixture: str, qubits: int | tuple[int, ...], operation: Operation
     ):
         """Test that add method raises error if trying to add an operation with less/more qubits than possible"""
         circuit = request.getfixturevalue(circuit_fixture)
