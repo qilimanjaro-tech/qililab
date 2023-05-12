@@ -35,9 +35,9 @@ class TestExecutionManager:
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.experiment.experiment.yaml.safe_dump")
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.experiment.exp.yaml.safe_dump")
+@patch("qililab.experiment.exp.open")
+@patch("qililab.experiment.exp.os.makedirs")
 class TestExecutionManagerPlatform:
     """Unit tests checking a platform with instruments of the ExecutionManager."""
 
