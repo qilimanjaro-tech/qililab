@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
 import numpy as np
-from qibo.gates import Gate, M
+from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
 from qililab.chip import Chip
@@ -16,6 +16,9 @@ from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag
 from qililab.utils import Factory
+
+# TODO IMPORTANT set flux pulse line for cz gate
+# parking
 
 
 @dataclass
@@ -40,6 +43,7 @@ class CircuitToPulses:
             List[PulseSequences]: List of PulseSequences classes.
         """
         pulse_schedule_list: List[PulseSchedule] = []
+        # TODO eliminate loop over circuit list
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: Dict[int, int] = {}  # restart time
@@ -95,6 +99,10 @@ class CircuitToPulses:
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Add CPhase gate
+        # for CZs check if they are possible and switch target if needed
+        if isinstance(control_gate, CZ):
+            control_gate = self._parse_check_cz(control_gate)
+
         qubit_idx = control_gate.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
         port = chip.get_port(node)
@@ -132,6 +140,27 @@ class CircuitToPulses:
             else None,
             port,
         )
+
+    def _parse_check_cz(self, cz: CZ):
+        """Checks that given CZ qubits are supported by the hardware (defined in the runcard).
+        Switches CZ(q1,q2) to CZ(q2,q1) if the former is not supported but the later is (note that CZ is symmetric)
+
+        Args:
+            cz (CZ): qibo CZ gate
+
+        Returns:
+            CZ: qibo CZ gate
+        """
+
+        cz_qubits = cz.qubits
+        cz_from_settings = [qubit for qubit in self.settings.gates.keys() if isinstance(qubit, tuple)]
+        if cz_qubits in cz_from_settings:
+            return cz
+        elif cz_qubits[::-1] in cz_from_settings:
+            cz_qubits = cz_qubits[::-1]
+            return CZ(cz_qubits[0], cz_qubits[1])
+        else:
+            raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
     def _get_gate_settings_with_master_values(self, gate: Gate):
         """get gate settings with master values

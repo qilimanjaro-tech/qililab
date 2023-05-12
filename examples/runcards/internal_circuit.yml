@@ -56,7 +56,7 @@ settings:
         shape:
           name: rectangular
       - name: X
-        amplitude: 1.0
+        amplitude: 0.50
         phase: 0
         duration: 100
         shape:
@@ -70,7 +70,7 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 5
-    (0,1):
+    0,2: # (control, target). Pulse is applied to target. Note that this also implements (2,0) since CZ is symmetric
       - name: CZ
         amplitude: 1.0
         phase: 0
@@ -78,7 +78,30 @@ settings:
         shape:
           name: snz
           b: 0.5
-
+    (1,2):
+      - name: CZ
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: snz
+          b: 0.5
+    (2,3):
+      - name: CZ
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: snz
+          b: 0.5
+    (2,4):
+      - name: CZ
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: snz
+          b: 0.5
 schema:
   chip:
     id_: 0
@@ -99,6 +122,12 @@ schema:
         alias: qubit
         id_: 3
         qubit_index: 0
+        frequency: 6.5328e+09
+        nodes: [0, 2]
+      - name: qubit # mock
+        alias: qubit
+        id_: 4
+        qubit_index: 1
         frequency: 6.5328e+09
         nodes: [0, 2]
   instruments:
