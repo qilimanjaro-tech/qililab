@@ -1,7 +1,7 @@
 """QubitControl class."""
 from abc import abstractmethod
 from dataclasses import asdict, dataclass
-from typing import List, Sequence
+from typing import Sequence
 
 from qililab.constants import RUNCARD
 from qililab.instruments.awg_settings.awg_sequencer import AWGSequencer
@@ -97,7 +97,7 @@ class AWG(Instrument):
             chip_port_id (int): chip port identifier
 
         Returns:
-            List[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
+            list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
         """
         return [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]
 

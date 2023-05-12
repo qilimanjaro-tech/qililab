@@ -26,6 +26,6 @@ class VNAResult(Result):
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError

@@ -1,5 +1,5 @@
 """Nested Dictionary Iterator"""
-from typing import Generator, List
+from typing import Generator
 
 import pandas as pd
 
@@ -25,7 +25,7 @@ def nested_dict_to_path_tuples(dict_obj: dict) -> Generator:
             yield key, value
 
 
-def nested_dict_to_path_value_list(dict_obj: dict) -> List:
+def nested_dict_to_path_value_list(dict_obj: dict) -> list:
     """Transform a nested dict into a list of [key0, keyN, value] into a list using the nested_dict_to_path_tuples
     generator"""
     return list(nested_dict_to_path_tuples(dict_obj=dict_obj))

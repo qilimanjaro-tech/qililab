@@ -1,6 +1,5 @@
 """Instrument Controllers class"""
 from dataclasses import dataclass
-from typing import List
 
 import yaml
 
@@ -11,7 +10,7 @@ from qililab.instrument_controllers.instrument_controller import InstrumentContr
 class InstrumentControllers:
     """Instrument Controllers class."""
 
-    elements: List[InstrumentController]
+    elements: list[InstrumentController]
 
     def get_instrument_controller(self, alias: str | None = None):
         """Get instrument controller given an id_ and category"""

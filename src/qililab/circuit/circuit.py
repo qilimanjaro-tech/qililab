@@ -5,8 +5,6 @@ This file provides the Circuit class for representing quantum circuits.
 It stores the circuit as a Directed Acyclic Graph and uses the rustworkx library for its manipulation.
 It offers methods to add operations to the circuit, calculate the circuit's depth, and visualize the circuit.
 """
-from typing import List, Tuple
-
 import rustworkx as rx
 from rustworkx.visualization import graphviz_draw
 
@@ -43,11 +41,11 @@ class Circuit:
         self.graph[index].index = index
         self.entry_node = self.graph[index]
 
-    def add(self, qubits: int | Tuple[int, ...], operation: Operation, alias: str | None = None):
+    def add(self, qubits: int | tuple[int, ...], operation: Operation, alias: str | None = None):
         """Adds an operation to the circuit.
 
         Args:
-            qubits (int | Tuple[int, ...]): The qubit(s) the operation acts on
+            qubits (int | tuple[int, ...]): The qubit(s) the operation acts on
             operation (Operation): The operation to add
             alias (str | None, optional): Optional alias for the operation. Defaults to None.
         """
@@ -59,11 +57,11 @@ class Circuit:
             raise ValueError("Number of qubits does not match operation's num_qubits attribute")
         self._add_operation(qubits=qubits, operation=operation, alias=alias)
 
-    def _add_operation(self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None):
+    def _add_operation(self, qubits: tuple[int, ...], operation: Operation, alias: str | None = None):
         """Adds one operation node for all qubits
 
         Args:
-            qubits (Tuple[int, ...]): The qubits the operation acts on
+            qubits (tuple[int, ...]): The qubits the operation acts on
             operation (Operation): The operation to add
             alias (str | None, optional): Optional alias for the operation. Defaults to None.
         """
@@ -80,12 +78,12 @@ class Circuit:
             self.graph.add_edge(self.entry_node.index, new_operation_node.index, None)
 
     def _add_operation_node(
-        self, qubits: Tuple[int, ...], operation: Operation, alias: str | None = None
+        self, qubits: tuple[int, ...], operation: Operation, alias: str | None = None
     ) -> OperationNode:
         """Add an operation node to circuit's graph
 
         Args:
-            qubits (Tuple[int]): Tuple of qubits indices
+            qubits (tuple[int]): Tuple of qubits indices
             operation (Operation): The operation
             alias (str | None): Optional alias
 
@@ -96,14 +94,14 @@ class Circuit:
         self.graph[index].index = index
         return self.graph[index]
 
-    def _last_operation_of_qubit(self, qubit: int) -> Tuple[int, Node]:
+    def _last_operation_of_qubit(self, qubit: int) -> tuple[int, Node]:
         """Get the last operation node regarding qubit, along with the layer's index. If no operation found returns the entry node.
 
         Args:
             qubit (int): qubit's index
 
         Returns:
-            Tuple[int, Node]: layer index, Node
+            tuple[int, Node]: layer index, Node
         """
         layers = rx.layers(self.graph, [self.entry_node.index])  # pylint: disable=no-member
         for index, layer in reversed(list(enumerate(layers[1:]))):
@@ -129,14 +127,14 @@ class Circuit:
 
     def get_operation_layers(
         self, method: OperationTimingsCalculationMethod = OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE
-    ) -> List[List[OperationNode]]:
+    ) -> list[list[OperationNode]]:
         """Get the layers of operation nodes. Each layer represents an advancement in time.
 
         Args:
             method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. If set to `OperationTimingsCalcuationMethod.AS_LATE_AS_POSSIBLE, we rearrange the layers, moving operations to the largest layer index possible. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
 
         Returns:
-            List[List[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
+            list[list[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
         """
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]  # pylint: disable=no-member
         for layer in layers:
