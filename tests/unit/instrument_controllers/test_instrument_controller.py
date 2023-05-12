@@ -5,6 +5,14 @@ from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, INSTRUMENTREFERE
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
 from qililab.typings.enums import Category, ConnectionName, InstrumentControllerName, InstrumentControllerSubCategory
+from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="rs_settings")
