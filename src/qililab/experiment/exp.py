@@ -46,7 +46,7 @@ class Exp:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Creates the ``ExecutionManager`` class."""
+        """Creates the ``ExecutionManager`` class from loops."""
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build_from_loops(platform=self.platform, loops=self.options.loops)
 
@@ -54,9 +54,7 @@ class Exp:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
-        * Looping over all the given circuits, loops and/or software averages. And for each loop:
-            * Generating and uploading the program corresponding to the circuit.
-            * Executing the circuit.
+        * Looping over all given loops and/or software averages. And for each loop:
             * Saving the results to the ``results.yml`` file.
             * Sending the data to the live plotting (if asked to).
             * Save the results to the ``results`` attribute.
@@ -305,19 +303,6 @@ class Exp:
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
-
-    def draw(self, resolution: float = 1.0, idx: int = 0):
-        """Return figure with the waveforms sent to each bus.
-
-        Args:
-            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
-
-        Returns:
-            Figure: Matplotlib figure with the waveforms sent to each bus.
-        """
-        if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before drawing the experiment.")
-        return self.execution_manager.draw(resolution=resolution, idx=idx)
 
     def to_dict(self):
         """Convert Exp into a dictionary.

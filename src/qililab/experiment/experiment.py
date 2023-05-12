@@ -44,6 +44,7 @@ class Experiment(Exp):
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
+            * Executing the circuit.
             * Saving the results to the ``results.yml`` file.
             * Sending the data to the live plotting (if asked to).
             * Save the results to the ``results`` attribute.
@@ -76,6 +77,19 @@ class Experiment(Exp):
             self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration)
             for schedule_idx in range(len(self.pulse_schedules))
         ]
+
+    def draw(self, resolution: float = 1.0, idx: int = 0):
+        """Return figure with the waveforms sent to each bus.
+
+        Args:
+            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
+
+        Returns:
+            Figure: Matplotlib figure with the waveforms sent to each bus.
+        """
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before drawing the experiment.")
+        return self.execution_manager.draw(resolution=resolution, idx=idx)
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
