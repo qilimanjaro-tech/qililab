@@ -1,7 +1,6 @@
 """ExecutionManager class."""
 from dataclasses import dataclass, field
 from queue import Queue
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +19,7 @@ class ExecutionManager:
 
     num_schedules: int
     platform: Platform
-    buses: List[BusExecution] = field(default_factory=list)
+    buses: list[BusExecution] = field(default_factory=list)
 
     def turn_on_instruments(self):
         """Start/Turn on the instruments."""
@@ -84,14 +83,14 @@ class ExecutionManager:
             raise ValueError("No Results acquired")
         return results[0]
 
-    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> Dict[int, Waveforms]:
+    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
         """Get pulses of each bus.
 
         Args:
             resolution (float): The resolution of the pulses in ns.
 
         Returns:
-            Dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
+            dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
         return {bus.id_: bus.waveforms(resolution=resolution, idx=idx) for bus in self.buses}
 
@@ -145,10 +144,10 @@ class ExecutionManager:
         return self.buses.__getitem__(key)
 
     @property
-    def readout_buses(self) -> List[BusExecution]:
+    def readout_buses(self) -> list[BusExecution]:
         """Returns a list of all the readout buses.
 
         Returns:
-            List[BusExecution]: list of readout buses
+            list[BusExecution]: list of readout buses
         """
         return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]

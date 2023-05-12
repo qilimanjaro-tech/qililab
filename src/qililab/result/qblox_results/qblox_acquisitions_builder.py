@@ -1,8 +1,4 @@
 """ Qblox Acquisitions Builder """
-
-
-from typing import List
-
 from qililab.result.qblox_results.bins_data import BinsData
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
@@ -24,7 +20,7 @@ class QbloxAcquisitionsBuilder:
         return None
 
     @classmethod
-    def get_bins(cls, integration_lengths: list[int], qblox_raw_results: List[dict]) -> QbloxBinsAcquisitions:
+    def get_bins(cls, integration_lengths: list[int], qblox_raw_results: list[dict]) -> QbloxBinsAcquisitions:
         """Cast dictionaries to their corresponding class."""
         bins_data = [sequencer_acq["bins"] for sequencer_acq in qblox_raw_results]
         return QbloxBinsAcquisitions(

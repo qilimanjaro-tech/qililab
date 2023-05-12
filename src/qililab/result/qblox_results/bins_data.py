@@ -1,6 +1,5 @@
 """ Bin Data """
 from dataclasses import dataclass
-from typing import List
 
 import numpy as np
 
@@ -15,8 +14,8 @@ class BinsData:
     class QbloxIntegrationData:
         """QbloxIntegrationData class."""
 
-        path0: List[float]
-        path1: List[float]
+        path0: list[float]
+        path1: list[float]
 
         def __post_init__(self):
             """Remove nan values."""  # FIXME: Since we cannot do ascending loops in Qpysequence, we need to

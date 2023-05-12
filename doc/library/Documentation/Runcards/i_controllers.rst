@@ -1,10 +1,30 @@
 Instrument Controllers
 +++++++++++++++++++++++++
-Instrument controllers, as the name suggests, are from where the instruments are controlled.
-**explicar que hay algunos instrumentos que van solos i otros en grupos (creo). expliacar alguna cosa mas supongo.**
+Instrument controllers, are the way qililab has to **communicate** with each **intrument** is connected to.
+Each instrument must be connected to an instrument controller that serves as the *drivers* of said instrument.
+So, an instrument controller, serves as a mediatior between our desire instrucctions and the actual actions of an instrument.
 
-As in the instrument section, every type of instrument controller has its own specs to determine.
-Below there are some examples of the different instrument controllers implemented in qililab.
+An instrument controller can contain one or multiple instruments. The option ``subcategory:`` is utilized to determinate wether is a ``single_instrumet`` or a ``multiple_instruments``.
+For a multiple instument, each instument is assigned in the section ``modules:``
+
+As in the :doc:`instrument<instruments>` section, every type of instrument controller has its own specs to determine.
+Below there are **some examples** of the different instrument controllers implemented in qililab.
+
+Rohde Schwarz
+-----------------
+::
+
+  - name: rohde_schwarz
+    id_: 2
+    alias: rohde_schwarz_controller_drive_q0
+    category: instrument_controller
+    subcategory: single_instrument
+    connection:
+      name: tcp_ip
+      address: 192.168.0.10
+    modules:
+      - signal_generator: rs_0
+        slot_id: 1
 
 Qblox Cluster
 ---------------
@@ -46,19 +66,3 @@ Qblox Spi Rack
         slot_id: 1
       - current_source: S4g_1
         slot_id: 2
-
-Rohde Schwarz
------------------
-::
-
-  - name: rohde_schwarz
-    id_: 2
-    alias: rohde_schwarz_controller_drive_q0
-    category: instrument_controller
-    subcategory: single_instrument
-    connection:
-      name: tcp_ip
-      address: 192.168.0.10
-    modules:
-      - signal_generator: rs_0
-        slot_id: 1

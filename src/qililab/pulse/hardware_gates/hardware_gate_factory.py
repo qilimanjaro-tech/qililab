@@ -1,6 +1,4 @@
 """PulsedGateFactory class."""
-from typing import Dict, Type
-
 from qibo.gates import Gate
 
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -9,10 +7,10 @@ from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 class HardwareGateFactory:
     """Contains the gates that can be directly translated into a pulse."""
 
-    pulsed_gates: Dict[str, Type[HardwareGate]] = {}
+    pulsed_gates: dict[str, type[HardwareGate]] = {}
 
     @classmethod
-    def register(cls, handler_cls: Type[HardwareGate]):
+    def register(cls, handler_cls: type[HardwareGate]):
         """Register handler in the factory.
 
         Args:
@@ -36,7 +34,7 @@ class HardwareGateFactory:
             gate (Gate): Qibo Gate class.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the translated pulse.
+            tuple[float, float]: Amplitude and phase of the translated pulse.
         """
         for pulsed_gate in cls.pulsed_gates.values():
             if isinstance(gate, pulsed_gate.class_type):
