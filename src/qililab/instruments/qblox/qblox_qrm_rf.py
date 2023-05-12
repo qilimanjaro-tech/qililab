@@ -29,12 +29,12 @@ class QbloxQRMRF(QbloxQRM):
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
     parameters = {
-        "out0_in0_lo_freq",
-        "out0_in0_lo_en",
-        "out0_att",
-        "in0_att",
-        "out0_offset_path0",
-        "out0_offset_path1",
+        Parameter.OUT0_IN0_LO_FREQ,
+        Parameter.OUT0_IN0_LO_EN,
+        Parameter.OUT0_ATT,
+        Parameter.IN0_ATT,
+        Parameter.OUT0_OFFSET_PATH0,
+        Parameter.OUT0_OFFSET_PATH1,
     }
 
     settings: QbloxQRMRFSettings
@@ -44,7 +44,7 @@ class QbloxQRMRF(QbloxQRM):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
-            self.setup(Parameter(parameter), getattr(self.settings, parameter))
+            self.setup(parameter, getattr(self.settings, parameter.value))
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -54,7 +54,7 @@ class QbloxQRMRF(QbloxQRM):
             value (float | str | bool): Value to set.
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
-        if parameter.value in self.parameters:
+        if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
             self.device.set(parameter.value, value)
             return
