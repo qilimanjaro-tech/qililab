@@ -108,17 +108,26 @@ class TestIntegration:
         qcm_rf.device = cluster.modules[0]
         qcm_rf.initial_setup()
         # TODO: Remove commented lines once the Qblox dummy class is fixed!
-        # assert qcm_rf.device.out0_lo_freq() == settings["out0_lo_freq"]
-        # assert qcm_rf.device.out0_lo_en() == settings["out0_lo_en"]
         assert qcm_rf.device.get("out0_att") == settings["out0_att"]
-        # assert qcm_rf.device.out0_offset_path0() == settings["out0_offset_path0"]
-        # assert qcm_rf.device.out0_offset_path1() == settings["out0_offset_path1"]
-        # assert qcm_rf.device.out1_lo_freq() == settings["out1_lo_freq"]
-        # assert qcm_rf.device.out1_lo_en() == settings["out1_lo_en"]
         assert qcm_rf.device.get("out1_att") == settings["out1_att"]
-        # assert qcm_rf.device.out1_offset_path0() == settings["out1_offset_path0"]
-        # assert qcm_rf.device.out1_offset_path1() == settings["out1_offset_path1"]
         cluster.close()
+
+    @pytest.mark.xfail
+    def test_initial_setup_with_failing_setters(self, settings):
+        """Test the `initial_setup` method of the QbloxQCMRF class with the attributes
+        that don't get updated in the version 0.8.1 of the `qblox_instruments`."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QCM_RF})
+        qcm_rf.device = cluster.modules[0]
+        qcm_rf.initial_setup()
+        assert qcm_rf.device.out0_lo_freq() == settings["out0_lo_freq"]
+        assert qcm_rf.device.out0_lo_en() == settings["out0_lo_en"]
+        assert qcm_rf.device.out0_offset_path0() == settings["out0_offset_path0"]
+        assert qcm_rf.device.out0_offset_path1() == settings["out0_offset_path1"]
+        assert qcm_rf.device.out1_lo_freq() == settings["out1_lo_freq"]
+        assert qcm_rf.device.out1_lo_en() == settings["out1_lo_en"]
+        assert qcm_rf.device.out1_offset_path0() == settings["out1_offset_path0"]
+        assert qcm_rf.device.out1_offset_path1() == settings["out1_offset_path1"]
 
     def test_setup(self, settings):
         """Test the `setup` method of the QbloxQCMRF class."""
