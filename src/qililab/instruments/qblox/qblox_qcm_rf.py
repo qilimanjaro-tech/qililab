@@ -1,13 +1,8 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qpysequence.program import Loop, Register
-from qpysequence.weights import Weights
-
 from qililab.instruments import Instrument
-from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
-from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qcm import QbloxQCM
@@ -41,16 +36,16 @@ class QbloxQCMRF(QbloxQCM):
     # TODO: We should separate instrument settings and instrument parameters, such that the user can quickly get
     # al the settable parameters of an instrument.
     parameters = {
-        "out0_lo_freq",
-        "out0_lo_en",
-        "out0_att",
-        "out0_offset_path0",
-        "out0_offset_path1",
-        "out1_lo_freq",
-        "out1_lo_en",
-        "out1_att",
-        "out1_offset_path0",
-        "out1_offset_path1",
+        Parameter.OUT0_LO_FREQ,
+        Parameter.OUT0_LO_EN,
+        Parameter.OUT0_ATT,
+        Parameter.OUT0_OFFSET_PATH0,
+        Parameter.OUT0_OFFSET_PATH1,
+        Parameter.OUT1_LO_FREQ,
+        Parameter.OUT1_LO_EN,
+        Parameter.OUT1_ATT,
+        Parameter.OUT1_OFFSET_PATH0,
+        Parameter.OUT1_OFFSET_PATH1,
     }
 
     @Instrument.CheckDeviceInitialized
@@ -58,7 +53,7 @@ class QbloxQCMRF(QbloxQCM):
         """Initial setup"""
         super().initial_setup()
         for parameter in self.parameters:
-            self.setup(Parameter(parameter), getattr(self.settings, parameter))
+            self.setup(parameter, getattr(self.settings, parameter.value))
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -69,7 +64,7 @@ class QbloxQCMRF(QbloxQCM):
             value (float | str | bool): Value to set.
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
-        if parameter.value in self.parameters:
+        if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
             self.device.set(parameter.value, value)
             return
