@@ -31,12 +31,18 @@ def fixture_qblox_module():
     return DummyQbloxModule(settings=settings)
 
 
-def awg_settings(output_i: int = 0, output_q: int = 1):
-    return {
+@pytest.fixture(name="sequencer")
+def fixture_sequencer():
+    """Load simple sequencer
+
+    Returns:
+        PulseBusSchedule: Simple PulseBusSchedule
+    """
+    settings = {
         "identifier": 0,
         "chip_port_id": 1,
-        "output_i": output_i,
-        "output_q": output_q,
+        "output_i": 0,
+        "output_q": 1,
         "intermediate_frequency": 20000000,
         "gain_i": 0.001,
         "gain_q": 0.02,
@@ -46,16 +52,6 @@ def awg_settings(output_i: int = 0, output_q: int = 1):
         "offset_q": 0,
         "hardware_modulation": True,
     }
-
-
-@pytest.fixture(name="sequencer")
-def fixture_sequencer():
-    """Load simple sequencer
-
-    Returns:
-        PulseBusSchedule: Simple PulseBusSchedule
-    """
-    settings = awg_settings()
     return AWGSequencer(**settings)
 
 
