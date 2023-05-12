@@ -31,30 +31,6 @@ def fixture_qblox_module():
     return DummyQbloxModule(settings=settings)
 
 
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule():
-    """Load simple PulseBusSchedule
-
-    Returns:
-        PulseBusSchedule: Simple PulseBusSchedule
-    """
-    amplitude = 0.8
-    phase = np.pi / 2 + 12.2
-    timeline = [
-        PulseEvent(
-            pulse=Pulse(
-                amplitude=amplitude,
-                phase=phase,
-                duration=1000,
-                frequency=7.0e9,
-                pulse_shape=Gaussian(num_sigmas=5),
-            ),
-            start_time=0,
-        )
-    ]
-    return PulseBusSchedule(timeline=timeline, port=0), amplitude, phase
-
-
 def awg_settings(output_i: int = 0, output_q: int = 1):
     return {
         "identifier": 0,
@@ -86,8 +62,28 @@ def fixture_sequencer():
 class TestQbloxModule:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
-    def test_amp_phase_modification(self, qblox_module: QbloxModule, pulse_bus_schedule, sequencer):
+    def test_amp_phase_modification(self, qblox_module: QbloxModule):
         """Test amplification modification of a sequencer"""
+
+        amplitude = 0.8
+        phase = np.pi / 2 + 12.2
+        timeline = [
+            PulseEvent(
+                pulse=Pulse(
+                    amplitude=amplitude,
+                    phase=phase,
+                    duration=1000,
+                    frequency=7.0e9,
+                    pulse_shape=Gaussian(num_sigmas=5),
+                ),
+                start_time=0,
+            )
+        ]
+
+        settings = awg_settings()
+        sequencer = AWGSequencer(**settings)
+
+        pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port=0), amplitude, phase
 
         waveforms = qblox_module._generate_waveforms(
             pulse_bus_schedule[0], sequencer
