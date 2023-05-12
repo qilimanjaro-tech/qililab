@@ -4,20 +4,18 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from qibo.models.circuit import Circuit
 
 from qililab import build_platform
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Exp
 from qililab.platform import Platform
-from qililab.pulse import PulseSchedule
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import Galadriel, experiment_params
-from tests.utils import mock_instruments
+from tests.utils import mock_instruments, platform_db
 
 
 @pytest.fixture(name="connected_experiment")
@@ -41,6 +39,37 @@ def fixture_connected_experiment(
     mock_rs.assert_called()
     mock_pulsar.assert_called()
     return experiment_all_platforms
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="nested_experiment", params=experiment_params)
+def fixture_nested_experiment(request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, _ = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop2 = Loop(
+        alias="platform",
+        parameter=Parameter.DELAY_BEFORE_READOUT,
+        values=np.arange(start=40, stop=100, step=40),
+    )
+    loop = Loop(
+        alias=InstrumentName.QBLOX_QRM.value,
+        parameter=Parameter.GAIN,
+        values=np.linspace(start=0, stop=1, num=2),
+        channel_id=0,
+        loop=loop2,
+    )
+    options = ExperimentOptions(loops=[loop])
+    return Exp(platform=platform, options=options)
 
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)

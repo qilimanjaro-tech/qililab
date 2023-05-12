@@ -1,5 +1,10 @@
 """ Experiment class."""
-from typing import List
+import itertools
+import os
+from datetime import datetime
+from pathlib import Path
+from queue import Empty, Queue
+from threading import Thread
 
 from qibo.models.circuit import Circuit
 
@@ -21,8 +26,8 @@ class Experiment(Exp):
     def __init__(
         self,
         platform: Platform,
-        circuits: List[Circuit] | None = None,
-        pulse_schedules: List[PulseSchedule] | None = None,
+        circuits: list[Circuit] | None = None,
+        pulse_schedules: list[PulseSchedule] | None = None,
         options: ExperimentOptions = ExperimentOptions(),
     ):
         self.circuits = circuits or []
@@ -63,12 +68,12 @@ class Experiment(Exp):
 
         return self._run()
 
-    def compile(self) -> List[dict]:
+    def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
         experiment.
 
         Returns:
-            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+            list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
                 compiled sequences as values.
         """
         if not hasattr(self, "execution_manager"):
