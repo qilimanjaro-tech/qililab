@@ -7,7 +7,6 @@ from typing import Callable, get_type_hints
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
-from qililab.pulse import PulseBusSchedule
 from qililab.result import Result
 from qililab.settings import DDBBElement
 from qililab.typings.enums import InstrumentName, Parameter
