@@ -151,7 +151,9 @@ class CircuitToPulses:
         gate_duration = gate_settings.duration
         if isinstance(gate_duration, float):
             if gate_duration % 1 != 0:  # check decimals
-                raise ValueError(f"Value duration {gate_duration} must be an integer or a float with 0 decimal part")
+                raise ValueError(
+                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
+                )
             else:
                 gate_duration = int(gate_duration)
         assert isinstance(gate_duration, int)
