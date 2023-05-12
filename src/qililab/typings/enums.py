@@ -264,6 +264,7 @@ class InstrumentName(str, Enum):
 
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
+    QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
@@ -271,6 +272,7 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    QCMRF = "QCM-RF"
 
 
 class InstrumentControllerName(str, Enum):
@@ -391,6 +393,19 @@ class Parameter(str, Enum):
     WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
     THRESHOLD = "threshold"
+    OUT0_LO_FREQ = "out0_lo_freq"
+    OUT0_IN0_LO_FREQ = "out0_in0_lo_freq"
+    OUT1_LO_FREQ = "out1_lo_freq"
+    OUT0_LO_EN = "out0_lo_en"
+    OUT0_IN0_LO_EN = "out0_in0_lo_en"
+    OUT1_LO_EN = "out1_lo_en"
+    OUT0_ATT = "out0_att"
+    IN0_ATT = "in0_att"
+    OUT1_ATT = "out1_att"
+    OUT0_OFFSET_PATH0 = "out0_offset_path0"
+    OUT1_OFFSET_PATH0 = "out1_offset_path0"
+    OUT0_OFFSET_PATH1 = "out0_offset_path1"
+    OUT1_OFFSET_PATH1 = "out1_offset_path1"
 
 
 class ResultName(str, Enum):
