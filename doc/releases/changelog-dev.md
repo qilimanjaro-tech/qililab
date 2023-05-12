@@ -4,7 +4,7 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
-- Added `quililab.pulse.pulse_distortion` package, which contains a module `pulse_distortion.py` with the base class to distort envelopes in `PulseEvent`, and two modules `bias_tee_correction.py` and `exponential_decay_correction.py`, each containing examples of distortion child classes to apply. This new feature can be used in two ways, directly from the class itself:
+- Added `pulse.pulse_distortion` package, which contains a module `pulse_distortion.py` with the base class to distort envelopes in `PulseEvent`, and two modules `bias_tee_correction.py` and `exponential_decay_correction.py`, each containing examples of distortion child classes to apply. This new feature can be used in two ways, directly from the class itself:
 
   ```python
   distorted_envelope = BiasTeeCorrection(tau_bias_tee=1.0).apply(original_envelope)
@@ -16,7 +16,10 @@ This document contains the changes of the current release.
   pulse_event = PulseEvent(
       pulse="example_pulse",
       start_time="example_start",
-      distortions=[BiasTeeCorrection(tau_bias_tee=1.0), BiasTeeCorrection(tau_bias_tee=0.8)],
+      distortions=[
+          BiasTeeCorrection(tau_bias_tee=1.0),
+          BiasTeeCorrection(tau_bias_tee=0.8),
+      ],
   )
   distorted_envelope = pulse_event.envelope()
   ```

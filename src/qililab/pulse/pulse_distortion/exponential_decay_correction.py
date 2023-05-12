@@ -48,9 +48,11 @@ class ExponentialCorrection(PulseDistortion):
 
         else:
             # Parameters
-            a_1 = (self.tau_exponential * (1 + 2 * self.amp) - 1) / (2 * self.tau_exponential * (1 + self.amp) + 1)
-            b_0 = (2 * self.tau_exponential + 1) / (2 * self.tau_exponential + (1 + self.amp) + 1)
-            b_1 = (-2 * self.tau_exponential + 1) / (2 * self.tau_exponential * (1 + self.amp + 1))
+            denominator = 2 * self.tau_exponential * (1 + self.amp) + 1
+
+            a_1 = (self.tau_exponential * (1 + 2 * self.amp) - 1) / denominator
+            b_0 = (2 * self.tau_exponential + 1) / denominator
+            b_1 = (-2 * self.tau_exponential + 1) / denominator
 
         # Filtered signal
         corr_envelope = signal.lfilter(b=[b_0, b_1], a=[1, a_1], x=envelope)
