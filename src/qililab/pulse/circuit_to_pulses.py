@@ -156,7 +156,10 @@ class CircuitToPulses:
                 )
             else:
                 gate_duration = int(gate_duration)
-        assert isinstance(gate_duration, int)
+        if not isinstance(gate_duration, int):
+            raise ValueError(
+                f"Gate {gate.name} has duration {gate_duration} of type {type(gate_duration)} which is neither integer nor float"
+            )
 
         return gate_settings
 
