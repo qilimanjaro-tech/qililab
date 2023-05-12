@@ -107,13 +107,22 @@ schema:
           acquisition_timeout: 1
           hardware_demodulation: true
           scope_store_enabled: true
-    - name: QCM
+    - name: QCM-RF
       alias: QCM
       id_: 2
       category: awg
       firmware: 0.7.0
       num_sequencers: 1
-      out_offsets: [0, 0.5, 0.7, 0.8]
+      out0_lo_freq: 3700000000
+      out0_lo_en: true
+      out0_att: 10
+      out0_offset_path0: 0.2
+      out0_offset_path1: 0.07
+      out1_lo_freq: 3900000000
+      out1_lo_en: true
+      out1_att: 6
+      out1_offset_path0: 0.1
+      out1_offset_path1: 0.6
       awg_sequencers:
         - identifier: 0
           chip_port_id: 0

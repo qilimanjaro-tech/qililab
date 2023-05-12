@@ -1,10 +1,10 @@
 """Utilities for usual dataframe manipulation"""
-from typing import List
+
 
 import pandas as pd
 
 
-def concatenate_creating_new_name_index(dataframe_list: List[pd.DataFrame], new_index_name: str) -> pd.DataFrame:
+def concatenate_creating_new_name_index(dataframe_list: list[pd.DataFrame], new_index_name: str) -> pd.DataFrame:
     """Concatenates an ordered list of dataframes into a single one, adding a new named column containing the index of
      the dataframe the data came from in the original list.
      The result dataframe will have as columns the union of the original dataframes plus the new column with the

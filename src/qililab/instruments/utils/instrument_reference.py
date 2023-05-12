@@ -26,7 +26,7 @@ class InstrumentReference:
         """Iterate over InstrumentReference elements.
 
         Yields:
-            Tuple[Tuple[str, Category], Tuple[str, int], Tuple[str, int]]: category, alias and slot_id
+            tuple[tuple[str, Category], tuple[str, int], tuple[str, int]]: category, alias and slot_id
         """
         yield from self.__dict__.items()
 

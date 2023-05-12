@@ -1,6 +1,5 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Tuple
 
 import numpy as np
 from qibo.gates import Gate, M
@@ -28,7 +27,7 @@ class CircuitToPulses:
         """Post init."""
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: List[Circuit], chip: Chip) -> List[PulseSchedule]:
+    def translate(self, circuits: list[Circuit], chip: Chip) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -37,12 +36,12 @@ class CircuitToPulses:
             chip (Chip): Chip representation as a graph.
 
         Returns:
-            List[PulseSequences]: List of PulseSequences classes.
+            list[PulseSequences]: List of PulseSequences classes.
         """
-        pulse_schedule_list: List[PulseSchedule] = []
+        pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
-            time: Dict[int, int] = {}  # restart time
+            time: dict[int, int] = {}  # restart time
             readout_gates = circuit.gates_of_type(M)
             control_gates = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
@@ -76,8 +75,8 @@ class CircuitToPulses:
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
     def _control_gate_to_pulse_event(
-        self, time: Dict[int, int], control_gate: Gate, chip: Chip
-    ) -> Tuple[PulseEvent | None, int]:
+        self, time: dict[int, int], control_gate: Gate, chip: Chip
+    ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse event.
 
         Args:
@@ -160,8 +159,8 @@ class CircuitToPulses:
         return gate_settings
 
     def _readout_gate_to_pulse_event(
-        self, time: Dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> Tuple[PulseEvent | None, int]:
+        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
+    ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
         Args:
@@ -171,7 +170,7 @@ class CircuitToPulses:
             chip (Chip): chip representation as a graph.
 
         Returns:
-            Tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
+            tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
@@ -200,7 +199,7 @@ class CircuitToPulses:
             port,
         )
 
-    def _update_time(self, time: Dict[int, int], qubit_idx: int, pulse_time: int):
+    def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:

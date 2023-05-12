@@ -16,6 +16,31 @@ from qililab.result.results import QbloxResult
 from qililab.typings import InstrumentName
 from qililab.typings.enums import AcquireTriggerMode, IntegrationMode, Parameter
 from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -160,6 +185,8 @@ class TestQbloxQRM:
             (Parameter.GAIN_Q, 0.01, 0),
             (Parameter.OFFSET_I, 0.8, 0),
             (Parameter.OFFSET_Q, 0.11, 0),
+            (Parameter.OFFSET_OUT0, 1.234, 0),
+            (Parameter.OFFSET_OUT1, 0, 0),
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
@@ -234,12 +261,20 @@ class TestQbloxQRM:
             assert qrm.awg_sequencers[channel_id].acquisition_timeout == value
         if parameter == Parameter.ACQUISITION_DELAY_TIME:
             assert qrm.acquisition_delay_time == value
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            assert qrm.out_offsets[output] == value
 
     def test_setup_raises_error(self, qrm: QbloxQRM):
         """Test that the ``setup`` method raises an error when called with a channel id bigger than the number of
         sequencers."""
         with pytest.raises(ValueError, match="the specified channel id:9 is out of range. Number of sequencers is 2"):
             qrm.setup(parameter=Parameter.GAIN, value=1, channel_id=9)
+
+    def test_setup_out_offset_raises_error(self, qrm: QbloxQRM):
+        """Test that calling ``_set_out_offset`` with a wrong output value raises an error."""
+        with pytest.raises(IndexError, match="Output 5 is out of range"):
+            qrm._set_out_offset(output=5, value=1)
 
     def test_turn_off_method(self, qrm: QbloxQRM):
         """Test turn_off method"""
