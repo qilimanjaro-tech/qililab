@@ -105,7 +105,7 @@ schema:
         id_: 4
         qubit_index: 1
         frequency: 6.5328e+09
-        nodes: [0, 2]
+        nodes: [0, 2, 1]
       - name: qubit # mock
         alias: qubit
         id_: 5

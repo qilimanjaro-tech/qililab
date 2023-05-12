@@ -143,6 +143,7 @@ class GateName(str, Enum):
 
 class MasterGateSettingsName(str, Enum):
     """Master Gate Settings names.
+
     Args:
         enum (str): Available types of master gate settings names:
         * master_amplitude_gate
@@ -178,6 +179,34 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
+class PulseDistortionName(str, Enum):
+    """Pulse distortion options.
+
+    Args:
+        Enum (str): Available types of PulseDistortion options:
+        * gaussian
+    """
+
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
+
+
+class PulseDistortionSettingsName(str, Enum):
+    """Pulse Shape Settings names.
+
+    Args:
+        enum (str): Available types of pulse distortion settings names:
+        * tau_bias_tee
+        * tau_exponential
+        * amp
+    """
+
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    AMP = "amp"
+    SAMPLING_RATE = "sampling_rate"
+
+
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -194,6 +223,7 @@ class PulseShapeName(str, Enum):
 
 class PulseShapeSettingsName(str, Enum):
     """Pulse Shape Settings names.
+
     Args:
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
