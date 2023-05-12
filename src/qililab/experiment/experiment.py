@@ -98,7 +98,7 @@ class Experiment(Exp):
             dict: Dictionary representation of the Experiment class.
         """
         exp_dict = super().to_dict()
-        exp_dict[EXPERIMENT.CIRCUITS] = [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules]
+        exp_dict[EXPERIMENT.CIRCUITS] = [circuit.to_qasm() for circuit in self.circuits]
         exp_dict[EXPERIMENT.PULSE_SCHEDULES] = [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules]
         return exp_dict
 
