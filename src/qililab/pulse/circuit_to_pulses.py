@@ -1,4 +1,5 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
+import ast
 from dataclasses import asdict, dataclass
 from typing import Dict, List, Tuple
 
@@ -248,10 +249,17 @@ class CircuitToPulses:
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for qubit, gate_settings_list in self.settings.gates.items():
+        for qubits, gate_settings_list in list(self.settings.gates.items()):
+            # parse string tupples for 2 qubit keys
+            if isinstance(qubits, str):
+                qubit_str = qubits
+                qubits = ast.literal_eval(qubit_str)
+                # check for expected output
+                assert isinstance(qubits, tuple) and list(map(type, qubits)) == [int, int]
+                self.settings.gates[qubits] = self.settings.gates.pop(qubit_str)
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
                 if not gate_class.settings:
                     gate_class.settings = {}
-                gate_class.settings[qubit] = gate_class.HardwareGateSettings(**settings_dict)
+                gate_class.settings[qubits] = gate_class.HardwareGateSettings(**settings_dict)
