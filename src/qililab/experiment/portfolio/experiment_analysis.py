@@ -1,6 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +24,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
     Args:
         platform (Platform): platform used to run the experiment
-        circuits (List[Circuit]): list of circuits used in the experiment
+        circuits (list[Circuit]): list of circuits used in the experiment
         options (ExperimentOptions): options of the experiment
         control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
         readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
@@ -40,7 +39,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
     def __init__(
         self,
         platform: Platform,
-        circuits: List[Circuit],
+        circuits: list[Circuit],
         options: ExperimentOptions,
         control_bus: Bus | None = None,  # TODO: This will probably change for 2-qubit experiments
         readout_bus: Bus | None = None,
@@ -124,7 +123,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             axes.legend(loc="upper right")
         return fig
 
-    def bus_setup(self, parameters: Dict[Parameter, float | str | bool], control=False) -> None:
+    def bus_setup(self, parameters: dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
 
             * Parameter.CURRENT
@@ -135,7 +134,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.POWER
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             control (bool, optional): whether to change the parameters of the control bus (True) or the readout
                 bus (False)
@@ -148,7 +147,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         for parameter, value in parameters.items():
             bus.set_parameter(parameter=parameter, value=value)
 
-    def gate_setup(self, parameters: Dict[Parameter, float | str | bool], gate: str) -> None:
+    def gate_setup(self, parameters: dict[Parameter, float | str | bool], gate: str) -> None:
         """Method used to change the parameters of the given gate. Some possible gate parameters are:
 
             * Parameter.AMPLITUDE
@@ -156,7 +155,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             * Parameter.PHASE
 
         Args:
-            parameters (Dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
+            parameters (dict[Parameter, float | str | bool]): dictionary containing parameter names as keys and
                 parameter values as values
             gate (str): name of the gate to change
         """

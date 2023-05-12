@@ -1,7 +1,6 @@
 """ Qblox Scope Data """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -12,7 +11,7 @@ class ScopeData:
     class PathData:
         """Path data."""
 
-        data: List[float]
+        data: list[float]
         avg_cnt: int
         out_of_range: bool
 

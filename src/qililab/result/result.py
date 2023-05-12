@@ -1,7 +1,6 @@
 """Result class."""
 from collections import Counter
 from dataclasses import asdict, dataclass, field
-from typing import List, Set, Tuple
 
 import pandas as pd
 
@@ -18,13 +17,13 @@ class Result(FactoryElement):
     """Result class."""
 
     name: ResultName = field(init=False)
-    data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
+    data_dataframe_indices: set[str] = field(init=False, default_factory=set)
 
     def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         return self.counts().probabilities()
 

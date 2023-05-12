@@ -4,6 +4,7 @@ from qililab.typings.enums import (
     InstrumentControllerName,
     InstrumentName,
     NodeName,
+    PulseDistortionName,
     PulseShapeName,
     ResultName,
     SystemControlName,
@@ -15,6 +16,7 @@ class FactoryElement:
 
     name: (
         SystemControlName
+        | PulseDistortionName
         | PulseShapeName
         | ResultName
         | InstrumentName

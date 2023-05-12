@@ -1,6 +1,5 @@
 """Module containing utilities for the tests."""
 import copy
-from typing import List, Tuple
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -87,15 +86,15 @@ def name_generator(base: str):
 
 
 def compare_pair_of_arrays(
-    pair_a: Tuple[List[float], List[float]],
-    pair_b: Tuple[List[float], List[float]],
+    pair_a: tuple[list[float], list[float]],
+    pair_b: tuple[list[float], list[float]],
     tolerance: float,
 ) -> bool:
     """Compares two pairs of arrays of the same length up to a given tolerance.
 
     Args:
-        pair_a (Tuple[List[float], List[float]]): First pair of arrays.
-        pair_b (Tuple[List[float], List[float]]): Second pair of arrays.
+        pair_a (tuple[list[float], list[float]]): First pair of arrays.
+        pair_b (tuple[list[float], list[float]]): Second pair of arrays.
         tolerance (float): Absolute amount up to which the arrays can differ to be considered equal.
 
     Returns:
@@ -106,16 +105,16 @@ def compare_pair_of_arrays(
     return path0_ok and path1_ok
 
 
-def complete_array(array: List[float], filler: float, final_length: int) -> List[float]:
+def complete_array(array: list[float], filler: float, final_length: int) -> list[float]:
     """Fills a given array with the given float as a filler up to the final_length specified.
 
     Args:
-        array (List[float]): Original array.
+        array (list[float]): Original array.
         filler (float): Number to use as a filler.
         final_length (int): Final length of the array.
 
     Returns:
-        List[float]: List of length `final_length` where the first `len(array)` elements are those of the original
+        list[float]: List of length `final_length` where the first `len(array)` elements are those of the original
             array, and the remaining elements are are repetitions of `filler`.
     """
     return array + [filler] * (final_length - len(array))
