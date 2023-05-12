@@ -149,7 +149,7 @@ class CircuitToPulses:
 
         # check if duration is an integer value (admit floats with null decimal part)
         gate_duration = gate_settings.duration
-        if isinstance(gate_duration, float):
+        if not isinstance(gate_duration, int):  # this handles floats but also settings reading int as np.int64
             if gate_duration % 1 != 0:  # check decimals
                 raise ValueError(
                     f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
