@@ -43,6 +43,7 @@ class ExponentialCorrection(PulseDistortion):
             k = self.amp / (1 + self.amp - alpha)
 
             a_1 = -(1 - alpha)
+
             b_0 = 1 - k + k * alpha
             b_1 = -(1 - k) * (1 - alpha)
 
@@ -51,6 +52,7 @@ class ExponentialCorrection(PulseDistortion):
             denominator = 2 * self.tau_exponential * (1 + self.amp) + 1
 
             a_1 = (self.tau_exponential * (1 + 2 * self.amp) - 1) / denominator
+
             b_0 = (2 * self.tau_exponential + 1) / denominator
             b_1 = (-2 * self.tau_exponential + 1) / denominator
 
