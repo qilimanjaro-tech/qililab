@@ -120,6 +120,9 @@ class TestIntegration:
     def test_initial_setup_with_failing_setters(self, settings):
         """Test the `initial_setup` method of the QbloxQCMRF class with the attributes
         that don't get updated in the version 0.8.1 of the `qblox_instruments`."""
+        # This test is marked as `xfail` because the setters for the attributes that are
+        # asserted below don't work properly in the version 0.8.1 of the `qblox_instruments` package.
+        # Once this problem is fixed, this test should fail and the `xfail` mark should be removed.
         qrm_rf = QbloxQRMRF(settings=settings)
         cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
         qrm_rf.device = cluster.modules[0]
