@@ -29,16 +29,36 @@ class Drag(PulseShape):
         Returns:
             ndarray: Amplitude of the envelope for each time step.
         """
-
         sigma = duration / self.num_sigmas
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
+
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
-        return gaussian + 1j * self.drag_coefficient * (-(time - mu_) / sigma**2) * gaussian
+
+        # We normalize pulse_shapes envelopes with max heights of the real parts
+        real_norm = np.max(gaussian)
+
+        drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
+
+        return drag_gaussian * amplitude / real_norm
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "Drag":
+        """Load Drag object/shape from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the Drag object/shape.
+
+        Returns:
+            Drag: Loaded class.
+        """
+        local_dictionary = dictionary.copy()
+        local_dictionary.pop(RUNCARD.NAME, None)
+        return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the pulse shape.
+        """Return dictionary representation of the Drag object/shape.
 
         Returns:
             dict: Dictionary.
