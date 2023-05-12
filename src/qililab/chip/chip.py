@@ -1,6 +1,5 @@
 """Chip class."""
 from dataclasses import asdict, dataclass
-from typing import List
 
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
@@ -14,7 +13,7 @@ from qililab.utils import Factory, dict_factory
 class Chip(DDBBElement):
     """Chip representation as a graph."""
 
-    nodes: List[Node]
+    nodes: list[Node]
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
@@ -38,14 +37,14 @@ class Chip(DDBBElement):
                 return node
         raise ValueError(f"Could not find qubit with idx {idx}.")
 
-    def _get_adjacent_nodes(self, node: Node) -> List[Node]:
+    def _get_adjacent_nodes(self, node: Node) -> list[Node]:
         """Get adjacent nodes from given node.
 
         Args:
             node (Node): Node object.
 
         Returns:
-            List[Node]: List containing all adjacent nodes.
+            list[Node]: List containing all adjacent nodes.
         """
         return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
@@ -90,14 +89,14 @@ class Chip(DDBBElement):
                 return adj_node.id_
         raise ValueError(f"Node with id {node.id_} is not connected to a port.")
 
-    def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler | Coil]:
+    def get_port_nodes(self, port_id: int) -> list[Qubit | Resonator | Coupler | Coil]:
         """Get nodes connected to a given port.
 
         Args:
             port (Port): Port class.
 
         Returns:
-            List[Node]: List of nodes connected to the given port.
+            list[Node]: List of nodes connected to the given port.
         """
         port = self.get_node_from_id(node_id=port_id)
         return self._get_adjacent_nodes(node=port)  # type: ignore

@@ -2,8 +2,20 @@
 import numpy as np
 import pytest
 
-from qililab.pulse import PulseEvent
+from qililab.pulse import Gaussian, Pulse, PulseEvent
 from qililab.utils import Waveforms
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 class TestPulseEvent:

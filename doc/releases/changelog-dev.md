@@ -4,6 +4,53 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- The `QbloxQCMRF` module has been added. To use it, please use the `QCM-RF` name inside the runcard:
+
+  ```yaml
+  - name: QCM-RF
+    alias: QCM-RF0
+    id_: 2
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 1
+    out0_lo_freq: 3700000000  # <-- new line
+    out0_lo_en: true  # <-- new line
+    out0_att: 10  # <-- new line
+    out0_offset_path0: 0.2  # <-- new line
+    out0_offset_path1: 0.07  # <-- new line
+    out1_lo_freq: 3900000000  # <-- new line
+    out1_lo_en: true  # <-- new line
+    out1_att: 6  # <-- new line
+    out1_offset_path0: 0.1  # <-- new line
+    out1_offset_path1: 0.6  # <-- new line
+    awg_sequencers:
+      ...
+  ```
+
+  [#327](https://github.com/qilimanjaro-tech/qililab/pull/327)
+
+- The `QbloxQRMRF` module has been added. To use it, please use the `QRM-RF` name inside the runcard:
+
+  ```yaml
+  - name: QRM-RF
+    alias: QRM-RF0
+    id_: 0
+    category: awg
+    firmware: 0.7.0
+    num_sequencers: 1
+    out0_in0_lo_freq: 3000000000  # <-- new line
+    out0_in0_lo_en: true  # <-- new line
+    out0_att: 34  # <-- new line
+    in0_att: 28  # <-- new line
+    out0_offset_path0: 0.123  # <-- new line
+    out0_offset_path1: 1.234  # <-- new line
+    acquisition_delay_time: 100
+    awg_sequencers:
+      ...
+  ```
+
+  [#330](https://github.com/qilimanjaro-tech/qililab/pull/330)
+
 ### Improvements
 
 - Arbitrary mapping of I/Q channels to outputs is now possible with the Qblox driver. When using a mapping that is not
@@ -24,6 +71,7 @@ This document contains the changes of the current release.
 
   Under the hood, the driver maps `path0 -> output0` and `path1 -> output1`.
   When applying an I/Q pulse, it sends the I signal through `path1` and the Q signal through `path0`.
+  [#324](https://github.com/qilimanjaro-tech/qililab/pull/324)
 
 ### Breaking changes
 
