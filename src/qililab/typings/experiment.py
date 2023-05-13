@@ -1,7 +1,6 @@
 """ Experiment Options Typings """
 
 from dataclasses import asdict, dataclass, field
-from typing import List
 
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.typings.yaml_type import yaml
@@ -27,7 +26,7 @@ class ExperimentSettings:
 class ExperimentOptions:
     """Experiment Options"""
 
-    loops: List[Loop] | None = None
+    loops: list[Loop] | None = None
     settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
     remote_save: bool = True

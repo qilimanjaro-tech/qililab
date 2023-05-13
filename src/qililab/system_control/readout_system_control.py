@@ -1,5 +1,5 @@
 """ReadoutSystemControl class."""
-from typing import List
+
 
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.result import Result
@@ -22,7 +22,7 @@ class ReadoutSystemControl(SystemControl):
             Result: Acquired result
         """
         # TODO: Support acquisition from multiple instruments
-        results: List[Result] = []
+        results: list[Result] = []
         for instrument in self.instruments:
             result = instrument.acquire_result()
             if result is not None:

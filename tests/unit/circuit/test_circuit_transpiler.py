@@ -19,6 +19,8 @@ from qililab.pulse import PulseSchedule
 from qililab.settings.runcard_schema import RuncardSchema
 from qililab.typings.enums import OperationName, OperationTimingsCalculationMethod, Qubits
 from qililab.utils import classproperty
+from tests.data import Galadriel
+from tests.utils import platform_db
 
 
 @pytest.fixture(name="simple_circuit")
@@ -34,6 +36,12 @@ def fixture_simple_circuit() -> Circuit:
     circuit.add((0, 1), Measure())
     circuit.add((0, 1), Reset())
     return circuit
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="empty_circuit")
