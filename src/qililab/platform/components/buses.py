@@ -1,6 +1,5 @@
 """Buses class."""
 from dataclasses import dataclass
-from typing import List
 
 from qililab.platform.components.bus import Bus
 from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
@@ -11,10 +10,10 @@ class Buses:
     """Class used as a container of Bus objects.
 
     Args:
-        buses (List[Bus]): List of Bus objects.
+        buses (list[Bus]): List of Bus objects.
     """
 
-    elements: List[Bus]
+    elements: list[Bus]
 
     def add(self, bus: Bus):
         """Add a bus to the list of buses.
@@ -35,12 +34,12 @@ class Buses:
         """Redirect __len__ magic method."""
         return len(self.elements)
 
-    def to_dict(self) -> List[dict]:
+    def to_dict(self) -> list[dict]:
         """Return a dict representation of the Buses class."""
         return [bus.to_dict() for bus in self.elements]
 
     @property
-    def readout_buses(self) -> List[Bus]:
+    def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""
         readout_sc = (ReadoutSystemControl, SimulatedSystemControl)
         return [bus for bus in self.elements if isinstance(bus.system_control, readout_sc)]

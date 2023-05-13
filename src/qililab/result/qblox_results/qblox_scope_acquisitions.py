@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 
-from qililab.constants import RESULTSDATAFRAME
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
 from qililab.result.acquisition import Acquisition
 from qililab.result.acquisitions import Acquisitions
@@ -84,11 +81,11 @@ class QbloxScopeAcquisitions(Acquisitions):
         integrated_acquisitions.scope.path1.data = [integrated_q]
         return integrated_acquisitions
 
-    def _iq_values(self) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def _iq_values(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Arrays of IQ values
 
         Returns:
-            Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: _description_
+            tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: _description_
         """
         i_values = np.array(self.scope.path0.data, dtype=np.float32)
         q_values = np.array(self.scope.path1.data, dtype=np.float32)

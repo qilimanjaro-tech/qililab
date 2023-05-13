@@ -1,6 +1,5 @@
 """PulseSequence class."""
 from dataclasses import dataclass, field
-from typing import List
 
 from qililab.constants import PULSESCHEDULES
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
@@ -12,10 +11,10 @@ class PulseSchedule:
     """Class containing a list of PulseSequence objects. It is the pulsed representation of a Qibo circuit.
 
     Args:
-        elements (List[PulseSequences]): List of pulse sequences.
+        elements (list[PulseSequences]): List of pulse sequences.
     """
 
-    elements: List[PulseBusSchedule] = field(default_factory=list)
+    elements: list[PulseBusSchedule] = field(default_factory=list)
 
     def add_event(self, pulse_event: PulseEvent, port: int):
         """Add pulse event.

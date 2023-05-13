@@ -10,6 +10,13 @@ from qililab.instruments import Attenuator
 from qililab.platform import Platform
 from qililab.typings.enums import Parameter
 from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="attenuator_controller")

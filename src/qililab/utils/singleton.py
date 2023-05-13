@@ -1,12 +1,11 @@
 """Singleton classes."""
 from abc import ABCMeta
-from typing import Dict
 
 
 class Singleton(type):
     """Singleton metaclass used to limit to 1 the number of instances of a subclass."""
 
-    _instances: Dict = {}
+    _instances: dict = {}
 
     def __call__(cls, *args, **kwargs):
         """Create a new instance of cls if it doesn't already exist."""
@@ -18,7 +17,7 @@ class Singleton(type):
 class SingletonABC(ABCMeta):
     """ABC singleton metaclass used to limit to 1 the number of instances of a subclass."""
 
-    _instances: Dict = {}
+    _instances: dict = {}
 
     def __call__(cls, *args, **kwargs):
         """Create a new instance of cls if it doesn't already exist."""

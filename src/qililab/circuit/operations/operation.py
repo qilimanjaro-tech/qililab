@@ -10,7 +10,6 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import Signature, signature
-from typing import Dict, Tuple
 
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.constants import RUNCARD
@@ -19,7 +18,7 @@ from qililab.typings.enums import Qubits
 from qililab.utils import classproperty
 
 ParameterValue = int | float | bool
-Parameters = Dict[str, ParameterValue]
+Parameters = dict[str, ParameterValue]
 
 
 @dataclass(kw_only=True)
@@ -48,20 +47,20 @@ class Operation(ABC):
         return {}
 
     @property
-    def parameters_names(self) -> Tuple[str, ...]:
+    def parameters_names(self) -> tuple[str, ...]:
         """Get the names of all parameters
 
         Returns:
-            Tuple[str, ...]: The names of all parameters as tuple
+            tuple[str, ...]: The names of all parameters as tuple
         """
         return tuple(self.parameters.keys())
 
     @property
-    def parameters_values(self) -> Tuple[ParameterValue, ...]:
+    def parameters_values(self) -> tuple[ParameterValue, ...]:
         """Get the values of all parameters
 
         Returns:
-            Tuple[ParameterValue, ...]: The values of all parameters as tuple
+            tuple[ParameterValue, ...]: The values of all parameters as tuple
         """
         return tuple(self.parameters.values())
 

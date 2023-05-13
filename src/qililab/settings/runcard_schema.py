@@ -2,9 +2,8 @@
 import ast
 import re
 from dataclasses import dataclass
-from typing import List, Literal
+from typing import Literal
 
-from qililab.circuit.operations.special_operations.reset import Reset
 from qililab.constants import GATE_ALIAS_REGEX, PLATFORM
 from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings.enums import (
@@ -52,13 +51,13 @@ class RuncardSchema:
 
             id_: int
             category: str
-            nodes: List[dict]
+            nodes: list[dict]
             alias: str | None = None
 
         chip: ChipSchema | None
-        buses: List[BusSchema]
-        instruments: List[dict]
-        instrument_controllers: List[dict]
+        buses: list[BusSchema]
+        instruments: list[dict]
+        instrument_controllers: list[dict]
 
         def __post_init__(self):
             self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
@@ -141,7 +140,7 @@ class RuncardSchema:
         ]
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
-        operations: List[OperationSettings]
+        operations: list[OperationSettings]
         gates: dict[int | tuple[int, int], list[GateSettings]]
 
         def __post_init__(self):

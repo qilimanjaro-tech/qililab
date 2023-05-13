@@ -31,13 +31,36 @@ class Gaussian(PulseShape):
         sigma = duration / self.num_sigmas
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
+
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+
+        # We normalize pulse_shapes envelopes with max heights of the real parts
+        real_norm = np.max(gaussian)
+
+        return gaussian * amplitude / real_norm
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> "Gaussian":
+        """Load Gaussian object/shape from dictionary.
+
+        Args:
+            dictionary (dict): Dictionary representation of the Gaussian object/shape.
+
+        Returns:
+            Gaussian: Loaded class.
+        """
+        local_dictionary = dictionary.copy()
+        local_dictionary.pop(RUNCARD.NAME, None)
+        return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the pulse shape.
+        """Return dictionary representation of the Gaussian object/shape.
 
         Returns:
             dict: Dictionary.
         """
-        return {RUNCARD.NAME: self.name.value, PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas}
+        return {
+            RUNCARD.NAME: self.name.value,
+            PulseShapeSettingsName.NUM_SIGMAS.value: self.num_sigmas,
+        }

@@ -1,6 +1,5 @@
 """Keithley2600 instrument."""
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 
@@ -72,7 +71,7 @@ class Keithley2600(Instrument):
         """Reset instrument."""
         self.device.reset()
 
-    def fast_sweep(self, start: float, stop: float, steps: int, mode: str) -> Tuple[np.ndarray, np.ndarray]:
+    def fast_sweep(self, start: float, stop: float, steps: int, mode: str) -> tuple[np.ndarray, np.ndarray]:
         """Perform a fast sweep using a deployed lua script and return an xarray dataset.
 
         Args:
