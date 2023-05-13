@@ -80,7 +80,7 @@ def fixture_pulse_event(request: pytest.FixtureRequest) -> PulseEvent:
         PulseEvent: Instance of the PulseEvent class.
     """
     pulse = request.param
-    return PulseEvent(pulse=pulse, start_time=0)
+    return PulseEvent(pulse=pulse, start_time=0, pulse_distortions=[BiasTeeCorrection(tau_bias_tee=1.3)])
 
 
 class TestPulseEvent:
@@ -116,9 +116,8 @@ class TestPulseEvent:
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
-    def test_from_dict_method(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
+    def test_from_dict_method(self, pulse_event: PulseEvent):
         """Test to_dict method"""
-        pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
 
         dictionary = pulse_event.to_dict()
         pulse_event2 = PulseEvent.from_dict(dictionary)
