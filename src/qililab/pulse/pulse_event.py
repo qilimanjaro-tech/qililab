@@ -83,7 +83,7 @@ class PulseEvent:
         Returns:
             PulseEvent: Loaded class.
         """
-        if len(dictionary[PULSEEVENT.PULSE]) > 0:
+        if PULSEEVENT.PULSE in dictionary and len(dictionary[PULSEEVENT.PULSE]) > 0:
             pulse_settings = dictionary[PULSEEVENT.PULSE]
             pulse = Pulse.from_dict(pulse_settings)
         else:
@@ -108,7 +108,8 @@ class PulseEvent:
             dict: Dictionary describing the pulse.
         """
         return {
-            PULSEEVENT.PULSE: self.pulse.to_dict(),
+            PULSEEVENT.PULSE: self.pulse.to_dict() if isinstance(self.pulse, Pulse) else {},
+            PULSEEVENT.PULSE_OPERATION: self.pulse.to_dict() if isinstance(self.pulse, PulseOperation) else {},
             PULSEEVENT.START_TIME: self.start_time,
             PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in self.pulse_distortions],
         }
