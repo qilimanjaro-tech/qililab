@@ -1,9 +1,10 @@
 """This file contains a pre-defined version of a T1 experiment."""
+import numpy as np
 from qibo.gates import M, X
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
 from .experiment_analysis import ExperimentAnalysis
@@ -27,7 +28,7 @@ class T1(ExperimentAnalysis, Exp):
         self,
         platform: Platform,
         qubit: int,
-        loop_options: LoopOptions,
+        loop_values: np.ndarray,
         repetition_duration=10000,
         hardware_average=10000,
     ):
@@ -39,12 +40,11 @@ class T1(ExperimentAnalysis, Exp):
 
         control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
 
-        wait_loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, options=loop_options)
+        wait_loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, values=loop_values)
         experiment_options = ExperimentOptions(
             name="T1",
             loops=[wait_loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
-            plot_y_label="|S21| [dB]",
         )
 
         # Initialize experiment

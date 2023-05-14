@@ -1,9 +1,10 @@
 """This file contains a pre-defined version of a resonator spectroscopy experiment."""
+import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
@@ -28,7 +29,7 @@ class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
         self,
         platform: Platform,
         qubit: int,
-        loop_options: LoopOptions,
+        loop_values: np.ndarray,
         repetition_duration=10000,
         hardware_average=10000,
     ):
@@ -42,13 +43,12 @@ class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
         readout_bus.set_parameter(parameter=Parameter.SYNC_ENABLED, value=False)
 
         # Define loop used in the experiment
-        loop = Loop(alias=readout_bus.alias, parameter=Parameter.LO_FREQUENCY, options=loop_options)
+        loop = Loop(alias=readout_bus.alias, parameter=Parameter.LO_FREQUENCY, values=loop_values)
 
         experiment_options = ExperimentOptions(
             name="ResonatorSpectroscopy",
             loops=[loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
-            plot_y_label="|S21| [dB]",
         )
 
         # Initialize experiment

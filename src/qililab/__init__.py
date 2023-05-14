@@ -17,7 +17,7 @@ from .circuit import (
     X,
 )
 from .config import __version__, logger
-from .experiment import Experiment
+from .experiment import Experiment, ResonatorSpectroscopy
 from .platform import build_platform, save_platform
 from .result.results import Results
 from .transpiler import translate_circuit
