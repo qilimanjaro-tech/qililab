@@ -1,15 +1,13 @@
 """QbloxResult class."""
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
-import numpy as np
-import numpy.typing as npt
 import pandas as pd
 
 from qililab.constants import QBLOXRESULT, RUNCARD
 from qililab.exceptions import DataUnavailable
 from qililab.instruments.qblox.constants import SCOPE_ACQ_MAX_DURATION
+from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_acquisitions_builder import QbloxAcquisitionsBuilder
 from qililab.result.qblox_results.qblox_bins_acquisitions import QbloxBinsAcquisitions
 from qililab.result.qblox_results.qblox_scope_acquisitions import QbloxScopeAcquisitions
@@ -36,18 +34,18 @@ class QbloxResult(Result):
     """
 
     name = ResultName.QBLOX
-    pulse_length: int | np.number
-    qblox_raw_results: List[dict]
+    integration_lengths: list[int]
+    qblox_raw_results: list[dict]
     qblox_bins_acquisitions: QbloxBinsAcquisitions = field(init=False, compare=False)
     qblox_scope_acquisitions: QbloxScopeAcquisitions | None = field(init=False, compare=False)
 
     def __post_init__(self):
         """Create a Qblox Acquisition class from dictionaries data"""
         self.qblox_scope_acquisitions = QbloxAcquisitionsBuilder.get_scope(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self.qblox_bins_acquisitions = QbloxAcquisitionsBuilder.get_bins(
-            pulse_length=self.pulse_length, qblox_raw_results=self.qblox_raw_results
+            integration_lengths=self.integration_lengths, qblox_raw_results=self.qblox_raw_results
         )
         self._qblox_scope_acquisition_copy = deepcopy(self.qblox_scope_acquisitions)
         self.data_dataframe_indices = self.qblox_bins_acquisitions.data_dataframe_indices
@@ -96,21 +94,21 @@ class QbloxResult(Result):
         demod_freq: float = 0.0,
         demod_phase_offset: float = 0.0,
         integrate: bool = False,
-        integration_range: Tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
-    ) -> Tuple[List[float], List[float]]:
+        integration_range: tuple[int, int] = (0, SCOPE_ACQ_MAX_DURATION),
+    ) -> tuple[list[float], list[float]]:
         """Acquisitions Scope
 
         Args:
             demod_freq (float, optional): _description_. Defaults to 0.0.
             demod_phase_offset (float, optional): _description_. Defaults to 0.0.
             integrate (bool, optional): _description_. Defaults to False.
-            integration_range (Tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
+            integration_range (tuple[int, int], optional): _description_. Defaults to (0, SCOPE_ACQ_MAX_DURATION).
 
         Raises:
             DataUnavailable: Scope data is not available since it was not stored for this acquisition.
 
         Returns:
-            Tuple[List[float], List[float]]
+            tuple[list[float], list[float]]
         """
         acquisitions = self.qblox_scope_acquisitions
         if acquisitions is None:
@@ -124,20 +122,20 @@ class QbloxResult(Result):
             )
         return acquisitions.scope.path0.data, acquisitions.scope.path1.data
 
-    def probabilities(self) -> List[Tuple[float, float]]:
-        """Return probabilities of being in the ground and excited state.
+    def counts(self) -> Counts:
+        """Returns a Counts object containing the counts of each state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            Counts: Counts object containing the counts of each state.
         """
-        return self.qblox_bins_acquisitions.probabilities()
+        return self.qblox_bins_acquisitions.counts()
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> list[int]:
         """QbloxResult 'shape' property.
 
         Returns:
-            List[int]: Shape of the acquisitions.
+            list[int]: Shape of the acquisitions.
         """
         return list(self.acquisitions().shape)
 
@@ -148,8 +146,6 @@ class QbloxResult(Result):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            QBLOXRESULT.PULSE_LENGTH: self.pulse_length.item()
-            if isinstance(self.pulse_length, np.number)
-            else self.pulse_length,
+            QBLOXRESULT.INTEGRATION_LENGTHS: self.integration_lengths,
             QBLOXRESULT.QBLOX_RAW_RESULTS: self.qblox_raw_results,
         }

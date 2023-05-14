@@ -3,8 +3,10 @@ import itertools
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from queue import Empty, Queue
+from threading import Thread
 
+import numpy as np
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
@@ -31,14 +33,14 @@ class Experiment:
     execution_manager: ExecutionManager
     results: Results
     results_path: Path
-    _plot: LivePlot
+    _plot: LivePlot | None
     _remote_id: int
 
     def __init__(
         self,
         platform: Platform,
-        circuits: List[Circuit] | None = None,
-        pulse_schedules: List[PulseSchedule] | None = None,
+        circuits: list[Circuit] | None = None,
+        pulse_schedules: list[PulseSchedule] | None = None,
         options: ExperimentOptions = ExperimentOptions(),
     ):
         self.platform = platform
@@ -55,29 +57,17 @@ class Experiment:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed), creates the ``ExecutionManager`` class,
-        and generates the live plotting.
-        """
+        """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
             translator = CircuitToPulses(settings=self.platform.settings)
             self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
-        # Generate live plotting
-        if self.platform.connection is None:
-            self._plot = None
-        else:
-            self._plot = LivePlot(
-                connection=self.platform.connection,
-                loops=self.options.loops,
-                plot_y_label=self.options.plot_y_label,
-                num_schedules=self.execution_manager.num_schedules,
-                title=self.options.name,
-            )
 
     def run(self) -> Results:
         """This method is responsible for:
+        * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all the given circuits, loops and/or software averages. And for each loop:
             * Generating and uploading the program corresponding to the circuit.
@@ -87,28 +77,74 @@ class Experiment:
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
+        # Generate live plotting
+        if self.platform.connection is None:
+            self._plot = None
+        else:
+            self._plot = LivePlot(
+                connection=self.platform.connection,
+                loops=self.options.loops or [],
+                num_schedules=len(self.pulse_schedules),
+                title=self.options.name,
+            )
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
         num_schedules = self.execution_manager.num_schedules
+
+        data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._asynchronous_data_handling(queue=data_queue)
+
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
         ):
-            self._execute_recursive_loops(loops=self.options.loops, idx=idx)
+            self._execute_recursive_loops(loops=self.options.loops, idx=idx, queue=data_queue)
 
         if self.options.remote_save:
             self.remote_save_experiment()
 
         return self.results
 
-    def compile(self) -> List[dict]:
+    def _asynchronous_data_handling(self, queue: Queue):
+        """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
+        and saves them to a file.
+
+        If no items are received in the queue for 5 seconds, the thread will exit.
+
+        Args:
+            queue (Queue): Queue used to store the experiment results.
+        """
+        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * 1e-9)
+
+        def _threaded_function():
+            """Asynchronous thread."""
+            while True:
+                try:
+                    result = queue.get(timeout=timeout)  # get new result from the queue
+                except Empty:
+                    return  # exit thread if no results are received for 10 times the duration of the program
+
+                if self._plot is not None:
+                    acq = result.acquisitions()
+                    i = np.array(acq["i"])
+                    q = np.array(acq["q"])
+                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
+                    self._plot.send_points(value=amplitude[0])
+                with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                    result_dict = result.to_dict()
+                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+
+        thread = Thread(target=_threaded_function)
+        thread.start()
+
+    def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
         experiment.
 
         Returns:
-            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+            list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
                 compiled sequences as values.
         """
         if not hasattr(self, "execution_manager"):
@@ -180,11 +216,11 @@ class Experiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, depth=0):
-        """Loop over all the range values defined in the Loop class and change the parameters of the chosen instruments.
+    def _execute_recursive_loops(self, loops: list[Loop] | None, idx: int, queue: Queue, depth=0):
+        """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
@@ -194,26 +230,26 @@ class Experiment:
                 idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
             )
             self.execution_manager.upload()
-            result = self.execution_manager.run(plot=self._plot, path=self.results_path)
+            result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
 
-        self._process_loops(loops=loops, idx=idx, depth=depth)
+        self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: List[Loop], idx: int, depth: int):
-        """Loop over the loop range values, change the element's parameter and call the recursive_loop function.
+    def _process_loops(self, loops: list[Loop], idx: int, queue: Queue, depth: int):
+        """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
 
-        with tqdm(total=min(len(loop.range) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
-            loop_ranges = [loop.range for loop in loops]
+        with tqdm(total=min(len(loop.values) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
+            loop_ranges = [loop.values for loop in loops]
 
             for values in zip(*loop_ranges):
                 self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
@@ -223,9 +259,9 @@ class Experiment:
                 )
                 self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
-                self._execute_recursive_loops(idx=idx, loops=inner_loops, depth=depth + 1)
+                self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
 
-    def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
+    def _update_tqdm_bar(self, loops: list[Loop], values: tuple[float], pbar):
         """Updates TQDM bar"""
         description = []
         for value, loop in zip(values, loops):
@@ -236,7 +272,7 @@ class Experiment:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
+    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
@@ -249,7 +285,7 @@ class Experiment:
 
         return filtered_loops, filtered_values
 
-    def _update_parameters_from_loops(self, values: List[float], loops: List[Loop]):
+    def _update_parameters_from_loops(self, values: list[float], loops: list[Loop]):
         """update parameters from loops"""
         elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 

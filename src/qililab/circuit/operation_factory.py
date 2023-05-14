@@ -1,11 +1,11 @@
 """OperationFactory class"""
-from typing import Callable, Dict, Type
+from typing import Callable, Type
 
 
 class OperationFactory:
     """A factory class to register and retrieve operation classes based on their names."""
 
-    _operations: Dict[str, Type] = {}
+    _operations: dict[str, Type] = {}
 
     @classmethod
     def register(cls, operation: Type) -> Callable:

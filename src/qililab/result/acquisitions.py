@@ -1,7 +1,6 @@
 """ Acquisitions Result """
 
 from dataclasses import dataclass, field
-from typing import List, Set, Tuple
 
 import pandas as pd
 
@@ -14,12 +13,12 @@ from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_i
 class Acquisitions:
     """Acquisitions Results
     Args:
-        acquisitions (List[Acquisition]): list of all the acquisition results
+        acquisitions (list[Acquisition]): list of all the acquisition results
 
     """
 
-    _acquisitions: List[Acquisition] = field(init=False)
-    data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
+    _acquisitions: list[Acquisition] = field(init=False)
+    data_dataframe_indices: set[str] = field(init=False, default_factory=set)
 
     def acquisitions(self) -> pd.DataFrame:
         """return the acquisitions with a structure
@@ -31,10 +30,10 @@ class Acquisitions:
             dataframe_list=acquisition_list, new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX
         )
 
-    def probabilities(self) -> pd.DataFrame:
+    def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
 
         Returns:
-            Tuple[float, float]: Probabilities of being in the ground and excited state.
+            tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError

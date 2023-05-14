@@ -12,6 +12,7 @@ from .enums import (
     NodeName,
     OperationName,
     Parameter,
+    PulseDistortionName,
     PulseShapeName,
     ReferenceClock,
     ResultName,
@@ -22,7 +23,6 @@ from .factory_element import FactoryElement
 from .instruments import (
     Cluster,
     Device,
-    E5080BDriver,
     Keithley2600Driver,
     MiniCircuitsDriver,
     Pulsar,
@@ -31,5 +31,4 @@ from .instruments import (
     QcmQrm,
     RohdeSchwarzSGS100A,
 )
-from .loop import LoopOptions
 from .yaml_type import yaml

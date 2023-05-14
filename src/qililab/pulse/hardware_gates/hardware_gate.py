@@ -1,7 +1,7 @@
 """PulsedGates class. Contains the gates that can be directly translated into a pulse."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Literal, Type
+from typing import Literal
 
 import numpy as np
 from qibo.gates import Gate
@@ -45,8 +45,8 @@ class HardwareGate(ABC, metaclass=SingletonABC):
         shape: dict
 
     name: GateName
-    class_type: Type[Gate]
-    settings: HardwareGateSettings | None = None
+    class_type: type[Gate]
+    settings: dict[int | tuple[int, int], HardwareGateSettings] | None = None  # qubit -> HardwareGateSettings
 
     @classmethod
     def normalize_angle(cls, angle: float):
@@ -66,11 +66,13 @@ class HardwareGate(ABC, metaclass=SingletonABC):
         """Translate gate into pulse.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the pulse.
+            tuple[float, float]: Amplitude and phase of the pulse.
         """
 
     @classmethod
-    def parameters(cls, master_amplitude_gate: float, master_duration_gate: int) -> HardwareGateSettings:
+    def parameters(
+        cls, qubits: int | tuple[int, int], master_amplitude_gate: float, master_duration_gate: int
+    ) -> HardwareGateSettings:
         """Return the gate parameters.
 
         Raises:
@@ -82,8 +84,11 @@ class HardwareGate(ABC, metaclass=SingletonABC):
         if cls.settings is None:
             raise ValueError(f"Please specify the parameters of the {cls.name.value} gate.")
 
+        if qubits not in cls.settings:
+            raise ValueError(f"Please specify the parameters of the {cls.name.value} gate for qubit {qubits}.")
+
         return cls._apply_master_values_to_hardware_gate_settings(
-            settings=cls.settings,
+            settings=cls.settings[qubits],
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )

@@ -10,6 +10,13 @@ from qililab.instruments import Keithley2600
 from qililab.platform import Platform
 from qililab.typings import Parameter
 from tests.data import Galadriel
+from tests.utils import platform_db
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.fixture(name="keithley_2600_controller")

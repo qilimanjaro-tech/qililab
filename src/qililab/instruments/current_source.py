@@ -1,6 +1,5 @@
 """CurrentSource class."""
 from dataclasses import dataclass
-from typing import List
 
 from qililab.instruments.instrument import Instrument
 
@@ -17,11 +16,11 @@ class CurrentSource(Instrument):
                 Value range is (-8, 8).
         """
 
-        current: List[float]
-        span: List[str]
-        ramping_enabled: List[bool]
-        ramp_rate: List[float]
-        dacs: List[int]
+        current: list[float]
+        span: list[str]
+        ramping_enabled: list[bool]
+        ramp_rate: list[float]
+        dacs: list[int]
 
     settings: CurrentSourceSettings
 

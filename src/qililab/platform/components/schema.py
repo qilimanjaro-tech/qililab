@@ -1,5 +1,5 @@
 """Schema class"""
-from typing import List
+
 
 from qililab.chip import Chip
 from qililab.constants import RUNCARD, SCHEMA
@@ -14,7 +14,7 @@ from qililab.platform.components import Bus, Buses
 class Schema:
     """Class representing the schema of the platform."""
 
-    def __init__(self, buses: List[dict], instruments: List[dict], chip: dict, instrument_controllers: List[dict]):
+    def __init__(self, buses: list[dict], instruments: list[dict], chip: dict, instrument_controllers: list[dict]):
         """Cast each list element to its corresponding bus class and instantiate class Buses."""
         self.instruments = (
             Instruments(elements=self._load_instruments(instruments_dict=instruments))
@@ -39,28 +39,28 @@ class Schema:
         """String representation of the schema."""
         return "\n".join(str(bus) for bus in self.buses)
 
-    def _load_instruments(self, instruments_dict: List[dict]) -> List[Instrument]:
+    def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
         """Instantiate all instrument classes from their respective dictionaries.
 
         Args:
-            instruments_dict (List[dict]): List of dictionaries containing the settings of each instrument.
+            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
 
         Returns:
-            List[Instrument]: List of instantiated instrument classes.
+            list[Instrument]: List of instantiated instrument classes.
         """
         return [
             InstrumentFactory.get(instrument.pop(RUNCARD.NAME))(settings=instrument) for instrument in instruments_dict
         ]
 
-    def _load_instrument_controllers(self, instrument_controllers_dict: List[dict]) -> List[InstrumentController]:
+    def _load_instrument_controllers(self, instrument_controllers_dict: list[dict]) -> list[InstrumentController]:
         """Instantiate all instrument controller classes from their respective dictionaries.
 
         Args:
-            instrument_controllers_dict (List[dict]): List of dictionaries containing
+            instrument_controllers_dict (list[dict]): List of dictionaries containing
             the settings of each instrument controller.
 
         Returns:
-            List[InstrumentController]: List of instantiated instrument controller classes.
+            list[InstrumentController]: List of instantiated instrument controller classes.
         """
         return [
             InstrumentControllerFactory.get(instrument_controller.pop(RUNCARD.NAME))(

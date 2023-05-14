@@ -139,6 +139,7 @@ class GateName(str, Enum):
 
 class MasterGateSettingsName(str, Enum):
     """Master Gate Settings names.
+
     Args:
         enum (str): Available types of master gate settings names:
         * master_amplitude_gate
@@ -174,6 +175,34 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
+class PulseDistortionName(str, Enum):
+    """Pulse distortion options.
+
+    Args:
+        Enum (str): Available types of PulseDistortion options:
+        * gaussian
+    """
+
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
+
+
+class PulseDistortionSettingsName(str, Enum):
+    """Pulse Shape Settings names.
+
+    Args:
+        enum (str): Available types of pulse distortion settings names:
+        * tau_bias_tee
+        * tau_exponential
+        * amp
+    """
+
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    AMP = "amp"
+    SAMPLING_RATE = "sampling_rate"
+
+
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -193,6 +222,7 @@ class PulseShapeName(str, Enum):
 
 class PulseShapeSettingsName(str, Enum):
     """Pulse Shape Settings names.
+
     Args:
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
@@ -245,6 +275,7 @@ class InstrumentName(str, Enum):
 
     QBLOX_QCM = "QCM"
     QBLOX_QRM = "QRM"
+    QRMRF = "QRM-RF"
     ROHDE_SCHWARZ = "rohde_schwarz"
     MINI_CIRCUITS = "mini_circuits"  # step attenuator
     KEITHLEY2600 = "keithley_2600"
@@ -252,6 +283,7 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    QCMRF = "QCM-RF"
 
 
 class InstrumentControllerName(str, Enum):
@@ -313,8 +345,6 @@ class Parameter(str, Enum):
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
-    OFFSET_I = "offset_i"
-    OFFSET_Q = "offset_q"
     SAMPLING_RATE = "sampling_rate"
     INTEGRATION = "integration"
     INTEGRATION_LENGTH = "integration_length"
@@ -355,16 +385,20 @@ class Parameter(str, Enum):
     MAX_CURRENT = "max_current"
     MAX_VOLTAGE = "max_voltage"
     SCOPE_STORE_ENABLED = "scope_store_enabled"
-    GAIN_PATH0 = "gain_path0"
-    GAIN_PATH1 = "gain_path1"
-    OFFSET_PATH0 = "offset_path0"
-    OFFSET_PATH1 = "offset_path1"
+    GAIN_I = "gain_i"
+    GAIN_Q = "gain_q"
+    OFFSET_I = "offset_i"
+    OFFSET_Q = "offset_q"
     OFFSET_OUT0 = "offset_out0"
     OFFSET_OUT1 = "offset_out1"
     OFFSET_OUT2 = "offset_out2"
     OFFSET_OUT3 = "offset_out3"
     RF_ON = "rf_on"
     OPERATION_PARAMETER = "operation_parameter"
+    DEVICE_TIMEOUT = "device_timeout"
+    SWEEP_MODE = "sweep_mode"
+    ELECTRICAL_DELAY = "electrical_delay"
+    TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
     INTEGRATION_WEIGHT_I_1 = "integration_weight_I_1"
     INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
@@ -378,6 +412,23 @@ class Parameter(str, Enum):
     AMP = "amp"
     AMP1 = "amp1"
     AMP2 = "amp2"
+    WEIGHTS_I = "weights_i"
+    WEIGHTS_Q = "weights_q"
+    WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
+    THRESHOLD = "threshold"
+    OUT0_LO_FREQ = "out0_lo_freq"
+    OUT0_IN0_LO_FREQ = "out0_in0_lo_freq"
+    OUT1_LO_FREQ = "out1_lo_freq"
+    OUT0_LO_EN = "out0_lo_en"
+    OUT0_IN0_LO_EN = "out0_in0_lo_en"
+    OUT1_LO_EN = "out1_lo_en"
+    OUT0_ATT = "out0_att"
+    IN0_ATT = "in0_att"
+    OUT1_ATT = "out1_att"
+    OUT0_OFFSET_PATH0 = "out0_offset_path0"
+    OUT1_OFFSET_PATH0 = "out1_offset_path0"
+    OUT0_OFFSET_PATH1 = "out0_offset_path1"
+    OUT1_OFFSET_PATH1 = "out1_offset_path1"
 
 
 class ResultName(str, Enum):
@@ -473,6 +524,23 @@ class VNAScatteringParameters(str, Enum):
     S12 = "S12"
     S22 = "S22"
     S21 = "S21"
+
+
+class VNASweepModes(str, Enum):
+    """Vector Network Analyzers Sweep Modes
+
+    Args:
+        enum (str): Available types of sweeping modes:
+        * hold
+        * cont
+        * single
+        * group
+    """
+
+    HOLD = "hold"
+    CONT = "cont"
+    SING = "single"
+    GRO = "group"
 
 
 class Node(str, Enum):

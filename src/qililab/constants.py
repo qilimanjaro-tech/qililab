@@ -10,10 +10,9 @@ EXPERIMENT_FILENAME = "experiment.yml"
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9
 
-DEFAULT_PLOT_Y_LABEL = "Sequence idx"
-
 DEFAULT_TIMEOUT = 10 * 1000  # 10 seconds
 
+GATE_ALIAS_REGEX = "(?P<gate>[a-zA-Z]+)\((?P<qubits>\d+(?:,\s*\d+)*)\)"
 
 # TODO: Distribute constants over different classes
 
@@ -95,7 +94,6 @@ class EXPERIMENT:
     LOOPS = "loops"
     OPTIONS = "options"
     DEVICE_ID = "device_id"
-    PLOT_Y_LABEL = "plot_y_label"
     REMOTE_DEVICE_MANUAL_OVERRIDE = "remote_device_manual_override"
     CONNECTION = "connection"
     CIRCUITS = "circuits"
@@ -130,16 +128,10 @@ class LOOP:
 
     LOOP = "loop"
     PARAMETER = "parameter"
-    START = "start"
-    STOP = "stop"
     ALIAS = "alias"
-    NUM = "num"
-    STEP = "step"
-    LOGARITHMIC = "logarithmic"
     CHANNEL_ID = "channel_id"
     PREVIOUS = "previous"
     VALUES = "values"
-    OPTIONS = "options"
 
 
 class PULSESCHEDULES:
@@ -173,10 +165,17 @@ class PULSESHAPE:
     NAME = "name"
 
 
+class PULSEDISTORTION:
+    """PulsePredecessor attribute names."""
+
+    NAME = "name"
+
+
 class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
+    PULSE_DISTORTIONS = "pulse_distortions"
     START_TIME = "start_time"
 
 
@@ -202,7 +201,7 @@ class INSTRUMENTREFERENCE:
 class QBLOXRESULT:
     """Qblox Results attribute names."""
 
-    PULSE_LENGTH = "pulse_length"
+    INTEGRATION_LENGTHS = "integration_lengths"
     QBLOX_RAW_RESULTS = "qblox_raw_results"
 
 

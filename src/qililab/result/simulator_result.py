@@ -31,13 +31,13 @@ class SimulatorResult(Result):
     states: list[Qobj]
     times: list[float]
 
-    def probabilities(self) -> list[tuple[float, float]]:
+    def probabilities(self) -> dict[str, float]:
         """Probabilities of being in the ground and excited state.
 
         Returns arbitrary result.
         """
         # FIXME: need bypass when this is not implemented
-        return [(0, 1)] * len(self.states)
+        return {}
 
     def to_dict(self) -> dict:
         """Returns dict with class data.

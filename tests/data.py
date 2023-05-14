@@ -1,8 +1,8 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-from typing import Dict, List, Type
 
+import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -17,17 +17,11 @@ from qililab.constants import (
     PULSEBUSSCHEDULE,
     PULSEEVENT,
     PULSESCHEDULES,
+    PULSESHAPE,
     RUNCARD,
     SCHEMA,
 )
-from qililab.instruments.awg_settings.typings import (
-    AWGChannelMappingTypes,
-    AWGIQChannelTypes,
-    AWGSequencerPathTypes,
-    AWGSequencerTypes,
-    AWGTypes,
-)
-from qililab.platform.platform import Platform
+from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
     Category,
@@ -83,44 +77,102 @@ class Galadriel:
                 "pulse": {RUNCARD.NAME: "Square", "amplitude": 1.0, "duration": 6000, "parameters": {}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 0,
-                "duration": 50,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
-                "phase": 1.5707963267948966,
-                "duration": PLATFORM.MASTER_DURATION_GATE,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-        ],
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            1: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                },
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
+                },
+            ],
+            (0, 1): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+            (1, 0): [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                }
+            ],
+        },
     }
 
     pulsar_controller_qcm_0 = {
@@ -154,35 +206,18 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
             },
         ],
     }
@@ -219,49 +254,45 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
                 Parameter.SAMPLING_RATE.value: 1.0e09,
-                Parameter.INTEGRATION_LENGTH.value: 2_000,
+                Parameter.INTEGRATION_LENGTH.value: 2_123,
                 Parameter.INTEGRATION_MODE.value: IntegrationMode.SSB.value,
                 Parameter.SEQUENCE_TIMEOUT.value: 1,
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: True,
+                Parameter.WEIGHTS_I.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHED_ACQ_ENABLED.value: True,
+                Parameter.THRESHOLD.value: 0.5,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
-                AWGSequencerTypes.PATH0.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 0,
-                },
-                AWGSequencerTypes.PATH1.value: {
-                    AWGSequencerPathTypes.OUTPUT_CHANNEL.value: 1,
-                },
+                "output_i": 0,
+                "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
                 Parameter.IF.value: 200_000_000,
-                Parameter.GAIN_PATH0.value: 1,
-                Parameter.GAIN_PATH1.value: 1,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
                 Parameter.GAIN_IMBALANCE.value: 0,
                 Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_PATH0.value: 0,
-                Parameter.OFFSET_PATH1.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
                 Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
@@ -273,19 +304,10 @@ class Galadriel:
                 Parameter.ACQUISITION_TIMEOUT.value: 1,
                 Parameter.HARDWARE_DEMODULATION.value: True,
                 Parameter.SCOPE_STORE_ENABLED.value: False,
-            },
-        ],
-        AWGTypes.AWG_IQ_CHANNELS.value: [
-            {
-                AWGIQChannelTypes.IDENTIFIER.value: 0,
-                AWGIQChannelTypes.I_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 0,
-                },
-                AWGIQChannelTypes.Q_CHANNEL.value: {
-                    AWGChannelMappingTypes.AWG_SEQUENCER_IDENTIFIER.value: 0,
-                    AWGChannelMappingTypes.AWG_SEQUENCER_PATH_IDENTIFIER.value: 1,
-                },
+                Parameter.WEIGHTS_I.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
+                Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                Parameter.WEIGHED_ACQ_ENABLED.value: False,
+                Parameter.THRESHOLD.value: 0.5,
             },
         ],
     }
@@ -541,48 +563,46 @@ class FluxQubitSimulator:
                 "pulse": {RUNCARD.NAME: "Gaussian", "amplitude": 1.0, "duration": 40, "parameters": {"sigma": 2}},
             },
         ],
-        "gates": [
-            {
-                RUNCARD.NAME: "M",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 2000,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+        "gates": {
+            0: [
+                {
+                    RUNCARD.NAME: "M",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 2000,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "I",
-                "amplitude": 0,
-                "phase": 0,
-                "duration": 0,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "rectangular",
+                {
+                    RUNCARD.NAME: "I",
+                    "amplitude": 0,
+                    "phase": 0,
+                    "duration": 0,
+                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 },
-            },
-            {
-                RUNCARD.NAME: "X",
-                "amplitude": 1,
-                "phase": 0,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "X",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-            {
-                RUNCARD.NAME: "Y",
-                "amplitude": 1,
-                "phase": 1.5707963267948966,
-                "duration": 10,
-                EXPERIMENT.SHAPE: {
-                    RUNCARD.NAME: "drag",
-                    "num_sigmas": 4,
-                    "drag_coefficient": 0,
+                {
+                    RUNCARD.NAME: "Y",
+                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "phase": 1.5707963267948966,
+                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 0,
+                    },
                 },
-            },
-        ],
+            ]
+        },
     }
 
     chip = {
@@ -632,7 +652,7 @@ class FluxQubitSimulator:
     }
 
 
-experiment_params: List[List[str | Circuit | List[Circuit]]] = []
+experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
     circuit = Circuit(1)
     circuit.add(I(0))
@@ -660,35 +680,21 @@ results_two_loops = {
         {
             RUNCARD.ALIAS: "attenuator",
             LOOP.PARAMETER: Parameter.ATTENUATION.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 15,
-                LOOP.STOP: 90,
-                LOOP.NUM: None,
-                LOOP.STEP: 1,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: (np.arange(start=15, stop=90, step=1)).tolist(),
+            LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
                 LOOP.PARAMETER: Node.FREQUENCY.value,
-                LOOP.OPTIONS: {
-                    LOOP.START: 7342000000,
-                    LOOP.STOP: 7352000000,
-                    LOOP.NUM: None,
-                    LOOP.STEP: 100000,
-                    LOOP.LOGARITHMIC: False,
-                    LOOP.CHANNEL_ID: None,
-                    LOOP.VALUES: None,
-                },
+                LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
                 LOOP.LOOP: None,
+                LOOP.CHANNEL_ID: None,
             },
         },
     ],
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -705,7 +711,7 @@ results_two_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -731,22 +737,15 @@ results_one_loops = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 7342000000,
-                LOOP.STOP: 7352000000,
-                LOOP.NUM: None,
-                LOOP.STEP: 100000,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
+            LOOP.CHANNEL_ID: None,
         }
     ],
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -763,7 +762,7 @@ results_one_loops = {
         },
         {
             RUNCARD.NAME: "qblox",
-            "pulse_length": 8000,
+            "integration_lengths": [8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -789,15 +788,7 @@ results_one_loops_empty = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: Node.FREQUENCY.value,
-            LOOP.OPTIONS: {
-                LOOP.START: 7342000000,
-                LOOP.STOP: 7352000000,
-                LOOP.NUM: None,
-                LOOP.STEP: 100000,
-                LOOP.LOGARITHMIC: False,
-                LOOP.CHANNEL_ID: None,
-                LOOP.VALUES: None,
-            },
+            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
             LOOP.LOOP: None,
         }
     ],
@@ -811,39 +802,16 @@ experiment = {
             {
                 RUNCARD.ALIAS: "qblox_qrm",
                 LOOP.PARAMETER: Parameter.GAIN.value,
-                LOOP.OPTIONS: {
-                    LOOP.START: 0.1,
-                    LOOP.STOP: 1,
-                    LOOP.NUM: None,
-                    LOOP.STEP: 0.3,
-                    LOOP.LOGARITHMIC: False,
-                    LOOP.CHANNEL_ID: 0,
-                    LOOP.VALUES: None,
-                },
+                LOOP.VALUES: np.arange(start=0.1, stop=1, step=0.3),
+                LOOP.CHANNEL_ID: 0,
                 LOOP.LOOP: {
                     RUNCARD.ALIAS: "attenuator",
                     LOOP.PARAMETER: Parameter.ATTENUATION.value,
-                    LOOP.OPTIONS: {
-                        LOOP.START: 15,
-                        LOOP.STOP: 90,
-                        LOOP.NUM: None,
-                        LOOP.STEP: 1,
-                        LOOP.LOGARITHMIC: False,
-                        LOOP.CHANNEL_ID: None,
-                        LOOP.VALUES: None,
-                    },
+                    LOOP.VALUES: np.arange(start=15, stop=90, step=1),
                     LOOP.LOOP: {
                         RUNCARD.ALIAS: "rs_1",
                         LOOP.PARAMETER: Node.FREQUENCY.value,
-                        LOOP.OPTIONS: {
-                            LOOP.START: 7342000000,
-                            LOOP.STOP: 7352000000,
-                            LOOP.NUM: None,
-                            LOOP.STEP: 100000,
-                            LOOP.LOGARITHMIC: False,
-                            LOOP.CHANNEL_ID: None,
-                            LOOP.VALUES: None,
-                        },
+                        LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
                         LOOP.LOOP: None,
                     },
                 },
@@ -880,16 +848,163 @@ experiment = {
 }
 
 
+class SauronVNA:
+    """Test data of the sauron platform."""
+
+    name = "sauron_vna"
+
+    platform = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: "sauron_vna",
+        PLATFORM.DEVICE_ID: 9,
+        RUNCARD.ALIAS: None,
+        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.MINIMUM_CLOCK_TIME: 4,
+        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
+        PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
+        PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
+        PLATFORM.PASSIVE_RESET_DURATION: 100,
+        "gates": {},
+        "operations": [],
+    }
+
+    keysight_e5080b_controller = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
+        RUNCARD.ALIAS: InstrumentControllerName.KEYSIGHT_E5080B.value,
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.TIMEOUT.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.254",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.VNA.value: InstrumentName.KEYSIGHT_E5080B.value,
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    keysight_e5080b = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.KEYSIGHT_E5080B,
+        RUNCARD.ALIAS: InstrumentName.KEYSIGHT_E5080B.value,
+        RUNCARD.CATEGORY: Category.VNA.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.POWER.value: -60.0,
+    }
+
+    agilent_e5071b_controller = {
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: InstrumentControllerName.AGILENT_E5071B,
+        RUNCARD.ALIAS: InstrumentControllerName.AGILENT_E5071B.value,
+        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
+        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.TIMEOUT.value: 10000,
+        INSTRUMENTCONTROLLER.CONNECTION: {
+            RUNCARD.NAME: ConnectionName.TCP_IP.value,
+            CONNECTION.ADDRESS: "192.168.1.254",
+        },
+        INSTRUMENTCONTROLLER.MODULES: [
+            {
+                Category.VNA.value: InstrumentName.AGILENT_E5071B.value,
+                INSTRUMENTREFERENCE.SLOT_ID: 0,
+            }
+        ],
+    }
+
+    agilent_e5071b = {
+        RUNCARD.ID: 0,
+        RUNCARD.NAME: InstrumentName.AGILENT_E5071B,
+        RUNCARD.ALIAS: InstrumentName.AGILENT_E5071B.value,
+        RUNCARD.CATEGORY: Category.VNA.value,
+        RUNCARD.FIRMWARE: "A.15.10.06",
+        Parameter.POWER.value: -60.0,
+    }
+
+    instruments = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers = [keysight_e5080b_controller, agilent_e5071b_controller]
+
+    chip = {
+        RUNCARD.ID: 0,
+        RUNCARD.ALIAS: None,
+        RUNCARD.CATEGORY: Category.CHIP.value,
+        Node.NODES.value: [
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+            {
+                RUNCARD.NAME: NodeName.RESONATOR.value,
+                RUNCARD.ID: 2,
+                RUNCARD.ALIAS: NodeName.RESONATOR.value,
+                Node.FREQUENCY.value: 8.0726e09,
+                Node.NODES.value: [1, 3],
+            },
+            {
+                RUNCARD.NAME: NodeName.QUBIT.value,
+                RUNCARD.ID: 3,
+                RUNCARD.ALIAS: NodeName.QUBIT.value,
+                Node.QUBIT_INDEX.value: 0,
+                Node.FREQUENCY.value: 6.5328e09,
+                Node.NODES.value: [0, 2],
+            },
+        ],
+    }
+
+    buses = [
+        {
+            RUNCARD.ID: 0,
+            RUNCARD.CATEGORY: Category.BUS.value,
+            RUNCARD.ALIAS: "keysight_e5080b_readout_bus",
+            Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 0,
+                RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
+                RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
+            },
+            NodeName.PORT.value: 1,
+        },
+        {
+            RUNCARD.ID: 1,
+            RUNCARD.CATEGORY: Category.BUS.value,
+            RUNCARD.ALIAS: "agilent_e5071b_readout_bus",
+            Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 1,
+                RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
+                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
+                RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
+            },
+            NodeName.PORT.value: 0,
+        },
+    ]
+
+    schema = {
+        SCHEMA.INSTRUMENTS: instruments,
+        SCHEMA.CHIP: chip,
+        SCHEMA.BUSES: buses,
+        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
+    }
+
+    runcard = {
+        RUNCARD.SETTINGS: platform,
+        RUNCARD.SCHEMA: schema,
+    }
+
+
 class MockedSettingsFactory:
     """Class that loads a specific class given an object's name."""
 
-    handlers: Dict[str, Type[Galadriel] | Type[FluxQubitSimulator]] = {
+    handlers: dict[str, type[Galadriel] | type[FluxQubitSimulator]] = {
         "galadriel": Galadriel,
         "flux_qubit": FluxQubitSimulator,
     }
 
     @classmethod
-    def register(cls, handler_cls: Type[Galadriel] | Type[FluxQubitSimulator]):
+    def register(cls, handler_cls: type[Galadriel] | type[FluxQubitSimulator]):
         """Register handler in the factory.
 
         Args:

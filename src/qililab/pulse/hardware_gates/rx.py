@@ -25,9 +25,11 @@ class RX(HardwareGate):
         """Translate gate into pulse.
 
         Returns:
-            Tuple[float, float]: Amplitude and phase of the pulse.
+            tuple[float, float]: Amplitude and phase of the pulse.
         """
+        qubit = gate.target_qubits[0]
         x_params = X.parameters(
+            qubits=qubit,
             master_amplitude_gate=master_amplitude_gate,
             master_duration_gate=master_duration_gate,
         )

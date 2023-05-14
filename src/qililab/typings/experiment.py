@@ -1,7 +1,6 @@
 """ Experiment Options Typings """
 
 from dataclasses import asdict, dataclass, field
-from typing import List
 
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.typings.yaml_type import yaml
@@ -27,10 +26,9 @@ class ExperimentSettings:
 class ExperimentOptions:
     """Experiment Options"""
 
-    loops: List[Loop] | None = None
+    loops: list[Loop] | None = None
     settings: ExperimentSettings = field(default_factory=ExperimentSettings)
     name: str = DEFAULT_EXPERIMENT_NAME
-    plot_y_label: str | None = None
     remote_save: bool = True
     description: str = ""
 
@@ -44,7 +42,6 @@ class ExperimentOptions:
             EXPERIMENT.LOOPS: [loop.to_dict() for loop in self.loops] if self.loops is not None else None,
             RUNCARD.SETTINGS: asdict(self.settings),
             RUNCARD.NAME: self.name,
-            EXPERIMENT.PLOT_Y_LABEL: self.plot_y_label,
             EXPERIMENT.REMOTE_SAVE: self.remote_save,
             EXPERIMENT.DESCRIPTION: self.description,
         }
@@ -65,7 +62,6 @@ class ExperimentOptions:
             if RUNCARD.SETTINGS in dictionary
             else ExperimentSettings(),
             name=dictionary[RUNCARD.NAME] if RUNCARD.NAME in dictionary else DEFAULT_EXPERIMENT_NAME,
-            plot_y_label=dictionary.get(EXPERIMENT.PLOT_Y_LABEL, None),
             remote_save=dictionary.get(EXPERIMENT.REMOTE_SAVE, True),
             description=dictionary.get(EXPERIMENT.DESCRIPTION, ""),
         )
