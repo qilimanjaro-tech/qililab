@@ -8,7 +8,8 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait, WaitSync
+from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain, SetPh,
+                                              Stop, Wait, WaitSync)
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -622,7 +623,7 @@ class QbloxModule(AWG):
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                envelope = pulse_event.pulse.envelope(amplitude=1)
+                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude)*1.)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
