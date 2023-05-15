@@ -194,11 +194,11 @@ class TestTranslation:
         circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
         # test error raised when drag phase != 0
         platform_settings.get_gate(name="Drag", qubits=0).phase = 2
-        translator = CircuitToPulses(settings=platform_settings)
         with pytest.raises(
             ValueError,
             match="Drag gate should not have setting for phase since the phase depends only on circuit gate parameters",
         ):
+            translator = CircuitToPulses(settings=platform_settings)
             translator.translate(circuits=[circuit], chip=chip)
 
     def test_gate_duration_errors_raised_in_translate(
@@ -210,8 +210,8 @@ class TestTranslation:
         # test error raised when duration has decimal part
         platform_settings.get_gate(name="Drag", qubits=0).duration = 2.3
         error_string = "The settings of the gate drag have a non-integer duration \(2.3ns\). The gate duration must be an integer or a float with 0 decimal part"
-        translator = CircuitToPulses(settings=platform_settings)
         with pytest.raises(ValueError, match=error_string):
+            translator = CircuitToPulses(settings=platform_settings)
             translator.translate(circuits=[circuit], chip=chip)
 
     def test_translate_pulses_with_duration_not_multiple_of_minimum_clock_time(
