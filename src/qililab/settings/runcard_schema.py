@@ -80,7 +80,6 @@ class RuncardSchema:
                 amplitude: float | Literal[MasterGateSettingsName.MASTER_AMPLITUDE_GATE]
                 duration: int | Literal[MasterGateSettingsName.MASTER_DURATION_GATE]
                 phase: float
-                frequency: float
                 parameters: dict
 
             name: str
