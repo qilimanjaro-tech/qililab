@@ -147,7 +147,7 @@ class CircuitTranspiler:
                 if isinstance(operation_node.operation, PulseOperation):
                     is_measurement = operation_node.is_measurement
                     chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
-                if isinstance(operation_node.operation, TranslatableToPulseOperation):
+                elif isinstance(operation_node.operation, TranslatableToPulseOperation):
                     is_measurement = isinstance(operation_node.operation, Measure)
                     chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
