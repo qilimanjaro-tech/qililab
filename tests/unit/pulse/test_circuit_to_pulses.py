@@ -188,6 +188,42 @@ class TestTranslation:
             for name, value in gate_settings.shape.items():
                 assert getattr(pulse.pulse_shape, name) == value
 
+        # test error raised when drag phase != 0
+        platform_settings.get_gate(name="Drag", qubits=0).phase = 2
+        with pytest.raises(
+            ValueError,
+            match="Drag gate should not have setting for phase since the phase depends only on circuit gate parameters",
+        ):
+            translator = CircuitToPulses(settings=platform_settings)
+            translator.translate(circuits=[circuit], chip=chip)
+        # restore phase to None
+        platform_settings.get_gate(name="Drag", qubits=0).phase = None
+        # test error raised when duration has decimal part
+        platform_settings.get_gate(name="Drag", qubits=0).duration = 2.3
+        error_string = "The settings of the gate drag have a non-integer duration \(2.3ns\). The gate duration must be an integer or a float with 0 decimal part"
+        with pytest.raises(ValueError, match=error_string):
+            translator = CircuitToPulses(settings=platform_settings)
+            translator.translate(circuits=[circuit], chip=chip)
+
+    """
+###
+        CircuitToPulses(settings=platform_settings)
+        platform_settings.g
+        for gate in HardwareGateFactory.pulsed_gates.values():
+            if gate.name not in platform_settings.gate_names:
+                # Some gates derive from others (such as RY from Y), thus they have no settings
+                assert gate.settings is None
+            else:
+                for qubit in range(chip.num_qubits):
+                    settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
+                    assert isinstance(gate.settings[qubit], HardwareGate.HardwareGateSettings)
+                    assert gate.settings[qubit].amplitude == settings.amplitude
+                    assert gate.settings[qubit].duration == settings.duration
+                    assert gate.settings[qubit].phase == settings.phase
+                    assert isinstance(gate.settings[qubit].shape, dict)
+                    assert gate.settings[qubit].shape == settings.shape
+    """
+
     def test_translate_pulses_with_duration_not_multiple_of_minimum_clock_time(
         self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip
     ):
