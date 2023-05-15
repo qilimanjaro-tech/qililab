@@ -47,37 +47,7 @@ settings:
         shape:
           name: drag
           num_sigmas: 4
-          drag_coefficient: 4
-    1:
-      - name: M
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: rectangular
-      - name: X
-        amplitude: 0.50
-        phase: 0
-        duration: 100
-        shape:
-          name: gaussian
-          num_sigmas: 4
-      - name: Drag
-        amplitude: 1.0
-        phase: 0
-        duration: 100
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 5
-    (0,2): # (control, target). Pulse is applied to target. Note that this also implements (2,0) since CZ is symmetric
-      - name: CZ
-        amplitude: 1.0
-        phase: 0
-        duration: 6000
-        shape:
-          name: snz
-          b: 0.5
+          drag_coefficient: 1
 schema:
   chip:
     id_: 0
