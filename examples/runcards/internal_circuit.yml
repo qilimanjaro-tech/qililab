@@ -172,6 +172,12 @@ schema:
         category: system_control
         instruments: [QCM, rs_1]
       port: 1
+      distortions:
+        - name: bias_tee_correction
+          tau_bias_tee: 1.0
+        - name: exponential_decay_correction
+          tau_exponential: 1.0
+          amp: 1.0
     - id_: 2
       category: bus
       alias: feedline_input_output_bus
@@ -181,6 +187,7 @@ schema:
         category: system_control
         instruments: [QCM, rs_2]
       port: 0
+      distortions: []
   instrument_controllers:
     - name: qblox_cluster
       id_: 1

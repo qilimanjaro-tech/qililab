@@ -3,8 +3,8 @@ from dataclasses import InitVar, dataclass
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.instruments import Instruments
+from qililab.instruments import Instruments, ParameterNotFound
+from qililab.pulse import PulseDistortion
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
 from qililab.typings import Node, Parameter
@@ -31,10 +31,12 @@ class Bus:
             bus_subcategory (BusSubCategory): Bus subcategory
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (int): Chip's port where bus is connected.
+            distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
         """
 
         system_control: SystemControl
         port: int
+        distortions: list[PulseDistortion]
         platform_instruments: InitVar[Instruments]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
