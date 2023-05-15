@@ -28,11 +28,6 @@ class PulseEvent:
         """End time of the pulse in ns."""
         return self.start_time + self.duration
 
-    @property
-    def frequency(self) -> float:
-        """Frequency of the pulse in Hz."""
-        return self.pulse.frequency
-
     def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the envelope.
 
@@ -96,7 +91,7 @@ class PulseEvent:
 
         return cls(**local_dictionary)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Return dictionary of pulse.
 
         Returns:
@@ -108,7 +103,7 @@ class PulseEvent:
             PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in self.pulse_distortions],
         }
 
-    def __lt__(self, other: "PulseEvent"):
+    def __lt__(self, other: "PulseEvent") -> bool:
         """Returns True if and only if self.start_time is less than other.start_time
 
         Args:

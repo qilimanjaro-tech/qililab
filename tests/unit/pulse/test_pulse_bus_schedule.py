@@ -78,7 +78,7 @@ class TestPulseBusSchedule:
 
     def test_frequencies(self, mux_pulse_bus_schedule: PulseBusSchedule):
         """Test the frequencies method."""
-        frequencies = sorted({event.frequency for event in mux_pulse_bus_schedule.timeline})
+        frequencies = sorted({event.pulse.frequency for event in mux_pulse_bus_schedule.timeline})
         assert frequencies == mux_pulse_bus_schedule.frequencies()
 
     def test_with_frequency(self, mux_pulse_bus_schedule: PulseBusSchedule):

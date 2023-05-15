@@ -118,7 +118,7 @@ class PulseBusSchedule:
         Returns:
             PulseBusSchedule: Filtered PulseBusSchedule.
         """
-        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.frequency == frequency]
+        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.pulse.frequency == frequency]
         return PulseBusSchedule(port=self.port, timeline=filtered_timeline)
 
     def to_dict(self):
