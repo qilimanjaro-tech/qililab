@@ -1,44 +1,45 @@
 settings:
   id_: 0
   category: platform
-  name: flux_qubit_simulator
-  device_id: 0
+  name: rabi_soprano
   delay_between_pulses: 0
   delay_before_readout: 40
   master_amplitude_gate: 1
-  master_duration_gate: 10
-  gates:
-    - name: M
-      amplitude: 1
-      phase: 0
-      duration: 2000
-      shape:
-        name: rectangular
-
-    - name: I
-      amplitude: 0
-      phase: 0
-      duration: master_duration_gate
-      shape:
-        name: rectangular
-
+  master_duration_gate: 20
+  timings_calculation_method: as_soon_as_possible
+  reset_method: passive
+  passive_reset_duration: 100
+  device_id: 9
+  minimum_clock_time: 4
+  operations:
     - name: X
-      amplitude: master_amplitude_gate
-      phase: 0
-      duration: master_duration_gate
-      shape:
-        name: drag
-        num_sigmas: 4
-        drag_coefficient: 0
-
-    - name: Y
-      amplitude: master_amplitude_gate
-      phase: 1.5707963267948966 # pi / 2
-      duration: master_duration_gate
-      shape:
-        name: drag
-        num_sigmas: 4
-        drag_coefficient: 0
+      pulse:
+        name: Gaussian
+        amplitude: 1.0
+        duration: 40
+        parameters:
+          sigma: 2
+    - name: Measure
+      pulse:
+        name: Square
+        amplitude: 1.0
+        duration: 6000
+        parameters: {}
+  gates:
+    0:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
 schema:
   chip:
     id_: 0
@@ -61,7 +62,7 @@ schema:
         id_: 0
         name: simulated_system_control
         category: system_control
-        qubit: csfq4jj
+        qubit: csfq3jjx
         qubit_params: # qubit parameters
           n_cut: 10
           phi_x: 6.28318530718 # 2*pi
