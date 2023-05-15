@@ -250,7 +250,7 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
-            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)
+            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
