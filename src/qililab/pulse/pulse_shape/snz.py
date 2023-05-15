@@ -16,31 +16,45 @@ class SNZ(PulseShape):
 
     name = PulseShapeName.SNZ
     b: float
+    t_phi: int
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
         """Constant amplitude envelope.
 
         Args:
-            duration (int): Duration of the pulse (ns).
+            duration (int): HALF-PULSE duration of the pulse (ns).
             amplitude (float): Maximum amplitude of the pulse
             resolution (float): Pulse resolution
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
-        """
-        envelope = np.zeros(round(duration / resolution))
-        phi_t = 3  # total time between halfpulses, this is always 3
-        halfpulse_t = np.ceil(
-            (duration - phi_t) / 2
-        )  # TODO: is it  a problem if we lose some time due to int division?
 
-        envelope[: halfpulse_t / resolution] = amplitude * np.ones(
-            round(halfpulse_t / resolution)
-        )  # positive square halfpulse
-        envelope[halfpulse_t / resolution] = self.b
-        envelope[halfpulse_t / resolution + 1] = 0
-        envelope[halfpulse_t / resolution + 2] = -self.b
-        envelope[halfpulse_t / resolution + 3 :] = -amplitude * np.ones(round(halfpulse_t / resolution))
+        The duration of the pulse is determined by duration, which is the duration of a halfpulse
+        thus the total duration will be 2*duration + t_phi + 2, where the 2 is due to each of the
+        1ns b pulses
+        """
+
+        # ensure t_phi is an int or float with 0 decimal part
+        if not isinstance(self.t_phi, int):
+            if self.t_phi % 1 != 0:
+                raise ValueError(
+                    f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
+                )
+            else:
+                self.t_phi = int(self.t_phi)
+        full_snz_duration = 2 * duration + self.t_phi + 2
+        envelope = np.zeros(round(full_snz_duration / resolution))
+        # raise warning if we are rounding
+        if (full_snz_duration / resolution) % 1 != 0 or (duration / resolution) % 1 != 0:
+            raise RuntimeWarning(  # TODO: better error string
+                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({full_snz_duration}) / resolution ({resolution}) = {full_snz_duration/resolution}"
+            )
+        halfpulse_t = int(duration / resolution)
+        envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
+        envelope[halfpulse_t] = self.b  # impulse b
+        envelope[halfpulse_t + 1 : halfpulse_t + 1 + self.t_phi] = 0  # t_phi
+        envelope[halfpulse_t + 1 + self.t_phi] = -self.b  # impulse -b
+        envelope[halfpulse_t + 2 + self.t_phi :] = -amplitude * np.ones(halfpulse_t)  # negative square halfpulse
 
         return envelope
 

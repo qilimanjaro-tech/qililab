@@ -7,6 +7,7 @@ from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
 from qililab.chip import Chip
+from qililab.chip.nodes import Port, Qubit
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -46,10 +47,16 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time
-            readout_gates = circuit.gates_of_type(M)
-            control_gates = [
-                gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
-            ]
+
+            # separate measurement gates from control gates
+            readout_gates = []
+            control_gates = []
+            for i, gate in enumerate(circuit.queue):
+                if isinstance(gate, M):
+                    readout_gates.append((i, gate))
+                else:
+                    control_gates.append(gate)
+
             for gate in control_gates:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
@@ -97,14 +104,45 @@ class CircuitToPulses:
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
-        # TODO: Add CPhase gate
         # for CZs check if they are possible and switch target if needed
         if isinstance(control_gate, CZ):
             control_gate = self._parse_check_cz(control_gate)
 
         qubit_idx = control_gate.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
-        port = chip.get_port(node)
+
+        # TODO: CZ port here
+        # TODO: SNZ duration is 2 * gate.duration + t_phi + 2
+        # TODO: park pulse here
+
+        # TODO implement this inside chip class
+        # get ports and select those we need
+        adj_nodes = chip._get_adjacent_nodes(node)
+        # get adjacent node if it is a drive line
+        if not isinstance(control_gate, CZ):
+            for adj_node in adj_nodes:
+                if isinstance(adj_node, Port) and adj_node.name[: len("drive_line")] == "drive_line":
+                    port = adj_node.id_
+        # for CZ gates we need flux drive and adjacent qubits if parking
+        else:
+            parking = "parking" in [gate.name for gate in self.settings.gates[control_gate.qubits]]
+            parking_qubits = []
+            for adj_node in adj_nodes:
+                # get flux line
+                if isinstance(adj_node, Port) and adj_node.name[: len("flux_line")] == "flux_line":
+                    port = adj_node.id_
+                # get adj qubits
+                elif parking and isinstance(adj_node, Qubit):
+                    parking_qubits.append(adj_node.qubit_index)
+        if not isinstance(port, Port):
+            raise RuntimeError(
+                f"Wrong or no port found for gate {control_gate} and qubit {qubit_idx} with node id {node.id_}"
+            )
+        if parking and len(parking_qubits) < 1:
+            raise RuntimeError(
+                f"{len(parking_qubits)} adjacent qubits found for qubit {qubit_idx} with node id {node.id_}. There should be more than 1 adjacent qubit for a CZ gate with parking"
+            )
+
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
@@ -134,6 +172,47 @@ class CircuitToPulses:
                     frequency=node.frequency,
                 ),
                 start_time=old_time,
+            )
+            if gate_settings.duration > 0
+            else None,
+            port,
+        )
+
+    def _readout_gate_to_pulse_event(
+        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
+    ) -> tuple[PulseEvent | None, int]:
+        """Translate a gate into a pulse.
+
+        Args:
+            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
+            readout_gate (Gate): measurement gate
+            qubit_id (int): qubit number (note that the first qubit is the 0th).
+            chip (Chip): chip representation as a graph.
+
+        Returns:
+            tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
+        """
+        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
+        shape_settings = gate_settings.shape.copy()
+        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
+        port = chip.get_port(node)
+        old_time = self._update_time(
+            time=time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
+        )
+
+        return (
+            PulseEvent(
+                pulse=Pulse(
+                    amplitude=gate_settings.amplitude,
+                    phase=gate_settings.phase,
+                    duration=gate_settings.duration,
+                    frequency=node.frequency,
+                    pulse_shape=pulse_shape,
+                ),
+                start_time=old_time + self.settings.delay_before_readout,
             )
             if gate_settings.duration > 0
             else None,
@@ -187,47 +266,6 @@ class CircuitToPulses:
                 gate_duration = int(gate_duration)
 
         return gate_settings
-
-    def _readout_gate_to_pulse_event(
-        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> tuple[PulseEvent | None, int]:
-        """Translate a gate into a pulse.
-
-        Args:
-            time (dict[int, int]): dictionary containing qubit indices as keys and current time (ns) as values
-            readout_gate (Gate): measurement gate
-            qubit_id (int): qubit number (note that the first qubit is the 0th).
-            chip (Chip): chip representation as a graph.
-
-        Returns:
-            tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
-        """
-        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
-        shape_settings = gate_settings.shape.copy()
-        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
-        port = chip.get_port(node)
-        old_time = self._update_time(
-            time=time,
-            qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
-        )
-
-        return (
-            PulseEvent(
-                pulse=Pulse(
-                    amplitude=gate_settings.amplitude,
-                    phase=gate_settings.phase,
-                    duration=gate_settings.duration,
-                    frequency=node.frequency,
-                    pulse_shape=pulse_shape,
-                ),
-                start_time=old_time + self.settings.delay_before_readout,
-            )
-            if gate_settings.duration > 0
-            else None,
-            port,
-        )
 
     def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
