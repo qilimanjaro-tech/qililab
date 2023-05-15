@@ -65,6 +65,12 @@ class DRAGPulse(PulseOperation):
         sigma = self.duration / self.sigma
         time = np.arange(self.duration / resolution) * resolution
         mu_ = self.duration / 2
+
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
-        return gaussian + 1j * self.delta * (-(time - mu_) / sigma**2) * gaussian
+
+        # We normalize pulse_shapes envelopes with max heights of the real parts
+        real_norm = np.max(gaussian)
+
+        drag_gaussian = (1 - 1j * self.delta * (time - mu_) / sigma**2) * gaussian
+        return drag_gaussian * amplitude / real_norm
