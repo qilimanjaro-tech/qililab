@@ -236,8 +236,7 @@ class QbloxModule(AWG):
         """
         # Define program's blocks
         program = Program()
-        nshots = self.nshots or 1
-        avg_loop = Loop(name="average", begin=nshots)  # type: ignore
+        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
