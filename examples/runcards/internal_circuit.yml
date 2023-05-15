@@ -172,6 +172,15 @@ schema:
         category: system_control
         instruments: [QCM, rs_1]
       port: 1
+      distortions:
+        - name: bias_tee
+          tau_bias_tee: 10
+          sampling_rate: 1.23
+        - name: exponential
+          tau_exponential: 0.124
+          amp: 1.23
+          sampling_rate: 1.0
+
     - id_: 2
       category: bus
       alias: feedline_input_output_bus
@@ -181,6 +190,7 @@ schema:
         category: system_control
         instruments: [QCM, rs_2]
       port: 0
+      distortions: []
   instrument_controllers:
     - name: qblox_cluster
       id_: 1

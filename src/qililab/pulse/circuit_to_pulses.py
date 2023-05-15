@@ -7,12 +7,12 @@ from qibo.models.circuit import Circuit
 
 from qililab.chip import Chip
 from qililab.constants import RUNCARD
+from qililab.platform import Platform
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings import RuncardSchema
 from qililab.utils import Factory
 
 
@@ -20,13 +20,13 @@ from qililab.utils import Factory
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
-    settings: RuncardSchema.PlatformSettings
+    platform: Platform
 
     def __post_init__(self):
         """Post init."""
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: list[Circuit], chip: Chip) -> list[PulseSchedule]:
+    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -36,6 +36,7 @@ class CircuitToPulses:
         Returns:
             list[PulseSequences]: List of PulseSequences classes.
         """
+        chip = self.platform.chip
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
@@ -85,8 +86,9 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
+            pulse_time=gate_settings.duration + self.platform.settings.delay_between_pulses,
         )
+        _, bus = self.platform.get_bus(port=port)
         return (
             PulseEvent(
                 pulse=Pulse(
@@ -97,6 +99,7 @@ class CircuitToPulses:
                     frequency=node.frequency,
                 ),
                 start_time=old_time,
+                pulse_distortions=bus.distortions,
             )
             if gate_settings.duration > 0
             else None,
@@ -107,8 +110,8 @@ class CircuitToPulses:
         """get gate settings with master values"""
         gate_settings = HardwareGateFactory.gate_settings(
             gate=gate,
-            master_amplitude_gate=self.settings.master_amplitude_gate,
-            master_duration_gate=self.settings.master_duration_gate,
+            master_amplitude_gate=self.platform.settings.master_amplitude_gate,
+            master_duration_gate=self.platform.settings.master_duration_gate,
         )
         if (
             not isinstance(gate_settings.amplitude, float)
@@ -155,8 +158,9 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
+            pulse_time=gate_settings.duration + self.platform.settings.delay_before_readout,
         )
+        _, bus = self.platform.get_bus(port=port)
 
         return (
             PulseEvent(
@@ -167,7 +171,8 @@ class CircuitToPulses:
                     frequency=node.frequency,
                     pulse_shape=pulse_shape,
                 ),
-                start_time=old_time + self.settings.delay_before_readout,
+                start_time=old_time + self.platform.settings.delay_before_readout,
+                pulse_distortions=bus.distortions,
             )
             if gate_settings.duration > 0
             else None,
@@ -185,15 +190,15 @@ class CircuitToPulses:
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
-        residue = pulse_time % self.settings.minimum_clock_time
+        residue = pulse_time % self.platform.settings.minimum_clock_time
         if residue != 0:
-            pulse_time += self.settings.minimum_clock_time - residue
+            pulse_time += self.platform.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for qubit, gate_settings_list in self.settings.gates.items():
+        for qubit, gate_settings_list in self.platform.settings.gates.items():
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))

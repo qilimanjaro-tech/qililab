@@ -1,5 +1,4 @@
 """__init__.py"""
-
 from .circuit import (
     R180,
     Barrier,
@@ -18,7 +17,7 @@ from .circuit import (
 )
 from .config import __version__, logger
 from .experiment import Experiment
-from .platform import build_platform, save_platform
+from .platform import Platform, build_platform, save_platform
 from .result.results import Results
 from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter

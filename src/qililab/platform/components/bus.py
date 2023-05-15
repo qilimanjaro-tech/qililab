@@ -5,6 +5,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.instruments import Instruments
+from qililab.pulse import PulseDistortion
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
 from qililab.typings import Node, Parameter
@@ -36,6 +37,7 @@ class Bus:
         system_control: SystemControl
         port: int
         platform_instruments: InitVar[Instruments]
+        distortions: list[PulseDistortion]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -43,6 +45,11 @@ class Bus:
                 self.system_control = system_control_class(
                     settings=self.system_control, platform_instruments=platform_instruments
                 )
+            distortions = [
+                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+            ]
+            self.distortions = distortions
+
             super().__post_init__()
 
     settings: BusSettings
@@ -85,6 +92,15 @@ class Bus:
             Resonator: settings.resonator.
         """
         return self.settings.port
+
+    @property
+    def distortions(self):
+        """Bus 'distortions' property.
+
+        Returns:
+            list[PulseDistortion]: settings.distortions.
+        """
+        return self.settings.distortions
 
     @property
     def category(self):
