@@ -91,6 +91,8 @@ class QbloxModule(AWG):
         self._map_outputs()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
+            # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
+            self.device.sequencers[sequencer_id].sync_en(False)
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_i(value=sequencer.gain_i, sequencer_id=sequencer_id)
             self._set_gain_q(value=sequencer.gain_q, sequencer_id=sequencer_id)

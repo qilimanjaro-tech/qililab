@@ -135,11 +135,12 @@ class TestQbloxQCM:
         qcm.device.out1_offset.assert_called()
         qcm.device.out2_offset.assert_called()
         qcm.device.out3_offset.assert_called()
-        qcm.device.sequencer0.mod_en_awg.assert_called()
-        qcm.device.sequencer0.offset_awg_path0.assert_called()
-        qcm.device.sequencer0.offset_awg_path1.assert_called()
-        qcm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
-        qcm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
+        qcm.device.sequencers[0].sync_en.assert_called_with(False)
+        qcm.device.sequencers[0].mod_en_awg.assert_called()
+        qcm.device.sequencers[0].offset_awg_path0.assert_called()
+        qcm.device.sequencers[0].offset_awg_path1.assert_called()
+        qcm.device.sequencers[0].mixer_corr_gain_ratio.assert_called()
+        qcm.device.sequencers[0].mixer_corr_phase_offset_degree.assert_called()
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""

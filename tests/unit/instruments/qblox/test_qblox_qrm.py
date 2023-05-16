@@ -160,11 +160,12 @@ class TestQbloxQRM:
         qrm.device.scope_acq_avg_mode_en_path1.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
-        qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
-        qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
-        qrm.device.sequencer0.demod_en_acq.assert_called()
-        qrm.device.sequencer0.integration_length_acq.assert_called()
-        qrm.device.sequencer0.thresholded_acq_threshold.assert_called()
+        qrm.device.sequencers[0].mixer_corr_gain_ratio.assert_called()
+        qrm.device.sequencers[0].mixer_corr_phase_offset_degree.assert_called()
+        qrm.device.sequencers[0].sync_en.assert_called_with(False)
+        qrm.device.sequencers[0].demod_en_acq.assert_called()
+        qrm.device.sequencers[0].integration_length_acq.assert_called()
+        qrm.device.sequencers[0].thresholded_acq_threshold.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
