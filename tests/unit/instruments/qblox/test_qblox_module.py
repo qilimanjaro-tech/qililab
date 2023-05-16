@@ -1,68 +1,66 @@
-"""This file tests the the ``qblox_d5a`` class"""
+"""Tests for the Qblox Module class."""
+import copy
 
-from unittest.mock import MagicMock
-
+import numpy as np
 import pytest
 from qpysequence.program import Loop, Register
+from qpysequence.utils.constants import AWG_MAX_GAIN
+from qpysequence.weights import Weights
 
-from qililab.constants import RUNCARD
-from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
-from qililab.instruments.qblox import QbloxModule
-from qililab.typings.enums import Category, InstrumentName, Parameter
-
-
-class DummyAWG(QbloxModule):
-    """Dummy AWG class."""
-
-    def _generate_weights(self) -> dict:
-        return {}
-
-    def _append_acquire_instruction(self, loop: Loop, register: Register, sequencer_id: int):
-        pass
+from qililab.instruments.awg_settings import AWGQbloxSequencer
+from qililab.instruments.qblox.qblox_module import QbloxModule
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
+from qililab.pulse.pulse_event import PulseEvent
+from tests.data import Galadriel
 
 
-@pytest.fixture(name="pulsar")
-def fixture_pulsar_controller_qcm():
-    """Fixture that returns an instance of a dummy QbloxD5a."""
-    settings = {
-        RUNCARD.ID: 0,
-        RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
-        RUNCARD.CATEGORY: Category.AWG.value,
-        RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
-        AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
-        AWGTypes.AWG_SEQUENCERS.value: [
-            {
-                AWGSequencerTypes.IDENTIFIER.value: 0,
-                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
-                "output_i": 0,
-                "output_q": 1,
-                Parameter.NUM_BINS.value: 1,
-                Parameter.IF.value: 100_000_000,
-                Parameter.GAIN_I.value: 1,
-                Parameter.GAIN_Q.value: 1,
-                Parameter.GAIN_IMBALANCE.value: 0,
-                Parameter.PHASE_IMBALANCE.value: 0,
-                Parameter.OFFSET_I.value: 0,
-                Parameter.OFFSET_Q.value: 0,
-                Parameter.HARDWARE_MODULATION.value: False,
-                Parameter.SYNC_ENABLED.value: True,
-            }
-        ],
-    }
-    return DummyAWG(settings=settings)
+class DummyQbloxModule(QbloxModule):
+    """Dummy QbloxModule class for testing"""
+
+    def _generate_weights(self, sequencer: AWGQbloxSequencer):
+        return Weights()
+
+    def _append_acquire_instruction(self, loop: Loop, bin_index: Register, sequencer_id: int):
+        """Append an acquire instruction to the loop."""
 
 
-class TestQbloxD5a:
-    """This class contains the unit tests for the ``qblox_d5a`` class."""
+@pytest.fixture(name="qblox_module")
+def fixture_qblox_module():
+    """Return an instance of QbloxModule class"""
+    settings = copy.deepcopy(Galadriel.qblox_qcm_0)
+    settings.pop("name")
+    return DummyQbloxModule(settings=settings)
 
-    def test_error_raises_when_no_channel_specified(self, pulsar):
-        """These test makes soure that an error raises whenever a channel is not specified in chainging a parameter
 
-        Args:
-            pulsar (_type_): pulsar
-        """
-        pulsar.settings.num_sequencers = 2
-        with pytest.raises(ValueError, match="channel not specified to update instrument"):
-            pulsar.device = MagicMock()
-            pulsar.setup(parameter=Parameter.GAIN, value=2, channel_id=None)
+class TestQbloxModule:
+    """Unit tests checking the QbloxQCM attributes and methods"""
+
+    def test_amplitude_and_phase_in_program(self, qblox_module: QbloxModule):
+        """Test that the amplitude and the phase of a compiled pulse is added into the Qblox program."""
+
+        amplitude = 0.8
+        phase = np.pi / 2 + 12.2
+        timeline = [
+            PulseEvent(
+                pulse=Pulse(
+                    amplitude=amplitude,
+                    phase=phase,
+                    duration=1000,
+                    frequency=7.0e9,
+                    pulse_shape=Gaussian(num_sigmas=5),
+                ),
+                start_time=0,
+            )
+        ]
+
+        pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port=0)
+
+        sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1)
+        program = sequences[0]._program
+
+        expected_gain = int(amplitude * AWG_MAX_GAIN)
+        expected_phase = int((phase % 360) * 1e9 / 360)
+
+        assert program.blocks[1].components[1].args[0] == expected_gain
+        assert program.blocks[1].components[1].args[1] == expected_gain
+        assert program.blocks[1].components[2].args[0] == expected_phase
