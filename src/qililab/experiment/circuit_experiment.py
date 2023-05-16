@@ -4,7 +4,7 @@ from qibo.models.circuit import Circuit
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment import Experiment
+from qililab.experiment.experiment import Experiment
 from qililab.platform.platform import Platform
 from qililab.pulse import CircuitToPulses, PulseSchedule
 from qililab.result.results import Results
