@@ -43,7 +43,7 @@ def fixture_system_control(platform: Platform):
     settings = {
         "id_": 1,
         "category": "system_control",
-        "instruments": ["QCM", "rs_1"],
+        "instruments": [{"alias": "QCM", "outputs": [0, 1]}, {"alias": "rs_1", "outputs": [0]}],
     }
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
@@ -55,7 +55,7 @@ def fixture_system_control_without_awg(platform: Platform):
         "id_": 1,
         "alias": "test_alias",
         "category": "system_control",
-        "instruments": ["rs_1"],
+        "instruments": [{"alias": "rs_1", "outputs": [0]}],
     }
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
@@ -71,8 +71,11 @@ class TestInitialization:
         assert system_control.name.value == "system_control"
         assert isinstance(system_control.settings.category, Category)
         assert system_control.settings.category == Category.SYSTEM_CONTROL
-        for instrument in system_control.settings.instrument_outputs:
+        for instrument, outputs in system_control.settings.instrument_outputs:
             assert isinstance(instrument, Instrument)
+            assert isinstance(outputs, list)
+            for output in outputs:
+                assert isinstance(output, int)
         assert not hasattr(system_control.settings, "platform_instruments")
 
 
@@ -120,7 +123,7 @@ class TestMethods:
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
-        awg = system_control.instrument_outputs[0]
+        awg, _ = system_control.instrument_outputs[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)

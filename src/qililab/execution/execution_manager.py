@@ -9,7 +9,7 @@ from qililab.config import logger
 from qililab.execution import BusExecution
 from qililab.platform import Platform
 from qililab.result import Result
-from qililab.system_control import ReadoutSystemControl
+from qililab.system_control import ReadoutSystemControl, SimulatedSystemControl
 from qililab.utils import Waveforms
 
 
@@ -150,4 +150,6 @@ class ExecutionManager:
         Returns:
             list[BusExecution]: list of readout buses
         """
-        return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
+        return [
+            bus for bus in self.buses if isinstance(bus.system_control, (ReadoutSystemControl, SimulatedSystemControl))
+        ]

@@ -88,7 +88,7 @@ class SystemControl(BusElement, ABC):
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.settings.instrument_outputs)
+        return iter([instrument for instrument, _ in self.settings.instrument_outputs])
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""

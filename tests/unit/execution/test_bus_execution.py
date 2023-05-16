@@ -136,7 +136,7 @@ class TestBusExecution:
 
     def test_upload(self, bus_execution: BusExecution):
         """Test upload method."""
-        awg = bus_execution.system_control.instrument_outputs[0]
+        awg, _ = bus_execution.system_control.instrument_outputs[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)

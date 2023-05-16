@@ -42,7 +42,7 @@ def fixture_simulated_system_control():
         "resolution": 1,
         "store_states": False,
     }
-    return SimulatedSystemControl(settings=settings, platform_instruments=None)
+    return SimulatedSystemControl(settings=settings)
 
 
 class TestSimulatedSystemControl:

@@ -288,8 +288,9 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
     instruments are mocked."""
     # Mock all the devices
     awgs = [bus.system_control.instrument_outputs[0] for bus in execution_manager.buses]
-    for awg in awgs:
+    for awg, outputs in awgs:
         assert isinstance(awg, AWG)
+        assert isinstance(outputs, list)
         awg.device = MagicMock()
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
@@ -317,7 +318,8 @@ class TestWorkflow:
 
         awgs = [bus.system_control.instrument_outputs[0] for bus in mocked_execution_manager.buses]
 
-        for awg in awgs:
+        for awg, outputs in awgs:
+            assert isinstance(outputs, list)
             for seq_idx in range(awg.num_sequencers):  # type: ignore
                 assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
 
@@ -336,7 +338,8 @@ class TestWorkflow:
             for bus in mocked_execution_manager.buses
             if isinstance(bus.system_control, ReadoutSystemControl)
         ]
-        for awg in readout_awgs:
+        for awg, outputs in readout_awgs:
+            assert isinstance(outputs, list)
             assert awg.device.get_acquisitions.call_count == 2  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
