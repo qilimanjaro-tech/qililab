@@ -10,7 +10,7 @@ from qpysequence import Sequence
 from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
-from qililab.experiment import Experiment
+from qililab.experiment import CircuitExperiment
 from qililab.instruments import AWG
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
@@ -24,7 +24,7 @@ from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+def fixture_execution_manager(experiment: CircuitExperiment) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
@@ -56,7 +56,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    return Experiment(
+    return CircuitExperiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
@@ -76,7 +76,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
         values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    return Experiment(
+    return CircuitExperiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
@@ -99,9 +99,9 @@ class TestExecutionManager:
 @patch("qililab.typings.instruments.mini_circuits.urllib", autospec=True)
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
-@patch("qililab.experiment.exp.yaml.safe_dump")
-@patch("qililab.experiment.exp.open")
-@patch("qililab.experiment.exp.os.makedirs")
+@patch("qililab.experiment.experiment.yaml.safe_dump")
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.os.makedirs")
 class TestExecutionManagerPlatform:
     """Unit tests checking a platform with instruments of the ExecutionManager."""
 
@@ -116,7 +116,7 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        nested_experiment: Experiment,
+        nested_experiment: CircuitExperiment,
     ):
         """Test execute method with nested loops."""
         saved_experiment_id = 0
@@ -150,7 +150,7 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        nested_experiment: Experiment,
+        nested_experiment: CircuitExperiment,
     ):
         """Test execute method with nested loops."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
@@ -189,7 +189,7 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        experiment: Experiment,
+        experiment: CircuitExperiment,
     ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
@@ -216,12 +216,12 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        nested_experiment: Experiment,
+        nested_experiment: CircuitExperiment,
     ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
         nested_experiment_dict = nested_experiment.to_dict()
-        experiment = Experiment.from_dict(nested_experiment_dict)
+        experiment = CircuitExperiment.from_dict(nested_experiment_dict)
         results = experiment.execute()
         results_2 = nested_experiment.execute()
         mock_urllib.request.Request.assert_called()
@@ -247,7 +247,7 @@ class TestExecutionManagerPlatform:
         mock_pulsar: MagicMock,
         mock_urllib: MagicMock,
         mock_keithley: MagicMock,
-        experiment: Experiment,
+        experiment: CircuitExperiment,
     ):
         """Test run method."""
         mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
