@@ -228,6 +228,12 @@ class TestMethods:
         experiment.build_execution()
         experiment.draw()
 
+    def test_str_method(self, experiment: Experiment):
+        """Test __str__ method."""
+        expected = f"Experiment {experiment.options.name}:\n{str(experiment.platform)}\n{str(experiment.options)}\n{str(experiment.circuits)}\n{str(experiment.pulse_schedules)}\n"
+        test_str = str(experiment)
+        assert expected == test_str
+
 
 class TestAttributes:
     """Unit tests checking the Experiment attributes and methods"""

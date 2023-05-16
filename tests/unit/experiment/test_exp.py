@@ -290,7 +290,9 @@ class TestMethods:
 
     def test_str_method(self, experiment_all_platforms: Exp):
         """Test __str__ method."""
-        str(experiment_all_platforms)
+        expected = f"Experiment {experiment_all_platforms.options.name}:\n{str(experiment_all_platforms.platform)}\n{str(experiment_all_platforms.options)}"
+        test_str = str(experiment_all_platforms)
+        assert expected == test_str
 
 
 class TestSetParameter:
