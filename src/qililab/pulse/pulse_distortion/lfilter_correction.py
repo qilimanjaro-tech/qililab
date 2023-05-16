@@ -13,7 +13,7 @@ from .pulse_distortion import PulseDistortion
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
-class LFilter(PulseDistortion):
+class LFilterCorrection(PulseDistortion):
     """Bias tee distortion."""
 
     name = PulseDistortionName.LFILTER
@@ -41,7 +41,7 @@ class LFilter(PulseDistortion):
         return corr_envelope
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> "LFilter":
+    def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
         """Load BiasTeeCorrection object from dictionary.
 
         Args:
