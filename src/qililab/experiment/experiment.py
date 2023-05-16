@@ -1,11 +1,4 @@
 """ Experiment class."""
-import itertools
-import os
-from datetime import datetime
-from pathlib import Path
-from queue import Empty, Queue
-from threading import Thread
-
 from qibo.models.circuit import Circuit
 
 from qililab.config import __version__

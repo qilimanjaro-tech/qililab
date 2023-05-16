@@ -125,18 +125,12 @@ def fixture_exp(request: pytest.FixtureRequest):
             platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
-    loop_1 = Loop(
+    loop = Loop(
         alias=Galadriel.buses[0][RUNCARD.ALIAS],
         parameter=Parameter.DURATION,
         values=np.arange(start=4, stop=1000, step=40),
     )
-    # Adds more coverage to tests
-    loop_2 = Loop(
-        alias=Galadriel.buses[0][RUNCARD.ALIAS],
-        parameter=Parameter.EXTERNAL,
-        values=np.arange(start=4, stop=1000, step=40),
-    )
-    options = ExperimentOptions(loops=[loop_1, loop_2])
+    options = ExperimentOptions(loops=[loop])
     return Exp(platform=platform, options=options)
 
 
@@ -303,11 +297,25 @@ class TestMethods:
     def test_filter_loops_values_with_external_parameters_raises_exception(self, exp: Exp):
         """Test _filter_loops_values_with_external_paramters raises an exception when lists of values and loops have not the same length"""
         values = (1.5, -1.5)
-        loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 10))]
+        loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 1))]
         with pytest.raises(
             ValueError, match=f"Values list length: {len(values)} differ from loops list length: {len(loops)}."
         ):
             exp._filter_loops_values_with_external_parameters(values, loops)
+
+    def test_filter_loops_values_with_external_parameters_pops(self, exp: Exp):
+        """Test _filter_loops_values_with_external_paramters returns a list of the original values and loops without the ones containing external parameters"""
+        test_value = (1.5,)
+        test_loop = [
+            Loop(
+                alias=Galadriel.buses[0][RUNCARD.ALIAS],
+                parameter=Parameter.EXTERNAL,
+                values=np.linspace(start=0, stop=10, num=1),
+            )
+        ]
+        filtered_loops, filtered_values = exp._filter_loops_values_with_external_parameters(test_value, test_loop)
+        assert filtered_loops == []
+        assert filtered_values == []
 
 
 class TestSetParameter:
