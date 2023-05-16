@@ -4,6 +4,14 @@
 
 ### New features since last release
 
+- Added CZ gate support, 2 qubit gate support to `circuit_to_pulse` and corresponding definitions to the runcard.
+
+  CZ implements a Sudden Net Zero (SNZ) pulse through the flux line as well as a parking gate (if defined in the runcar)
+  to adjacent qubits with lower frequency than CZ's target qubit.
+  For the parking gate, if the time is greater than the CZ pulse, the extra time is added as padding at the beginning/end
+  of the pulse.
+  [#329](https://github.com/qilimanjaro-tech/qililab/pull/329)
+
 - Added Drag gate support to `circuit_to_pulse` so that Drag gates are implemented as drag pulses
   [#312](https://github.com/qilimanjaro-tech/qililab/pull/312)
 
