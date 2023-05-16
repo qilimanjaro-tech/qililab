@@ -75,10 +75,10 @@ class TestPulseDistortion:
     def test_from_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""
         dictionary = pulse_distortion.to_dict()
-        pulse_distortion2: PulseDistortion = Factory.get(name=pulse_distortion.name).from_dict(dictionary)
+        pulse_distortion2 = PulseDistortion.from_dict(dictionary)
 
         dictionary2 = pulse_distortion2.to_dict()
-        pulse_distortion3: PulseDistortion = Factory.get(name=pulse_distortion2.name).from_dict(dictionary2)
+        pulse_distortion3 = PulseDistortion.from_dict(dictionary2)
 
         assert isinstance(pulse_distortion2, Factory.get(name=pulse_distortion.name))
         assert isinstance(pulse_distortion3, Factory.get(name=pulse_distortion2.name))
