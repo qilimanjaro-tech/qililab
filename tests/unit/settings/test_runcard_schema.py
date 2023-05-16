@@ -73,6 +73,18 @@ class TestPlatformSettings:
         for operation in settings.operations:
             assert isinstance(settings.get_operation_settings(name=operation.name), settings.OperationSettings)
 
+    def test_set_operation_parameter(self):
+        """Test the ``set_parameter`` method of the PlatformSettings.OperationSettings class."""
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        settings = runcard.settings
+
+        for operation in settings.operations:
+            operation_settings = settings.get_operation_settings(name=operation.name)
+            operation_settings.set_parameter(Parameter.DURATION, value=123)
+            operation_settings.set_parameter(Parameter.GAIN, value=123)
+            assert getattr(operation_settings.pulse, Parameter.DURATION.value) == 123
+            assert getattr(operation_settings.pulse, Parameter.GAIN.value) == 123
+
     def test_get_gate(self):
         """Test the ``get_gate`` method of the PlatformSettings class."""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
