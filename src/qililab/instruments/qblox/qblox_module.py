@@ -97,7 +97,6 @@ class QbloxModule(AWG):
             self._set_offset_i(value=sequencer.offset_i, sequencer_id=sequencer_id)
             self._set_offset_q(value=sequencer.offset_q, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
-            self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
 
@@ -331,9 +330,6 @@ class QbloxModule(AWG):
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.SYNC_ENABLED:
-            self._set_sync_enabled(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.NUM_BINS:
             self._set_num_bins(value=value, sequencer_id=channel_id)
             return
@@ -359,20 +355,6 @@ class QbloxModule(AWG):
         if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
         cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
-
-    @Instrument.CheckParameterValueBool
-    def _set_sync_enabled(self, value: float | str | bool, sequencer_id: int):
-        """set sync enabled for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).sync_enabled = bool(value)
-        self.device.sequencers[sequencer_id].sync_en(bool(value))
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
@@ -542,6 +524,7 @@ class QbloxModule(AWG):
             if seq_idx not in self.sequences:
                 self.sequences[seq_idx] = (empty_sequence, False)
             sequence, uploaded = self.sequences[seq_idx]
+            self.device.sequencers[seq_idx].sync_en(True)
             if not uploaded:
                 logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
                 self.device.sequencers[seq_idx].sequence(sequence.todict())

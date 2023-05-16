@@ -217,7 +217,6 @@ class Galadriel:
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
-                Parameter.SYNC_ENABLED.value: True,
             },
         ],
     }
@@ -265,7 +264,6 @@ class Galadriel:
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
-                Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
                 Parameter.SAMPLING_RATE.value: 1.0e09,
@@ -294,7 +292,6 @@ class Galadriel:
                 Parameter.OFFSET_I.value: 0,
                 Parameter.OFFSET_Q.value: 0,
                 Parameter.HARDWARE_MODULATION.value: False,
-                Parameter.SYNC_ENABLED.value: True,
                 Parameter.SCOPE_ACQUIRE_TRIGGER_MODE.value: AcquireTriggerMode.SEQUENCER.value,
                 Parameter.SCOPE_HARDWARE_AVERAGING.value: True,
                 Parameter.SAMPLING_RATE.value: 1.0e09,
