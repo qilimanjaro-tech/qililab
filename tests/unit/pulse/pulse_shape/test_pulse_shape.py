@@ -9,8 +9,7 @@ from qililab.utils import Factory
 
 
 @pytest.fixture(
-    name="pulse_shape",
-    params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)],
+    name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
