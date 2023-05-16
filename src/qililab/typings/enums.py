@@ -220,7 +220,6 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
-    LFILTER_RECTANGULAR = "lfilter_rectangular"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -234,9 +233,6 @@ class PulseShapeSettingsName(str, Enum):
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
-    NORM_FACTOR = "norm_factor"
-    A = "a"
-    B = "b"
 
 
 class NodeName(str, Enum):

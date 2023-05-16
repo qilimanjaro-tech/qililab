@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape import Drag, Gaussian, LFilterRectangular, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
@@ -14,7 +14,6 @@ from qililab.utils import Factory
         Rectangular(),
         Gaussian(num_sigmas=4),
         Drag(num_sigmas=4, drag_coefficient=1.0),
-        LFilterRectangular(norm_factor=1.0, a=[0.7, 1.3], b=[0.8, 0.6]),
     ],
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
