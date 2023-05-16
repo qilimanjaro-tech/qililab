@@ -1,4 +1,5 @@
 """Tests for the Experiment class."""
+import copy
 import time
 from unittest.mock import MagicMock, patch
 
@@ -77,7 +78,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
@@ -138,10 +139,11 @@ def fixture_connected_experiment(
 def fixture_experiment_reset(request: pytest.FixtureRequest):
     """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
+    runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
             mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galadriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
