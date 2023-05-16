@@ -128,6 +128,7 @@ class GateName(str, Enum):
         * XY
         * Drag
         * CZ
+        * Park
     """
 
     I = "I"  # noqa: E741
@@ -139,6 +140,7 @@ class GateName(str, Enum):
     M = "M"
     Drag = "Drag"
     CZ = "CZ"
+    Park = "Park"
 
 
 class MasterGateSettingsName(str, Enum):

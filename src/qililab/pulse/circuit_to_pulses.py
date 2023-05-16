@@ -1,5 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
+import warnings
 from dataclasses import asdict, dataclass
 
 import numpy as np
@@ -15,14 +16,11 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
-from qililab.transpiler import Drag
+from qililab.transpiler import Drag, Park
 from qililab.utils import Factory
 
-# TODO IMPORTANT set flux pulse line for cz gate
-# parking
 
-
-@dataclass
+@dataclass  # TODO do we actually need this?
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
@@ -58,6 +56,52 @@ class CircuitToPulses:
                     control_gates.append(gate)
 
             for gate in control_gates:
+                # if gate is CZ, parse input to check for symmetric gates
+                # if gate is CZ, check if parking is needed
+                if isinstance(gate, CZ):
+                    gate = self._parse_check_cz(gate)
+
+                    # TODO get connectivity here and check if qubits to park
+                    # get qubits to park
+                    park_qubits = self._get_parking_targets(gate, chip)
+                    if len(park_qubits) != 0:
+                        pad_times = []
+                        for qubit in park_qubits:
+                            park_gate_settings = [
+                                settings_gate
+                                for settings_gate in self.settings.gates[qubit]
+                                if "Park" in settings_gate.name
+                            ]
+                            if len(park_gate_settings) == 0:
+                                warnings.warn(
+                                    f"Found parking candidate qubit {qubit} for {gate.name} at qubits {gate.qubits} but did not find settings for parking gate at qubit {qubit}",
+                                    UserWarning,
+                                )
+                                continue
+                            cz_gate_settings = [
+                                settings_gate
+                                for settings_gate in self.settings.gates[gate.qubits]
+                                if "CZ" in settings_gate.name
+                            ][0]
+                            pad_times.append(
+                                self._get_park_pad_time(
+                                    park_settings=park_gate_settings[0], cz_settings=cz_gate_settings
+                                )
+                            )
+
+                            # add parking gate
+                            parking_gate = Park(qubit)
+                            pulse_event, port = self._control_gate_to_pulse_event(
+                                time=time, control_gate=parking_gate, chip=chip
+                            )
+                            pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+
+                        # add padd time to CZ target qubit
+                        # if there is more than 1 pad time, add max
+                        self._update_time(
+                            time=time, qubit_idx=gate.target_qubits[0], pulse_time=max(pad_times, default=0)
+                        )
+
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
@@ -72,6 +116,38 @@ class CircuitToPulses:
             pulse_schedule_list.append(pulse_schedule)
 
         return pulse_schedule_list
+
+    def _get_park_pad_time(
+        self,
+        park_settings: RuncardSchema.PlatformSettings.GateSettings,
+        cz_settings: RuncardSchema.PlatformSettings.GateSettings,
+    ):
+        """Gets pad time for parking gate
+
+        Args:
+            park_settings (HardwareGate.HardwareGateSettings): settings for the parking gate
+            cz_settings (HardwareGate.HardwareGateSettings): settings for the cz gate for which we need parking
+
+        Returns:
+            pad_time (int): pad time
+
+        Pad time is the extra time for the pulses on the parked qubits before and afer the snz pulse for the
+        CZ gate is applied
+        """
+
+        # ideally pad time would be at Park gate definition
+        t_park = int(park_settings.duration)
+        t_cz = int(cz_settings.duration)
+        t_phi = int(cz_settings.shape["t_phi"])
+        pad_time = (t_park - 2 * t_cz + 2 + t_phi) / 2
+        if park_settings.duration != cz_settings.duration:
+            if pad_time < 0 or pad_time % 1 != 0:
+                raise ValueError(
+                    f"Negative or decimal padding time resulting from park_gate_settings.duration - 2 * cz_gate_settings.duration + 2 + cz_gate_settings.shape['t_phi'] = {pad_time}"
+                )
+            pad_time = int(pad_time)
+
+        return pad_time
 
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
         """Build Pulse Shape from Gate settings
@@ -111,56 +187,63 @@ class CircuitToPulses:
         qubit_idx = control_gate.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
 
-        # TODO: CZ port here
-        # TODO: SNZ duration is 2 * gate.duration + t_phi + 2
-        # TODO: park pulse here
-
         # TODO implement this inside chip class
         # get ports and select those we need
         adj_nodes = chip._get_adjacent_nodes(node)
-        # get adjacent node if it is a drive line
-        if not isinstance(control_gate, CZ):
-            for adj_node in adj_nodes:
-                if isinstance(adj_node, Port) and adj_node.name[: len("drive_line")] == "drive_line":
-                    port = adj_node.id_
-        # for CZ gates we need flux drive and adjacent qubits if parking
+        # get adjacent flux line (drive line) for CZ,Park gates (all others)
+        if isinstance(control_gate, (CZ, Park)):
+            line = "flux_line"
         else:
-            parking = "parking" in [gate.name for gate in self.settings.gates[control_gate.qubits]]
-            parking_qubits = []
-            for adj_node in adj_nodes:
-                # get flux line
-                if isinstance(adj_node, Port) and adj_node.name[: len("flux_line")] == "flux_line":
-                    port = adj_node.id_
-                # get adj qubits
-                elif parking and isinstance(adj_node, Qubit):
-                    parking_qubits.append(adj_node.qubit_index)
+            line = "drive_line"
+
+        # initialize variable port (ensure to get the error below if no port assigned)
+        port = None
+        for adj_node in adj_nodes:
+            # check that first part of alias matches line name
+            # note that aliases are usually eg. flux line for qubit 1 -> flux_line_q1
+            if isinstance(adj_node, Port) and adj_node.alias[: len(line)] == line:
+                port = adj_node
+
         if not isinstance(port, Port):
             raise RuntimeError(
-                f"Wrong or no port found for gate {control_gate} and qubit {qubit_idx} with node id {node.id_}"
-            )
-        if parking and len(parking_qubits) < 1:
-            raise RuntimeError(
-                f"{len(parking_qubits)} adjacent qubits found for qubit {qubit_idx} with node id {node.id_}. There should be more than 1 adjacent qubit for a CZ gate with parking"
+                f"Wrong or no port found of type {line} for gate {control_gate.name} and qubit {qubit_idx} with node id {node.id_}"
             )
 
-        old_time = self._update_time(
-            time=time,
-            qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
-        )
+        # get amplitude from gate settings
+        amplitude = float(gate_settings.amplitude)
 
-        # load amplitude, phase for drag pulse from circuit gate parameters
-        if isinstance(control_gate, Drag):
-            amplitude = (control_gate.parameters[0] / np.pi) * gate_settings.amplitude
-            phase = control_gate.parameters[1]
-            # phase is given by b in Drag(a,b) so there should not be any phase defined at gate settings (runcard)
+        # check that phase is empty for Drag, CZ, Park
+        # also handle specific gate settings
+        if isinstance(control_gate, (Drag, CZ, Park)):
+            # phase should be None
+            phase = gate_settings.phase
             if gate_settings.phase is not None:
-                raise ValueError(
-                    "Drag gate should not have setting for phase since the phase depends only on circuit gate parameters"
-                )
+                raise ValueError(f"{control_gate.name} gate should not have setting for phase")
+
+            # load amplitude, phase for drag pulse from circuit gate parameters
+            if isinstance(control_gate, Drag):
+                amplitude = (control_gate.parameters[0] / np.pi) * amplitude
+                phase = control_gate.parameters[1]
+
         else:
-            amplitude = float(gate_settings.amplitude)
             phase = float(gate_settings.phase)
+
+        if isinstance(control_gate, CZ):
+            # SNZ duration at gate settings is the SNZ halfpulse duration
+            # should not use pulse duration interchangeably with gate duration
+            cz_duration = 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
+            old_time = self._update_2q_time(
+                time=time,
+                qubit_idx=control_gate.qubits,
+                pulse_time=cz_duration + self.settings.delay_between_pulses,
+            )
+
+        else:
+            old_time = self._update_time(
+                time=time,
+                qubit_idx=qubit_idx,
+                pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
+            )
 
         return (
             PulseEvent(
@@ -175,8 +258,35 @@ class CircuitToPulses:
             )
             if gate_settings.duration > 0
             else None,
-            port,
+            port.id_,
         )
+
+    def _get_parking_targets(self, cz: CZ, chip: Chip):
+        """Gets targets for parking for the CZ's SNZ pulse
+
+        Args:
+            cz (CZ): CZ gate with qubits (control, target)
+            chip (Chip): chip representation as a graph.
+
+        Returns:
+            qubit list[int]: list of qubit indices to be parked
+
+        Qubits to be parked are those that are adjacent to the target qubit, are not the control qubit
+        and have lower frequency than the target
+        """
+        target = cz.target_qubits[0]
+        node = chip.get_node_from_qubit_idx(idx=target, readout=False)
+        # get adjacent nodes
+        adj_nodes = chip._get_adjacent_nodes(node)
+        # return adjacent qubits not in CZ gate
+        # TODO unit test if CZ(0,2) should park 1
+        return [
+            adj_node.qubit_index
+            for adj_node in adj_nodes
+            if isinstance(adj_node, Qubit)
+            and adj_node.qubit_index not in cz.qubits
+            and adj_node.frequency < node.frequency
+        ]
 
     def _readout_gate_to_pulse_event(
         self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
@@ -231,10 +341,10 @@ class CircuitToPulses:
         """
 
         cz_qubits = cz.qubits
-        cz_from_settings = [qubit for qubit in self.settings.gates.keys() if isinstance(qubit, tuple)]
-        if cz_qubits in cz_from_settings:
+        two_qubit_gates = [qubit for qubit in self.settings.gates.keys() if isinstance(qubit, tuple)]
+        if cz_qubits in two_qubit_gates:
             return cz
-        elif cz_qubits[::-1] in cz_from_settings:
+        elif cz_qubits[::-1] in two_qubit_gates:
             cz_qubits = cz_qubits[::-1]
             return CZ(cz_qubits[0], cz_qubits[1])
         else:
@@ -272,7 +382,7 @@ class CircuitToPulses:
 
         Args:
             time (Dict[int, int]): Dictionary with the time of each qubit.
-            qubit_idx (int): Index of the qubit.
+            qubit_idx (int | tuple[int,int]): Index of the qubit or index of 2 qubits for 2 qubit gates.
             pulse_time (int): Duration of the puls + wait time.
         """
         if qubit_idx not in time:
@@ -282,6 +392,31 @@ class CircuitToPulses:
         if residue != 0:
             pulse_time += self.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
+        return old_time
+
+    def _update_2q_time(self, time: dict[int, int], qubit_idx: tuple[int, int], pulse_time: int):
+        """Create new timeline if not already created and update time.
+
+        Args:
+            time (Dict[int, int]): Dictionary with the time of each qubit.
+            qubit_idx (tuple[int,int]): Index of the 2 qubit gate.
+            pulse_time (int): Duration of the puls + wait time.
+        """
+
+        # get max time if existing, otherwise initialize both times
+        max_time = max((time[qubit] for qubit in time if qubit in qubit_idx), default=0)
+        if max_time == 0:
+            time[qubit_idx[0]] = 0
+            time[qubit_idx[1]] = 0
+
+        old_time = max_time
+        residue = pulse_time % self.settings.minimum_clock_time
+        if residue != 0:
+            pulse_time += self.settings.minimum_clock_time - residue
+
+        # update time for both qubits / create dict entry if not created
+        time[qubit_idx[0]] = max_time + pulse_time
+        time[qubit_idx[1]] = max_time + pulse_time
         return old_time
 
     def _instantiate_gates_from_settings(self):

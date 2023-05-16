@@ -48,6 +48,38 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 1
+    1:
+      - name: M
+        amplitude: 1.0
+        phase: 0
+        duration: 6000
+        shape:
+          name: rectangular
+      - name: X
+        amplitude: 1.0
+        phase: 0
+        duration: 100
+        shape:
+          name: gaussian
+          num_sigmas: 4
+      - name: Drag
+        amplitude: 1.0
+        duration: 100
+        phase: # phase should be empty
+        shape:
+          name: drag
+          num_sigmas: 4
+          drag_coefficient: 1
+    (0,2):
+      - name: CZ
+        amplitude: 1.0
+        phase:
+        duration: 6000
+        shape:
+          name: snz
+          b: 1
+          t_phi: 1
+
 schema:
   chip:
     id_: 0
