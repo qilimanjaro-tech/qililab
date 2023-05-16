@@ -61,7 +61,7 @@ class CircuitTranspiler:
                 # Calculate [start-end] time of operation
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
-                    pulse_duration = operation_settings.pulse.duration
+                    pulse_duration = operation_settings.pulse.duration  # type: ignore[union-attr]
                     delay = (
                         self.settings.delay_before_readout
                         if isinstance(operation_node.operation, Measure)
@@ -151,7 +151,7 @@ class CircuitTranspiler:
                     is_measurement = isinstance(operation_node.operation, Measure)
                     chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
-                    pulse_operation_settings = operation_settings.pulse
+                    pulse_operation_settings = operation_settings.pulse  # type: ignore[union-attr]
                     pulse_operation_name = pulse_operation_settings.name
                     pulse_operation_parameters = {
                         "amplitude": pulse_operation_settings.amplitude,

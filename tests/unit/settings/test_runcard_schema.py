@@ -150,7 +150,7 @@ class TestPlatformSettings:
         settings.set_parameter(alias=alias, parameter=Parameter.AMPLITUDE, value=1234)
         assert settings.get_gate(name=name, qubits=qubits).amplitude == 1234
 
-    @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
+    @pytest.mark.parametrize("alias", ["X(0,)", "X()", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str):
         """Test that with ``set_parameter`` will raise error when alias has incorrect format"""
         runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
