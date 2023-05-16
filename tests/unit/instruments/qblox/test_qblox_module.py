@@ -35,8 +35,8 @@ def fixture_qblox_module():
 class TestQbloxModule:
     """Unit tests checking the QbloxQCM attributes and methods"""
 
-    def test_amp_phase_modification(self, qblox_module: QbloxModule):
-        """Test amplification modification of a sequencer"""
+    def test_amplitude_and_phase_in_program(self, qblox_module: QbloxModule):
+        """Test that the amplitude and the phase of a compiled pulse is added into the Qblox program."""
 
         amplitude = 0.8
         phase = np.pi / 2 + 12.2
