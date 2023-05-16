@@ -7,3 +7,4 @@ from .gaussian import Gaussian
 from .predistortion import Predistortion
 from .pulse_shape import PulseShape
 from .rectangular import Rectangular
+from .fir import LFilter

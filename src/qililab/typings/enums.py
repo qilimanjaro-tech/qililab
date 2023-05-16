@@ -189,6 +189,7 @@ class PulseShapeName(str, Enum):
     EXPONENTIAL_CORRECTION = "exponential"
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     PREDISTORTION = "predistortion"
+    LFILTER = 'lfilter'
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -208,6 +209,9 @@ class PulseShapeSettingsName(str, Enum):
     AMP = "amp"
     AMP1 = "amp1"
     AMP2 = "amp2"
+    A = 'a'
+    B = 'b'
+    NORM_FACTOR = 'norm_factor'
 
 
 class NodeName(str, Enum):
@@ -401,6 +405,9 @@ class Parameter(str, Enum):
     OUT1_OFFSET_PATH0 = "out1_offset_path0"
     OUT0_OFFSET_PATH1 = "out0_offset_path1"
     OUT1_OFFSET_PATH1 = "out1_offset_path1"
+    A = 'a'
+    B = 'b'
+    NORM_FACTOR = 'norm_factor'
 
 
 class ResultName(str, Enum):
