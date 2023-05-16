@@ -4,6 +4,18 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
+
+  ```python
+  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(
+      original_envelopes
+  )
+  ```
+
+  In the meanwhile, I've also done a couple of improvements to my previous code, such as organize imports, and add phase to `PulseEvent`.
+
+  [#354](https://github.com/qilimanjaro-tech/qililab/pull/354)
+
 - Added `pulse.pulse_distortion` package, which contains a module `pulse_distortion.py` with the base class to distort envelopes in `PulseEvent`, and two modules `bias_tee_correction.py` and `exponential_decay_correction.py`, each containing examples of distortion child classes to apply. This new feature can be used in two ways, directly from the class itself:
 
   ```python
