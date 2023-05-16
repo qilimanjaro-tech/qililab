@@ -12,7 +12,7 @@ This document contains the changes of the current release.
   )
   ```
 
-  In the meanwhile, I've also done a couple of improvements to my previous code, such as organize imports, and add phase to `PulseEvent`.
+  In the meanwhile, I've also done a couple of improvements to my previous code, such as organize imports, add phase to `PulseEvent` and add `Factory.get` to `from_dict()` method in `PulseDistortion`.
 
   [#354](https://github.com/qilimanjaro-tech/qililab/pull/354)
 

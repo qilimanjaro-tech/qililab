@@ -27,8 +27,8 @@ class TestPulseShape:
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
         envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0, resolution=1.0)
-        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1.0)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0)
+        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
