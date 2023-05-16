@@ -614,30 +614,24 @@ class QbloxModule(AWG):
         """
         waveforms = Waveforms()
 
-        unique_pulses: list[tuple[int, PulseShape]] = []
-        unique_pulse_operations: list[tuple[int, PulseOperation]] = []
+        unique_pulses: list[tuple[int, PulseShape | PulseOperation]] = []
 
         for pulse_event in pulse_bus_schedule.timeline:
-            if isinstance(pulse_event.pulse, Pulse):
-                if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
-                    unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                    envelope = pulse_event.pulse.envelope(amplitude=1)
-                    real = np.real(envelope)
-                    imag = np.imag(envelope)
-                    pair = (real, imag)
-                    if (sequencer.path_i, sequencer.path_q) == (1, 0):
-                        pair = pair[::-1]  # swap paths
-                    waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
-            else:
-                if (pulse_event.duration, pulse_event.pulse) not in unique_pulse_operations:
-                    unique_pulse_operations.append((pulse_event.duration, pulse_event.pulse))
-                    envelope = pulse_event.pulse.envelope(amplitude=1)
-                    real = np.real(envelope)
-                    imag = np.imag(envelope)
-                    pair = (real, imag)
-                    if (sequencer.path_i, sequencer.path_q) == (1, 0):
-                        pair = pair[::-1]  # swap paths
-                    waveforms.add_pair(pair=pair, name=str(pulse_event.pulse))
+            pulse_tuple = (
+                (pulse_event.duration, pulse_event.pulse.pulse_shape)
+                if isinstance(pulse_event.pulse, Pulse)
+                else (pulse_event.duration, pulse_event.pulse)
+            )
+            name = pulse_event.pulse.label() if isinstance(pulse_event.pulse, Pulse) else str(pulse_event.pulse)
+            if pulse_tuple not in unique_pulses:
+                unique_pulses.append(pulse_tuple)  # type: ignore
+                envelope = pulse_event.pulse.envelope(amplitude=1)
+                real = np.real(envelope)
+                imag = np.imag(envelope)
+                pair = (real, imag)
+                if (sequencer.path_i, sequencer.path_q) == (1, 0):
+                    pair = pair[::-1]  # swap paths
+                waveforms.add_pair(pair=pair, name=name)
         return waveforms
 
     @property

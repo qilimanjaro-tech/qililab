@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from qililab.chip import Chip
 from qililab.circuit import Circuit
-from qililab.circuit.nodes.operation_node import OperationTiming
+from qililab.circuit.nodes.operation_node import OperationNode, OperationTiming
 from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
@@ -111,7 +111,11 @@ class CircuitTranspiler:
                     successors = circuit.graph.successors(operation_node.index)
                     for predecessor in predecessors:
                         for successor in successors:
-                            predecessor_qubits = set(predecessor.qubits)
+                            predecessor_qubits = (
+                                set(predecessor.qubits)
+                                if isinstance(predecessor, OperationNode)
+                                else set(range(circuit.num_qubits))
+                            )
                             successor_qubits = set(successor.qubits)
                             node_qubits = set(operation_node.qubits)
                             if predecessor_qubits & successor_qubits & node_qubits:
@@ -143,7 +147,7 @@ class CircuitTranspiler:
                 if isinstance(operation_node.operation, PulseOperation):
                     is_measurement = operation_node.is_measurement
                     chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
-                if isinstance(operation_node.operation, TranslatableToPulseOperation):
+                elif isinstance(operation_node.operation, TranslatableToPulseOperation):
                     is_measurement = isinstance(operation_node.operation, Measure)
                     chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)

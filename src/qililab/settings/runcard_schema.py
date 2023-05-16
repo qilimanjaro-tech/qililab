@@ -80,7 +80,6 @@ class RuncardSchema:
                 amplitude: float
                 duration: int
                 phase: float
-                frequency: float
                 parameters: dict
 
             name: str

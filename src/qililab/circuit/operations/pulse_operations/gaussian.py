@@ -64,4 +64,9 @@ class GaussianPulse(PulseOperation):
         time = np.arange(self.duration / resolution) * resolution
         mu_ = self.duration / 2
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        return (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+
+        # We normalize pulse_shapes envelopes with max heights of the real parts
+        real_norm = np.max(gaussian)
+
+        return gaussian * amplitude / real_norm

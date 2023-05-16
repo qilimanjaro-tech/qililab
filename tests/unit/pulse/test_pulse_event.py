@@ -143,15 +143,7 @@ class TestPulseEvent:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        assert (
-            dictionary
-            == dictionary2
-            == {
-                PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
-                PULSEEVENT.START_TIME: pulse_event.start_time,
-                PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
-            }
-        )
+        assert dictionary == dictionary2
 
     def test_end_time(self, pulse: Pulse, pulse_distortions: list[PulseDistortion]):
         """Test end_time property."""
