@@ -287,7 +287,7 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
     """Fixture that returns an instance of an ExecutionManager class, where all the drivers of the
     instruments are mocked."""
     # Mock all the devices
-    awgs = [bus.system_control.instruments[0] for bus in execution_manager.buses]
+    awgs = [bus.system_control.instrument_outputs[0] for bus in execution_manager.buses]
     for awg in awgs:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
@@ -315,7 +315,7 @@ class TestWorkflow:
         _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000)
         mocked_execution_manager.upload()
 
-        awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]
+        awgs = [bus.system_control.instrument_outputs[0] for bus in mocked_execution_manager.buses]
 
         for awg in awgs:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
@@ -332,7 +332,7 @@ class TestWorkflow:
 
         # Make sure the mocked devices were called
         readout_awgs = [
-            bus.system_control.instruments[0]
+            bus.system_control.instrument_outputs[0]
             for bus in mocked_execution_manager.buses
             if isinstance(bus.system_control, ReadoutSystemControl)
         ]

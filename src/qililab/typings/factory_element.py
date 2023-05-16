@@ -1,26 +1,9 @@
 """FactoryElement class"""
-from qililab.typings.enums import (
-    ConnectionName,
-    InstrumentControllerName,
-    InstrumentName,
-    NodeName,
-    PulseDistortionName,
-    PulseShapeName,
-    ResultName,
-    SystemControlName,
-)
+from enum import Enum
+from typing import Protocol
 
 
-class FactoryElement:
+class FactoryElement(Protocol):
     """Class FactoryElement"""
 
-    name: (
-        SystemControlName
-        | PulseDistortionName
-        | PulseShapeName
-        | ResultName
-        | InstrumentName
-        | NodeName
-        | ConnectionName
-        | InstrumentControllerName
-    )
+    name: Enum

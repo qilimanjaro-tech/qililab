@@ -71,7 +71,7 @@ class TestInitialization:
         assert system_control.name.value == "system_control"
         assert isinstance(system_control.settings.category, Category)
         assert system_control.settings.category == Category.SYSTEM_CONTROL
-        for instrument in system_control.settings.instruments:
+        for instrument in system_control.settings.instrument_outputs:
             assert isinstance(instrument, Instrument)
         assert not hasattr(system_control.settings, "platform_instruments")
 
@@ -100,7 +100,7 @@ class TestMethods:
             AttributeError,
             match="The system control with alias test_alias doesn't have any AWG to compile the given pulse sequence",
         ):
-            system_control_without_awg.compile("dummy_pulse_sequence", nshots=1000, repetition_duration=1000)
+            system_control_without_awg.compile("dummy_pulse_sequence", nshots=1000, repetition_duration=1000)  # type: ignore
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test the ``compile`` method of the ``SystemControl`` class."""
@@ -120,7 +120,7 @@ class TestMethods:
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
-        awg = system_control.instruments[0]
+        awg = system_control.instrument_outputs[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
@@ -150,4 +150,4 @@ class TestProperties:
 
     def test_instruments_property(self, system_control: SystemControl):
         """Test instruments property."""
-        assert system_control.instruments == system_control.settings.instruments
+        assert system_control.instrument_outputs == system_control.settings.instrument_outputs

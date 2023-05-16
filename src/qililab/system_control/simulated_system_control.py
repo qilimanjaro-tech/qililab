@@ -1,28 +1,27 @@
 """Simulated SystemControl class."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 from qilisimulator.evolution import Evolution
 from qilisimulator.typings.enums import DrivingHamiltonianName, QubitName
 
 from qililab.constants import RUNCARD
-from qililab.instruments import Instrument, Instruments
 from qililab.pulse import PulseBusSchedule
 from qililab.result.simulator_result import SimulatorResult
+from qililab.settings import DDBBElement
 from qililab.typings.enums import SystemControlName
-from qililab.utils.factory import Factory
-
-from .readout_system_control import ReadoutSystemControl
+from qililab.utils import Factory
 
 
 @Factory.register
-class SimulatedSystemControl(ReadoutSystemControl):
+class SimulatedSystemControl:
     """SimulatedSystemControl class."""
 
-    name = SystemControlName.SIMULATED_SYSTEM_CONTROL
+    name: Enum = SystemControlName.SIMULATED_SYSTEM_CONTROL
 
     @dataclass
-    class SimulatedSystemControlSettings(ReadoutSystemControl.SystemControlSettings):
+    class SimulatedSystemControlSettings(DDBBElement):
         """SimulatedSystemControlSettings class.
 
         Args:
@@ -50,14 +49,13 @@ class SimulatedSystemControl(ReadoutSystemControl):
         drive_params: dict
         resolution: float
         store_states: bool
-        instruments: list[Instrument] = field(init=False, default_factory=list)
 
     settings: SimulatedSystemControlSettings
     _evo: Evolution
 
-    def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
+    def __init__(self, settings: dict):
         self.sequence: list[np.ndarray] | None = None
-        super().__init__(settings=settings, platform_instruments=platform_instruments)
+        self.settings = self.SimulatedSystemControlSettings(**settings)
         self._evo = Evolution(
             qubit_name=self.settings.qubit,
             qubit_params=self.settings.qubit_params,
@@ -85,7 +83,11 @@ class SimulatedSystemControl(ReadoutSystemControl):
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""
-        return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
+        return {
+            RUNCARD.ID: self.settings.id_,
+            RUNCARD.NAME: self.name.value,
+            RUNCARD.CATEGORY: self.settings.category.value,
+        }
 
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None

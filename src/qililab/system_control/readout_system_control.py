@@ -23,7 +23,7 @@ class ReadoutSystemControl(SystemControl):
         """
         # TODO: Support acquisition from multiple instruments
         results: list[Result] = []
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             result = instrument.acquire_result()
             if result is not None:
                 results.append(result)
@@ -39,7 +39,7 @@ class ReadoutSystemControl(SystemControl):
     def acquisition_delay_time(self) -> int:
         """SystemControl 'acquisition_delay_time' property.
         Delay (in ns) between the readout pulse and the acquisition."""
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             if isinstance(instrument, AWGAnalogDigitalConverter):
                 return instrument.acquisition_delay_time
         raise ValueError(f"The system control {self.name} doesn't have an AWG instrument.")

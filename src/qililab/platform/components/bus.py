@@ -6,7 +6,7 @@ from qililab.constants import BUS, RUNCARD
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.instruments import Instruments
 from qililab.settings import DDBBElement
-from qililab.system_control import SystemControl
+from qililab.system_control import SimulatedSystemControl, SystemControl
 from qililab.typings import Node, Parameter
 from qililab.utils import Factory
 
@@ -40,9 +40,12 @@ class Bus:
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
                 system_control_class = Factory.get(name=self.system_control.pop(RUNCARD.NAME))
-                self.system_control = system_control_class(
-                    settings=self.system_control, platform_instruments=platform_instruments
-                )
+                if system_control_class is SimulatedSystemControl:
+                    self.system_control = system_control_class(settings=self.system_control)
+                else:
+                    self.system_control = system_control_class(
+                        settings=self.system_control, platform_instruments=platform_instruments
+                    )
             super().__post_init__()
 
     settings: BusSettings

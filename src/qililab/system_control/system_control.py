@@ -2,7 +2,7 @@
 
 import contextlib
 from abc import ABC
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import get_type_hints
 
 from qililab.constants import RUNCARD
@@ -13,6 +13,8 @@ from qililab.pulse import PulseBusSchedule
 from qililab.settings import DDBBElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
+
+# pylint: disable=super-init-not-called
 
 
 @Factory.register
@@ -25,19 +27,20 @@ class SystemControl(BusElement, ABC):
     class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
-        instruments: list[Instrument]
-        platform_instruments: InitVar[Instruments]
-
-        def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
-            # ``self.instruments`` contains a list of instrument aliases
-            self.instruments = [platform_instruments.get_instrument(alias=i) for i in self.instruments]  # type: ignore
-            super().__post_init__()
+        instrument_outputs: list[tuple[Instrument, list[int]]]  # [(Instrument, outputs), ...]
 
     settings: SystemControlSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
+        if platform_instruments is None:
+            raise ValueError("The platform instruments must be provided to initialize a SystemControl class.")
+        instrument_outputs = []
+        for instrument_dict in settings.pop("instruments"):
+            instrument = platform_instruments.get_instrument(alias=instrument_dict["alias"])
+            instrument_outputs.append((instrument, instrument_dict["outputs"]))
+        settings["instrument_outputs"] = instrument_outputs
         settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
-        self.settings = settings_class(**settings, platform_instruments=platform_instruments)
+        self.settings = settings_class(**settings)
 
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
@@ -47,7 +50,7 @@ class SystemControl(BusElement, ABC):
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
         """
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             if isinstance(instrument, AWG):
                 return instrument.compile(
                     pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
@@ -59,7 +62,7 @@ class SystemControl(BusElement, ABC):
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             if isinstance(instrument, AWG):
                 instrument.upload()
                 return
@@ -70,7 +73,7 @@ class SystemControl(BusElement, ABC):
 
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             if isinstance(instrument, AWG):
                 instrument.run()
                 return
@@ -81,11 +84,11 @@ class SystemControl(BusElement, ABC):
 
     def __str__(self):
         """String representation of a SystemControl class."""
-        return "".join(f"-|{instrument}|-" for instrument in self.instruments)
+        return "".join(f"-|{instrument}{outputs}|-" for instrument, outputs in self.instrument_outputs)
 
     def __iter__(self):
         """Redirect __iter__ magic method."""
-        return iter(self.settings.instruments)
+        return iter(self.settings.instrument_outputs)
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""
@@ -93,7 +96,9 @@ class SystemControl(BusElement, ABC):
             RUNCARD.ID: self.id_,
             RUNCARD.NAME: self.name.value,
             RUNCARD.CATEGORY: self.settings.category.value,
-            RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments],
+            RUNCARD.INSTRUMENTS: [
+                {"alias": instrument.alias, "outputs": outputs} for instrument, outputs in self.instrument_outputs
+            ],
         }
 
     @property
@@ -115,9 +120,9 @@ class SystemControl(BusElement, ABC):
         return self.settings.category
 
     @property
-    def instruments(self) -> list[Instrument]:
+    def instrument_outputs(self) -> list[tuple[Instrument, list[int]]]:
         """Instruments controlled by this system control."""
-        return self.settings.instruments
+        return self.settings.instrument_outputs
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.
@@ -127,7 +132,7 @@ class SystemControl(BusElement, ABC):
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        for instrument in self.instruments:
+        for instrument, outputs in self.instrument_outputs:
             with contextlib.suppress(ParameterNotFound):
                 instrument.set_parameter(parameter, value, channel_id)
                 return

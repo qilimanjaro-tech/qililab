@@ -170,7 +170,13 @@ schema:
         id_: 1
         name: readout_system_control
         category: system_control
-        instruments: [QCM, rs_1]
+        instruments:
+          - alias: QRM1
+            outputs: [0, 1]
+          - alias: rs_1
+            outputs: [0]
+          - alias: attenuator
+            outputs: [0]
       port: 1
     - id_: 2
       category: bus
@@ -179,7 +185,11 @@ schema:
         id_: 2
         name: system_control
         category: system_control
-        instruments: [QCM, rs_2]
+        instruments:
+          - alias: QRM
+            output: 0
+          - alias: rs_2
+            output: 0
       port: 0
   instrument_controllers:
     - name: qblox_cluster
