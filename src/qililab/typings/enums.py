@@ -188,8 +188,6 @@ class PulseDistortionName(str, Enum):
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
     LFILTER = "lfilter"
-    FIR_A = "fir_a"
-    FIR_B = "fir_b"
 
 
 class PulseDistortionSettingsName(str, Enum):
