@@ -8,8 +8,9 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
@@ -248,6 +249,10 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
+            gain = int(pulse_event.pulse.amplitude * AWG_MAX_GAIN)
+            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
+            avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -256,9 +261,10 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
-        wait_time = self.repetition_duration - avg_loop.duration_iter
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
+        if self.repetition_duration is not None:
+            wait_time = self.repetition_duration - avg_loop.duration_iter
+            if wait_time > self._MIN_WAIT_TIME:
+                avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
