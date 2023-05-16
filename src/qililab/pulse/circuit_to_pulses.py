@@ -136,6 +136,8 @@ class CircuitToPulses:
         """
 
         # ideally pad time would be at Park gate definition
+        # TODO find out why mypy complains about the line below
+        # pad_time = (park_settings.duration - 2 * cz_settings.duration + 2 + cz_settings.shape["t_phi"]) / 2
         t_park = int(park_settings.duration)
         t_cz = int(cz_settings.duration)
         t_phi = int(cz_settings.shape["t_phi"])

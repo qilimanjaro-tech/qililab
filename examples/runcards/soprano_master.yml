@@ -59,7 +59,7 @@ settings:
       - name: Park
         amplitude: 1.0
         phase:
-        duration: 6000 # extra time with respect to total CZ duration will be padding (added before and after the SNZ pulse times to the parked qubit)
+        duration: 6002 # extra time with respect to total CZ duration will be padding (added before and after the SNZ pulse times to the parked qubit)
         shape:
           name: rectangular
     2:
