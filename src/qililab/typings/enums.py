@@ -206,7 +206,7 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
-    NORMALIZATION_FACTOR = "normalization_factor"
+    NORM_FACTOR = "norm_factor"
     A = "a"
     B = "b"
 

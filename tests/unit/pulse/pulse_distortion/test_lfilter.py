@@ -3,6 +3,7 @@ import itertools
 
 import numpy as np
 import pytest
+from black import assert_equivalent
 
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
@@ -52,7 +53,7 @@ def fixture_envelope(request: pytest.FixtureRequest) -> np.ndarray:
     return request.param
 
 
-class TestBiasTeeCorrection:
+class TestLFilter:
     """Unit tests checking the BiasTeeCorrection attributes and methods"""
 
     def test_apply(self, pulse_distortion: LFilter, envelope: np.ndarray):
@@ -66,10 +67,14 @@ class TestBiasTeeCorrection:
             assert corr_envelope is not None
             assert isinstance(corr_envelope, np.ndarray)
             assert len(envelope) == len(corr_envelope)
-            assert round(np.max(np.real(corr_envelope)), 14) == round(
-                np.max(np.real(envelope)), 14
-            )  # This should fail unless all norm_factor = 1.0
             assert not np.array_equal(corr_envelope, envelope)
+        assert (
+            round(np.max(np.real(corr_envelope[0])), 14)
+            == round(np.max(np.real(corr_envelope[1])), 14)
+            == round(np.max(np.real(corr_envelope[1])) / 2.3, 14)
+            == round(np.max(np.real(corr_envelope[0])) / (2.3 * 1.2), 14)
+            == round(np.max(np.real(envelope)), 14) * pulse_distortion.norm_factor
+        )
 
     def test_from_dict(self, pulse_distortion: LFilter):
         """Test for the to_dict method."""
@@ -79,7 +84,7 @@ class TestBiasTeeCorrection:
         dictionary.pop(RUNCARD.NAME)
         pulse_distortions.append(LFilter.from_dict(dictionary))
 
-        dictionary[PulseDistortionSettingsName.NORMALIZATION_FACTOR.value] = 1.2
+        dictionary[PulseDistortionSettingsName.NORM_FACTOR.value] = 1.2
         dictionary[PulseDistortionSettingsName.A.value] = [0.7, 1.3]
         dictionary[PulseDistortionSettingsName.B.value] = [0.5, 0.6]
         pulse_distortions.append(LFilter.from_dict(dictionary))
@@ -96,7 +101,7 @@ class TestBiasTeeCorrection:
         assert isinstance(dictionary, dict)
         assert dictionary == {
             RUNCARD.NAME: pulse_distortion.name.value,
-            PulseDistortionSettingsName.NORMALIZATION_FACTOR.value: pulse_distortion.norm_factor,
+            PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
             PulseDistortionSettingsName.A.value: pulse_distortion.a,
             PulseDistortionSettingsName.B.value: pulse_distortion.b,
         }

@@ -62,6 +62,6 @@ class FiniteInputResponseA(PulseDistortion):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            PulseDistortionSettingsName.NORMALIZATION_FACTOR.value: self.norm_factor,
+            PulseDistortionSettingsName.NORM_FACTOR.value: self.norm_factor,
             PulseDistortionSettingsName.A.value: self.a,
         }
