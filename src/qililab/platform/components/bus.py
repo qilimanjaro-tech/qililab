@@ -32,6 +32,7 @@ class Bus:
             bus_subcategory (BusSubCategory): Bus subcategory
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (int): Chip's port where bus is connected.
+            distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
         """
 
         system_control: SystemControl

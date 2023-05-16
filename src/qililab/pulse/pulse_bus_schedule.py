@@ -51,7 +51,7 @@ class PulseBusSchedule:
             int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
-            pulse_end = event.start_time + event.pulse.duration
+            pulse_end = event.start_time + event.duration
             end = max(pulse_end, end)
         return end
 
@@ -118,7 +118,7 @@ class PulseBusSchedule:
         Returns:
             PulseBusSchedule: Filtered PulseBusSchedule.
         """
-        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.pulse.frequency == frequency]
+        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.frequency == frequency]
         return PulseBusSchedule(port=self.port, timeline=filtered_timeline)
 
     def to_dict(self):

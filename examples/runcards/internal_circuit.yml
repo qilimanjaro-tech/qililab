@@ -174,11 +174,11 @@ schema:
       port: 1
       distortions:
         - name: bias_tee
-          tau_bias_tee: 10
+          tau_bias_tee: 1.1
           sampling_rate: 1.23
         - name: exponential
-          tau_exponential: 0.124
-          amp: 1.23
+          tau_exponential: 1.124
+          amp: 1.2
           sampling_rate: 1.0
 
     - id_: 2

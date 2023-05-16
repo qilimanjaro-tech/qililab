@@ -28,6 +28,16 @@ class PulseEvent:
         """End time of the pulse in ns."""
         return self.start_time + self.duration
 
+    @property
+    def frequency(self) -> float:
+        """Frequency of the pulse in Hz."""
+        return self.pulse.frequency
+
+    @property
+    def phase(self) -> float:
+        """Phase of the pulse."""
+        return self.pulse.phase
+
     def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the envelope.
 
@@ -43,8 +53,8 @@ class PulseEvent:
         q = np.imag(envelope)
 
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.pulse.phase + 2 * np.pi * self.pulse.frequency * self.start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=self.pulse.frequency, phase_offset=phase_offset)
+        phase_offset = self.phase + 2 * np.pi * self.frequency * self.start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
 
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
