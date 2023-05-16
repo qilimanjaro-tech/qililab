@@ -45,10 +45,10 @@ class Bus:
                 self.system_control = system_control_class(
                     settings=self.system_control, platform_instruments=platform_instruments
                 )
-            distortions = [
+
+            self.distortions = [
                 PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
             ]
-            self.distortions = distortions
 
             super().__post_init__()
 
