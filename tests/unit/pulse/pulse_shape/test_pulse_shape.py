@@ -3,13 +3,19 @@ import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import Drag, Gaussian, LFilterRectangular, PulseShape, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @pytest.fixture(
-    name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+    name="pulse_shape",
+    params=[
+        Rectangular(),
+        Gaussian(num_sigmas=4),
+        Drag(num_sigmas=4, drag_coefficient=1.0),
+        LFilterRectangular(norm_factor=1.0, a=[0.7, 1.3], b=[0.8, 0.6]),
+    ],
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -22,8 +28,8 @@ class TestPulseShape:
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
         envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0)
-        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0, resolution=1.0)
+        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1.0)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None

@@ -5,4 +5,4 @@ from .pulse_bus_schedule import PulseBusSchedule
 from .pulse_distortion import BiasTeeCorrection, ExponentialCorrection, PulseDistortion
 from .pulse_event import PulseEvent
 from .pulse_schedule import PulseSchedule
-from .pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+from .pulse_shape import Drag, Gaussian, LFilterRectangular, PulseShape, Rectangular

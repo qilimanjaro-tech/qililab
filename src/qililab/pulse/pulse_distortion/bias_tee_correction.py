@@ -5,8 +5,7 @@ import numpy as np
 from scipy import signal
 
 from qililab.constants import RUNCARD
-from qililab.typings import PulseDistortionName
-from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.typings import PulseDistortionName, PulseDistortionSettingsName
 from qililab.utils import Factory
 
 from .pulse_distortion import PulseDistortion
