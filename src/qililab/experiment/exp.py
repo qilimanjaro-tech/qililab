@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
-from typing import List, Tuple
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -199,11 +198,11 @@ class Exp:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, queue: Queue, depth=0):
+    def _execute_recursive_loops(self, loops: list[Loop] | None, idx: int, queue: Queue, depth=0):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
@@ -220,11 +219,11 @@ class Exp:
 
         self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: List[Loop], idx: int, queue: Queue, depth: int):
+    def _process_loops(self, loops: list[Loop], idx: int, queue: Queue, depth: int):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
@@ -244,7 +243,7 @@ class Exp:
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
                 self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
 
-    def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
+    def _update_tqdm_bar(self, loops: list[Loop], values: tuple[float], pbar):
         """Updates TQDM bar"""
         description = []
         for value, loop in zip(values, loops):
@@ -255,7 +254,7 @@ class Exp:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
+    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
@@ -268,7 +267,7 @@ class Exp:
 
         return filtered_loops, filtered_values
 
-    def _update_parameters_from_loops(self, values: List[float], loops: List[Loop]):
+    def _update_parameters_from_loops(self, values: list[float], loops: list[Loop]):
         """update parameters from loops"""
         elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 
