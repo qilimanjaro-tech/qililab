@@ -13,7 +13,6 @@ from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag
 from qililab.utils import Factory
 
