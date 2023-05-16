@@ -2,7 +2,6 @@
 from dataclasses import dataclass, field
 
 from qililab.constants import PULSESCHEDULES
-from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 

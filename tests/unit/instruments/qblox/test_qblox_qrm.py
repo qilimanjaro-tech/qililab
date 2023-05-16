@@ -325,7 +325,7 @@ class TestQbloxQRM:
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
-        assert qrm.device.delete_acquisition_data.call_count == 2
+        qrm.device.delete_acquisition_data.assert_called_once_with(sequencer=0, name="default")
 
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""
@@ -334,9 +334,10 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
+        pulse_bus_schedule.port = 1
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
         qrm.upload()
-        assert qrm.device.sequencer0.sequence.call_count == 2
+        qrm.device.sequencer0.sequence.assert_called_once()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""

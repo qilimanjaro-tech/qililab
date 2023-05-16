@@ -10,6 +10,7 @@ from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
@@ -43,13 +44,15 @@ class CircuitToPulses:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time
             readout_gates = circuit.gates_of_type(M)
-            control_gates = [
+            control_gates: list[Gate] = [
                 gate for (i, gate) in enumerate(circuit.queue) if i not in [idx for (idx, _) in readout_gates]
             ]
             for gate in control_gates:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                    if flux_port := chip.get_port_from_qubit_idx(idx=gate.target_qubits[0], flux=True) is not None:
+                        pulse_schedule.elements.append(PulseBusSchedule(port=flux_port))
             for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(

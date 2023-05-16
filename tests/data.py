@@ -440,8 +440,8 @@ class Galadriel:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
         Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, "flux": False, Node.NODES.value: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, "flux": False, Node.NODES.value: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
@@ -609,7 +609,7 @@ class FluxQubitSimulator:
         RUNCARD.ID: 0,
         RUNCARD.CATEGORY: Category.CHIP.value,
         Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [1]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, "flux": False, Node.NODES.value: [1]},
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
                 RUNCARD.ID: 1,
@@ -935,8 +935,8 @@ class SauronVNA:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
         Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, "flux": False, Node.NODES.value: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, "flux": False, Node.NODES.value: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,

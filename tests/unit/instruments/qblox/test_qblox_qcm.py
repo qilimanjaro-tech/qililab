@@ -259,7 +259,10 @@ class TestQbloxQCM:
 
     def test_compile_not_single_freq_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
         """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
-        expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
+        expected_error_message = (
+            "The PulseBusSchedule of a sequencer cannot have more than one frequency. "
+            + f"This instance has {len(big_pulse_bus_schedule.frequencies())}."
+        )
         with pytest.raises(ValueError, match=expected_error_message):
             qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
 

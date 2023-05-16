@@ -12,3 +12,4 @@ class Port(Node):
     """Port class."""
 
     name = NodeName.PORT
+    flux: bool
