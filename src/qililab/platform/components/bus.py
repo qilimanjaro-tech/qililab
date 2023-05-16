@@ -3,8 +3,7 @@ from dataclasses import InitVar, dataclass
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, RUNCARD
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.instruments import Instruments
+from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
