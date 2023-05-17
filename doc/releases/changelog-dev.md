@@ -106,6 +106,9 @@ This document contains the changes of the current release.
 - The versions of the `qblox-instruments` and `qpysequence` requirements have been updated to `0.9.0`
   [#337](https://github.com/qilimanjaro-tech/qililab/pull/337)
 
+- Allow uploading negative envelopes on the `QbloxModule` class.
+  [#356](https://github.com/qilimanjaro-tech/qililab/pull/356)
+
 ### Breaking changes
 
 ### Deprecations / Removals
