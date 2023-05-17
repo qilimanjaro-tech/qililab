@@ -1,7 +1,6 @@
 import pytest
 
-from qililab.chip import Chip
-from qililab.chip.nodes.port import Port
+from qililab.chip import Chip, Port, Qubit, Resonator
 from qililab.typings.enums import Line
 
 
@@ -44,10 +43,17 @@ class TestChip:
 
     def test_get_port_from_qubit_idx_method_raises_error_when_no_port_found(self, chip: Chip):
         """Test ``get_port_from_qubit_idx`` method raises error when no port is found"""
-        for node in chip.nodes:
+        port_ids = set()
+        for node in chip.nodes.copy():
             if isinstance(node, Port):
+                port_ids.add(node.id_)
                 chip.nodes.remove(node)
+        for node in chip.nodes:
+            if isinstance(node, (Qubit, Resonator)):
+                for adj_node in node.nodes.copy():
+                    if adj_node in port_ids:
+                        node.nodes.remove(adj_node)
 
         for line in [Line.FLUX, Line.DRIVE, Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT]:
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match=f"Qubit with index {0} doesn't have a {line} line."):
                 chip.get_port_from_qubit_idx(idx=0, line=line)
