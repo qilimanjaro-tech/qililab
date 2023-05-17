@@ -110,6 +110,8 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "offset_awg_path0",
             "offset_awg_path1",
             "thresholded_acq_threshold",
+            "marker_ovr_en",
+            "marker_ovr_value",
         ]
     )
     # connect to instrument

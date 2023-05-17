@@ -96,6 +96,8 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "mixer_corr_gain_ratio",
             "offset_awg_path0",
             "offset_awg_path1",
+            "marker_ovr_en",
+            "marker_ovr_value",
         ]
     )
     pulsar_controller_qcm.connect()
