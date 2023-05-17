@@ -9,6 +9,7 @@ from qibo.models.circuit import Circuit
 
 from qililab.chip import Chip
 from qililab.chip.nodes import Port, Qubit
+from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
@@ -55,63 +56,68 @@ class CircuitToPulses:
                 else:
                     control_gates.append(gate)
 
-            for gate in control_gates:
-                # if gate is CZ, parse input to check for symmetric gates
-                # if gate is CZ, check if parking is needed
-                if isinstance(gate, CZ):
-                    gate = self._parse_check_cz(gate)
+            for gate in circuit.queue:
+                if not isinstance(gate, M):
+                    # if gate is CZ, parse input to check for symmetric gates
+                    # if gate is CZ, check if parking is needed
+                    if isinstance(gate, CZ):
+                        gate = self._parse_check_cz(gate)
 
-                    # TODO get connectivity here and check if qubits to park
-                    # get qubits to park
-                    park_qubits = self._get_parking_targets(gate, chip)
-                    if len(park_qubits) != 0:
-                        pad_times = []
-                        for qubit in park_qubits:
-                            park_gate_settings = [
-                                settings_gate
-                                for settings_gate in self.settings.gates[qubit]
-                                if "Park" in settings_gate.name
-                            ]
-                            if len(park_gate_settings) == 0:
-                                warnings.warn(
-                                    f"Found parking candidate qubit {qubit} for {gate.name} at qubits {gate.qubits} but did not find settings for parking gate at qubit {qubit}",
-                                    UserWarning,
-                                )
-                                continue
-                            cz_gate_settings = [
-                                settings_gate
-                                for settings_gate in self.settings.gates[gate.qubits]
-                                if "CZ" in settings_gate.name
-                            ][0]
-                            pad_times.append(
-                                self._get_park_pad_time(
+                        # TODO get connectivity here and check if qubits to park
+                        # get qubits to park
+                        park_qubits = self._get_parking_targets(gate, chip)
+                        if len(park_qubits) != 0:
+                            pad_times = []
+                            for qubit in park_qubits:
+                                park_gate_settings = [
+                                    settings_gate
+                                    for settings_gate in self.settings.gates[qubit]
+                                    if "Park" in settings_gate.name
+                                ]
+                                if len(park_gate_settings) == 0:
+                                    logger.warning(
+                                        f"Found parking candidate qubit {qubit} for {gate.name} at qubits {gate.qubits} but did not find settings for parking gate at qubit {qubit}"
+                                    )
+                                    continue
+                                cz_gate_settings = [
+                                    settings_gate
+                                    for settings_gate in self.settings.gates[gate.qubits]
+                                    if "CZ" in settings_gate.name
+                                ][0]
+                                pad_time = self._get_park_pad_time(
                                     park_settings=park_gate_settings[0], cz_settings=cz_gate_settings
                                 )
+                                if pad_time % 1 != 0 or pad_time < 0:
+                                    raise ValueError(
+                                        f"Value pad_time {pad_time} for park gate at {qubit} and CZ {gate.qubits} has nonzero decimal or is negative"
+                                    )
+                                pad_times.append(int(pad_time))
+
+                                # add parking gate
+                                parking_gate = Park(qubit)
+                                pulse_event, port = self._control_gate_to_pulse_event(
+                                    time=time, control_gate=parking_gate, chip=chip
+                                )
+                                pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+
+                            # add padd time to CZ target qubit
+                            # if there is more than 1 pad time, add max
+                            self._update_time(
+                                time=time, qubit_idx=gate.target_qubits[0], pulse_time=max(pad_times, default=0)
                             )
 
-                            # add parking gate
-                            parking_gate = Park(qubit)
-                            pulse_event, port = self._control_gate_to_pulse_event(
-                                time=time, control_gate=parking_gate, chip=chip
-                            )
-                            pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                    pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
+                    if pulse_event is not None:
+                        pulse_schedule.add_event(pulse_event=pulse_event, port=port)
 
-                        # add padd time to CZ target qubit
-                        # if there is more than 1 pad time, add max
-                        self._update_time(
-                            time=time, qubit_idx=gate.target_qubits[0], pulse_time=max(pad_times, default=0)
+                else:
+                    for qubit_idx in gate.target_qubits:
+                        m_gate = M(qubit_idx)
+                        readout_pulse_event, port = self._readout_gate_to_pulse_event(
+                            time=time, readout_gate=m_gate, qubit_idx=qubit_idx, chip=chip
                         )
-
-                pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
-                if pulse_event is not None:
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-            for _, readout_gate in readout_gates:
-                for qubit_idx in readout_gate.target_qubits:
-                    readout_pulse_event, port = self._readout_gate_to_pulse_event(
-                        time=time, readout_gate=readout_gate, qubit_idx=qubit_idx, chip=chip
-                    )
-                    if readout_pulse_event is not None:
-                        pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
+                        if readout_pulse_event is not None:
+                            pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
 
             pulse_schedule_list.append(pulse_schedule)
 
@@ -142,12 +148,6 @@ class CircuitToPulses:
         t_cz = int(cz_settings.duration)
         t_phi = int(cz_settings.shape["t_phi"])
         pad_time = (t_park - 2 * t_cz + 2 + t_phi) / 2
-        if park_settings.duration != cz_settings.duration:
-            if pad_time < 0 or pad_time % 1 != 0:
-                raise ValueError(
-                    f"Negative or decimal padding time resulting from park_gate_settings.duration - 2 * cz_gate_settings.duration + 2 + cz_gate_settings.shape['t_phi'] = {pad_time}"
-                )
-            pad_time = int(pad_time)
 
         return pad_time
 
@@ -194,21 +194,21 @@ class CircuitToPulses:
         adj_nodes = chip._get_adjacent_nodes(node)
         # get adjacent flux line (drive line) for CZ,Park gates (all others)
         if isinstance(control_gate, (CZ, Park)):
-            line = "flux_line"
+            line = "flux_line_q"
         else:
-            line = "drive_line"
+            line = "drive_line_q"
 
         # initialize variable port (ensure to get the error below if no port assigned)
         port = None
         for adj_node in adj_nodes:
             # check that first part of alias matches line name
             # note that aliases are usually eg. flux line for qubit 1 -> flux_line_q1
-            if isinstance(adj_node, Port) and adj_node.alias[: len(line)] == line:
+            if isinstance(adj_node, Port) and adj_node.alias == line + str(qubit_idx):
                 port = adj_node
 
         if not isinstance(port, Port):
             raise RuntimeError(
-                f"Wrong or no port found of type {line} for gate {control_gate.name} and qubit {qubit_idx} with node id {node.id_}"
+                f"Wrong or no port found of type {line+str(qubit_idx)} for gate {control_gate.name} and qubit {qubit_idx} with node id {node.id_}"
             )
 
         # get amplitude from gate settings

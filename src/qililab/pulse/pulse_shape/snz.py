@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
@@ -46,7 +47,7 @@ class SNZ(PulseShape):
         envelope = np.zeros(round(full_snz_duration / resolution))
         # raise warning if we are rounding
         if (full_snz_duration / resolution) % 1 != 0 or (duration / resolution) % 1 != 0:
-            raise RuntimeWarning(  # TODO: better error string
+            logger.warning(
                 f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({full_snz_duration}) / resolution ({resolution}) = {full_snz_duration/resolution}"
             )
         halfpulse_t = int(duration / resolution)
