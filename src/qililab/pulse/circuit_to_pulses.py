@@ -126,7 +126,6 @@ class CircuitToPulses:
                     frequency=node.frequency,
                 ),
                 start_time=old_time,
-                qubit=qubit_idx,
             )
             if gate_settings.duration > 0
             else None,

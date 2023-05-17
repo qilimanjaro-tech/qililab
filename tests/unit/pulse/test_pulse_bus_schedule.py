@@ -14,7 +14,7 @@ def fixture_pulse_event() -> PulseEvent:
     """
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0, qubit=0)
+    return PulseEvent(pulse=pulse, start_time=0)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -29,12 +29,10 @@ def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_event_1 = PulseEvent(
         pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.0, pulse_shape=Gaussian(num_sigmas=5)),
         start_time=0,
-        qubit=0,
     )
     pulse_event_2 = PulseEvent(
         pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
         start_time=0,
-        qubit=1,
     )
     return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)
 

@@ -50,7 +50,6 @@ class TestQbloxModule:
                     pulse_shape=Gaussian(num_sigmas=5),
                 ),
                 start_time=0,
-                qubit=0,
             )
         ]
 

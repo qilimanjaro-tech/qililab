@@ -24,7 +24,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port=1)
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -125,7 +125,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(2)
     ]
-    return PulseBusSchedule(timeline=timeline, port=0)
+    return PulseBusSchedule(timeline=timeline, port=1)
 
 
 class TestQbloxQRM:
@@ -378,7 +378,7 @@ class TestQbloxQRM:
         new_qrm = QbloxQRM(settings=qrm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=0)
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=1)
         sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms
