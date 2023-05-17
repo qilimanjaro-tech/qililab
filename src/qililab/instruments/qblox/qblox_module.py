@@ -214,14 +214,15 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        program.append_block(avg_loop)
+        bins = Loop(name="bins", begin=0, end=2000, step=1)
+        program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         wait_time = self.repetition_duration
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
-
+        bins.append_block(avg_loop)
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
@@ -239,7 +240,8 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        program.append_block(avg_loop)
+        bins = Loop(name="bins", begin=0, end=2000, step=1)
+        program.append_block(bins)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -262,11 +264,11 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=bins.counter_register, sequencer_id=sequencer)
         wait_time = self.repetition_duration - avg_loop.duration_iter
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
-
+        bins.append_block(avg_loop)
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 

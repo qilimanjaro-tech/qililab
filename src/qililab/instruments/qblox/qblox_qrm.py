@@ -245,7 +245,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME
             )
             if weighed_acq
-            else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+            else Acquire(acq_index=1, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
         )
         loop.append_component(acq_instruction)
 
