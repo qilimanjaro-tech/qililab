@@ -63,7 +63,6 @@ class CircuitToPulses:
                     if isinstance(gate, CZ):
                         gate = self._parse_check_cz(gate)
 
-                        # TODO get connectivity here and check if qubits to park
                         # get qubits to park
                         park_qubits = self._get_parking_targets(gate, chip)
                         if len(park_qubits) != 0:
@@ -84,6 +83,8 @@ class CircuitToPulses:
                                     for settings_gate in self.settings.gates[gate.qubits]
                                     if "CZ" in settings_gate.name
                                 ][0]
+
+                                # get pad time
                                 pad_time = self._get_park_pad_time(
                                     park_settings=park_gate_settings[0], cz_settings=cz_gate_settings
                                 )
@@ -100,17 +101,18 @@ class CircuitToPulses:
                                 )
                                 pulse_schedule.add_event(pulse_event=pulse_event, port=port)
 
-                            # add padd time to CZ target qubit
-                            # if there is more than 1 pad time, add max
+                            # add padd time to CZ target qubit to sync it with parking gate
+                            # if there is more than 1 pad time, add max (this is a bit misleading)
                             self._update_time(
                                 time=time, qubit_idx=gate.target_qubits[0], pulse_time=max(pad_times, default=0)
                             )
-
+                    # add control gate to pulse sequence
                     pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
-                    if pulse_event is not None:
+                    if pulse_event is not None:  # TODO check pulse event should not be None?
                         pulse_schedule.add_event(pulse_event=pulse_event, port=port)
 
                 else:
+                    # handle measurement gates
                     for qubit_idx in gate.target_qubits:
                         m_gate = M(qubit_idx)
                         readout_pulse_event, port = self._readout_gate_to_pulse_event(
@@ -182,7 +184,7 @@ class CircuitToPulses:
         """
         gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
-        # for CZs check if they are possible and switch target if needed
+        # for CZs check if they are possible (defined at runcard) and switch target if needed
         if isinstance(control_gate, CZ):
             control_gate = self._parse_check_cz(control_gate)
 
@@ -281,7 +283,6 @@ class CircuitToPulses:
         # get adjacent nodes
         adj_nodes = chip._get_adjacent_nodes(node)
         # return adjacent qubits not in CZ gate
-        # TODO unit test if CZ(0,2) should park 1
         return [
             adj_node.qubit_index
             for adj_node in adj_nodes
@@ -307,6 +308,7 @@ class CircuitToPulses:
         gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        # gets resonator port
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
         port = chip.get_port(node)
         old_time = self._update_time(
