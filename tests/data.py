@@ -469,6 +469,8 @@ class Galadriel:
         NODE.NODES: [
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 10, NODE.LINE: Line.FLUX.value, NODE.NODES: [3]},
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 12, NODE.LINE: Line.FLUX.value, NODE.NODES: [4]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 13, NODE.LINE: Line.DRIVE.value, NODE.NODES: [4]},
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
             {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 11, NODE.LINE: Line.FEEDLINE_OUTPUT.value, NODE.NODES: [2]},
             {
@@ -492,7 +494,7 @@ class Galadriel:
                 RUNCARD.ALIAS: NodeName.QUBIT.value + "_1",
                 NODE.QUBIT_INDEX: 1,
                 NODE.FREQUENCY: 3.451e09,
-                NODE.NODES: [2],
+                NODE.NODES: [2, 12, 13],
             },
         ],
     }
