@@ -80,7 +80,7 @@ class QbloxModule(AWG):
     def __init__(self, settings: dict):
         # The sequences dictionary contains all the compiled sequences for each sequencer and a flag indicating whether
         # the sequence has been uploaded or not
-        self.sequences: dict[int, tuple[Sequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
+        self.sequences: dict[int, tuple[QpySequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
         # TODO: Set this attribute during initialization of the instrument
         self.nshots: int | None = None
         self.repetition_duration: int | None = None
@@ -112,25 +112,6 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def _split_schedule_for_sequencers(self, pulse_bus_schedule: PulseBusSchedule) -> list[PulseBusSchedule]:
-        """Returns a list of single-frequency PulseBusSchedules for each sequencer.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): schedule to split.
-
-        Raises:
-            IndexError: if the number of sequencers does not match the number of AWG Sequencers
-
-        Returns:
-            list[PulseBusSchedule]: list of single-frequency PulseBusSchedules for each sequencer.
-        """
-        frequencies = pulse_bus_schedule.frequencies()
-        if len(frequencies) > self._NUM_MAX_SEQUENCERS:
-            raise IndexError(
-                f"The number of frequencies must be less or equal than the number of sequencers. Got {len(frequencies)} frequencies and {self._NUM_MAX_SEQUENCERS} sequencers."
-            )
-        return [pulse_bus_schedule.with_frequency(frequency) for frequency in frequencies]
-
     def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
@@ -152,12 +133,11 @@ class QbloxModule(AWG):
             self.repetition_duration = repetition_duration
             self.clear_cache()
 
-        sequencers_pulse_bus_schedule = self._split_schedule_for_sequencers(pulse_bus_schedule=pulse_bus_schedule)
         compiled_sequences = []
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        for sequencer, schedule in zip(sequencers, sequencers_pulse_bus_schedule):
+        for sequencer in sequencers:
             if pulse_bus_schedule != self._cache.get(sequencer.identifier):
-                sequence = self._compile(schedule, sequencer)
+                sequence = self._compile(pulse_bus_schedule, sequencer)
                 compiled_sequences.append(sequence)
             else:
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
@@ -170,10 +150,6 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             sequencer (int): index of the sequencer to generate the program
         """
-        if (n_freqs := len(pulse_bus_schedule.frequencies())) != 1:
-            raise ValueError(
-                f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {n_freqs}."
-            )
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule, sequencer=sequencer)
         self._cache[sequencer.identifier] = pulse_bus_schedule
         self.sequences[sequencer.identifier] = (sequence, False)

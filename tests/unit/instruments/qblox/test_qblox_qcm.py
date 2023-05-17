@@ -8,7 +8,6 @@ from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
-from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
@@ -16,33 +15,19 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
-    """Load PulseEvent.
-
-    Returns:
-        PulseEvent: Instance of the PulseEvent class.
-    """
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
+    pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
-def fixture_pulsar_controller_qcm(platform: Platform):
+def fixture_pulsar_controller_qcm():
     """Return an instance of QbloxPulsarController class"""
+    platform = platform_db(runcard=Galadriel.runcard)
     settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
@@ -121,6 +106,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
                 pulse_shape=Gaussian(num_sigmas=5),
             ),
             start_time=0,
+            qubit=n,
         )
         for n in range(10)
     ]
@@ -253,18 +239,6 @@ class TestQbloxQCM:
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
 
-    def test_max_frequencies_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
-        """Test split_schedule_for_sequencers method raises error when handling more frequencies than it can support."""
-        expected_error_message = f"The number of frequencies must be less or equal than the number of sequencers. Got {len(big_pulse_bus_schedule.frequencies())} frequencies and {qcm._NUM_MAX_SEQUENCERS} sequencers."
-        with pytest.raises(IndexError, match=expected_error_message):
-            qcm._split_schedule_for_sequencers(pulse_bus_schedule=big_pulse_bus_schedule)
-
-    def test_compile_not_single_freq_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
-        """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
-        expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
-        with pytest.raises(ValueError, match=expected_error_message):
-            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
-
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""
         # We change the dictionary and initialize the QCM
@@ -275,7 +249,7 @@ class TestQbloxQCM:
         new_qcm = QbloxQCM(settings=qcm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=0)
+        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=0)
         sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
         # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms

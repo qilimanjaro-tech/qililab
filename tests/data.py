@@ -253,7 +253,8 @@ class Galadriel:
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
-                AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
+                "qubit": 0,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -282,7 +283,8 @@ class Galadriel:
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
-                AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 0,
+                "qubit": 1,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,

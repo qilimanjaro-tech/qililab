@@ -14,7 +14,7 @@ def fixture_pulse_event() -> PulseEvent:
     """
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
+    return PulseEvent(pulse=pulse, start_time=0, qubit=0)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -29,10 +29,12 @@ def fixture_mux_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_event_1 = PulseEvent(
         pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.0, pulse_shape=Gaussian(num_sigmas=5)),
         start_time=0,
+        qubit=0,
     )
     pulse_event_2 = PulseEvent(
         pulse=Pulse(amplitude=1, phase=0.0, duration=1000, frequency=7.1, pulse_shape=Gaussian(num_sigmas=5)),
         start_time=0,
+        qubit=1,
     )
     return PulseBusSchedule(timeline=[pulse_event_1, pulse_event_2], port=0)
 
@@ -75,16 +77,3 @@ class TestPulseBusSchedule:
         """Test the total duration property."""
         duration = pulse_bus_schedule.end_time - pulse_bus_schedule.start_time
         assert pulse_bus_schedule.duration == duration
-
-    def test_frequencies(self, mux_pulse_bus_schedule: PulseBusSchedule):
-        """Test the frequencies method."""
-        frequencies = sorted({event.frequency for event in mux_pulse_bus_schedule.timeline})
-        assert frequencies == mux_pulse_bus_schedule.frequencies()
-
-    def test_with_frequency(self, mux_pulse_bus_schedule: PulseBusSchedule):
-        """Test the with_frequency method."""
-        frequencies = mux_pulse_bus_schedule.frequencies()
-        for frequency in frequencies:
-            schedule = mux_pulse_bus_schedule.with_frequency(frequency)
-            assert len(schedule.frequencies()) == 1
-            assert frequency == schedule.frequencies()[0]

@@ -16,6 +16,7 @@ class PulseEvent:
 
     pulse: Pulse
     start_time: int
+    qubit: int
     pulse_distortions: list[PulseDistortion] = field(default_factory=list)
 
     @property
