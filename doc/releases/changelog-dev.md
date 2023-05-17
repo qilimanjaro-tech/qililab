@@ -116,3 +116,7 @@ This document contains the changes of the current release.
 ### Documentation
 
 ### Bug fixes
+
+- Add `_set_markers` method to the `QbloxModule` class and enable all markers. For the RF modules, this command
+  enables the outputs/inputs of the instrument.
+  [#361](https://github.com/qilimanjaro-tech/qililab/pull/361)
