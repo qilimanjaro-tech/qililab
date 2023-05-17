@@ -5,6 +5,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from qililab.result.counts import Counts
 from qililab.result.result import Result
 from qililab.typings.enums import ResultName
 from qililab.utils.factory import Factory
@@ -16,16 +17,12 @@ class VNAResult(Result):
     """VNAResult class."""
 
     name = ResultName.VECTOR_NETWORK_ANALYZER
-    data: npt.NDArray[np.float32]
+    i: npt.NDArray[np.float32]
+    q: npt.NDArray[np.float32]
 
-    def acquisitions(self) -> np.ndarray:
+    def acquisitions(self) -> tuple[np.ndarray, np.ndarray]:
         """Return acquisition values."""
-        return self.data
+        return self.i, self.q
 
-    def probabilities(self) -> pd.DataFrame:
-        """Return probabilities of being in the ground and excited state.
-
-        Returns:
-            tuple[float, float]: Probabilities of being in the ground and excited state.
-        """
+    def counts(self) -> Counts:
         raise NotImplementedError

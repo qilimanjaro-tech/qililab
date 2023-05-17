@@ -1,4 +1,5 @@
 """ Exp class."""
+import csv
 import itertools
 import os
 from datetime import datetime
@@ -15,6 +16,7 @@ from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FIL
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.result.results import Results
+from qililab.result.vna_result import VNAResult
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
@@ -124,14 +126,23 @@ class Experiment:
                     return  # exit thread if no results are received for 10 times the duration of the program
 
                 if self._plot is not None:
-                    acq = result.acquisitions()
-                    i = np.array(acq["i"])
-                    q = np.array(acq["q"])
-                    amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
-                    self._plot.send_points(value=amplitude[0])
-                with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
-                    result_dict = result.to_dict()
-                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+                    if isinstance(result, VNAResult):
+                        i, q = result.acquisitions()
+                        z = i + 1j * q
+                        S21 = 20 * np.log10(np.abs(z))  # dB
+                        self._plot.send_points(value=S21)
+                        with open(file=self.results_path / "raw_data.csv", mode="a", encoding="utf8") as data_file:
+                            writer = csv.writer(data_file)
+                            writer.writerow([i, q])
+                    else:
+                        acq = result.acquisitions()
+                        i = np.array(acq["i"])
+                        q = np.array(acq["q"])
+                        amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
+                        self._plot.send_points(value=amplitude[0])
+                        with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                            result_dict = result.to_dict()
+                            yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function)
         thread.start()

@@ -209,4 +209,7 @@ class E5080B(VectorNetworkAnalyzer):
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
-        return VNAResult(data=self.read_tracedata())
+        data = self.read_tracedata()
+        real = np.real(data)
+        imag = np.imag(data)
+        return VNAResult(i=real, q=imag)
