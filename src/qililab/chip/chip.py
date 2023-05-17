@@ -83,7 +83,7 @@ class Chip(DDBBElement):
             ValueError: If qubit isn't connected to this type of line
 
         Returns:
-            Port: The port
+            int: The port index
         """
         readout = True if line in [Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT] else False
         node = self.get_node_from_qubit_idx(idx=idx, readout=readout)
