@@ -14,6 +14,7 @@ from qililab.constants import (
     INSTRUMENTCONTROLLER,
     INSTRUMENTREFERENCE,
     LOOP,
+    NODE,
     PLATFORM,
     PULSE,
     PULSEBUSSCHEDULE,
@@ -32,7 +33,7 @@ from qililab.typings.enums import (
     InstrumentControllerSubCategory,
     InstrumentName,
     IntegrationMode,
-    Node,
+    Line,
     NodeName,
     Parameter,
     PulseShapeName,
@@ -465,32 +466,35 @@ class Galadriel:
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
-        Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 5, Node.NODES.value: [4]},
+        NODE.NODES: [
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 10, NODE.LINE: Line.FLUX.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 12, NODE.LINE: Line.FLUX.value, NODE.NODES: [4]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 13, NODE.LINE: Line.DRIVE.value, NODE.NODES: [4]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 11, NODE.LINE: Line.FEEDLINE_OUTPUT.value, NODE.NODES: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
-                RUNCARD.ALIAS: NodeName.RESONATOR.value,
-                Node.FREQUENCY.value: 7.34730e09,
-                Node.NODES.value: [1, 3, 4],
+                RUNCARD.ALIAS: NodeName.PORT.value,
+                NODE.FREQUENCY: 7.34730e09,
+                NODE.NODES: [1, 11, 3],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
                 RUNCARD.ID: 3,
                 RUNCARD.ALIAS: NodeName.QUBIT.value + "_0",
-                Node.QUBIT_INDEX.value: 0,
-                Node.FREQUENCY.value: 3.451e09,
-                Node.NODES.value: [0, 2],
+                NODE.QUBIT_INDEX: 0,
+                NODE.FREQUENCY: 3.451e09,
+                NODE.NODES: [0, 2, 10],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
                 RUNCARD.ID: 4,
                 RUNCARD.ALIAS: NodeName.QUBIT.value + "_1",
-                Node.QUBIT_INDEX.value: 1,
-                Node.FREQUENCY.value: 3.451e09,
-                Node.NODES.value: [5, 2],
+                NODE.QUBIT_INDEX: 1,
+                NODE.FREQUENCY: 3.451e09,
+                NODE.NODES: [2, 12, 13],
             },
         ],
     }
@@ -519,6 +523,18 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
+        },
+        {
+            RUNCARD.ID: 2,
+            RUNCARD.CATEGORY: Category.BUS.value,
+            RUNCARD.ALIAS: "flux_line_bus",
+            Category.SYSTEM_CONTROL.value: {
+                RUNCARD.ID: 0,
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
+                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_0"],
+            },
+            NodeName.PORT.value: 10,
         },
     ]
 
@@ -661,14 +677,14 @@ class FluxQubitSimulator:
     chip = {
         RUNCARD.ID: 0,
         RUNCARD.CATEGORY: Category.CHIP.value,
-        Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [1]},
+        NODE.NODES: [
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [1]},
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
                 RUNCARD.ID: 1,
-                Node.QUBIT_INDEX.value: 0,
-                Node.FREQUENCY.value: 3.451e09,
-                Node.NODES.value: [0],
+                NODE.QUBIT_INDEX: 0,
+                NODE.FREQUENCY: 3.451e09,
+                NODE.NODES: [0],
             },
         ],
     }
@@ -744,7 +760,7 @@ results_two_loops = {
             LOOP.CHANNEL_ID: None,
             LOOP.LOOP: {
                 RUNCARD.ALIAS: "rs_1",
-                LOOP.PARAMETER: Node.FREQUENCY.value,
+                LOOP.PARAMETER: NODE.FREQUENCY,
                 LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
                 LOOP.LOOP: None,
                 LOOP.CHANNEL_ID: None,
@@ -796,7 +812,7 @@ results_one_loops = {
     EXPERIMENT.LOOPS: [
         {
             RUNCARD.ALIAS: "rs_1",
-            LOOP.PARAMETER: Node.FREQUENCY.value,
+            LOOP.PARAMETER: NODE.FREQUENCY,
             LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
             LOOP.CHANNEL_ID: None,
@@ -847,7 +863,7 @@ results_one_loops_empty = {
     EXPERIMENT.LOOPS: [
         {
             RUNCARD.ALIAS: "rs_1",
-            LOOP.PARAMETER: Node.FREQUENCY.value,
+            LOOP.PARAMETER: NODE.FREQUENCY,
             LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
             LOOP.LOOP: None,
         }
@@ -870,7 +886,7 @@ experiment = {
                     LOOP.VALUES: np.arange(start=15, stop=90, step=1),
                     LOOP.LOOP: {
                         RUNCARD.ALIAS: "rs_1",
-                        LOOP.PARAMETER: Node.FREQUENCY.value,
+                        LOOP.PARAMETER: NODE.FREQUENCY,
                         LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
                         LOOP.LOOP: None,
                     },
@@ -995,23 +1011,23 @@ class SauronVNA:
         RUNCARD.ID: 0,
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: Category.CHIP.value,
-        Node.NODES.value: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, Node.NODES.value: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, Node.NODES.value: [2]},
+        NODE.NODES: [
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
                 RUNCARD.ALIAS: NodeName.RESONATOR.value,
-                Node.FREQUENCY.value: 8.0726e09,
-                Node.NODES.value: [1, 3],
+                NODE.FREQUENCY: 8.0726e09,
+                NODE.NODES: [1, 3],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
                 RUNCARD.ID: 3,
                 RUNCARD.ALIAS: NodeName.QUBIT.value,
-                Node.QUBIT_INDEX.value: 0,
-                Node.FREQUENCY.value: 6.5328e09,
-                Node.NODES.value: [0, 2],
+                NODE.QUBIT_INDEX: 0,
+                NODE.FREQUENCY: 6.5328e09,
+                NODE.NODES: [0, 2],
             },
         ],
     }

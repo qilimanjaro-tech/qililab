@@ -8,8 +8,9 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, Stop, Wait
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
@@ -101,6 +102,8 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+            ALL_ON = 15  # 1111 in binary
+            self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
@@ -250,6 +253,10 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(name)
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
+            gain = int(np.abs(pulse_event.pulse.amplitude * AWG_MAX_GAIN))
+            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
+            avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -258,9 +265,10 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
-        wait_time = self.repetition_duration - avg_loop.duration_iter
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
+        if self.repetition_duration is not None:
+            wait_time = self.repetition_duration - avg_loop.duration_iter
+            if wait_time > self._MIN_WAIT_TIME:
+                avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
@@ -588,6 +596,26 @@ class QbloxModule(AWG):
         self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
 
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_markers(self, value: int, sequencer_id: int):
+        """Set markers ON/OFF on qblox modules.
+
+        For the RF modules, this command is also used to enable/disable:
+            - The 2 outputs (for the QCM-RF).
+            - The input and the output (for QRM-RF).
+
+         Args:
+            value (int): ON/OFF of the 4 markers in binary (range: 0-15 -> (0000)-(1111)). For the RF modules, the
+                first 2 bits correspond to the ON/OFF value of the outputs/inputs and the last 2 bits correspond
+                to the 2 markers.
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not int
+        """
+        self.device.sequencers[sequencer_id].marker_ovr_en(True)
+        self.device.sequencers[sequencer_id].marker_ovr_value(value)
+
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
         # Disable all connections
@@ -625,7 +653,7 @@ class QbloxModule(AWG):
             name = pulse_event.pulse.label() if isinstance(pulse_event.pulse, Pulse) else str(pulse_event.pulse)
             if pulse_tuple not in unique_pulses:
                 unique_pulses.append(pulse_tuple)  # type: ignore
-                envelope = pulse_event.pulse.envelope(amplitude=1)
+                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude) * 1.0)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)

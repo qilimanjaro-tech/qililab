@@ -11,7 +11,7 @@ from qililab.circuit.operations.special_operations.special_operation import Spec
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import ResetMethod
+from qililab.typings.enums import Line, ResetMethod
 
 
 @dataclass
@@ -144,12 +144,14 @@ class CircuitTranspiler:
         for layer in layers:
             for operation_node in layer:
                 # TODO: Change this for multiplexed readout
+                # TODO: Change this to apply logical<->physical qubits mapping
+                qubit_idx = operation_node.qubits[0]
                 if isinstance(operation_node.operation, PulseOperation):
                     is_measurement = operation_node.is_measurement
-                    chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
+                    chip_node = self.chip.get_node_from_qubit_idx(idx=qubit_idx, readout=is_measurement)
                 elif isinstance(operation_node.operation, TranslatableToPulseOperation):
                     is_measurement = isinstance(operation_node.operation, Measure)
-                    chip_node = self.chip.get_node_from_qubit_idx(idx=operation_node.qubits[0], readout=is_measurement)
+                    chip_node = self.chip.get_node_from_qubit_idx(idx=qubit_idx, readout=is_measurement)
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
                     pulse_operation_settings = operation_settings.pulse  # type: ignore[union-attr]
                     pulse_operation_name = pulse_operation_settings.name
@@ -163,7 +165,8 @@ class CircuitTranspiler:
                     pulse_operation = OperationFactory.get(pulse_operation_name)(**pulse_operation_parameters)
                     operation_node.operation = pulse_operation
                     operation_node.is_measurement = is_measurement
-                operation_node.chip_port = self.chip.get_port(chip_node)
+                line = Line.FEEDLINE_INPUT if is_measurement else Line.DRIVE
+                operation_node.chip_port = self.chip.get_port_from_qubit_idx(idx=qubit_idx, line=line)
         circuit._has_transpiled_to_pulses = True
         return circuit
 

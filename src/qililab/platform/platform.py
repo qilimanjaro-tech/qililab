@@ -10,7 +10,7 @@ from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
@@ -134,25 +134,27 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus]:
+    def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Find bus associated with the given qubit index.
 
         Args:
             qubit_index (int): qubit index
 
         Returns:
-            tuple[Bus, Bus]: Returns a tuple of Bus objects containing the control and readout buses of the given qubit
+            tuple[Bus, Bus, Bus]: Returns a tuple of Bus objects containing the flux, control and readout buses of the given qubit
         """
-        control_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=False)
-        readout_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=True)
-        control_bus = self.get_bus(port=self.chip.get_port(node=control_port))[1]
-        readout_bus = self.get_bus(port=self.chip.get_port(node=readout_port))[1]
-        if readout_bus is None or control_bus is None:
+        flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
+        control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
+        readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
+        flux_bus = self.get_bus(port=flux_port)[1]
+        control_bus = self.get_bus(port=control_port)[1]
+        readout_bus = self.get_bus(port=readout_port)[1]
+        if flux_bus is None or control_bus is None or readout_bus is None:
             raise ValueError(
                 f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{readout_port} and {control_port}."
+                f"{flux_port}, {control_port} and {readout_port}."
             )
-        return control_bus, readout_bus
+        return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
