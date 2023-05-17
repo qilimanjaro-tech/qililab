@@ -101,6 +101,8 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
+            ALL_ON = 15  # 1111 in binary
+            self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
@@ -591,6 +593,26 @@ class QbloxModule(AWG):
         """
         self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
+
+    @Instrument.CheckParameterValueFloatOrInt
+    def _set_markers(self, value: int, sequencer_id: int):
+        """Set markers ON/OFF on qblox modules.
+
+        For the RF modules, this command is also used to enable/disable:
+            - The 2 outputs (for the QCM-RF).
+            - The input and the output (for QRM-RF).
+
+         Args:
+            value (int): ON/OFF of the 4 markers in binary (range: 0-15 -> (0000)-(1111)). For the RF modules, the
+                first 2 bits correspond to the ON/OFF value of the outputs/inputs and the last 2 bits correspond
+                to the 2 markers.
+            sequencer_id (int): sequencer to update the value
+
+        Raises:
+            ValueError: when value type is not int
+        """
+        self.device.sequencers[sequencer_id].marker_ovr_en(True)
+        self.device.sequencers[sequencer_id].marker_ovr_value(value)
 
     def _map_outputs(self):
         """Disable all connections and map sequencer paths with output channels."""
