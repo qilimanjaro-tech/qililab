@@ -2,6 +2,7 @@
 import copy
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller import E5080BController
@@ -373,12 +374,14 @@ class TestE5080B:
         with pytest.raises(TimeoutError):
             e5080b.read_tracedata()
 
-    @patch("qililab.instruments.keysight.e5080b_vna.E5080B.ready")
-    def test_acquire_result_method(self, mock_ready, e5080b: E5080B):
+    @patch("qililab.instruments.keysight.e5080b_vna.E5080B.read_tracedata")
+    def test_acquire_result_method(self, mock_read_tracedata, e5080b: E5080B):
         """Test the acquire result method"""
-        mock_ready.return_value = True
+        mock_read_tracedata.return_value = np.array([1, 2]), np.array([3, 4])
         output = e5080b.acquire_result()
         assert isinstance(output, VNAResult)
+        assert hasattr(output, "i")
+        assert hasattr(output, "q")
 
     def test_power_property(self, e5080b_no_device: E5080B):
         """Test power property."""
