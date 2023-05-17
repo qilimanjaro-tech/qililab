@@ -135,12 +135,12 @@ class TestQbloxQCM:
         qcm.device.out1_offset.assert_called()
         qcm.device.out2_offset.assert_called()
         qcm.device.out3_offset.assert_called()
-        qcm.device.sequencer0.sync_en.assert_called_with(qcm.awg_sequencers[0].sync_enabled)
-        qcm.device.sequencer0.mod_en_awg.assert_called()
-        qcm.device.sequencer0.offset_awg_path0.assert_called()
-        qcm.device.sequencer0.offset_awg_path1.assert_called()
-        qcm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
-        qcm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
+        qcm.device.sequencers[0].sync_en.assert_called_with(False)
+        qcm.device.sequencers[0].mod_en_awg.assert_called()
+        qcm.device.sequencers[0].offset_awg_path0.assert_called()
+        qcm.device.sequencers[0].offset_awg_path1.assert_called()
+        qcm.device.sequencers[0].mixer_corr_gain_ratio.assert_called()
+        qcm.device.sequencers[0].mixer_corr_phase_offset_degree.assert_called()
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
@@ -163,8 +163,6 @@ class TestQbloxQCM:
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
-            (Parameter.SYNC_ENABLED, False, 0),
-            (Parameter.SYNC_ENABLED, True, 0),
             (Parameter.NUM_BINS, 1, 0),
             (Parameter.GAIN_IMBALANCE, 0.1, 0),
             (Parameter.PHASE_IMBALANCE, 0.09, 0),
@@ -188,8 +186,6 @@ class TestQbloxQCM:
             assert qcm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
             assert qcm.awg_sequencers[channel_id].hardware_modulation == value
-        if parameter == Parameter.SYNC_ENABLED:
-            assert qcm.awg_sequencers[channel_id].sync_enabled == value
         if parameter == Parameter.NUM_BINS:
             assert qcm.awg_sequencers[channel_id].num_bins == value
         if parameter == Parameter.GAIN_IMBALANCE:
@@ -234,6 +230,7 @@ class TestQbloxQCM:
         qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
         qcm.upload()
         qcm.device.sequencer0.sequence.assert_called_once()
+        qcm.device.sequencer0.sync_en.assert_called_once_with(True)
 
     def test_id_property(self, qcm_no_device: QbloxQCM):
         """Test id property."""

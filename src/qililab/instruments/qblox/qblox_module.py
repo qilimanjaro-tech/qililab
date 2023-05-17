@@ -9,7 +9,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain, SetPh,
-                                              Stop, Wait, WaitSync)
+                                              Stop, Wait)
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -93,13 +93,14 @@ class QbloxModule(AWG):
         self._map_outputs()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
+            # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
+            self.device.sequencers[sequencer_id].sync_en(False)
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_i(value=sequencer.gain_i, sequencer_id=sequencer_id)
             self._set_gain_q(value=sequencer.gain_q, sequencer_id=sequencer_id)
             self._set_offset_i(value=sequencer.offset_i, sequencer_id=sequencer_id)
             self._set_offset_q(value=sequencer.offset_q, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
-            self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
             self._set_mkr(value=15, sequencer_id=sequencer_id)
@@ -263,9 +264,10 @@ class QbloxModule(AWG):
                 )
             )
         self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
-        wait_time = self.repetition_duration - avg_loop.duration_iter
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
+        if self.repetition_duration is not None:
+            wait_time = self.repetition_duration - avg_loop.duration_iter
+            if wait_time > self._MIN_WAIT_TIME:
+                avg_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
@@ -338,9 +340,6 @@ class QbloxModule(AWG):
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.SYNC_ENABLED:
-            self._set_sync_enabled(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.NUM_BINS:
             self._set_num_bins(value=value, sequencer_id=channel_id)
             return
@@ -366,20 +365,6 @@ class QbloxModule(AWG):
         if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
         cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
-
-    @Instrument.CheckParameterValueBool
-    def _set_sync_enabled(self, value: float | str | bool, sequencer_id: int):
-        """set sync enabled for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).sync_enabled = bool(value)
-        self.device.sequencers[sequencer_id].sync_en(bool(value))
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
@@ -549,6 +534,7 @@ class QbloxModule(AWG):
             if seq_idx not in self.sequences:
                 self.sequences[seq_idx] = (empty_sequence, False)
             sequence, uploaded = self.sequences[seq_idx]
+            self.device.sequencers[seq_idx].sync_en(True)
             if not uploaded:
                 logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
@@ -638,7 +624,7 @@ class QbloxModule(AWG):
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude)*1.)
+                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude) * 1.0)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
