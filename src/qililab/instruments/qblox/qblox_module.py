@@ -223,9 +223,7 @@ class QbloxModule(AWG):
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
-        if (
-            len(timeline) > 0 and timeline[0].start_time != 0
-        ):  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+        if len(timeline) > 0 and timeline[0].start_time != 0:
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
