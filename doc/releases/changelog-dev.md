@@ -108,6 +108,9 @@ This document contains the changes of the current release.
   When applying an I/Q pulse, it sends the I signal through `path1` and the Q signal through `path0`.
   [#324](https://github.com/qilimanjaro-tech/qililab/pull/324)
 
+- The versions of the `qblox-instruments` and `qpysequence` requirements have been updated to `0.9.0`
+  [#337](https://github.com/qilimanjaro-tech/qililab/pull/337)
+
 ### Breaking changes
 
 ### Deprecations / Removals
