@@ -105,7 +105,7 @@ class TestPlatform:
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
-        control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
         assert isinstance(control_bus, Bus)
         assert isinstance(readout_bus, Bus)
         assert not isinstance(control_bus.system_control, ReadoutSystemControl)

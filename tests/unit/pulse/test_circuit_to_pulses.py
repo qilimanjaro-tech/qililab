@@ -10,6 +10,7 @@ from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
 from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag
 from qililab.typings import Parameter
+from qililab.typings.enums import Line
 
 
 @pytest.fixture(name="platform_settings")
@@ -67,16 +68,17 @@ def fixture_chip():
         "id_": 0,
         "category": "chip",
         "nodes": [
-            {"name": "port", "id_": 0, "nodes": [3]},
-            {"name": "port", "id_": 1, "nodes": [2]},
-            {"name": "resonator", "alias": "resonator", "id_": 2, "frequency": 8072600000, "nodes": [1, 3]},
+            {"name": "port", "id_": 0, "line": Line.FLUX.value, "nodes": [11]},
+            {"name": "port", "id_": 1, "line": Line.DRIVE.value, "nodes": [11]},
+            {"name": "port", "id_": 2, "line": Line.FEEDLINE_INPUT.value, "nodes": [10]},
+            {"name": "resonator", "alias": "resonator", "id_": 10, "frequency": 8072600000, "nodes": [2, 11]},
             {
                 "name": "qubit",
                 "alias": "qubit",
-                "id_": 3,
+                "id_": 11,
                 "qubit_index": 0,
                 "frequency": 6532800000,
-                "nodes": [0, 2],
+                "nodes": [0, 1, 10],
             },
         ],
     }
@@ -155,12 +157,16 @@ class TestTranslation:
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 
-        assert control_pulse_bus_schedule.port == 0  # it targets the qubit, which is connected to port 0
+        assert (
+            control_pulse_bus_schedule.port == 1
+        )  # it targets the qubit, which is connected to drive line with port 1
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
         readout_pulse_bus_schedule = pulse_schedule.elements[1]
 
-        assert readout_pulse_bus_schedule.port == 1
+        assert (
+            readout_pulse_bus_schedule.port == 2
+        )  # it targets the resonator, which is connected to feedline input line with port 2
         assert len(readout_pulse_bus_schedule.timeline) == 1
 
         all_pulse_events = control_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
