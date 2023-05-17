@@ -67,8 +67,8 @@ def fixture_chip():
         "id_": 0,
         "category": "chip",
         "nodes": [
-            {"name": "port", "id_": 0, "nodes": [3]},
-            {"name": "port", "id_": 1, "nodes": [2]},
+            {"name": "port", "id_": 0, "nodes": [3], "flux": False},
+            {"name": "port", "id_": 1, "nodes": [2], "flux": False},
             {"name": "resonator", "alias": "resonator", "id_": 2, "frequency": 8072600000, "nodes": [1, 3]},
             {
                 "name": "qubit",

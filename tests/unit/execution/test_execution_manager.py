@@ -319,7 +319,7 @@ class TestWorkflow:
 
         for awg in awgs:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
-                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
+                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
 
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
