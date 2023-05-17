@@ -67,7 +67,10 @@ class E5071B(VectorNetworkAnalyzer):
 
     def acquire_result(self):
         """Convert the data received from the device to a Result object."""
-        return VNAResult(data=self.get_data())
+        data = self.get_data()
+        real = np.real(data)
+        imag = np.imag(data)
+        return VNAResult(i=real, q=imag)
 
     def continuous(self, continuous: bool):
         """set continuous mode
