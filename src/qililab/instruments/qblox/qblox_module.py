@@ -102,7 +102,7 @@ class QbloxModule(AWG):
             self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
-            self._set_mkr(value=12, sequencer_id=sequencer_id)
+            self._set_mkr(value=15, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
