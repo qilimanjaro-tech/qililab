@@ -1,6 +1,5 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
-import warnings
 from dataclasses import asdict, dataclass
 
 import numpy as np
