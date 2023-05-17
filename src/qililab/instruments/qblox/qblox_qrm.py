@@ -229,7 +229,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
         results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
+            self.device.get_acquisitions(sequencer=sequencer.identifier)["binning"]["acquisition"]
             for sequencer in self.awg_sequencers
         ]
 
