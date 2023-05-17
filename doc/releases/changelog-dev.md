@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added `get_port_from_qubit_idx` method to `Chip` class. This method takes the qubit index and the line type as arguments and returns the associated port.
+  [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
+
 - Added `pulse.pulse_distortion` package, which contains a module `pulse_distortion.py` with the base class to distort envelopes in `PulseEvent`, and two modules `bias_tee_correction.py` and `exponential_decay_correction.py`, each containing examples of distortion child classes to apply. This new feature can be used in two ways, directly from the class itself:
 
   ```python
@@ -83,6 +86,9 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- The `get_bus_by_qubit_index` method of `Platform` class now returns a tuple of three buses: `flux_bus, control_bux, readout_bus`.
+  [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
+
 - Arbitrary mapping of I/Q channels to outputs is now possible with the Qblox driver. When using a mapping that is not
   possible in hardware, the waveforms of the corresponding paths are swapped (in software) to allow it. For example,
   when loading a runcard with the following sequencer mapping a warning should be raised:
@@ -106,6 +112,9 @@ This document contains the changes of the current release.
 - The versions of the `qblox-instruments` and `qpysequence` requirements have been updated to `0.9.0`
   [#337](https://github.com/qilimanjaro-tech/qililab/pull/337)
 
+- Allow uploading negative envelopes on the `QbloxModule` class.
+  [#356](https://github.com/qilimanjaro-tech/qililab/pull/356)
+
 ### Breaking changes
 
 ### Deprecations / Removals
@@ -113,6 +122,14 @@ This document contains the changes of the current release.
 - Remove the `awg_iq_channels` from the `AWG` class. This mapping was already done within each sequencer.
   [#323](https://github.com/qilimanjaro-tech/qililab/pull/323)
 
+- Remove the `get_port` method from the `Chip` class.
+  [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
+
 ### Documentation
 
 ### Bug fixes
+
+- Add `_set_markers` method to the `QbloxModule` class and enable all markers. For the RF modules, this command
+  enables the outputs/inputs of the instrument. We decided to enable all markers by default to be able to use them
+  later if needed.
+  [#361](https://github.com/qilimanjaro-tech/qililab/pull/361)
