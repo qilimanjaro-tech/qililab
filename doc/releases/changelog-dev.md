@@ -178,6 +178,10 @@ This document contains the changes of the current release.
 - Allow uploading negative envelopes on the `QbloxModule` class.
   [#356](https://github.com/qilimanjaro-tech/qililab/pull/356)
 
+- The parameter `sync_en` of the Qblox sequencers is now updated automatically when uploading a program to a sequencer.
+  This parameter can no longer be set using `set_parameter`.
+  [#353](https://github.com/qilimanjaro-tech/qililab/pull/353)
+
 ### Breaking changes
 
 ### Deprecations / Removals
