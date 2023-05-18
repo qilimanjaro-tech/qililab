@@ -526,18 +526,13 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Node(str, Enum):
-    """Node elements
+class Line(str, Enum):
+    """Chip line"""
 
-    Args:
-        enum (str): Available elements of chip node:
-        * nodes
-        * frequency
-    """
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"
 
 
 class Qubits(str, Enum):
