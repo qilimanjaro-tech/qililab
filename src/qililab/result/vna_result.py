@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 
 from qililab.result.counts import Counts
 from qililab.result.result import Result

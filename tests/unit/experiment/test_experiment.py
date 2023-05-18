@@ -11,6 +11,7 @@ from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
+from qililab.result.vna_result import VNAResult
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -228,6 +229,34 @@ class TestMethods:
                         title=connected_experiment.options.name,
                     )
                     mock_plot.assert_called_once()
+        assert len(connected_experiment.results.results) > 0
+
+    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
+    def test_run_with_vna_result(self, connected_experiment: Experiment):
+        """Test the ``run`` method of the Experiment class, this is a temporary test until ``run``function of the vna is implemented."""
+        connected_experiment.build_execution()
+        connected_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(connected_experiment, "_plot")
+        assert not hasattr(connected_experiment, "results")
+        with patch("qililab.experiment.experiment.open") as mock_open:
+            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
+                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                    with patch(
+                        "qililab.execution.execution_manager.BusExecution.acquire_result"
+                    ) as mock_bus_acquisition:
+                        mock_bus_acquisition.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+                        # Build execution
+                        connected_experiment.run()
+                        # Assert that the mocks are called when building the execution (such that NO files are created)
+                        mock_open.assert_called()
+                        mock_makedirs.assert_called()
+                        mock_plot.assert_called_once_with(
+                            connection=connected_experiment.platform.connection,
+                            loops=connected_experiment.options.loops or [],
+                            num_schedules=1,
+                            title=connected_experiment.options.name,
+                        )
+                        mock_plot.assert_called_once()
         assert len(connected_experiment.results.results) > 0
 
     def test_run_raises_error(self, exp: Experiment):
