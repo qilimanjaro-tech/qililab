@@ -2,12 +2,12 @@
 from dataclasses import InitVar, dataclass
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
-from qililab.constants import BUS, RUNCARD
+from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
-from qililab.typings import Node, Parameter
+from qililab.typings import Parameter
 from qililab.utils import Factory
 
 
@@ -129,9 +129,7 @@ class Bus:
             list[float]: Frequencies of the nodes that have frequencies
         """
         return list(
-            filter(
-                None, [target.frequency if hasattr(target, Node.FREQUENCY.value) else None for target in self.targets]
-            )
+            filter(None, [target.frequency if hasattr(target, NODE.FREQUENCY) else None for target in self.targets])
         )
 
     def __iter__(self):

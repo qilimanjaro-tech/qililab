@@ -14,6 +14,7 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.transpiler import Drag
+from qililab.typings.enums import Line
 from qililab.utils import Factory
 
 
@@ -97,7 +98,7 @@ class CircuitToPulses:
         # TODO: Add CPhase gate
         qubit_idx = control_gate.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
-        port = chip.get_port(node)
+        port = chip.get_port_from_qubit_idx(idx=qubit_idx, line=Line.DRIVE)
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
@@ -180,7 +181,7 @@ class CircuitToPulses:
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
-        port = chip.get_port(node)
+        port = chip.get_port_from_qubit_idx(idx=qubit_idx, line=Line.FEEDLINE_INPUT)
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
