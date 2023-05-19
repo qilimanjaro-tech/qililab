@@ -68,7 +68,9 @@ class ExecutionManager:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
         for bus in self.buses:
-            bus.run()
+            # TODO: Rethink this condition to maybe have separated buses by type with sets or use protocols
+            if not isinstance(bus.system_control, ReadoutSystemControl):
+                bus.run()
 
         results = []
         for bus in self.readout_buses:
