@@ -121,7 +121,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             if sequencer.identifier in self.sequences:
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="binning")
         return super().compile(
             pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
         )
@@ -231,7 +231,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequencer.scope_store_enabled:
                     self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["binning"]["acquisition"])
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
