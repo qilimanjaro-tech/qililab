@@ -1,14 +1,13 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 import numpy as np
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab import Drag, Park
 from qililab.chip import Chip
-from qililab.chip.nodes import Port, Qubit
+from qililab.chip.nodes import Qubit
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
@@ -17,6 +16,7 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
+from qililab.transpiler import Drag, Park
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -24,10 +24,8 @@ from qililab.utils import Factory
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
-    settings: RuncardSchema.PlatformSettings
-
-    def __post_init__(self):
-        """Post init."""
+    def __init__(self, settings: RuncardSchema.PlatformSettings):
+        self.settings = settings
         self._instantiate_gates_from_settings()
 
     def translate(self, circuits: list[Circuit], chip: Chip) -> list[PulseSchedule]:
@@ -54,8 +52,8 @@ class CircuitToPulses:
                         readout_pulse_event, port = self._readout_gate_to_pulse_event(
                             time=time, readout_gate=m_gate, qubit_idx=qubit_idx, chip=chip
                         )
-
                         pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
+                    continue
 
                 elif isinstance(gate, CZ):
                     # CZ sends a SNZ pulse to target in CZ(control, target)
@@ -157,16 +155,9 @@ class CircuitToPulses:
         # for CZs check if they are possible (defined at runcard) and switch target if needed
 
         qubit_idx = control_gate.target_qubits[0]
-        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
-        port = chip.get_port_from_qubit_idx(idx=qubit_idx, line=Line.DRIVE)
-        old_time = self._update_time(
-            time=time,
-            qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
-        )
 
-        # get ports and select those we need
         # get adjacent flux line (drive line) for CZ,Park gates (all others)
+        node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
         if isinstance(control_gate, (CZ, Park)):
             port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.FLUX)
         else:
