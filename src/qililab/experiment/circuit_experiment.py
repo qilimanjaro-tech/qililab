@@ -1,5 +1,10 @@
 """ Experiment class."""
+import copy
+import itertools
+from queue import Queue
+
 from qibo.models.circuit import Circuit
+from tqdm.auto import tqdm
 
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
@@ -11,6 +16,7 @@ from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
+from qililab.utils.loop import Loop
 
 
 class CircuitExperiment(Experiment):
@@ -59,7 +65,82 @@ class CircuitExperiment(Experiment):
                 title=self.options.name,
             )
 
-        return self._run()
+        if not hasattr(self, "execution_manager"):
+            raise ValueError("Please build the execution_manager before running an experiment.")
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results()
+        num_schedules = self.execution_manager.num_schedules
+
+        data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._asynchronous_data_handling(queue=data_queue)
+
+        for idx, _ in itertools.product(
+            tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
+            range(self.software_average),
+        ):
+            self._execute_recursive_loops(loops=self.options.loops, idx=idx, queue=data_queue)
+
+        if self.options.remote_save:
+            self.remote_save_experiment()
+
+        return self.results
+
+    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0, **kwargs):
+        """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
+
+        Args:
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            parameter values to loop over.
+            idx (int): index of the circuit to execute
+            depth (int): depth of the recursive loop.
+            kwargs (dict): optional paramters, valid optional parameters:
+                idx (int): index of the circuit to execute
+        """
+        if "idx" not in kwargs:
+            raise ValueError("Parameter 'idx' must be specified")
+        idx = copy.deepcopy(kwargs["idx"])
+
+        if loops is None or len(loops) == 0:
+            self.execution_manager.compile(
+                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+            )
+            self.execution_manager.upload()
+            result = self.execution_manager.run(queue)
+            if result is not None:
+                self.results.add(result)
+            return
+
+        self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
+
+    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):
+        """Loop over the loop values, change the element's parameter and call the recursive_loop function.
+
+        Args:
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            parameter values to loop over.
+            depth (int): depth of the recursive loop.
+            kwargs (dict): optional paramters, valid optional parameters:
+                idx (int): index of the circuit to execute
+        """
+
+        if "idx" not in kwargs:
+            raise ValueError("Parameter 'idx' must be specified")
+        idx = copy.deepcopy(kwargs["idx"])
+
+        is_the_top_loop = all(loop.previous is False for loop in loops)
+
+        with tqdm(total=min(len(loop.values) for loop in loops), position=depth, leave=is_the_top_loop) as pbar:
+            loop_ranges = [loop.values for loop in loops]
+
+            for values in zip(*loop_ranges):
+                self._update_tqdm_bar(loops=loops, values=values, pbar=pbar)
+                filtered_loops, filtered_values = self._filter_loops_values_with_external_parameters(
+                    values=values,
+                    loops=loops,
+                )
+                self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
+                inner_loops = list(filter(None, [loop.loop for loop in loops]))
+                self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
 
     def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the

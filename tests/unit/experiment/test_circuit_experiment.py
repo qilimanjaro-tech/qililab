@@ -1,6 +1,7 @@
 """Tests for the Experiment class."""
 import copy
 import time
+from queue import Queue
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -233,6 +234,25 @@ class TestMethods:
         expected = f"Experiment {experiment.options.name}:\n{str(experiment.platform)}\n{str(experiment.options)}\n{str(experiment.circuits)}\n{str(experiment.pulse_schedules)}\n"
         test_str = str(experiment)
         assert expected == test_str
+
+    def test_process_loops_raises_without_idx(self, experiment: CircuitExperiment):
+        """Test that the _process_loops method raises an exception when called without 'idx' parameter"""
+        with pytest.raises(ValueError, match="Parameter 'idx' must be specified"):
+            loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 10))]
+            queue: Queue = Queue()
+            experiment._process_loops(loops=loops, queue=queue, depth=0)
+
+    def test_execute_recursive_loops_raises_without_idx(self, experiment: CircuitExperiment):
+        """Test that the _execute_recursive_loops method raises an exception when called without 'idx' parameter"""
+        with pytest.raises(ValueError, match="Parameter 'idx' must be specified"):
+            loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 10))]
+            queue: Queue = Queue()
+            experiment._execute_recursive_loops(loops=loops, queue=queue)
+
+    def test_run_raises_without_execution_manager(self, experiment: CircuitExperiment):
+        """Test the run method raises an exception if the execution manager was not previously built"""
+        with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment."):
+            experiment.run()
 
 
 class TestAttributes:
