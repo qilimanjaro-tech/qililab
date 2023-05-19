@@ -43,7 +43,6 @@ def fixture_settings():
                 "offset_i": 0,
                 "offset_q": 0,
                 "hardware_modulation": True,
-                "sync_enabled": True,
                 "scope_acquire_trigger_mode": "sequencer",
                 "scope_hardware_averaging": True,
                 "sampling_rate": 1000000000,
