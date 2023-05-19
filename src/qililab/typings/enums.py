@@ -332,7 +332,6 @@ class Parameter(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
-    SYNC_ENABLED = "sync_enabled"
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
@@ -522,18 +521,13 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Node(str, Enum):
-    """Node elements
+class Line(str, Enum):
+    """Chip line"""
 
-    Args:
-        enum (str): Available elements of chip node:
-        * nodes
-        * frequency
-    """
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"
 
 
 class Qubits(str, Enum):
