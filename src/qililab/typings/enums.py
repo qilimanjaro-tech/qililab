@@ -336,7 +336,6 @@ class Parameter(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
-    SYNC_ENABLED = "sync_enabled"
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
