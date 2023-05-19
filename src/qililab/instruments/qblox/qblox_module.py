@@ -219,13 +219,13 @@ class QbloxModule(AWG):
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bins = Loop(name="bins", begin=0, end=2000, step=1)
         program.append_block(bins)
+        bins.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         wait_time = self.repetition_duration
         if wait_time > self._MIN_WAIT_TIME:
             avg_loop.append_component(long_wait(wait_time=wait_time))
-        bins.append_block(avg_loop)
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
@@ -245,6 +245,7 @@ class QbloxModule(AWG):
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bins = Loop(name="bins", begin=0, end=2000, step=1)
         program.append_block(bins)
+        bins.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -267,7 +268,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=bins.counter_register, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -285,7 +286,6 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        # acquisitions.add(name="default", num_bins=1, index=0)
         acquisitions.add(name="binning", num_bins=2000, index=0)
         return acquisitions
 

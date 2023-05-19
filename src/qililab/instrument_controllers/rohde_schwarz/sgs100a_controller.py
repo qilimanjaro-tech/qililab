@@ -27,11 +27,19 @@ class SGS100AController(SingleInstrumentController):
     class SGS100AControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
         """Contains the settings of a specific SGS100A Controller."""
 
+        reference_clock: str
+
         def __post_init__(self):
             super().__post_init__()
             self.connection.name = ConnectionName.TCP_IP
 
     settings: SGS100AControllerSettings
+
+    @SingleInstrumentController.CheckConnected
+    def initial_setup(self):
+        """Initial setup of the instrument."""
+        self.device.ref_osc_source(self.settings.reference_clock)
+        super().initial_setup()
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
