@@ -4,6 +4,46 @@
 
 ### New features since last release
 
+- Added CZ gate support, 2 qubit gate support to `circuit_to_pulse` and corresponding definitions to the runcard.
+
+  CZ implements a Sudden Net Zero (SNZ) pulse through the flux line as well as a parking gate (if defined in the runcard)
+  to adjacent qubits with lower frequency than CZ's target qubit.
+  For the parking gate, if the time is greater than the CZ pulse, the extra time is added as padding at the beginning/end
+  of the pulse.
+  The parameters for the CZ in the runcard are amplitude, duration _of the halfpulse_; and for the CZ's snz pulse b
+  (impulse between halfpulses) and t_phi (time between halfpulses without accounting for b)
+
+  Example:
+
+  ```yaml
+  gates:
+   1:
+     - name: Park
+       amplitude: 1.0
+       phase: 0
+       duration: 103
+       shape:
+         name: rectangular
+
+   (0,2):
+     - name: CZ
+       amplitude: 1.0
+       phase:
+       duration: 40
+       shape:
+         name: snz
+         b: 0.5
+         t_phi: 1
+  ```
+
+  In the example above, if qubit 1 is connected to 2 and has lower frequency, there will be an attempt to apply a parking
+  pulse. If a Park gate definition is found for qubit 1, then a parking pulse will be applied.
+  The total duration of the CZ gate above will be 2\*duration + t_phi + 2 = 83 (each b has 1ns duration and there are 2 bs).
+  Thus the parking gate lasts for some extra 20ns which will result in 10ns 'pad time' in the parking gate before and after
+  the SNZ pulse.
+  Note that the order of thequbits in the CZ is important even if the gate is symmetric, because the second qubit will be
+  the target for the SNZ pulse.
+
 - Added Drag gate support to `circuit_to_pulse` so that Drag gates are implemented as drag pulses
   [#312](https://github.com/qilimanjaro-tech/qililab/pull/312)
 
