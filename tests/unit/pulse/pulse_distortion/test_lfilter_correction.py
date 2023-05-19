@@ -57,12 +57,13 @@ class TestLFilterCorrection:
 
     def test_apply(self, pulse_distortion: LFilterCorrection, envelope: np.ndarray):
         """Test for the envelope method."""
+        norm_factors = [1.2, 2.3]
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(
-            LFilterCorrection(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope=corr_envelopes[0])
+            LFilterCorrection(norm_factor=norm_factors[0], a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope=corr_envelopes[0])
         )
         corr_envelopes.append(
-            LFilterCorrection(norm_factor=2.3, a=[0.5, 0.6], b=[0.7, 1.3]).apply(envelope=corr_envelopes[1])
+            LFilterCorrection(norm_factor=norm_factors[1], a=[0.5, 0.6], b=[0.7, 1.3]).apply(envelope=corr_envelopes[1])
         )
 
         for corr_envelope in corr_envelopes:
@@ -72,8 +73,8 @@ class TestLFilterCorrection:
             assert not np.array_equal(corr_envelope, envelope)
         assert (
             round(np.max(np.real(corr_envelopes[0])), 14)
-            == round(np.max(np.real(corr_envelopes[1])) / 1.2, 14)
-            == round(np.max(np.real(corr_envelopes[2])) / (2.3 * 1.2), 14)
+            == round(np.max(np.real(corr_envelopes[1])) / norm_factors[0], 14)
+            == round(np.max(np.real(corr_envelopes[2])) / (norm_factors[0] * norm_factors[1]), 14)
             == round(np.max(np.real(envelope)), 14) * pulse_distortion.norm_factor
         )
 
