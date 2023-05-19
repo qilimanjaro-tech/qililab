@@ -36,7 +36,7 @@ class Rabi(ExperimentAnalysis, Cos):
         circuit.add(X(qubit))
         circuit.add(M(qubit))
 
-        control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
 
         # Define loop used in the experiment
         loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, values=loop_values)
