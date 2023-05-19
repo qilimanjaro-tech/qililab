@@ -231,7 +231,7 @@ class Instrument(BusElement, ABC):
         """
         if not hasattr(self, "device"):
             raise ValueError(
-                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+                f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter}."
             )
         if channel_id is None:
             logger.debug("Setting parameter: %s to value: %f", parameter.value, value)

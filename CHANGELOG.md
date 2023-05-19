@@ -4,6 +4,9 @@
 
 ### New features since last release
 
+- Added Drag gate support to `circuit_to_pulse` so that Drag gates are implemented as drag pulses
+  [#312](https://github.com/qilimanjaro-tech/qililab/pull/312)
+
 - Added `experiment/portfolio/` submodule, which will contain pre-defined experiments and their analysis.
   [#189](https://github.com/qilimanjaro-tech/qililab/pull/189)
 

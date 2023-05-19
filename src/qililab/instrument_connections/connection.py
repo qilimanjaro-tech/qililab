@@ -68,7 +68,7 @@ class Connection(ABC, FactoryElement):
     def connect(self, device: Device, device_name: str):
         """Establish connection with the instrument. Initialize self._device variable."""
         if self._connected:
-            raise ValueError("Instrument is already connected")
+            raise ValueError(f"Instrument ({device_name}) is already connected")
         self._connected = True
         self._device = device
         self._device_name = device_name

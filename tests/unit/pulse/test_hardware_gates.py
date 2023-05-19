@@ -8,6 +8,7 @@ from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.settings import RuncardSchema
+from qililab.transpiler import Drag
 
 
 @pytest.fixture(name="platform_settings")
@@ -45,6 +46,13 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "duration": 40,
                     "shape": {"name": "gaussian", "num_sigmas": 4},
                 },
+                {
+                    "name": "Drag",
+                    "amplitude": 0.3,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
+                },
             ],
             1: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -62,6 +70,13 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "phase": 90,
                     "duration": 40,
                     "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+                {
+                    "name": "Drag",
+                    "amplitude": 0.3,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
             ],
         },
@@ -82,13 +97,13 @@ def initialize_hardware_gates(platform_settings: RuncardSchema.PlatformSettings)
 
 class TestHardwareGates:
     @pytest.mark.parametrize("qubit", [0, 1])
-    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "M"])
+    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "Drag", "M"])
     def test_parameters_method(self, qubit: int, gate_name: str):
         gate = HardwareGateFactory.get(gate_name)
         settings = gate.parameters(qubits=qubit, master_amplitude_gate=1.0, master_duration_gate=40)
         assert isinstance(settings, HardwareGate.HardwareGateSettings)
 
-    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "M"])
+    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "Drag", "M"])
     def test_parameters_method_raise_error_when_settings_for_qubit_not_set(self, gate_name: str):
         qubit = 123
         gate = HardwareGateFactory.get(gate_name)
@@ -104,9 +119,7 @@ class TestHardwareGates:
         with pytest.raises(ValueError, match=f"Please specify the parameters of the {gate.name.value} gate."):
             gate.parameters(qubits=qubit, master_amplitude_gate=1.0, master_duration_gate=40)
 
-    @pytest.mark.parametrize("qibo_gate", [I(0), M(0), X(0), Y(0), RX(0, 90), RY(0, 90), U2(0, 90, 90)])
-    def test_translate_method(self, qibo_gate: Gate):
-        gate_settings = HardwareGateFactory.gate_settings(
-            gate=qibo_gate, master_amplitude_gate=1.0, master_duration_gate=40
-        )
+    @pytest.mark.parametrize("gate", [I(0), M(0), X(0), Y(0), RX(0, 90), RY(0, 90), U2(0, 90, 90), Drag(0, 2, 1.4)])
+    def test_translate_method(self, gate: Gate):
+        gate_settings = HardwareGateFactory.gate_settings(gate=gate, master_amplitude_gate=1.0, master_duration_gate=40)
         assert isinstance(gate_settings, HardwareGate.HardwareGateSettings)

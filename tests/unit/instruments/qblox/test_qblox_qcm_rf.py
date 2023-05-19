@@ -42,7 +42,6 @@ def fixture_settings():
                 "offset_i": 0,
                 "offset_q": 0,
                 "hardware_modulation": True,
-                "sync_enabled": True,
             }
         ],
     }

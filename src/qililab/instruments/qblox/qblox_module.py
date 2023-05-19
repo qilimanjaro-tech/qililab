@@ -2,6 +2,7 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
+from lib2to3.pgen2.token import AMPER
 from typing import Sequence, cast
 
 import numpy as np
@@ -9,7 +10,7 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain, SetPh,
-                                              Stop, Wait, WaitSync)
+                                              Stop, Wait)
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -93,16 +94,18 @@ class QbloxModule(AWG):
         self._map_outputs()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
+            # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
+            self.device.sequencers[sequencer_id].sync_en(False)
             self._set_nco(sequencer_id=sequencer_id)
             self._set_gain_i(value=sequencer.gain_i, sequencer_id=sequencer_id)
             self._set_gain_q(value=sequencer.gain_q, sequencer_id=sequencer_id)
             self._set_offset_i(value=sequencer.offset_i, sequencer_id=sequencer_id)
             self._set_offset_q(value=sequencer.offset_q, sequencer_id=sequencer_id)
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
-            self._set_sync_enabled(value=cast(AWGQbloxSequencer, sequencer).sync_enabled, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
-            self._set_mkr(value=15, sequencer_id=sequencer_id)
+            ALL_ON = 15  # 1111 in binary
+            self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
@@ -264,11 +267,12 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=bins.counter_register, sequencer_id=sequencer)
-        wait_time = self.repetition_duration - avg_loop.duration_iter
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
-        bins.append_block(avg_loop)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
+        if self.repetition_duration is not None:
+            wait_time = self.repetition_duration - avg_loop.duration_iter
+            if wait_time > self._MIN_WAIT_TIME:
+                avg_loop.append_component(long_wait(wait_time=wait_time))
+
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
 
@@ -300,8 +304,9 @@ class QbloxModule(AWG):
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
         for sequencer in self.awg_sequencers:
-            self.device.arm_sequencer(sequencer=sequencer.identifier)
-            self.device.start_sequencer(sequencer=sequencer.identifier)
+            if sequencer.identifier in self.sequences:
+                self.device.arm_sequencer(sequencer=sequencer.identifier)
+                self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -341,9 +346,6 @@ class QbloxModule(AWG):
         if parameter == Parameter.HARDWARE_MODULATION:
             self._set_hardware_modulation(value=value, sequencer_id=channel_id)
             return
-        if parameter == Parameter.SYNC_ENABLED:
-            self._set_sync_enabled(value=value, sequencer_id=channel_id)
-            return
         if parameter == Parameter.NUM_BINS:
             self._set_num_bins(value=value, sequencer_id=channel_id)
             return
@@ -369,20 +371,6 @@ class QbloxModule(AWG):
         if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
         cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
-
-    @Instrument.CheckParameterValueBool
-    def _set_sync_enabled(self, value: float | str | bool, sequencer_id: int):
-        """set sync enabled for the specific channel
-
-        Args:
-            value (float | str | bool): value to update
-            sequencer_id (int): sequencer to update the value
-
-        Raises:
-            ValueError: when value type is not bool
-        """
-        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).sync_enabled = bool(value)
-        self.device.sequencers[sequencer_id].sync_en(bool(value))
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
@@ -552,6 +540,7 @@ class QbloxModule(AWG):
             if seq_idx not in self.sequences:
                 self.sequences[seq_idx] = (empty_sequence, False)
             sequence, uploaded = self.sequences[seq_idx]
+            self.device.sequencers[seq_idx].sync_en(True)
             if not uploaded:
                 logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
                 self.device.sequencers[seq_idx].sequence(sequence.todict())
@@ -597,11 +586,17 @@ class QbloxModule(AWG):
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
-    def _set_mkr(self, value: int, sequencer_id: int):
-        """Set markers ON/OFF on qxm modules.
+    def _set_markers(self, value: int, sequencer_id: int):
+        """Set markers ON/OFF on qblox modules.
+
+        For the RF modules, this command is also used to enable/disable:
+            - The 2 outputs (for the QCM-RF).
+            - The input and the output (for QRM-RF).
 
          Args:
-            value (int): ON/OFF of the 4 markers in binary (range: 0-15 -> (0000)-(1111))
+            value (int): ON/OFF of the 4 markers in binary (range: 0-15 -> (0000)-(1111)). For the RF modules, the
+                first 2 bits correspond to the ON/OFF value of the outputs/inputs and the last 2 bits correspond
+                to the 2 markers.
             sequencer_id (int): sequencer to update the value
 
         Raises:
@@ -641,7 +636,9 @@ class QbloxModule(AWG):
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude)*1.)
+                amp = pulse_event.pulse.amplitude
+                sign = 1 if amp >= 0 else -1
+                envelope = pulse_event.pulse.envelope(amplitude=sign * 1.0)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)

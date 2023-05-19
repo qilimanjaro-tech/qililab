@@ -126,6 +126,7 @@ class GateName(str, Enum):
         * RX
         * RY
         * XY
+        * Drag
     """
 
     I = "I"  # noqa: E741
@@ -135,10 +136,12 @@ class GateName(str, Enum):
     RY = "RY"
     XY = "XY"
     M = "M"
+    Drag = "Drag"
 
 
 class MasterGateSettingsName(str, Enum):
     """Master Gate Settings names.
+
     Args:
         enum (str): Available types of master gate settings names:
         * master_amplitude_gate
@@ -174,6 +177,34 @@ class SchemaDrawOptions(str, Enum):
     FILE = "file"
 
 
+class PulseDistortionName(str, Enum):
+    """Pulse distortion options.
+
+    Args:
+        Enum (str): Available types of PulseDistortion options:
+        * gaussian
+    """
+
+    BIAS_TEE_CORRECTION = "bias_tee"
+    EXPONENTIAL_CORRECTION = "exponential"
+
+
+class PulseDistortionSettingsName(str, Enum):
+    """Pulse Shape Settings names.
+
+    Args:
+        enum (str): Available types of pulse distortion settings names:
+        * tau_bias_tee
+        * tau_exponential
+        * amp
+    """
+
+    TAU_BIAS_TEE = "tau_bias_tee"
+    TAU_EXPONENTIAL = "tau_exponential"
+    AMP = "amp"
+    SAMPLING_RATE = "sampling_rate"
+
+
 class PulseShapeName(str, Enum):
     """Pulse shape options.
 
@@ -194,6 +225,7 @@ class PulseShapeName(str, Enum):
 
 class PulseShapeSettingsName(str, Enum):
     """Pulse Shape Settings names.
+
     Args:
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
@@ -315,7 +347,6 @@ class Parameter(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
-    SYNC_ENABLED = "sync_enabled"
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
@@ -522,18 +553,13 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Node(str, Enum):
-    """Node elements
+class Line(str, Enum):
+    """Chip line"""
 
-    Args:
-        enum (str): Available elements of chip node:
-        * nodes
-        * frequency
-    """
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"
 
 
 class Qubits(str, Enum):

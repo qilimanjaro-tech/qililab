@@ -134,6 +134,15 @@ class LOOP:
     VALUES = "values"
 
 
+class NODE:
+    """Chip node class and attribute names"""
+
+    NODES = "nodes"
+    FREQUENCY = "frequency"
+    QUBIT_INDEX = "qubit_index"
+    LINE = "line"
+
+
 class PULSESCHEDULES:
     """Pulse Schedules attribute names."""
 
@@ -165,10 +174,17 @@ class PULSESHAPE:
     NAME = "name"
 
 
+class PULSEDISTORTION:
+    """PulsePredecessor attribute names."""
+
+    NAME = "name"
+
+
 class PULSEEVENT:
     """PulseEvent attribute names."""
 
     PULSE = "pulse"
+    PULSE_DISTORTIONS = "pulse_distortions"
     START_TIME = "start_time"
 
 

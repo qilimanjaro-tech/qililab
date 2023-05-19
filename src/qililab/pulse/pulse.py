@@ -1,14 +1,9 @@
 """Pulse class."""
-from __future__ import annotations
-
 from dataclasses import dataclass
-
-import numpy as np
 
 from qililab.constants import PULSE, RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.utils import Factory, Waveforms
-from qililab.utils.signal_processing import modulate
+from qililab.utils import Factory
 
 
 @dataclass(frozen=True, eq=True)
@@ -21,28 +16,6 @@ class Pulse:
     frequency: float
     pulse_shape: PulseShape
 
-    def modulated_waveforms(
-        self, resolution: float = 1.0, start_time: float = 0.0, frequency: float = 0.0
-    ) -> Waveforms:
-        """Applies digital quadrature amplitude modulation (QAM) to the pulse envelope.
-
-        Args:
-            resolution (float, optional): The resolution of the pulse in ns. Defaults to 1.0.
-            start_time (float, optional): The start time of the pulse in ns. Defaults to 0.0.
-            frequency (float, optional): The modulation frequency in Hz, if it is 0.0 then the frequency of the pulse is used. Defaults to 0.0.
-
-        Returns:
-            Waveforms: I and Q modulated waveforms.
-        """
-        frequency = frequency or self.frequency
-        envelope = self.envelope(resolution=resolution)
-        i = np.real(envelope)
-        q = np.imag(envelope)
-        # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.phase + 2 * np.pi * self.frequency * start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
-        return Waveforms(i=imod.tolist(), q=qmod.tolist())
-
     def envelope(self, amplitude: float | None = None, resolution: float = 1.0):
         """Pulse 'envelope' property.
 
@@ -54,7 +27,7 @@ class Pulse:
         return self.pulse_shape.envelope(duration=self.duration, amplitude=amplitude, resolution=resolution)
 
     @classmethod
-    def from_dict(cls, dictionary: dict) -> Pulse:
+    def from_dict(cls, dictionary: dict) -> "Pulse":
         """Load Pulse object from dictionary.
 
         Args:
@@ -63,10 +36,13 @@ class Pulse:
         Returns:
             Pulse: Loaded class.
         """
-        pulse_shape_dict = dictionary[PULSE.PULSE_SHAPE]
-        pulse_shape = Factory.get(name=pulse_shape_dict.pop(RUNCARD.NAME))(**pulse_shape_dict)
-        dictionary[PULSE.PULSE_SHAPE] = pulse_shape
-        return cls(**dictionary)
+        local_dictionary = dictionary.copy()
+        pulse_shape_dict = local_dictionary[PULSE.PULSE_SHAPE]
+        local_dictionary[PULSE.PULSE_SHAPE] = Factory.get(name=pulse_shape_dict[RUNCARD.NAME]).from_dict(
+            pulse_shape_dict
+        )
+
+        return cls(**local_dictionary)
 
     def to_dict(self):
         """Return dictionary of pulse.

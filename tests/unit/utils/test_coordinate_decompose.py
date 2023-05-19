@@ -1,4 +1,4 @@
-""" Tests for LivePlot """
+""" Tests for CoordinateDecompose"""
 
 from qililab.utils import coordinate_decompose
 
