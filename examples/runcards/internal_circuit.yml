@@ -56,31 +56,46 @@ schema:
     category: chip
     nodes:
       - name: port
+        line: feedline_input
         id_: 0
-        nodes: [30]
+        nodes: [100]
       - name: port
+        line: feedline_output
         id_: 1
-        nodes: [31]
+        nodes: [100]
       - name: port
-        id_: 10
-        nodes: [20]
+        line: flux
+        id_: 2
+        nodes: [101]
+      - name: port
+        line: drive
+        id_: 3
+        nodes: [101]
+      - name: port
+        line: flux
+        id_: 4
+        nodes: [102]
+      - name: port
+        line: drive
+        id_: 5
+        nodes: [102]
       - name: resonator
         alias: resonator
-        id_: 20
+        id_: 100
         frequency: 8.0726e+09
-        nodes: [10, 30, 31]
+        nodes: [0, 1, 101, 102]
       - name: qubit
         alias: qubit
-        id_: 30
+        id_: 101
         qubit_index: 0
         frequency: 6.5e+09
-        nodes: [0, 20]
+        nodes: [2, 3, 100]
       - name: qubit
         alias: qubit
-        id_: 31
+        id_: 102
         qubit_index: 1
         frequency: 7.2e+09
-        nodes: [1, 20]
+        nodes: [4, 5, 100]
   instruments:
     - name: QRM
       alias: QRM
