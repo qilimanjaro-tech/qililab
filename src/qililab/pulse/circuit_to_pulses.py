@@ -390,28 +390,6 @@ class CircuitToPulses:
         time[qubit_idx] += pulse_time
         return old_time
 
-    def _update_2q_time(self, time: dict[int, int], qubit_idx: tuple[int, int], pulse_time: int):
-        """Create new timeline if not already created and update time.
-
-        Args:
-            time (Dict[int, int]): Dictionary with the time of each qubit.
-            qubit_idx (tuple[int,int]): Index of the 2 qubit gate.
-            pulse_time (int): Duration of the puls + wait time.
-        """
-
-        # get max time if existing, otherwise initialize both times
-        max_time = max((time[qubit] for qubit in time if qubit in qubit_idx), default=0)
-
-        old_time = max_time
-        residue = pulse_time % self.settings.minimum_clock_time
-        if residue != 0:
-            pulse_time += self.settings.minimum_clock_time - residue
-
-        # update time for both qubits / create dict entry if not created
-        time[qubit_idx[0]] = max_time + pulse_time
-        time[qubit_idx[1]] = max_time + pulse_time
-        return old_time
-
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
         for qubits, gate_settings_list in list(self.settings.gates.items()):
