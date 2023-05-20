@@ -333,10 +333,10 @@ class TestSimulatedExecution:
 
     def test_execute(
         self,
-        mock_open: MagicMock,
-        mock_dump: MagicMock,
-        mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
+        mock_ssc_run: MagicMock,
+        mock_dump: MagicMock,
+        mock_open: MagicMock,
         simulated_experiment: CircuitExperiment,
     ):
         """Test execute method with simulated qubit"""
