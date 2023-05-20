@@ -69,7 +69,8 @@ class ExecutionManager:
 
         for bus in self.buses:
             # TODO: Rethink this condition to maybe have separated buses by type with sets or use protocols
-            if not isinstance(bus.system_control, ReadoutSystemControl):
+            # Use of type() instead of isinstance() because the SimulatedSystemControl inherits from ReadoutSystemControl although having a run method
+            if type(bus.system_control) != ReadoutSystemControl:
                 bus.run()
 
         results = []
