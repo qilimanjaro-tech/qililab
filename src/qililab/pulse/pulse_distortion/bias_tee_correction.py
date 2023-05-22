@@ -14,7 +14,16 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class BiasTeeCorrection(PulseDistortion):
-    """Bias tee distortion."""
+    """Bias tee distortion.
+
+    For more info, check SUPLEMENTAL MATERIAL in [https://arxiv.org/abs/1907.04818].
+
+    Args:
+        tau_bias_tee (float): time constant
+
+    Returns:
+        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+    """
 
     name = PulseDistortionName.BIAS_TEE_CORRECTION
     tau_bias_tee: float
