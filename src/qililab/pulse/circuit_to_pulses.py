@@ -170,6 +170,7 @@ class CircuitToPulses:
 
         # get amplitude from gate settings
         amplitude = float(gate_settings.amplitude)
+        frequency = node.frequency
 
         # check that phase is empty for Drag, CZ, Park
         # also handle specific gate settings
@@ -191,6 +192,7 @@ class CircuitToPulses:
             # SNZ duration at gate settings is the SNZ halfpulse duration
             # should not use pulse duration interchangeably with gate duration
             cz_duration = 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
+            frequency = chip.get_node_from_qubit_idx(idx=control_gate.control_qubits[0], readout=False).frequency
 
             # get old time and update time with pulse duration
             old_time = self._update_time(
@@ -215,7 +217,7 @@ class CircuitToPulses:
                     phase=phase,
                     duration=gate_settings.duration,
                     pulse_shape=pulse_shape,
-                    frequency=node.frequency,
+                    frequency=frequency,  # TODO: frequency for CZ and Park(?)
                 ),
                 start_time=old_time,
             )

@@ -1,14 +1,16 @@
 """This file contains unit tests for the ``CircuitToPulses`` class."""
+import re
+
 import numpy as np
 import pytest
-from qibo.gates import M, X, Y
+from qibo.gates import CZ, M, X, Y
 from qibo.models import Circuit
 
 from qililab.chip import Chip
 from qililab.pulse import CircuitToPulses, PulseSchedule, PulseShape
 from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
 from qililab.settings import RuncardSchema
-from qililab.transpiler import Drag
+from qililab.transpiler import Drag, Park
 from qililab.typings import Parameter
 from qililab.typings.enums import Line
 
@@ -55,7 +57,64 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
-            ]
+                {
+                    "name": "Park",
+                    "amplitude": 0.8,
+                    "phase": None,
+                    "duration": 65,
+                    "shape": {"name": "rectangular"},
+                },
+            ],
+            1: [
+                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+                {"name": "M", "amplitude": 1, "phase": 0, "duration": 100, "shape": {"name": "rectangular"}},
+                {
+                    "name": "X",
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "duration": 45,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                },
+                {
+                    "name": "Y",
+                    "amplitude": 0.3,
+                    "phase": 90,
+                    "duration": 40,
+                    "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+                {
+                    "name": "Drag",
+                    "amplitude": 0.3,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
+                },
+                {
+                    "name": "Park",
+                    "amplitude": 0.8,
+                    "phase": None,
+                    "duration": 65,
+                    "shape": {"name": "rectangular"},
+                },
+            ],
+            (0, 1): [
+                {
+                    "name": "CZ",
+                    "amplitude": 1,
+                    "phase": None,
+                    "duration": 30,
+                    "shape": {"name": "snz", "b": 0.1, "t_phi": 1},
+                },
+            ],
+            (1, 0): [
+                {
+                    "name": "CZ",
+                    "amplitude": 1,
+                    "phase": None,
+                    "duration": 30,
+                    "shape": {"name": "snz", "b": 0.1, "t_phi": 1},
+                },
+            ],
         },
     }
     return RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
@@ -80,6 +139,14 @@ def fixture_chip():
                 "frequency": 6532800000,
                 "nodes": [0, 1, 10],
             },
+            {
+                "name": "qubit",
+                "alias": "qubit",
+                "id_": 51,
+                "qubit_index": 1,
+                "frequency": 7532800000,
+                "nodes": [0, 1, 10],
+            },
         ],
     }
     return Chip(**settings)
@@ -101,6 +168,18 @@ class TestInitialization:
                 assert gate.settings is None
             else:
                 for qubit in range(chip.num_qubits):
+                    if gate.name == "CZ":
+                        qubits = (qubit, (qubit + 1) % 2)
+                        # TODO had to dupplicate this to avoid mypy complain
+                        settings = platform_settings.get_gate(name=gate.name, qubits=qubits)
+                        assert isinstance(gate.settings[qubits], HardwareGate.HardwareGateSettings)
+                        assert gate.settings[qubits].amplitude == settings.amplitude
+                        assert gate.settings[qubits].duration == settings.duration
+                        assert gate.settings[qubits].phase == settings.phase
+                        assert isinstance(gate.settings[qubits].shape, dict)
+                        assert gate.settings[qubits].shape == settings.shape
+                        continue
+
                     settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
                     assert isinstance(gate.settings[qubit], HardwareGate.HardwareGateSettings)
                     assert gate.settings[qubit].amplitude == settings.amplitude
@@ -132,16 +211,20 @@ class TestTranslation:
         """Test the ``translate`` method of the ``CircuitToPulses`` class."""
         translator = CircuitToPulses(settings=platform_settings)
 
-        circuit = Circuit(1)
+        circuit = Circuit(2)
         circuit.add(X(0))
         circuit.add(Y(0))
         circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
+        circuit.add(Park(0))
+        circuit.add(CZ(0, 1))  # CZ(control, target)
         circuit.add(M(0))
 
         pulsed_gates = [
             platform_settings.get_gate(name="X", qubits=0),
             platform_settings.get_gate(name="Y", qubits=0),
             platform_settings.get_gate(name="Drag", qubits=0),
+            platform_settings.get_gate(name="Park", qubits=0),
+            platform_settings.get_gate(name="CZ", qubits=(0, 1)),
             platform_settings.get_gate(name="M", qubits=0),
         ]
 
@@ -151,9 +234,12 @@ class TestTranslation:
         assert len(pulse_schedules) == 1
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
+        # test parking gates
+        assert len(translator._get_parking_gates(CZ(0, 1), chip)) == 0
+
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 2  # it contains pulses for 2 buses
+        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 
@@ -162,14 +248,20 @@ class TestTranslation:
         )  # it targets the qubit, which is connected to drive line with port 1
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
-        readout_pulse_bus_schedule = pulse_schedule.elements[1]
+        flux_pulse_bus_schedule = pulse_schedule.elements[1]
+        assert flux_pulse_bus_schedule.port == 0  # it targets the qubit, which is connected to flux line with port 0
+        assert len(flux_pulse_bus_schedule.timeline) == 2  # it contains 2 gates (CZ, Park)
+
+        readout_pulse_bus_schedule = pulse_schedule.elements[2]
 
         assert (
             readout_pulse_bus_schedule.port == 2
         )  # it targets the resonator, which is connected to feedline input line with port 2
         assert len(readout_pulse_bus_schedule.timeline) == 1
 
-        all_pulse_events = control_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
+        all_pulse_events = (
+            control_pulse_bus_schedule.timeline + flux_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
+        )
 
         for pulse_event, gate_settings in zip(all_pulse_events, pulsed_gates):
             pulse = pulse_event.pulse
@@ -186,6 +278,8 @@ class TestTranslation:
 
             if gate_settings.name == "M":
                 frequency = chip.get_node_from_alias(alias="resonator").frequency
+            elif gate_settings.name == "CZ":
+                frequency = chip.get_node_from_qubit_idx(idx=0, readout=False).frequency
             else:
                 frequency = chip.get_node_from_alias(alias="qubit").frequency
 
@@ -197,13 +291,14 @@ class TestTranslation:
     def test_drag_phase_errors_raised_in_translate(self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip):
         """Test whether errors are raised correctly if gate values are not what is expected"""
         circuit = Circuit(1)
-        circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
+        drag = Drag(0, 1, 0.5)
+        circuit.add(drag)  # 1 defines amplitude, 0.5 defines phase
         # test error raised when drag phase != 0
         platform_settings.get_gate(name="Drag", qubits=0).phase = 2
         translator = CircuitToPulses(settings=platform_settings)
         with pytest.raises(
             ValueError,
-            match="Drag gate should not have setting for phase since the phase depends only on circuit gate parameters",
+            match=f"{drag.name} gate should not have setting for phase",
         ):
             translator.translate(circuits=[circuit], chip=chip)
 
@@ -220,6 +315,15 @@ class TestTranslation:
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit], chip=chip)
 
+    def test_cz_errors_raised_in_translate(self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip):
+        circuit = Circuit(2)
+        cz = CZ(1, 0)
+        circuit.add(cz)
+        translator = CircuitToPulses(settings=platform_settings)
+        error_string = f"Attempting to perform {cz.name} on qubits {re.escape(str(cz.qubits))} by targeting qubit {cz.target_qubits[0]} which has lower frequency than {cz.control_qubits[0]}"
+        with pytest.raises(ValueError, match=error_string):
+            translator.translate(circuits=[circuit], chip=chip)
+
     def test_translate_pulses_with_duration_not_multiple_of_minimum_clock_time(
         self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip
     ):
@@ -227,17 +331,26 @@ class TestTranslation:
         start time is delayed by ``pulse_time mod min_clock_time``."""
         translator = CircuitToPulses(settings=platform_settings)
 
-        circuit = Circuit(1)
+        circuit = Circuit(2)
         circuit.add(X(0))
         circuit.add(Y(0))
+        circuit.add(Park(0))
         circuit.add(Drag(0, 1, 0.5))
+        circuit.add(CZ(0, 1))
         circuit.add(M(0))
 
         pulse_schedule = translator.translate(circuits=[circuit], chip=chip)[0]
 
-        expected_start_times = [0, 48, 88]  # X has a duration of 45ns, but Y doesn't start until 48ns!
+        # minimum_clock_time is 4ns so every start time will be multiple of 4
+        # the order respects drive-flux-resonator (line 337)
+        # duration for CZ is 30*2+2+1
+        expected_start_times = [0, 48, 156, 88, 196, 260]
 
-        pulse_events = pulse_schedule.elements[0].timeline + pulse_schedule.elements[1].timeline
+        pulse_events = (
+            pulse_schedule.elements[0].timeline
+            + pulse_schedule.elements[1].timeline
+            + pulse_schedule.elements[2].timeline
+        )
 
         for pulse_event, expected_start_time in zip(pulse_events, expected_start_times):
             assert pulse_event.start_time == expected_start_time

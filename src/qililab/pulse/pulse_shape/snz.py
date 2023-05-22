@@ -54,7 +54,7 @@ class SNZ(PulseShape):
         halfpulse_t = int(duration / resolution)
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
         envelope[halfpulse_t] = self.b  # impulse b
-        envelope[halfpulse_t + 1 : halfpulse_t + 1 + self.t_phi] = 0  # t_phi
+        envelope[halfpulse_t + 2 + self.t_phi :] = 0  # t_phi
         envelope[halfpulse_t + 1 + self.t_phi] = -self.b  # impulse -b
         envelope[halfpulse_t + 2 + self.t_phi :] = -amplitude * np.ones(halfpulse_t)  # negative square halfpulse
 
@@ -84,4 +84,5 @@ class SNZ(PulseShape):
         return {
             RUNCARD.NAME: self.name.value,
             PulseShapeSettingsName.B.value: self.b,
+            PulseShapeSettingsName.T_PHI.value: self.t_phi,
         }

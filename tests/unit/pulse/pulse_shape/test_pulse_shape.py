@@ -3,13 +3,14 @@ import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import SNZ, Drag, Gaussian, PulseShape, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @pytest.fixture(
-    name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+    name="pulse_shape",
+    params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=2)],
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -22,8 +23,8 @@ class TestPulseShape:
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
         envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0)
-        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0, resolution=1)
+        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
@@ -101,5 +102,15 @@ class TestPulseShape:
                     RUNCARD.NAME: pulse_shape.name.value,
                     PulseShapeSettingsName.NUM_SIGMAS.value: pulse_shape.num_sigmas,
                     PulseShapeSettingsName.DRAG_COEFFICIENT.value: pulse_shape.drag_coefficient,
+                }
+            )
+        if isinstance(pulse_shape, SNZ):
+            assert (
+                dictionary
+                == dictionary2
+                == {
+                    RUNCARD.NAME: pulse_shape.name.value,
+                    PulseShapeSettingsName.B.value: pulse_shape.b,
+                    PulseShapeSettingsName.T_PHI.value: pulse_shape.t_phi,
                 }
             )
