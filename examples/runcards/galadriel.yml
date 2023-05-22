@@ -9,20 +9,7 @@ settings:
   reset_method: passive
   passive_reset_duration: 100
   minimum_clock_time: 4
-  operations:
-    - name: X
-      pulse:
-        name: Gaussian
-        amplitude: 1.0
-        duration: 40
-        parameters:
-          sigma: 2
-    - name: Measure
-      pulse:
-        name: Square
-        amplitude: 1.0
-        duration: 6000
-        parameters: {}
+  operations: []
   gates:
     0:
       - name: M
@@ -31,17 +18,9 @@ settings:
         duration: 2000
         shape:
           name: rectangular
-      - name: X
+      - name: Drag
         amplitude: 1
         phase: 0
-        duration: 20
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-      - name: Y
-        amplitude: 1
-        phase: 90
         duration: 20
         shape:
           name: drag
@@ -54,7 +33,7 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
+      - name: Drag
         amplitude: 1
         phase: 0
         duration: 20
@@ -62,12 +41,6 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: rectangular
     2:
       - name: M
         amplitude: 1.0
@@ -75,7 +48,7 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
+      - name: Drag
         amplitude: 1
         phase: 0
         duration: 20
@@ -83,12 +56,6 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: rectangular
     3:
       - name: M
         amplitude: 1.0
@@ -96,7 +63,7 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
+      - name: Drag
         amplitude: 1
         phase: 0
         duration: 20
@@ -104,12 +71,6 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: rectangular
     4:
       - name: M
         amplitude: 1.0
@@ -117,7 +78,7 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
+      - name: Drag
         amplitude: 1
         phase: 0
         duration: 20
@@ -125,12 +86,6 @@ settings:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: 1
-        phase: 0
-        duration: 20
-        shape:
-          name: rectangular
 
 schema:
   chip:
