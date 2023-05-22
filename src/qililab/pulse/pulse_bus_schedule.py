@@ -42,7 +42,7 @@ class PulseBusSchedule:
             int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
-            pulse_end = event.start_time + event.pulse.duration
+            pulse_end = event.start_time + event.duration
             end = max(pulse_end, end)
         return end
 
