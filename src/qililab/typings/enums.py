@@ -187,6 +187,7 @@ class PulseDistortionName(str, Enum):
 
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    LFILTER = "lfilter"
 
 
 class PulseDistortionSettingsName(str, Enum):
@@ -203,6 +204,9 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
+    NORM_FACTOR = "norm_factor"
+    A = "a"
+    B = "b"
 
 
 class PulseShapeName(str, Enum):
