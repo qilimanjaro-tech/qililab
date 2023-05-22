@@ -8,8 +8,7 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.instruments.awg_analog_digital_converter import \
-    AWGAnalogDigitalConverter
+from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -232,6 +231,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                     self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
                 results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
