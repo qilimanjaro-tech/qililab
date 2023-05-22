@@ -1,4 +1,4 @@
-"""Bias tee correction."""
+"""LFilter correction."""
 from dataclasses import dataclass
 
 import numpy as np
@@ -14,7 +14,45 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class LFilterCorrection(PulseDistortion):
-    """Bias tee distortion."""
+    """LFilter correction from scipy.signal.lfilter
+    [https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html]
+
+    Filter data along one-dimension with an IIR or FIR filter.
+
+    Filter a data sequence, `x`, using a digital filter.  This works for many
+    fundamental data types (including Object type).  The filter is a direct
+    form II transposed implementation of the standard difference equation
+    (see Notes).
+
+    The function `sosfilt` (and filter design using ``output='sos'``) should be
+    preferred over `lfilter` for most filtering tasks, as second-order sections
+    have fewer numerical problems.
+
+    Notes
+    -----
+    The filter function is implemented as a direct II transposed structure.
+    This means that the filter implements::
+
+        a[0]*y[n] = b[0]*x[n] + b[1]*x[n-1] + ... + b[M]*x[n-M]
+                             - a[1]*y[n-1] - ... - a[N]*y[n-N]
+
+    The rational transfer function describing this filter in the
+    z-transform domain is::
+
+                             -1              -M
+                 b[0] + b[1]z  + ... + b[M] z
+         Y(z) = -------------------------------- X(z)
+                             -1              -N
+                 a[0] + a[1]z  + ... + a[N] z
+
+    Args:
+        a (list[float]): The denominator coefficient vector in a 1-D sequence.
+        b (list[float]): The numerator coefficient vector in a 1-D sequence.
+        norm_factor (float): A coefficient to multiply the final result with, to scale it.
+
+    Returns:
+        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+    """
 
     name = PulseDistortionName.LFILTER
     a: list[float]
@@ -22,9 +60,10 @@ class LFilterCorrection(PulseDistortion):
     norm_factor: float = 1.0
 
     def apply(self, envelope: np.ndarray) -> np.ndarray:
-        """Distorts envelopes (originally created to distort square envelopes).
+        """Distorts envelopes (which normally get calibrated with square envelopes).
 
-        Corrects for a bias tee using a linear IIR filter with time constant tau.
+        Corrects an envelope applying the scipy.signal.lfilter.
+        And then normalizes the pulse to the same real amplitude as the initial one.
 
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
@@ -42,13 +81,13 @@ class LFilterCorrection(PulseDistortion):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":
-        """Load BiasTeeCorrection object from dictionary.
+        """Load LFilterCorrection object from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the BiasTeeCorrection object.
+            dictionary (dict): Dictionary representation of the LFilterCorrection object.
 
         Returns:
-            BiasTeeCorrection: Loaded class.
+            LFilterCorrection: Loaded class.
         """
         local_dictionary = dictionary.copy()
         local_dictionary.pop(RUNCARD.NAME, None)
