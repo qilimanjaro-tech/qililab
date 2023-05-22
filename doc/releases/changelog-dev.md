@@ -43,6 +43,19 @@ This document contains the changes of the current release.
   the SNZ pulse.
   Note that the order of the qubits in the CZ is important even if the gate is symmetric, because the second qubit will be
   the target for the SNZ pulse.
+  [#369](https://github.com/qilimanjaro-tech/qililab/pull/369/)
+
+- Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
+
+  ```python
+  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(
+      original_envelopes
+  )
+  ```
+
+  Also adds a phase property to `PulseEvent` and implements `Factory.get` directly in the `from_dict()` method of the parent class `PulseDistortion`.
+
+  [#354](https://github.com/qilimanjaro-tech/qililab/pull/354)
 
 - Added `get_port_from_qubit_idx` method to `Chip` class. This method takes the qubit index and the line type as arguments and returns the associated port.
   [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
