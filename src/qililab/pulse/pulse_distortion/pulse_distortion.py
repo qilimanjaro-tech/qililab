@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from qililab.constants import RUNCARD
 from qililab.typings import FactoryElement, PulseDistortionName
+from qililab.utils import Factory
 
 
 @dataclass(frozen=True, eq=True)
@@ -25,7 +27,6 @@ class PulseDistortion(FactoryElement):
         """
 
     @classmethod
-    @abstractmethod
     def from_dict(cls, dictionary: dict) -> "PulseDistortion":
         """Load PulseDistortion object from dictionary.
 
@@ -35,6 +36,8 @@ class PulseDistortion(FactoryElement):
         Returns:
             PulseDistortion: Loaded class.
         """
+        distortion_class = Factory.get(name=dictionary[RUNCARD.NAME])
+        return distortion_class.from_dict(dictionary)
 
     @abstractmethod
     def to_dict(self) -> dict:
