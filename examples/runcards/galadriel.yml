@@ -203,50 +203,62 @@ schema:
         id_: 10
         alias: drive_line_q0
         nodes: [0]
+        line: drive
       - name: port
         id_: 11
         alias: drive_line_q1
         nodes: [1]
+        line: drive
       - name: port
         id_: 12
         alias: drive_line_q2
         nodes: [2]
+        line: drive
       - name: port
         id_: 13
         alias: drive_line_q3
         nodes: [3]
+        line: drive
       - name: port
         id_: 14
         alias: drive_line_q4
         nodes: [4]
+        line: drive
       - name: port
         id_: 15
         alias: flux_line_q0
         nodes: [5]
+        line: flux
       - name: port
         id_: 16
         alias: flux_line_q1
         nodes: [6]
+        line: flux
       - name: port
         id_: 17
         alias: flux_line_q2
         nodes: [7]
+        line: flux
       - name: port
         id_: 18
         alias: flux_line_q3
         nodes: [8]
+        line: flux
       - name: port
         id_: 19
         alias: flux_line_q4
         nodes: [9]
+        line: flux
       - name: port
         id_: 100
         alias: feedline_input
         nodes: [20, 21, 22, 23, 24]
+        line: feedline_input
       - name: port
         id_: 101
         alias: feedline_output
         nodes: [20, 21, 22, 23, 24]
+        line: feedline_output
       - name: resonator
         alias: resonator_q0
         id_: 20
@@ -300,7 +312,6 @@ schema:
           gain_imbalance: 1.
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
           sampling_rate: 1.e+09
@@ -327,7 +338,6 @@ schema:
           gain_imbalance: 1.
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
           sampling_rate: 1.e+09
@@ -354,7 +364,6 @@ schema:
           gain_imbalance: 1.
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
           sampling_rate: 1.e+09
@@ -381,7 +390,6 @@ schema:
           gain_imbalance: 1.
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
           sampling_rate: 1.e+09
@@ -408,7 +416,6 @@ schema:
           gain_imbalance: 1.
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: false
           scope_acquire_trigger_mode: sequencer
           scope_hardware_averaging: true
           sampling_rate: 1.e+09
@@ -448,7 +455,6 @@ schema:
           gain_imbalance: 0.940
           phase_imbalance: 14.482
           hardware_modulation: true
-          sync_enabled: true
         - identifier: 1
           chip_port_id: 11 #q1 drive
           output_i: 2
@@ -462,7 +468,6 @@ schema:
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: true
     - name: QCM-RF
       alias: QCM-RF2
       id_: 2
@@ -493,7 +498,6 @@ schema:
           gain_imbalance: .5
           phase_imbalance: 0.
           hardware_modulation: true
-          sync_enabled: true
         - identifier: 1
           chip_port_id: 14 #q4 drive
           output_i: 2
@@ -507,7 +511,6 @@ schema:
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: true
     - name: QCM-RF
       alias: QCM-RF3
       id_: 3
@@ -538,7 +541,6 @@ schema:
           gain_imbalance: .5
           phase_imbalance: 0.
           hardware_modulation: true
-          sync_enabled: true
     - name: QCM
       alias: QCM1
       id_: 4
@@ -560,7 +562,6 @@ schema:
           gain_imbalance: .5
           phase_imbalance: 0.
           hardware_modulation: true
-          sync_enabled: true
         - identifier: 1
           chip_port_id: 16 #q1 flux
           output_i: 1
@@ -574,7 +575,6 @@ schema:
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: true
         - identifier: 2
           chip_port_id: 18 #q3 flux
           output_i: 2
@@ -588,7 +588,6 @@ schema:
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: true
         - identifier: 3
           chip_port_id: 19 #q4 flux
           output_i: 3
@@ -602,7 +601,6 @@ schema:
           gain_imbalance: 0.5
           phase_imbalance: 0
           hardware_modulation: true
-          sync_enabled: true
     - name: QCM
       alias: QCM2
       id_: 5
@@ -624,7 +622,6 @@ schema:
           gain_imbalance: .5
           phase_imbalance: 0.
           hardware_modulation: true
-          sync_enabled: true
     - name: rohde_schwarz
       alias: rs_1
       id_: 0
