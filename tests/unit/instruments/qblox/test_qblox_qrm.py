@@ -65,6 +65,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "sequencer1",
             "out0_offset",
             "out1_offset",
             "scope_acq_trigger_mode_path0",
@@ -75,7 +76,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "get_acquisitions",
         ]
     )
-    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer0]
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
     mock_instance.sequencer0.mock_add_spec(
         [
             "sync_en",
@@ -147,12 +148,12 @@ class TestQbloxQRM:
         qrm.device.scope_acq_avg_mode_en_path1.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
         qrm.device.scope_acq_trigger_mode_path0.assert_called()
-        qrm.device.sequencer0.mixer_corr_gain_ratio.assert_called()
-        qrm.device.sequencer0.mixer_corr_phase_offset_degree.assert_called()
-        qrm.device.sequencer0.sync_en.assert_called_with(qrm.awg_sequencers[0].sync_enabled)
-        qrm.device.sequencer0.demod_en_acq.assert_called()
-        qrm.device.sequencer0.integration_length_acq.assert_called()
-        qrm.device.sequencer0.thresholded_acq_threshold.assert_called()
+        qrm.device.sequencers[0].mixer_corr_gain_ratio.assert_called()
+        qrm.device.sequencers[0].mixer_corr_phase_offset_degree.assert_called()
+        qrm.device.sequencers[0].sync_en.assert_called_with(False)
+        qrm.device.sequencers[0].demod_en_acq.assert_called()
+        qrm.device.sequencers[0].integration_length_acq.assert_called()
+        qrm.device.sequencers[0].thresholded_acq_threshold.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
@@ -178,8 +179,6 @@ class TestQbloxQRM:
             (Parameter.IF, 100_000, 0),
             (Parameter.HARDWARE_MODULATION, True, 0),
             (Parameter.HARDWARE_MODULATION, False, 0),
-            (Parameter.SYNC_ENABLED, False, 0),
-            (Parameter.SYNC_ENABLED, True, 0),
             (Parameter.NUM_BINS, 1, 0),
             (Parameter.GAIN_IMBALANCE, 0.1, 0),
             (Parameter.PHASE_IMBALANCE, 0.09, 0),
@@ -223,8 +222,6 @@ class TestQbloxQRM:
             assert qrm.awg_sequencers[channel_id].intermediate_frequency == value
         if parameter == Parameter.HARDWARE_MODULATION:
             assert qrm.awg_sequencers[channel_id].hardware_modulation == value
-        if parameter == Parameter.SYNC_ENABLED:
-            assert qrm.awg_sequencers[channel_id].sync_enabled == value
         if parameter == Parameter.NUM_BINS:
             assert qrm.awg_sequencers[channel_id].num_bins == value
         if parameter == Parameter.GAIN_IMBALANCE:
@@ -319,7 +316,10 @@ class TestQbloxQRM:
         """Test upload method"""
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
         qrm.upload()
-        assert qrm.device.sequencer0.sequence.call_count == 2
+        qrm.device.sequencers[0].sequence.assert_called_once()
+        qrm.device.sequencers[1].sequence.assert_called_once()
+        qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
+        qrm.device.sequencers[1].sync_en.assert_called_once_with(True)
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""
