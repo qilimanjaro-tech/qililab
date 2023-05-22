@@ -93,7 +93,7 @@ class PulseEvent:
 
         if PULSEEVENT.PULSE_DISTORTIONS in local_dictionary:
             pulse_distortions_list.extend(
-                Factory.get(name=pulse_distortion_dict[RUNCARD.NAME]).from_dict(pulse_distortion_dict)
+                PulseDistortion.from_dict(pulse_distortion_dict)
                 for pulse_distortion_dict in local_dictionary[PULSEEVENT.PULSE_DISTORTIONS]
             )
 
