@@ -67,7 +67,7 @@ class QbloxS4g(CurrentSource):
             if len(self.dacs) == 1:
                 channel_id = self.dacs[0]
             else:
-                raise ValueError("channel not specified to update instrument")
+                raise ValueError(f"channel not specified to update instrument {self.name.value}")
         if channel_id > 3:
             raise ValueError(
                 f"the specified dac index:{channel_id} is out of range."
