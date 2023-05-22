@@ -119,8 +119,11 @@ class Experiment:
                         amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                         self._plot.send_points(value=amplitude[0])
                 if isinstance(result, VNAResult):
+                    file_exists = os.path.isfile(self.results_path / "raw_data.csv")
                     with open(file=self.results_path / "raw_data.csv", mode="a", encoding="utf8") as data_file:
                         writer = csv.writer(data_file)
+                        if not file_exists:
+                            writer.writerow(["i", "q"])
                         writer.writerow([i, q])
                 else:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
