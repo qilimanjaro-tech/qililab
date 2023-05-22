@@ -187,6 +187,7 @@ class PulseDistortionName(str, Enum):
 
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    LFILTER = "lfilter"
 
 
 class PulseDistortionSettingsName(str, Enum):
@@ -203,6 +204,9 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
+    NORM_FACTOR = "norm_factor"
+    A = "a"
+    B = "b"
 
 
 class PulseShapeName(str, Enum):
@@ -332,7 +336,6 @@ class Parameter(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
-    SYNC_ENABLED = "sync_enabled"
     POWER = "power"
     GAIN_IMBALANCE = "gain_imbalance"
     PHASE_IMBALANCE = "phase_imbalance"
@@ -522,18 +525,13 @@ class VNASweepModes(str, Enum):
     GRO = "group"
 
 
-class Node(str, Enum):
-    """Node elements
+class Line(str, Enum):
+    """Chip line"""
 
-    Args:
-        enum (str): Available elements of chip node:
-        * nodes
-        * frequency
-    """
-
-    NODES = "nodes"
-    FREQUENCY = "frequency"
-    QUBIT_INDEX = "qubit_index"
+    FLUX = "flux"
+    DRIVE = "drive"
+    FEEDLINE_INPUT = "feedline_input"
+    FEEDLINE_OUTPUT = "feedline_output"
 
 
 class Qubits(str, Enum):
