@@ -403,27 +403,29 @@ def fixture_chip():
         ),
     ],
 )
-def test_native_circuit_to_pulse(
-    circuit_gates: list[gates.Gate],
-    platform_settings: RuncardSchema.PlatformSettings,
-    chip: Chip,
-    expected: dict[str, list],
-):
-    c = Circuit(5)
-    c.add(circuit_gates)
-    translator = CircuitToPulses(settings=platform_settings)
-    pulse_schedules = translator.translate(circuits=[c], chip=chip)
+class TestIntegration:
+    def test_native_circuit_to_pulse(
+        self,
+        circuit_gates: list[gates.Gate],
+        platform_settings: RuncardSchema.PlatformSettings,
+        chip: Chip,
+        expected: dict[str, list],
+    ):
+        c = Circuit(5)
+        c.add(circuit_gates)
+        translator = CircuitToPulses(settings=platform_settings)
+        pulse_schedules = translator.translate(circuits=[c], chip=chip)
 
-    # TODO if resonator is missing then M gate is not added but no error is raised
-    pulse_schedule = pulse_schedules[0]
+        # TODO if resonator is missing then M gate is not added but no error is raised
+        pulse_schedule = pulse_schedules[0]
 
-    events = []
-    for element in pulse_schedule.elements:
-        for timeline in element.timeline:
-            events.append((element.port, timeline.pulse.pulse_shape.name.value, timeline.start_time))
+        events = []
+        for element in pulse_schedule.elements:
+            for timeline in element.timeline:
+                events.append((element.port, timeline.pulse.pulse_shape.name.value, timeline.start_time))
 
-    assert len(events) == len(expected["nodes"])
-    for pulse_time, pulse_name, node in zip(expected["pulse_times"], expected["pulse_name"], expected["nodes"]):
-        assert (node, pulse_name, pulse_time) in events
+        assert len(events) == len(expected["nodes"])
+        for pulse_time, pulse_name, node in zip(expected["pulse_times"], expected["pulse_name"], expected["nodes"]):
+            assert (node, pulse_name, pulse_time) in events
 
-    print(pulse_schedules)
+        print(pulse_schedules)
