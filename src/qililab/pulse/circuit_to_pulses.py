@@ -66,15 +66,20 @@ class CircuitToPulses:
                         raise ValueError(
                             f"Attempting to perform {gate.name} on qubits {gate.qubits} by targeting qubit {gate.target_qubits[0]} which has lower frequency than {gate.control_qubits[0]}"
                         )
-                    parking_gates = self._get_parking_gates(cz=gate, chip=chip)
-                    for parking_gate, _ in parking_gates:
+                    parking_gates_pads = self._get_parking_gates(cz=gate, chip=chip)
+                    # sync times for all qubits involved
+                    cz_qubits = [gate.qubits[0] for gate, _ in parking_gates_pads]
+                    cz_qubits.extend(gate.qubits)
+                    self._sync_qubit_times(cz_qubits, time)
+
+                    for parking_gate, _ in parking_gates_pads:
                         pulse_event, port = self._control_gate_to_pulse_event(
                             time=time, control_gate=parking_gate, chip=chip
                         )
                         pulse_schedule.add_event(pulse_event=pulse_event, port=port)
                     # add padd time to CZ target qubit to sync it with parking gate
                     # if there is more than 1 pad time, add max (this is a bit misleading)
-                    pad_time = max((time for _, time in parking_gates), default=0)
+                    pad_time = max((time for _, time in parking_gates_pads), default=0)
                     if pad_time != 0:
                         self._update_time(time=time, qubit_idx=gate.target_qubits[0], pulse_time=pad_time)
 
@@ -186,9 +191,6 @@ class CircuitToPulses:
             # SNZ duration at gate settings is the SNZ halfpulse duration
             # should not use pulse duration interchangeably with gate duration
             cz_duration = 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
-            # sync both qubits start time and set it for the target qubit
-            max_time = max((time[qubit] for qubit in time if qubit in control_gate.qubits), default=0)
-            time[control_gate.target_qubits[0]] = max_time
 
             # get old time and update time with pulse duration
             old_time = self._update_time(
@@ -380,6 +382,17 @@ class CircuitToPulses:
             pulse_time += self.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
+
+    def _sync_qubit_times(self, qubits: list[int], time: dict[int, int]):
+        """Syncs the time of the given qubit list
+
+        Args:
+            qubits (list[int]): qubits to sync
+            time (dict[int,int]): time dictionary
+        """
+        max_time = max((time[qubit] for qubit in qubits if qubit in time), default=0)
+        for qubit in qubits:
+            time[qubit] = max_time
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
