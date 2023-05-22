@@ -14,13 +14,16 @@ from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
-from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.platform.platform import Platform
+from qililab.pulse import PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
-from qililab.typings import ExperimentOptions, Instrument, Parameter
+from qililab.typings.enums import Instrument, Parameter
+from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
-from qililab.utils.live_plot import LivePlot, Loop
+from qililab.utils.live_plot import LivePlot
+from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
 
 

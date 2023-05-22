@@ -472,6 +472,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 0,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 1,
@@ -484,6 +485,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 2,
@@ -496,6 +498,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_0"],
             },
             NodeName.PORT.value: 10,
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 

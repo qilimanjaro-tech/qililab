@@ -106,6 +106,9 @@ class CircuitToPulses:
         )
         _, bus = self.platform.get_bus(port=port)
 
+        if bus is None:
+            raise TypeError("bus cannot be None to get the distortions")
+
         # load amplitude, phase for drag pulse from circuit gate parameters
         if isinstance(control_gate, Drag):
             amplitude = (control_gate.parameters[0] / np.pi) * gate_settings.amplitude
@@ -188,6 +191,9 @@ class CircuitToPulses:
             pulse_time=gate_settings.duration + self.platform.settings.delay_before_readout,
         )
         _, bus = self.platform.get_bus(port=port)
+
+        if bus is None:
+            raise TypeError("bus cannot be None to get the distortions")
 
         return (
             PulseEvent(
