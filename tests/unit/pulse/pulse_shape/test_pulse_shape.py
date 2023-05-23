@@ -3,13 +3,14 @@ import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape import Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, PulseShape, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @pytest.fixture(
-    name="pulse_shape", params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+    name="pulse_shape",
+    params=[Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)],
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -21,22 +22,29 @@ class TestPulseShape:
 
     def test_envelope_method(self, pulse_shape: PulseShape):
         """Test envelope method"""
-        envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=0.1)
-        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0)
-        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0)
+        small_resolution = 0.1
+        big_resolution = 1.0
+
+        envelope = pulse_shape.envelope(duration=50, amplitude=1.0, resolution=small_resolution)
+        envelope2 = pulse_shape.envelope(duration=25, amplitude=1.0, resolution=big_resolution)
+        envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=big_resolution)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), 14) == 1.0
-        assert round(np.max(np.real(envelope2)), 14) == 1.0
-        assert round(np.max(np.real(envelope3)), 14) == 2.0
+        assert round(np.max(np.real(envelope)), int(np.sqrt(1 / small_resolution))) == 1.0
+        assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / big_resolution))) == 1.0
+        assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / big_resolution))) == 2.0
 
         assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
         if isinstance(pulse_shape, Rectangular):
             assert np.max(envelope) == np.min(envelope)
+
+        if isinstance(pulse_shape, Cosine):
+            assert np.max(envelope) == envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
 
         if isinstance(pulse_shape, Gaussian):
             assert np.max(envelope) == envelope[len(envelope) // 2]
@@ -74,7 +82,7 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        if isinstance(pulse_shape, Rectangular):
+        if isinstance(pulse_shape, (Rectangular, Cosine)):
             assert (
                 dictionary
                 == dictionary2

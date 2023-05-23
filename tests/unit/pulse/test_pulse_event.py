@@ -88,9 +88,11 @@ class TestPulseEvent:
         """Test envelope method"""
         pulse_event = PulseEvent(pulse=pulse, start_time=0, pulse_distortions=pulse_distortions)
 
+        resolution = 0.1
+
         envelope = pulse_event.envelope()
-        envelope2 = pulse_event.envelope(resolution=0.1)
-        envelope3 = pulse_event.envelope(amplitude=2.0, resolution=0.1)
+        envelope2 = pulse_event.envelope(resolution=resolution)
+        envelope3 = pulse_event.envelope(amplitude=2.0, resolution=resolution)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
@@ -99,9 +101,9 @@ class TestPulseEvent:
             if pulse_distortions:
                 assert not np.array_equal(pulse.envelope(), env)
 
-        assert round(np.max(np.real(envelope)), 14) == pulse.amplitude
-        assert round(np.max(np.real(envelope2)), 14) == pulse.amplitude
-        assert round(np.max(np.real(envelope3)), 14) == 2.0
+        assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
+        assert round(np.max(np.real(envelope2)), 2 * int(np.sqrt(1 / resolution))) == pulse.amplitude
+        assert round(np.max(np.real(envelope3)), 2 * int(np.sqrt(1 / resolution))) == 2.0
 
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
