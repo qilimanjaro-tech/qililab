@@ -188,7 +188,7 @@ class Chip(DDBBElement):
         for node in self.nodes:
             if isinstance(node, Port):
                 adj_nodes = self._get_adjacent_nodes(node=node)
-                string += f" * Port {node.id_}: ----"
+                string += f" * Port {node.id_} ({node.line.value}): ----"
                 for adj_node in adj_nodes:
                     string += f"|{adj_node}|--"
                 string += "--\n"

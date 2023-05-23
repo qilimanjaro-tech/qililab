@@ -127,6 +127,8 @@ class GateName(str, Enum):
         * RY
         * XY
         * Drag
+        * CZ
+        * Park
     """
 
     I = "I"  # noqa: E741
@@ -137,6 +139,8 @@ class GateName(str, Enum):
     XY = "XY"
     M = "M"
     Drag = "Drag"
+    CZ = "CZ"
+    Park = "Park"
 
 
 class AcquisitionName(str, Enum):
@@ -207,6 +211,7 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+    SNZ = "snz"
     COSINE = "cosine"
 
 
@@ -217,10 +222,13 @@ class PulseShapeSettingsName(str, Enum):
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
         * drag_coefficient
+        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
     """
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
+    B = "b"
+    T_PHI = "t_phi"
 
 
 class NodeName(str, Enum):

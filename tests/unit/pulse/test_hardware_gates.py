@@ -1,3 +1,4 @@
+import re
 from dataclasses import asdict
 
 import pytest
@@ -49,6 +50,19 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
+                {
+                    "name": "Park",
+                    "amplitude": 1.0,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {
+                        "name": "Park",
+                        "amplitude": 1.0,
+                        "phase": None,
+                        "duration": 83,
+                        "shape": {"name": "rectangular"},
+                    },
+                },
             ],
             1: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -73,6 +87,28 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "phase": None,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
+                },
+                {
+                    "name": "Park",
+                    "amplitude": 1.0,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {
+                        "name": "Park",
+                        "amplitude": 1.0,
+                        "phase": None,
+                        "duration": 83,
+                        "shape": {"name": "rectangular"},
+                    },
+                },
+            ],
+            (0, 1): [
+                {
+                    "name": "CZ",
+                    "amplitude": 1,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "snz", "b": 0.0, "t_phi": 1},
                 },
             ],
         },

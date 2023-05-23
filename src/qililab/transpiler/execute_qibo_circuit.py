@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from qibo.models import Circuit
 
 import qililab as ql
@@ -13,40 +16,50 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str, experiment_name: s
 
     Returns:
         Results : ``Results`` class containing the experiment results
+
+    Example Usage:
+
+    from qibo.models import Circuit
+    from qibo import gates
+    from pathlib import Path
+    import qililab as ql
+    import os
+    import numpy as np
+
+    nqubits = 5
+    c = Circuit(nqubits)
+    for qubit in range(nqubits):
+        c.add(gates.H(qubit))
+    c.add(gates.CNOT(2,0))
+    c.add(gates.RY(4,np.pi / 4))
+    c.add(gates.X(3))
+    c.add(gates.M(*range(3)))
+    c.add(gates.SWAP(4,2))
+    c.add(gates.RX(1, 3*np.pi/2))
+
+    probabilities = execute_qibo_circuit(c, runcard_name="galadriel")
     """
 
-    # create platform
-    # TODO how is the platform build if this is run on remote(?)
-    platform = ql.build_platform(name=runcard_name)  # FIXME based on the comment above
-    platform.connect(manual_override=False)  # if manual_override=True, it surpasses any blocked connection
-    platform.initial_setup()  # Sets all the values of the Runcard to the connected instruments
-    platform.turn_on_instruments()  # Turns on all instruments
+    fname = os.path.abspath("")
+    os.environ["RUNCARDS"] = str(Path(fname) / "examples/runcards")
+    os.environ["DATA"] = str(Path(fname) / "data")
+    platform = ql.build_platform(name=runcard_name)
 
     settings = ql.ExperimentSettings(
         hardware_average=1,
         repetition_duration=0,
         software_average=1,
     )
-
     options = ql.ExperimentOptions(
         loops=[],  # loops to run the experiment
         settings=settings,  # experiment settings
-        name=experiment_name,  # name of the experiment (it will be also used for the results folder name)
     )
-
     # transpile and optimize circuit
-    ql.translate_circuit(circuit, optimize=True)
-
+    circuit = ql.translate_circuit(circuit, optimize=True)
     sample_experiment = ql.Experiment(
         platform=platform,  # platform to run the experiment
         circuits=[circuit],  # circuits to run the experiment
         options=options,  # experiment options
     )
 
-    # build and run the experiment
-    sample_experiment.build_execution()
-    results = sample_experiment.run()
-
-    platform.disconnect()  # TODO do we need to disconnect?
-
-    return results
+    return sample_experiment.execute().probabilities
