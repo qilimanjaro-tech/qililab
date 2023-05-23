@@ -15,6 +15,37 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 
+@pytest.fixture(name="settings_even_sequencers")
+def fixture_settings_even_sequencers():
+    sequencers = [
+        {
+            "identifier": seq_idx,
+            "chip_port_id": 1,
+            "output_i": 1,
+            "output_q": 0,
+            "intermediate_frequency": 20000000,
+            "gain_i": 0.001,
+            "gain_q": 0.02,
+            "gain_imbalance": 1,
+            "phase_imbalance": 0,
+            "offset_i": 0,
+            "offset_q": 0,
+            "hardware_modulation": True,
+            "num_bins": 1,
+        }
+        for seq_idx in range(0, 6, 2)
+    ]
+    return {
+        "alias": "test",
+        "id_": 0,
+        "category": "awg",
+        "firmware": "0.4.0",
+        "num_sequencers": 3,
+        "out_offsets": [0.123, 1.23, 0.123, 1.23],
+        "awg_sequencers": sequencers,
+    }
+
+
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
@@ -251,3 +282,13 @@ class TestQbloxQCM:
         waveforms = sequences[0]._waveforms._waveforms
         assert np.allclose(waveforms[0].data, 0)
         assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
+
+    def test_getting_even_sequencers(self, settings_even_sequencers: dict):
+        """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""
+        qrm = QbloxQCM(settings=settings_even_sequencers)
+        for seq_id in range(6):
+            if seq_id % 2 == 0:
+                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id
+            else:
+                with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
+                    qrm._get_sequencer_by_id(id=seq_id)
