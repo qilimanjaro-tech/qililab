@@ -34,8 +34,8 @@ class TestPulseShape:
             assert isinstance(env, np.ndarray)
 
         assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / small_resolution))) == 1.0
-        assert round(np.max(np.real(envelope2)), 2 * int(np.sqrt(1 / big_resolution))) == 1.0
-        assert round(np.max(np.real(envelope3)), 2 * int(np.sqrt(1 / big_resolution))) == 2.0
+        assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / big_resolution))) == 1.0
+        assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / big_resolution))) == 2.0
 
         assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
