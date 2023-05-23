@@ -108,9 +108,7 @@ class TestTranslation:
         readout_port = next(
             item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FEEDLINE_INPUT.value
         )[RUNCARD.ID]
-        assert (
-            readout_pulse_bus_schedule.port == readout_port
-        )  # it targets the resonator, which is connected to feedline input
+        assert readout_pulse_bus_schedule.port == readout_port  # it targets resonator, which is connected to feedline
         assert len(readout_pulse_bus_schedule.timeline) == 1
 
         all_pulse_events = control_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
