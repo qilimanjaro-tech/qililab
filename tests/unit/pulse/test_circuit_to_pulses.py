@@ -61,7 +61,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "name": "Park",
                     "amplitude": 0.8,
                     "phase": None,
-                    "duration": 65,
+                    "duration": 71,
                     "shape": {"name": "rectangular"},
                 },
             ],
@@ -93,7 +93,39 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "name": "Park",
                     "amplitude": 0.8,
                     "phase": None,
-                    "duration": 65,
+                    "duration": 71,
+                    "shape": {"name": "rectangular"},
+                },
+            ],
+            2: [
+                {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
+                {"name": "M", "amplitude": 1, "phase": 0, "duration": 100, "shape": {"name": "rectangular"}},
+                {
+                    "name": "X",
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "duration": 45,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                },
+                {
+                    "name": "Y",
+                    "amplitude": 0.3,
+                    "phase": 90,
+                    "duration": 40,
+                    "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+                {
+                    "name": "Drag",
+                    "amplitude": 0.3,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
+                },
+                {
+                    "name": "Park",
+                    "amplitude": 0.8,
+                    "phase": None,
+                    "duration": 71,
                     "shape": {"name": "rectangular"},
                 },
             ],
@@ -137,7 +169,7 @@ def fixture_chip():
                 "id_": 11,
                 "qubit_index": 0,
                 "frequency": 6532800000,
-                "nodes": [0, 1, 10],
+                "nodes": [0, 1, 10, 51],
             },
             {
                 "name": "qubit",
@@ -145,7 +177,15 @@ def fixture_chip():
                 "id_": 51,
                 "qubit_index": 1,
                 "frequency": 7532800000,
-                "nodes": [0, 1, 10],
+                "nodes": [0, 1, 10, 11, 53],
+            },
+            {
+                "name": "qubit",
+                "alias": "qubit",
+                "id_": 53,
+                "qubit_index": 2,
+                "frequency": 6532800000,
+                "nodes": [0, 1, 51],
             },
         ],
     }
@@ -166,20 +206,20 @@ class TestInitialization:
             if gate.name not in platform_settings.gate_names:
                 # Some gates derive from others (such as RY from Y), thus they have no settings
                 assert gate.settings is None
+                continue
+            # test CZ separately
+            if gate.name == "CZ":
+                for qubits in ((0, 1), (1, 0)):
+                    # TODO remove duplicate code
+                    settings = platform_settings.get_gate(name=gate.name, qubits=qubits)
+                    assert isinstance(gate.settings[qubits], HardwareGate.HardwareGateSettings)
+                    assert gate.settings[qubits].amplitude == settings.amplitude
+                    assert gate.settings[qubits].duration == settings.duration
+                    assert gate.settings[qubits].phase == settings.phase
+                    assert isinstance(gate.settings[qubits].shape, dict)
+                    assert gate.settings[qubits].shape == settings.shape
             else:
                 for qubit in range(chip.num_qubits):
-                    if gate.name == "CZ":
-                        qubits = (qubit, (qubit + 1) % 2)
-                        # TODO had to dupplicate this to avoid mypy complain
-                        settings = platform_settings.get_gate(name=gate.name, qubits=qubits)
-                        assert isinstance(gate.settings[qubits], HardwareGate.HardwareGateSettings)
-                        assert gate.settings[qubits].amplitude == settings.amplitude
-                        assert gate.settings[qubits].duration == settings.duration
-                        assert gate.settings[qubits].phase == settings.phase
-                        assert isinstance(gate.settings[qubits].shape, dict)
-                        assert gate.settings[qubits].shape == settings.shape
-                        continue
-
                     settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
                     assert isinstance(gate.settings[qubit], HardwareGate.HardwareGateSettings)
                     assert gate.settings[qubit].amplitude == settings.amplitude
@@ -224,6 +264,7 @@ class TestTranslation:
             platform_settings.get_gate(name="Y", qubits=0),
             platform_settings.get_gate(name="Drag", qubits=0),
             platform_settings.get_gate(name="Park", qubits=0),
+            platform_settings.get_gate(name="Park", qubits=(2)),
             platform_settings.get_gate(name="CZ", qubits=(0, 1)),
             platform_settings.get_gate(name="M", qubits=0),
         ]
@@ -235,7 +276,7 @@ class TestTranslation:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         # test parking gates
-        assert len(translator._get_parking_gates(CZ(0, 1), chip)) == 0
+        assert len(translator._get_parking_gates(CZ(0, 1), chip)) == 1
 
         pulse_schedule = pulse_schedules[0]
 
@@ -250,7 +291,7 @@ class TestTranslation:
 
         flux_pulse_bus_schedule = pulse_schedule.elements[1]
         assert flux_pulse_bus_schedule.port == 0  # it targets the qubit, which is connected to flux line with port 0
-        assert len(flux_pulse_bus_schedule.timeline) == 2  # it contains 2 gates (CZ, Park)
+        assert len(flux_pulse_bus_schedule.timeline) == 3  # it contains 2 gates (CZ, Park, Park for the CZ)
 
         readout_pulse_bus_schedule = pulse_schedule.elements[2]
 
@@ -344,7 +385,7 @@ class TestTranslation:
         # minimum_clock_time is 4ns so every start time will be multiple of 4
         # the order respects drive-flux-resonator (line 337)
         # duration for CZ is 30*2+2+1
-        expected_start_times = [0, 48, 156, 88, 196, 260]
+        expected_start_times = [0, 48, 160, 88, 200, 204, 272]  # TODO why not 264
 
         pulse_events = (
             pulse_schedule.elements[0].timeline

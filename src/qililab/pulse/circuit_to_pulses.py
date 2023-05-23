@@ -272,9 +272,9 @@ class CircuitToPulses:
 
             # get pad time
             pad_time = self._get_park_pad_time(park_settings=park_gate_settings[0], cz_settings=cz_gate_settings)
-            if pad_time % 1 != 0 or pad_time < 0:
+            if pad_time % self.settings.minimum_clock_time != 0 or pad_time < 0:
                 raise ValueError(
-                    f"Value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits} has nonzero decimal or is negative"
+                    f"Value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits} has to be positive and multiple of min clock time {self.settings.minimum_clock_time}"
                 )
 
             park_gates.append((Park(qubit), int(pad_time)))
