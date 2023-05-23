@@ -151,7 +151,7 @@ class TestTranslation:
 
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 2  # it contains pulses for 2 buses
+        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses (control, flux and readout)
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 
@@ -160,7 +160,12 @@ class TestTranslation:
         )  # it targets the qubit, which is connected to drive line with port 1
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
-        readout_pulse_bus_schedule = pulse_schedule.elements[1]
+        flux_pulse_bus_schedule = pulse_schedule.elements[1]
+
+        assert flux_pulse_bus_schedule.port == 0  # it targets the flux line, which is connected to port 0
+        assert len(flux_pulse_bus_schedule.timeline) == 0
+
+        readout_pulse_bus_schedule = pulse_schedule.elements[2]
 
         assert (
             readout_pulse_bus_schedule.port == 2
