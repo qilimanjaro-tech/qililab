@@ -417,13 +417,12 @@ class TestIntegration:
         # TODO if resonator is missing then M gate is not added but no error is raised
         pulse_schedule = pulse_schedules[0]
 
-        events = []
-        for element in pulse_schedule.elements:
-            for timeline in element.timeline:
-                events.append((element.port, timeline.pulse.pulse_shape.name.value, timeline.start_time))
-
+        events: list[tuple] = []
+        for pulse_bus_schedule in pulse_schedule.elements:
+            events.extend(
+                (pulse_bus_schedule.port, pulse_event.pulse.pulse_shape.name.value, pulse_event.start_time)
+                for pulse_event in pulse_bus_schedule.timeline
+            )
         assert len(events) == len(expected["nodes"])
-        for pulse_time, pulse_name, node in zip(expected["pulse_times"], expected["pulse_name"], expected["nodes"]):
-            assert (node, pulse_name, pulse_time) in events
-
-        print(pulse_schedules)
+        pulse_values = list(zip(expected["nodes"], expected["pulse_name"], expected["pulse_times"]))
+        assert sorted(pulse_values) == sorted(events)
