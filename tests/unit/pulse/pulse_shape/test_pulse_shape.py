@@ -30,9 +30,9 @@ class TestPulseShape:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), 4) == 1.0
-        assert round(np.max(np.real(envelope2)), 4) == 1.0
-        assert round(np.max(np.real(envelope3)), 4) == 2.0
+        assert round(np.max(np.real(envelope)), 14) == 1.0
+        assert round(np.max(np.real(envelope2)), 14) == 1.0
+        assert round(np.max(np.real(envelope3)), 14) == 2.0
 
         assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 

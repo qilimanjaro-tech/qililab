@@ -75,7 +75,7 @@ class TestLFilterCorrection:
             round(np.max(np.real(corr_envelopes[0])), 14)
             == round(np.max(np.real(corr_envelopes[1])) / norm_factors[0], 14)
             == round(np.max(np.real(corr_envelopes[2])) / (norm_factors[0] * norm_factors[1]), 14)
-            == round(np.max(np.real(envelope)), 14) * pulse_distortion.norm_factor
+            == round(np.max(np.real(envelope)) * pulse_distortion.norm_factor, 14)
         )
 
     def test_from_dict(self, pulse_distortion: LFilterCorrection):
