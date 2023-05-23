@@ -68,10 +68,7 @@ class ExecutionManager:
         """Execute the program for each Bus (with an uploaded pulse schedule)."""
 
         for bus in self.buses:
-            # TODO: Rethink this condition to maybe have separated buses by type with sets or use protocols
-            # Use of type() instead of isinstance() because the SimulatedSystemControl inherits from ReadoutSystemControl although having a run method
-            if type(bus.system_control) != ReadoutSystemControl:
-                bus.run()
+            bus.run()
 
         results = []
         for bus in self.readout_buses:

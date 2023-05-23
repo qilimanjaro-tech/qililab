@@ -8,6 +8,7 @@ from typing import get_type_hints
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
+from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer as VNA
 from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
 from qililab.settings import DDBBElement
@@ -71,8 +72,8 @@ class SystemControl(BusElement, ABC):
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
-            if isinstance(instrument, AWG):
-                instrument.run()
+            if isinstance(instrument, (AWG, VNA)):
+                instrument.run()  # type: ignore
                 return
 
         raise AttributeError(
