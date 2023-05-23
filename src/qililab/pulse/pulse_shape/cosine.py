@@ -17,7 +17,9 @@ class Cosine(PulseShape):
     name = PulseShapeName.COSINE
 
     def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
-        """Cosine envelope.
+        """Cosine envelope that goes like A/2*(1-cos(x)), giving a sinusoidal-gaussian.
+
+        Starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi)
 
         Args:
             duration (int): Duration of the pulse (ns).
@@ -29,7 +31,7 @@ class Cosine(PulseShape):
 
         x_values = np.linspace(start=0, stop=2 * np.pi, num=int(duration / resolution))
 
-        return amplitude * np.cos(x_values)
+        return amplitude / 2 * (1 - np.cos(x_values))
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Cosine":
