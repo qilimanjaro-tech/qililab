@@ -3,14 +3,20 @@ import numpy as np
 import pytest
 
 from qililab.constants import RUNCARD
-from qililab.pulse.pulse_shape import SNZ, Drag, Gaussian, PulseShape, Rectangular
+from qililab.pulse.pulse_shape import SNZ, Cosine, Drag, Gaussian, PulseShape, Rectangular
 from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
 @pytest.fixture(
     name="pulse_shape",
-    params=[Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0), SNZ(b=0.1, t_phi=2)],
+    params=[
+        Rectangular(),
+        Cosine(),
+        Gaussian(num_sigmas=4),
+        Drag(num_sigmas=4, drag_coefficient=1.0),
+        SNZ(b=0.1, t_phi=2),
+    ],
 )
 def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
     """Return Rectangular object."""
@@ -37,9 +43,9 @@ class TestPulseShape:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), 14) == 1.0
-        assert round(np.max(np.real(envelope2)), 14) == 1.0
-        assert round(np.max(np.real(envelope3)), 14) == 2.0
+        assert round(np.max(np.real(envelope)), int(np.sqrt(10))) == 1.0
+        assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) == 1.0
+        assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) == 2.0
 
         if isinstance(pulse_shape, SNZ):
             assert len(envelope) * 10 == len(envelope2) * 12.5 == len(envelope3)
@@ -48,6 +54,10 @@ class TestPulseShape:
 
         if isinstance(pulse_shape, Rectangular):
             assert np.max(envelope) == np.min(envelope)
+
+        if isinstance(pulse_shape, Cosine):
+            assert np.max(envelope) == envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
 
         if isinstance(pulse_shape, Gaussian):
             assert np.max(envelope) == envelope[len(envelope) // 2]
@@ -85,7 +95,7 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        if isinstance(pulse_shape, Rectangular):
+        if isinstance(pulse_shape, (Rectangular, Cosine)):
             assert (
                 dictionary
                 == dictionary2

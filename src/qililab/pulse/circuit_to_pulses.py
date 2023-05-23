@@ -16,7 +16,7 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
-from qililab.transpiler import Drag, Park
+from qililab.transpiler import Park
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -151,7 +151,6 @@ class CircuitToPulses:
         Returns:
             PulseEvent: PulseEvent object.
         """
-
         gate_settings = self._get_gate_settings(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # for CZs check if they are possible (defined at runcard) and switch target if needed
@@ -215,7 +214,8 @@ class CircuitToPulses:
         if not isinstance(gate_duration, int):  # this handles floats but also settings reading int as np.int64
             if gate_duration % 1 != 0:  # check decimals
                 raise ValueError(
-                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
+                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). "
+                    "The gate duration must be an integer or a float with 0 decimal part"
                 )
             else:
                 gate_duration = int(gate_duration)
@@ -312,6 +312,7 @@ class CircuitToPulses:
                     pulse_shape=pulse_shape,
                 ),
                 start_time=old_time + self.settings.delay_before_readout,
+                qubit=qubit_idx,
             )
             if gate_settings.duration > 0
             else None,

@@ -45,6 +45,21 @@ This document contains the changes of the current release.
   the target for the SNZ pulse.
   [#369](https://github.com/qilimanjaro-tech/qililab/pull/369/)
 
+- Added `cosine.py` module containing a `Cosine` child class of `pulse_shape`, which gives a sinusoidal like gaussian A/2\*(1-cos(x)).
+  The shape starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi)
+
+  ```python
+  pulse = Pulse(
+      amplitude=...,
+      phase=...,
+      duration=...,
+      frequency=...,
+      pulse_shape=Cosine(),
+  )
+  ```
+
+  [#376](https://github.com/qilimanjaro-tech/qililab/pull/376)
+
 - Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
 
   ```python

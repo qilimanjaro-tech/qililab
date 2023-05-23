@@ -2,13 +2,12 @@ import re
 from dataclasses import asdict
 
 import pytest
-from qibo.gates import CZ, RX, RY, U2, Gate, I, M, X, Y
+from qibo.gates import I, M, X, Y
 
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.settings import RuncardSchema
-from qililab.transpiler import Drag, Park
 
 
 @pytest.fixture(name="platform_settings")

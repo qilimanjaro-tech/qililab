@@ -9,6 +9,7 @@ from qililab.instruments.awg_settings.awg_qblox_sequencer import AWGQbloxSequenc
 class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
     """AWG Qblox ADC Sequencer"""
 
+    qubit: int
     weights_i: list[float]
     weights_q: list[float]
     weighed_acq_enabled: bool
