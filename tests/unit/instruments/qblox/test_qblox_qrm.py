@@ -419,12 +419,11 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
+        pulse_bus_schedule.port = 1
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
         qrm.upload()
-        qrm.device.sequencers[0].sequence.assert_called_once()
-        qrm.device.sequencers[1].sequence.assert_called_once()
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
-        qrm.device.sequencers[1].sync_en.assert_called_once_with(True)
+        qrm.device.sequencers[1].sequence.assert_not_called()
 
     def test_get_acquisitions_method(self, qrm: QbloxQRM):
         """Test get_acquisitions_method"""

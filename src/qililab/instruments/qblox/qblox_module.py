@@ -178,30 +178,6 @@ class QbloxModule(AWG):
         weights = self._generate_weights(sequencer=sequencer)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
 
-    def _generate_empty_program(self):
-        """Generate Q1ASM program
-
-        Args:
-            pulse_sequence (PulseSequence): Pulse sequence.
-            waveforms (Waveforms): Waveforms.
-
-        Returns:
-            Program: Q1ASM program.
-        """
-        # Define program's blocks
-        program = Program()
-        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        program.append_block(avg_loop)
-        stop = Block(name="stop")
-        stop.append_component(Stop())
-        program.append_block(block=stop)
-        wait_time = self.repetition_duration
-        if wait_time > self._MIN_WAIT_TIME:
-            avg_loop.append_component(long_wait(wait_time=wait_time))
-
-        logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
-        return program
-
     def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int):
         """Generate Q1ASM program
 
@@ -221,7 +197,7 @@ class QbloxModule(AWG):
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
-        if timeline[0].start_time != 0:  # TODO: Make sure that start time of Pulse is 0 or bigger than 4
+        if len(timeline) > 0 and timeline[0].start_time != 0:
             avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
@@ -281,6 +257,10 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
+            return
         if channel_id is None:
             if self.num_sequencers == 1:
                 channel_id = 0
@@ -305,10 +285,6 @@ class QbloxModule(AWG):
             return
         if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, sequencer_id=channel_id)
-            return
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
@@ -502,19 +478,14 @@ class QbloxModule(AWG):
         This method must be called after the method ``compile``."""
         if self.nshots is None or self.repetition_duration is None:
             raise ValueError("Please compile the circuit before uploading it to the device.")
-        empty_program = self._generate_empty_program()
-        empty_sequence = QpySequence(
-            program=empty_program, waveforms=Waveforms(), acquisitions=Acquisitions(), weights={}
-        )
-        for seq_idx in range(self.num_sequencers):
-            if seq_idx not in self.sequences:
-                self.sequences[seq_idx] = (empty_sequence, False)
-            sequence, uploaded = self.sequences[seq_idx]
-            self.device.sequencers[seq_idx].sync_en(True)
-            if not uploaded:
-                logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
-                self.device.sequencers[seq_idx].sequence(sequence.todict())
-                self.sequences[seq_idx] = (sequence, True)
+        for sequencer in self.awg_sequencers:
+            if (seq_idx := sequencer.identifier) in self.sequences:
+                sequence, uploaded = self.sequences[seq_idx]
+                self.device.sequencers[seq_idx].sync_en(True)
+                if not uploaded:
+                    logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+                    self.device.sequencers[seq_idx].sequence(sequence.todict())
+                    self.sequences[seq_idx] = (sequence, True)
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
