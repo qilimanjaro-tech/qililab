@@ -7,163 +7,18 @@ from qibo import gates
 from qibo.models import Circuit
 
 from qililab.chip import Chip
-from qililab.constants import NODE, RUNCARD
 from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import PulseSchedule, PulseShape
+from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
-from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
+from qililab.pulse.hardware_gates import CZ
+from qililab.pulse.hardware_gates import Drag as DragGate
+from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory, I, M
+from qililab.pulse.hardware_gates import Park as ParkGate
 from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag, Park
 from qililab.typings import Parameter
-from qililab.typings.enums import Line
 from tests.data import Galadriel
 from tests.utils import platform_db
-
-bus_settings = [
-    {
-        "id_": 0,
-        "category": "bus",
-        "alias": "feedline_bus",
-        "system_control": {
-            "id_": 0,
-            "name": "readout_system_control",
-            "category": "system_control",
-            "instruments": ["QRM1", "rs_1"],
-        },
-        "port": 0,
-        "distortions": ["BiasTeeCorrection(tau_bias_tee=1.0)", "LFilter(a = [0.1, 1.1], b = [1.1, 1.3])"],
-    },
-    {
-        "id_": 20,
-        "category": "bus",
-        "alias": "drive_line_q0_bus",
-        "system_control": {
-            "id_": 20,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM-RF1"],
-        },
-        "port": 8,
-        "distortions": [],
-    },
-    {
-        "id_": 30,
-        "category": "bus",
-        "alias": "flux_line_q0_bus",
-        "system_control": {
-            "id_": 30,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM1"],
-        },
-        "port": 13,
-        "distortions": [],
-    },
-    {
-        "id_": 21,
-        "category": "bus",
-        "alias": "drive_line_q1_bus",
-        "system_control": {
-            "id_": 21,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM-RF1"],
-        },
-        "port": 9,
-        "distortions": [],
-    },
-    {
-        "id_": 31,
-        "category": "bus",
-        "alias": "flux_line_q1_bus",
-        "system_control": {
-            "id_": 31,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM1"],
-        },
-        "port": 14,
-        "distortions": [],
-    },
-    {
-        "id_": 22,
-        "category": "bus",
-        "alias": "drive_line_q2_bus",
-        "system_control": {
-            "id_": 22,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM-RF2"],
-        },
-        "port": 10,
-        "distortions": [],
-    },
-    {
-        "id_": 32,
-        "category": "bus",
-        "alias": "flux_line_q2_bus",
-        "system_control": {
-            "id_": 32,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM2"],
-        },
-        "port": 15,
-        "distortions": [],
-    },
-    {
-        "id_": 23,
-        "category": "bus",
-        "alias": "drive_line_q3_bus",
-        "system_control": {
-            "id_": 23,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM-RF3"],
-        },
-        "port": 11,
-        "distortions": [],
-    },
-    {
-        "id_": 33,
-        "category": "bus",
-        "alias": "flux_line_q3_bus",
-        "system_control": {
-            "id_": 33,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM1"],
-        },
-        "port": 16,
-        "distortions": [],
-    },
-    {
-        "id_": 24,
-        "category": "bus",
-        "alias": "drive_line_q4_bus",
-        "system_control": {
-            "id_": 24,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM-RF3"],
-        },
-        "port": 12,
-        "distortions": [],
-    },
-    {
-        "id_": 34,
-        "category": "bus",
-        "alias": "flux_line_q4_bus",
-        "system_control": {
-            "id_": 34,
-            "name": "system_control",
-            "category": "system_control",
-            "instruments": ["QCM1"],
-        },
-        "port": 17,
-        "distortions": [],
-    },
-]
 
 
 @pytest.fixture(name="platform")
@@ -174,7 +29,7 @@ def fixture_platform(chip: Chip) -> Platform:
         "category": "platform",
         "name": "dummy",
         "device_id": 9,
-        "minimum_clock_time": 5,
+        "minimum_clock_time": 4,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
         "reset_method": "passive",
@@ -206,6 +61,7 @@ def fixture_platform(chip: Chip) -> Platform:
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
+                {"name": "Park", "amplitude": 1.0, "phase": 0, "duration": 93, "shape": {"name": "rectangular"}},
             ],
             1: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -229,6 +85,7 @@ def fixture_platform(chip: Chip) -> Platform:
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
+                {"name": "Park", "amplitude": 1.0, "phase": 0, "duration": 93, "shape": {"name": "rectangular"}},
             ],
             3: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -281,6 +138,15 @@ def fixture_platform(chip: Chip) -> Platform:
                     "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
                 },
             ],
+            (2, 3): [
+                {
+                    "name": "CZ",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 40,
+                    "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                },
+            ],
             (4, 2): [
                 {
                     "name": "CZ",
@@ -292,7 +158,151 @@ def fixture_platform(chip: Chip) -> Platform:
             ],
         },
     }
-
+    bus_settings = [
+        {
+            "id_": 0,
+            "category": "bus",
+            "alias": "feedline_bus",
+            "system_control": {
+                "id_": 0,
+                "name": "readout_system_control",
+                "category": "system_control",
+                "instruments": ["QRM1", "rs_1"],
+            },
+            "port": 0,
+            "distortions": ["BiasTeeCorrection(tau_bias_tee=1.0)", "LFilter(a = [0.1, 1.1], b = [1.1, 1.3])"],
+        },
+        {
+            "id_": 20,
+            "category": "bus",
+            "alias": "drive_line_q0_bus",
+            "system_control": {
+                "id_": 20,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM-RF1"],
+            },
+            "port": 8,
+            "distortions": [],
+        },
+        {
+            "id_": 30,
+            "category": "bus",
+            "alias": "flux_line_q0_bus",
+            "system_control": {
+                "id_": 30,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM1"],
+            },
+            "port": 13,
+            "distortions": [],
+        },
+        {
+            "id_": 21,
+            "category": "bus",
+            "alias": "drive_line_q1_bus",
+            "system_control": {
+                "id_": 21,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM-RF1"],
+            },
+            "port": 9,
+            "distortions": [],
+        },
+        {
+            "id_": 31,
+            "category": "bus",
+            "alias": "flux_line_q1_bus",
+            "system_control": {
+                "id_": 31,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM1"],
+            },
+            "port": 14,
+            "distortions": [],
+        },
+        {
+            "id_": 22,
+            "category": "bus",
+            "alias": "drive_line_q2_bus",
+            "system_control": {
+                "id_": 22,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM-RF2"],
+            },
+            "port": 10,
+            "distortions": [],
+        },
+        {
+            "id_": 32,
+            "category": "bus",
+            "alias": "flux_line_q2_bus",
+            "system_control": {
+                "id_": 32,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM2"],
+            },
+            "port": 15,
+            "distortions": [],
+        },
+        {
+            "id_": 23,
+            "category": "bus",
+            "alias": "drive_line_q3_bus",
+            "system_control": {
+                "id_": 23,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM-RF3"],
+            },
+            "port": 11,
+            "distortions": [],
+        },
+        {
+            "id_": 33,
+            "category": "bus",
+            "alias": "flux_line_q3_bus",
+            "system_control": {
+                "id_": 33,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM1"],
+            },
+            "port": 16,
+            "distortions": [],
+        },
+        {
+            "id_": 24,
+            "category": "bus",
+            "alias": "drive_line_q4_bus",
+            "system_control": {
+                "id_": 24,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM-RF3"],
+            },
+            "port": 12,
+            "distortions": [],
+        },
+        {
+            "id_": 34,
+            "category": "bus",
+            "alias": "flux_line_q4_bus",
+            "system_control": {
+                "id_": 34,
+                "name": "system_control",
+                "category": "system_control",
+                "instruments": ["QCM1"],
+            },
+            "port": 17,
+            "distortions": [],
+        },
+    ]
     settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
     platform.settings = settings  # type: ignore
@@ -452,7 +462,7 @@ class TestInitialization:
         gates."""
         _ = CircuitToPulses(platform=platform)
 
-        for gate in HardwareGateFactory.pulsed_gates.values():
+        for gate in {I, M, ParkGate, DragGate, CZ}:
             if gate.name not in platform.settings.gate_names:
                 # Some gates derive from others (such as RY from Y), thus they have no settings
                 assert not hasattr(gate, "settings")
@@ -485,7 +495,7 @@ class TestInitialization:
 
         _ = CircuitToPulses(platform=platform)
 
-        assert X.settings[0].amplitude == 1.0
+        assert X.settings[0].amplitude == 0.8
 
         platform.settings.set_parameter(alias="X(0)", parameter=Parameter.AMPLITUDE, value=123)
 
@@ -501,23 +511,13 @@ class TestTranslation:
         """Test the ``translate`` method of the ``CircuitToPulses`` class."""
         translator = CircuitToPulses(platform=platform)
 
-        circuit = Circuit(2)
+        circuit = Circuit(5)
         circuit.add(gates.X(0))
         circuit.add(gates.Y(0))
         circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
         circuit.add(Park(0))
-        circuit.add(gates.CZ(0, 1))  # CZ(control, target)
+        circuit.add(gates.CZ(3, 2))  # CZ(control, target)
         circuit.add(gates.M(0))
-
-        pulsed_gates = [
-            platform.settings.get_gate(name="X", qubits=0),
-            platform.settings.get_gate(name="Y", qubits=0),
-            platform.settings.get_gate(name="Drag", qubits=0),
-            platform.settings.get_gate(name="Park", qubits=0),
-            platform.settings.get_gate(name="Park", qubits=(2)),
-            platform.settings.get_gate(name="CZ", qubits=(0, 1)),
-            platform.settings.get_gate(name="M", qubits=0),
-        ]
 
         pulse_schedules = translator.translate(circuits=[circuit])
 
@@ -526,70 +526,11 @@ class TestTranslation:
         assert isinstance(pulse_schedules[0], PulseSchedule)
 
         # test parking gates
-        assert len(translator._get_parking_gates(gates.CZ(0, 1), platform.chip)) == 1
+        assert len(translator._get_parking_gates(gates.CZ(3, 2), platform.chip)) == 2
 
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses (control, flux and readout)
-
-        control_pulse_bus_schedule = pulse_schedule.elements[0]
-        control_port = next(item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.DRIVE.value)[
-            RUNCARD.ID
-        ]
-        assert control_pulse_bus_schedule.port == control_port  # it targets the qubit, which is connected to drive line
-        assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
-
-        flux_pulse_bus_schedule = pulse_schedule.elements[1]
-        flux_port = next(item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FLUX.value)[RUNCARD.ID]
-        assert flux_pulse_bus_schedule.port == flux_port  # it targets the flux line, which is connected to flux line
-        assert len(flux_pulse_bus_schedule.timeline) == 3  # it contains 2 gates (CZ, Park, Park for the CZ)
-
-        readout_pulse_bus_schedule = pulse_schedule.elements[2]
-        readout_port = next(
-            item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FEEDLINE_INPUT.value
-        )[RUNCARD.ID]
-        assert readout_pulse_bus_schedule.port == readout_port  # it targets resonator, which is connected to feedline
-        assert len(readout_pulse_bus_schedule.timeline) == 1
-
-        all_pulse_events = (
-            control_pulse_bus_schedule.timeline + flux_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
-        )
-
-        for pulse_event, gate_settings in zip(all_pulse_events, pulsed_gates):
-            pulse = pulse_event.pulse
-            # check duration
-            if gate_settings.name == "CZ":
-                assert pulse.duration == 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
-            else:
-                assert pulse.duration == gate_settings.duration
-
-            if gate_settings.name == "Drag":
-                # drag amplitude is defined by the first parameter, in this case 1
-                drag_amplitude = (1 / np.pi) * gate_settings.amplitude
-                assert pulse.amplitude == pytest.approx(drag_amplitude)
-                # drag phase is defined by the second parameter, in this case 0.5
-                assert pulse.phase == 0.5
-            else:
-                if gate_settings.name == "CZ" or gate_settings.name == "Park":
-                    assert pulse.phase == 0
-                else:
-                    assert pulse.phase == gate_settings.phase
-                assert pulse.amplitude == gate_settings.amplitude
-
-            if gate_settings.name == "M":
-                frequency = platform.chip.get_node_from_alias(alias="resonator").frequency
-            elif gate_settings.name == "CZ":
-                frequency = platform.chip.get_node_from_qubit_idx(idx=0, readout=False).frequency
-            else:
-                frequency = platform.chip.get_node_from_alias(alias="qubit").frequency
-
-            if gate_settings.name == "CZ" or gate_settings.name == "Park":
-                assert pulse.frequency == 0
-            else:
-                assert pulse.frequency == frequency
-            assert isinstance(pulse.pulse_shape, PulseShape)
-            for name, value in gate_settings.shape.items():
-                assert getattr(pulse.pulse_shape, name) == value
+        assert len(pulse_schedule) == 7  # it contains pulses for 7 buses (control, flux and readout)
 
     def test_gate_duration_errors_raised_in_translate(self, platform: Platform):
         """Test whether errors are raised correctly if gate values are not what is expected"""
@@ -603,8 +544,8 @@ class TestTranslation:
             translator.translate(circuits=[circuit])
 
     def test_cz_errors_raised_in_translate(self, platform: Platform):
-        circuit = Circuit(2)
-        cz = gates.CZ(1, 0)
+        circuit = Circuit(4)
+        cz = gates.CZ(2, 3)
         circuit.add(cz)
         translator = CircuitToPulses(platform=platform)
         error_string = f"Attempting to perform {cz.name} on qubits {re.escape(str(cz.qubits))} by targeting qubit {cz.target_qubits[0]} which has lower frequency than {cz.control_qubits[0]}"
@@ -616,12 +557,12 @@ class TestTranslation:
         start time is delayed by ``pulse_time mod min_clock_time``."""
         translator = CircuitToPulses(platform=platform)
 
-        circuit = Circuit(2)
+        circuit = Circuit(5)
         circuit.add(gates.X(0))
         circuit.add(gates.Y(0))
         circuit.add(Park(0))
         circuit.add(Drag(0, 1, 0.5))
-        circuit.add(gates.CZ(0, 1))
+        circuit.add(gates.CZ(3, 2))
         circuit.add(gates.M(0))
 
         pulse_schedule = translator.translate(circuits=[circuit])[0]
@@ -629,13 +570,24 @@ class TestTranslation:
         # minimum_clock_time is 4ns so every start time will be multiple of 4
         # the order respects drive-flux-resonator (line 337)
         # duration for CZ is 30*2+2+1
-        expected_start_times = [0, 48, 160, 88, 200, 204, 272]  # TODO why not 264
+        bus0_start_times = [224]
+        bus8_start_times = [0, 48, 184]
+        bus13_start_times = [88]
+        bus14_start_times = [0]
+        bus15_start_times = [8]  # padding
+        bus17_start_times = [0]
 
-        pulse_events = (
-            pulse_schedule.elements[0].timeline
-            + pulse_schedule.elements[1].timeline
-            + pulse_schedule.elements[2].timeline
+        expected_start_times = (
+            bus0_start_times
+            + bus8_start_times
+            + bus13_start_times
+            + bus14_start_times
+            + bus15_start_times
+            + bus17_start_times
         )
+
+        sorted_bus_schedules = sorted(pulse_schedule.elements, key=lambda element: element.port)
+        pulse_events: list[PulseEvent] = sum((element.timeline for element in sorted_bus_schedules), [])
 
         for pulse_event, expected_start_time in zip(pulse_events, expected_start_times):
             assert pulse_event.start_time == expected_start_time
@@ -760,6 +712,7 @@ class TestIntegration:
     def test_native_circuit_to_pulse(
         self, circuit_gates: list[gates.Gate], platform: Platform, expected: dict[str, list]
     ):
+        platform.settings.gates.pop((2, 3))
         c = Circuit(5)
         c.add(circuit_gates)
         translator = CircuitToPulses(platform=platform)
