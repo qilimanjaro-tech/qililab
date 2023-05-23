@@ -11,7 +11,7 @@ from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instruments import AWG
+from qililab.instruments import AWG, QbloxQRM
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
 from qililab.system_control import ReadoutSystemControl
@@ -291,6 +291,7 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
     for awg in awgs:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
+        awg.device.sequencers = [MagicMock(), MagicMock()]
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
 
@@ -319,7 +320,10 @@ class TestWorkflow:
 
         for awg in awgs:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
-                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
+                if isinstance(awg, QbloxQRM) and seq_idx == 1:
+                    assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
+                    continue
+                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
 
     def test_run(self, mocked_execution_manager: ExecutionManager):
         """Test that the run method returns a ``Result`` object."""
