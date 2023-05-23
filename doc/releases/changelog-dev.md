@@ -99,6 +99,33 @@ This document contains the changes of the current release.
 
   [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
 
+- The `VectorNetworkAnalizer` instrument is now implemented into the workflow of qililab.
+  The user can now create an `Experiment` and use all qililab features. The results of experiments using the VNA will now be saved into three different files: File containing the runcard, file containing the raw data (data saved in real time) and a file containing the metadata (experiment options and loops). Here is an example of a simple experiment using the `VectorNetworkAnalizer`:
+
+  ```python
+  platform = build_platform(name="sauron_vna")  # Load the platform
+  platform.connect()
+  # Set some values for the VNA
+  platform.set_parameter(alias="VNA", parameter=Parameter.POWER, value=-20.0)
+  platform.set_parameter(
+      alias="VNA", parameter=Parameter.SCATTERING_PARAMETER, value="S21"
+  )
+  # Define loops and options for the experiment
+  loop = Loop(
+      alias="vna_readout_bus", parameter=Parameter.IF_BANDWIDTH, values=[100.0, 200.0]
+  )
+  options = ExperimentOptions(loops=[loop], name="test_vna")
+  # Create the `Experiment`
+  experiment = Experiment(platform=platform, options=options)
+  # Build execution (needed) and run
+  experiment.build_execution()
+  experiment.run()
+  # Access the results
+  res = experiment.results
+  ```
+
+  [#360](https://github.com/qilimanjaro-tech/qililab/pull/360)
+
 ### Improvements
 
 - The `get_bus_by_qubit_index` method of `Platform` class now returns a tuple of three buses: `flux_bus, control_bux, readout_bus`.
@@ -133,6 +160,10 @@ This document contains the changes of the current release.
 - The parameter `sync_en` of the Qblox sequencers is now updated automatically when uploading a program to a sequencer.
   This parameter can no longer be set using `set_parameter`.
   [#353](https://github.com/qilimanjaro-tech/qililab/pull/353)
+
+- The `VNAResult` class now holds the parameters `i` and `q` obtained from the trace of the
+  `VectorNetworkAnalyzer` instrument.
+  [#360](https://github.com/qilimanjaro-tech/qililab/pull/360)
 
 ### Breaking changes
 
