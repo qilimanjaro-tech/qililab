@@ -236,25 +236,25 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
+        results = []
+        integration_lengths = []
         for sequencer in self.awg_sequencers:
-            sequencer_id = sequencer.identifier
-            flags = self.device.get_sequencer_state(
-                sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
-            )
-            logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-            self.device.get_acquisition_state(
-                sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
-            )
+            if sequencer.identifier in self.sequences:
+                sequencer_id = sequencer.identifier
+                flags = self.device.get_sequencer_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
+                )
+                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
+                self.device.get_acquisition_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
+                )
 
-            if sequencer.scope_store_enabled:
-                self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+                if sequencer.scope_store_enabled:
+                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-        results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
-            for sequencer in self.awg_sequencers
-        ]
-
-        integration_lengths = [sequencer.used_integration_length for sequencer in self.awg_sequencers]
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                self.device.sequencers[sequencer.identifier].sync_en(False)
+                integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 

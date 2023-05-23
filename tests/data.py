@@ -353,6 +353,7 @@ class Galadriel:
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.10",
@@ -382,6 +383,7 @@ class Galadriel:
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.7",
