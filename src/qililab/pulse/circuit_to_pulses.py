@@ -174,17 +174,9 @@ class CircuitToPulses:
 
         # check that phase is empty for Drag, CZ, Park
         # also handle specific gate settings
-        if isinstance(control_gate, (Drag, CZ, Park)):
-            # phase should be None
-            phase = gate_settings.phase
-            if gate_settings.phase is not None:
-                raise ValueError(f"{control_gate.name} gate should not have setting for phase")
-
-            # load amplitude, phase for drag pulse from circuit gate parameters
-            if isinstance(control_gate, Drag):
-                amplitude = (control_gate.parameters[0] / np.pi) * amplitude
-                phase = control_gate.parameters[1]
-
+        if isinstance(control_gate, Drag):
+            amplitude *= control_gate.parameters[0] / np.pi
+            phase = control_gate.parameters[1]
         else:
             phase = float(gate_settings.phase)
 
