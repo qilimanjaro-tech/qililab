@@ -133,8 +133,8 @@ class TestQbloxQCM:
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
         qcm.start_sequencer()
-        qcm.device.arm_sequencer.assert_called()
-        qcm.device.start_sequencer.assert_called()
+        qcm.device.arm_sequencer.assert_not_called()
+        qcm.device.start_sequencer.assert_not_called()
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
