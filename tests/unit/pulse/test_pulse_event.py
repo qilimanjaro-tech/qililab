@@ -101,9 +101,9 @@ class TestPulseEvent:
             if pulse_distortions:
                 assert not np.array_equal(pulse.envelope(), env)
 
-        assert round(np.max(np.real(envelope)), int(np.sqrt(1 / 1.0))) == pulse.amplitude
-        assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
-        assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
+        assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
+        assert round(np.max(np.real(envelope2)), 2 * int(np.sqrt(1 / resolution))) == pulse.amplitude
+        assert round(np.max(np.real(envelope3)), 2 * int(np.sqrt(1 / resolution))) == 2.0
 
         assert len(pulse.envelope()) == len(envelope)
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
