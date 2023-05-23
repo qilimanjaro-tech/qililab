@@ -216,7 +216,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): Normalized threshold value.
             sequencer_id (int): sequencer to update the value
         """
-        integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
+        integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_nco(self, sequencer_id: int):
@@ -260,7 +260,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        weighed_acq = self.awg_sequencers[sequencer_id].weighed_acq_enabled
+        weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
         acq_instruction = (
             AcquireWeighed(
                 acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME

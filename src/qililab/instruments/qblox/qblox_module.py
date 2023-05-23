@@ -318,7 +318,7 @@ class QbloxModule(AWG):
         """
         if int(value) > self._MAX_BINS:
             raise ValueError(f"Value {value} greater than maximum bins: {self._MAX_BINS}")
-        cast(AWGQbloxSequencer, self.awg_sequencers[sequencer_id]).num_bins = int(value)
+        cast(AWGQbloxSequencer, self._get_sequencer_by_id(id=sequencer_id)).num_bins = int(value)
 
     @Instrument.CheckParameterValueBool
     def _set_hardware_modulation(self, value: float | str | bool, sequencer_id: int):
@@ -331,7 +331,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not bool
         """
-        self.awg_sequencers[sequencer_id].hardware_modulation = bool(value)
+        self._get_sequencer_by_id(id=sequencer_id).hardware_modulation = bool(value)
         self.device.sequencers[sequencer_id].mod_en_awg(bool(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -345,7 +345,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].intermediate_frequency = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).intermediate_frequency = float(value)
         self.device.sequencers[sequencer_id].nco_freq(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -360,9 +360,9 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self.awg_sequencers[sequencer_id].offset_i = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).offset_i = float(value)
         # update value in the instrument
-        path = self.awg_sequencers[sequencer_id].path_i
+        path = self._get_sequencer_by_id(id=sequencer_id).path_i
         sequencer = self.device.sequencers[sequencer_id]
         getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
@@ -378,9 +378,9 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self.awg_sequencers[sequencer_id].offset_q = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).offset_q = float(value)
         # update value in the instrument
-        path = self.awg_sequencers[sequencer_id].path_q
+        path = self._get_sequencer_by_id(id=sequencer_id).path_q
         sequencer = self.device.sequencers[sequencer_id]
         getattr(sequencer, f"offset_awg_path{path}")(float(value))
 
@@ -416,9 +416,9 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self.awg_sequencers[sequencer_id].gain_i = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).gain_i = float(value)
         # update value in the instrument
-        path = self.awg_sequencers[sequencer_id].path_i
+        path = self._get_sequencer_by_id(id=sequencer_id).path_i
         sequencer = self.device.sequencers[sequencer_id]
         getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
@@ -434,9 +434,9 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
         # update value in qililab
-        self.awg_sequencers[sequencer_id].gain_q = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).gain_q = float(value)
         # update value in the instrument
-        path = self.awg_sequencers[sequencer_id].path_q
+        path = self._get_sequencer_by_id(id=sequencer_id).path_q
         sequencer = self.device.sequencers[sequencer_id]
         getattr(sequencer, f"gain_awg_path{path}")(float(value))
 
@@ -491,12 +491,12 @@ class QbloxModule(AWG):
 
     def _set_nco(self, sequencer_id: int):
         """Enable modulation of pulses and setup NCO frequency."""
-        if self.awg_sequencers[sequencer_id].hardware_modulation:
+        if self._get_sequencer_by_id(id=sequencer_id).hardware_modulation:
             self._set_hardware_modulation(
-                value=self.awg_sequencers[sequencer_id].hardware_modulation, sequencer_id=sequencer_id
+                value=self._get_sequencer_by_id(id=sequencer_id).hardware_modulation, sequencer_id=sequencer_id
             )
             self._set_frequency(
-                value=self.awg_sequencers[sequencer_id].intermediate_frequency, sequencer_id=sequencer_id
+                value=self._get_sequencer_by_id(id=sequencer_id).intermediate_frequency, sequencer_id=sequencer_id
             )
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -511,7 +511,7 @@ class QbloxModule(AWG):
             ValueError: when value type is not float
         """
 
-        self.awg_sequencers[sequencer_id].gain_imbalance = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).gain_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_gain_ratio(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -525,7 +525,7 @@ class QbloxModule(AWG):
         Raises:
             ValueError: when value type is not float
         """
-        self.awg_sequencers[sequencer_id].phase_imbalance = float(value)
+        self._get_sequencer_by_id(id=sequencer_id).phase_imbalance = float(value)
         self.device.sequencers[sequencer_id].mixer_corr_phase_offset_degree(float(value))
 
     @Instrument.CheckParameterValueFloatOrInt
@@ -604,3 +604,20 @@ class QbloxModule(AWG):
     def out_offsets(self):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets
+
+    def _get_sequencer_by_id(self, id: int):
+        """Returns a sequencer with the given `id`."
+
+        Args:
+            id (int): Id of the sequencer.
+
+        Raises:
+            IndexError: There is no sequencer with the given `id`.
+
+        Returns:
+            AWGQbloxSequencer: Sequencer with the given `id`.
+        """
+        for sequencer in self.awg_sequencers:
+            if sequencer.identifier == id:
+                return sequencer
+        raise IndexError(f"There is no sequencer with id={id}.")
