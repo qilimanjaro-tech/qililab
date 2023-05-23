@@ -2,11 +2,12 @@
 import itertools
 from abc import abstractmethod
 from dataclasses import dataclass
+from lib2to3.pgen2.token import AMPER
 from typing import Sequence, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait
+from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
 from qpysequence.sequence import Sequence as QpySequence
@@ -204,7 +205,7 @@ class QbloxModule(AWG):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             avg_loop.append_component(ResetPh())
-            gain = int(np.abs(pulse_event.pulse.amplitude * AWG_MAX_GAIN))
+            gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
@@ -251,8 +252,9 @@ class QbloxModule(AWG):
     def start_sequencer(self):
         """Start sequencer and execute the uploaded instructions."""
         for sequencer in self.awg_sequencers:
-            self.device.arm_sequencer(sequencer=sequencer.identifier)
-            self.device.start_sequencer(sequencer=sequencer.identifier)
+            if sequencer.identifier in self.sequences:
+                self.device.arm_sequencer(sequencer=sequencer.identifier)
+                self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
@@ -577,7 +579,9 @@ class QbloxModule(AWG):
         for pulse_event in pulse_bus_schedule.timeline:
             if (pulse_event.duration, pulse_event.pulse.pulse_shape) not in unique_pulses:
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
-                envelope = pulse_event.pulse.envelope(amplitude=np.sign(pulse_event.pulse.amplitude) * 1.0)
+                amp = pulse_event.pulse.amplitude
+                sign = 1 if amp >= 0 else -1
+                envelope = pulse_event.pulse.envelope(amplitude=sign * 1.0)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
