@@ -691,6 +691,7 @@ class FluxQubitSimulator:
                     "resolution": 1,
                     "store_states": False,
                 },
+                RUNCARD.DISTORTIONS: [],
                 NodeName.PORT.value: 0,
             }
         ],
