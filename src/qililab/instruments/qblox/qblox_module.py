@@ -284,6 +284,10 @@ class QbloxModule(AWG):
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
+        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
+            output = int(parameter.value[-1])
+            self._set_out_offset(output=output, value=value)
+            return
         if channel_id is None:
             if self.num_sequencers == 1:
                 channel_id = 0
@@ -308,10 +312,6 @@ class QbloxModule(AWG):
             return
         if parameter == Parameter.OFFSET_Q:
             self._set_offset_q(value=value, sequencer_id=channel_id)
-            return
-        if parameter in {Parameter.OFFSET_OUT0, Parameter.OFFSET_OUT1, Parameter.OFFSET_OUT2, Parameter.OFFSET_OUT3}:
-            output = int(parameter.value[-1])
-            self._set_out_offset(output=output, value=value)
             return
         if parameter == Parameter.IF:
             self._set_frequency(value=value, sequencer_id=channel_id)
