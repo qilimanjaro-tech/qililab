@@ -44,14 +44,16 @@ class SNZ(PulseShape):
                 )
             else:
                 self.t_phi = int(self.t_phi)
-        full_snz_duration = 2 * duration + self.t_phi + 2
-        envelope = np.zeros(round(full_snz_duration / resolution))
+        # full_snz_duration = 2 * duration + self.t_phi + 2
+        halfpulse_t = (duration - 2 - self.t_phi) / 2
+        halfpulse_t = int(halfpulse_t / resolution)
+
+        envelope = np.zeros(round(duration / resolution))
         # raise warning if we are rounding
-        if (full_snz_duration / resolution) % 1 != 0 or (duration / resolution) % 1 != 0:
+        if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
             logger.warning(
-                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({full_snz_duration}) / resolution ({resolution}) = {full_snz_duration/resolution}"
+                f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
             )
-        halfpulse_t = int(duration / resolution)
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
         envelope[halfpulse_t] = self.b  # impulse b
         envelope[halfpulse_t + 2 + self.t_phi :] = 0  # t_phi

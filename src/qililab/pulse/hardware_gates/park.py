@@ -18,5 +18,8 @@ class Park(HardwareGate):  # pylint: disable=invalid-name
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
-        qubit = gate.target_qubits[0]
-        return cls.settings[qubit]
+        park_params = Park.settings[gate.target_qubits[0]]
+
+        return cls.HardwareGateSettings(
+            amplitude=park_params.amplitude, phase=0, duration=park_params.duration, shape=park_params.shape
+        )

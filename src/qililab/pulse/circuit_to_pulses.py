@@ -167,29 +167,21 @@ class CircuitToPulses:
         # get amplitude from gate settings
         amplitude = float(gate_settings.amplitude)
         frequency = node.frequency
-        phase = float(gate_settings.phase)
+        if isinstance(control_gate, (CZ, Park)):
+            phase = 0
+            frequency = 0
+        else:
+            phase = float(gate_settings.phase)
+
+        old_time = self._update_time(
+            time=time,
+            qubit_idx=qubit_idx,
+            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
+        )
 
         if isinstance(control_gate, CZ):
-            # SNZ duration at gate settings is the SNZ halfpulse duration
-            # should not use pulse duration interchangeably with gate duration
-            cz_duration = 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
-            frequency = 0
-
-            # get old time and update time with pulse duration
-            old_time = self._update_time(
-                time=time,
-                qubit_idx=control_gate.target_qubits[0],
-                pulse_time=cz_duration + self.settings.delay_between_pulses,
-            )
             # sync control qubit time
             time[control_gate.control_qubits[0]] = time[control_gate.target_qubits[0]]
-
-        else:
-            old_time = self._update_time(
-                time=time,
-                qubit_idx=qubit_idx,
-                pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
-            )
 
         return (
             PulseEvent(
@@ -275,9 +267,9 @@ class CircuitToPulses:
 
             # get pad time
             pad_time = self._get_park_pad_time(park_settings=park_gate_settings[0], cz_settings=cz_gate_settings)
-            if pad_time % self.settings.minimum_clock_time != 0 or pad_time < 0:
+            if pad_time < 0:
                 raise ValueError(
-                    f"Value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits} has to be positive and multiple of min clock time {self.settings.minimum_clock_time}"
+                    f"Negative value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits}. Pad time is calculated as ParkGate.duration - 2*CZ.duration + 2 + CZ.t_phi from runcard parameters"
                 )
 
             park_gates.append((Park(qubit), int(pad_time)))

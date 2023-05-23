@@ -23,5 +23,8 @@ class CZ(HardwareGate):  # pylint: disable=invalid-name
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
-        qubit = gate.target_qubits[0]
-        return cls.settings[qubit]
+        cz_params = CZ.settings[gate.qubits]
+        cz_duration = 2 * cz_params.duration + 2 + cz_params.shape["t_phi"]
+        return cls.HardwareGateSettings(
+            amplitude=cz_params.amplitude, phase=0, duration=cz_duration, shape=cz_params.shape
+        )

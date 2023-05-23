@@ -21,8 +21,6 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
         "minimum_clock_time": 5,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
-        "master_amplitude_gate": 1,
-        "master_duration_gate": 40,
         "reset_method": "passive",
         "passive_reset_duration": 100,
         "timings_calculation_method": "as_soon_as_possible",

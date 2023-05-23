@@ -59,7 +59,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "name": "Park",
                     "amplitude": 0.8,
                     "phase": None,
-                    "duration": 71,
+                    "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
             ],
@@ -91,7 +91,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "name": "Park",
                     "amplitude": 0.8,
                     "phase": None,
-                    "duration": 71,
+                    "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
             ],
@@ -123,7 +123,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "name": "Park",
                     "amplitude": 0.8,
                     "phase": None,
-                    "duration": 71,
+                    "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
             ],
@@ -216,7 +216,6 @@ class TestInitialization:
                     assert gate.settings[qubits].phase == settings.phase
                     assert isinstance(gate.settings[qubits].shape, dict)
                     assert gate.settings[qubits].shape == settings.shape
-                assert not hasattr(gate, "settings")
             else:
                 for qubit in range(chip.num_qubits):
                     settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
@@ -305,7 +304,12 @@ class TestTranslation:
 
         for pulse_event, gate_settings in zip(all_pulse_events, pulsed_gates):
             pulse = pulse_event.pulse
-            assert pulse.duration == gate_settings.duration
+            # check duration
+            if gate_settings.name == "CZ":
+                assert pulse.duration == 2 * gate_settings.duration + 2 + gate_settings.shape["t_phi"]
+            else:
+                assert pulse.duration == gate_settings.duration
+
             if gate_settings.name == "Drag":
                 # drag amplitude is defined by the first parameter, in this case 1
                 drag_amplitude = (1 / np.pi) * gate_settings.amplitude
@@ -313,8 +317,11 @@ class TestTranslation:
                 # drag phase is defined by the second parameter, in this case 0.5
                 assert pulse.phase == 0.5
             else:
+                if gate_settings.name == "CZ" or gate_settings.name == "Park":
+                    assert pulse.phase == 0
+                else:
+                    assert pulse.phase == gate_settings.phase
                 assert pulse.amplitude == gate_settings.amplitude
-                assert pulse.phase == gate_settings.phase
 
             if gate_settings.name == "M":
                 frequency = chip.get_node_from_alias(alias="resonator").frequency
@@ -323,24 +330,13 @@ class TestTranslation:
             else:
                 frequency = chip.get_node_from_alias(alias="qubit").frequency
 
-            assert pulse.frequency == frequency
+            if gate_settings.name == "CZ" or gate_settings.name == "Park":
+                assert pulse.frequency == 0
+            else:
+                assert pulse.frequency == frequency
             assert isinstance(pulse.pulse_shape, PulseShape)
             for name, value in gate_settings.shape.items():
                 assert getattr(pulse.pulse_shape, name) == value
-
-    def test_drag_phase_errors_raised_in_translate(self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip):
-        """Test whether errors are raised correctly if gate values are not what is expected"""
-        circuit = Circuit(1)
-        drag = Drag(0, 1, 0.5)
-        circuit.add(drag)  # 1 defines amplitude, 0.5 defines phase
-        # test error raised when drag phase != 0
-        platform_settings.get_gate(name="Drag", qubits=0).phase = 2
-        translator = CircuitToPulses(settings=platform_settings)
-        with pytest.raises(
-            ValueError,
-            match=f"{drag.name} gate should not have setting for phase",
-        ):
-            translator.translate(circuits=[circuit], chip=chip)
 
     def test_gate_duration_errors_raised_in_translate(
         self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip

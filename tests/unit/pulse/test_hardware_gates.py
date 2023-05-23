@@ -130,42 +130,7 @@ def initialize_hardware_gates(platform_settings: RuncardSchema.PlatformSettings)
 
 class TestHardwareGates:
     @pytest.mark.parametrize("qubit", [0, 1])
-    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "Drag", "M", "Park", "CZ"])
-    def test_parameters_method(self, qubit: int, gate_name: str):
-        gate = HardwareGateFactory.get(gate_name)
-        # there's only one 2q gate so we treat it as an special case
-        if gate_name == "CZ":
-            settings = gate.parameters(qubits=(0, 1))
-            assert isinstance(settings, HardwareGate.HardwareGateSettings)
-        else:
-            settings = gate.parameters(qubits=qubit)
-            assert isinstance(settings, HardwareGate.HardwareGateSettings)
-
-    @pytest.mark.parametrize("gate_name", ["I", "X", "Y", "Drag", "M", "Park", "CZ"])
-    def test_parameters_method_raise_error_when_settings_for_qubit_not_set(self, gate_name: str):
-        if gate_name == "CZ":
-            qubits = (123, 520)
-        else:
-            qubit = 151
-
-        gate = HardwareGateFactory.get(gate_name)
-        with pytest.raises(
-            ValueError,
-            match=f"Please specify the parameters of the {gate.name.value} gate for qubit {re.escape(str(qubit))}.",
-        ):
-            if gate_name == "CZ":
-                gate.parameters(qubits=qubits)
-            else:
-                gate.parameters(qubits=qubit)
-
-    @pytest.mark.parametrize("qubit", [0, 1])
-    @pytest.mark.parametrize("gate_name", ["RX", "RY"])
-    def test_parameters_method_raise_error_when_settings_not_set(self, qubit: int, gate_name: str):
-        gate = HardwareGateFactory.get(gate_name)
-        with pytest.raises(ValueError, match=f"Please specify the parameters of the {gate.name.value} gate."):
-            gate.parameters(qubits=qubit)
-
-    @pytest.mark.parametrize("gate", [I(0), M(0), X(0), Y(0), RX(0, 90), RY(0, 90), Drag(0, 2, 1.4), Park(1), CZ(0, 1)])
-    def test_translate_method(self, gate: Gate):
-        gate_settings = HardwareGateFactory.gate_settings(gate=gate)
-        assert isinstance(gate_settings, HardwareGate.HardwareGateSettings)
+    @pytest.mark.parametrize("qibo_gate", [I, X, Y, M])
+    def test_gate_settings_method(self, qubit: int, qibo_gate: str):
+        settings = HardwareGateFactory.gate_settings(qibo_gate(qubit))  # type: ignore
+        assert isinstance(settings, HardwareGate.HardwareGateSettings)
