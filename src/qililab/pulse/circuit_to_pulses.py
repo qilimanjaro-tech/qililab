@@ -149,13 +149,9 @@ class CircuitToPulses:
 
         Returns:
             PulseEvent: PulseEvent object.
-
-        For a Drag pulse R(a,b) the corresponding pulse will have amplitude a/pi * qubit_pi_amp
-        where qubit_pi_amp is the amplitude of the pi pulse for the given qubit calibrated from Rabi.
-        The phase will correspond to the rotation around Z from b in R(a,b)
         """
 
-        gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
+        gate_settings = self._get_gate_settings(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # for CZs check if they are possible (defined at runcard) and switch target if needed
 
@@ -217,6 +213,28 @@ class CircuitToPulses:
             else None,
             port,
         )
+
+    def _get_gate_settings(self, gate: Gate):
+        """get gate settings with master values
+
+        Args:
+            gate (Gate): qibo / native gate
+
+        Returns:
+            gate_settings ()
+        """
+        gate_settings = HardwareGateFactory.gate_settings(gate=gate)
+        # check if duration is an integer value (admit floats with null decimal part)
+        gate_duration = gate_settings.duration
+        if not isinstance(gate_duration, int):  # this handles floats but also settings reading int as np.int64
+            if gate_duration % 1 != 0:  # check decimals
+                raise ValueError(
+                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
+                )
+            else:
+                gate_duration = int(gate_duration)
+
+        return gate_settings
 
     def _get_parking_gates(self, cz: CZ, chip: Chip):
         """Gets parking gates for CZ's SNZ pulse
@@ -287,7 +305,7 @@ class CircuitToPulses:
         Returns:
             tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
-        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
+        gate_settings = self._get_gate_settings(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
@@ -333,33 +351,6 @@ class CircuitToPulses:
             return CZ(cz_qubits[1], cz_qubits[0])
         raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
-    def _get_gate_settings_with_master_values(self, gate: Gate):
-        """get gate settings with master values
-
-        Args:
-            gate (Gate): qibo / native gate
-
-        Returns:
-            gate_settings ()
-        """
-        gate_settings = HardwareGateFactory.gate_settings(
-            gate=gate,
-            master_amplitude_gate=self.settings.master_amplitude_gate,
-            master_duration_gate=self.settings.master_duration_gate,
-        )
-
-        # check if duration is an integer value (admit floats with null decimal part)
-        gate_duration = gate_settings.duration
-        if not isinstance(gate_duration, int):  # this handles floats but also settings reading int as np.int64
-            if gate_duration % 1 != 0:  # check decimals
-                raise ValueError(
-                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
-                )
-            else:
-                gate_duration = int(gate_duration)
-
-        return gate_settings
-
     def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
@@ -401,6 +392,6 @@ class CircuitToPulses:
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
-                if not gate_class.settings:
+                if not hasattr(gate_class, "settings"):
                     gate_class.settings = {}
                 gate_class.settings[qubits] = gate_class.HardwareGateSettings(**settings_dict)

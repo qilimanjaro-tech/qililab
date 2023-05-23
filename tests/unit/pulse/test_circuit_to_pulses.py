@@ -26,8 +26,6 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
         "minimum_clock_time": 4,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
-        "master_amplitude_gate": 1,
-        "master_duration_gate": 40,
         "reset_method": "passive",
         "passive_reset_duration": 100,
         "timings_calculation_method": "as_soon_as_possible",
@@ -204,8 +202,8 @@ class TestInitialization:
 
         for gate in HardwareGateFactory.pulsed_gates.values():
             if gate.name not in platform_settings.gate_names:
+                assert not hasattr(gate, "settings")
                 # Some gates derive from others (such as RY from Y), thus they have no settings
-                assert gate.settings is None
                 continue
             # test CZ separately
             if gate.name == "CZ":
@@ -218,6 +216,7 @@ class TestInitialization:
                     assert gate.settings[qubits].phase == settings.phase
                     assert isinstance(gate.settings[qubits].shape, dict)
                     assert gate.settings[qubits].shape == settings.shape
+                assert not hasattr(gate, "settings")
             else:
                 for qubit in range(chip.num_qubits):
                     settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
@@ -310,7 +309,7 @@ class TestTranslation:
             if gate_settings.name == "Drag":
                 # drag amplitude is defined by the first parameter, in this case 1
                 drag_amplitude = (1 / np.pi) * gate_settings.amplitude
-                assert pulse.amplitude == drag_amplitude
+                assert pulse.amplitude == pytest.approx(drag_amplitude)
                 # drag phase is defined by the second parameter, in this case 0.5
                 assert pulse.phase == 0.5
             else:
