@@ -143,6 +143,7 @@ class TestPulseEvent:
                 PULSEEVENT.PULSE: pulse_event.pulse.to_dict(),
                 PULSEEVENT.START_TIME: pulse_event.start_time,
                 PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in pulse_event.pulse_distortions],
+                "qubit": None,
             }
         )
 
