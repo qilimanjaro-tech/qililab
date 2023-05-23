@@ -505,8 +505,8 @@ class QbloxModule(AWG):
         This method must be called after the method ``compile``."""
         if self.nshots is None or self.repetition_duration is None:
             raise ValueError("Please compile the circuit before uploading it to the device.")
-        for seq_idx in range(self.num_sequencers):
-            if seq_idx in self.sequences:
+        for sequencer in self.awg_sequencers:
+            if (seq_idx := sequencer.identifier) in self.sequences:
                 sequence, uploaded = self.sequences[seq_idx]
                 self.device.sequencers[seq_idx].sync_en(True)
                 if not uploaded:

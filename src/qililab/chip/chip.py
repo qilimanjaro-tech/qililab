@@ -95,26 +95,6 @@ class Chip(DDBBElement):
 
         raise ValueError(f"Qubit with index {idx} doesn't have a {line} line.")
 
-    def get_port_from_qubit_idx(self, idx: int, flux=False) -> int | None:
-        """Find port associated with the given qubit index.
-
-        Args:
-            idx (int): Qubit index.
-            flux (bool): If True, return flux port, if False return drive port.
-
-        Raises:
-            ValueError: If no port is found.
-
-        Returns:
-            int: port index
-        """
-        qubit = self._get_qubit(idx=idx)
-        adj_nodes = self._get_adjacent_nodes(node=qubit)
-        return next(
-            (adj_node.id_ for adj_node in adj_nodes if isinstance(adj_node, Port) and adj_node.flux == flux),
-            None,
-        )
-
     def get_port_nodes(self, port_id: int) -> list[Qubit | Resonator | Coupler | Coil]:
         """Get nodes connected to a given port.
 

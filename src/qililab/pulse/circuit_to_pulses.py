@@ -1,4 +1,6 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
+
+import contextlib
 from dataclasses import asdict, dataclass
 
 import numpy as np
@@ -51,8 +53,11 @@ class CircuitToPulses:
                 pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 if pulse_event is not None:
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-                    if flux_port := chip.get_port_from_qubit_idx(idx=gate.target_qubits[0], flux=True) is not None:
-                        pulse_schedule.elements.append(PulseBusSchedule(port=flux_port))
+                    with contextlib.suppress(ValueError):
+                        # If we find a flux port, create empty schedule for that port
+                        flux_port = chip.get_port_from_qubit_idx(idx=gate.target_qubits[0], line=Line.FLUX)
+                        if flux_port is not None:
+                            pulse_schedule.create_schedule(port=flux_port)
             for _, readout_gate in readout_gates:
                 for qubit_idx in readout_gate.target_qubits:
                     readout_pulse_event, port = self._readout_gate_to_pulse_event(
