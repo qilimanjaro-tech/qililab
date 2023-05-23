@@ -13,7 +13,6 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
-from qililab.transpiler import Drag
 from qililab.typings.enums import Line
 from qililab.utils import Factory
 
@@ -87,12 +86,8 @@ class CircuitToPulses:
 
         Returns:
             PulseEvent: PulseEvent object.
-
-        For a Drag pulse R(a,b) the corresponding pulse will have amplitude a/pi * qubit_pi_amp
-        where qubit_pi_amp is the amplitude of the pi pulse for the given qubit calibrated from Rabi.
-        The phase will correspond to the rotation around Z from b in R(a,b)
         """
-        gate_settings = self._get_gate_settings_with_master_values(gate=control_gate)
+        gate_settings = self._get_gate_settings(gate=control_gate)
         pulse_shape = self._build_pulse_shape_from_gate_settings(gate_settings=gate_settings)
         # TODO: Add CPhase gate
         qubit_idx = control_gate.target_qubits[0]
@@ -103,19 +98,8 @@ class CircuitToPulses:
             qubit_idx=qubit_idx,
             pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
         )
-
-        # load amplitude, phase for drag pulse from circuit gate parameters
-        if isinstance(control_gate, Drag):
-            amplitude = (control_gate.parameters[0] / np.pi) * gate_settings.amplitude
-            phase = control_gate.parameters[1]
-            # phase is given by b in Drag(a,b) so there should not be any phase defined at gate settings (runcard)
-            if gate_settings.phase is not None:
-                raise ValueError(
-                    "Drag gate should not have setting for phase since the phase depends only on circuit gate parameters"
-                )
-        else:
-            amplitude = float(gate_settings.amplitude)
-            phase = float(gate_settings.phase)
+        amplitude = float(gate_settings.amplitude)
+        phase = float(gate_settings.phase)
 
         return (
             PulseEvent(
@@ -133,7 +117,7 @@ class CircuitToPulses:
             port,
         )
 
-    def _get_gate_settings_with_master_values(self, gate: Gate):
+    def _get_gate_settings(self, gate: Gate):
         """get gate settings with master values
 
         Args:
@@ -142,18 +126,15 @@ class CircuitToPulses:
         Returns:
             gate_settings ()
         """
-        gate_settings = HardwareGateFactory.gate_settings(
-            gate=gate,
-            master_amplitude_gate=self.settings.master_amplitude_gate,
-            master_duration_gate=self.settings.master_duration_gate,
-        )
+        gate_settings = HardwareGateFactory.gate_settings(gate=gate)
 
         # check if duration is an integer value (admit floats with null decimal part)
         gate_duration = gate_settings.duration
         if not isinstance(gate_duration, int):  # this handles floats but also settings reading int as np.int64
             if gate_duration % 1 != 0:  # check decimals
                 raise ValueError(
-                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). The gate duration must be an integer or a float with 0 decimal part"
+                    f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). "
+                    "The gate duration must be an integer or a float with 0 decimal part"
                 )
             else:
                 gate_duration = int(gate_duration)
@@ -174,7 +155,7 @@ class CircuitToPulses:
         Returns:
             tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
-        gate_settings = self._get_gate_settings_with_master_values(gate=readout_gate)
+        gate_settings = self._get_gate_settings(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=True)
@@ -195,6 +176,7 @@ class CircuitToPulses:
                     pulse_shape=pulse_shape,
                 ),
                 start_time=old_time + self.settings.delay_before_readout,
+                qubit=qubit_idx,
             )
             if gate_settings.duration > 0
             else None,
@@ -224,6 +206,6 @@ class CircuitToPulses:
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
-                if not gate_class.settings:
+                if not hasattr(gate_class, "settings"):
                     gate_class.settings = {}
                 gate_class.settings[qubit] = gate_class.HardwareGateSettings(**settings_dict)

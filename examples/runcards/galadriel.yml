@@ -5,26 +5,11 @@ settings:
   device_id: 9
   delay_between_pulses: 0
   delay_before_readout: 4
-  master_amplitude_gate: 0.25
-  master_duration_gate: 20
   timings_calculation_method: as_soon_as_possible
   reset_method: passive
   passive_reset_duration: 100
   minimum_clock_time: 4
-  operations:
-    - name: X
-      pulse:
-        name: Gaussian
-        amplitude: 1.0
-        duration: 40
-        parameters:
-          sigma: 2
-    - name: Measure
-      pulse:
-        name: Square
-        amplitude: 1.0
-        duration: 6000
-        parameters: {}
+  operations: []
   gates:
     0:
       - name: M
@@ -33,18 +18,10 @@ settings:
         duration: 2000
         shape:
           name: rectangular
-      - name: X
-        amplitude: master_amplitude_gate
+      - name: Drag
+        amplitude: 1
         phase: 0
-        duration: master_duration_gate
-        shape:
-          name: drag
-          num_sigmas: 4
-          drag_coefficient: 0.0
-      - name: Y
-        amplitude: master_amplitude_gate
-        phase: 90
-        duration: master_duration_gate
+        duration: 20
         shape:
           name: drag
           num_sigmas: 4
@@ -56,20 +33,14 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
-        amplitude: master_amplitude_gate
+      - name: Drag
+        amplitude: 1
         phase: 0
-        duration: master_duration_gate
+        duration: 20
         shape:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: master_amplitude_gate
-        phase: 0
-        duration: master_duration_gate
-        shape:
-          name: rectangular
     2:
       - name: M
         amplitude: 1.0
@@ -77,20 +48,14 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
-        amplitude: master_amplitude_gate
+      - name: Drag
+        amplitude: 1
         phase: 0
-        duration: master_duration_gate
+        duration: 20
         shape:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: master_amplitude_gate
-        phase: 0
-        duration: master_duration_gate
-        shape:
-          name: rectangular
     3:
       - name: M
         amplitude: 1.0
@@ -98,20 +63,14 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
-        amplitude: master_amplitude_gate
+      - name: Drag
+        amplitude: 1
         phase: 0
-        duration: master_duration_gate
+        duration: 20
         shape:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: master_amplitude_gate
-        phase: 0
-        duration: master_duration_gate
-        shape:
-          name: rectangular
     4:
       - name: M
         amplitude: 1.0
@@ -119,20 +78,14 @@ settings:
         duration: 6000
         shape:
           name: rectangular
-      - name: X
-        amplitude: master_amplitude_gate
+      - name: Drag
+        amplitude: 1
         phase: 0
-        duration: master_duration_gate
+        duration: 20
         shape:
           name: drag
           num_sigmas: 4
           drag_coefficient: 0.0
-      - name: Y
-        amplitude: master_amplitude_gate
-        phase: 0
-        duration: master_duration_gate
-        shape:
-          name: rectangular
 
 schema:
   chip:

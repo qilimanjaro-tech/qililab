@@ -13,18 +13,6 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
-    """Load PulseEvent.
-
-    Returns:
-        PulseEvent: Instance of the PulseEvent class.
-    """
-    pulse_shape = Gaussian(num_sigmas=4)
-    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
-
-
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
@@ -32,8 +20,11 @@ def fixture_platform() -> Platform:
 
 
 @pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
@@ -100,7 +91,7 @@ class TestMethods:
             AttributeError,
             match="The system control with alias test_alias doesn't have any AWG to compile the given pulse sequence",
         ):
-            system_control_without_awg.compile("dummy_pulse_sequence", nshots=1000, repetition_duration=1000)
+            system_control_without_awg.compile(PulseBusSchedule(port=0), nshots=1000, repetition_duration=1000)
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test the ``compile`` method of the ``SystemControl`` class."""
