@@ -91,7 +91,8 @@ class CircuitToPulses:
                 if isinstance(gate, CZ) and pad_time != 0:
                     self._update_time(time=time, qubit_idx=gate.target_qubits[0], pulse_time=pad_time)
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
-                pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                if pulse_event is not None:  # this happens for the Identity gate
+                    pulse_schedule.add_event(pulse_event=pulse_event, port=port)
 
             pulse_schedule_list.append(pulse_schedule)
 
