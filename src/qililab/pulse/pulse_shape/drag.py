@@ -35,12 +35,8 @@ class Drag(PulseShape):
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
         gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
 
-        # We normalize pulse_shapes envelopes with max heights of the real parts
-        real_norm = np.max(gaussian)
-
-        drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
-
-        return drag_gaussian * amplitude / real_norm
+        # return dragged gaussian
+        return (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":
