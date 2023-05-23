@@ -1,5 +1,4 @@
 """__init__.py"""
-from .circuit_to_pulses import CircuitToPulses
 from .pulse import Pulse
 from .pulse_bus_schedule import PulseBusSchedule
 from .pulse_distortion import BiasTeeCorrection, ExponentialCorrection, PulseDistortion

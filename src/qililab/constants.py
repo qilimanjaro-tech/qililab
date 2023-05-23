@@ -41,6 +41,7 @@ class RUNCARD:
     GATES = "gates"
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
+    DISTORTIONS = "distortions"
 
 
 class PLATFORM:

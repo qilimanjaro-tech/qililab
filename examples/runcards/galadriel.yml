@@ -599,6 +599,7 @@ schema:
         category: system_control
         instruments: [QRM1, rs_1]
       port: 100
+      distortions: []
     - id_: 10
       category: bus
       alias: drive_line_q0_bus
@@ -608,6 +609,7 @@ schema:
         category: system_control
         instruments: [QCM-RF1]
       port: 10
+      distortions: []
     - id_: 15
       category: bus
       alias: flux_line_q0_bus
@@ -617,6 +619,7 @@ schema:
         category: system_control
         instruments: [QCM1]
       port: 15
+      distortions: []
     - id_: 11
       category: bus
       alias: drive_line_q1_bus
@@ -626,6 +629,7 @@ schema:
         category: system_control
         instruments: [QCM-RF1]
       port: 11
+      distortions: []
     - id_: 16
       category: bus
       alias: flux_line_q1_bus
@@ -635,6 +639,7 @@ schema:
         category: system_control
         instruments: [QCM1]
       port: 16
+      distortions: []
     - id_: 12
       category: bus
       alias: drive_line_q2_bus
@@ -644,6 +649,7 @@ schema:
         category: system_control
         instruments: [QCM-RF3]
       port: 12
+      distortions: []
     - id_: 17
       category: bus
       alias: flux_line_q2_bus
@@ -653,6 +659,7 @@ schema:
         category: system_control
         instruments: [QCM2]
       port: 17
+      distortions: []
     - id_: 13
       category: bus
       alias: drive_line_q3_bus
@@ -662,6 +669,7 @@ schema:
         category: system_control
         instruments: [QCM-RF2]
       port: 13
+      distortions: []
     - id_: 18
       category: bus
       alias: flux_line_q3_bus
@@ -671,6 +679,7 @@ schema:
         category: system_control
         instruments: [QCM1]
       port: 18
+      distortions: []
     - id_: 14
       category: bus
       alias: drive_line_q4_bus
@@ -680,6 +689,7 @@ schema:
         category: system_control
         instruments: [QCM-RF2]
       port: 14
+      distortions: []
     - id_: 19
       category: bus
       alias: flux_line_q4_bus
@@ -689,6 +699,7 @@ schema:
         category: system_control
         instruments: [QCM1]
       port: 19
+      distortions: []
   instrument_controllers:
     - name: qblox_cluster
       id_: 1
