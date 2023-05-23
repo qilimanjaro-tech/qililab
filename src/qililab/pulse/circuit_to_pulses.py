@@ -386,8 +386,7 @@ class CircuitToPulses:
             if isinstance(qubits, str):
                 qubit_str = qubits
                 qubits = ast.literal_eval(qubit_str)
-                # check for expected output
-                assert isinstance(qubits, tuple) and list(map(type, qubits)) == [int, int]
+                # get tuple from string
                 self.settings.gates[qubits] = self.settings.gates.pop(qubit_str)
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
