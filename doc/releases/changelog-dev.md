@@ -8,26 +8,28 @@ This document contains the changes of the current release.
 
 ```python
 buses:
-    - id_: 0
-      category: bus
-      alias: feedline_bus
-      system_control:
-        id_: 0
-        name: readout_system_control
-        category: system_control
-        instruments: [QRM1, rs_1]
-      port: 100
-      distortions: [BiasTeeCorrection(tau_bias_tee=1.0),LFilter(a = [0.1, 1.1], b = [1.1, 1.3])]      <<<
-    - id_: 10
-      category: bus
-      alias: drive_line_q0_bus
-      system_control:
-        id_: 10
-        name: system_control
-        category: system_control
-        instruments: [QCM-RF1]
-      port: 10
-      distortions: []                                                                                 <<<
+  - id_: 0
+    category: bus
+    alias: feedline_bus
+    system_control:
+      id_: 0
+      name: readout_system_control
+      category: system_control
+      instruments: [QRM1, rs_1]
+    port: 100
+    distortions:                                        <<<
+      - BiasTeeCorrection(tau_bias_tee=1.0)             <<<
+      - LFilter(a = [0.1, 1.1], b = [1.1, 1.3])         <<<
+  - id_: 10
+    category: bus
+    alias: drive_line_q0_bus
+    system_control:
+      id_: 10
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF1]
+    port: 10
+    distortions: []                                     <<<
 ```
 
 - Added `cosine.py` module containing a `Cosine` child class of `pulse_shape`, which gives a sinusoidal like gaussian A/2\*(1-cos(x)).
