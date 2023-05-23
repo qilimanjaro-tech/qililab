@@ -7,7 +7,7 @@ import pytest
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import BiasTeeCorrection
-from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
+from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the BiasTeeCorrection.
@@ -19,7 +19,7 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
 
 
 @pytest.fixture(
