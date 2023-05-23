@@ -297,20 +297,3 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             AWGAnalogDigitalConverter.setup(self, parameter=parameter, value=value, channel_id=channel_id)
         except ParameterNotFound:
             QbloxModule.setup(self, parameter=parameter, value=value, channel_id=channel_id)
-
-    def _get_sequencer_by_id(self, id: int) -> AWGQbloxADCSequencer:
-        """Returns a sequencer with the given `id`."
-
-        Args:
-            id (int): Id of the sequencer.
-
-        Raises:
-            IndexError: There is no sequencer with the given `id`.
-
-        Returns:
-            AWGQbloxADCSequencer: Sequencer with the given `id`.
-        """
-        for sequencer in self.awg_sequencers:
-            if sequencer.identifier == id:
-                return sequencer
-        raise IndexError(f"There is no sequencer with id={id}.")

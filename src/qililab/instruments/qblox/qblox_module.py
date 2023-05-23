@@ -630,7 +630,7 @@ class QbloxModule(AWG):
         """Returns the offsets of each output of the qblox module."""
         return self.settings.out_offsets
 
-    def _get_sequencer_by_id(self, id: int) -> AWGQbloxSequencer:
+    def _get_sequencer_by_id(self, id: int):
         """Returns a sequencer with the given `id`."
 
         Args:
