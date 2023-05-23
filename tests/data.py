@@ -53,8 +53,8 @@ class Galadriel:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 40,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -114,6 +114,17 @@ class Galadriel:
                         "drag_coefficient": 0,
                     },
                 },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
+                    },
+                },
             ],
             1: [
                 {
@@ -150,6 +161,17 @@ class Galadriel:
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
                         "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
                     },
                 },
             ],
@@ -445,7 +467,7 @@ class Galadriel:
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
-                RUNCARD.ALIAS: NodeName.PORT.value,
+                RUNCARD.ALIAS: NodeName.RESONATOR.value,
                 NODE.FREQUENCY: 7.34730e09,
                 NODE.NODES: [1, 11, 3],
             },
@@ -529,8 +551,8 @@ class Galadriel:
 
     resonator_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.PORT,
-        RUNCARD.CATEGORY: NodeName.PORT.value,
+        RUNCARD.NAME: NodeName.RESONATOR,
+        RUNCARD.CATEGORY: NodeName.RESONATOR.value,
         "qubits": [
             {
                 RUNCARD.ID: 0,

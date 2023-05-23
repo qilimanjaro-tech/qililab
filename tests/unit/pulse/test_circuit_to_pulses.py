@@ -1,14 +1,16 @@
 """This file contains unit tests for the ``CircuitToPulses`` class."""
+import copy
+
 import numpy as np
 import pytest
 from qibo.gates import M, X, Y
 from qibo.models import Circuit
 
+from qililab.constants import NODE, PLATFORM, RUNCARD
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule, PulseShape
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
-from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag
 from qililab.typings import Parameter
 from qililab.typings.enums import Line
@@ -19,7 +21,7 @@ from tests.utils import platform_db
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
+    return platform_db(runcard=copy.deepcopy(Galadriel.runcard))
 
 
 class TestInitialization:
@@ -51,7 +53,7 @@ class TestInitialization:
 
         _ = CircuitToPulses(platform=platform)
 
-        assert X.settings[0].amplitude == 0.8
+        assert X.settings[0].amplitude == 1.0
 
         platform.settings.set_parameter(alias="X(0)", parameter=Parameter.AMPLITUDE, value=123)
 
@@ -91,16 +93,18 @@ class TestTranslation:
         assert len(pulse_schedule) == 2  # it contains pulses for 2 buses
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
-
-        assert (
-            control_pulse_bus_schedule.port == 1
-        )  # it targets the qubit, which is connected to drive line with port 1
+        control_port = next(item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.DRIVE.value)[
+            RUNCARD.ID
+        ]
+        assert control_pulse_bus_schedule.port == control_port  # it targets the qubit, which is connected to drive line
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
         readout_pulse_bus_schedule = pulse_schedule.elements[1]
-
+        readout_port = next(
+            item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FEEDLINE_INPUT.value
+        )[RUNCARD.ID]
         assert (
-            readout_pulse_bus_schedule.port == 2
+            readout_pulse_bus_schedule.port == readout_port
         )  # it targets the resonator, which is connected to feedline input line with port 2
         assert len(readout_pulse_bus_schedule.timeline) == 1
 
@@ -153,7 +157,24 @@ class TestTranslation:
 
         pulse_schedule = translator.translate(circuits=[circuit])[0]
 
-        expected_start_times = [0, 48, 88]  # X has a duration of 45ns, but Y doesn't start until 48ns!
+        min_clock_t = Galadriel.platform[PLATFORM.MINIMUM_CLOCK_TIME]
+        x_dur = next(item for item in Galadriel.platform["gates"][0] if item[RUNCARD.NAME] == "X")["duration"]
+        y_dur = next(item for item in Galadriel.platform["gates"][0] if item[RUNCARD.NAME] == "Y")["duration"]
+        drag_dur = next(item for item in Galadriel.platform["gates"][0] if item[RUNCARD.NAME] == "Drag")["duration"]
+
+        x_dur_mod = x_dur
+        if x_dur % min_clock_t != 0:
+            x_dur_mod += min_clock_t - (x_dur % min_clock_t)
+
+        xy_dur_mod = x_dur_mod + y_dur
+        if (x_dur_mod + y_dur) % min_clock_t != 0:
+            xy_dur_mod += min_clock_t - ((x_dur_mod + y_dur) % min_clock_t)
+
+        xydrag_dur_mod = xy_dur_mod + drag_dur
+        if (xy_dur_mod + drag_dur) % min_clock_t != 0:
+            xydrag_dur_mod += min_clock_t - ((xy_dur_mod + drag_dur) % min_clock_t)
+
+        expected_start_times = [0, x_dur_mod, xy_dur_mod, xydrag_dur_mod]
 
         pulse_events = pulse_schedule.elements[0].timeline + pulse_schedule.elements[1].timeline
 

@@ -19,7 +19,6 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from qililab.utils.live_plot import LivePlot
 from tests.data import FluxQubitSimulator, Galadriel, experiment_params, simulated_experiment_circuit
 from tests.utils import mock_instruments, platform_db
 
