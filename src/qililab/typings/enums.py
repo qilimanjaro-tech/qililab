@@ -220,6 +220,7 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+    COSINE = "cosine"
 
 
 class PulseShapeSettingsName(str, Enum):
