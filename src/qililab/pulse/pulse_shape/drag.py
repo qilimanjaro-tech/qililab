@@ -5,8 +5,7 @@ import numpy as np
 
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName
-from qililab.typings.enums import PulseShapeSettingsName
+from qililab.typings import PulseShapeName, PulseShapeSettingsName
 from qililab.utils import Factory
 
 
@@ -34,14 +33,14 @@ class Drag(PulseShape):
         mu_ = duration / 2
 
         gaussian = amplitude * np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        norm = np.amax(np.real(gaussian))
 
-        # We normalize pulse_shapes envelopes with max heights of the real parts
-        real_norm = np.max(gaussian)
+        gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
+        corr_norm = np.amax(np.real(gaussian))
 
         drag_gaussian = (1 - 1j * self.drag_coefficient * (time - mu_) / sigma**2) * gaussian
 
-        return drag_gaussian * amplitude / real_norm
+        return drag_gaussian * norm / corr_norm
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Drag":

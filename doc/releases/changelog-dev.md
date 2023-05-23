@@ -4,6 +4,33 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added `cosine.py` module containing a `Cosine` child class of `pulse_shape`, which gives a sinusoidal like gaussian A/2\*(1-cos(x)).
+  The shape starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi)
+
+  ```python
+  pulse = Pulse(
+      amplitude=...,
+      phase=...,
+      duration=...,
+      frequency=...,
+      pulse_shape=Cosine(),
+  )
+  ```
+
+  [#376](https://github.com/qilimanjaro-tech/qililab/pull/376)
+
+- Added `pulse.pulse_distortion.lfilter_correction.py` module, which is another child class for the `pulse.pulse_distortion` package.
+
+  ```python
+  distorted_envelope = LFilter(norm_factor=1.2, a=[0.7, 1.3], b=[0.5, 0.6]).apply(
+      original_envelopes
+  )
+  ```
+
+  Also adds a phase property to `PulseEvent` and implements `Factory.get` directly in the `from_dict()` method of the parent class `PulseDistortion`.
+
+  [#354](https://github.com/qilimanjaro-tech/qililab/pull/354)
+
 - Added `get_port_from_qubit_idx` method to `Chip` class. This method takes the qubit index and the line type as arguments and returns the associated port.
   [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
 
