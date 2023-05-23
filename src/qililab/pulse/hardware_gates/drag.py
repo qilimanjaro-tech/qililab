@@ -1,4 +1,6 @@
 """Drag gate"""
+import numpy as np
+
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.hardware_gates.hardware_gate_factory import HardwareGateFactory
 from qililab.transpiler import Drag as Drag_gate
@@ -16,20 +18,14 @@ class Drag(HardwareGate):
     class_type = Drag_gate
 
     @classmethod
-    def translate(
-        cls,
-        gate: Drag_gate,
-        master_amplitude_gate: float,
-        master_duration_gate: int,
-    ) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: Drag_gate) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
         qubit = gate.target_qubits[0]
-        return cls.parameters(
-            qubits=qubit,
-            master_amplitude_gate=master_amplitude_gate,
-            master_duration_gate=master_duration_gate,
-        )
+        params = cls.settings[qubit]
+        amplitude = params.amplitude * gate.parameters[0] / np.pi
+        phase = gate.parameters[1]
+        return cls.HardwareGateSettings(amplitude=amplitude, phase=phase, duration=params.duration, shape=params.shape)

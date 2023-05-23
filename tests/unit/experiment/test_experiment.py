@@ -1,13 +1,11 @@
 """Tests for the Experiment class."""
 import os
 import time
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
-from qibo.gates import M
 from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 

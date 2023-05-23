@@ -55,8 +55,6 @@ class Galadriel:
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 40,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 100,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -82,7 +80,7 @@ class Galadriel:
             0: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -96,7 +94,7 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -107,9 +105,9 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
@@ -120,7 +118,7 @@ class Galadriel:
             1: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -134,7 +132,7 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -145,9 +143,9 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
@@ -158,7 +156,7 @@ class Galadriel:
             (0, 1): [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -167,7 +165,7 @@ class Galadriel:
             (1, 0): [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -558,8 +556,6 @@ class FluxQubitSimulator:
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 10,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -581,7 +577,7 @@ class FluxQubitSimulator:
             0: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -595,7 +591,7 @@ class FluxQubitSimulator:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -606,9 +602,9 @@ class FluxQubitSimulator:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
@@ -876,8 +872,6 @@ class SauronVNA:
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 100,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
