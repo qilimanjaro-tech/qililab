@@ -213,19 +213,19 @@ class TestMethods:
     def test_compile(self, experiment: Experiment):
         """Test the compile method of the ``Execution`` class."""
         experiment.build_execution()
-        sequences = experiment.compile()
-        assert isinstance(sequences, list)
-        assert len(sequences) == len(experiment.circuits)
-        sequence = sequences[0]
+        pulse_schedules = experiment.compile()
+        assert isinstance(pulse_schedules, list)
+        assert len(pulse_schedules) == len(experiment.circuits)
+        pulse_schedule = pulse_schedules[0]
         buses = experiment.execution_manager.buses
-        assert len(sequence) == len(buses)
-        for alias, bus_sequences in sequence.items():
+        assert len(pulse_schedule) == len(buses)
+        for alias, bus_schedule in pulse_schedule.items():
             assert alias in {bus.alias for bus in buses}
-            assert isinstance(bus_sequences, list)
-            assert len(bus_sequences) == 1
-            assert isinstance(bus_sequences[0], Sequence)
+            assert isinstance(bus_schedule, list)
+            assert len(bus_schedule) == 1
+            assert isinstance(bus_schedule[0], Sequence)
             assert (
-                bus_sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+                bus_schedule[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
             )  # additional 4ns for the initial wait_sync
 
     def test_compile_raises_error(self, experiment: Experiment):

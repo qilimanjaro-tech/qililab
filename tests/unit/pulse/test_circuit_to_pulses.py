@@ -278,7 +278,7 @@ class TestTranslation:
 
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses
+        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses (control, flux and readout)
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 

@@ -1,6 +1,7 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
-from dataclasses import asdict
+import contextlib
+from dataclasses import asdict, dataclass
 
 import numpy as np
 from qibo.gates import CZ, Gate, M
@@ -13,6 +14,7 @@ from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
+from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
@@ -52,7 +54,13 @@ class CircuitToPulses:
                         readout_pulse_event, port = self._readout_gate_to_pulse_event(
                             time=time, readout_gate=m_gate, qubit_idx=qubit_idx, chip=chip
                         )
-                        pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
+                        if readout_pulse_event is not None:
+                            pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
+                            with contextlib.suppress(ValueError):
+                                # If we find a flux port, create empty schedule for that port
+                                flux_port = chip.get_port_from_qubit_idx(idx=m_gate.target_qubits[0], line=Line.FLUX)
+                                if flux_port is not None:
+                                    pulse_schedule.create_schedule(port=flux_port)
                     continue
 
                 elif isinstance(gate, CZ):
@@ -76,7 +84,8 @@ class CircuitToPulses:
                         pulse_event, port = self._control_gate_to_pulse_event(
                             time=time, control_gate=parking_gate, chip=chip
                         )
-                        pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                        if pulse_event is not None:
+                            pulse_schedule.add_event(pulse_event=pulse_event, port=port)
                     # add padd time to CZ target qubit to sync it with parking gate
                     # if there is more than 1 pad time, add max (this is a bit misleading)
                     pad_time = max((time for _, time in parking_gates_pads), default=0)
@@ -93,6 +102,12 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                    with contextlib.suppress(ValueError):
+                        # If we find a flux port, create empty schedule for that port
+                        for qubit_idx in gate.qubits:
+                            flux_port = chip.get_port_from_qubit_idx(idx=qubit_idx, line=Line.FLUX)
+                            if flux_port is not None:
+                                pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 
