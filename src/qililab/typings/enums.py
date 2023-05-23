@@ -139,19 +139,6 @@ class GateName(str, Enum):
     Drag = "Drag"
 
 
-class MasterGateSettingsName(str, Enum):
-    """Master Gate Settings names.
-
-    Args:
-        enum (str): Available types of master gate settings names:
-        * master_amplitude_gate
-        * master_duration_gate
-    """
-
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
-
-
 class AcquisitionName(str, Enum):
     """Acquisition names.
 
@@ -349,8 +336,6 @@ class Parameter(str, Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
     HARDWARE_MODULATION = "hardware_modulation"
