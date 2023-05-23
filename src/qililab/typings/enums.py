@@ -139,19 +139,6 @@ class GateName(str, Enum):
     Drag = "Drag"
 
 
-class MasterGateSettingsName(str, Enum):
-    """Master Gate Settings names.
-
-    Args:
-        enum (str): Available types of master gate settings names:
-        * master_amplitude_gate
-        * master_duration_gate
-    """
-
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
-
-
 class AcquisitionName(str, Enum):
     """Acquisition names.
 
@@ -187,6 +174,7 @@ class PulseDistortionName(str, Enum):
 
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    LFILTER = "lfilter"
 
 
 class PulseDistortionSettingsName(str, Enum):
@@ -203,6 +191,9 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
+    NORM_FACTOR = "norm_factor"
+    A = "a"
+    B = "b"
 
 
 class PulseShapeName(str, Enum):
@@ -220,7 +211,7 @@ class PulseShapeName(str, Enum):
     EXPONENTIAL_CORRECTION = "exponential"
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     PREDISTORTION = "predistortion"
-    LFILTER = 'lfilter'
+    LFILTER = "lfilter"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -241,9 +232,9 @@ class PulseShapeSettingsName(str, Enum):
     AMP = "amp"
     AMP1 = "amp1"
     AMP2 = "amp2"
-    A = 'a'
-    B = 'b'
-    NORM_FACTOR = 'norm_factor'
+    A = "a"
+    B = "b"
+    NORM_FACTOR = "norm_factor"
 
 
 class NodeName(str, Enum):
@@ -359,8 +350,6 @@ class Parameter(str, Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
     HARDWARE_MODULATION = "hardware_modulation"
@@ -436,9 +425,9 @@ class Parameter(str, Enum):
     OUT1_OFFSET_PATH0 = "out1_offset_path0"
     OUT0_OFFSET_PATH1 = "out0_offset_path1"
     OUT1_OFFSET_PATH1 = "out1_offset_path1"
-    A = 'a'
-    B = 'b'
-    NORM_FACTOR = 'norm_factor'
+    A = "a"
+    B = "b"
+    NORM_FACTOR = "norm_factor"
 
 
 class ResultName(str, Enum):

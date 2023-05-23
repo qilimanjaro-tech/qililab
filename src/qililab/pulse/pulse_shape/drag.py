@@ -5,8 +5,7 @@ import numpy as np
 
 from qililab.constants import RUNCARD
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
-from qililab.typings import PulseShapeName
-from qililab.typings.enums import PulseShapeSettingsName
+from qililab.typings import PulseShapeName, PulseShapeSettingsName
 from qililab.utils import Factory
 
 

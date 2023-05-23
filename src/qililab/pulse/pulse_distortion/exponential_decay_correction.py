@@ -5,8 +5,7 @@ import numpy as np
 from scipy import signal
 
 from qililab.constants import RUNCARD
-from qililab.typings import PulseDistortionName
-from qililab.typings.enums import PulseDistortionSettingsName
+from qililab.typings import PulseDistortionName, PulseDistortionSettingsName
 from qililab.utils import Factory
 
 from .pulse_distortion import PulseDistortion
@@ -15,7 +14,17 @@ from .pulse_distortion import PulseDistortion
 @Factory.register
 @dataclass(frozen=True, eq=True)
 class ExponentialCorrection(PulseDistortion):
-    """Exponential decay distortion."""
+    """Exponential decay distortion
+
+    For more info, check SUPLEMENTAL MATERIAL IV. B. in [https://arxiv.org/abs/1907.04818].
+
+    Args:
+        tau_bias_tee (float): time constant
+        amp (float): amplitude constant
+
+    Returns:
+        PulseDistortion: Distortion to apply to given envelopes in PulseEvent.
+    """
 
     name = PulseDistortionName.EXPONENTIAL_CORRECTION
     tau_exponential: float

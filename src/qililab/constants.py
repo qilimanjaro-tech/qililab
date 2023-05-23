@@ -48,8 +48,6 @@ class PLATFORM:
 
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     TIMINGS_CALCULATION_METHOD = "timings_calculation_method"
     RESET_METHOD = "reset_method"
     PASSIVE_RESET_DURATION = "passive_reset_duration"

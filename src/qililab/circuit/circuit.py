@@ -195,5 +195,5 @@ class Circuit:
                 if len(operations_on_qubit) == 0:
                     print("----------", end="")
                 if len(operations_on_qubit) == 1:
-                    print(f"{operations_on_qubit[0].operation.name:->10s}", end="")
+                    print(f"{operations_on_qubit[0].operation.name.value:->10s}", end="")
             print()
