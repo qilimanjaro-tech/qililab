@@ -18,8 +18,8 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 
-@pytest.fixture(name="settings")
-def fixture_settings():
+@pytest.fixture(name="settings_6_sequencers")
+def fixture_settings_6_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
@@ -64,9 +64,55 @@ def fixture_settings():
     }
 
 
+@pytest.fixture(name="settings_even_sequencers")
+def fixture_settings_even_sequencers():
+    sequencers = [
+        {
+            "identifier": seq_idx,
+            "chip_port_id": 1,
+            "qubit": 5 - seq_idx,
+            "output_i": 1,
+            "output_q": 0,
+            "weights_i": [1, 1, 1, 1],
+            "weights_q": [1, 1, 1, 1],
+            "weighed_acq_enabled": False,
+            "threshold": 0.5,
+            "num_bins": 1,
+            "intermediate_frequency": 20000000,
+            "gain_i": 0.001,
+            "gain_q": 0.02,
+            "gain_imbalance": 1,
+            "phase_imbalance": 0,
+            "offset_i": 0,
+            "offset_q": 0,
+            "hardware_modulation": True,
+            "scope_acquire_trigger_mode": "sequencer",
+            "scope_hardware_averaging": True,
+            "sampling_rate": 1000000000,
+            "integration_length": 8000,
+            "integration_mode": "ssb",
+            "sequence_timeout": 1,
+            "acquisition_timeout": 1,
+            "hardware_demodulation": True,
+            "scope_store_enabled": True,
+        }
+        for seq_idx in range(0, 6, 2)
+    ]
+    return {
+        "alias": "test",
+        "id_": 0,
+        "category": "awg",
+        "firmware": "0.4.0",
+        "num_sequencers": 3,
+        "out_offsets": [0.123, 1.23],
+        "acquisition_delay_time": 100,
+        "awg_sequencers": sequencers,
+    }
+
+
 @pytest.fixture(name="local_cfg_qrm")
-def fixture_local_cfg_qrm(settings: dict) -> QbloxQRM:
-    return QbloxQRM(settings=settings)
+def fixture_local_cfg_qrm(settings_6_sequencers: dict) -> QbloxQRM:
+    return QbloxQRM(settings=settings_6_sequencers)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -450,6 +496,16 @@ class TestQbloxQRM:
         """Test that the pulses to odd qubits are mapped to odd sequencers."""
         local_cfg_qrm.compile(pulse_bus_schedule=pulse_bus_schedule_odd_qubits, nshots=1, repetition_duration=5000)
         assert list(local_cfg_qrm.sequences.keys()) == [4, 2, 0]
+
+    def test_getting_even_sequencers(self, settings_even_sequencers: dict):
+        """Tests the method QbloxQRM._get_sequencers_by_id() for a QbloxQRM with only the even sequencers configured."""
+        qrm = QbloxQRM(settings=settings_even_sequencers)
+        for seq_id in range(6):
+            if seq_id % 2 == 0:
+                assert qrm._get_sequencer_by_id(id=seq_id).identifier == seq_id
+            else:
+                with pytest.raises(IndexError, match=f"There is no sequencer with id={seq_id}."):
+                    qrm._get_sequencer_by_id(id=seq_id)
 
 
 class TestAWGQbloxADCSequencer:
