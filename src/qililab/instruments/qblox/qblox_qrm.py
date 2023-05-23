@@ -194,6 +194,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             sequencer_id (int): sequencer to update the value
         """
         integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
+        # TODO: Change the parameter to `thresholded_acq_threshold` when qblox-instruments is updated to >= 0.9.0
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_nco(self, sequencer_id: int):
@@ -213,27 +214,41 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             QbloxResult: Class containing the acquisition results.
 
         """
+        results = []
+        integration_lengths = []
         for sequencer in self.awg_sequencers:
-            sequencer_id = sequencer.identifier
-            flags = self.device.get_sequencer_state(
-                sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
-            )
-            logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
-            self.device.get_acquisition_state(
-                sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
-            )
+            if sequencer.identifier in self.sequences:
+                sequencer_id = sequencer.identifier
+                flags = self.device.get_sequencer_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).sequence_timeout
+                )
+                logger.info("Sequencer[%d] flags: \n%s", sequencer_id, flags)
+                self.device.get_acquisition_state(
+                    sequencer=sequencer_id, timeout=cast(AWGQbloxADCSequencer, sequencer).acquisition_timeout
+                )
 
-            if sequencer.scope_store_enabled:
-                self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
+                if sequencer.scope_store_enabled:
+                    self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-        results = [
-            self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"]
-            for sequencer in self.awg_sequencers
-        ]
-
-        integration_lengths = [sequencer.used_integration_length for sequencer in self.awg_sequencers]
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                self.device.sequencers[sequencer.identifier].sync_en(False)
+                integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    def upload(self):
+        """Upload all the previously compiled programs to its corresponding sequencers.
+        This method must be called after the method ``compile``."""
+        if self.nshots is None or self.repetition_duration is None:
+            raise ValueError("Please compile the circuit before uploading it to the device.")
+        for seq_idx in range(self.num_sequencers):
+            if seq_idx in self.sequences:
+                sequence, uploaded = self.sequences[seq_idx]
+                self.device.sequencers[seq_idx].sync_en(True)
+                if not uploaded:
+                    logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+                    self.device.sequencers[seq_idx].sequence(sequence.todict())
+                    self.sequences[seq_idx] = (sequence, True)
 
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""

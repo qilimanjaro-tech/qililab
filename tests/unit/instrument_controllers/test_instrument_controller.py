@@ -4,7 +4,13 @@ import pytest
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, INSTRUMENTREFERENCE, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
 from qililab.platform import Platform
-from qililab.typings.enums import Category, ConnectionName, InstrumentControllerName, InstrumentControllerSubCategory
+from qililab.typings.enums import (
+    Category,
+    ConnectionName,
+    InstrumentControllerName,
+    InstrumentControllerSubCategory,
+    Parameter,
+)
 from tests.data import Galadriel
 from tests.utils import platform_db
 
@@ -24,6 +30,7 @@ def fixture_rs_settings():
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.10",

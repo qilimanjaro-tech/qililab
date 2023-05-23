@@ -33,7 +33,7 @@ class TestQbloxD5a:
         Args:
             pulsar (_type_): _description_
         """
-        name = pulsar.name
+        name = pulsar.name.value
         with pytest.raises(ValueError, match=f"channel not specified to update instrument {name}"):
             pulsar.device = MagicMock()
             pulsar.setup(parameter=Parameter.VOLTAGE, value="2", channel_id=None)
