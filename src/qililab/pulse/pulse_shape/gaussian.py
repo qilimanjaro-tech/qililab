@@ -33,9 +33,9 @@ class Gaussian(PulseShape):
         mu_ = duration / 2
 
         gaussian = np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
-        gaussian = (gaussian - gaussian[0]) / (1 - gaussian[0])  # Shift to avoid introducing noise at time 0
+        gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
 
-        return gaussian * amplitude
+        return gaussian * amplitude / np.max(gaussian)  # Re-shape to amplitude
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Gaussian":
