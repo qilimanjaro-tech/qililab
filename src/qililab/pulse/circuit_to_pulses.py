@@ -184,6 +184,7 @@ class CircuitToPulses:
                     pulse_shape=pulse_shape,
                 ),
                 start_time=old_time + self.settings.delay_before_readout,
+                qubit=qubit_idx,
             )
             if gate_settings.duration > 0
             else None,
