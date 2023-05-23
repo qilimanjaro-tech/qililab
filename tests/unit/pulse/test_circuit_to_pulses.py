@@ -90,7 +90,7 @@ class TestTranslation:
 
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 2  # it contains pulses for 2 buses
+        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses (control, flux and readout)
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
         control_port = next(item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.DRIVE.value)[
@@ -99,13 +99,18 @@ class TestTranslation:
         assert control_pulse_bus_schedule.port == control_port  # it targets the qubit, which is connected to drive line
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
-        readout_pulse_bus_schedule = pulse_schedule.elements[1]
+        flux_pulse_bus_schedule = pulse_schedule.elements[1]
+        flux_port = next(item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FLUX.value)[RUNCARD.ID]
+        assert flux_pulse_bus_schedule.port == flux_port  # it targets the flux line, which is connected to flux line
+        assert len(flux_pulse_bus_schedule.timeline) == 0
+
+        readout_pulse_bus_schedule = pulse_schedule.elements[2]
         readout_port = next(
             item for item in Galadriel.chip[NODE.NODES] if item[NODE.LINE] == Line.FEEDLINE_INPUT.value
         )[RUNCARD.ID]
         assert (
             readout_pulse_bus_schedule.port == readout_port
-        )  # it targets the resonator, which is connected to feedline input line with port 2
+        )  # it targets the resonator, which is connected to feedline input
         assert len(readout_pulse_bus_schedule.timeline) == 1
 
         all_pulse_events = control_pulse_bus_schedule.timeline + readout_pulse_bus_schedule.timeline
