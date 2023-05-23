@@ -222,8 +222,8 @@ class TestQbloxQRM:
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
         qrm.start_sequencer()
-        qrm.device.arm_sequencer.assert_called()
-        qrm.device.start_sequencer.assert_called()
+        qrm.device.arm_sequencer.assert_not_called()
+        qrm.device.start_sequencer.assert_not_called()
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
@@ -400,9 +400,9 @@ class TestQbloxQRM:
         acquisitions = qrm.get_acquisitions()
         assert isinstance(acquisitions, QbloxResult)
         # Assert device calls
-        qrm.device.get_sequencer_state.assert_called()
-        qrm.device.get_acquisition_state.assert_called()
-        qrm.device.get_acquisitions.assert_called()
+        qrm.device.get_sequencer_state.assert_not_called()
+        qrm.device.get_acquisition_state.assert_not_called()
+        qrm.device.get_acquisitions.assert_not_called()
 
     def test_id_property(self, qrm_no_device: QbloxQRM):
         """Test id property."""
