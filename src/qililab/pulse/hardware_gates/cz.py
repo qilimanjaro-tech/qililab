@@ -26,5 +26,5 @@ class CZ(HardwareGate):  # pylint: disable=invalid-name
         cz_params = CZ.settings[gate.qubits]
         cz_duration = 2 * cz_params.duration + 2 + cz_params.shape["t_phi"]
         return cls.HardwareGateSettings(
-            amplitude=cz_params.amplitude, phase=0, duration=cz_duration, shape=cz_params.shape
+            amplitude=cz_params.amplitude, phase=cz_params.phase, duration=cz_duration, shape=cz_params.shape
         )

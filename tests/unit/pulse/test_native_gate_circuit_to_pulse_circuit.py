@@ -46,7 +46,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
@@ -57,11 +57,11 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 0.5,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
-                {"name": "Park", "amplitude": 1.0, "phase": None, "duration": 93, "shape": {"name": "rectangular"}},
+                {"name": "Park", "amplitude": 1.0, "phase": 0, "duration": 93, "shape": {"name": "rectangular"}},
             ],
             2: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -69,7 +69,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
@@ -80,11 +80,11 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
-                {"name": "Park", "amplitude": 1.0, "phase": None, "duration": 93, "shape": {"name": "rectangular"}},
+                {"name": "Park", "amplitude": 1.0, "phase": 0, "duration": 93, "shape": {"name": "rectangular"}},
             ],
             4: [
                 {"name": "I", "amplitude": 0, "phase": 0, "duration": 0, "shape": {"name": "rectangular"}},
@@ -92,17 +92,17 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
-                {"name": "Park", "amplitude": 1.0, "phase": None, "duration": 83, "shape": {"name": "rectangular"}},
+                {"name": "Park", "amplitude": 1.0, "phase": 0, "duration": 83, "shape": {"name": "rectangular"}},
             ],
             (2, 0): [
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
                 },
@@ -111,7 +111,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
                 },
@@ -120,7 +120,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
                 },
@@ -129,7 +129,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
                 },

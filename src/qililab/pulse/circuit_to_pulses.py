@@ -179,15 +179,13 @@ class CircuitToPulses:
         else:
             port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.DRIVE)
 
-        # get amplitude from gate settings
-        amplitude = float(gate_settings.amplitude)
-        frequency = node.frequency
+        # set frequency to 0 for CZ, park
         if isinstance(control_gate, (CZ, Park)):
-            phase = 0
             frequency = 0
         else:
-            phase = float(gate_settings.phase)
+            frequency = node.frequency
 
+        # update time
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
@@ -201,11 +199,11 @@ class CircuitToPulses:
         return (
             PulseEvent(
                 pulse=Pulse(
-                    amplitude=amplitude,
-                    phase=phase,
+                    amplitude=float(gate_settings.amplitude),
+                    phase=float(gate_settings.phase),
                     duration=gate_settings.duration,
                     pulse_shape=pulse_shape,
-                    frequency=frequency,  # TODO: frequency for CZ and Park(?)
+                    frequency=frequency,
                 ),
                 start_time=old_time,
             )

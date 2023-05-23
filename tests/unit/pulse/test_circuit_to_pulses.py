@@ -51,14 +51,14 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 0.3,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
                 {
                     "name": "Park",
                     "amplitude": 0.8,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
@@ -83,14 +83,14 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 0.3,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
                 {
                     "name": "Park",
                     "amplitude": 0.8,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
@@ -115,14 +115,14 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "Drag",
                     "amplitude": 0.3,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 40,
                     "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 1},
                 },
                 {
                     "name": "Park",
                     "amplitude": 0.8,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 70,
                     "shape": {"name": "rectangular"},
                 },
@@ -131,7 +131,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 30,
                     "shape": {"name": "snz", "b": 0.1, "t_phi": 1},
                 },
@@ -140,7 +140,7 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                 {
                     "name": "CZ",
                     "amplitude": 1,
-                    "phase": None,
+                    "phase": 0,
                     "duration": 30,
                     "shape": {"name": "snz", "b": 0.1, "t_phi": 1},
                 },

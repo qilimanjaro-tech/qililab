@@ -21,5 +21,8 @@ class Park(HardwareGate):  # pylint: disable=invalid-name
         park_params = Park.settings[gate.target_qubits[0]]
 
         return cls.HardwareGateSettings(
-            amplitude=park_params.amplitude, phase=0, duration=park_params.duration, shape=park_params.shape
+            amplitude=park_params.amplitude,
+            phase=park_params.phase,
+            duration=park_params.duration,
+            shape=park_params.shape,
         )
