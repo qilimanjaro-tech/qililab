@@ -18,8 +18,11 @@ This document contains the changes of the current release.
         instruments: [QRM1, rs_1]
       port: 100
       distortions:                                        <<<
-        - BiasTeeCorrection(tau_bias_tee=1.0)             <<<
-        - LFilter(a = [0.1, 1.1], b = [1.1, 1.3])         <<<
+        - name: bias_tee
+          tau_bias_tee: 1.0
+        - name: lfilter
+          a: [0.1, 1.1]
+          b: [1.1, 1.3]
     - id_: 10
       category: bus
       alias: drive_line_q0_bus
