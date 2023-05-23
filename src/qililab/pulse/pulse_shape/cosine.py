@@ -33,20 +33,20 @@ class Cosine(PulseShape):
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "Cosine":
-        """Load Rectangular object/shape from dictionary.
+        """Load Cosine object/shape from dictionary.
 
         Args:
-            dictionary (dict): Dictionary representation of the Rectangular object/shape.
+            dictionary (dict): Dictionary representation of the Cosine object/shape.
 
         Returns:
-            Rectangular: Loaded class.
+            Cosine: Loaded class.
         """
         local_dictionary = dictionary.copy()
         local_dictionary.pop(RUNCARD.NAME, None)
         return cls(**local_dictionary)
 
     def to_dict(self):
-        """Return dictionary representation of the Rectangular object/shape.
+        """Return dictionary representation of the Cosine object/shape.
 
         Returns:
             dict: Dictionary.
