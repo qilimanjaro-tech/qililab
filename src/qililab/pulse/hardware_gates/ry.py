@@ -16,23 +16,14 @@ class RY(HardwareGate):
     class_type = gates.RY
 
     @classmethod
-    def translate(
-        cls,
-        gate: gates.RY,
-        master_amplitude_gate: float,
-        master_duration_gate: int,
-    ) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.RY) -> HardwareGate.HardwareGateSettings:
         """Translate gate into pulse.
 
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
         qubit = gate.target_qubits[0]
-        y_params = Y.parameters(
-            qubits=qubit,
-            master_amplitude_gate=master_amplitude_gate,
-            master_duration_gate=master_duration_gate,
-        )
+        y_params = Y.settings[qubit]
         (theta,) = gate.parameters
         theta = cls.normalize_angle(angle=theta)
         amplitude = (np.abs(theta) / np.pi) * y_params.amplitude

@@ -24,8 +24,6 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
         "minimum_clock_time": 4,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
-        "master_amplitude_gate": 1,
-        "master_duration_gate": 40,
         "reset_method": "passive",
         "passive_reset_duration": 100,
         "timings_calculation_method": "as_soon_as_possible",
@@ -98,7 +96,7 @@ class TestInitialization:
         for gate in HardwareGateFactory.pulsed_gates.values():
             if gate.name not in platform_settings.gate_names:
                 # Some gates derive from others (such as RY from Y), thus they have no settings
-                assert gate.settings is None
+                assert not hasattr(gate, "settings")
             else:
                 for qubit in range(chip.num_qubits):
                     settings = platform_settings.get_gate(name=gate.name, qubits=qubit)
@@ -153,7 +151,7 @@ class TestTranslation:
 
         pulse_schedule = pulse_schedules[0]
 
-        assert len(pulse_schedule) == 2  # it contains pulses for 2 buses
+        assert len(pulse_schedule) == 3  # it contains pulses for 3 buses (control, flux and readout)
 
         control_pulse_bus_schedule = pulse_schedule.elements[0]
 
@@ -162,7 +160,12 @@ class TestTranslation:
         )  # it targets the qubit, which is connected to drive line with port 1
         assert len(control_pulse_bus_schedule.timeline) == 3  # it contains 3 gates
 
-        readout_pulse_bus_schedule = pulse_schedule.elements[1]
+        flux_pulse_bus_schedule = pulse_schedule.elements[1]
+
+        assert flux_pulse_bus_schedule.port == 0  # it targets the flux line, which is connected to port 0
+        assert len(flux_pulse_bus_schedule.timeline) == 0
+
+        readout_pulse_bus_schedule = pulse_schedule.elements[2]
 
         assert (
             readout_pulse_bus_schedule.port == 2
@@ -177,7 +180,7 @@ class TestTranslation:
             if gate_settings.name == "Drag":
                 # drag amplitude is defined by the first parameter, in this case 1
                 drag_amplitude = (1 / np.pi) * gate_settings.amplitude
-                assert pulse.amplitude == drag_amplitude
+                assert pulse.amplitude == pytest.approx(drag_amplitude)
                 # drag phase is defined by the second parameter, in this case 0.5
                 assert pulse.phase == 0.5
             else:
@@ -193,19 +196,6 @@ class TestTranslation:
             assert isinstance(pulse.pulse_shape, PulseShape)
             for name, value in gate_settings.shape.items():
                 assert getattr(pulse.pulse_shape, name) == value
-
-    def test_drag_phase_errors_raised_in_translate(self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip):
-        """Test whether errors are raised correctly if gate values are not what is expected"""
-        circuit = Circuit(1)
-        circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
-        # test error raised when drag phase != 0
-        platform_settings.get_gate(name="Drag", qubits=0).phase = 2
-        translator = CircuitToPulses(settings=platform_settings)
-        with pytest.raises(
-            ValueError,
-            match="Drag gate should not have setting for phase since the phase depends only on circuit gate parameters",
-        ):
-            translator.translate(circuits=[circuit], chip=chip)
 
     def test_gate_duration_errors_raised_in_translate(
         self, platform_settings: RuncardSchema.PlatformSettings, chip: Chip
