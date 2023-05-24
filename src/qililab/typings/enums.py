@@ -229,6 +229,7 @@ class PulseShapeSettingsName(str, Enum):
     DRAG_COEFFICIENT = "drag_coefficient"
     B = "b"
     T_PHI = "t_phi"
+    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):
