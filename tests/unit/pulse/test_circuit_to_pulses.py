@@ -29,7 +29,7 @@ def fixture_platform(chip: Chip) -> Platform:
         "category": "platform",
         "name": "dummy",
         "device_id": 9,
-        "minimum_clock_time": 4,
+        "minimum_clock_time": 5,
         "delay_between_pulses": 0,
         "delay_before_readout": 0,
         "reset_method": "passive",
@@ -570,11 +570,11 @@ class TestTranslation:
         # minimum_clock_time is 4ns so every start time will be multiple of 4
         # the order respects drive-flux-resonator (line 337)
         # duration for CZ is 30*2+2+1
-        bus0_start_times = [224]
-        bus8_start_times = [0, 48, 184]
-        bus13_start_times = [88]
+        bus0_start_times = [220]
+        bus8_start_times = [0, 45, 180]
+        bus13_start_times = [85]
         bus14_start_times = [0]
-        bus15_start_times = [8]  # padding
+        bus15_start_times = [5]  # padding
         bus17_start_times = [0]
 
         expected_start_times = (
