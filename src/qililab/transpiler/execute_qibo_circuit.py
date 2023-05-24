@@ -6,7 +6,7 @@ from qibo.models import Circuit
 import qililab as ql
 
 
-def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_only: bool):
+def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_only: bool = False):
     """Transpile a qibo circuit to native gates and run it with qililab
 
     Args:
