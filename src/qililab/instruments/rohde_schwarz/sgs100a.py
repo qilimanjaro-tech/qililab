@@ -39,6 +39,7 @@ class SGS100A(SignalGenerator):
         """Set R&S dbm power and frequency. Value ranges are:
         - power: (-120, 25).
         - frequency (1e6, 20e9).
+        Toggle RF on/off.
         """
         if parameter == Parameter.POWER:
             self.settings.power = float(value)

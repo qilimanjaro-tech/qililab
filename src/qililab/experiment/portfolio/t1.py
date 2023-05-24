@@ -1,24 +1,24 @@
-"""This file contains a pre-defined version of a rabi experiment."""
-import numpy as np
+"""This file contains a pre-defined version of a T1 experiment."""
 from qibo.gates import M, X
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
-from qililab.utils import Loop
+from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.utils import Loop, Wait
 
 from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import Cos
+from .fitting_models import Exp
 
 
-class Rabi(ExperimentAnalysis, Cos):
-    """Class used to run a rabi experiment on the given qubit. This experiment modifies the amplitude of the pulse
-    associated to the X gate.
+class T1(ExperimentAnalysis, Exp):
+    """Class used to run a T1 experiment on the given qubit.
+
+    This experiment uses an X gate to excite the qubit, and then waits for a given time before measuring the qubit.
 
     Args:
         platform (Platform): platform used to run the experiment
         qubit (int): qubit index used in the experiment
-        loopvalues (numpy.ndarray): array of values to loop through in the experiment, which modifies the amplitude of X gate
+        loop_options (LoopOptions): wait time loop options
         repetition_duration (int, optional): duration of a single repetition in nanoseconds. Defaults to 10000.
         hardware_average (int, optional): number of repetitions used to average the result. Defaults to 10000.
     """
@@ -27,24 +27,24 @@ class Rabi(ExperimentAnalysis, Cos):
         self,
         platform: Platform,
         qubit: int,
-        loop_values: np.ndarray,
+        loop_options: LoopOptions,
         repetition_duration=10000,
         hardware_average=10000,
     ):
         # Define circuit used in this experiment
-        circuit = Circuit(1)
+        circuit = Circuit(qubit)
         circuit.add(X(qubit))
+        circuit.add(Wait(qubit, t=0))
         circuit.add(M(qubit))
 
-        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
 
-        # Define loop used in the experiment
-        loop = Loop(alias="X", parameter=Parameter.AMPLITUDE, values=loop_values)
-
+        wait_loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, options=loop_options)
         experiment_options = ExperimentOptions(
-            name="Rabi",
-            loops=[loop],
+            name="T1",
+            loops=[wait_loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
+            plot_y_label="|S21| [dB]",
         )
 
         # Initialize experiment

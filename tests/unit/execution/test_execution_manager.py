@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 import pytest
+from qibo.gates import RX, RY, I, M, X, Y
+from qibo.models import Circuit
 from qpysequence import Sequence
 
 from qililab import build_platform

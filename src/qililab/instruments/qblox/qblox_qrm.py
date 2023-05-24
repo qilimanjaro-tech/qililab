@@ -258,6 +258,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
+    def upload(self):
+        """Upload all the previously compiled programs to its corresponding sequencers.
+
+        This method must be called after the method ``compile``."""
+        if self.nshots is None or self.repetition_duration is None:
+            raise ValueError("Please compile the circuit before uploading it to the device.")
+        for seq_idx in range(self.num_sequencers):
+            if seq_idx in self.sequences:
+                sequence, uploaded = self.sequences[seq_idx]
+                self.device.sequencers[seq_idx].sync_en(True)
+                if not uploaded:
+                    logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+                    self.device.sequencers[seq_idx].sequence(sequence.todict())
+                    self.sequences[seq_idx] = (sequence, True)
+
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
