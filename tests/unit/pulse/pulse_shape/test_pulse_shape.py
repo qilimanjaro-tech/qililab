@@ -95,12 +95,22 @@ class TestPulseShape:
             assert dict_ is not None
             assert isinstance(dict_, dict)
 
-        if isinstance(pulse_shape, (Rectangular, Cosine)):
+        if isinstance(pulse_shape, Rectangular):
             assert (
                 dictionary
                 == dictionary2
                 == {
                     RUNCARD.NAME: pulse_shape.name.value,
+                }
+            )
+
+        if isinstance(pulse_shape, Cosine):
+            assert (
+                dictionary
+                == dictionary2
+                == {
+                    RUNCARD.NAME: pulse_shape.name.value,
+                    PulseShapeSettingsName.LAMBDA_2.value: pulse_shape.lambda_2,
                 }
             )
 
