@@ -8,7 +8,7 @@ from qililab.instrument_controllers.vector_network_analyzer.vector_network_analy
 )
 from qililab.instruments.keysight.e5080b_vna import E5080B
 from qililab.typings.enums import InstrumentControllerName, InstrumentName
-from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
+from qililab.typings.instruments.keysight_e5080b import E5080BDriver
 
 
 @InstrumentControllerFactory.register
@@ -22,7 +22,7 @@ class E5080BController(VectorNetworkAnalyzerController):
     """
 
     name = InstrumentControllerName.KEYSIGHT_E5080B
-    device: VectorNetworkAnalyzerDriver
+    device: E5080BDriver
     modules: Sequence[E5080B]
 
     @dataclass
@@ -33,9 +33,7 @@ class E5080BController(VectorNetworkAnalyzerController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = VectorNetworkAnalyzerDriver(
-            name=f"{self.name.value}_{self.id_}", address=self.address, timeout=self.timeout
-        )
+        self.device = E5080BDriver(name=f"{self.name.value}_{self.id_}", address=self.address, timeout=self.timeout)
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

@@ -131,7 +131,7 @@ def fixture_exp(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="vna_experiment")
 @patch(
-    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.VectorNetworkAnalyzerDriver",
+    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.E5080BDriver",
     autospec=True,
 )
 @patch(
