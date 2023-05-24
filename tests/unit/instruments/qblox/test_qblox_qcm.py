@@ -8,7 +8,6 @@ from qpysequence.sequence import Sequence
 
 from qililab.instrument_controllers.qblox.qblox_pulsar_controller import QbloxPulsarController
 from qililab.instruments import QbloxQCM
-from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
@@ -16,33 +15,19 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
-    """Load PulseEvent.
-
-    Returns:
-        PulseEvent: Instance of the PulseEvent class.
-    """
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="platform")
-def fixture_platform() -> Platform:
-    """Return Platform object."""
-    return platform_db(runcard=Galadriel.runcard)
-
-
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
+    pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulsar_controller_qcm")
-def fixture_pulsar_controller_qcm(platform: Platform):
+def fixture_pulsar_controller_qcm():
     """Return an instance of QbloxPulsarController class"""
+    platform = platform_db(runcard=Galadriel.runcard)
     settings = copy.deepcopy(Galadriel.pulsar_controller_qcm_0)
     settings.pop("name")
     return QbloxPulsarController(settings=settings, loaded_instruments=platform.instruments)
@@ -66,6 +51,7 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "sequencer1",
             "out0_offset",
             "out1_offset",
             "out2_offset",
@@ -77,29 +63,29 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "scope_acq_sequencer_select",
         ]
     )
-    mock_instance.sequencers = [mock_instance.sequencer0]
-    mock_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "set",
-            "mixer_corr_phase_offset_degree",
-            "mixer_corr_gain_ratio",
-            "offset_awg_path0",
-            "offset_awg_path1",
-            "marker_ovr_en",
-            "marker_ovr_value",
-        ]
-    )
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
+    spec = [
+        "sync_en",
+        "gain_awg_path0",
+        "gain_awg_path1",
+        "sequence",
+        "mod_en_awg",
+        "nco_freq",
+        "scope_acq_sequencer_select",
+        "channel_map_path0_out0_en",
+        "channel_map_path1_out1_en",
+        "demod_en_acq",
+        "integration_length_acq",
+        "set",
+        "mixer_corr_phase_offset_degree",
+        "mixer_corr_gain_ratio",
+        "offset_awg_path0",
+        "offset_awg_path1",
+        "marker_ovr_en",
+        "marker_ovr_value",
+    ]
+    mock_instance.sequencer0.mock_add_spec(spec)
+    mock_instance.sequencer1.mock_add_spec(spec)
     pulsar_controller_qcm.connect()
     return pulsar_controller_qcm.modules[0]
 
@@ -147,8 +133,8 @@ class TestQbloxQCM:
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
         qcm.start_sequencer()
-        qcm.device.arm_sequencer.assert_called()
-        qcm.device.start_sequencer.assert_called()
+        qcm.device.arm_sequencer.assert_not_called()
+        qcm.device.start_sequencer.assert_not_called()
 
     @pytest.mark.parametrize(
         "parameter, value, channel_id",
@@ -206,7 +192,7 @@ class TestQbloxQCM:
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
         qcm.turn_off()
-        qcm.device.stop_sequencer.assert_called_once()
+        assert qcm.device.stop_sequencer.call_count == qcm.num_sequencers
 
     def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
@@ -249,18 +235,6 @@ class TestQbloxQCM:
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""
         assert qcm_no_device.firmware == qcm_no_device.settings.firmware
-
-    def test_max_frequencies_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
-        """Test split_schedule_for_sequencers method raises error when handling more frequencies than it can support."""
-        expected_error_message = f"The number of frequencies must be less or equal than the number of sequencers. Got {len(big_pulse_bus_schedule.frequencies())} frequencies and {qcm._NUM_MAX_SEQUENCERS} sequencers."
-        with pytest.raises(IndexError, match=expected_error_message):
-            qcm._split_schedule_for_sequencers(pulse_bus_schedule=big_pulse_bus_schedule)
-
-    def test_compile_not_single_freq_error(self, qcm: QbloxQCM, big_pulse_bus_schedule: PulseBusSchedule):
-        """Test that the compile method raises an error when the PulseBusSchedule contains more than one frequency."""
-        expected_error_message = f"The PulseBusSchedule of a sequencer must have exactly one frequency. This instance has {len(big_pulse_bus_schedule.frequencies())}."
-        with pytest.raises(ValueError, match=expected_error_message):
-            qcm._compile(pulse_bus_schedule=big_pulse_bus_schedule, sequencer=0)  # type: ignore
 
     def test_compile_swaps_the_i_and_q_channels_when_mapping_is_not_supported_in_hw(self, qcm):
         """Test that the compile method swaps the I and Q channels when the output mapping is not supported in HW."""

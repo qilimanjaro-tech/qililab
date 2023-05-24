@@ -1,6 +1,4 @@
 """ReadoutSystemControl class."""
-
-
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.result import Result
 from qililab.typings.enums import SystemControlName

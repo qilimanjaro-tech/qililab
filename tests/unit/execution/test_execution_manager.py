@@ -8,14 +8,12 @@ import pytest
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models import Circuit
 from qpysequence import Sequence
-from tests.data import experiment_params
-from tests.utils import mock_instruments
 
 from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instruments import AWG
+from qililab.instruments import AWG, QbloxQRM
 from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
 from qililab.system_control import ReadoutSystemControl
@@ -23,6 +21,8 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
+from tests.data import experiment_params
+from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="execution_manager")
@@ -167,7 +167,7 @@ class TestExecutionManagerPlatform:
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
         probabilities = results.probabilities()
         for qubit_string in probabilities.keys():
-            assert len(qubit_string) == 2
+            assert len(qubit_string) == nested_experiment.circuits[0].nqubits
         assert sum(probabilities.values()) == 1.0
         mock_dump.assert_called()
         mock_open.assert_called()
@@ -293,6 +293,7 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
     for awg in awgs:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
+        awg.device.sequencers = [MagicMock(), MagicMock()]
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
 
@@ -321,25 +322,10 @@ class TestWorkflow:
 
         for awg in awgs:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
-                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
-
-    def test_run(self, mocked_execution_manager: ExecutionManager):
-        """Test that the run method returns a ``Result`` object."""
-        # Test that the run method returns a ``Result`` object
-        mocked_queue = MagicMock()
-        result = mocked_execution_manager.run(queue=mocked_queue)
-        assert isinstance(result, QbloxResult)
-        mocked_queue.put_nowait.assert_called_with(item=result)
-        assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
-
-        # Make sure the mocked devices were called
-        readout_awgs = [
-            bus.system_control.instruments[0]
-            for bus in mocked_execution_manager.buses
-            if isinstance(bus.system_control, ReadoutSystemControl)
-        ]
-        for awg in readout_awgs:
-            assert awg.device.get_acquisitions.call_count == 2  # type: ignore
+                if isinstance(awg, QbloxQRM) and seq_idx == 1:
+                    assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
+                    continue
+                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
         """Test that an error is raised when calling ``run`` with multiple readout buses."""

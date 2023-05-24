@@ -6,7 +6,7 @@ from qililab.instrument_controllers.single_instrument_controller import SingleIn
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
 from qililab.typings import RohdeSchwarzSGS100A
-from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName
+from qililab.typings.enums import ConnectionName, InstrumentControllerName, InstrumentTypeName, Parameter
 
 
 @InstrumentControllerFactory.register
@@ -53,3 +53,9 @@ class SGS100AController(SingleInstrumentController):
                     f"Instrument {type(module)} not supported."
                     + f"The only supported instrument is {InstrumentTypeName.ROHDE_SCHWARZ}"
                 )
+
+    def to_dict(self):
+        """Return a dict representation of the SGS100A controller class."""
+        return super().to_dict() | {
+            Parameter.REFERENCE_CLOCK.value: self.settings.reference_clock,
+        }

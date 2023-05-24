@@ -7,7 +7,7 @@ import pytest
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
 from qililab.pulse.pulse_distortion import LFilterCorrection
-from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
+from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 
 # Parameters for the LFilterCorrection.
@@ -21,7 +21,7 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
 
 
 @pytest.fixture(
@@ -75,7 +75,7 @@ class TestLFilterCorrection:
             round(np.max(np.real(corr_envelopes[0])), 14)
             == round(np.max(np.real(corr_envelopes[1])) / norm_factors[0], 14)
             == round(np.max(np.real(corr_envelopes[2])) / (norm_factors[0] * norm_factors[1]), 14)
-            == round(np.max(np.real(envelope)), 14) * pulse_distortion.norm_factor
+            == round(np.max(np.real(envelope)) * pulse_distortion.norm_factor, 14)
         )
 
     def test_from_dict(self, pulse_distortion: LFilterCorrection):

@@ -115,15 +115,38 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         Returns:
             list[QpySequence]: list of compiled assembly programs
         """
+        # Clear cache if `nshots` or `repetition_duration` changes
+        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+            self.nshots = nshots
+            self.repetition_duration = repetition_duration
+            self.clear_cache()
+
+        # Get all sequencers connected to port the schedule acts on
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=pulse_bus_schedule.port)
-        for sequencer in sequencers:
-            if sequencer.identifier in self.sequences:
+        # Separate the readout schedules by the qubit they act on
+        qubit_schedules = pulse_bus_schedule.qubit_schedules()
+        compiled_sequences = []
+        for schedule in qubit_schedules:
+            # Get the sequencer that acts on the same qubit as the schedule
+            qubit_sequencers = [sequencer for sequencer in sequencers if sequencer.qubit == schedule.qubit]
+            if len(qubit_sequencers) != 1:
+                raise IndexError(
+                    f"Expected 1 sequencer connected to port {schedule.port} and qubit {schedule.qubit}, "
+                    f"got {len(qubit_sequencers)}"
+                )
+            sequencer = qubit_sequencers[0]
+            if schedule != self._cache.get(sequencer.identifier):
+                # If the schedule is not in the cache, compile it and add it to the cache
+                sequence = self._compile(schedule, sequencer)
+                compiled_sequences.append(sequence)
+            else:
+                # If the schedule is in the cache, delete the acquisition data (if uploaded) and add it to the list of
+                # compiled sequences
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
                     self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
-        return super().compile(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
-        )
+                compiled_sequences.append(self.sequences[sequencer.identifier][0])
+        return compiled_sequences
 
     def acquire_result(self) -> QbloxResult:
         """Read the result from the AWG instrument
@@ -193,8 +216,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             value (float): Normalized threshold value.
             sequencer_id (int): sequencer to update the value
         """
-        integer_value = int(value * self.awg_sequencers[sequencer_id].used_integration_length)
-        # TODO: Change the parameter to `thresholded_acq_threshold` when qblox-instruments is updated to >= 0.9.0
+        integer_value = int(value * self._get_sequencer_by_id(id=sequencer_id).used_integration_length)
         self.device.sequencers[sequencer_id].thresholded_acq_threshold(integer_value)
 
     def _set_nco(self, sequencer_id: int):
@@ -253,7 +275,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""
-        weighed_acq = self.awg_sequencers[sequencer_id].weighed_acq_enabled
+        weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
         acq_instruction = (
             AcquireWeighed(
                 acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME

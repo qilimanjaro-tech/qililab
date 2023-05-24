@@ -99,7 +99,12 @@ class AWG(Instrument):
         Returns:
             list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
         """
-        return [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]
+        if seqs := [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]:
+            return seqs
+        raise IndexError(
+            f"No sequencer found connected to port {chip_port_id}. Please make sure the `chip_port_id` "
+            "attribute is correct."
+        )
 
     def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
         """Get sequencer from the sequencer identifier

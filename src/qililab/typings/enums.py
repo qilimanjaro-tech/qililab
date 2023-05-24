@@ -127,6 +127,8 @@ class GateName(str, Enum):
         * RY
         * XY
         * Drag
+        * CZ
+        * Park
     """
 
     I = "I"  # noqa: E741
@@ -137,6 +139,8 @@ class GateName(str, Enum):
     XY = "XY"
     M = "M"
     Drag = "Drag"
+    CZ = "CZ"
+    Park = "Park"
 
 
 class AcquisitionName(str, Enum):
@@ -212,6 +216,8 @@ class PulseShapeName(str, Enum):
     EXPONENTIAL_CORRECTION_LOOP = "exponential_loop"
     PREDISTORTION = "predistortion"
     LFILTER = "lfilter"
+    SNZ = "snz"
+    COSINE = "cosine"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -221,6 +227,7 @@ class PulseShapeSettingsName(str, Enum):
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
         * drag_coefficient
+        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
     """
 
     NUM_SIGMAS = "num_sigmas"
@@ -235,6 +242,7 @@ class PulseShapeSettingsName(str, Enum):
     A = "a"
     B = "b"
     NORM_FACTOR = "norm_factor"
+    T_PHI = "t_phi"
 
 
 class NodeName(str, Enum):
