@@ -94,10 +94,12 @@ class ExecutionManager:
         """
         return {bus.id_: bus.waveforms(resolution=resolution, idx=idx) for bus in self.buses}
 
-    def draw(self, resolution: float, idx: int = 0):
+    def draw(self, part: str, linestyle: str, resolution: float, idx: int = 0):
         """Save figure with the waveforms sent to each bus.
 
         Args:
+            part (str): both, real or imaginary. Which will be the ploted parts of the waveforms. Defaults to both
+            linestyle (str): linestyles accepted by matplotlib.pyplot.plot(): "-", ".", "o", "x"... Defaults to "-" (line plot)
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -109,8 +111,13 @@ class ExecutionManager:
         for axis_idx, (bus_idx, waveforms) in enumerate(self.waveforms_dict(resolution=resolution, idx=idx).items()):
             time = np.arange(len(waveforms)) * resolution
             axes[axis_idx].set_title(f"Bus {bus_idx}")
-            axes[axis_idx].plot(time, waveforms.i, label="I")
-            axes[axis_idx].plot(time, waveforms.q, label="Q")
+
+            if part in {"both", "real"}:
+                axes[axis_idx].plot(time, waveforms.i, linestyle, label="I")
+
+            if part in {"both", "imaginary"}:
+                axes[axis_idx].plot(time, waveforms.q, linestyle, label="Q")
+
             bus = self.buses[axis_idx]
             self._plot_acquire_time(bus=bus, sequence_idx=idx)
             axes[axis_idx].legend()

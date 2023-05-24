@@ -56,5 +56,6 @@ sample_experiment.build_execution()
 for gate in circuit.queue:
     print(gate.name, gate.qubits)
 
-figure = sample_experiment.draw()
+figure = sample_experiment.draw(part="imaginary", linestyle=".")
+# figure = sample_experiment.draw()
 plt.show()

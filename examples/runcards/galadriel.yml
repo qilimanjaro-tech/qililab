@@ -101,7 +101,7 @@ settings:
     (0,2):
       - name: CZ
         amplitude: 1.0
-        phase: 0
+        phase:
         duration: 40
         shape:
           name: snz
@@ -110,7 +110,7 @@ settings:
     (1,2):
       - name: CZ
         amplitude: 1.0
-        phase: 0
+        phase:
         duration: 40
         shape:
           name: snz
@@ -119,7 +119,7 @@ settings:
     (2,3):
       - name: CZ
         amplitude: 1.0
-        phase: 0
+        phase:
         duration: 40
         shape:
           name: snz
@@ -128,7 +128,7 @@ settings:
     (2,4):
       - name: CZ
         amplitude: 1.0
-        phase: 0
+        phase:
         duration: 40
         shape:
           name: snz
