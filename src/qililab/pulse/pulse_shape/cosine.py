@@ -71,5 +71,5 @@ class Cosine(PulseShape):
         """
         return {
             RUNCARD.NAME: self.name.value,
-            PulseShapeSettingsName.LAMBDA_2: self.lambda_2,
+            PulseShapeSettingsName.LAMBDA_2.value: self.lambda_2,
         }
