@@ -101,7 +101,7 @@ settings:
     (0,2):
       - name: CZ
         amplitude: 1.0
-        phase:
+        phase: 0
         duration: 40
         shape:
           name: snz
@@ -110,7 +110,7 @@ settings:
     (1,2):
       - name: CZ
         amplitude: 1.0
-        phase:
+        phase: 0
         duration: 40
         shape:
           name: snz
@@ -119,7 +119,7 @@ settings:
     (2,3):
       - name: CZ
         amplitude: 1.0
-        phase:
+        phase: 0
         duration: 40
         shape:
           name: snz
@@ -128,7 +128,7 @@ settings:
     (2,4):
       - name: CZ
         amplitude: 1.0
-        phase:
+        phase: 0
         duration: 40
         shape:
           name: snz
@@ -621,9 +621,7 @@ schema:
         category: system_control
         instruments: [QRM1, rs_1]
       port: 100
-      distortions:
-        - BiasTeeCorrection(tau_bias_tee=1.0)
-        - LFilter(a = [0.1, 1.1], b = [1.1, 1.3])
+      distortions: []
     - id_: 20
       category: bus
       alias: drive_line_q0_bus
@@ -752,6 +750,7 @@ schema:
       alias: rohde_schwarz_controller_0
       category: instrument_controller
       subcategory: single_instrument
+      reference_clock: internal
       connection:
         name: tcp_ip
         address: 192.168.1.11
