@@ -194,6 +194,9 @@ This document contains the changes of the current release.
 
 ### Breaking changes
 
+- Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
+  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
+
 ### Deprecations / Removals
 
 - Remove the `awg_iq_channels` from the `AWG` class. This mapping was already done within each sequencer.
