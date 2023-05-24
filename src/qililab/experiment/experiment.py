@@ -64,6 +64,8 @@ class Experiment:
             * Save the results to the ``results`` attribute.
             * Save the results to the remote database (if asked to).
         """
+        if not hasattr(self, "execution_manager"):
+            self.build_execution()
         # Generate live plotting
         if self.platform.connection is None:
             self._plot = None
@@ -75,9 +77,6 @@ class Experiment:
                 num_schedules=1,
                 title=self.options.name,
             )
-
-        if not hasattr(self, "execution_manager"):
-            self.build_execution()
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
 

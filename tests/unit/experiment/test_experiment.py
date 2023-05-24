@@ -254,10 +254,12 @@ class TestMethods:
                         mock_plot.assert_called_once()
         assert len(vna_experiment.results.results) > 0
 
-    def test_run_raises_error(self, exp: Experiment):
-        """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
-        with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
-            exp.run()
+    @patch("qililab.execution.execution_manager.BusExecution.acquire_result")
+    def test_run_builds_execution_manager_if_not_exists(self, mock_acq_res: MagicMock, vna_experiment: Experiment):
+        """Test that the ``run`` method builds the execution if ``execution_manager`` was not created."""
+        assert not hasattr(vna_experiment, "execution_manager")
+        vna_experiment.run()
+        assert hasattr(vna_experiment, "execution_manager")
 
     def test_turn_on_instruments(self, connected_experiment: Experiment):
         """Test the ``turn_on_instruments`` method of the Experiment class."""
