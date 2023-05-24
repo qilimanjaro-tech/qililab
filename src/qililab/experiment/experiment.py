@@ -55,6 +55,7 @@ class Experiment:
 
     def run(self) -> Results:
         """This method is responsible for:
+        * Create the ``ExecutionManager`` class if was not previously created.
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
         * Looping over all given loops and/or software averages. And for each loop:
@@ -76,7 +77,7 @@ class Experiment:
             )
 
         if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before running an experiment.")
+            self.build_execution()
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
 
@@ -154,7 +155,7 @@ class Experiment:
 
             * Connect to the instruments.
             * Apply settings of the runcard to the instruments.
-            * Translate circuit into pulses and create the ``ExecutionManager`` class.
+            * Create the ``ExecutionManager`` class.
             * Turn on instruments.
             * Create the results files & class and connect to live plotting.
             * Runs the experiment.
