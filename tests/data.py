@@ -53,8 +53,8 @@ class Galadriel:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 40,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -114,6 +114,17 @@ class Galadriel:
                         "drag_coefficient": 0,
                     },
                 },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
+                    },
+                },
             ],
             1: [
                 {
@@ -150,6 +161,17 @@ class Galadriel:
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
                         "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
                     },
                 },
             ],
@@ -462,7 +484,7 @@ class Galadriel:
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
-                RUNCARD.ALIAS: NodeName.PORT.value,
+                RUNCARD.ALIAS: NodeName.RESONATOR.value,
                 NODE.FREQUENCY: 7.34730e09,
                 NODE.NODES: [1, 11, 3],
             },
@@ -489,6 +511,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 0,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 1,
@@ -501,6 +524,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 2,
@@ -513,6 +537,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 10,
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 
@@ -543,8 +568,8 @@ class Galadriel:
 
     resonator_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.PORT,
-        RUNCARD.CATEGORY: NodeName.PORT.value,
+        RUNCARD.NAME: NodeName.RESONATOR,
+        RUNCARD.CATEGORY: NodeName.RESONATOR.value,
         "qubits": [
             {
                 RUNCARD.ID: 0,
@@ -668,6 +693,7 @@ class FluxQubitSimulator:
                     "resolution": 1,
                     "store_states": False,
                 },
+                RUNCARD.DISTORTIONS: [],
                 NodeName.PORT.value: 0,
             }
         ],
@@ -992,6 +1018,7 @@ class SauronVNA:
                 RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
             },
             NodeName.PORT.value: 1,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 1,
@@ -1004,6 +1031,7 @@ class SauronVNA:
                 RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
             },
             NodeName.PORT.value: 0,
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 

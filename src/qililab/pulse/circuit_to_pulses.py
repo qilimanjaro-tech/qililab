@@ -3,7 +3,6 @@ import ast
 import contextlib
 from dataclasses import asdict, dataclass
 
-import numpy as np
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
@@ -11,6 +10,7 @@ from qililab.chip import Chip
 from qililab.chip.nodes import Qubit
 from qililab.config import logger
 from qililab.constants import RUNCARD
+from qililab.platform import Platform
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
@@ -26,11 +26,11 @@ from qililab.utils import Factory
 class CircuitToPulses:
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
-    def __init__(self, settings: RuncardSchema.PlatformSettings):
-        self.settings = settings
+    def __init__(self, platform: Platform):
+        self.platform = platform
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: list[Circuit], chip: Chip) -> list[PulseSchedule]:
+    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -41,6 +41,7 @@ class CircuitToPulses:
         Returns:
             list[PulseSequences]: List of PulseSequences classes.
         """
+        chip = self.platform.chip
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
@@ -180,21 +181,23 @@ class CircuitToPulses:
             port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.DRIVE)
 
         # set frequency to 0 for CZ, park
-        if isinstance(control_gate, (CZ, Park)):
-            frequency = 0
-        else:
-            frequency = node.frequency
+        frequency = 0 if isinstance(control_gate, (CZ, Park)) else node.frequency
 
         # update time
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_between_pulses,
+            pulse_time=gate_settings.duration + self.platform.settings.delay_between_pulses,
         )
 
         if isinstance(control_gate, CZ):
             # sync control qubit time
             time[control_gate.control_qubits[0]] = time[control_gate.target_qubits[0]]
+
+        _, bus = self.platform.get_bus(port=port)
+
+        if bus is None:
+            raise TypeError("bus cannot be None to get the distortions")
 
         return (
             PulseEvent(
@@ -206,6 +209,7 @@ class CircuitToPulses:
                     frequency=frequency,
                 ),
                 start_time=old_time,
+                pulse_distortions=bus.distortions,
             )
             if gate_settings.duration > 0
             else None,
@@ -268,7 +272,7 @@ class CircuitToPulses:
         # get qubits to park
         for qubit in park_qubits:
             park_gate_settings = [
-                settings_gate for settings_gate in self.settings.gates[qubit] if "Park" in settings_gate.name
+                settings_gate for settings_gate in self.platform.settings.gates[qubit] if "Park" in settings_gate.name
             ]
             if len(park_gate_settings) == 0:
                 logger.warning(
@@ -276,7 +280,7 @@ class CircuitToPulses:
                 )
                 continue
             cz_gate_settings = [
-                settings_gate for settings_gate in self.settings.gates[cz.qubits] if "CZ" in settings_gate.name
+                settings_gate for settings_gate in self.platform.settings.gates[cz.qubits] if "CZ" in settings_gate.name
             ][0]
 
             # get pad time
@@ -312,8 +316,12 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.settings.delay_before_readout,
+            pulse_time=gate_settings.duration + self.platform.settings.delay_before_readout,
         )
+        _, bus = self.platform.get_bus(port=port)
+
+        if bus is None:
+            raise TypeError("bus cannot be None to get the distortions")
 
         return (
             PulseEvent(
@@ -324,7 +332,8 @@ class CircuitToPulses:
                     frequency=node.frequency,
                     pulse_shape=pulse_shape,
                 ),
-                start_time=old_time + self.settings.delay_before_readout,
+                start_time=old_time + self.platform.settings.delay_before_readout,
+                pulse_distortions=bus.distortions,
                 qubit=qubit_idx,
             )
             if gate_settings.duration > 0
@@ -344,7 +353,7 @@ class CircuitToPulses:
         """
 
         cz_qubits = cz.qubits
-        two_qubit_gates = [qubit for qubit in self.settings.gates.keys() if isinstance(qubit, tuple)]
+        two_qubit_gates = [qubit for qubit in self.platform.settings.gates.keys() if isinstance(qubit, tuple)]
         if cz_qubits in two_qubit_gates:
             return cz
         elif cz_qubits[::-1] in two_qubit_gates:
@@ -362,9 +371,9 @@ class CircuitToPulses:
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
-        residue = pulse_time % self.settings.minimum_clock_time
+        residue = pulse_time % self.platform.settings.minimum_clock_time
         if residue != 0:
-            pulse_time += self.settings.minimum_clock_time - residue
+            pulse_time += self.platform.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
 
@@ -381,13 +390,13 @@ class CircuitToPulses:
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for qubits, gate_settings_list in list(self.settings.gates.items()):
+        for qubits, gate_settings_list in list(self.platform.settings.gates.items()):
             # parse string tupples for 2 qubit keys
             if isinstance(qubits, str):
                 qubit_str = qubits
                 qubits = ast.literal_eval(qubit_str)
                 # get tuple from string
-                self.settings.gates[qubits] = self.settings.gates.pop(qubit_str)
+                self.platform.settings.gates[qubits] = self.platform.settings.gates.pop(qubit_str)
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
