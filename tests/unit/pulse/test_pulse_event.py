@@ -6,7 +6,6 @@ import pytest
 
 from qililab.constants import PULSEEVENT
 from qililab.pulse import (
-    SNZ,
     BiasTeeCorrection,
     Cosine,
     Drag,
@@ -30,7 +29,6 @@ SHAPE = [
     Cosine(lambda_2=0.3),
     Gaussian(num_sigmas=4),
     Drag(num_sigmas=4, drag_coefficient=1.0),
-    SNZ(b=0.1, t_phi=2),
 ]
 
 # Parameters for the different corrections.
