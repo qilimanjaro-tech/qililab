@@ -6,16 +6,16 @@ from qibo.models import Circuit
 import qililab as ql
 
 
-def execute_qibo_circuit(circuit: Circuit, runcard_name: str):
+def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_only: bool):
     """Transpile a qibo circuit to native gates and run it with qililab
 
     Args:
         circuit (Circuit): qibo circuit
         runcard_name (str): name of the runcard to be loaded
-        experiment_name (str): name of the experiment
+        get_experiment_only (bool): return sample experiment instead of running it
 
     Returns:
-        Results : ``Results`` class containing the experiment results
+        Results | Experiment: ``Results`` class containing the experiment results | sampple experiment
 
     Example Usage:
 
@@ -38,6 +38,12 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str):
     c.add(gates.RX(1, 3*np.pi/2))
 
     probabilities = execute_qibo_circuit(c, runcard_name="galadriel")
+
+
+    To plot pulse schedules:
+    do all of the above with get_experiment_only = True, then:
+        experiment = execute_qibo_circuit(c, runcard_name="galadriel")
+        experiment.draw()
     """
 
     fname = os.path.abspath("")
@@ -61,5 +67,8 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str):
         circuits=[circuit],  # circuits to run the experiment
         options=options,  # experiment options
     )
+    if get_experiment_only:
+        sample_experiment.build_execution()
+        return sample_experiment
 
     return sample_experiment.execute().probabilities
