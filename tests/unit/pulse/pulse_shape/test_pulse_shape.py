@@ -13,6 +13,7 @@ from qililab.utils import Factory
     params=[
         Rectangular(),
         Cosine(),
+        Cosine(lambda_2=0.3),
         Gaussian(num_sigmas=4),
         Drag(num_sigmas=4, drag_coefficient=1.0),
         SNZ(b=0.1, t_phi=2),
@@ -39,23 +40,45 @@ class TestPulseShape:
 
         envelope3 = pulse_shape.envelope(duration=500, amplitude=2.0, resolution=1)
 
+        # Test not None and type
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), int(np.sqrt(10))) == 1.0
-        assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) == 1.0
-        assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) == 2.0
+        # Test  the maximums of the envelopes
+        if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
+            # If lambda_2 > 0.0 the max amplitude is reduced
+            assert round(np.max(np.real(envelope)), int(np.sqrt(10))) < 1.0
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) < 1.0
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) < 2.0
+            # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
+            assert round(np.max(np.real(envelope)), int(np.sqrt(10))) > 0.7 * 1.0
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) > 0.7 * 1.0
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) > 0.7 * 2.0
+        else:
+            assert round(np.max(np.real(envelope)), int(np.sqrt(10))) == 1.0
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1))) == 1.0
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1))) == 2.0
 
+        # Tests lenghts
         if isinstance(pulse_shape, SNZ):
             assert len(envelope) * 10 == len(envelope2) * 12.5 == len(envelope3)
         else:
             assert len(envelope) == len(envelope2) * 20 == len(envelope3)
 
+        # Test shapes of the graphs for each child
         if isinstance(pulse_shape, Rectangular):
             assert np.max(envelope) == np.min(envelope)
 
-        if isinstance(pulse_shape, Cosine):
+        if isinstance(pulse_shape, SNZ):
+            assert np.max(envelope) == -np.min(envelope)
+            assert envelope[len(envelope) // 2] == 0
+
+        if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 > 0.0:
+            assert np.max(envelope) != envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
+
+        if isinstance(pulse_shape, Cosine) and pulse_shape.lambda_2 <= 0.0:
             assert np.max(envelope) == envelope[len(envelope) // 2]
             assert np.min(envelope) == envelope[0]
 
