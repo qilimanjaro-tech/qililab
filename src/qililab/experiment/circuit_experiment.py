@@ -11,7 +11,8 @@ from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
 from qililab.experiment.experiment import Experiment
 from qililab.platform.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.pulse import PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.experiment import ExperimentOptions
@@ -37,8 +38,8 @@ class CircuitExperiment(Experiment):
         """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
-            translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            translator = CircuitToPulses(platform=self.platform)
+            self.pulse_schedules = translator.translate(circuits=self.circuits)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 

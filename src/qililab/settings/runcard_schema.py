@@ -37,6 +37,7 @@ class RuncardSchema:
             category: str
             system_control: dict
             port: int
+            distortions: list[dict]
             alias: str | None = None
 
         @dataclass

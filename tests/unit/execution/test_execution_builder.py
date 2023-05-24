@@ -9,7 +9,8 @@ from qililab.constants import RUNCARD
 from qililab.execution import EXECUTION_BUILDER, BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseEvent, PulseSchedule
+from qililab.pulse import Gaussian, Pulse, PulseEvent, PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.typings import Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel, circuit, experiment_params
@@ -37,7 +38,7 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
 
 
 @pytest.fixture(name="loops")

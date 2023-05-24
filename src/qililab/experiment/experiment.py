@@ -27,6 +27,8 @@ from qililab.utils.util_loops import compute_shapes_from_loops
 
 
 class Experiment:
+    """Experiment class"""
+
     # Specify the types of the attributes that are not defined during initialization
     execution_manager: ExecutionManager
     results: Results

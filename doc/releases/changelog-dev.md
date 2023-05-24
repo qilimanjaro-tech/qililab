@@ -4,6 +4,80 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added user integration for `pulse_distortions`. Now they can be used writing them in the Buses of the runcards:
+
+  ```python
+  buses:
+    - id_: 0
+      category: bus
+      alias: feedline_bus
+      system_control:
+        id_: 0
+        name: readout_system_control
+        category: system_control
+        instruments: [QRM1, rs_1]
+      port: 100
+      distortions: # <-- new line
+        - name: bias_tee # <-- new line
+          tau_bias_tee: 1.0 # <-- new line
+        - name: lfilter # <-- new line
+          a: [0.1, 1.1] # <-- new line
+          b: [1.1, 1.3] # <-- new line
+    - id_: 10
+      category: bus
+      alias: drive_line_q0_bus
+      system_control:
+        id_: 10
+        name: system_control
+        category: system_control
+        instruments: [QCM-RF1]
+      port: 10
+      distortions: [] # <-- new line
+  ```
+
+  [#372](https://github.com/qilimanjaro-tech/qililab/pull/372)
+
+- Added CZ gate support, 2 qubit gate support to `circuit_to_pulse` and corresponding definitions to the runcard.
+
+  CZ implements a Sudden Net Zero (SNZ) pulse through the flux line as well as a parking gate (if defined in the runcard)
+  to adjacent qubits with lower frequency than CZ's target qubit.
+  For the parking gate, if the time is greater than the CZ pulse, the extra time is added as padding at the beginning/end
+  of the pulse.
+  The parameters for the CZ in the runcard are amplitude, duration _of the halfpulse_; and for the CZ's snz pulse b
+  (impulse between halfpulses) and t_phi (time between halfpulses without accounting for b)
+
+  Example:
+
+  ```yaml
+  gates:
+   1:
+     - name: Park
+       amplitude: 1.0
+       phase: 0
+       duration: 103
+       shape:
+         name: rectangular
+
+   (0,2):
+     - name: CZ
+       amplitude: 1.0
+       phase:
+       duration: 40
+       shape:
+         name: snz
+         b: 0.5
+         t_phi: 1
+  ```
+
+  In the example above, if qubit 1 is connected to 2 and has lower frequency, there will be an attempt to apply a parking
+  pulse. If a Park gate definition is found for qubit 1, then a parking pulse will be applied.
+  The total duration of the CZ gate above will be 2\*duration + t_phi + 2 = 83 (each b has 1ns duration and there are 2 bs).
+  Thus the parking gate lasts for some extra 20ns which will result in 10ns 'pad time' in the parking gate before and after
+  the SNZ pulse.
+  Note that the order of the qubits in the CZ is important even if the gate is symmetric, because the second qubit will be
+  the target for the SNZ pulse.
+  [#369](https://github.com/qilimanjaro-tech/qililab/pull/369/)
+
 - Added `cosine.py` module containing a `Cosine` child class of `pulse_shape`, which gives a sinusoidal like gaussian A/2\*(1-cos(x)).
   The shape starts at height 0 (phase=0), maximum height A (phase=pi) and ends at height 0 (phase=2pi)
 

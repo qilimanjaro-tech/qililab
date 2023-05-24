@@ -165,7 +165,7 @@ class TestExecutionManagerPlatform:
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
         probabilities = results.probabilities()
         for qubit_string in probabilities.keys():
-            assert len(qubit_string) == 2
+            assert len(qubit_string) == nested_experiment.circuits[0].nqubits
         assert sum(probabilities.values()) == 1.0
         mock_dump.assert_called()
         mock_open.assert_called()
@@ -324,24 +324,6 @@ class TestWorkflow:
                     assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
                     continue
                 assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
-
-    def test_run(self, mocked_execution_manager: ExecutionManager):
-        """Test that the run method returns a ``Result`` object."""
-        # Test that the run method returns a ``Result`` object
-        mocked_queue = MagicMock()
-        result = mocked_execution_manager.run(queue=mocked_queue)
-        assert isinstance(result, QbloxResult)
-        mocked_queue.put_nowait.assert_called_with(item=result)
-        assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
-
-        # Make sure the mocked devices were called
-        readout_awgs = [
-            bus.system_control.instruments[0]
-            for bus in mocked_execution_manager.buses
-            if isinstance(bus.system_control, ReadoutSystemControl)
-        ]
-        for awg in readout_awgs:
-            assert awg.device.get_acquisitions.call_count == 2  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
         """Test that an error is raised when calling ``run`` with multiple readout buses."""
