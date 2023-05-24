@@ -52,7 +52,10 @@ class Loop:
             self.loop.previous = self
         if isinstance(self.parameter, str):
             self.parameter = Parameter(self.parameter)
-        if isinstance(self.values, list):
+        if isinstance(self.values, np.ndarray):
+            new_values = self.values.tolist()  # Convert type of elements `np.int64` to `int`
+            self.values = np.array(new_values, dtype=object)
+        elif isinstance(self.values, list):
             self.values = np.array(self.values, dtype=object)
 
     @property
