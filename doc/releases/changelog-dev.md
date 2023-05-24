@@ -4,6 +4,39 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added user integration for `pulse_distortions`. Now they can be used writing them in the Buses of the runcards:
+
+  ```python
+  buses:
+    - id_: 0
+      category: bus
+      alias: feedline_bus
+      system_control:
+        id_: 0
+        name: readout_system_control
+        category: system_control
+        instruments: [QRM1, rs_1]
+      port: 100
+      distortions: # <-- new line
+        - name: bias_tee # <-- new line
+          tau_bias_tee: 1.0 # <-- new line
+        - name: lfilter # <-- new line
+          a: [0.1, 1.1] # <-- new line
+          b: [1.1, 1.3] # <-- new line
+    - id_: 10
+      category: bus
+      alias: drive_line_q0_bus
+      system_control:
+        id_: 10
+        name: system_control
+        category: system_control
+        instruments: [QCM-RF1]
+      port: 10
+      distortions: [] # <-- new line
+  ```
+
+  [#372](https://github.com/qilimanjaro-tech/qililab/pull/372)
+
 - Added CZ gate support, 2 qubit gate support to `circuit_to_pulse` and corresponding definitions to the runcard.
 
   CZ implements a Sudden Net Zero (SNZ) pulse through the flux line as well as a parking gate (if defined in the runcard)
