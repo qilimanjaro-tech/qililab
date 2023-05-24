@@ -51,6 +51,7 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
         [
             "reference_source",
             "sequencer0",
+            "sequencer1",
             "out0_offset",
             "out1_offset",
             "out2_offset",
@@ -62,29 +63,29 @@ def fixture_qcm(mock_pulsar: MagicMock, pulsar_controller_qcm: QbloxPulsarContro
             "scope_acq_sequencer_select",
         ]
     )
-    mock_instance.sequencers = [mock_instance.sequencer0]
-    mock_instance.sequencer0.mock_add_spec(
-        [
-            "sync_en",
-            "gain_awg_path0",
-            "gain_awg_path1",
-            "sequence",
-            "mod_en_awg",
-            "nco_freq",
-            "scope_acq_sequencer_select",
-            "channel_map_path0_out0_en",
-            "channel_map_path1_out1_en",
-            "demod_en_acq",
-            "integration_length_acq",
-            "set",
-            "mixer_corr_phase_offset_degree",
-            "mixer_corr_gain_ratio",
-            "offset_awg_path0",
-            "offset_awg_path1",
-            "marker_ovr_en",
-            "marker_ovr_value",
-        ]
-    )
+    mock_instance.sequencers = [mock_instance.sequencer0, mock_instance.sequencer1]
+    spec = [
+        "sync_en",
+        "gain_awg_path0",
+        "gain_awg_path1",
+        "sequence",
+        "mod_en_awg",
+        "nco_freq",
+        "scope_acq_sequencer_select",
+        "channel_map_path0_out0_en",
+        "channel_map_path1_out1_en",
+        "demod_en_acq",
+        "integration_length_acq",
+        "set",
+        "mixer_corr_phase_offset_degree",
+        "mixer_corr_gain_ratio",
+        "offset_awg_path0",
+        "offset_awg_path1",
+        "marker_ovr_en",
+        "marker_ovr_value",
+    ]
+    mock_instance.sequencer0.mock_add_spec(spec)
+    mock_instance.sequencer1.mock_add_spec(spec)
     pulsar_controller_qcm.connect()
     return pulsar_controller_qcm.modules[0]
 
@@ -191,7 +192,7 @@ class TestQbloxQCM:
     def test_turn_off_method(self, qcm: QbloxQCM):
         """Test turn_off method"""
         qcm.turn_off()
-        qcm.device.stop_sequencer.assert_called_once()
+        assert qcm.device.stop_sequencer.call_count == qcm.num_sequencers
 
     def test_reset_method(self, qcm: QbloxQCM):
         """Test reset method"""
