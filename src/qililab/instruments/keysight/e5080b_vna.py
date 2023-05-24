@@ -213,7 +213,3 @@ class E5080B(VectorNetworkAnalyzer):
         real = np.real(data)
         imag = np.imag(data)
         return VNAResult(i=real, q=imag)
-
-    def run(self):
-        """Run method"""
-        pass

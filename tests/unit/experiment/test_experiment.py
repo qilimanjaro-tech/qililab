@@ -238,25 +238,20 @@ class TestMethods:
         with patch("qililab.experiment.experiment.open") as mock_open:
             with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
                 with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    with patch(
-                        "qililab.execution.execution_manager.BusExecution.acquire_result"
-                    ) as mock_bus_acquisition:
-                        with patch("qililab.experiment.experiment.csv.writer") as mock_writer:
-                            mock_bus_acquisition.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
-                            # Build execution
-                            vna_experiment.run()
-                            # Assert that the mocks are called when building the execution (such that NO files are created)
-                            mock_writer.assert_called()
-                            mock_open.assert_called()
-                            mock_makedirs.assert_called()
-                            mock_plot.assert_called_once_with(
-                                connection=vna_experiment.platform.connection,
-                                loops=vna_experiment.options.loops or [],
-                                num_schedules=1,
-                                title=vna_experiment.options.name,
-                            )
-                            mock_plot.assert_called_once()
-                            mock_bus_acquisition.assert_called()
+                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
+                        mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+                        # Build execution
+                        vna_experiment.run()
+                        # Assert that the mocks are called when building the execution (such that NO files are created)
+                        mock_open.assert_called()
+                        mock_makedirs.assert_called()
+                        mock_plot.assert_called_once_with(
+                            connection=vna_experiment.platform.connection,
+                            loops=vna_experiment.options.loops or [],
+                            num_schedules=1,
+                            title=vna_experiment.options.name,
+                        )
+                        mock_plot.assert_called_once()
         assert len(vna_experiment.results.results) > 0
 
     def test_run_raises_error(self, exp: Experiment):

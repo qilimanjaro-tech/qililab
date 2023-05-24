@@ -413,3 +413,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
     def set_timeout(self, value: float):
         """Set timeout in mili seconds"""
         self.device.set_timeout(value)
+
+    def run(self):
+        """Run method"""
+        pass
