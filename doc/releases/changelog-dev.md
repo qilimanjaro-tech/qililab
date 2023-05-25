@@ -20,7 +20,7 @@ This document contains the changes of the current release.
   # Option 2 (Equivalent to option 1)
   figure = sample_experiment.draw()
 
-  # Option 3 (something different, only plotting the envelopes withoumodulation)
+  # Option 3 (something different, only plotting the envelopes without modulation)
   figure = sample_experiment.draw(modulation=False, linestyle=".")
 
   plt.show()
