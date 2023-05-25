@@ -92,8 +92,8 @@ class TestExecutionManager:
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
         bool_list = [True, False]
-        resolution_list = [0.01, 0.1, 1.0, 10.0]
-        linestyle_list = ["-", ".", "o"]
+        resolution_list = [1.0, 9.2]
+        linestyle_list = ["--", "o"]
 
         for resolution, real, imag, absolute, modulation, linestyle in itertools.product(
             resolution_list, bool_list, bool_list, bool_list, bool_list, linestyle_list

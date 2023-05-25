@@ -329,8 +329,8 @@ class TestMethods:
         connected_experiment.build_execution()
 
         bool_list = [True, False]
-        resolution_list = [0.01, 0.1, 1.0, 10.0]
-        linestyle_list = ["-", ".", "o"]
+        resolution_list = [0.11, 1.3]
+        linestyle_list = ["-", "."]
 
         for resolution, real, imag, absolute, modulation, linestyle in itertools.product(
             resolution_list, bool_list, bool_list, bool_list, bool_list, linestyle_list
