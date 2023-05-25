@@ -7,9 +7,9 @@ from typing import Sequence, cast
 
 import numpy as np
 from qpysequence.acquisitions import Acquisitions
-from qpysequence.library import long_wait, set_awg_gain_relative
+from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetMrk, SetPh, Stop, UpdParam, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -103,8 +103,8 @@ class QbloxModule(AWG):
             self._set_hardware_modulation(value=sequencer.hardware_modulation, sequencer_id=sequencer_id)
             self._set_gain_imbalance(value=sequencer.gain_imbalance, sequencer_id=sequencer_id)
             self._set_phase_imbalance(value=sequencer.phase_imbalance, sequencer_id=sequencer_id)
-            ALL_ON = 15  # 1111 in binary
-            self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
+            # ALL_ON = 15  # 1111 in binary
+            # self._set_markers(value=ALL_ON, sequencer_id=sequencer_id)
 
         for idx, offset in enumerate(self.out_offsets):
             self._set_out_offset(output=idx, value=offset)
@@ -209,6 +209,7 @@ class QbloxModule(AWG):
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
+            avg_loop.append_component(SetMrk(marker_outputs=15))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -216,6 +217,8 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
+            avg_loop.append_component(SetMrk(marker_outputs=0))
+            avg_loop.append_component(UpdParam(wait_time=4))
         self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
