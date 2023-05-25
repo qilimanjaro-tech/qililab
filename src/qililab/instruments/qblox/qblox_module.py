@@ -584,7 +584,7 @@ class QbloxModule(AWG):
                 unique_pulses.append((pulse_event.duration, pulse_event.pulse.pulse_shape))
                 amp = pulse_event.pulse.amplitude
                 sign = 1 if amp >= 0 else -1
-                envelope = pulse_event.pulse.envelope(amplitude=sign * 1.0)
+                envelope = pulse_event.envelope(amplitude=sign * 1.0)
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
