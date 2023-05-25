@@ -4,6 +4,7 @@ import os
 import time
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
@@ -344,6 +345,7 @@ class TestMethods:
             )
             assert figure is not None
             assert isinstance(figure, Figure)
+            plt.close()
 
     def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""

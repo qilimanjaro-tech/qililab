@@ -108,6 +108,7 @@ class TestExecutionManager:
             )
             assert figure is not None
             assert isinstance(figure, plt.Figure)
+            plt.close()
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
