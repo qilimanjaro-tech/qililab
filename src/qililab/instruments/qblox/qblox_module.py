@@ -209,7 +209,7 @@ class QbloxModule(AWG):
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
             avg_loop.append_component(SetPh(phase=phase))
-            avg_loop.append_component(SetMrk(marker_outputs=15))
+            # avg_loop.append_component(SetMrk(marker_outputs=15))
             avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
@@ -217,8 +217,8 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-            avg_loop.append_component(SetMrk(marker_outputs=0))
-            avg_loop.append_component(UpdParam(wait_time=4))
+            # avg_loop.append_component(SetMrk(marker_outputs=0))
+            # avg_loop.append_component(UpdParam(wait_time=4))
         self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
