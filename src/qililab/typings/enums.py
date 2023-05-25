@@ -243,6 +243,7 @@ class PulseShapeSettingsName(str, Enum):
     B = "b"
     NORM_FACTOR = "norm_factor"
     T_PHI = "t_phi"
+    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):
