@@ -1,6 +1,7 @@
 """Test for the VectorNetworkAnalyzer class."""
 from unittest.mock import MagicMock, patch
 
+from qililab.typings.instruments import E5080BDriver
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
 
 
@@ -33,6 +34,14 @@ class TestVectorNetworkAnalyzerDriver:
         vna_driver = VectorNetworkAnalyzerDriver("foo", "bar")
         vna_driver.reset()
         vna_driver.driver.write.assert_called_with("SYST:PRES; *OPC?")
+
+    @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
+    def test_keysight_reset_method(self, mock_resource_manager):
+        mock_resource = MagicMock(name="mock_resource")
+        mock_resource_manager.return_value.open_resource.return_value = mock_resource
+        vna_keysight_driver = E5080BDriver("foo", "bar")
+        vna_keysight_driver.reset()
+        vna_keysight_driver.driver.write.assert_called_with("SYST:PRES; *OPC")
 
     @patch("qililab.typings.instruments.vector_network_analyzer.pyvisa.ResourceManager")
     def test_send_command(self, mock_resource_manager):
