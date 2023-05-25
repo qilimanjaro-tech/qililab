@@ -13,7 +13,13 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Cosine(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [
+    Rectangular(),
+    Cosine(),
+    Cosine(lambda_2=0.3),
+    Gaussian(num_sigmas=4),
+    Drag(num_sigmas=4, drag_coefficient=1.0),
+]
 
 
 @pytest.fixture(
@@ -45,16 +51,31 @@ class TestPulse:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
-        assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
-        assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+            # If lambda_2 > 0.0 the max amplitude is reduced
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) < pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) < pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) < 2.0
+            # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) > 0.7 * pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) > 0.7 * pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) > 0.7 * 2.0
+
+        else:
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
 
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
         if isinstance(pulse.pulse_shape, Rectangular):
             assert np.max(envelope) == np.min(envelope)
 
-        if isinstance(pulse.pulse_shape, Cosine):
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+            assert np.max(envelope) != envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
+
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 <= 0.0:
             assert np.max(envelope) == envelope[len(envelope) // 2]
             assert np.min(envelope) == envelope[0]
 
