@@ -9,7 +9,8 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait, set_awg_gain_relative
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
+from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain, SetPh,
+                                              Stop, Wait)
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -193,7 +194,9 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        program.append_block(avg_loop)
+        bins = Loop(name='bins', begin=0, end=2000, step=1)
+        program.append_block(bins)
+        bins.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -216,7 +219,7 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=bins.counter_register, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -234,7 +237,7 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="default", num_bins=1, index=0)
+        acquisitions.add(name="default", num_bins=2000, index=0)
         return acquisitions
 
     @abstractmethod
