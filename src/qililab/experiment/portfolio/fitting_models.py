@@ -69,3 +69,24 @@ class Exp(FittingModel):
             offset (float): offset
         """
         return amplitude * np.exp(-xdata / decay) + offset
+    
+
+class CosExp(FittingModel):
+    """Exponential model function."""
+
+    @staticmethod
+    def func(xdata: np.ndarray, amplitude: float, decay: float, frequency: float, phase: float, offset: float) -> np.ndarray:  # type: ignore  # pylint: disable=arguments-differ
+        """Exponential model function.
+
+        It must take the independent variable as the first argument and the parameters to fit as separate remaining
+        arguments.
+
+        Args:
+            xdata (ndarray): amplitude of the X gate
+            amplitude (float): amplitude of the exponential function
+            decay (float): decay constant
+            frequency (float): frequency in Hz (f, not omega!)
+            phase (float): phase in rad
+            offset (float): offset
+        """
+        return amplitude * np.exp(-xdata / decay) * np.cos(2 * np.pi * frequency * xdata + phase) + offset
