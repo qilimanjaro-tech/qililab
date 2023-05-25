@@ -4,7 +4,7 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
-- Added to the `draw()` methodsthe option  of specifying if you want:
+- Added to the `draw()` method the option  of specifying if you want:
 
   - modulation or not,
   - plot the real, iamginary, absolute or any combination of these options
