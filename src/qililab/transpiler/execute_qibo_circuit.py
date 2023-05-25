@@ -6,7 +6,7 @@ from qibo.models import Circuit
 import qililab as ql
 
 
-def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_only: bool = False):
+def execute(circuit: Circuit, runcard_name: str):
     """Transpile a qibo circuit to native gates and run it with qililab
 
     Args:
@@ -19,6 +19,7 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_onl
 
     Example Usage:
 
+    ```python
     from qibo.models import Circuit
     from qibo import gates
     from pathlib import Path
@@ -38,12 +39,8 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_onl
     c.add(gates.RX(1, 3*np.pi/2))
 
     probabilities = execute_qibo_circuit(c, runcard_name="galadriel")
+    ```
 
-
-    To plot pulse schedules:
-    do all of the above with get_experiment_only = True, then:
-        experiment = execute_qibo_circuit(c, runcard_name="galadriel")
-        experiment.draw()
     """
 
     fname = os.path.abspath("")
@@ -67,8 +64,5 @@ def execute_qibo_circuit(circuit: Circuit, runcard_name: str, get_experiment_onl
         circuits=[circuit],  # circuits to run the experiment
         options=options,  # experiment options
     )
-    if get_experiment_only:
-        sample_experiment.build_execution()
-        return sample_experiment
 
-    return sample_experiment.execute().probabilities
+    return sample_experiment.execute().probabilities()
