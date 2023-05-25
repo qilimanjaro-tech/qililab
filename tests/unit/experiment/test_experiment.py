@@ -258,7 +258,11 @@ class TestMethods:
     def test_run_builds_execution_manager_if_not_exists(self, mock_acq_res: MagicMock, vna_experiment: Experiment):
         """Test that the ``run`` method builds the execution if ``execution_manager`` was not created."""
         assert not hasattr(vna_experiment, "execution_manager")
-        vna_experiment.run()
+        with patch("qililab.experiment.experiment.open") as _:
+            with patch("qililab.experiment.experiment.os.makedirs") as _:
+                with patch("qililab.experiment.experiment.LivePlot") as _:
+                    mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+                    vna_experiment.run()
         assert hasattr(vna_experiment, "execution_manager")
 
     def test_turn_on_instruments(self, connected_experiment: Experiment):

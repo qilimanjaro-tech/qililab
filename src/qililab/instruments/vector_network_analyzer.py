@@ -2,6 +2,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import numpy as np
+
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
 from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
@@ -56,16 +58,16 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             value (float | str | bool | int): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        if isinstance(value, str):
+        if isinstance(value, (str, np.character)):
             self._set_parameter_str(parameter=parameter, value=value)
             return
-        if isinstance(value, bool):
+        if isinstance(value, (bool, np.bool_)):
             self._set_parameter_bool(parameter=parameter, value=value)
             return
-        if isinstance(value, float):
+        if isinstance(value, (float, np.floating)):
             self._set_parameter_float(parameter=parameter, value=value)
             return
-        if isinstance(value, int):
+        if isinstance(value, (int, np.integer)):
             self._set_parameter_int(parameter=parameter, value=value)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
