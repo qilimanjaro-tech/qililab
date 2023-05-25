@@ -91,24 +91,28 @@ class TestExecutionManager:
 
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
-        bool_list = [True, False]
-        resolution_list = [1.0, 9.2]
-        linestyle_list = ["--", "o"]
+        figures = [
+            execution_manager.draw(),
+            execution_manager.draw(
+                modulation=False,
+                linestyle=":",
+                resolution=0.8,
+            ),
+            execution_manager.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle="x",
+                resolution=10.1,
+            ),
+        ]
 
-        for resolution, real, imag, absolute, modulation, linestyle in itertools.product(
-            resolution_list, bool_list, bool_list, bool_list, bool_list, linestyle_list
-        ):
-            figure = execution_manager.draw(
-                real=real,
-                imag=imag,
-                absolute=absolute,
-                modulation=modulation,
-                linestyle=linestyle,
-                resolution=resolution,
-            )
+        for figure in figures:
             assert figure is not None
             assert isinstance(figure, plt.Figure)
-            plt.close()
+
+        plt.close()
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)

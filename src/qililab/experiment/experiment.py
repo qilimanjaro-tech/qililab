@@ -332,11 +332,16 @@ class Experiment:
         resolution: float = 1.0,
         idx: int = 0,
     ):
-        """Return figure with the waveforms sent to each bus.
+        """Return figure with the waveforms/envelopes sent to each bus.
+
+        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
 
         Args:
-            part (str): the real (or re), imaginary (or im, imag), both or absolute (or abs) part. Defaults to "both".
-            styleline (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other styline that matplotlib accepts. Defaults to "-".
+            real (bool): True to plot the real part of the function, False otherwise. Default to True.
+            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
+            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
+            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
+            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -344,6 +349,7 @@ class Experiment:
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before drawing the experiment.")
+
         return self.execution_manager.draw(
             real=real,
             imag=imag,

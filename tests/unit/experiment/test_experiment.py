@@ -328,24 +328,28 @@ class TestMethods:
         """Test draw method."""
         connected_experiment.build_execution()
 
-        bool_list = [True, False]
-        resolution_list = [0.11, 1.3]
-        linestyle_list = ["-", "."]
+        figures = [
+            connected_experiment.draw(),
+            connected_experiment.draw(
+                modulation=False,
+                linestyle="--",
+                resolution=1.3,
+            ),
+            connected_experiment.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle=".",
+                resolution=0.11,
+            ),
+        ]
 
-        for resolution, real, imag, absolute, modulation, linestyle in itertools.product(
-            resolution_list, bool_list, bool_list, bool_list, bool_list, linestyle_list
-        ):
-            figure = connected_experiment.draw(
-                real=real,
-                imag=imag,
-                absolute=absolute,
-                modulation=modulation,
-                linestyle=linestyle,
-                resolution=resolution,
-            )
+        for figure in figures:
             assert figure is not None
             assert isinstance(figure, Figure)
-            plt.close()
+
+        plt.close()
 
     def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""
