@@ -1,4 +1,5 @@
 """Tests for the Experiment class."""
+import itertools
 import os
 import time
 from unittest.mock import MagicMock, patch
@@ -325,8 +326,24 @@ class TestMethods:
     def test_draw_method(self, connected_experiment: Experiment):
         """Test draw method."""
         connected_experiment.build_execution()
-        figure = connected_experiment.draw()
-        assert isinstance(figure, Figure)
+
+        bool_list = [True, False]
+        resolution_list = [0.01, 0.1, 1.0, 10.0]
+        linestyle_list = ["-", ".", "o"]
+
+        for resolution, real, imag, absolute, modulation, linestyle in itertools.product(
+            resolution_list, bool_list, bool_list, bool_list, bool_list, linestyle_list
+        ):
+            figure = connected_experiment.draw(
+                real=real,
+                imag=imag,
+                absolute=absolute,
+                modulation=modulation,
+                linestyle=linestyle,
+                resolution=resolution,
+            )
+            assert figure is not None
+            assert isinstance(figure, Figure)
 
     def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""

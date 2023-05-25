@@ -322,10 +322,21 @@ class Experiment:
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
-    def draw(self, resolution: float = 1.0, idx: int = 0):
+    def draw(
+        self,
+        real: bool = True,
+        imag: bool = True,
+        absolute: bool = False,
+        modulation: bool = True,
+        linestyle: str = "-",
+        resolution: float = 1.0,
+        idx: int = 0,
+    ):
         """Return figure with the waveforms sent to each bus.
 
         Args:
+            part (str): the real (or re), imaginary (or im, imag), both or absolute (or abs) part. Defaults to "both".
+            styleline (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other styline that matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -333,7 +344,15 @@ class Experiment:
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before drawing the experiment.")
-        return self.execution_manager.draw(resolution=resolution, idx=idx)
+        return self.execution_manager.draw(
+            real=real,
+            imag=imag,
+            absolute=absolute,
+            modulation=modulation,
+            linestyle=linestyle,
+            resolution=resolution,
+            idx=idx,
+        )
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
