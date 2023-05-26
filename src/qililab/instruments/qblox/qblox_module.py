@@ -198,26 +198,26 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
-        avg_loop.append_component(bin_loop)
+        # bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
+        # avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            bin_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
+            avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
-            bin_loop.append_component(ResetPh())
+            avg_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
-            bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
-            bin_loop.append_component(SetPh(phase=phase))
+            avg_loop.append_component(SetPh(phase=phase))
             # avg_loop.append_component(SetMrk(marker_outputs=15))
-            bin_loop.append_component(
+            avg_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
@@ -226,7 +226,7 @@ class QbloxModule(AWG):
             )
             # avg_loop.append_component(SetMrk(marker_outputs=0))
             # avg_loop.append_component(UpdParam(wait_time=4))
-        self._append_acquire_instruction(loop=avg_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
