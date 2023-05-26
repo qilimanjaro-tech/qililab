@@ -8,7 +8,8 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
+from qililab.instruments.awg_analog_digital_converter import \
+    AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.qblox.qblox_module import QbloxModule
@@ -144,7 +145,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 # compiled sequences
                 sequence_uploaded = self.sequences[sequencer.identifier][1]
                 if sequence_uploaded:
-                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="default")
+                    self.device.delete_acquisition_data(sequencer=sequencer.identifier, name="binning")
                 compiled_sequences.append(self.sequences[sequencer.identifier][0])
         return compiled_sequences
 
