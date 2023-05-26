@@ -241,7 +241,7 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="default", num_bins=1, index=0)
+        acquisitions.add(name="default", num_bins=self.num_bins, index=0)
         return acquisitions
 
     @abstractmethod
