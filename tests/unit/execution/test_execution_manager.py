@@ -321,7 +321,7 @@ class TestWorkflow:
 
     def test_compile(self, execution_manager: ExecutionManager):
         """Test the compile method of the ``ExecutionManager`` class."""
-        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000)
+        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len(execution_manager.buses)
         for alias, sequences in sequences.items():
@@ -333,7 +333,7 @@ class TestWorkflow:
 
     def test_upload(self, mocked_execution_manager: ExecutionManager):
         """Test upload method."""
-        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000)
+        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         mocked_execution_manager.upload()
 
         awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]

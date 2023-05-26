@@ -195,8 +195,12 @@ class QbloxModule(AWG):
         Returns:
             Program: Q1ASM program.
         """
+
         # Define program's blocks
         program = Program()
+        # Create registers with 0 and 1 (necessary for qblox)
+        weight_registers = Register(), Register()
+        self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
@@ -223,7 +227,9 @@ class QbloxModule(AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
+        self._append_acquire_instruction(
+            loop=avg_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
+        )
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -231,6 +237,10 @@ class QbloxModule(AWG):
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
+
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
 
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
@@ -253,7 +263,9 @@ class QbloxModule(AWG):
         """
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+    ):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):
