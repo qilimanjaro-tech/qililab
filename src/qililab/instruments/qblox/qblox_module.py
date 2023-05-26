@@ -84,6 +84,7 @@ class QbloxModule(AWG):
         self.sequences: dict[int, tuple[QpySequence, bool]] = {}  # {sequencer_idx: (program, True), ...}
         # TODO: Set this attribute during initialization of the instrument
         self.nshots: int | None = None
+        self.num_bins: int = 1
         self.repetition_duration: int | None = None
         super().__init__(settings=settings)
 
@@ -114,7 +115,9 @@ class QbloxModule(AWG):
         """returns the qblox module type. Options: QCM or QRM"""
         return self.device.module_type()
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list[QpySequence]:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -126,13 +129,15 @@ class QbloxModule(AWG):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             list[QpySequence]: list of compiled assembly programs
         """
-        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+        if nshots != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
             self.nshots = nshots
             self.repetition_duration = repetition_duration
+            self.num_bins = num_bins
             self.clear_cache()
 
         compiled_sequences = []
@@ -193,30 +198,32 @@ class QbloxModule(AWG):
         # Define program's blocks
         program = Program()
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
+        bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
+        avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
+            bin_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
-            avg_loop.append_component(ResetPh())
+            bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
-            avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
+            bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
             phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
-            avg_loop.append_component(SetPh(phase=phase))
-            avg_loop.append_component(
+            bin_loop.append_component(SetPh(phase=phase))
+            bin_loop.append_component(
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=avg_loop, bin_index=0, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=avg_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:

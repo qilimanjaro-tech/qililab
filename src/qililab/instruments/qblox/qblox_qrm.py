@@ -99,7 +99,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list[QpySequence]:
         """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -111,14 +113,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             list[QpySequence]: list of compiled assembly programs
         """
         # Clear cache if `nshots` or `repetition_duration` changes
-        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+        if nshots != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
             self.nshots = nshots
             self.repetition_duration = repetition_duration
+            self.num_bins = num_bins
             self.clear_cache()
 
         # Get all sequencers connected to port the schedule acts on

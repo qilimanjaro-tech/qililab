@@ -42,20 +42,23 @@ class ExecutionManager:
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> dict:
+    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> dict:
         """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins
 
         Returns:
             list: list of compiled assembly programs
         """
         programs = {}
         for bus in self.buses:
-            bus_programs = bus.compile(idx=idx, nshots=nshots, repetition_duration=repetition_duration)
+            bus_programs = bus.compile(
+                idx=idx, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins
+            )
             programs[bus.alias] = bus_programs
         return programs
 
