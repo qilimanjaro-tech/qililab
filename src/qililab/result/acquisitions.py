@@ -6,7 +6,7 @@ import pandas as pd
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisition import Acquisition
-from qililab.utils.dataframe_manipulation import concatenate_creating_new_index_name_and_index_concatenation_name
+from qililab.utils.dataframe_manipulation import concatenate_creating_new_index_name_and_concatenation_index_name
 
 
 @dataclass
@@ -26,7 +26,7 @@ class Acquisitions:
         """
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
 
-        return concatenate_creating_new_index_name_and_index_concatenation_name(
+        return concatenate_creating_new_index_name_and_concatenation_index_name(
             dataframe_list=acquisition_list,
             new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX,
             new_concatenation_index_name=RESULTSDATAFRAME.QUBIT_INDEX,

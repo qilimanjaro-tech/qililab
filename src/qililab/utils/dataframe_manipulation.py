@@ -23,7 +23,7 @@ def concatenate_creating_new_index_name(dataframe_list: list[pd.DataFrame], new_
     return concatenated_df
 
 
-def concatenate_creating_new_index_name_and_index_concatenation_name(
+def concatenate_creating_new_index_name_and_concatenation_index_name(
     dataframe_list: list[pd.DataFrame], new_index_name: str, new_concatenation_index_name: str
 ) -> pd.DataFrame:
     # TODO: CHANGE THIS DOCSTRING

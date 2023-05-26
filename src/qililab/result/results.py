@@ -13,7 +13,7 @@ from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
 from qililab.utils.dataframe_manipulation import (
     concatenate_creating_new_index_name,
-    concatenate_creating_new_index_name_and_index_concatenation_name,
+    concatenate_creating_new_index_name_and_concatenation_index_name,
 )
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
@@ -113,7 +113,7 @@ class Results:
             result.acquisitions().reset_index(drop=True) if result is not None else self._build_empty_result_dataframe()
             for result in self.results
         ]
-        return concatenate_creating_new_index_name_and_index_concatenation_name(
+        return concatenate_creating_new_index_name_and_concatenation_index_name(
             dataframe_list=result_acquisition_list,
             new_index_name=RESULTSDATAFRAME.RESULTS_INDEX,
             new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT_INDEX,
