@@ -1,7 +1,9 @@
 """Tests for the ExecutionManager class."""
+import itertools
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,9 +16,7 @@ from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.instruments import AWG, QbloxQRM
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
-from qililab.system_control import ReadoutSystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -93,8 +93,28 @@ class TestExecutionManager:
 
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
-        for resolution in [0.01, 0.1, 1.0, 10.0]:
-            execution_manager.draw(resolution=resolution)
+        figures = [
+            execution_manager.draw(),
+            execution_manager.draw(
+                modulation=False,
+                linestyle=":",
+                resolution=0.8,
+            ),
+            execution_manager.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle="x",
+                resolution=10.1,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, plt.Figure)
+
+        plt.close()
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)

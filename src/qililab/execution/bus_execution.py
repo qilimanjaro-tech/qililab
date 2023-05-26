@@ -77,7 +77,7 @@ class BusExecution:
             time += self.system_control.acquisition_delay_time
         return time
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
+    def waveforms(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
@@ -90,7 +90,7 @@ class BusExecution:
         num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
     def port(self):
