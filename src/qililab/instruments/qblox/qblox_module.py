@@ -197,7 +197,7 @@ class QbloxModule(AWG):
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bins = Loop(name="bins", begin=0, end=2000, step=1)
         program.append_block(bins)
-        program.append_block(avg_loop)
+        bins.append_block(avg_loop)
         stop = Block(name="stop")
         stop.append_component(Stop())
         program.append_block(block=stop)
@@ -228,7 +228,6 @@ class QbloxModule(AWG):
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
                 avg_loop.append_component(long_wait(wait_time=wait_time))
-        bins.append_block(avg_loop)
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
