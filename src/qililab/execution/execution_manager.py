@@ -83,7 +83,7 @@ class ExecutionManager:
             raise ValueError("No Results acquired")
         return results[0]
 
-    def waveforms_dict(self, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
+    def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
         """Get pulses of each bus.
 
         Args:
@@ -92,33 +92,64 @@ class ExecutionManager:
         Returns:
             dict[int, Waveforms]: Dictionary containing a list of the I/Q amplitudes of the pulses applied on each bus.
         """
-        return {bus.id_: bus.waveforms(resolution=resolution, idx=idx) for bus in self.buses}
+        return {bus.id_: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 
-    def draw(self, resolution: float, idx: int = 0):
-        """Save figure with the waveforms sent to each bus.
+    def draw(
+        self,
+        real: bool = True,
+        imag: bool = True,
+        absolute: bool = False,
+        modulation: bool = True,
+        linestyle: str = "-",
+        resolution: float = 1.0,
+        idx: int = 0,
+    ):
+        """Save figure with the waveforms/envelopes sent to each bus.
+
+        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
 
         Args:
+            Args:
+            real (bool): True to plot the real part of the function, False otherwise. Default to True.
+            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
+            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
+            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
+            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
             Figure: Matplotlib figure with the waveforms sent to each bus.
         """
         figure, axes = plt.subplots(nrows=len(self.buses), ncols=1, sharex=True)
+        plt.ylabel("Amplitude")
+        figure.suptitle(" Pulses on each bus ", fontsize=20)
+
         if len(self.buses) == 1:
             axes = [axes]  # make axes subscriptable
-        for axis_idx, (bus_idx, waveforms) in enumerate(self.waveforms_dict(resolution=resolution, idx=idx).items()):
+
+        for axis_idx, (bus_idx, waveforms) in enumerate(
+            self.waveforms_dict(modulation=modulation, resolution=resolution, idx=idx).items()
+        ):
             time = np.arange(len(waveforms)) * resolution
-            axes[axis_idx].set_title(f"Bus {bus_idx}")
-            axes[axis_idx].plot(time, waveforms.i, label="I")
-            axes[axis_idx].plot(time, waveforms.q, label="Q")
+            axes[axis_idx].set_title(f"Bus {bus_idx}", loc="right")
+
+            if imag:
+                axes[axis_idx].plot(time, waveforms.q, linestyle, label="imag", color="orange")
+
+            if real:
+                axes[axis_idx].plot(time, waveforms.i, linestyle, label="real", color="blue")
+
+            if absolute:
+                waveform_abs = np.sqrt(waveforms.q * waveforms.q + waveforms.i * +waveforms.i)
+                axes[axis_idx].plot(time, waveform_abs, linestyle, label="abs", color="green")
+
             bus = self.buses[axis_idx]
             self._plot_acquire_time(bus=bus, sequence_idx=idx)
-            axes[axis_idx].legend()
             axes[axis_idx].minorticks_on()
             axes[axis_idx].grid(which="both")
-            axes[axis_idx].set_ylabel("Amplitude")
-            axes[axis_idx].set_xlabel("Time (ns)")
 
+        plt.xlabel("Time (ns)")
+        plt.legend(loc="upper right")
         plt.tight_layout()
         return figure
 
