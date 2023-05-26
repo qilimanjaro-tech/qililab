@@ -170,7 +170,7 @@ def fixture_platform(chip: Chip) -> Platform:
                 "instruments": ["QRM1", "rs_1"],
             },
             "port": 0,
-            "distortions": ["BiasTeeCorrection(tau_bias_tee=1.0)", "LFilter(a = [0.1, 1.1], b = [1.1, 1.3])"],
+            "distortions": [],
         },
         {
             "id_": 20,

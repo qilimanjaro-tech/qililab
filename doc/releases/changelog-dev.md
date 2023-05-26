@@ -4,6 +4,47 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added to the `draw()` method the option  of specifying if you want:
+
+  - modulation or not,
+  - plot the real, iamginary, absolute or any combination of these options
+  - specify the type of plotline to use, such as "-", ".", "--", ":"...
+    for the classes `Experimental` and `ExecutionManager`, like:
+
+  ```python
+  # Option 1 (Default)
+  figure = sample_experiment.draw(
+      real=True, imag=True, abs=False, modulation=True, linestyle="-"
+  )
+
+  # Option 2 (Equivalent to option 1)
+  figure = sample_experiment.draw()
+
+  # Option 3 (something different, only plotting the envelopes without modulation)
+  figure = sample_experiment.draw(modulation=False, linestyle=".")
+
+  plt.show()
+  ```
+
+  [#383](https://github.com/qilimanjaro-tech/qililab/pull/383)
+
+- Added `lambda_2` attribute to the `cosine.py` module containing the `Cosine` pulse_shape, modifying the previous A/2\*(1-cos(x)).
+  Into a more general A/2\*(1-lambda_1*cos(phi)-lambda_2*cos(2phi)), giving a modified sinusoidal-gaussian.
+
+  - lambda_1 cosine A/2\*(1-cos(x)): Starts at height 0 (phase=0), maximum height A (phase=pi)
+    and ends at height 0 (phase=2pi). Which is a sinusoidal like gaussian.
+
+  - lambda_2 cosine A/2\*(1-cos(2x)): Starts at height 0 (phase=0), maximum height A (phase=pi/2)
+    then another height 0 in the middle at phase=pi, then another maximum height A (phase=3/2pi)
+    and ends at height 0 (phase=2pi).
+
+  For more info check the docstring and the following references:
+
+  - Supplemental material B. "Flux pulse parametrization" at \[<https://arxiv.org/abs/1903.02492%5C%5D>\],
+  - OPTIMAL SOLUTION: SMALL CHANGE IN θ at \[<https://arxiv.org/abs/1402.5467%5C%5D>\]
+
+  [#385](https://github.com/qilimanjaro-tech/qililab/pull/385)
+
 - Added user integration for `pulse_distortions`. Now they can be used writing them in the Buses of the runcards:
 
   ```python
@@ -43,7 +84,7 @@ This document contains the changes of the current release.
   to adjacent qubits with lower frequency than CZ's target qubit.
   For the parking gate, if the time is greater than the CZ pulse, the extra time is added as padding at the beginning/end
   of the pulse.
-  The parameters for the CZ in the runcard are amplitude, duration _of the halfpulse_; and for the CZ's snz pulse b
+  The parameters for the CZ in the runcard are amplitude, duration *of the halfpulse*; and for the CZ's snz pulse b
   (impulse between halfpulses) and t_phi (time between halfpulses without accounting for b)
 
   Example:
