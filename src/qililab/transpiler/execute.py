@@ -15,7 +15,7 @@ def execute(circuit: Circuit, runcard_name: str):
         get_experiment_only (bool): return sample experiment instead of running it
 
     Returns:
-        Results | Experiment: ``Results`` class containing the experiment results | sampple experiment
+        Results: ``Results`` class containing the experiment results
 
     Example Usage:
 
