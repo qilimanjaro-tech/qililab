@@ -226,11 +226,11 @@ class QbloxModule(AWG):
             )
             # avg_loop.append_component(SetMrk(marker_outputs=0))
             # avg_loop.append_component(UpdParam(wait_time=4))
-        self._append_acquire_instruction(loop=avg_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
+        self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
         if self.repetition_duration is not None:
-            wait_time = self.repetition_duration - avg_loop.duration_iter
+            wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
-                avg_loop.append_component(long_wait(wait_time=wait_time))
+                bin_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
@@ -244,7 +244,7 @@ class QbloxModule(AWG):
         """
         # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="default", num_bins=1, index=0)
+        acquisitions.add(name="default", num_bins=self.num_bins, index=0)
         return acquisitions
 
     @abstractmethod
