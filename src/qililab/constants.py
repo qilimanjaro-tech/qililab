@@ -222,6 +222,7 @@ class RESULTSDATAFRAME:
     QUBIT_INDEX = "qubit_index"
     RESULTS_INDEX = "results_index"
     BINS_INDEX = "bins_index"
+    CIRCUIT_INDEX = "circuit_index"
     SCOPE_INDEX = "scope_index"
     ACQUISITION_INDEX = "acquisition_index"
     P0 = "p0"
