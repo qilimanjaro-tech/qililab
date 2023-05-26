@@ -76,8 +76,7 @@ def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
         _type_: _description_
     """
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
-    import numpy as np
-
+    # TODO: Modify dummy_qrm to to get better examples of acquisitions (the one below is the top one modified)
     acquisition = {
         "scope": {
             "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},

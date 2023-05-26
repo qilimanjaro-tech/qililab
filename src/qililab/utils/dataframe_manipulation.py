@@ -43,5 +43,7 @@ def concatenate_creating_new_index_name_and_index_concatenation_name(
     """
     for index, df in enumerate(dataframe_list):
         df[new_concatenation_index_name] = index
+        col = df.pop(new_concatenation_index_name)
+        df.insert(0, col.name, col)
 
     return concatenate_creating_new_index_name(dataframe_list=dataframe_list, new_index_name=new_index_name)

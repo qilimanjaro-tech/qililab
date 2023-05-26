@@ -726,9 +726,9 @@ simulated_experiment_circuit.add(RX(0, 23))
 simulated_experiment_circuit.add(RY(0, 15))
 
 results_two_loops = {
-    EXPERIMENT.SOFTWARE_AVERAGE: 1,
-    EXPERIMENT.NUM_SCHEDULES: 1,
-    EXPERIMENT.SHAPE: [75, 100],
+    EXPERIMENT.SOFTWARE_AVERAGE: 3,
+    EXPERIMENT.NUM_SCHEDULES: 2,
+    EXPERIMENT.SHAPE: [4, 5],
     EXPERIMENT.LOOPS: [
         {
             RUNCARD.ALIAS: "attenuator",
@@ -747,7 +747,7 @@ results_two_loops = {
     EXPERIMENT.RESULTS: [
         {
             RUNCARD.NAME: "qblox",
-            "integration_lengths": [8000],
+            "integration_lengths": [8000, 8000, 8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -755,16 +755,38 @@ results_two_loops = {
                         "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
                     },
                     "bins": {
-                        "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
-                        "avg_cnt": [1024],
+                        "integration": {"path0": [-0.08875841551660968, 1, 3], "path1": [-0.4252879595139228, 1, 3]},
+                        "threshold": [0.48046875, 0],
+                        "avg_cnt": [1024, 1024],
                     },
-                }
+                },
+                {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968, 0, 3], "path1": [-0.4252879595139228, 0, 3]},
+                        "threshold": [0.48046875, 0],
+                        "avg_cnt": [1024, 1024],
+                    },
+                },
+                {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.08875841551660968, 0, 3], "path1": [-0.4252879595139228, 0, 3]},
+                        "threshold": [0.48046875, 0],
+                        "avg_cnt": [1024, 1024],
+                    },
+                },
             ],
         },
         {
             RUNCARD.NAME: "qblox",
-            "integration_lengths": [8000],
+            "integration_lengths": [8000, 8000],
             "qblox_raw_results": [
                 {
                     "scope": {
@@ -772,11 +794,22 @@ results_two_loops = {
                         "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
                     },
                     "bins": {
-                        "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
+                        "integration": {"path0": [-0.14089025097703958, 3, 3], "path1": [-0.3594594414081583, 3, 3]},
                         "threshold": [0.4599609375],
                         "avg_cnt": [1024],
                     },
-                }
+                },
+                {
+                    "scope": {
+                        "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                        "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+                    },
+                    "bins": {
+                        "integration": {"path0": [-0.14089025097703958, 3, 3], "path1": [-0.3594594414081583, 3, 3]},
+                        "threshold": [0.4599609375],
+                        "avg_cnt": [1024],
+                    },
+                },
             ],
         },
     ],
