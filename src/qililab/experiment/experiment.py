@@ -314,7 +314,7 @@ class Experiment:
         """
         if parameter == Parameter.GATE_PARAMETER:
             for circuit in self.circuits:
-                parameters = circuit.get_parameters()
+                parameters = list(sum(circuit.get_parameters(), ()))
                 parameters[int(alias)] = value
                 circuit.set_parameters(parameters)
             self.build_execution()
