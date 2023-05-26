@@ -224,11 +224,11 @@ class QbloxModule(AWG):
             # avg_loop.append_component(SetMrk(marker_outputs=0))
             # avg_loop.append_component(UpdParam(wait_time=4))
         self._append_acquire_instruction(loop=avg_loop, bin_index=bins.counter_register, sequencer_id=sequencer)
-        bins.append_block(avg_loop)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - avg_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
                 avg_loop.append_component(long_wait(wait_time=wait_time))
+        bins.append_block(avg_loop)
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
