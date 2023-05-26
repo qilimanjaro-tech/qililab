@@ -72,7 +72,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         q = np.array(acquisitions["q"])
         self.binned_post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
         data_dimensions = len(self.loop.values) if self.loop.loop is None else len(self.loop.values) * len(self.loop.loop.values)
-        self.post_processed_results = np.average(self.binned_post_processed_results.reshape(self.num_bins, data_dimensions))
+        self.post_processed_results = np.average(self.binned_post_processed_results.reshape(self.num_bins, data_dimensions), axis=1)
         return self.post_processed_results
 
     def fit(self, p0: tuple | None = None):
