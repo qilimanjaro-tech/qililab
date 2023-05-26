@@ -155,9 +155,10 @@ class CircuitToPulses:
         # pad_time = (park_settings.duration - 2 * cz_settings.duration + 2 + cz_settings.shape["t_phi"]) / 2
         t_park = int(park_settings.duration)
         t_cz = int(cz_settings.duration)
+        if "t_phi" not in cz_settings.shape:
+            return (t_park - t_cz) / 2
         t_phi = int(cz_settings.shape["t_phi"])
-        pad_time = (t_park - (2 * t_cz + 2 + t_phi)) / 2
-        return pad_time
+        return (t_park - (2 * t_cz + 2 + t_phi)) / 2
 
     def _build_pulse_shape_from_gate_settings(self, gate_settings: HardwareGate.HardwareGateSettings):
         """Build Pulse Shape from Gate settings
@@ -292,7 +293,7 @@ class CircuitToPulses:
             park_gate_settings = [
                 settings_gate for settings_gate in self.platform.settings.gates[qubit] if "Park" in settings_gate.name
             ]
-            if len(park_gate_settings) == 0:
+            if not park_gate_settings:
                 logger.warning(
                     f"Found parking candidate qubit {qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {qubit}"
                 )
@@ -305,7 +306,7 @@ class CircuitToPulses:
             pad_time = self._get_park_pad_time(park_settings=park_gate_settings[0], cz_settings=cz_gate_settings)
             if pad_time < 0:
                 raise ValueError(
-                    f"Negative value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits}. Pad time is calculated as ParkGate.duration - 2*CZ.duration + 2 + CZ.t_phi from runcard parameters"
+                    f"Negative value pad_time {pad_time} for park gate at {qubit} and CZ {cz.qubits}. Pad time is calculated as (ParkGate.duration - CZ pulse duration) / 2"
                 )
 
             park_gates.append((Park(qubit), int(pad_time)))
