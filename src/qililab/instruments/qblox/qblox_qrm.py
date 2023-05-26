@@ -252,7 +252,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 if sequencer.scope_store_enabled:
                     self.device.store_scope_acquisition(sequencer=sequencer_id, name="default")
 
-                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["default"]["acquisition"])
+                results.append(self.device.get_acquisitions(sequencer=sequencer.identifier)["binning"]["acquisition"])
                 self.device.sequencers[sequencer.identifier].sync_en(False)
                 integration_lengths.append(sequencer.used_integration_length)
 
