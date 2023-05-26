@@ -88,7 +88,11 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
 
     def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int | None = None,
+        repetition_duration: int | None = None,
+        num_bins: int = 1,
     ) -> list:
         """Compiles the ``PulseBusSchedule``.
 

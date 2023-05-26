@@ -38,18 +38,24 @@ class SystemControl(BusElement, ABC):
         settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins
         """
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 return instrument.compile(
-                    pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                    pulse_bus_schedule=pulse_bus_schedule,
+                    nshots=nshots,
+                    repetition_duration=repetition_duration,
+                    num_bins=num_bins,
                 )
         raise AttributeError(
             f"The system control with alias {self.settings.alias} doesn't have any AWG to compile the given pulse "

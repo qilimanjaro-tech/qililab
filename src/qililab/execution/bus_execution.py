@@ -16,19 +16,23 @@ class BusExecution:
     bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
+    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
         """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins.
 
         Returns:
             list: list of compiled assembly programs
         """
         return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=self.pulse_schedule[idx],
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
         )
 
     def upload(self):

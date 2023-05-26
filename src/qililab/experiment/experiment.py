@@ -118,7 +118,7 @@ class Experiment:
         Args:
             queue (Queue): Queue used to store the experiment results.
         """
-        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * 1e-9)
+        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * self.num_bins * 1e-9)
 
         def _threaded_function():
             """Asynchronous thread."""
@@ -152,7 +152,7 @@ class Experiment:
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 
@@ -229,7 +229,10 @@ class Experiment:
         """
         if loops is None or len(loops) == 0:
             self.execution_manager.compile(
-                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+                idx=idx,
+                nshots=self.hardware_average,
+                repetition_duration=self.repetition_duration,
+                num_bins=self.num_bins,
             )
             self.execution_manager.upload()
             result = self.execution_manager.run(queue)
@@ -434,6 +437,14 @@ class Experiment:
             int: settings.hardware_average.
         """
         return self.options.settings.hardware_average
+
+    @property
+    def num_bins(self):
+        """Experiment `num_bins` property.
+        Returns
+            int: settings.num_bins.
+        """
+        return self.options.settings.num_bins
 
     @property
     def repetition_duration(self):
