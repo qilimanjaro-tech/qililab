@@ -90,3 +90,9 @@ class CosExp(FittingModel):
             offset (float): offset
         """
         return amplitude * np.exp(-xdata / decay) * np.cos(2 * np.pi * frequency * xdata + phase) + offset
+    
+class Empty(FittingModel):
+    """ Empty fitting function for experiments that don't need it. """
+    @staticmethod
+    def func():
+        return 0
