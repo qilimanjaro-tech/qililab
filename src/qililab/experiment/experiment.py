@@ -322,10 +322,26 @@ class Experiment:
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
-    def draw(self, resolution: float = 1.0, idx: int = 0):
-        """Return figure with the waveforms sent to each bus.
+    def draw(
+        self,
+        real: bool = True,
+        imag: bool = True,
+        absolute: bool = False,
+        modulation: bool = True,
+        linestyle: str = "-",
+        resolution: float = 1.0,
+        idx: int = 0,
+    ):
+        """Return figure with the waveforms/envelopes sent to each bus.
+
+        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
 
         Args:
+            real (bool): True to plot the real part of the function, False otherwise. Default to True.
+            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
+            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
+            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
+            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -333,7 +349,16 @@ class Experiment:
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before drawing the experiment.")
-        return self.execution_manager.draw(resolution=resolution, idx=idx)
+
+        return self.execution_manager.draw(
+            real=real,
+            imag=imag,
+            absolute=absolute,
+            modulation=modulation,
+            linestyle=linestyle,
+            resolution=resolution,
+            idx=idx,
+        )
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
