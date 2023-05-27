@@ -9,7 +9,9 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetMrk, SetPh, Stop, UpdParam, Wait
+from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain,
+                                              SetMrk, SetPh, Stop, UpdParam,
+                                              Wait)
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -206,7 +208,7 @@ class QbloxModule(AWG):
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            bin_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
+            bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
@@ -221,9 +223,9 @@ class QbloxModule(AWG):
                 Play(
                     waveform_0=waveform_pair.waveform_i.index,
                     waveform_1=waveform_pair.waveform_q.index,
-                    wait_time=int(wait_time),
                 )
             )
+            bin_loop.append_component(long_wait(int(wait_time - 4)))
             # avg_loop.append_component(SetMrk(marker_outputs=0))
             # avg_loop.append_component(UpdParam(wait_time=4))
         self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
