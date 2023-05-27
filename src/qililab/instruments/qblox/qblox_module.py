@@ -216,7 +216,7 @@ class QbloxModule(AWG):
             bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
+            phase = int((pulse_event.pulse.phase % (2*np.pi)) * 1e9 / (2*np.pi))
             bin_loop.append_component(SetPh(phase=phase))
             # avg_loop.append_component(SetMrk(marker_outputs=15))
             bin_loop.append_component(
