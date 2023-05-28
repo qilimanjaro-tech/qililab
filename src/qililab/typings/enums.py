@@ -345,6 +345,8 @@ class Parameter(str, Enum):
     GATE_DURATION = "gate_duration"
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
+    T_PHI = "t_phi"
+    B_CZ = "b"
     REFERENCE_CLOCK = "reference_clock"
     SEQUENCER = "sequencer"
     POWER = "power"
