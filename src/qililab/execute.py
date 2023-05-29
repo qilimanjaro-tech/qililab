@@ -7,7 +7,7 @@ import qililab as ql
 
 
 def execute(circuit: Circuit, runcard_name: str):
-    """Transpile a qibo circuit to native gates and run it with qililab
+    """Execute a qibo with qililab and native gates
 
     Args:
         circuit (Circuit): qibo circuit
@@ -40,10 +40,10 @@ def execute(circuit: Circuit, runcard_name: str):
     ```
 
     """
+    # transpile and optimize circuit
+    circuit = ql.translate_circuit(circuit, optimize=True)
 
-    fname = os.path.abspath("")
-    os.environ["RUNCARDS"] = str(Path(fname) / "examples/runcards")
-    os.environ["DATA"] = str(Path(fname) / "data")
+    # create platform
     platform = ql.build_platform(name=runcard_name)
 
     settings = ql.ExperimentSettings(
@@ -55,8 +55,8 @@ def execute(circuit: Circuit, runcard_name: str):
         loops=[],  # loops to run the experiment
         settings=settings,  # experiment settings
     )
-    # transpile and optimize circuit
-    circuit = ql.translate_circuit(circuit, optimize=True)
+
+    # create experiment with options
     sample_experiment = ql.Experiment(
         platform=platform,  # platform to run the experiment
         circuits=[circuit],  # circuits to run the experiment
