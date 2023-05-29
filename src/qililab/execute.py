@@ -1,12 +1,9 @@
-import os
-from pathlib import Path
-
 from qibo.models import Circuit
 
 import qililab as ql
 
 
-def execute(circuit: Circuit, runcard_name: str):
+def execute(circuit: Circuit, runcard_name: str, nshots=1):
     """Execute a qibo with qililab and native gates
 
     Args:
@@ -46,21 +43,10 @@ def execute(circuit: Circuit, runcard_name: str):
     # create platform
     platform = ql.build_platform(name=runcard_name)
 
-    settings = ql.ExperimentSettings(
-        hardware_average=1,
-        repetition_duration=0,
-        software_average=1,
-    )
-    options = ql.ExperimentOptions(
-        loops=[],  # loops to run the experiment
-        settings=settings,  # experiment settings
-    )
+    settings = ql.ExperimentSettings(hardware_average=1, repetition_duration=0, software_average=nshots)
+    options = ql.ExperimentOptions(settings=settings)
 
     # create experiment with options
-    sample_experiment = ql.Experiment(
-        platform=platform,  # platform to run the experiment
-        circuits=[circuit],  # circuits to run the experiment
-        options=options,  # experiment options
-    )
+    sample_experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
 
-    return sample_experiment.execute()
+    return sample_experiment.execute(save_results=False)
