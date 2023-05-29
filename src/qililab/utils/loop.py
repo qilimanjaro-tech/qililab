@@ -43,6 +43,7 @@ class Loop:
     loop: Loop | None = None
     previous: Loop | None = field(compare=False, default=None)
     channel_id: int | None = None
+    hw_loop: bool = False
 
     def __post_init__(self):
         """Check that either step or num is used. Overwrite 'previous' attribute of next loop with self."""

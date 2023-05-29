@@ -240,6 +240,25 @@ class Instrument(BusElement, ABC):
 
         return self.setup(parameter=parameter, value=value, channel_id=channel_id)
 
+    def get_hw_values(self, parameter: Parameter):
+        """Return the hw values retrieved from the instrument if the parameter is supported"""
+        if not hasattr(self, "device"):
+            raise ValueError(
+                f"Instrument {self.name.value} is not connected and cannot retrieve values from the parameter {parameter}."
+            )
+        return self.retrieve_hw_values(parameter)
+
+    @CheckDeviceInitialized
+    def retrieve_hw_values(self, parameter: Parameter):
+        """Set instrument settings parameter to the corresponding value
+
+        Args:
+            parameter (Parameter): parameter values to be retrieved
+        """
+        raise ParameterNotFound(
+            f"Instrument {self.name.value} is does not support hardware loops for parameter {parameter}."
+        )
+
 
 class ParameterNotFound(Exception):
     """Error raised when a parameter in an instrument is not found."""

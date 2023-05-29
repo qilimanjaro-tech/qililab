@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from qililab.constants import DEFAULT_TIMEOUT
+from qililab.instruments.instrument import Instrument
 from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
@@ -58,6 +59,12 @@ class E5080B(VectorNetworkAnalyzer):
             return
 
         super()._set_parameter_str(parameter, value)
+
+    @Instrument.CheckDeviceInitialized
+    def retrieve_hw_values(self, parameter: Parameter):
+        """Retrurns the values from the device for the supported hardware loop parameters"""
+        if parameter in [Parameter.FREQUENCY_CS, Parameter.FREQUENCY_SS]:
+            return self.get_frequencies()
 
     @VectorNetworkAnalyzer.power.setter  # type: ignore
     def power(self, value: float, channel=1, port=1):

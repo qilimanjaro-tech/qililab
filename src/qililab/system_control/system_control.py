@@ -133,3 +133,12 @@ class SystemControl(BusElement, ABC):
                 instrument.set_parameter(parameter, value, channel_id)
                 return
         raise ParameterNotFound(f"Could not find parameter {parameter.value} in the system control {self.name}")
+
+    def get_hw_values(self, parameter: Parameter):
+        """Return the hw values retrieved from the instrument if the parameter is supported"""
+        for instrument in self.instruments:
+            with contextlib.suppress(ParameterNotFound):
+                return instrument.get_hw_values(parameter)
+        raise ParameterNotFound(
+            f"Parameter: {parameter.value} not supported to be looped by the hardware in system control {self.name}"
+        )

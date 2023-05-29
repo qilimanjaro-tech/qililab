@@ -14,6 +14,7 @@ from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
+from qililab.platform.components import Bus
 from qililab.platform.platform import Platform
 from qililab.result.results import Results
 from qililab.result.vna_result import VNAResult
@@ -81,6 +82,7 @@ class Experiment:
         self.results, self.results_path = self.prepare_results()
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._preprocess_hardware_loops()
         self._asynchronous_data_handling(queue=data_queue)
         self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
 
@@ -88,6 +90,31 @@ class Experiment:
             self.remote_save_experiment()
 
         return self.results
+
+    def _preprocess_hardware_loops(self):
+        """Preprocess all hardware loops from the experiment"""
+        for loop in self.options.loops:
+            self._process_hardware_loop(loop)
+
+    def _process_hardware_loop(self, loop: Loop):
+        """Process a hardware loop. It sets the parameters needed for the hardware loop and retrieves the new array of loop.values"""
+        if loop.hw_loop:
+            element = self.platform.get_element(alias=loop.alias)
+            self.set_parameter(
+                element=element,
+                alias=loop.alias,
+                parameter=loop.parameter,
+                value=loop.values[0],
+                channel_id=loop.channel_id,
+            )
+            loop.values = self.get_hw_values(element, loop.parameter)
+            # Recursive checking for hw_loops until we reach the sw_loops, reason why hw_loops are the outer loops
+            if loop.loop is not None:
+                self._process_hardware_loop(loop.loop)
+
+    def get_hw_values(self, element: Instrument | Bus, parameter: Parameter):  # type: ignore
+        """Get the values of a platform element's parameter"""
+        return element.get_hw_values(parameter=parameter)  # type: ignore
 
     def _asynchronous_data_handling(self, queue: Queue):
         """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
@@ -263,9 +290,10 @@ class Experiment:
         elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 
         for value, loop, element in zip(values, loops, elements):
-            self.set_parameter(
-                element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
-            )
+            if not loop.hw_loop:
+                self.set_parameter(
+                    element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
+                )
 
     def set_parameter(
         self,

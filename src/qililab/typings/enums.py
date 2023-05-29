@@ -406,6 +406,8 @@ class Parameter(str, Enum):
     OUT1_OFFSET_PATH0 = "out1_offset_path0"
     OUT0_OFFSET_PATH1 = "out0_offset_path1"
     OUT1_OFFSET_PATH1 = "out1_offset_path1"
+    FREQUENCY_CS = "frequency_cs"
+    FREQUENCY_SS = "frequency_ss"
 
 
 class ResultName(str, Enum):
