@@ -92,9 +92,8 @@ class Experiment:
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
 
-        if save_results:
-            # Prepares the results
-            self.results, self.results_path = self.prepare_results()
+        # Prepares the results
+        self.results, self.results_path = self.prepare_results(save_results=save_results)
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue, save_results=save_results)
@@ -439,7 +438,7 @@ class Experiment:
         """
         return self.options.settings.repetition_duration
 
-    def prepare_results(self) -> tuple[Results, Path]:
+    def prepare_results(self, save_results=True) -> tuple[Results, Path]:
         """Creates the ``Results`` class, creates the ``results.yml`` file where the results will be saved, and dumps
         the experiment data into this file.
 
@@ -457,13 +456,17 @@ class Experiment:
             num_schedules=self.execution_manager.num_schedules,
             loops=self.options.loops,
         )
-        # Create the folders & files needed to save the results locally
-        results_path = self._path_to_results_folder()
-        self._create_results_file(results_path)
 
-        # Dump the experiment data into the created file
-        with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+        if save_results:
+            # Create the folders & files needed to save the results locally
+            results_path = self._path_to_results_folder()
+            self._create_results_file(results_path)
+
+            # Dump the experiment data into the created file
+            with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
+                yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+        else:
+            results_path = None
 
         return results, results_path
 
