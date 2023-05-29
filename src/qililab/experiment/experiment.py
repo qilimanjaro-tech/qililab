@@ -91,12 +91,12 @@ class Experiment:
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
 
-        data_queue: Queue = Queue()  # queue used to store the experiment results
         if save_results:
             # Prepares the results
             self.results, self.results_path = self.prepare_results()
-            self._asynchronous_data_handling(queue=data_queue)
 
+        data_queue: Queue = Queue()  # queue used to store the experiment results
+        self._asynchronous_data_handling(queue=data_queue, save_results=save_results)
         num_schedules = self.execution_manager.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -109,7 +109,7 @@ class Experiment:
 
         return self.results
 
-    def _asynchronous_data_handling(self, queue: Queue):
+    def _asynchronous_data_handling(self, queue: Queue, save_results=True):
         """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
         and saves them to a file.
 
@@ -134,9 +134,11 @@ class Experiment:
                     q = np.array(acq["q"])
                     amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                     self._plot.send_points(value=amplitude[0])
-                with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
-                    result_dict = result.to_dict()
-                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+
+                if save_results:
+                    with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                        result_dict = result.to_dict()
+                        yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function)
         thread.start()
