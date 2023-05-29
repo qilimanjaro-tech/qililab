@@ -66,7 +66,7 @@ class Experiment:
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self) -> Results:
+    def run(self, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -90,13 +90,14 @@ class Experiment:
             )
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
-        # Prepares the results
-        self.results, self.results_path = self.prepare_results()
-        num_schedules = self.execution_manager.num_schedules
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
-        self._asynchronous_data_handling(queue=data_queue)
+        if save_results:
+            # Prepares the results
+            self.results, self.results_path = self.prepare_results()
+            self._asynchronous_data_handling(queue=data_queue)
 
+        num_schedules = self.execution_manager.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
@@ -171,7 +172,7 @@ class Experiment:
         """Disconnects from the instruments and releases the device."""
         self.platform.disconnect()
 
-    def execute(self) -> Results:
+    def execute(self, save_results=True) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
             * Connect to the instruments.
@@ -191,7 +192,7 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        results = self.run()
+        results = self.run(save_results=save_results)
         self.turn_off_instruments()
         self.disconnect()
         return results
