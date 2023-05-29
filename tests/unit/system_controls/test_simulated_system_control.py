@@ -12,21 +12,12 @@ from qililab.system_control import SimulatedSystemControl
 from qililab.typings.enums import SystemControlName
 
 
-@pytest.fixture(name="pulse_event")
-def fixture_pulse_event() -> PulseEvent:
-    """Load PulseEvent.
-
-    Returns:
-        PulseEvent: Instance of the PulseEvent class.
-    """
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
-    return PulseEvent(pulse=pulse, start_time=0)
-
-
-@pytest.fixture(name="pulse_bus_schedule")
-def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
+    pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 

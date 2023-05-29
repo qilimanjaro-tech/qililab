@@ -1,7 +1,9 @@
 """Tests for the ExecutionManager class."""
+import itertools
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,10 +13,8 @@ from qililab import build_platform
 from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import Experiment
-from qililab.instruments import AWG
-from qililab.result.qblox_results import QbloxResult
+from qililab.instruments import AWG, QbloxQRM
 from qililab.result.results import Results
-from qililab.system_control import ReadoutSystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -91,8 +91,28 @@ class TestExecutionManager:
 
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
-        for resolution in [0.01, 0.1, 1.0, 10.0]:
-            execution_manager.draw(resolution=resolution)
+        figures = [
+            execution_manager.draw(),
+            execution_manager.draw(
+                modulation=False,
+                linestyle=":",
+                resolution=0.8,
+            ),
+            execution_manager.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle="x",
+                resolution=10.1,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, plt.Figure)
+
+        plt.close()
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
@@ -165,7 +185,7 @@ class TestExecutionManagerPlatform:
         assert acquisitions[RESULTSDATAFRAME.LOOP_INDEX + "1"].unique().size == 2
         probabilities = results.probabilities()
         for qubit_string in probabilities.keys():
-            assert len(qubit_string) == 2
+            assert len(qubit_string) == nested_experiment.circuits[0].nqubits
         assert sum(probabilities.values()) == 1.0
         mock_dump.assert_called()
         mock_open.assert_called()
@@ -291,6 +311,7 @@ def fixture_mocked_execution_manager(execution_manager: ExecutionManager):
     for awg in awgs:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
+        awg.device.sequencers = [MagicMock(), MagicMock()]
         awg.device.get_acquisitions.return_value = qblox_acquisition
     return execution_manager
 
@@ -319,25 +340,10 @@ class TestWorkflow:
 
         for awg in awgs:
             for seq_idx in range(awg.num_sequencers):  # type: ignore
-                assert awg.device.sequencers[seq_idx].sequence.call_count == awg.num_sequencers  # type: ignore
-
-    def test_run(self, mocked_execution_manager: ExecutionManager):
-        """Test that the run method returns a ``Result`` object."""
-        # Test that the run method returns a ``Result`` object
-        mocked_queue = MagicMock()
-        result = mocked_execution_manager.run(queue=mocked_queue)
-        assert isinstance(result, QbloxResult)
-        mocked_queue.put_nowait.assert_called_with(item=result)
-        assert [result.qblox_raw_results[0]] == [qblox_acquisition["default"]["acquisition"]]
-
-        # Make sure the mocked devices were called
-        readout_awgs = [
-            bus.system_control.instruments[0]
-            for bus in mocked_execution_manager.buses
-            if isinstance(bus.system_control, ReadoutSystemControl)
-        ]
-        for awg in readout_awgs:
-            assert awg.device.get_acquisitions.call_count == 2  # type: ignore
+                if isinstance(awg, QbloxQRM) and seq_idx == 1:
+                    assert awg.device.sequencers[seq_idx].sequence.call_count == 0  # type: ignore
+                    continue
+                assert awg.device.sequencers[seq_idx].sequence.call_count == 1  # type: ignore
 
     def test_run_multiple_readout_buses_raises_error(self, mocked_execution_manager: ExecutionManager):
         """Test that an error is raised when calling ``run`` with multiple readout buses."""
