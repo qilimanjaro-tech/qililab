@@ -30,7 +30,7 @@ class VectorNetworkAnalyzerDriver(Device):
 
     def reset(self):
         """Reset instrument settings."""
-        self.driver.write("SYST:PRES; *OPC?")
+        self.driver.write("SYST:PRES; *OPC")
 
     def send_command(self, command: str, arg: str = "?"):
         """Function to communicate with the device."""

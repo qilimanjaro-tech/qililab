@@ -78,23 +78,39 @@ class Experiment:
                 num_schedules=1,
                 title=self.options.name,
             )
+        # Preprocess HW loops
+        self._preprocess_hardware_loops()
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
-        self._preprocess_hardware_loops()
         self._asynchronous_data_handling(queue=data_queue)
-        self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
+        sowftware_loops = self._filter_hw_loops()
+        self._execute_recursive_loops(loops=sowftware_loops, queue=data_queue)
 
         if self.options.remote_save:
             self.remote_save_experiment()
 
         return self.results
 
+    def _filter_hw_loops(self):
+        """Returns all software loops"""
+        loops = self.options.loops.copy()
+        for loop in loops:
+            self._filter_hw_loop(loop)
+
+    def _filter_hw_loop(self, loop: Loop):
+        """Returns a loop without any hardware loop if there was any nested"""
+        if loop.loop.hw_loop:
+            loop.loop = None
+            return
+        self._filter_hw_loop(loop)
+
+
     def _preprocess_hardware_loops(self):
         """Preprocess all hardware loops from the experiment"""
-        for loop in self.options.loops:
-            self._process_hardware_loop(loop)
+        for idx, loop in enumerate(self.options.loops):
+            self.options.loops[idx] = self._process_hardware_loop(loop)
 
     def _process_hardware_loop(self, loop: Loop):
         """Process a hardware loop. It sets the parameters needed for the hardware loop and retrieves the new array of loop.values"""
@@ -108,9 +124,12 @@ class Experiment:
                 channel_id=loop.channel_id,
             )
             loop.values = self.get_hw_values(element, loop.parameter)
+            print(loop.values)
             # Recursive checking for hw_loops until we reach the sw_loops, reason why hw_loops are the outer loops
-            if loop.loop is not None:
-                self._process_hardware_loop(loop.loop)
+        if loop.loop is not None:
+            self._process_hardware_loop(loop.loop)
+
+        return loop
 
     def get_hw_values(self, element: Instrument | Bus, parameter: Parameter):  # type: ignore
         """Get the values of a platform element's parameter"""
@@ -290,10 +309,9 @@ class Experiment:
         elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 
         for value, loop, element in zip(values, loops, elements):
-            if not loop.hw_loop:
-                self.set_parameter(
-                    element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
-                )
+            self.set_parameter(
+                element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
+            )
 
     def set_parameter(
         self,

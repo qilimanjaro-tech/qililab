@@ -50,7 +50,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool | int | tuple, channel_id: int | None = None):
+    def setup(self, parameter: Parameter, value: float | str | bool | int | tuple | list, channel_id: int | None = None):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -70,7 +70,7 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         if isinstance(value, (int, np.integer)):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        if isinstance(value, tuple):
+        if isinstance(value, (tuple, list, np.ndarray)):
             self._set_parameter_tuple(parameter=parameter, value=value)
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
