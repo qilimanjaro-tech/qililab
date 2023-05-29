@@ -12,8 +12,6 @@ def execute(circuit: Circuit, runcard_name: str):
     Args:
         circuit (Circuit): qibo circuit
         runcard_name (str): name of the runcard to be loaded
-        get_experiment_only (bool): return sample experiment instead of running it
-
     Returns:
         Results: ``Results`` class containing the experiment results
 
@@ -38,7 +36,7 @@ def execute(circuit: Circuit, runcard_name: str):
     c.add(gates.SWAP(4,2))
     c.add(gates.RX(1, 3*np.pi/2))
 
-    probabilities = execute_qibo_circuit(c, runcard_name="galadriel")
+    probabilities = ql.execute(c, runcard_name="galadriel")
     ```
 
     """
@@ -65,4 +63,4 @@ def execute(circuit: Circuit, runcard_name: str):
         options=options,  # experiment options
     )
 
-    return sample_experiment.execute().probabilities()
+    return sample_experiment.execute()
