@@ -63,4 +63,4 @@ def execute(circuit: Circuit, runcard_name: str):
         options=options,  # experiment options
     )
 
-    return sample_experiment.execute()
+    return sample_experiment.execute(save_results=False)
