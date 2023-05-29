@@ -199,7 +199,7 @@ class QbloxModule(AWG):
         program.append_block(block=stop)
         timeline = pulse_bus_schedule.timeline
         if len(timeline) > 0 and timeline[0].start_time != 0:
-            avg_loop.append_component(Wait(wait_time=int(timeline[0].start_time)))
+            avg_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
@@ -207,7 +207,7 @@ class QbloxModule(AWG):
             avg_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             avg_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-            phase = int((pulse_event.pulse.phase % 360) * 1e9 / 360)
+            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             avg_loop.append_component(SetPh(phase=phase))
             avg_loop.append_component(
                 Play(
