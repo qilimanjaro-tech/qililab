@@ -34,7 +34,7 @@ class Experiment:
     # Specify the types of the attributes that are not defined during initialization
     execution_manager: ExecutionManager
     results: Results
-    results_path: Path
+    results_path: Path | None
     _plot: LivePlot | None
     _remote_id: int
 
@@ -96,7 +96,7 @@ class Experiment:
         self.results, self.results_path = self.prepare_results(save_results=save_results)
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
-        self._asynchronous_data_handling(queue=data_queue, save_results=save_results)
+        self._asynchronous_data_handling(queue=data_queue)
         num_schedules = self.execution_manager.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
@@ -109,7 +109,7 @@ class Experiment:
 
         return self.results
 
-    def _asynchronous_data_handling(self, queue: Queue, save_results=True):
+    def _asynchronous_data_handling(self, queue: Queue):
         """Starts a thread that asynchronously gets the results from the queue, sends them to the live plot (if any)
         and saves them to a file.
 
@@ -135,7 +135,7 @@ class Experiment:
                     amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                     self._plot.send_points(value=amplitude[0])
 
-                if save_results:
+                if self.results_path is not None:
                     with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
                         result_dict = result.to_dict()
                         yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
@@ -438,7 +438,7 @@ class Experiment:
         """
         return self.options.settings.repetition_duration
 
-    def prepare_results(self, save_results=True) -> tuple[Results, Path]:
+    def prepare_results(self, save_results=True) -> tuple[Results, Path | None]:
         """Creates the ``Results`` class, creates the ``results.yml`` file where the results will be saved, and dumps
         the experiment data into this file.
 
