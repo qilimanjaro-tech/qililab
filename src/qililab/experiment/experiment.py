@@ -7,6 +7,7 @@ from queue import Empty, Queue
 from threading import Thread
 
 import numpy as np
+from qcodes.instrument import Instrument as QcodesInstrument
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
@@ -197,6 +198,7 @@ class Experiment:
         results = self.run(save_results=save_results)
         self.turn_off_instruments()
         self.disconnect()
+        QcodesInstrument.close_all()
         return results
 
     def remote_save_experiment(self) -> None:
