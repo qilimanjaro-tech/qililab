@@ -1,6 +1,3 @@
-import os
-from pathlib import Path
-
 from qibo.models import Circuit
 
 import qililab as ql
