@@ -49,7 +49,9 @@ class CircuitToPulses:
             wait_of_next_pulse_event = {}
             for gate in circuit.queue:
                 if isinstance(gate, qibo_gates.Wait):
-                    wait_of_next_pulse_event[gate.qubits[0]] = gate.parameters[0]
+                    wait_of_next_pulse_event[gate.qubits[0]] = (
+                        wait_of_next_pulse_event.get(gate.qubits[0], 0) + gate.parameters[0]
+                    )
                     continue
                 if isinstance(gate, M):
                     # handle measurement gates
