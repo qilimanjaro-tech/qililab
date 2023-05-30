@@ -29,7 +29,7 @@ class Acquisitions:
         return concatenate_creating_new_index_name_and_concatenation_index_name(
             dataframe_list=acquisition_list,
             new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX,
-            new_concatenation_index_name=RESULTSDATAFRAME.QUBIT_INDEX,
+            new_concatenation_index_name=RESULTSDATAFRAME.QUBIT_NUMBER,
         )
 
     def probabilities(self) -> dict[str, float]:

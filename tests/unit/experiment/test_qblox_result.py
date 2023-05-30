@@ -184,8 +184,8 @@ class TestsQbloxResult:
         acquisitions = qblox_result_noscope.acquisitions()
         assert set(acquisitions.keys().tolist()) == {
             RESULTSDATAFRAME.ACQUISITION_INDEX,
-            RESULTSDATAFRAME.BINS_INDEX,
-            RESULTSDATAFRAME.QUBIT_INDEX,
+            RESULTSDATAFRAME.BINS_INDEX_NUMBER,
+            RESULTSDATAFRAME.QUBIT_NUMBER,
             "i",
             "q",
             "amplitude",

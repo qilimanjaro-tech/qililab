@@ -116,7 +116,7 @@ class Results:
         return concatenate_creating_new_index_name_and_concatenation_index_name(
             dataframe_list=result_acquisition_list,
             new_index_name=RESULTSDATAFRAME.RESULTS_INDEX,
-            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT_INDEX,
+            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT_NUMBER,
         )
 
     def _generate_new_acquisition_column_names(self):
