@@ -26,6 +26,7 @@ class Drag(HardwareGate):
         """
         qubit = gate.target_qubits[0]
         params = cls.settings[qubit]
-        amplitude = params.amplitude * gate.parameters[0] / np.pi
-        phase = gate.parameters[1]
+        theta = cls.normalize_angle(angle=gate.parameters[0])
+        amplitude = params.amplitude * theta / np.pi
+        phase = cls.normalize_angle(angle=gate.parameters[1])
         return cls.HardwareGateSettings(amplitude=amplitude, phase=phase, duration=params.duration, shape=params.shape)

@@ -287,7 +287,7 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
         move_0 = Move(0, registers[0])
         move_1 = Move(1, registers[1])
         setup_block = program.get_block(name="setup")
-        setup_block.append_components([move_0, move_1])
+        setup_block.append_components([move_0, move_1], bot_position=1)
 
     def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.
