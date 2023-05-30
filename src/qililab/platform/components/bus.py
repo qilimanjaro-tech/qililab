@@ -159,12 +159,3 @@ class Bus:
             raise ParameterNotFound(
                 f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
             ) from error
-
-    def get_hw_values(self, parameter: Parameter):
-        """Return the hw values retrieved from the instrument if the parameter is supported"""
-        try:
-            return self.system_control.get_hw_values(parameter)
-        except ParameterNotFound as error:
-            raise ParameterNotFound(
-                f"Parameter: {parameter.value} not supported to be looped by the hardware for bus with alias {self.alias}"
-            ) from error

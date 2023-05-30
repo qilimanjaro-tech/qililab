@@ -63,8 +63,8 @@ class E5080B(VectorNetworkAnalyzer):
     @Instrument.CheckDeviceInitialized
     def retrieve_hw_values(self, parameter: Parameter):
         """Retrurns the values from the device for the supported hardware loop parameters"""
-        if parameter in [Parameter.FREQUENCY_CS, Parameter.FREQUENCY_SS]:
-            return self.get_frequencies()
+        if parameter in [Parameter.FREQUENCY]:
+            return self.get_frequencies().tolist()
 
     @VectorNetworkAnalyzer.power.setter  # type: ignore
     def power(self, value: float, channel=1, port=1):

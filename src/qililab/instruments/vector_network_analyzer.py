@@ -50,7 +50,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized
-    def setup(self, parameter: Parameter, value: float | str | bool | int | tuple | list, channel_id: int | None = None):
+    def setup(
+        self, parameter: Parameter, value: float | str | bool | int | tuple | list, channel_id: int | None = None
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:
@@ -70,9 +72,6 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         if isinstance(value, (int, np.integer)):
             self._set_parameter_int(parameter=parameter, value=value)
             return
-        if isinstance(value, (tuple, list, np.ndarray)):
-            self._set_parameter_tuple(parameter=parameter, value=value)
-            return
         raise ParameterNotFound(f"Invalid Parameter: {parameter} with type {type(parameter)}")
 
     def _set_parameter_str(self, parameter: Parameter, value: str):
@@ -87,24 +86,6 @@ class VectorNetworkAnalyzer(Instrument, ABC):
             return
         if parameter == Parameter.TRIGGER_MODE:
             self.settings.trigger_mode = VNATriggerModes(value)
-            return
-
-        raise ParameterNotFound(f"Invalid Parameter: {parameter}")
-
-    def _set_parameter_tuple(self, parameter: Parameter, value: tuple):
-        """Set instrument settings parameter to the corresponding value
-
-        Args:
-            parameter (Parameter): settings parameter to be updated
-            value (tuple): new values
-        """
-        if parameter == Parameter.FREQUENCY_CS:
-            self.frequency_center = value[0]
-            self.frequency_span = value[1]
-            return
-        if parameter == Parameter.FREQUENCY_SS:
-            self.frequency_start = value[0]
-            self.frequency_stop = value[1]
             return
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")

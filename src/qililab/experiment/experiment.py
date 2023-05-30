@@ -19,7 +19,7 @@ from qililab.platform.platform import Platform
 from qililab.result.results import Results
 from qililab.result.vna_result import VNAResult
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Instrument, Parameter
+from qililab.typings.enums import Category, Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
 from qililab.utils.live_plot import LivePlot
@@ -78,58 +78,31 @@ class Experiment:
                 num_schedules=1,
                 title=self.options.name,
             )
-        # Preprocess HW loops
-        self._preprocess_hardware_loops()
         # Prepares the results
         self.results, self.results_path = self.prepare_results()
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue)
-        sowftware_loops = self._filter_hw_loops()
-        self._execute_recursive_loops(loops=sowftware_loops, queue=data_queue)
+        self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
+        self._post_process_results()
 
         if self.options.remote_save:
             self.remote_save_experiment()
 
         return self.results
 
-    def _filter_hw_loops(self):
-        """Returns all software loops"""
-        loops = self.options.loops.copy()
-        for loop in loops:
-            self._filter_hw_loop(loop)
-
-    def _filter_hw_loop(self, loop: Loop):
-        """Returns a loop without any hardware loop if there was any nested"""
-        if loop.loop.hw_loop:
-            loop.loop = None
-            return
-        self._filter_hw_loop(loop)
-
-
-    def _preprocess_hardware_loops(self):
-        """Preprocess all hardware loops from the experiment"""
-        for idx, loop in enumerate(self.options.loops):
-            self.options.loops[idx] = self._process_hardware_loop(loop)
-
-    def _process_hardware_loop(self, loop: Loop):
-        """Process a hardware loop. It sets the parameters needed for the hardware loop and retrieves the new array of loop.values"""
-        if loop.hw_loop:
-            element = self.platform.get_element(alias=loop.alias)
-            self.set_parameter(
-                element=element,
-                alias=loop.alias,
-                parameter=loop.parameter,
-                value=loop.values[0],
-                channel_id=loop.channel_id,
-            )
-            loop.values = self.get_hw_values(element, loop.parameter)
-            print(loop.values)
-            # Recursive checking for hw_loops until we reach the sw_loops, reason why hw_loops are the outer loops
-        if loop.loop is not None:
-            self._process_hardware_loop(loop.loop)
-
-        return loop
+    def _post_process_results(self):
+        """Post process results if needed"""
+        # Postprocess results of the class ``VNAResult``
+        if any(isinstance(result, VNAResult) for result in self.results.results):
+            vna_alias = [
+                instrument.alias for instrument in self.platform.instruments if instrument.category == Category.VNA
+            ]
+            element = self.platform.get_element(alias=vna_alias[0])
+            frequencies = self.get_hw_values(element, Parameter.FREQUENCY)
+            data = {"frequencies": frequencies}
+            with open(file=self.results_path, mode="a", encoding="utf-8") as results_file:
+                yaml.dump(data=data, stream=results_file, sort_keys=False)
 
     def get_hw_values(self, element: Instrument | Bus, parameter: Parameter):  # type: ignore
         """Get the values of a platform element's parameter"""
