@@ -96,12 +96,13 @@ class Experiment:
         # Postprocess results of the class ``VNAResult``
         if any(isinstance(result, VNAResult) for result in self.results.results):
             vna_alias = [
-                instrument.alias for instrument in self.platform.instruments if instrument.category == Category.VNA
+                instrument.alias for instrument in self.platform.instruments.elements if instrument.category == Category.VNA
             ]
             element = self.platform.get_element(alias=vna_alias[0])
             frequencies = self.get_hw_values(element, Parameter.FREQUENCY)
-            data = {"frequencies": frequencies}
-            with open(file=self.results_path, mode="a", encoding="utf-8") as results_file:
+            frequencies_str_format = [str(freq) for freq in frequencies]
+            data = {"frequencies": frequencies_str_format}
+            with open(file=self.results_path / RESULTS_FILENAME, mode="a", encoding="utf-8") as results_file:
                 yaml.dump(data=data, stream=results_file, sort_keys=False)
 
     def get_hw_values(self, element: Instrument | Bus, parameter: Parameter):  # type: ignore
