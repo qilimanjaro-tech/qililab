@@ -46,10 +46,12 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time
-            wait_of_next_pulse_event = 0
+            wait_of_next_pulse_event = {}
             for gate in circuit.queue:
                 if isinstance(gate, qibo_gates.Wait):
-                    wait_of_next_pulse_event = gate.parameters[0]
+                    wait_of_next_pulse_event[gate.qubits[0]] = (
+                        wait_of_next_pulse_event.get(gate.qubits[0], 0) + gate.parameters[0]
+                    )
                     continue
                 if isinstance(gate, M):
                     # handle measurement gates
@@ -60,9 +62,9 @@ class CircuitToPulses:
                             readout_gate=m_gate,
                             qubit_idx=qubit_idx,
                             chip=chip,
-                            wait_time=wait_of_next_pulse_event,
+                            wait_time=wait_of_next_pulse_event.get(qubit_idx, 0),
                         )
-                        wait_of_next_pulse_event = 0
+                        wait_of_next_pulse_event[qubit_idx] = 0
                         if readout_pulse_event is not None:
                             pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
                             with contextlib.suppress(ValueError):
@@ -91,7 +93,10 @@ class CircuitToPulses:
 
                     for parking_gate, _ in parking_gates_pads:
                         pulse_event, port = self._control_gate_to_pulse_event(
-                            time=time, control_gate=parking_gate, chip=chip, wait_time=wait_of_next_pulse_event
+                            time=time,
+                            control_gate=parking_gate,
+                            chip=chip,
+                            wait_time=wait_of_next_pulse_event.get(parking_gate.qubits[0], 0),
                         )
                         if pulse_event is not None:
                             pulse_schedule.add_event(pulse_event=pulse_event, port=port)
@@ -103,15 +108,15 @@ class CircuitToPulses:
                             time=time,
                             qubit_idx=gate.target_qubits[0],
                             pulse_time=pad_time,
-                            wait_time=wait_of_next_pulse_event,
+                            wait_time=wait_of_next_pulse_event.get(gate.qubits[0], 0),
                         )
-                        wait_of_next_pulse_event = 0
+                        wait_of_next_pulse_event[qubit_idx] = 0
 
                 # add control gates
                 pulse_event, port = self._control_gate_to_pulse_event(
-                    time=time, control_gate=gate, chip=chip, wait_time=wait_of_next_pulse_event
+                    time=time, control_gate=gate, chip=chip, wait_time=wait_of_next_pulse_event.get(gate.qubits[0], 0)
                 )
-                wait_of_next_pulse_event = 0
+                wait_of_next_pulse_event[gate.qubits[0]] = 0
                 # add pad time at the end of CZ to both target and control
                 # note that we dont need to do this for the control qubit at the beginning of the pulse
                 # since its time is already synced with the target qubit in _control_gate_to_pulse_event
