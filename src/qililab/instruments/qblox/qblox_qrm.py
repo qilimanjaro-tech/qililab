@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Sequence, cast
 
 from qpysequence import Sequence as QpySequence
-from qpysequence.program import Loop, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed
+from qpysequence.program import Loop, Program, Register
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
 from qpysequence.weights import Weights
 
 from qililab.config import logger
@@ -99,7 +99,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list[QpySequence]:
         """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -111,14 +113,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             list[QpySequence]: list of compiled assembly programs
         """
         # Clear cache if `nshots` or `repetition_duration` changes
-        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+        if nshots != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
             self.nshots = nshots
             self.repetition_duration = repetition_duration
+            self.num_bins = num_bins
             self.clear_cache()
 
         # Get all sequencers connected to port the schedule acts on
@@ -258,17 +262,32 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
 
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+    ):
         """Append an acquire instruction to the loop."""
         weighed_acq = self._get_sequencer_by_id(id=sequencer_id).weighed_acq_enabled
+
         acq_instruction = (
             AcquireWeighed(
-                acq_index=0, bin_index=bin_index, weight_index_0=0, weight_index_1=1, wait_time=self._MIN_WAIT_TIME
+                acq_index=0,
+                bin_index=bin_index,
+                weight_index_0=weight_regs[0],
+                weight_index_1=weight_regs[1],
+                wait_time=self._MIN_WAIT_TIME,
             )
             if weighed_acq
             else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
         )
         loop.append_component(acq_instruction)
+
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
+        move_0 = Move(0, registers[0])
+        move_1 = Move(1, registers[1])
+        setup_block = program.get_block(name="setup")
+        setup_block.append_components([move_0, move_1])
 
     def _generate_weights(self, sequencer: AWGQbloxADCSequencer) -> Weights:  # type: ignore
         """Generate acquisition weights.

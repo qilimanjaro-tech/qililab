@@ -379,14 +379,14 @@ class TestQbloxQRM:
 
     def test_compile(self, qrm, pulse_bus_schedule):
         """Test compile method."""
-        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
 
     def test_compile_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Test compile method with a multiplexed pulse bus schedule."""
-        sequences = qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 2
         for sequence in sequences:
@@ -396,7 +396,7 @@ class TestQbloxQRM:
 
     def test_cache_multiplexing(self, qrm, multiplexed_pulse_bus_schedule: PulseBusSchedule):
         """Checks the cache after compiling a multiplexed pulse bus schedule."""
-        qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        qrm.compile(multiplexed_pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         single_freq_schedules = multiplexed_pulse_bus_schedule.qubit_schedules()
         assert len(qrm._cache) == len(single_freq_schedules)
         for cache_schedule, expected_schedule in zip(qrm._cache.values(), single_freq_schedules):
@@ -404,9 +404,9 @@ class TestQbloxQRM:
 
     def test_acquisition_data_is_removed_when_calling_compile_twice(self, qrm, pulse_bus_schedule):
         """Test that the acquisition data of the QRM device is deleted when calling compile twice."""
-        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qrm.upload()
-        sequences2 = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        sequences2 = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         assert len(sequences) == 1
         assert len(sequences2) == 1
         assert sequences[0] is sequences2[0]
@@ -420,7 +420,7 @@ class TestQbloxQRM:
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
         pulse_bus_schedule.port = 1
-        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qrm.upload()
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
         qrm.device.sequencers[1].sequence.assert_not_called()
@@ -483,7 +483,7 @@ class TestQbloxQRM:
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
         pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=1)
-        sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms
         assert np.allclose(waveforms[0].data, 0)
@@ -494,7 +494,9 @@ class TestQbloxQRM:
 
     def test_qubit_to_sequencer_mapping(self, local_cfg_qrm: QbloxQRM, pulse_bus_schedule_odd_qubits):
         """Test that the pulses to odd qubits are mapped to odd sequencers."""
-        local_cfg_qrm.compile(pulse_bus_schedule=pulse_bus_schedule_odd_qubits, nshots=1, repetition_duration=5000)
+        local_cfg_qrm.compile(
+            pulse_bus_schedule=pulse_bus_schedule_odd_qubits, nshots=1, repetition_duration=5000, num_bins=1
+        )
         assert list(local_cfg_qrm.sequences.keys()) == [4, 2, 0]
 
     def test_getting_even_sequencers(self, settings_even_sequencers: dict):
