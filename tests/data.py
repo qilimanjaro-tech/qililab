@@ -55,10 +55,8 @@ class Galadriel:
         RUNCARD.ALIAS: None,
         RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
-        PLATFORM.DELAY_BETWEEN_PULSES: 40,
-        PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 100,
+        PLATFORM.DELAY_BETWEEN_PULSES: 0,
+        PLATFORM.DELAY_BEFORE_READOUT: 0,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -108,7 +106,7 @@ class Galadriel:
             0: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -122,7 +120,7 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -133,20 +131,31 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
                         "drag_coefficient": 0,
+                    },
+                },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
                     },
                 },
             ],
             1: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -160,7 +169,7 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -171,20 +180,31 @@ class Galadriel:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
                         "drag_coefficient": 0,
                     },
                 },
+                {
+                    RUNCARD.NAME: "Drag",
+                    "amplitude": 1,
+                    "phase": 0,
+                    "duration": 50,
+                    EXPERIMENT.SHAPE: {
+                        RUNCARD.NAME: "drag",
+                        "num_sigmas": 4,
+                        "drag_coefficient": 1.0,
+                    },
+                },
             ],
             (0, 1): [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -193,7 +213,7 @@ class Galadriel:
             (1, 0): [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -227,12 +247,27 @@ class Galadriel:
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
         RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
-        Parameter.NUM_SEQUENCERS.value: 1,
+        Parameter.NUM_SEQUENCERS.value: 2,
         AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
         AWGTypes.AWG_SEQUENCERS.value: [
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 0,
+                "output_i": 0,
+                "output_q": 1,
+                Parameter.NUM_BINS.value: 1,
+                Parameter.IF.value: 100_000_000,
+                Parameter.GAIN_I.value: 1,
+                Parameter.GAIN_Q.value: 1,
+                Parameter.GAIN_IMBALANCE.value: 0,
+                Parameter.PHASE_IMBALANCE.value: 0,
+                Parameter.OFFSET_I.value: 0,
+                Parameter.OFFSET_Q.value: 0,
+                Parameter.HARDWARE_MODULATION.value: False,
+            },
+            {
+                AWGSequencerTypes.IDENTIFIER.value: 1,
+                AWGSequencerTypes.CHIP_PORT_ID.value: 10,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -280,6 +315,7 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 0,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                "qubit": 0,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -308,6 +344,7 @@ class Galadriel:
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
                 AWGSequencerTypes.CHIP_PORT_ID.value: 1,
+                "qubit": 1,
                 "output_i": 0,
                 "output_q": 1,
                 Parameter.NUM_BINS.value: 1,
@@ -342,6 +379,7 @@ class Galadriel:
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.10",
@@ -371,6 +409,7 @@ class Galadriel:
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
         RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
         RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
+        Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.7",
@@ -473,7 +512,7 @@ class Galadriel:
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
                 RUNCARD.ID: 2,
-                RUNCARD.ALIAS: NodeName.PORT.value,
+                RUNCARD.ALIAS: NodeName.RESONATOR.value,
                 NODE.FREQUENCY: 7.34730e09,
                 NODE.NODES: [1, 11, 3],
             },
@@ -508,6 +547,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 0,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 1,
@@ -520,6 +560,7 @@ class Galadriel:
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 2,
@@ -529,9 +570,10 @@ class Galadriel:
                 RUNCARD.ID: 0,
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
-                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_0"],
+                RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 10,
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 
@@ -562,8 +604,8 @@ class Galadriel:
 
     resonator_0 = {
         RUNCARD.ID: 0,
-        RUNCARD.NAME: NodeName.PORT,
-        RUNCARD.CATEGORY: NodeName.PORT.value,
+        RUNCARD.NAME: NodeName.RESONATOR,
+        RUNCARD.CATEGORY: NodeName.RESONATOR.value,
         "qubits": [
             {
                 RUNCARD.ID: 0,
@@ -592,8 +634,6 @@ class FluxQubitSimulator:
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 10,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -633,7 +673,7 @@ class FluxQubitSimulator:
             0: [
                 {
                     RUNCARD.NAME: "M",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 2000,
                     EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
@@ -647,7 +687,7 @@ class FluxQubitSimulator:
                 },
                 {
                     RUNCARD.NAME: "X",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 0,
                     "duration": 50,
                     EXPERIMENT.SHAPE: {
@@ -658,9 +698,9 @@ class FluxQubitSimulator:
                 },
                 {
                     RUNCARD.NAME: "Y",
-                    "amplitude": PLATFORM.MASTER_AMPLITUDE_GATE,
+                    "amplitude": 1,
                     "phase": 1.5707963267948966,
-                    "duration": PLATFORM.MASTER_DURATION_GATE,
+                    "duration": 20,
                     EXPERIMENT.SHAPE: {
                         RUNCARD.NAME: "drag",
                         "num_sigmas": 4,
@@ -707,6 +747,7 @@ class FluxQubitSimulator:
                     "resolution": 1,
                     "store_states": False,
                 },
+                RUNCARD.DISTORTIONS: [],
                 NodeName.PORT.value: 0,
             }
         ],
@@ -936,8 +977,6 @@ class SauronVNA:
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
-        PLATFORM.MASTER_AMPLITUDE_GATE: 1,
-        PLATFORM.MASTER_DURATION_GATE: 100,
         PLATFORM.TIMINGS_CALCULATION_METHOD: "as_soon_as_possible",
         PLATFORM.RESET_METHOD: ResetMethod.PASSIVE.value,
         PLATFORM.PASSIVE_RESET_DURATION: 100,
@@ -1041,6 +1080,7 @@ class SauronVNA:
                 RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
             },
             NodeName.PORT.value: 1,
+            RUNCARD.DISTORTIONS: [],
         },
         {
             RUNCARD.ID: 1,
@@ -1053,6 +1093,7 @@ class SauronVNA:
                 RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
             },
             NodeName.PORT.value: 0,
+            RUNCARD.DISTORTIONS: [],
         },
     ]
 

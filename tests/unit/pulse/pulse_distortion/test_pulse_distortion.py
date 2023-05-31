@@ -6,9 +6,9 @@ import pytest
 
 from qililab.constants import RUNCARD
 from qililab.pulse import Pulse
-from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection
+from qililab.pulse.pulse_distortion import BiasTeeCorrection, ExponentialCorrection, LFilterCorrection
 from qililab.pulse.pulse_distortion.pulse_distortion import PulseDistortion
-from qililab.pulse.pulse_shape import Drag, Gaussian, Rectangular
+from qililab.pulse.pulse_shape import Cosine, Drag, Gaussian, Rectangular
 from qililab.typings.enums import PulseDistortionSettingsName
 from qililab.utils import Factory
 
@@ -23,7 +23,13 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [
+    Rectangular(),
+    Cosine(),
+    Cosine(lambda_2=0.3),
+    Gaussian(num_sigmas=4),
+    Drag(num_sigmas=4, drag_coefficient=1.0),
+]
 
 
 @pytest.fixture(
@@ -75,10 +81,10 @@ class TestPulseDistortion:
     def test_from_dict(self, pulse_distortion: PulseDistortion):
         """Test for the to_dict method."""
         dictionary = pulse_distortion.to_dict()
-        pulse_distortion2: PulseDistortion = Factory.get(name=pulse_distortion.name).from_dict(dictionary)
+        pulse_distortion2 = PulseDistortion.from_dict(dictionary)
 
         dictionary2 = pulse_distortion2.to_dict()
-        pulse_distortion3: PulseDistortion = Factory.get(name=pulse_distortion2.name).from_dict(dictionary2)
+        pulse_distortion3 = PulseDistortion.from_dict(dictionary2)
 
         assert isinstance(pulse_distortion2, Factory.get(name=pulse_distortion.name))
         assert isinstance(pulse_distortion3, Factory.get(name=pulse_distortion2.name))
@@ -106,4 +112,12 @@ class TestPulseDistortion:
                 PulseDistortionSettingsName.TAU_EXPONENTIAL.value: pulse_distortion.tau_exponential,
                 PulseDistortionSettingsName.AMP.value: pulse_distortion.amp,
                 PulseDistortionSettingsName.SAMPLING_RATE.value: pulse_distortion.sampling_rate,
+            }
+
+        if isinstance(pulse_distortion, LFilterCorrection):
+            assert dictionary == {
+                RUNCARD.NAME: pulse_distortion.name.value,
+                PulseDistortionSettingsName.NORM_FACTOR.value: pulse_distortion.norm_factor,
+                PulseDistortionSettingsName.A.value: pulse_distortion.a,
+                PulseDistortionSettingsName.B.value: pulse_distortion.b,
             }

@@ -56,8 +56,6 @@ class TestPlatformSettings:
         assert isinstance(settings.name, str)
         assert isinstance(settings.delay_between_pulses, int)
         assert isinstance(settings.delay_before_readout, int)
-        assert isinstance(settings.master_amplitude_gate, (int, float))
-        assert isinstance(settings.master_duration_gate, int)
         assert isinstance(settings.gates, dict)
         assert isinstance(settings.gates[0], list)
         assert isinstance(settings.gates[0][0], settings.GateSettings)
@@ -133,12 +131,6 @@ class TestPlatformSettings:
 
         settings.set_parameter(parameter=Parameter.DELAY_BETWEEN_PULSES, value=1234)
         assert settings.delay_between_pulses == 1234
-
-        settings.set_parameter(parameter=Parameter.MASTER_AMPLITUDE_GATE, value=1234)
-        assert settings.master_amplitude_gate == 1234
-
-        settings.set_parameter(parameter=Parameter.MASTER_DURATION_GATE, value=1234)
-        assert settings.master_duration_gate == 1234
 
     @pytest.mark.parametrize("alias", ["X(0)", "X(1)", "M(0)", "M(1)", "M(0,1)", "M(1,0)"])
     def test_set_gate_parameters(self, alias: str):

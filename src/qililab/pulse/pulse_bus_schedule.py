@@ -36,15 +36,6 @@ class PulseBusSchedule:
         self._pulses.add(pulse_event.pulse)
         insort(self.timeline, pulse_event)
 
-    def frequencies(self) -> list[float]:
-        """Frequencies of the pulses in the sequence.
-
-        Returns:
-            list[float]: List of the frequencies in ascending order.
-        """
-        frequencies_set = {pulse.frequency for pulse in self._pulses}
-        return sorted(frequencies_set)
-
     @property
     def end_time(self) -> int:
         """End of the PulseBusSchedule.
@@ -52,7 +43,7 @@ class PulseBusSchedule:
             int: End of the PulseBusSchedule."""
         end = 0
         for event in self.timeline:
-            pulse_end = event.start_time + event.pulse.duration
+            pulse_end = event.start_time + event.duration
             end = max(pulse_end, end)
         return end
 
@@ -84,11 +75,26 @@ class PulseBusSchedule:
             str: The set of Pulse objects."""
         return self._pulses
 
+    @property
+    def qubit(self):
+        """Qubit index addressed by this PulseBusSchedule.
+
+        Raises:
+            ValueError: If more than one qubit is addressed by this PulseBusSchedule.
+
+        Returns:
+            int: The qubit index addressed by this PulseBusSchedule.
+        """
+        qubits = {pulse_event.qubit for pulse_event in self.timeline}
+        if len(qubits) > 1:
+            raise ValueError("More than one qubit is addressed by this PulseBusSchedule.")
+        return qubits.pop()
+
     def __iter__(self):
         """Redirect __iter__ magic method."""
         return self.timeline.__iter__()
 
-    def waveforms(self, resolution: float = 1.0) -> Waveforms:
+    def waveforms(self, resolution: float = 1.0, modulation: bool = True) -> Waveforms:
         """PulseBusSchedule 'waveforms' property.
 
         Args:
@@ -104,23 +110,32 @@ class PulseBusSchedule:
             if wait_time > 0:
                 waveforms.add(imod=np.zeros(shape=wait_time), qmod=np.zeros(shape=wait_time))
             time += wait_time
-            pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
+            if modulation:
+                pulse_waveforms = pulse_event.modulated_waveforms(resolution=resolution)
+            else:
+                real_env = np.real(pulse_event.envelope(resolution=resolution))
+                imag_env = np.imag(pulse_event.envelope(resolution=resolution))
+                pulse_waveforms = Waveforms(i=real_env, q=imag_env)
             waveforms += pulse_waveforms
             time += pulse_event.duration
 
         return waveforms
 
-    def with_frequency(self, frequency: float) -> PulseBusSchedule:
-        """Filter PulseBusSchedule by frequency.
-
-        Args:
-            frequency (float): Frequency to filter the PulseBusSchedule.
+    def qubit_schedules(self) -> list[PulseBusSchedule]:
+        """This method separates all the PulseEvent objects that act on different qubits, and returns a list
+        of PulseBusSchedule objects, each one acting on a single qubit.
 
         Returns:
-            PulseBusSchedule: Filtered PulseBusSchedule.
+            list[PulseBusSchedule]: List of PulseBusSchedule objects, each one acting on a single qubit.
         """
-        filtered_timeline = [pulse_event for pulse_event in self.timeline if pulse_event.frequency == frequency]
-        return PulseBusSchedule(port=self.port, timeline=filtered_timeline)
+        schedules = []
+        qubits = {pulse_event.qubit for pulse_event in self.timeline}
+        for qubit in qubits:
+            schedule = PulseBusSchedule(
+                port=self.port, timeline=[pulse_event for pulse_event in self.timeline if pulse_event.qubit == qubit]
+            )
+            schedules.append(schedule)
+        return schedules
 
     def to_dict(self):
         """Return dictionary representation of the class.

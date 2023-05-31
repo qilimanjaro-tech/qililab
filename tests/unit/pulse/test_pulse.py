@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from qililab.constants import PULSE
-from qililab.pulse import Drag, Gaussian, Pulse, Rectangular
+from qililab.pulse import Cosine, Drag, Gaussian, Pulse, Rectangular
 
 # Parameters for the different Pulses
 AMPLITUDE = [0.9]
@@ -13,7 +13,13 @@ PHASE = [0, np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
-SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coefficient=1.0)]
+SHAPE = [
+    Rectangular(),
+    Cosine(),
+    Cosine(lambda_2=0.3),
+    Gaussian(num_sigmas=4),
+    Drag(num_sigmas=4, drag_coefficient=1.0),
+]
 
 
 @pytest.fixture(
@@ -25,20 +31,9 @@ SHAPE = [Rectangular(), Gaussian(num_sigmas=4), Drag(num_sigmas=4, drag_coeffici
         )
     ],
 )
-def fixture_pulses(request: pytest.FixtureRequest) -> Pulse:
+def fixture_pulse(request: pytest.FixtureRequest) -> Pulse:
     """Fixture for the pulse distortion class."""
     return request.param
-
-
-@pytest.fixture(name="pulse")
-def fixture_pulse() -> Pulse:
-    """Load Pulse.
-
-    Returns:
-        Pulse: Instance of the Pulse class.
-    """
-    pulse_shape = Gaussian(num_sigmas=4)
-    return Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
 
 
 class TestPulse:
@@ -46,22 +41,43 @@ class TestPulse:
 
     def test_envelope_method(self, pulse: Pulse):
         """Test envelope method"""
+        resolution = 0.1
+
         envelope = pulse.envelope()
-        envelope2 = pulse.envelope(resolution=0.1)
-        envelope3 = pulse.envelope(amplitude=2.0, resolution=0.1)
+        envelope2 = pulse.envelope(resolution=resolution)
+        envelope3 = pulse.envelope(amplitude=2.0, resolution=resolution)
 
         for env in [envelope, envelope2, envelope3]:
             assert env is not None
             assert isinstance(env, np.ndarray)
 
-        assert round(np.max(np.real(envelope)), 14) == pulse.amplitude
-        assert round(np.max(np.real(envelope2)), 14) == pulse.amplitude
-        assert round(np.max(np.real(envelope3)), 14) == 2.0
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+            # If lambda_2 > 0.0 the max amplitude is reduced
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) < pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) < pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) < 2.0
+            # If you check the form of this shape, the maximum never gets down 70% of the Amplitude for any lambda_2
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) > 0.7 * pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) > 0.7 * pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) > 0.7 * 2.0
+
+        else:
+            assert round(np.max(np.real(envelope)), 2 * int(np.sqrt(1 / 1.0))) == pulse.amplitude
+            assert round(np.max(np.real(envelope2)), int(np.sqrt(1 / resolution))) == pulse.amplitude
+            assert round(np.max(np.real(envelope3)), int(np.sqrt(1 / resolution))) == 2.0
 
         assert len(envelope) * 10 == len(envelope2) == len(envelope3)
 
         if isinstance(pulse.pulse_shape, Rectangular):
             assert np.max(envelope) == np.min(envelope)
+
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 > 0.0:
+            assert np.max(envelope) != envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
+
+        if isinstance(pulse.pulse_shape, Cosine) and pulse.pulse_shape.lambda_2 <= 0.0:
+            assert np.max(envelope) == envelope[len(envelope) // 2]
+            assert np.min(envelope) == envelope[0]
 
         if isinstance(pulse.pulse_shape, Gaussian):
             assert np.max(envelope) == envelope[len(envelope) // 2]

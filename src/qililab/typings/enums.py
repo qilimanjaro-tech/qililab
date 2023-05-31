@@ -127,6 +127,8 @@ class GateName(str, Enum):
         * RY
         * XY
         * Drag
+        * CZ
+        * Park
     """
 
     I = "I"  # noqa: E741
@@ -137,19 +139,8 @@ class GateName(str, Enum):
     XY = "XY"
     M = "M"
     Drag = "Drag"
-
-
-class MasterGateSettingsName(str, Enum):
-    """Master Gate Settings names.
-
-    Args:
-        enum (str): Available types of master gate settings names:
-        * master_amplitude_gate
-        * master_duration_gate
-    """
-
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
+    CZ = "CZ"
+    Park = "Park"
 
 
 class AcquisitionName(str, Enum):
@@ -187,6 +178,7 @@ class PulseDistortionName(str, Enum):
 
     BIAS_TEE_CORRECTION = "bias_tee"
     EXPONENTIAL_CORRECTION = "exponential"
+    LFILTER = "lfilter"
 
 
 class PulseDistortionSettingsName(str, Enum):
@@ -203,6 +195,9 @@ class PulseDistortionSettingsName(str, Enum):
     TAU_EXPONENTIAL = "tau_exponential"
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
+    NORM_FACTOR = "norm_factor"
+    A = "a"
+    B = "b"
 
 
 class PulseShapeName(str, Enum):
@@ -216,6 +211,8 @@ class PulseShapeName(str, Enum):
     GAUSSIAN = "gaussian"
     DRAG = "drag"
     RECTANGULAR = "rectangular"
+    SNZ = "snz"
+    COSINE = "cosine"
 
 
 class PulseShapeSettingsName(str, Enum):
@@ -225,10 +222,14 @@ class PulseShapeSettingsName(str, Enum):
         enum (str): Available types of pulse shape settings names:
         * num_sigmas
         * drag_coefficient
+        * b (amplitude of the first and last sampling points of t_phi in the SNZ pulse)
     """
 
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
+    B = "b"
+    T_PHI = "t_phi"
+    LAMBDA_2 = "lambda_2"
 
 
 class NodeName(str, Enum):
@@ -344,8 +345,6 @@ class Parameter(str, Enum):
     SOFTWARE_AVERAGE = "software_average"
     NUM_BINS = "num_bins"
     SEQUENCE_TIMEOUT = "sequence_timeout"
-    MASTER_AMPLITUDE_GATE = "master_amplitude_gate"
-    MASTER_DURATION_GATE = "master_duration_gate"
     EXTERNAL = "external"
     RESET = "reset"
     HARDWARE_MODULATION = "hardware_modulation"
