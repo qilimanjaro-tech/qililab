@@ -202,7 +202,7 @@ class TestQbloxQCM:
 
     def test_compile(self, qcm, pulse_bus_schedule):
         """Test compile method."""
-        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
@@ -215,7 +215,7 @@ class TestQbloxQCM:
 
     def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
-        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100)
+        qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qcm.upload()
         qcm.device.sequencer0.sequence.assert_called_once()
         qcm.device.sequencer0.sync_en.assert_called_once_with(True)
@@ -247,7 +247,7 @@ class TestQbloxQCM:
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
         pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0)], port=0)
-        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = new_qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms
         assert np.allclose(waveforms[0].data, 0)

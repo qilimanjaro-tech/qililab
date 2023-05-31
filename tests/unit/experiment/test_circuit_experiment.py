@@ -4,6 +4,7 @@ import time
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
@@ -216,8 +217,29 @@ class TestMethods:
     def test_draw_method(self, connected_experiment: CircuitExperiment):
         """Test draw method."""
         connected_experiment.build_execution()
-        figure = connected_experiment.draw()
-        assert isinstance(figure, Figure)
+
+        figures = [
+            connected_experiment.draw(),
+            connected_experiment.draw(
+                modulation=False,
+                linestyle="--",
+                resolution=1.3,
+            ),
+            connected_experiment.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle=".",
+                resolution=0.11,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, Figure)
+
+        plt.close()
 
     def test_draw_raises_error(self, experiment: CircuitExperiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""

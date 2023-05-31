@@ -20,7 +20,9 @@ class DummyQbloxModule(QbloxModule):
     def _generate_weights(self, sequencer: AWGQbloxSequencer):
         return Weights()
 
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register, sequencer_id: int):
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register, sequencer_id: int, weight_regs: tuple[Register, Register]
+    ):
         """Append an acquire instruction to the loop."""
 
 
@@ -55,12 +57,14 @@ class TestQbloxModule:
 
         pulse_bus_schedule = PulseBusSchedule(timeline=timeline, port=0)
 
-        sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1)
+        sequences = qblox_module.compile(pulse_bus_schedule, nshots=1, repetition_duration=1, num_bins=1)
         program = sequences[0]._program
 
         expected_gain = int(amplitude * AWG_MAX_GAIN)
-        expected_phase = int((phase % 360) * 1e9 / 360)
+        expected_phase = int((phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
 
-        assert program.blocks[1].components[1].args[0] == expected_gain
-        assert program.blocks[1].components[1].args[1] == expected_gain
-        assert program.blocks[1].components[2].args[0] == expected_phase
+        bin_loop = program.blocks[1].components[1]
+
+        assert bin_loop.components[1].args[0] == expected_gain
+        assert bin_loop.components[1].args[1] == expected_gain
+        assert bin_loop.components[2].args[0] == expected_phase

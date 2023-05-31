@@ -1,5 +1,6 @@
 """Tests for the Experiment class."""
 import copy
+import itertools
 import os
 from unittest.mock import MagicMock, patch
 

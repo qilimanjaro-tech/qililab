@@ -1,7 +1,9 @@
 """Tests for the ExecutionManager class."""
+import itertools
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,9 +14,7 @@ from qililab.constants import RESULTSDATAFRAME
 from qililab.execution import ExecutionManager
 from qililab.experiment import CircuitExperiment
 from qililab.instruments import AWG, QbloxQRM
-from qililab.result.qblox_results import QbloxResult
 from qililab.result.results import Results
-from qililab.system_control import ReadoutSystemControl
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -91,8 +91,28 @@ class TestExecutionManager:
 
     def test_draw_method(self, execution_manager: ExecutionManager):
         """Test draw method."""
-        for resolution in [0.01, 0.1, 1.0, 10.0]:
-            execution_manager.draw(resolution=resolution)
+        figures = [
+            execution_manager.draw(),
+            execution_manager.draw(
+                modulation=False,
+                linestyle=":",
+                resolution=0.8,
+            ),
+            execution_manager.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle="x",
+                resolution=10.1,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, plt.Figure)
+
+        plt.close()
 
 
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
@@ -301,7 +321,7 @@ class TestWorkflow:
 
     def test_compile(self, execution_manager: ExecutionManager):
         """Test the compile method of the ``ExecutionManager`` class."""
-        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000)
+        sequences = execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len(execution_manager.buses)
         for alias, sequences in sequences.items():
@@ -313,7 +333,7 @@ class TestWorkflow:
 
     def test_upload(self, mocked_execution_manager: ExecutionManager):
         """Test upload method."""
-        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000)
+        _ = mocked_execution_manager.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         mocked_execution_manager.upload()
 
         awgs = [bus.system_control.instruments[0] for bus in mocked_execution_manager.buses]

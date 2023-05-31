@@ -91,11 +91,15 @@ class TestMethods:
             AttributeError,
             match="The system control with alias test_alias doesn't have any AWG to compile the given pulse sequence",
         ):
-            system_control_without_awg.compile(PulseBusSchedule(port=0), nshots=1000, repetition_duration=1000)
+            system_control_without_awg.compile(
+                PulseBusSchedule(port=0), nshots=1000, repetition_duration=1000, num_bins=1
+            )
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test the ``compile`` method of the ``SystemControl`` class."""
-        sequences = system_control.compile(pulse_bus_schedule=pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        sequences = system_control.compile(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1
+        )
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
@@ -114,7 +118,7 @@ class TestMethods:
         awg = system_control.instruments[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
-        _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000)
+        _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         system_control.upload()
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
