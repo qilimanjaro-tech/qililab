@@ -6,6 +6,8 @@ from queue import Queue
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
+from qililab.chip import Node
+from qililab.instruments.instrument import Instrument
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
@@ -18,6 +20,7 @@ from qililab.settings import RuncardSchema
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
+from qililab.typings.enums import Parameter
 
 
 class CircuitExperiment(Experiment):
