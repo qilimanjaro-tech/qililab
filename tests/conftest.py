@@ -10,7 +10,8 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent, PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -34,7 +35,7 @@ def fixture_sauron_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
 
 
 @pytest.fixture(name="pulse_bus_schedule")
