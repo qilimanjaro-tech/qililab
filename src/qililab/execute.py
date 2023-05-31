@@ -43,7 +43,9 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     # create platform
     platform = ql.build_platform(name=runcard_name)
 
-    settings = ql.ExperimentSettings(hardware_average=1, repetition_duration=0, software_average=1, num_bins=nshots)
+    settings = ql.ExperimentSettings(
+        hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots
+    )
     options = ql.ExperimentOptions(settings=settings)
 
     # create experiment with options
