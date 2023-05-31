@@ -6,6 +6,7 @@ RUNCARDS = "RUNCARDS"  # variable containing the runcard's path
 
 RESULTS_FILENAME = "results.yml"
 EXPERIMENT_FILENAME = "experiment.yml"
+RAW_DATA_FILENAME = "raw_data.csv"
 
 DEFAULT_PLATFORM_NAME = "galadriel"
 GALADRIEL_DEVICE_ID = 9

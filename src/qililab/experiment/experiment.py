@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import __version__, logger
-from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
+from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RAW_DATA_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.components import Bus
 from qililab.platform.platform import Platform
@@ -96,7 +96,9 @@ class Experiment:
         # Postprocess results of the class ``VNAResult``
         if any(isinstance(result, VNAResult) for result in self.results.results):
             vna_alias = [
-                instrument.alias for instrument in self.platform.instruments.elements if instrument.category == Category.VNA
+                instrument.alias
+                for instrument in self.platform.instruments.elements
+                if instrument.category == Category.VNA
             ]
             element = self.platform.get_element(alias=vna_alias[0])
             frequencies = self.get_hw_values(element, Parameter.FREQUENCY)
@@ -141,12 +143,13 @@ class Experiment:
                         amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                         self._plot.send_points(value=amplitude[0])
                 if isinstance(result, VNAResult):
-                    i, q = result.acquisitions()
-                    with open(file=self.results_path / "raw_data.csv", mode="a", encoding="utf8") as data_file:
+                    i_points, q_points = result.acquisitions()
+                    with open(file=self.results_path / RAW_DATA_FILENAME, mode="a", encoding="utf8") as data_file:
                         writer = csv.writer(data_file)
-                        writer.writerow([i, q])
+                        for i, q in zip(i_points, q_points):
+                            writer.writerow([i, q])
                 else:
-                    with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                    with open(file=self.results_path / RESULTS_FILENAME, mode="a", encoding="utf8") as data_file:
                         result_dict = result.to_dict()
                         yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
 
@@ -390,6 +393,7 @@ class Experiment:
         # Create the folders & files needed to save the results locally
         results_path = self._path_to_results_folder()
         self._create_results_file(results_path)
+        self._create_raw_data_file(results_path)
 
         # Dump the experiment data into the created file
         with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
@@ -449,3 +453,13 @@ class Experiment:
         }
         with open(file=path / RESULTS_FILENAME, mode="w", encoding="utf-8") as results_file:
             yaml.dump(data=data, stream=results_file, sort_keys=False)
+
+    def _create_raw_data_file(self, path: Path):
+        """Create 'raw_data.csv' file that contains the raw data of the current experiment.
+
+        Args:
+            path (Path): Path to data folder.
+        """
+        with open(file=path / RAW_DATA_FILENAME, mode="w", encoding="utf8") as raw_data_file:
+            writer = csv.writer(raw_data_file)
+            writer.writerow(["i", "q"])
