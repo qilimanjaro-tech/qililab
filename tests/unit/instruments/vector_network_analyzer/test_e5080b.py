@@ -214,8 +214,19 @@ class TestE5080B:
 
     def test_initial_setup_method(self, e5080b: E5080B):
         """Test the initial setup method"""
+        e5080b.setup(Parameter.FREQUENCY_CENTER, 0.0)
+        e5080b.setup(Parameter.FREQUENCY_SPAN, 0.0)
         e5080b.initial_setup()
         e5080b.device.initial_setup.assert_called()
+
+    def test_initial_setup_method_raises_exception(self, e5080b: E5080B):
+        """Test the initial setup method raises exception if was not specified any of:
+        (center-span)
+        (start-stop)
+        """
+        with pytest.raises(ValueError):
+            e5080b.initial_setup()
+            e5080b.device.initial_setup.assert_called()
 
     def test_reset_method(self, e5080b: E5080B):
         """Test the reset method"""
