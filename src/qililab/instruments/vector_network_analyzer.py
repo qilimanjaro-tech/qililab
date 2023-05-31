@@ -357,6 +357,29 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         """Set initial instrument settings."""
         self.device.initial_setup()
 
+        self.setup(Parameter.POWER, self.power)
+        self.setup(Parameter.SCATTERING_PARAMETER, self.scattering_parameter)
+        self.setup(Parameter.AVERAGING_ENABLED, self.averaging_enabled)
+        self.setup(Parameter.NUMBER_AVERAGES, self.number_averages)
+        self.setup(Parameter.NUMBER_POINTS, self.number_points)
+        self.setup(Parameter.ELECTRICAL_DELAY, self.electrical_delay)
+
+        if self.if_bandwidth is not None:
+            self.setup(Parameter.IF_BANDWIDTH, self.if_bandwidth)
+
+        if self.frequency_span is not None and self.frequency_center is not None:
+            self.setup(Parameter.FREQUENCY_SPAN, self.frequency_span)
+            self.setup(Parameter.FREQUENCY_CENTER, self.frequency_center)
+
+        elif self.frequency_start is not None and self.frequency_stop is not None:
+            self.setup(Parameter.FREQUENCY_START, self.frequency_start)
+            self.setup(Parameter.FREQUENCY_STOP, self.frequency_stop)
+
+        else:
+            raise ValueError(
+                f"Make sure the runcard specifies ({Parameter.FREQUENCY_CENTER.value} & {Parameter.FREQUENCY_SPAN.value}) or ({Parameter.FREQUENCY_START.value} & {Parameter.FREQUENCY_STOP.value})"
+            )
+
     @Instrument.CheckDeviceInitialized
     def reset(self):
         """Reset instrument settings."""
