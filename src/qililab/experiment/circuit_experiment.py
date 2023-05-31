@@ -7,7 +7,7 @@ from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.instruments.instrument import Instrument
+from qililab.typings.enums import Instrument
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER

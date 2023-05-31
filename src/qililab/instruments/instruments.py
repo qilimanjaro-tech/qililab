@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import yaml
 
-from qililab.instruments.instrument import Instrument
+from qililab.instruments import Instrument
 
 
 @dataclass
