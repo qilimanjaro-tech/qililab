@@ -9,9 +9,7 @@ import numpy as np
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import (Play, ResetPh, SetAwgGain,
-                                              SetMrk, SetPh, Stop, UpdParam,
-                                              Wait)
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetMrk, SetPh, Stop, UpdParam, Wait
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -197,8 +195,12 @@ class QbloxModule(AWG):
         Returns:
             Program: Q1ASM program.
         """
+
         # Define program's blocks
         program = Program()
+        # Create registers with 0 and 1 (necessary for qblox)
+        weight_registers = Register(), Register()
+        self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
         avg_loop.append_component(bin_loop)
@@ -216,19 +218,18 @@ class QbloxModule(AWG):
             bin_loop.append_component(ResetPh())
             gain = int(np.abs(pulse_event.pulse.amplitude) * AWG_MAX_GAIN)  # np.abs() needed for negative pulses
             bin_loop.append_component(SetAwgGain(gain_0=gain, gain_1=gain))
-            phase = int((pulse_event.pulse.phase % (2*np.pi)) * 1e9 / (2*np.pi))
+            phase = int((pulse_event.pulse.phase % (2 * np.pi)) * 1e9 / (2 * np.pi))
             bin_loop.append_component(SetPh(phase=phase))
             # avg_loop.append_component(SetMrk(marker_outputs=15))
             bin_loop.append_component(
-                Play(
-                    waveform_0=waveform_pair.waveform_i.index,
-                    waveform_1=waveform_pair.waveform_q.index,
-                )
+                Play(waveform_0=waveform_pair.waveform_i.index, waveform_1=waveform_pair.waveform_q.index)
             )
             bin_loop.append_component(long_wait(int(wait_time - 4)))
             # avg_loop.append_component(SetMrk(marker_outputs=0))
             # avg_loop.append_component(UpdParam(wait_time=4))
-        self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer)
+        self._append_acquire_instruction(
+            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=sequencer, weight_regs=weight_registers
+        )
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -236,6 +237,10 @@ class QbloxModule(AWG):
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
         return program
+
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
 
     def _generate_acquisitions(self) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
@@ -258,7 +263,9 @@ class QbloxModule(AWG):
         """
 
     @abstractmethod
-    def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+    ):
         """Append an acquire instruction to the loop."""
 
     def start_sequencer(self):

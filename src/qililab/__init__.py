@@ -17,6 +17,7 @@ from .circuit import (
     X,
 )
 from .config import __version__, logger
+from .execute import execute
 from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .result.results import Results
