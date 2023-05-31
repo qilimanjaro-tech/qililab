@@ -1,13 +1,13 @@
 """Tests for the Experiment class."""
+import itertools
 import os
 import time
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
-from qibo.gates import M
 from qibo.models.circuit import Circuit
 from qpysequence import Sequence
 
@@ -22,7 +22,6 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from qililab.utils.live_plot import LivePlot
 from tests.data import FluxQubitSimulator, Galadriel, experiment_params, simulated_experiment_circuit
 from tests.utils import mock_instruments, platform_db
 
@@ -216,19 +215,19 @@ class TestMethods:
     def test_compile(self, experiment: Experiment):
         """Test the compile method of the ``Execution`` class."""
         experiment.build_execution()
-        sequences = experiment.compile()
-        assert isinstance(sequences, list)
-        assert len(sequences) == len(experiment.circuits)
-        sequence = sequences[0]
+        pulse_schedules = experiment.compile()
+        assert isinstance(pulse_schedules, list)
+        assert len(pulse_schedules) == len(experiment.circuits)
+        pulse_schedule = pulse_schedules[0]
         buses = experiment.execution_manager.buses
-        assert len(sequence) == len(buses)
-        for alias, bus_sequences in sequence.items():
+        assert len(pulse_schedule) == len(buses)
+        for alias, bus_schedule in pulse_schedule.items():
             assert alias in {bus.alias for bus in buses}
-            assert isinstance(bus_sequences, list)
-            assert len(bus_sequences) == 1
-            assert isinstance(bus_sequences[0], Sequence)
+            assert isinstance(bus_schedule, list)
+            assert len(bus_schedule) == 1
+            assert isinstance(bus_schedule[0], Sequence)
             assert (
-                bus_sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+                bus_schedule[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
             )  # additional 4ns for the initial wait_sync
 
     def test_compile_raises_error(self, experiment: Experiment):
@@ -329,8 +328,29 @@ class TestMethods:
     def test_draw_method(self, connected_experiment: Experiment):
         """Test draw method."""
         connected_experiment.build_execution()
-        figure = connected_experiment.draw()
-        assert isinstance(figure, Figure)
+
+        figures = [
+            connected_experiment.draw(),
+            connected_experiment.draw(
+                modulation=False,
+                linestyle="--",
+                resolution=1.3,
+            ),
+            connected_experiment.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle=".",
+                resolution=0.11,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, Figure)
+
+        plt.close()
 
     def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""

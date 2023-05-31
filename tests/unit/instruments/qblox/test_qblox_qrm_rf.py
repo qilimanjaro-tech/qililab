@@ -28,6 +28,7 @@ def fixture_settings():
             {
                 "identifier": 0,
                 "chip_port_id": 1,
+                "qubit": 0,
                 "output_i": 1,
                 "output_q": 0,
                 "weights_i": [1, 1, 1, 1],

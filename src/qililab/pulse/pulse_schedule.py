@@ -28,6 +28,18 @@ class PulseSchedule:
                 return
         self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
 
+    def create_schedule(self, port: int):
+        """Creates an empty `PulseBusSchedule` that targets the given port.
+
+        If the schedule already exists, nothing is done.
+
+        Args:
+            port (int): Target port of the schedule to create.
+        """
+        ports = {schedule.port for schedule in self.elements}
+        if port not in ports:
+            self.elements.append(PulseBusSchedule(port=port))
+
     def to_dict(self):
         """Return dictionary representation of the class.
 

@@ -13,7 +13,7 @@ from qililab.platform import Platform
 def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: MagicMock):
     """Mock dynamically created attributes."""
     mock_rs_instance = mock_rs.return_value
-    mock_rs_instance.mock_add_spec(["power", "frequency"])
+    mock_rs_instance.mock_add_spec(["power", "frequency", "ref_osc_source"])
     mock_pulsar_instance = mock_pulsar.return_value
     mock_pulsar_instance.get_acquisitions.side_effect = lambda sequencer: copy.deepcopy(
         {

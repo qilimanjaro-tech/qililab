@@ -61,11 +61,7 @@ class CircuitTranspiler:
                 # Calculate [start-end] time of operation
                 if isinstance(operation_node.operation, TranslatableToPulseOperation):
                     operation_settings = self.settings.get_operation_settings(operation_node.operation.name.value)
-                    pulse_duration = (
-                        operation_settings.pulse.duration
-                        if isinstance(operation_settings.pulse.duration, int)
-                        else operation_settings.pulse.duration.value
-                    )
+                    pulse_duration = operation_settings.pulse.duration
                     delay = (
                         self.settings.delay_before_readout
                         if isinstance(operation_node.operation, Measure)

@@ -33,6 +33,6 @@ class TestReadoutSystemControl:
         Args:
             system_control (_type_): _description_
         """
-        name = system_control.name
+        name = system_control.name.value
         with pytest.raises(ValueError, match=f"The system control {name} doesn't have an AWG instrument."):
             system_control.acquisition_delay_time  # pylint: disable=pointless-statement

@@ -20,6 +20,7 @@ class PulseEvent:
     pulse: Pulse | PulseOperation
     start_time: int
     pulse_distortions: list[PulseDistortion] = field(default_factory=list)
+    qubit: int | None = None
 
     @property
     def duration(self) -> int:
@@ -36,6 +37,11 @@ class PulseEvent:
         """Frequency of the pulse in Hz."""
         return self.pulse.frequency
 
+    @property
+    def phase(self) -> float:
+        """Phase of the pulse."""
+        return self.pulse.phase
+
     def modulated_waveforms(self, resolution: float = 1.0) -> Waveforms:
         """Applies digital quadrature amplitude modulation (QAM) to the envelope.
 
@@ -51,8 +57,8 @@ class PulseEvent:
         q = np.imag(envelope)
 
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.pulse.phase + 2 * np.pi * self.pulse.frequency * self.start_time * 1e-9
-        imod, qmod = modulate(i=i, q=q, frequency=self.pulse.frequency, phase_offset=phase_offset)
+        phase_offset = self.phase + 2 * np.pi * self.frequency * self.start_time * 1e-9
+        imod, qmod = modulate(i=i, q=q, frequency=self.frequency, phase_offset=phase_offset)
 
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
 
@@ -92,7 +98,7 @@ class PulseEvent:
         start_time = dictionary[PULSEEVENT.START_TIME]
         pulse_distortions = (
             [
-                Factory.get(name=pulse_distortion_dict[RUNCARD.NAME]).from_dict(pulse_distortion_dict)
+                PulseDistortion.from_dict(pulse_distortion_dict)
                 for pulse_distortion_dict in dictionary[PULSEEVENT.PULSE_DISTORTIONS]
             ]
             if PULSEEVENT.PULSE_DISTORTIONS in dictionary
@@ -101,7 +107,7 @@ class PulseEvent:
 
         return PulseEvent(pulse=pulse, start_time=start_time, pulse_distortions=pulse_distortions)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Return dictionary of pulse.
 
         Returns:
@@ -112,9 +118,10 @@ class PulseEvent:
             PULSEEVENT.PULSE_OPERATION: self.pulse.to_dict() if isinstance(self.pulse, PulseOperation) else {},
             PULSEEVENT.START_TIME: self.start_time,
             PULSEEVENT.PULSE_DISTORTIONS: [distortion.to_dict() for distortion in self.pulse_distortions],
+            "qubit": self.qubit,
         }
 
-    def __lt__(self, other: "PulseEvent"):
+    def __lt__(self, other: "PulseEvent") -> bool:
         """Returns True if and only if self.start_time is less than other.start_time
 
         Args:

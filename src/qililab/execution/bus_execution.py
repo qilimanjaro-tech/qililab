@@ -16,19 +16,23 @@ class BusExecution:
     bus: Bus
     pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
+    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
         """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins.
 
         Returns:
             list: list of compiled assembly programs
         """
         return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=self.pulse_schedule[idx],
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
         )
 
     def upload(self):
@@ -80,7 +84,7 @@ class BusExecution:
             time += self.system_control.acquisition_delay_time
         return time
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
+    def waveforms(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
@@ -93,7 +97,7 @@ class BusExecution:
         num_sequences = len(self.pulse_schedule)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(resolution=resolution)
+        return self.pulse_schedule[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
     def port(self):
