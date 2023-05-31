@@ -277,6 +277,7 @@ class InstrumentName(str, Enum):
         * qblox_S4g
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa_gs200
     """
 
     QBLOX_QCM = "QCM"
@@ -289,6 +290,7 @@ class InstrumentName(str, Enum):
     QBLOX_S4G = "S4g"
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
+    YOKOGAWA_GS200 = "yokogawa_gs200"
     QCMRF = "QCM-RF"
 
 
@@ -304,6 +306,7 @@ class InstrumentControllerName(str, Enum):
         * keithley_2600
         * keysight_e5080b
         * agilent_e5071B
+        * yokogawa
     """
 
     QBLOX_PULSAR = "qblox_pulsar"
@@ -314,6 +317,7 @@ class InstrumentControllerName(str, Enum):
     QBLOX_SPIRACK = "qblox_spi_rack"
     KEYSIGHT_E5080B = "keysight_e5080b_controller"
     AGILENT_E5071B = "agilent_e5071B_controller"
+    YOKOGAWA = "yokogawa"
 
 
 class SystemControlName(str, Enum):
@@ -406,6 +410,8 @@ class Parameter(str, Enum):
     ELECTRICAL_DELAY = "electrical_delay"
     TIMEOUT = "timeout"
     NUM_FLIPS = "num_flips"
+    SOURCE_MODE = "source_mode"
+    OUTPUT_STATUS = "output_status"
     INTEGRATION_WEIGHT_I_1 = "integration_weight_I_1"
     INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
     INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
@@ -482,6 +488,7 @@ class InstrumentTypeName(str, Enum):
         * Keithley2600
         * QbloxD5a
         * QbloxS4g
+        * YokogawaGS200
     """
 
     QBLOX_QCM = "QbloxQCM"
@@ -491,6 +498,7 @@ class InstrumentTypeName(str, Enum):
     KEITHLEY2600 = "Keithley2600"
     QBLOX_D5A = "QbloxD5a"
     QBLOX_S4G = "QbloxS4g"
+    YOKOGAWA_GS200 = "YokogawaGS200"
 
 
 class LivePlotTypes(str, Enum):
@@ -607,3 +615,16 @@ class OperationTimingsCalculationMethod(str, Enum):
 class ResetMethod(str, Enum):
     PASSIVE = "passive"
     ACTIVE = "active"
+
+
+class YokogawaSourceModes(str, Enum):
+    """Yokogawa gs200 Source Modes
+
+    Args:
+        enum (str): Available types of source modes:
+        * current
+        * voltage
+    """
+
+    CURR = "current"
+    VOLT = "voltage"

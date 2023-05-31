@@ -244,6 +244,9 @@ This document contains the changes of the current release.
 
   [#360](https://github.com/qilimanjaro-tech/qililab/pull/360)
 
+- Added `Yokogawa` driver to qililab.
+  [#238](https://github.com/qilimanjaro-tech/qililab/pull/238)
+
 ### Improvements
 
 - The `get_bus_by_qubit_index` method of `Platform` class now returns a tuple of three buses: `flux_bus, control_bux, readout_bus`.
