@@ -23,6 +23,7 @@ class Cosine(PulseShape):
             and ends at height 0 (phase=2pi). Shaped like: _/v\_
 
     Total would be a sum of lambda_1 x _/\_ + lambda_2 _/v\_, giving a modified sinusoidal-gaussian.
+    Check the following graph from Wolframalpha, where y is the lambda_2 parameter: [https://imgur.com/a/tjatZsg]
 
     For more info check:
     - Supplemental material B. "Flux pulse parametrization" at [https://arxiv.org/abs/1903.02492],

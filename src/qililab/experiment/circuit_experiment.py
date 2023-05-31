@@ -103,7 +103,10 @@ class CircuitExperiment(Experiment):
 
         if loops is None or len(loops) == 0:
             self.execution_manager.compile(
-                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+                idx=idx,
+                nshots=self.hardware_average,
+                repetition_duration=self.repetition_duration,
+                num_bins=self.num_bins,
             )
             self.execution_manager.upload()
             result = self.execution_manager.run(queue)
@@ -214,3 +217,38 @@ class CircuitExperiment(Experiment):
         exp_str = super().__str__()
         exp_str = f"{exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
         return exp_str
+
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        alias: str,
+        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        channel_id: int | None = None,
+    ):
+        """Set parameter of a platform element.
+
+        Args:
+            parameter (Parameter): name of the parameter to change
+            value (float): new value
+            alias (str): alias of the element that contains the given parameter
+            channel_id (int | None): channel id
+        """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = list(sum(circuit.get_parameters(), ()))
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self.build_execution()
+            return
+
+        if element is None:
+            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
+        elif isinstance(element, RuncardSchema.PlatformSettings):
+            element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.build_execution()
+        elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
+            element.set_parameter(parameter=parameter, value=value)
+            self.build_execution()
+        else:
+            element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore

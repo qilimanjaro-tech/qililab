@@ -111,6 +111,15 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
                     "shape": {"name": "snz", "b": 0.0, "t_phi": 1},
                 },
             ],
+            (0, 2): [
+                {
+                    "name": "CZ",
+                    "amplitude": 1,
+                    "phase": None,
+                    "duration": 40,
+                    "shape": {"name": "rectangular"},
+                },
+            ],
         },
     }
     return RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg

@@ -1,8 +1,10 @@
 """Tests for the Experiment class."""
 import copy
+import itertools
 import os
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 

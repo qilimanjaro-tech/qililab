@@ -25,7 +25,7 @@ class RX(HardwareGate):
         qubit = gate.target_qubits[0]
         x_params = X.settings[qubit]
         (theta,) = gate.parameters
-        theta = cls.normalize_angle(angle=theta)
+        theta = cls.normalize_angle(angle=theta)  # normalize is setting theta to [-pi,pi]
         amplitude = (np.abs(theta) / np.pi) * x_params.amplitude
         phase = x_params.phase if theta >= 0 else x_params.phase + np.pi
         return cls.HardwareGateSettings(

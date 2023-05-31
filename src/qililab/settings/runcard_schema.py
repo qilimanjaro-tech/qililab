@@ -113,7 +113,12 @@ class RuncardSchema:
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
             self.gates = (
-                {qubit: [self.GateSettings(**gate) for gate in gate_list] for qubit, gate_list in self.gates.items()}
+                {
+                    qubit
+                    if isinstance(qubit, int)
+                    else ast.literal_eval(qubit): [self.GateSettings(**gate) for gate in gate_list]
+                    for qubit, gate_list in self.gates.items()
+                }
                 if self.gates is not None
                 else None
             )

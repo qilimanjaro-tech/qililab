@@ -120,7 +120,7 @@ class Experiment:
         Args:
             queue (Queue): Queue used to store the experiment results.
         """
-        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * 1e-9)
+        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * self.num_bins * 1e-9)
 
         def _threaded_function():
             """Asynchronous thread."""
@@ -365,6 +365,14 @@ class Experiment:
         return self.options.settings.hardware_average
 
     @property
+    def num_bins(self):
+        """Experiment `num_bins` property.
+        Returns
+            int: settings.num_bins.
+        """
+        return self.options.settings.num_bins
+
+    @property
     def repetition_duration(self):
         """Experiment 'repetition_duration' property.
         Returns:
@@ -397,7 +405,7 @@ class Experiment:
 
         # Dump the experiment data into the created file
         with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+            yaml.dump(data={}, stream=experiment_file, sort_keys=False)
 
         return results, results_path
 

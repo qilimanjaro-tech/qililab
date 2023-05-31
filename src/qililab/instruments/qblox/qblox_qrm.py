@@ -99,7 +99,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 else:
                     raise ValueError("The scope can only be stored in one sequencer at a time.")
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list[QpySequence]:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list[QpySequence]:
         """Deletes the old acquisition data and compiles the ``PulseBusSchedule`` into an assembly program.
 
         This method skips compilation if the pulse schedule is in the cache. Otherwise, the pulse schedule is
@@ -111,14 +113,16 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             list[QpySequence]: list of compiled assembly programs
         """
         # Clear cache if `nshots` or `repetition_duration` changes
-        if nshots != self.nshots or repetition_duration != self.repetition_duration:
+        if nshots != self.nshots or repetition_duration != self.repetition_duration or num_bins != self.num_bins:
             self.nshots = nshots
             self.repetition_duration = repetition_duration
+            self.num_bins = num_bins
             self.clear_cache()
 
         # Get all sequencers connected to port the schedule acts on
@@ -257,6 +261,21 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 integration_lengths.append(sequencer.used_integration_length)
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    def upload(self):
+        """Upload all the previously compiled programs to its corresponding sequencers.
+
+        This method must be called after the method ``compile``."""
+        if self.nshots is None or self.repetition_duration is None:
+            raise ValueError("Please compile the circuit before uploading it to the device.")
+        for seq_idx in range(self.num_sequencers):
+            if seq_idx in self.sequences:
+                sequence, uploaded = self.sequences[seq_idx]
+                self.device.sequencers[seq_idx].sync_en(True)
+                if not uploaded:
+                    logger.info("Sequence program: \n %s", repr(sequence._program))  # pylint: disable=protected-access
+                    self.device.sequencers[seq_idx].sequence(sequence.todict())
+                    self.sequences[seq_idx] = (sequence, True)
 
     def _append_acquire_instruction(self, loop: Loop, bin_index: Register | int, sequencer_id: int):
         """Append an acquire instruction to the loop."""

@@ -290,17 +290,6 @@ This document contains the changes of the current release.
 
 ### Deprecations / Removals
 
-- Remove the `awg_iq_channels` from the `AWG` class. This mapping was already done within each sequencer.
-  [#323](https://github.com/qilimanjaro-tech/qililab/pull/323)
-
-- Remove the `get_port` method from the `Chip` class.
-  [#362](https://github.com/qilimanjaro-tech/qililab/pull/362)
-
 ### Documentation
 
 ### Bug fixes
-
-- Add `_set_markers` method to the `QbloxModule` class and enable all markers. For the RF modules, this command
-  enables the outputs/inputs of the instrument. We decided to enable all markers by default to be able to use them
-  later if needed.
-  [#361](https://github.com/qilimanjaro-tech/qililab/pull/361)
