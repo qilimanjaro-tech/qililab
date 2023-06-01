@@ -46,7 +46,7 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time
-            wait_of_next_pulse_event = {}
+            wait_of_next_pulse_event = {}  # type: ignore
             for gate in circuit.queue:
                 if isinstance(gate, qibo_gates.Wait):
                     wait_of_next_pulse_event[gate.qubits[0]] = (
@@ -396,7 +396,7 @@ class CircuitToPulses:
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = wait_time + time[qubit_idx]
-        residue = pulse_time % self.platform.settings.minimum_clock_time
+        residue = (pulse_time + wait_time) % self.platform.settings.minimum_clock_time
         if residue != 0:
             pulse_time += self.platform.settings.minimum_clock_time - residue
         time[qubit_idx] += wait_time + pulse_time
