@@ -2,6 +2,7 @@
 Class to interface with the voltage source Qblox S4g
 """
 from dataclasses import dataclass
+import numpy as np
 
 from qililab.instruments.current_source import CurrentSource
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -42,10 +43,10 @@ class GS200(CurrentSource):
             value (float | str | bool): new value
             channel_id (int | None): channel identifier of the parameter to update
         """
-        if isinstance(value, str):
+        if isinstance(value, (str, np.character)):
             self._set_parameter_str(parameter=parameter, value=value)
             return
-        if isinstance(value, float):
+        if isinstance(value, (float, np.floating)):
             self._set_parameter_float(parameter=parameter, value=value)
             return
 
@@ -152,3 +153,7 @@ class GS200(CurrentSource):
             self.device.ramp_current(ramp_to, abs(step), delay)
             return
         raise ValueError("Ramping is not enabled, check runcard specifications")
+
+    def run(self):
+        """Run method"""
+        pass

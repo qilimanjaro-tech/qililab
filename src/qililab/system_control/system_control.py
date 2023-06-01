@@ -8,6 +8,7 @@ from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer as VNA
+from qililab.instruments.yokogawa.gs200 import GS200 as Yoko
 from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
 from qililab.settings import DDBBElement
@@ -77,7 +78,7 @@ class SystemControl(BusElement, ABC):
     def run(self) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
-            if isinstance(instrument, (AWG, VNA)):
+            if isinstance(instrument, (AWG, VNA, Yoko)):
                 instrument.run()  # type: ignore
                 return
 
