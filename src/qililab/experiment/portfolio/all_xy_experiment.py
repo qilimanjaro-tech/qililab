@@ -7,6 +7,7 @@ from qibo.gates import M
 from qibo.models import Circuit
 
 import qililab as ql
+from qililab import Drag
 from qililab.experiment.portfolio import Cos, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings
@@ -26,11 +27,11 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
     ):
         self.qubit = qubit
         self.gates = {
-            "I": ql.Drag(q=self.qubit, theta=np.pi, phase=0),
-            "Xp": ql.Drag(q=self.qubit, theta=np.pi, phase=0),
-            "Yp": ql.Drag(q=self.qubit, theta=np.pi, phase=np.pi/2),
-            "X9": ql.Drag(q=self.qubit, theta=np.pi/2, phase=0),
-            "Y9": ql.Drag(q=self.qubit, theta=np.pi/2, phase=np.pi/2),
+            "I": Drag(q=self.qubit, theta=np.pi, phase=0),
+            "Xp": Drag(q=self.qubit, theta=np.pi, phase=0),
+            "Yp": Drag(q=self.qubit, theta=np.pi, phase=np.pi/2),
+            "X9": Drag(q=self.qubit, theta=np.pi/2, phase=0),
+            "Y9": Drag(q=self.qubit, theta=np.pi/2, phase=np.pi/2),
             "Wait": Wait(self.qubit, t=measurement_buffer),
             "M": M(self.qubit)
         }
