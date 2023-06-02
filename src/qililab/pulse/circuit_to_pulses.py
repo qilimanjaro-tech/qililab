@@ -110,7 +110,7 @@ class CircuitToPulses:
                             pulse_time=pad_time,
                             wait_time=wait_of_next_pulse_event.get(gate.qubits[0], 0),
                         )
-                        wait_of_next_pulse_event[qubit_idx] = 0
+                        wait_of_next_pulse_event[gate.qubits[0]] = 0
 
                 # add control gates
                 pulse_event, port = self._control_gate_to_pulse_event(
