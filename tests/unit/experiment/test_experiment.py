@@ -421,6 +421,11 @@ class TestSetParameter:
         experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
+    def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: Experiment):
+        """Test the ``set_parameter`` method with a parameter of a gate in circuit."""
+        experiment.set_parameter(alias="0", parameter=Parameter.GATE_PARAMETER, value=123)
+        assert experiment.circuits[0].get_parameters()[0][0] == 123
+
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
 def fixture_experiment_reset(request: pytest.FixtureRequest):
