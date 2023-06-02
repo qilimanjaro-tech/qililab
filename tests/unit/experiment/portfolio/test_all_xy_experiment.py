@@ -5,8 +5,6 @@ import numpy as np
 import pytest
 from qibo.gates import M
 import qililab as ql
-from qililab import build_platform
-from qililab import Drag
 from qililab.utils import Wait
 from qililab.experiment import AllXYExperiment
 from qililab.system_control import ReadoutSystemControl
@@ -28,7 +26,7 @@ def fixture_all_xy():
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+            platform = ql.build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = AllXYExperiment(platform=platform, qubit=0, if_values=if_values)
@@ -62,7 +60,7 @@ class TestAllXY:
 
         for circuit in all_xy_experiment.circuits:
             for gate in circuit:
-                assert isinstance(gate, (Drag, M, Wait))
+                assert isinstance(gate, (ql.Drag, M, Wait))
                 assert gate.qubits == (0,)
         
         # Test the bus attributes
