@@ -1,12 +1,12 @@
 """Chip class."""
 from dataclasses import asdict, dataclass
-from typing import List
 
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
 from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings import Category
+from qililab.typings.enums import Line
 from qililab.utils import Factory, dict_factory
 
 
@@ -14,7 +14,7 @@ from qililab.utils import Factory, dict_factory
 class Chip(DDBBElement):
     """Chip representation as a graph."""
 
-    nodes: List[Node]
+    nodes: list[Node]
 
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
@@ -38,14 +38,14 @@ class Chip(DDBBElement):
                 return node
         raise ValueError(f"Could not find qubit with idx {idx}.")
 
-    def _get_adjacent_nodes(self, node: Node) -> List[Node]:
+    def _get_adjacent_nodes(self, node: Node) -> list[Node]:
         """Get adjacent nodes from given node.
 
         Args:
             node (Node): Node object.
 
         Returns:
-            List[Node]: List containing all adjacent nodes.
+            list[Node]: List containing all adjacent nodes.
         """
         return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
@@ -72,32 +72,37 @@ class Chip(DDBBElement):
                 return node
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
 
-    def get_port(self, node: Node) -> int:
-        """Find node's port (if exists).
+    def get_port_from_qubit_idx(self, idx: int, line: Line) -> int:
+        """Find Qubit's port for specific line type
 
         Args:
-            node (Node): Node class.
+            idx (int): Qubit index.
+            line (Line): The type of line
 
         Raises:
-            ValueError: If no node is found.
+            ValueError: If qubit isn't connected to this type of line
 
         Returns:
-            int: port index
+            int: The port index
         """
-        adj_nodes = self._get_adjacent_nodes(node)
-        for adj_node in adj_nodes:
-            if isinstance(adj_node, Port):
-                return adj_node.id_
-        raise ValueError(f"Node with id {node.id_} is not connected to a port.")
+        readout = True if line in [Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT] else False
+        node = self.get_node_from_qubit_idx(idx=idx, readout=readout)
+        adjacent_nodes = self._get_adjacent_nodes(node=node)
 
-    def get_port_nodes(self, port_id: int) -> List[Qubit | Resonator | Coupler | Coil]:
+        for adjacent_node in adjacent_nodes:
+            if isinstance(adjacent_node, Port) and adjacent_node.line == line:
+                return adjacent_node.id_
+
+        raise ValueError(f"Qubit with index {idx} doesn't have a {line} line.")
+
+    def get_port_nodes(self, port_id: int) -> list[Qubit | Resonator | Coupler | Coil]:
         """Get nodes connected to a given port.
 
         Args:
             port (Port): Port class.
 
         Returns:
-            List[Node]: List of nodes connected to the given port.
+            list[Node]: List of nodes connected to the given port.
         """
         port = self.get_node_from_id(node_id=port_id)
         return self._get_adjacent_nodes(node=port)  # type: ignore
@@ -183,7 +188,7 @@ class Chip(DDBBElement):
         for node in self.nodes:
             if isinstance(node, Port):
                 adj_nodes = self._get_adjacent_nodes(node=node)
-                string += f" * Port {node.id_}: ----"
+                string += f" * Port {node.id_} ({node.line.value}): ----"
                 for adj_node in adj_nodes:
                     string += f"|{adj_node}|--"
                 string += "--\n"

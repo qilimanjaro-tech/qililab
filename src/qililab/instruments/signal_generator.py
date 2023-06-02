@@ -1,7 +1,6 @@
 """SignalGenerator class."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from qililab.constants import SIGNALGENERATOR
 from qililab.instruments.instrument import Instrument
 
 

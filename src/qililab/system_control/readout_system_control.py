@@ -1,6 +1,4 @@
 """ReadoutSystemControl class."""
-from typing import List
-
 from qililab.instruments import AWGAnalogDigitalConverter
 from qililab.result import Result
 from qililab.typings.enums import SystemControlName
@@ -22,7 +20,7 @@ class ReadoutSystemControl(SystemControl):
             Result: Acquired result
         """
         # TODO: Support acquisition from multiple instruments
-        results: List[Result] = []
+        results: list[Result] = []
         for instrument in self.instruments:
             result = instrument.acquire_result()
             if result is not None:
@@ -42,4 +40,4 @@ class ReadoutSystemControl(SystemControl):
         for instrument in self.instruments:
             if isinstance(instrument, AWGAnalogDigitalConverter):
                 return instrument.acquisition_delay_time
-        raise ValueError(f"The system control {self.name} doesn't have an AWG instrument.")
+        raise ValueError(f"The system control {self.name.value} doesn't have an AWG instrument.")

@@ -2,7 +2,6 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import List, Set
 
 import numpy as np
 import pandas as pd
@@ -24,11 +23,11 @@ class Results:
 
     software_average: int
     num_schedules: int
-    loops: List[Loop] | None = None
-    shape: List[int] = field(default_factory=list)
-    results: List[Result] = field(default_factory=list)
-    _computed_dataframe_indices: List[str] = field(init=False, default_factory=list)
-    _data_dataframe_indices: Set[str] = field(init=False, default_factory=set)
+    loops: list[Loop] | None = None
+    shape: list[int] = field(default_factory=list)
+    results: list[Result] = field(default_factory=list)
+    _computed_dataframe_indices: list[str] = field(init=False, default_factory=list)
+    _data_dataframe_indices: set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self):
         """Add num_schedules to shape."""

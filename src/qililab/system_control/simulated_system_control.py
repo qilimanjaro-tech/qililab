@@ -1,6 +1,5 @@
 """Simulated SystemControl class."""
 from dataclasses import dataclass, field
-from typing import List
 
 import numpy as np
 from qilisimulator.evolution import Evolution
@@ -51,13 +50,13 @@ class SimulatedSystemControl(ReadoutSystemControl):
         drive_params: dict
         resolution: float
         store_states: bool
-        instruments: List[Instrument] = field(init=False, default_factory=list)
+        instruments: list[Instrument] = field(init=False, default_factory=list)
 
     settings: SimulatedSystemControlSettings
     _evo: Evolution
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
-        self.sequence: List[np.ndarray] | None = None
+        self.sequence: list[np.ndarray] | None = None
         super().__init__(settings=settings, platform_instruments=platform_instruments)
         self._evo = Evolution(
             qubit_name=self.settings.qubit,
@@ -89,7 +88,11 @@ class SimulatedSystemControl(ReadoutSystemControl):
         return {RUNCARD.ID: self.id_, RUNCARD.NAME: self.name.value, RUNCARD.CATEGORY: self.settings.category.value}
 
     def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int | None = None, repetition_duration: int | None = None
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int | None = None,
+        repetition_duration: int | None = None,
+        num_bins: int = 1,
     ) -> list:
         """Compiles the ``PulseBusSchedule``.
 

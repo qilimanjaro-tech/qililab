@@ -1,9 +1,7 @@
 """PulseSequence class."""
 from dataclasses import dataclass, field
-from typing import List
 
 from qililab.constants import PULSESCHEDULES
-from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -13,10 +11,10 @@ class PulseSchedule:
     """Class containing a list of PulseSequence objects. It is the pulsed representation of a Qibo circuit.
 
     Args:
-        elements (List[PulseSequences]): List of pulse sequences.
+        elements (list[PulseSequences]): List of pulse sequences.
     """
 
-    elements: List[PulseBusSchedule] = field(default_factory=list)
+    elements: list[PulseBusSchedule] = field(default_factory=list)
 
     def add_event(self, pulse_event: PulseEvent, port: int):
         """Add pulse event.
@@ -29,6 +27,18 @@ class PulseSchedule:
                 pulse_sequence.add_event(pulse_event=pulse_event)
                 return
         self.elements.append(PulseBusSchedule(timeline=[pulse_event], port=port))
+
+    def create_schedule(self, port: int):
+        """Creates an empty `PulseBusSchedule` that targets the given port.
+
+        If the schedule already exists, nothing is done.
+
+        Args:
+            port (int): Target port of the schedule to create.
+        """
+        ports = {schedule.port for schedule in self.elements}
+        if port not in ports:
+            self.elements.append(PulseBusSchedule(port=port))
 
     def to_dict(self):
         """Return dictionary representation of the class.

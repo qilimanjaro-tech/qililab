@@ -2,12 +2,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Type, get_type_hints
+from typing import Callable, get_type_hints
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
-from qililab.pulse import PulseBusSchedule
 from qililab.result import Result
 from qililab.settings import DDBBElement
 from qililab.typings.enums import InstrumentName, Parameter
@@ -140,7 +139,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: Type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
 
     @CheckDeviceInitialized
@@ -232,7 +231,7 @@ class Instrument(BusElement, ABC):
         """
         if not hasattr(self, "device"):
             raise ValueError(
-                f"Instrument is not connected and cannot set the new value: {value} to the parameter {parameter.value}."
+                f"Instrument {self.name.value} is not connected and cannot set the new value: {value} to the parameter {parameter}."
             )
         if channel_id is None:
             logger.debug("Setting parameter: %s to value: %f", parameter.value, value)

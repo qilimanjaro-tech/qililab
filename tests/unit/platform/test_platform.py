@@ -12,8 +12,13 @@ from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
+from tests.utils import platform_db, platform_yaml
 
-from ...conftest import platform_db, platform_yaml
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
 
 
 @pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
@@ -100,7 +105,7 @@ class TestPlatform:
 
     def test_get_bus_by_qubit_index(self, platform: Platform):
         """Test get_bus_by_qubit_index method."""
-        control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
+        _, control_bus, readout_bus = platform.get_bus_by_qubit_index(0)
         assert isinstance(control_bus, Bus)
         assert isinstance(readout_bus, Bus)
         assert not isinstance(control_bus.system_control, ReadoutSystemControl)

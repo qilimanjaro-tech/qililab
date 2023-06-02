@@ -1,14 +1,8 @@
 """ Qblox Bins Acquisitions Result """
-
-from collections import Counter
 from dataclasses import dataclass
-from typing import Counter as TCounter
-from typing import List, Tuple
 
 import numpy as np
-import pandas as pd
 
-from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisitions import Acquisitions
 from qililab.result.counts import Counts
 from qililab.result.qblox_results.bins_data import BinsData
@@ -23,7 +17,7 @@ class QbloxBinsAcquisitions(Acquisitions):
         integration_lengths (list[int]): List of integration lengths for each sequencer.
     """
 
-    bins: List[BinsData]
+    bins: list[BinsData]
     integration_lengths: list[int]
 
     def __post_init__(self):

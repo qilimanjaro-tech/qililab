@@ -1,5 +1,4 @@
 """ExecutionBuilder class"""
-from typing import Dict, List
 from warnings import warn
 
 from qililab.execution import BusExecution
@@ -13,14 +12,14 @@ from qililab.utils import Loop, Singleton
 class ExecutionBuilder(metaclass=Singleton):
     """Builder of platform objects."""
 
-    def build(self, platform: Platform, pulse_schedules: List[PulseSchedule]) -> ExecutionManager:
+    def build(self, platform: Platform, pulse_schedules: list[PulseSchedule]) -> ExecutionManager:
         """Build ExecutionManager class.
         Loop over pulses in PulseSequence, classify them by bus index and instantiate a BusExecution class.
 
         Returns:
             ExecutionManager: ExecutionManager object.
         """
-        buses: Dict[int, BusExecution] = {}
+        buses: dict[int, BusExecution] = {}
         for pulse_schedule in pulse_schedules:
             for pulse_bus_schedule in pulse_schedule.elements:
                 port, bus_idx, bus = self._get_bus_info_from_pulse_bus_schedule_port(platform, pulse_bus_schedule)
@@ -33,7 +32,7 @@ class ExecutionBuilder(metaclass=Singleton):
 
         return ExecutionManager(buses=list(buses.values()), num_schedules=len(pulse_schedules), platform=platform)
 
-    def build_from_loops(self, platform: Platform, loops: List[Loop]) -> ExecutionManager:
+    def build_from_loops(self, platform: Platform, loops: list[Loop]) -> ExecutionManager:
         """Build ExecutionManager class.
         Loop over loops, classify them by bus alias and instantiate a BusExecution class.
 
@@ -43,7 +42,7 @@ class ExecutionBuilder(metaclass=Singleton):
         warn(
             "|WARNING| Bus alias are not unique and can be repeated in the runcard\nThe first bus alias that matches the loop alias will be selected"
         )
-        buses: Dict[str, BusExecution] = {}
+        buses: dict[str, BusExecution] = {}
         for loop in loops:
             for _loop in loop.loops:  # Iterate over nested loops if any
                 alias, bus = self._get_bus_info_from_loop_alias(platform, _loop)

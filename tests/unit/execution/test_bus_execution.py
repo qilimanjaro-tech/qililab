@@ -1,13 +1,69 @@
 """Tests for the BusExecution class."""
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qpysequence import Sequence
 
+from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
+from qililab.experiment import Experiment
 from qililab.instruments import AWG
-from qililab.pulse import PulseBusSchedule
+from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
+from qililab.typings import Parameter
+from qililab.typings.experiment import ExperimentOptions
+from qililab.utils import Loop
+from tests.data import experiment_params
 from tests.utils import mock_instruments
+
+
+@pytest.fixture(name="pulse_event")
+def fixture_pulse_event() -> PulseEvent:
+    """Load PulseEvent.
+
+    Returns:
+        PulseEvent: Instance of the PulseEvent class.
+    """
+    pulse_shape = Gaussian(num_sigmas=4)
+    pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
+    return PulseEvent(pulse=pulse, start_time=0)
+
+
+@pytest.fixture(name="execution_manager")
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+    """Load ExecutionManager.
+
+    Returns:
+        ExecutionManager: Instance of the ExecutionManager class.
+    """
+    experiment.build_execution()
+    return experiment.execution_manager  # pylint: disable=protected-access
+
+
+@pytest.fixture(name="experiment", params=experiment_params)
+def fixture_experiment(request: pytest.FixtureRequest):
+    """Return Experiment object."""
+    runcard, circuits = request.param  # type: ignore
+    with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
+        with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
+            platform = build_platform(name="sauron")
+            mock_load.assert_called()
+            mock_open.assert_called()
+    loop = Loop(
+        alias="X(0)",
+        parameter=Parameter.DURATION,
+        values=np.arange(start=4, stop=1000, step=40),
+    )
+    options = ExperimentOptions(loops=[loop])
+    return Experiment(
+        platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
+    )
+
+
+@pytest.fixture(name="pulse_bus_schedule")
+def fixture_pulse_bus_schedule(pulse_event: PulseEvent) -> PulseBusSchedule:
+    """Return PulseBusSchedule instance."""
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
 @pytest.fixture(name="pulse_scheduled_readout_bus")
@@ -72,7 +128,7 @@ class TestBusExecution:
 
     def test_compile(self, bus_execution: BusExecution):
         """Test compile method."""
-        sequences = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        sequences = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
@@ -83,7 +139,7 @@ class TestBusExecution:
         awg = bus_execution.system_control.instruments[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
-        _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         bus_execution.upload()
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()

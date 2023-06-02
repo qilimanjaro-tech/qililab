@@ -17,9 +17,11 @@ from .circuit import (
     X,
 )
 from .config import __version__, logger
+from .execute import execute
 from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .result.results import Results
-from .transpiler.transpiler import translate_circuit
-from .typings import ExperimentOptions, ExperimentSettings
+from .transpiler import Drag, Park, translate_circuit
+from .typings import ExperimentOptions, ExperimentSettings, Parameter
+from .utils import Loop
 from .utils.load_data import load

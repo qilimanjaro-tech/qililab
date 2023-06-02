@@ -3,7 +3,7 @@
 import contextlib
 from abc import ABC
 from dataclasses import InitVar, dataclass
-from typing import List, Type, get_type_hints
+from typing import get_type_hints
 
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
@@ -25,7 +25,7 @@ class SystemControl(BusElement, ABC):
     class SystemControlSettings(DDBBElement):
         """SystemControlSettings class."""
 
-        instruments: List[Instrument]
+        instruments: list[Instrument]
         platform_instruments: InitVar[Instruments]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
@@ -36,21 +36,27 @@ class SystemControl(BusElement, ABC):
     settings: SystemControlSettings
 
     def __init__(self, settings: dict, platform_instruments: Instruments | None = None):
-        settings_class: Type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
+        settings_class: type[self.SystemControlSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings, platform_instruments=platform_instruments)
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins
         """
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 return instrument.compile(
-                    pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration
+                    pulse_bus_schedule=pulse_bus_schedule,
+                    nshots=nshots,
+                    repetition_duration=repetition_duration,
+                    num_bins=num_bins,
                 )
         raise AttributeError(
             f"The system control with alias {self.settings.alias} doesn't have any AWG to compile the given pulse "
@@ -115,7 +121,7 @@ class SystemControl(BusElement, ABC):
         return self.settings.category
 
     @property
-    def instruments(self) -> List[Instrument]:
+    def instruments(self) -> list[Instrument]:
         """Instruments controlled by this system control."""
         return self.settings.instruments
 

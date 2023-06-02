@@ -5,9 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
-from typing import List, Tuple
 
 import numpy as np
+from qcodes.instrument import Instrument as QcodesInstrument
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
@@ -15,8 +15,9 @@ from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
-from qililab.platform.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.platform import Platform
+from qililab.pulse import PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
@@ -33,15 +34,15 @@ class Experiment:
     # Specify the types of the attributes that are not defined during initialization
     execution_manager: ExecutionManager
     results: Results
-    results_path: Path
+    results_path: Path | None
     _plot: LivePlot | None
     _remote_id: int
 
     def __init__(
         self,
         platform: Platform,
-        circuits: List[Circuit] | None = None,
-        pulse_schedules: List[PulseSchedule] | None = None,
+        circuits: list[Circuit] | None = None,
+        pulse_schedules: list[PulseSchedule] | None = None,
         options: ExperimentOptions = ExperimentOptions(),
     ):
         self.platform = platform
@@ -61,12 +62,12 @@ class Experiment:
         """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
-            translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            translator = CircuitToPulses(platform=self.platform)
+            self.pulse_schedules = translator.translate(circuits=self.circuits)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self) -> Results:
+    def run(self, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -90,13 +91,13 @@ class Experiment:
             )
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
+
         # Prepares the results
-        self.results, self.results_path = self.prepare_results()
-        num_schedules = self.execution_manager.num_schedules
+        self.results, self.results_path = self.prepare_results(save_results=save_results)
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue)
-
+        num_schedules = self.execution_manager.num_schedules
         for idx, _ in itertools.product(
             tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
             range(self.software_average),
@@ -117,7 +118,7 @@ class Experiment:
         Args:
             queue (Queue): Queue used to store the experiment results.
         """
-        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * 1e-9)
+        timeout = max(5, 10 * self.hardware_average * self.repetition_duration * self.num_bins * 1e-9)
 
         def _threaded_function():
             """Asynchronous thread."""
@@ -133,25 +134,27 @@ class Experiment:
                     q = np.array(acq["q"])
                     amplitude = 20 * np.log10(np.abs(i + 1j * q)).astype(np.float64)
                     self._plot.send_points(value=amplitude[0])
-                with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
-                    result_dict = result.to_dict()
-                    yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
+
+                if self.results_path is not None:
+                    with open(file=self.results_path / "results.yml", mode="a", encoding="utf8") as data_file:
+                        result_dict = result.to_dict()
+                        yaml.safe_dump(data=[result_dict], stream=data_file, sort_keys=False)
 
         thread = Thread(target=_threaded_function)
         thread.start()
 
-    def compile(self) -> List[dict]:
+    def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
         experiment.
 
         Returns:
-            List[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
+            list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
                 compiled sequences as values.
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 
@@ -171,7 +174,7 @@ class Experiment:
         """Disconnects from the instruments and releases the device."""
         self.platform.disconnect()
 
-    def execute(self) -> Results:
+    def execute(self, save_results=True) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
             * Connect to the instruments.
@@ -191,9 +194,10 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        results = self.run()
+        results = self.run(save_results=save_results)
         self.turn_off_instruments()
         self.disconnect()
+        QcodesInstrument.close_all()
         return results
 
     def remote_save_experiment(self) -> None:
@@ -217,18 +221,21 @@ class Experiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: List[Loop] | None, idx: int, queue: Queue, depth=0):
+    def _execute_recursive_loops(self, loops: list[Loop] | None, idx: int, queue: Queue, depth=0):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
             self.execution_manager.compile(
-                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+                idx=idx,
+                nshots=self.hardware_average,
+                repetition_duration=self.repetition_duration,
+                num_bins=self.num_bins,
             )
             self.execution_manager.upload()
             result = self.execution_manager.run(queue)
@@ -238,11 +245,11 @@ class Experiment:
 
         self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: List[Loop], idx: int, queue: Queue, depth: int):
+    def _process_loops(self, loops: list[Loop], idx: int, queue: Queue, depth: int):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
-            loops (List[Loop]): list of Loop classes containing the info of one or more Platform element and the
+            loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
             idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
@@ -262,7 +269,7 @@ class Experiment:
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
                 self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
 
-    def _update_tqdm_bar(self, loops: List[Loop], values: Tuple[float], pbar):
+    def _update_tqdm_bar(self, loops: list[Loop], values: tuple[float], pbar):
         """Updates TQDM bar"""
         description = []
         for value, loop in zip(values, loops):
@@ -273,7 +280,7 @@ class Experiment:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: Tuple[float], loops: List[Loop]):
+    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
@@ -286,7 +293,7 @@ class Experiment:
 
         return filtered_loops, filtered_values
 
-    def _update_parameters_from_loops(self, values: List[float], loops: List[Loop]):
+    def _update_parameters_from_loops(self, values: list[float], loops: list[Loop]):
         """update parameters from loops"""
         elements = [self.platform.get_element(alias=loop.alias) for loop in loops]
 
@@ -322,10 +329,26 @@ class Experiment:
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
-    def draw(self, resolution: float = 1.0, idx: int = 0):
-        """Return figure with the waveforms sent to each bus.
+    def draw(
+        self,
+        real: bool = True,
+        imag: bool = True,
+        absolute: bool = False,
+        modulation: bool = True,
+        linestyle: str = "-",
+        resolution: float = 1.0,
+        idx: int = 0,
+    ):
+        """Return figure with the waveforms/envelopes sent to each bus.
+
+        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
 
         Args:
+            real (bool): True to plot the real part of the function, False otherwise. Default to True.
+            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
+            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
+            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
+            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -333,7 +356,16 @@ class Experiment:
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before drawing the experiment.")
-        return self.execution_manager.draw(resolution=resolution, idx=idx)
+
+        return self.execution_manager.draw(
+            real=real,
+            imag=imag,
+            absolute=absolute,
+            modulation=modulation,
+            linestyle=linestyle,
+            resolution=resolution,
+            idx=idx,
+        )
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -402,6 +434,14 @@ class Experiment:
         return self.options.settings.hardware_average
 
     @property
+    def num_bins(self):
+        """Experiment `num_bins` property.
+        Returns
+            int: settings.num_bins.
+        """
+        return self.options.settings.num_bins
+
+    @property
     def repetition_duration(self):
         """Experiment 'repetition_duration' property.
         Returns:
@@ -409,7 +449,7 @@ class Experiment:
         """
         return self.options.settings.repetition_duration
 
-    def prepare_results(self) -> tuple[Results, Path]:
+    def prepare_results(self, save_results=True) -> tuple[Results, Path | None]:
         """Creates the ``Results`` class, creates the ``results.yml`` file where the results will be saved, and dumps
         the experiment data into this file.
 
@@ -427,13 +467,17 @@ class Experiment:
             num_schedules=self.execution_manager.num_schedules,
             loops=self.options.loops,
         )
-        # Create the folders & files needed to save the results locally
-        results_path = self._path_to_results_folder()
-        self._create_results_file(results_path)
 
-        # Dump the experiment data into the created file
-        with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-            yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+        if save_results:
+            # Create the folders & files needed to save the results locally
+            results_path = self._path_to_results_folder()
+            self._create_results_file(results_path)
+
+            # Dump the experiment data into the created file
+            with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
+                yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+        else:
+            results_path = None
 
         return results, results_path
 

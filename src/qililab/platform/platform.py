@@ -2,7 +2,6 @@
 import ast
 import re
 from dataclasses import asdict
-from typing import Tuple
 
 from qiboconnection.api import API
 
@@ -11,7 +10,7 @@ from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Parameter
+from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
@@ -97,7 +96,7 @@ class Platform:
             alias (str): Element alias to identify it.
 
         Returns:
-            Tuple[object, list | None]: Element class together with the index of the bus where the element is located.
+            tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if alias is not None:
             if alias == Category.PLATFORM.value:
@@ -119,7 +118,7 @@ class Platform:
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int) -> Tuple[int, Bus] | Tuple[list, None]:
+    def get_bus(self, port: int) -> tuple[int, Bus] | tuple[list, None]:
         """Find bus associated with the specified port.
 
         Args:
@@ -133,25 +132,27 @@ class Platform:
             ([], None),
         )
 
-    def get_bus_by_qubit_index(self, qubit_index: int) -> Tuple[Bus, Bus]:
+    def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Find bus associated with the given qubit index.
 
         Args:
             qubit_index (int): qubit index
 
         Returns:
-            Tuple[Bus, Bus]: Returns a tuple of Bus objects containing the control and readout buses of the given qubit
+            tuple[Bus, Bus, Bus]: Returns a tuple of Bus objects containing the flux, control and readout buses of the given qubit
         """
-        control_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=False)
-        readout_port = self.chip.get_node_from_qubit_idx(qubit_index, readout=True)
-        control_bus = self.get_bus(port=self.chip.get_port(node=control_port))[1]
-        readout_bus = self.get_bus(port=self.chip.get_port(node=readout_port))[1]
-        if readout_bus is None or control_bus is None:
+        flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
+        control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
+        readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
+        flux_bus = self.get_bus(port=flux_port)[1]
+        control_bus = self.get_bus(port=control_port)[1]
+        readout_bus = self.get_bus(port=readout_port)[1]
+        if flux_bus is None or control_bus is None or readout_bus is None:
             raise ValueError(
                 f"Could not find buses for qubit {qubit_index} connected to the ports "
-                f"{readout_port} and {control_port}."
+                f"{flux_port}, {control_port} and {readout_port}."
             )
-        return control_bus, readout_bus
+        return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
@@ -232,7 +233,7 @@ class Platform:
         """Platform 'gate_names' property.
 
         Returns:
-            List[str]: List of the names of all the defined gates.
+            list[str]: List of the names of all the defined gates.
         """
         return self.settings.gate_names
 
