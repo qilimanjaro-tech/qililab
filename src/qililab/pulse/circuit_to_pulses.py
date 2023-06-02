@@ -378,12 +378,12 @@ class CircuitToPulses:
         Args:
             time (Dict[int, int]): Dictionary with the time of each qubit.
             qubit_idx (int | tuple[int,int]): Index of the qubit or index of 2 qubits for 2 qubit gates.
-            pulse_time (int): Duration of the puls + wait time.
+            pulse_time (int): Duration of the pulse.
         """
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
-        residue = pulse_time % self.platform.settings.minimum_clock_time
+        residue = (pulse_time) % self.platform.settings.minimum_clock_time
         if residue != 0:
             pulse_time += self.platform.settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
