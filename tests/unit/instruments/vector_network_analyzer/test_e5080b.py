@@ -212,12 +212,30 @@ class TestE5080B:
         """Test the dict method"""
         assert isinstance(e5080b_no_device.to_dict(), dict)
 
-    def test_initial_setup_method(self, e5080b: E5080B):
-        """Test the initial setup method"""
+    def test_initial_setup_method_with_center_span(self, e5080b: E5080B):
+        """Test the initial setup method when given center and span"""
         e5080b.setup(Parameter.FREQUENCY_CENTER, 0.0)
         e5080b.setup(Parameter.FREQUENCY_SPAN, 0.0)
         e5080b.initial_setup()
         e5080b.device.initial_setup.assert_called()
+        assert e5080b.device.send_command.call_count == 11
+
+    def test_initial_setup_method_with_start_stop(self, e5080b: E5080B):
+        """Test the initial setup method when given start and stop"""
+        e5080b.setup(Parameter.FREQUENCY_START, 0.0)
+        e5080b.setup(Parameter.FREQUENCY_STOP, 100.0)
+        e5080b.initial_setup()
+        e5080b.device.initial_setup.assert_called()
+        assert e5080b.device.send_command.call_count == 11
+
+    def test_initial_setup_method_with_if_bandwidth(self, e5080b: E5080B):
+        """Test the initial setup method when given bandwidth"""
+        e5080b.setup(Parameter.FREQUENCY_CENTER, 0.0)
+        e5080b.setup(Parameter.FREQUENCY_SPAN, 0.0)
+        e5080b.setup(Parameter.IF_BANDWIDTH, 0.0)
+        e5080b.initial_setup()
+        e5080b.device.initial_setup.assert_called()
+        assert e5080b.device.send_command.call_count == 13
 
     def test_initial_setup_method_raises_exception(self, e5080b: E5080B):
         """Test the initial setup method raises exception if was not specified any of:
