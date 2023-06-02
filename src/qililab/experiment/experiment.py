@@ -318,6 +318,14 @@ class Experiment:
             alias (str): alias of the element that contains the given parameter
             channel_id (int | None): channel id
         """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = list(sum(circuit.get_parameters(), ()))
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self.build_execution()
+            return
+
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
