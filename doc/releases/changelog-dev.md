@@ -6,6 +6,9 @@ This document contains the changes of the current release.
 
 ### Improvements
 
+- Add support for the `Wait` gate
+  [#405](https://github.com/qilimanjaro-tech/qililab/pull/405)
+
 ### Breaking changes
 
 ### Deprecations / Removals
