@@ -1,4 +1,5 @@
 """This file contains unit tests for the ``CircuitToPulses`` class."""
+import logging
 import re
 
 import numpy as np
@@ -7,6 +8,7 @@ from qibo import gates
 from qibo.models import Circuit
 
 from qililab.chip import Chip
+from qililab.config import logger
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -550,6 +552,47 @@ class TestTranslation:
         circuit.add(cz)
         translator = CircuitToPulses(platform=platform)
         error_string = f"Attempting to perform {cz.name} on qubits {re.escape(str(cz.qubits))} by targeting qubit {cz.target_qubits[0]} which has lower frequency than {cz.control_qubits[0]}"
+        with pytest.raises(ValueError, match=error_string):
+            translator.translate(circuits=[circuit])
+
+    def test_bus_error_is_raised(self, platform: Platform, chip: Chip):
+        circuit = Circuit(1)
+        circuit.add(Drag(0, 1, 1))
+        # create platform without buses for qubit 0
+        buses = Buses(elements=[platform.buses[3], platform.buses[4]])
+        platform.schema.buses = buses
+        translator = CircuitToPulses(platform=platform)
+        error_string = "bus cannot be None to get the distortions"
+        with pytest.raises(TypeError, match=error_string):
+            translator.translate(circuits=[circuit])
+
+    def test_no_park_raises_warning(self, caplog, platform: Platform, chip: Chip):
+        cz = gates.CZ(1, 2)
+        park_qubit = 3
+        circuit = Circuit(3)
+        circuit.add(cz)
+
+        # delete parking gate for q3
+        del platform.settings.gates[park_qubit][3]
+        translator = CircuitToPulses(platform=platform)
+        caplog.set_level(logging.WARNING)
+        translator.translate(circuits=[circuit])
+        warning_string = f"Found parking candidate qubit {park_qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {park_qubit}"
+        assert warning_string in caplog.text
+
+    def test_error_on_pad_time_negative(self, caplog, platform: Platform, chip: Chip):
+        cz = gates.CZ(1, 2)
+        circuit = Circuit(3)
+        circuit.add(cz)
+
+        # decrease park time for gate for q3, q4
+        pad_time = (10 - 83) / 2
+        platform.settings.gates[3][3].duration = 10
+        platform.settings.gates[4][3].duration = 10
+        translator = CircuitToPulses(platform=platform)
+        error_string = re.escape(
+            f"Negative value pad_time {pad_time} for park gate at 3 and CZ {cz.qubits}. Pad time is calculated as (ParkGate.duration - CZ pulse duration) / 2"
+        )
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit])
 
