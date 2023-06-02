@@ -410,7 +410,6 @@ class Parameter(str, Enum):
     INTEGRATION_WEIGHT_I_2 = "integration_weight_I_2"
     INTEGRATION_WEIGHT_Q_1 = "integration_weight_Q_1"
     INTEGRATION_WEIGHT_Q_2 = "integration_weight_Q_2"
-    GATE_PARAMETER = "gate_parameter"
     TAU_BIAS_TEE = "tau_bias_tee"
     TAU_EXPONENTIAL = "tau_exponential"
     TAU_EXPONENTIAL1 = "tau_exponential1"
