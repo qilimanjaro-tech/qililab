@@ -563,20 +563,21 @@ class TestTranslation:
         circuit.add(gates.Y(0))
         circuit.add(Park(0))
         circuit.add(Drag(0, 1, 0.5))
+        circuit.add(Wait(1, 17))  # wait on q1 which will be parked by CZ(3,2)
         circuit.add(gates.CZ(3, 2))
         circuit.add(gates.M(0))
 
         pulse_schedule = translator.translate(circuits=[circuit])[0]
 
-        # minimum_clock_time is 4ns so every start time will be multiple of 4
+        # minimum_clock_time is 5ns so every start time will be multiple of 5
         # the order respects drive-flux-resonator (line 337)
         # duration for CZ is 30*2+2+1
         bus0_start_times = [220]
         bus8_start_times = [0, 45, 180]
         bus13_start_times = [85]
-        bus14_start_times = [0]
-        bus15_start_times = [5]  # padding
-        bus17_start_times = [0]
+        bus14_start_times = [20]
+        bus15_start_times = [25]  # padding (5) + wait (20)
+        bus17_start_times = [20]
 
         expected_start_times = (
             bus0_start_times
@@ -657,10 +658,13 @@ class TestTranslation:
             [
                 Drag(1, 1, 1),
                 Drag(2, 1, 1),
+                Wait(2, 10),
                 gates.CZ(2, 3),
+                Wait(2, 10),
                 Drag(0, 1, 0),
                 Drag(3, 2, 2),
                 gates.M(0),
+                Wait(1, 4),
                 gates.M(2),
                 gates.CZ(4, 2),
                 gates.CZ(2, 3),
@@ -670,12 +674,15 @@ class TestTranslation:
                 "pulse_events": [
                     Drag(1, 1, 1),
                     Drag(2, 1, 1),
+                    Wait(2, 10),
                     gates.CZ(2, 3),
+                    Wait(2, 10),
                     Park(1),
                     Park(4),
                     Drag(0, 1, 0),
                     Drag(3, 2, 2),
                     gates.M(0),
+                    Wait(1, 4),
                     gates.M(2),
                     gates.CZ(4, 2),
                     Park(1),
@@ -685,7 +692,7 @@ class TestTranslation:
                     Park(4),
                     gates.M(4),
                 ],
-                "pulse_times": [0, 0, 45, 40, 40, 0, 135, 40, 135, 240, 235, 235, 335, 330, 330, 415],
+                "pulse_times": [0, 0, 55, 50, 50, 0, 145, 40, 155, 260, 255, 255, 355, 350, 350, 435],
                 "pulse_name": [
                     "drag",
                     "drag",
