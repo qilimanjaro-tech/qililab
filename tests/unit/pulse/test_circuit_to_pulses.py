@@ -17,7 +17,6 @@ from qililab.pulse.hardware_gates import Park as ParkGate
 from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag, Park
 from qililab.typings import Parameter
-from qililab.utils import Wait
 from tests.data import Galadriel
 from tests.utils import platform_db
 
@@ -153,8 +152,8 @@ def fixture_platform(chip: Chip) -> Platform:
                     "name": "CZ",
                     "amplitude": 1,
                     "phase": 0,
-                    "duration": 40,
-                    "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                    "duration": 83,
+                    "shape": {"name": "rectangular"},
                 },
             ],
         },
@@ -598,10 +597,10 @@ class TestTranslation:
     "circuit_gates, expected",
     [
         (
-            [Drag(0, 1, 1), Wait(0, 40), gates.M(*range(5))],
+            [Drag(0, 1, 1), gates.M(*range(5))],
             {
-                "gates": [Drag(0, 1, 1), Wait(0, 40), gates.M(0), gates.M(1), gates.M(2), gates.M(3), gates.M(4)],
-                "pulse_times": [0, 0, 80, 0, 0, 0],
+                "gates": [Drag(0, 1, 1), gates.M(0), gates.M(1), gates.M(2), gates.M(3), gates.M(4)],
+                "pulse_times": [0, 0, 40, 0, 0, 0],
                 "pulse_name": ["drag", "rectangular", "rectangular", "rectangular", "rectangular", "rectangular"],
                 "nodes": [8, 0, 0, 0, 0, 0],
             },
@@ -696,7 +695,7 @@ class TestTranslation:
                     "drag",
                     "rectangular",
                     "rectangular",
-                    "snz",
+                    "rectangular",
                     "rectangular",
                     "rectangular",
                     "snz",
