@@ -4,15 +4,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from qililab.constants import GATE_ALIAS_REGEX, PLATFORM
+from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import (
-    Category,
-    MasterGateSettingsName,
-    OperationTimingsCalculationMethod,
-    Parameter,
-    ResetMethod,
-)
+from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
 
@@ -43,6 +37,7 @@ class RuncardSchema:
             category: str
             system_control: dict
             port: int
+            distortions: list[dict]
             alias: str | None = None
 
         @dataclass
@@ -77,8 +72,8 @@ class RuncardSchema:
                 """PulseSchema class"""
 
                 name: str
-                amplitude: float | Literal[MasterGateSettingsName.MASTER_AMPLITUDE_GATE]
-                duration: int | Literal[MasterGateSettingsName.MASTER_DURATION_GATE]
+                amplitude: float
+                duration: int
                 parameters: dict
 
             name: str
@@ -89,28 +84,10 @@ class RuncardSchema:
             """GatesSchema class."""
 
             name: str
-            amplitude: float | Literal[MasterGateSettingsName.MASTER_AMPLITUDE_GATE]
+            amplitude: float
             phase: float
-            duration: int | Literal[MasterGateSettingsName.MASTER_DURATION_GATE]
+            duration: int
             shape: dict
-
-            def __post_init__(self):
-                """build the Gate Settings based on the master settings"""
-                self.amplitude = self._convert_string_to_master_gate_settings_enum(gate_current_value=self.amplitude)
-                self.duration = self._convert_string_to_master_gate_settings_enum(gate_current_value=self.duration)
-
-            def _convert_string_to_master_gate_settings_enum(self, gate_current_value: int | float | str):
-                """convert string to master gate settings enum when value is depending on masters value"""
-                if not isinstance(gate_current_value, str):
-                    return gate_current_value
-                if gate_current_value not in [PLATFORM.MASTER_AMPLITUDE_GATE, PLATFORM.MASTER_DURATION_GATE]:
-                    raise ValueError(
-                        f"Master Name {gate_current_value} not supported. The only supported names are: "
-                        + f"[{PLATFORM.MASTER_AMPLITUDE_GATE}, {PLATFORM.MASTER_DURATION_GATE}]"
-                    )
-                if gate_current_value == PLATFORM.MASTER_AMPLITUDE_GATE:
-                    return MasterGateSettingsName.MASTER_AMPLITUDE_GATE
-                return MasterGateSettingsName.MASTER_DURATION_GATE
 
             def set_parameter(self, parameter: Parameter, value: float | str | bool):
                 """Change a gate parameter with the given value."""
@@ -125,8 +102,6 @@ class RuncardSchema:
         minimum_clock_time: int
         delay_between_pulses: int
         delay_before_readout: int
-        master_amplitude_gate: float
-        master_duration_gate: int
         timings_calculation_method: Literal[
             OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE, OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE
         ]

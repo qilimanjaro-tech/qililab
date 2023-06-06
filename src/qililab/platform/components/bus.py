@@ -2,12 +2,12 @@
 from dataclasses import InitVar, dataclass
 
 from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
-from qililab.constants import BUS, RUNCARD
-from qililab.instruments.instrument import ParameterNotFound
-from qililab.instruments.instruments import Instruments
+from qililab.constants import BUS, NODE, RUNCARD
+from qililab.instruments import Instruments, ParameterNotFound
+from qililab.pulse import PulseDistortion
 from qililab.settings import DDBBElement
 from qililab.system_control import SystemControl
-from qililab.typings import Node, Parameter
+from qililab.typings import Parameter
 from qililab.utils import Factory
 
 
@@ -31,11 +31,13 @@ class Bus:
             bus_subcategory (BusSubCategory): Bus subcategory
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (int): Chip's port where bus is connected.
+            distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
         """
 
         system_control: SystemControl
         port: int
         platform_instruments: InitVar[Instruments]
+        distortions: list[PulseDistortion]
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -44,6 +46,10 @@ class Bus:
                     settings=self.system_control, platform_instruments=platform_instruments
                 )
             super().__post_init__()
+
+            self.distortions = [
+                PulseDistortion.from_dict(distortion) for distortion in self.distortions if isinstance(distortion, dict)
+            ]
 
     settings: BusSettings
 
@@ -87,6 +93,15 @@ class Bus:
         return self.settings.port
 
     @property
+    def distortions(self):
+        """Bus 'distortions' property.
+
+        Returns:
+            list[PulseDistortion]: settings.distortions.
+        """
+        return self.settings.distortions
+
+    @property
     def category(self):
         """Bus 'category' property.
 
@@ -113,9 +128,7 @@ class Bus:
             list[float]: Frequencies of the nodes that have frequencies
         """
         return list(
-            filter(
-                None, [target.frequency if hasattr(target, Node.FREQUENCY.value) else None for target in self.targets]
-            )
+            filter(None, [target.frequency if hasattr(target, NODE.FREQUENCY) else None for target in self.targets])
         )
 
     def __iter__(self):
@@ -129,6 +142,7 @@ class Bus:
             RUNCARD.CATEGORY: self.category.value,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
+            RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
         }
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):

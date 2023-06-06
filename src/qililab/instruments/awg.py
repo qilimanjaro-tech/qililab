@@ -51,13 +51,16 @@ class AWG(Instrument):
     settings: AWGSettings
 
     @abstractmethod
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             list: list of compiled assembly programs
@@ -99,7 +102,12 @@ class AWG(Instrument):
         Returns:
             list[AWGSequencer]: list of integers containing the indices of the sequencers connected to the chip port
         """
-        return [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]
+        if seqs := [sequencer for sequencer in self.awg_sequencers if sequencer.chip_port_id == chip_port_id]:
+            return seqs
+        raise IndexError(
+            f"No sequencer found connected to port {chip_port_id}. Please make sure the `chip_port_id` "
+            "attribute is correct."
+        )
 
     def get_sequencer(self, sequencer_id: int) -> AWGSequencer:
         """Get sequencer from the sequencer identifier

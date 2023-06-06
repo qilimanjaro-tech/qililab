@@ -14,21 +14,25 @@ class BusExecution:
     pulse schedules that will be executed on this bus."""
 
     bus: Bus
-    pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
+    pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)
 
-    def compile(self, idx: int, nshots: int, repetition_duration: int) -> list:
+    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
         """Compiles the pulse schedule at index ``idx`` into an assembly program.
 
         Args:
             idx (int): index of the circuit to compile and upload
             nshots (int): number of shots / hardware average
             repetition_duration (int): maximum window for the duration of one hardware repetition
+            num_bins (int): number of bins.
 
         Returns:
             list: list of compiled assembly programs
         """
         return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_schedule[idx], nshots=nshots, repetition_duration=repetition_duration
+            pulse_bus_schedule=self.pulse_bus_schedules[idx],
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
         )
 
     def upload(self):
@@ -50,7 +54,7 @@ class BusExecution:
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
 
-        self.pulse_schedule.append(pulse_bus_schedule)
+        self.pulse_bus_schedules.append(pulse_bus_schedule)
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
@@ -71,16 +75,16 @@ class BusExecution:
         Returns:
             int: Acquire time (in ns).
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
-        readout_schedule = self.pulse_schedule[idx]
+        readout_schedule = self.pulse_bus_schedules[idx]
         time = readout_schedule.timeline[-1].start_time
         if isinstance(self.system_control, ReadoutSystemControl):
             time += self.system_control.acquisition_delay_time
         return time
 
-    def waveforms(self, resolution: float = 1.0, idx: int = 0) -> Waveforms:
+    def waveforms(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> Waveforms:
         """Return pulses applied on this bus.
 
         Args:
@@ -90,10 +94,10 @@ class BusExecution:
             Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(resolution=resolution)
+        return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
     def port(self):

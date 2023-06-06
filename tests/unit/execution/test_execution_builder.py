@@ -1,5 +1,4 @@
 """Tests for the ExecutionBuilder class."""
-from typing import List
 from warnings import catch_warnings
 
 import numpy as np
@@ -9,7 +8,8 @@ from qililab.constants import RUNCARD
 from qililab.execution import EXECUTION_BUILDER, BusExecution
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
-from qililab.pulse import CircuitToPulses, Gaussian, Pulse, PulseEvent, PulseSchedule
+from qililab.pulse import Gaussian, Pulse, PulseEvent, PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.typings import Parameter
 from qililab.utils import Loop
 from tests.data import Galadriel, circuit, experiment_params
@@ -37,11 +37,11 @@ def fixture_platform() -> Platform:
 @pytest.fixture(name="pulse_schedule", params=experiment_params)
 def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
     """Return PulseSchedule instance."""
-    return CircuitToPulses(settings=platform.settings).translate(circuits=[circuit], chip=platform.chip)[0]
+    return CircuitToPulses(platform=platform).translate(circuits=[circuit])[0]
 
 
 @pytest.fixture(name="loops")
-def fixture_loop() -> List[Loop]:
+def fixture_loop() -> list[Loop]:
     """Return list of loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     return [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
@@ -50,7 +50,7 @@ def fixture_loop() -> List[Loop]:
 
 
 @pytest.fixture(name="nested_loops")
-def fixture_nested_loop() -> List[Loop]:
+def fixture_nested_loop() -> list[Loop]:
     """Return list of a loop that contain nested loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     loops = [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
@@ -72,7 +72,7 @@ class TestExecutionBuilder:
         platform_bus_executions = []
         for pulse_bus_schedule in pulse_schedule.elements:
             _, bus = platform.get_bus(pulse_bus_schedule.port)
-            platform_bus_executions.append(BusExecution(bus=bus, pulse_schedule=[pulse_bus_schedule]))
+            platform_bus_executions.append(BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule]))
 
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=1, platform=platform)
         execution_manager = EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
@@ -88,11 +88,11 @@ class TestExecutionBuilder:
         with pytest.raises(ValueError, match=f"There is no bus connected to port {test_port}."):
             EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
-    def test_build_from_loops_method(self, platform: Platform, loops: List[Loop]):
+    def test_build_from_loops_method(self, platform: Platform, loops: list[Loop]):
         """Test build_from_loops method"""
         loops_alias = [loop.alias for loop in loops]
         platform_bus_executions = [
-            BusExecution(bus=bus, pulse_schedule=[]) for bus in platform.buses if bus.alias in loops_alias
+            BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
 
@@ -101,14 +101,14 @@ class TestExecutionBuilder:
             assert len(w) == 1  # One warning is always thrown at the begining
             assert execution_manager == expected
 
-    def test_build_from_loops_method_nested_loops(self, platform: Platform, nested_loops: List[Loop]):
+    def test_build_from_loops_method_nested_loops(self, platform: Platform, nested_loops: list[Loop]):
         """Test build_from_loops method"""
         loops_alias = []
         for loops in nested_loops:
             for loop in loops.loops:
                 loops_alias.append(loop.alias)
         platform_bus_executions = [
-            BusExecution(bus=bus, pulse_schedule=[]) for bus in platform.buses if bus.alias in loops_alias
+            BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
 
@@ -117,11 +117,11 @@ class TestExecutionBuilder:
             assert len(w) == 1  # One warning is always thrown at the begining
             assert execution_manager == expected
 
-    def test_build_from_loops_method_repeated_alias(self, platform: Platform, loops: List[Loop]):
+    def test_build_from_loops_method_repeated_alias(self, platform: Platform, loops: list[Loop]):
         """Test build_from_loops method when two loops have the same alias"""
         loops_alias = [loop.alias for loop in loops]
         platform_bus_executions = [
-            BusExecution(bus=bus, pulse_schedule=[]) for bus in platform.buses if bus.alias in loops_alias
+            BusExecution(bus=bus, pulse_bus_schedules=[]) for bus in platform.buses if bus.alias in loops_alias
         ]
         expected = ExecutionManager(buses=platform_bus_executions, num_schedules=0, platform=platform)
 
@@ -131,7 +131,7 @@ class TestExecutionBuilder:
             assert len(w) == 2  # Two warnings should be thrown: Beggining and repeated alias
             assert execution_manager == expected
 
-    def test_build_method_from_loops_with_wrong_loop_alias(self, platform: Platform, loops: List[Loop]):
+    def test_build_method_from_loops_with_wrong_loop_alias(self, platform: Platform, loops: list[Loop]):
         """Test build_from_loops method raises an exception with a loop whose alias does not match any bus alias"""
         wrong_alias = "foobar"
         loop_with_wrong_alias = Loop(alias=wrong_alias, parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))

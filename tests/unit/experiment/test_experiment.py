@@ -1,8 +1,10 @@
 """Tests for the Experiment class."""
 import copy
+import itertools
 import os
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -360,11 +362,6 @@ class TestSetParameter:
             ).settings.reset
             is False
         )
-
-    def test_set_parameter_method_with_gate_value(self, exp: Experiment):
-        """Test the ``set_parameter`` method with a parameter of a gate."""
-        exp.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
-        assert exp.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
 
 class TestReset:

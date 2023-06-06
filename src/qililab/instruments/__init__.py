@@ -2,7 +2,7 @@
 from .agilent import E5071B
 from .awg import AWG
 from .awg_analog_digital_converter import AWGAnalogDigitalConverter
-from .instrument import Instrument
+from .instrument import Instrument, ParameterNotFound
 from .instruments import Instruments
 from .keithley import Keithley2600
 from .keysight import E5080B

@@ -3,17 +3,21 @@ import copy
 import itertools
 from queue import Queue
 
+from qcodes.instrument import Instrument as QcodesInstrument
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
+from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment.experiment import Experiment
+from qililab.experiment import Experiment
 from qililab.platform.platform import Platform
-from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.pulse import PulseSchedule
+from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
+from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
@@ -37,12 +41,12 @@ class CircuitExperiment(Experiment):
         """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
         # Translate circuits into pulses if needed
         if self.circuits:
-            translator = CircuitToPulses(settings=self.platform.settings)
-            self.pulse_schedules = translator.translate(circuits=self.circuits, chip=self.platform.chip)
+            translator = CircuitToPulses(platform=self.platform)
+            self.pulse_schedules = translator.translate(circuits=self.circuits)
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self) -> Results:
+    def run(self, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -68,7 +72,7 @@ class CircuitExperiment(Experiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
-        self.results, self.results_path = self.prepare_results()
+        self.results, self.results_path = self.prepare_results(save_results=save_results)
         num_schedules = self.execution_manager.num_schedules
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
@@ -102,7 +106,10 @@ class CircuitExperiment(Experiment):
 
         if loops is None or len(loops) == 0:
             self.execution_manager.compile(
-                idx=idx, nshots=self.hardware_average, repetition_duration=self.repetition_duration
+                idx=idx,
+                nshots=self.hardware_average,
+                repetition_duration=self.repetition_duration,
+                num_bins=self.num_bins,
             )
             self.execution_manager.upload()
             result = self.execution_manager.run(queue)
@@ -153,14 +160,30 @@ class CircuitExperiment(Experiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration)
+            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 
-    def draw(self, resolution: float = 1.0, idx: int = 0):
-        """Return figure with the waveforms sent to each bus.
+    def draw(
+        self,
+        real: bool = True,
+        imag: bool = True,
+        absolute: bool = False,
+        modulation: bool = True,
+        linestyle: str = "-",
+        resolution: float = 1.0,
+        idx: int = 0,
+    ):
+        """Return figure with the waveforms/envelopes sent to each bus.
+
+        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
 
         Args:
+            real (bool): True to plot the real part of the function, False otherwise. Default to True.
+            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
+            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
+            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
+            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
             resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
 
         Returns:
@@ -168,7 +191,16 @@ class CircuitExperiment(Experiment):
         """
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before drawing the experiment.")
-        return self.execution_manager.draw(resolution=resolution, idx=idx)
+
+        return self.execution_manager.draw(
+            real=real,
+            imag=imag,
+            absolute=absolute,
+            modulation=modulation,
+            linestyle=linestyle,
+            resolution=resolution,
+            idx=idx,
+        )
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -207,6 +239,31 @@ class CircuitExperiment(Experiment):
             pulse_schedules=pulse_schedules,
             options=experiment_options,
         )
+
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        alias: str,
+        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        channel_id: int | None = None,
+    ):
+        """Set parameter of a platform element.
+
+        Args:
+            parameter (Parameter): name of the parameter to change
+            value (float): new value
+            alias (str): alias of the element that contains the given parameter
+            channel_id (int | None): channel id
+        """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = list(sum(circuit.get_parameters(), ()))
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self.build_execution()
+            return
+        super().set_parameter(parameter=parameter, value=value, alias=alias, element=element, channel_id=channel_id)
 
     def __str__(self):
         """String representation of an experiment."""
