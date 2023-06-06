@@ -49,6 +49,6 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     options = ql.ExperimentOptions(settings=settings)
 
     # create experiment with options
-    sample_experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
+    sample_experiment = ql.CircuitExperiment(platform=platform, circuits=[circuit], options=options)
 
     return sample_experiment.execute(save_results=False)
