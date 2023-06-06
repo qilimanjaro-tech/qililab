@@ -42,7 +42,7 @@ def fixture_pulse_schedule(platform: Platform) -> PulseSchedule:
 
 
 @pytest.fixture(name="loops")
-def fixture_loop() -> List[Loop]:
+def fixture_loop() -> list[Loop]:
     """Return list of loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     return [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
