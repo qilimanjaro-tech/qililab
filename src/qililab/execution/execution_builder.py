@@ -26,7 +26,7 @@ class ExecutionBuilder(metaclass=Singleton):
                 if bus is None:
                     raise ValueError(f"There is no bus connected to port {port}.")
                 if bus_idx not in buses:
-                    buses[bus_idx] = BusExecution(bus=bus, pulse_schedule=[pulse_bus_schedule])
+                    buses[bus_idx] = BusExecution(bus=bus, pulse_bus_schedules=[pulse_bus_schedule])
                     continue
                 buses[bus_idx].add_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
@@ -55,18 +55,33 @@ class ExecutionBuilder(metaclass=Singleton):
                         f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
                     )
                 else:
-                    buses[alias] = BusExecution(bus=bus, pulse_schedule=[])
+                    buses[alias] = BusExecution(bus=bus, pulse_bus_schedules=[])
 
         return ExecutionManager(buses=list(buses.values()), num_schedules=0, platform=platform)
 
     def _get_bus_info_from_pulse_bus_schedule_port(self, platform: Platform, pulse_bus_schedule: PulseBusSchedule):
-        """get the bus information that it is connected to the port in the pulse bus schedule"""
+        """get the bus information that it is connected to the port in the pulse bus schedule
+        Args:
+            platform: Platform
+            pulse_bus_schedule: PulseBusSchedule
+        Returns:
+            port: pulse_bus_schedule.port
+            bus_idx: index of the bus
+            bus: Bus object
+        """
         port = pulse_bus_schedule.port
         bus_idx, bus = platform.get_bus(port=port)
         return port, bus_idx, bus
 
     def _get_bus_info_from_loop_alias(self, platform: Platform, loop: Loop):
-        """get the bus information that it is connected to the port from the loop alias. Loop alias has to be the same as the bus alias"""
+        """get the bus information that it is connected to the port from the loop alias. Loop alias has to be the same as the bus alias
+        Args:
+            platform: Platform
+            loop: Loop
+        Returns:
+            alias: alias of the bus
+            bus: Bus object
+        """
         alias = loop.alias
         bus = platform.get_bus_by_alias(alias=alias)
         return alias, bus
