@@ -14,7 +14,7 @@ from qpysequence import Sequence
 from qililab import build_platform
 from qililab.constants import RUNCARD, SCHEMA
 from qililab.execution import ExecutionManager
-from qililab.experiment import CircuitExperiment
+from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.typings import InstrumentName, Parameter
