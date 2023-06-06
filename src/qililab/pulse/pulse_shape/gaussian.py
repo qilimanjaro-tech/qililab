@@ -18,7 +18,7 @@ class Gaussian(PulseShape):
     name = PulseShapeName.GAUSSIAN
     num_sigmas: float
 
-    def envelope(self, duration: int, amplitude: float, resolution: float = 1.0):
+    def envelope(self, duration: int, amplitude: float, resolution: float = 1):
         """Gaussian envelope centered with respect to the pulse.
 
         Args:
@@ -32,7 +32,7 @@ class Gaussian(PulseShape):
         time = np.arange(duration / resolution) * resolution
         mu_ = duration / 2
 
-        gaussian = np.exp(-0.5 * (time - mu_) ** 2 / sigma**2)
+        gaussian = np.exp(-((time - mu_) ** 2) / sigma**2)
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
 
         return gaussian * amplitude / np.max(gaussian)  # Re-shape to amplitude

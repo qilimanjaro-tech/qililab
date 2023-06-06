@@ -52,7 +52,7 @@ schema:
         alias: qubit
         id_: 1
         qubit_index: 0
-        frequency: 3.351e+09
+        frequency: 13066127893.759731
         nodes: [0]
   instruments: []
   buses:

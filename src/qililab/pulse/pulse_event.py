@@ -48,7 +48,7 @@ class PulseEvent:
         q = np.imag(envelope)
 
         # Convert pulse relative phase to absolute phase by adding the absolute phase at t=start_time.
-        phase_offset = self.pulse.phase + 2 * np.pi * self.pulse.frequency * self.start_time * 1e-9
+        phase_offset = self.pulse.phase + self.pulse.frequency * self.start_time * 1e-9
         imod, qmod = modulate(i=i, q=q, frequency=self.pulse.frequency, phase_offset=phase_offset)
 
         return Waveforms(i=imod.tolist(), q=qmod.tolist())
