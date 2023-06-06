@@ -32,7 +32,7 @@ class ExecutionManager:
     def __post_init__(self):
         """check that the number of schedules matches all the schedules for each bus"""
         for bus in self.buses:
-            self._check_schedules_matches(bus_num_schedules=len(bus.pulse_schedule))
+            self._check_schedules_matches(bus_num_schedules=len(bus.pulse_bus_schedules))
 
     def _check_schedules_matches(self, bus_num_schedules: int):
         """check that the number of schedules matches all the schedules for each bus"""
