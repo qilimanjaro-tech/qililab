@@ -51,7 +51,7 @@ def fixture_loop() -> List[Loop]:
 
 
 @pytest.fixture(name="nested_loops")
-def fixture_nested_loop() -> List[Loop]:
+def fixture_nested_loop() -> list[Loop]:
     """Return list of a loop that contain nested loops with alias equal to the alias in the Galadriel object specifyied in the data.py file"""
     loops = [
         Loop(alias=bus[RUNCARD.ALIAS], parameter=Parameter.CURRENT, values=np.linspace(0, 10, 10))
