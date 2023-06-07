@@ -39,6 +39,7 @@ def fixture_all_xy():
     }
     return analysis
 
+
 class TestAllXY:
     """Unit tests for the ``all_xy_experiment`` class."""
 
@@ -46,16 +47,32 @@ class TestAllXY:
         """Test the ``__init__`` method."""
         # Test that the correct circuits are created
         expected_num_experiments = 21
-        expected_circuits_names = ["II", "XpXp", "YpYp",
-                                   "XpYp", "YpXp", "X9I",
-                                   "Y9I", "X9Y9", "Y9X9",
-                                   "X9Yp", "Y9Xp", "XpY9",
-                                   "YpX9", "X9Xp", "XpX9",
-                                   "Y9Yp", "YpY9", "XpI",
-                                   "YpI", "X9X9", "Y9Y9"]
+        expected_circuits_names = [
+            "II",
+            "XpXp",
+            "YpYp",
+            "XpYp",
+            "YpXp",
+            "X9I",
+            "Y9I",
+            "X9Y9",
+            "Y9X9",
+            "X9Yp",
+            "Y9Xp",
+            "XpY9",
+            "YpX9",
+            "X9Xp",
+            "XpX9",
+            "Y9Yp",
+            "YpY9",
+            "XpI",
+            "YpI",
+            "X9X9",
+            "Y9Y9",
+        ]
         default_repetition_duration = 10000
         default_hardware_average = 10000
-        
+
         all_xy_circuits = all_xy_experiment.circuit
         all_xy_circuits_names = all_xy_experiment.circuits_names
         assert len(all_xy_circuits) == expected_num_experiments
@@ -65,7 +82,7 @@ class TestAllXY:
             for gate in circuit:
                 assert isinstance(gate, (ql.Drag, M, Wait))
                 assert gate.qubits == (0,)
-        
+
         # Test the bus attributes
         assert not isinstance(all_xy_experiment.control_bus.system_control, ReadoutSystemControl)
         assert isinstance(all_xy_experiment.readout_bus.system_control, ReadoutSystemControl)
@@ -82,9 +99,9 @@ class TestAllXY:
     def test_func(self, all_xy_experiment: AllXYExperiment):
         """Test the ``func`` method."""
         assert np.allclose(
-            all_xy_experiment.func(xdata=if_values, amplitude=i_amplitude,
-                                   frequency=i_q_freq / (2 * np.pi),
-                                   phase=-np.pi / 2, offset=0),
+            all_xy_experiment.func(
+                xdata=if_values, amplitude=i_amplitude, frequency=i_q_freq / (2 * np.pi), phase=-np.pi / 2, offset=0
+            ),
             i,
         )
 
