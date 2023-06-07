@@ -1,10 +1,8 @@
 """Tests for the Experiment class."""
 import copy
-import itertools
 import os
 from unittest.mock import MagicMock, patch
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -13,6 +11,7 @@ from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
+from qililab.result.results import Results
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
@@ -44,6 +43,29 @@ def fixture_connected_experiment(
     return experiment_all_platforms
 
 
+@pytest.fixture(name="connected_nested_experiment")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+@patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
+def fixture_connected_nested_experiment(
+    mock_mini_circuits: MagicMock,
+    mock_keithley: MagicMock,
+    mock_rs: MagicMock,
+    mock_pulsar: MagicMock,
+    nested_experiment: Experiment,
+):
+    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
+    instance."""
+    mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+    nested_experiment.connect()
+    mock_mini_circuits.assert_called()
+    mock_keithley.assert_called()
+    mock_rs.assert_called()
+    mock_pulsar.assert_called()
+    return nested_experiment
+
+
 @pytest.fixture(name="platform")
 def fixture_platform() -> Platform:
     """Return Platform object."""
@@ -56,7 +78,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galdriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -237,6 +259,59 @@ class TestMethods:
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             exp.run()
 
+    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
+    def test_run_with_nested_experiment(self, connected_nested_experiment: Experiment):
+        """Test the run method with experiments with nested loops"""
+        """Test the ``run`` method of the Experiment class."""
+        connected_nested_experiment.build_execution()
+        connected_nested_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(connected_nested_experiment, "_plot")
+        assert not hasattr(connected_nested_experiment, "results")
+        with patch("qililab.experiment.experiment.open") as mock_open:
+            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
+                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                    # Build execution
+                    connected_nested_experiment.run()
+                    # Assert that the mocks are called when building the execution (such that NO files are created)
+                    mock_open.assert_called()
+                    mock_makedirs.assert_called()
+                    mock_plot.assert_called_once_with(
+                        connection=connected_nested_experiment.platform.connection,
+                        loops=connected_nested_experiment.options.loops or [],
+                        num_schedules=1,
+                        title=connected_nested_experiment.options.name,
+                    )
+                    mock_plot.assert_called_once()
+        assert len(connected_nested_experiment.results.results) > 0
+
+    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
+    @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
+    def test_run_with_remote_save(self, mock_remote_save: MagicMock, connected_experiment: Experiment):
+        """Test the run method with remote save set to True"""
+        connected_experiment.options.remote_save = True
+        connected_experiment.build_execution()
+        connected_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(connected_experiment, "_plot")
+        assert not hasattr(connected_experiment, "results")
+        with patch("qililab.experiment.experiment.open") as mock_open:
+            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
+                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                    # Build execution
+                    res = connected_experiment.run()
+                    # Assert that the mocks are called when building the execution (such that NO files are created)
+                    mock_remote_save.assert_called_once()
+                    mock_open.assert_called()
+                    mock_makedirs.assert_called()
+                    mock_plot.assert_called_once_with(
+                        connection=connected_experiment.platform.connection,
+                        loops=connected_experiment.options.loops or [],
+                        num_schedules=1,
+                        title=connected_experiment.options.name,
+                    )
+                    mock_plot.assert_called_once()
+                    assert isinstance(res, Results)
+        assert len(connected_experiment.results.results) > 0
+
     def test_turn_on_instruments(self, connected_experiment: Experiment):
         """Test the ``turn_on_instruments`` method of the Experiment class."""
         connected_experiment.build_execution()
@@ -318,6 +393,12 @@ class TestMethods:
         filtered_loops, filtered_values = exp._filter_loops_values_with_external_parameters(test_value, test_loop)
         assert filtered_loops == []
         assert filtered_values == []
+
+    def test_prepare_results_returns_no_path(self, exp: Experiment):
+        """Test the prepare_results method with save_results=False returns no results_path"""
+        exp.build_execution()
+        _, results_path = exp.prepare_results(save_results=False)
+        assert results_path is None
 
 
 class TestSetParameter:
