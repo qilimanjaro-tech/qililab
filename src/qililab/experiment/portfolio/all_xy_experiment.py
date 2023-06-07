@@ -201,3 +201,16 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
                 len(self.if_values), 21
             )
         return self.post_processed_results
+    
+    def plot(self):
+        acq = self.post_processed_results.acquisitions()
+        i = np.array(acq['i']).reshape(21,10)
+        q = np.array(acq['q']).reshape(21,10)
+
+        mag = 20*np.log10(np.abs(i+1j*q))
+
+        for ii , freq in enumerate(self.if_values):
+            plt.plot(mag[:,ii], '-o', label=f'IF ={freq*1e-6:.2f} MHz')
+        plt.legend(loc='right', bbox_to_anchor=(1.4, 0.5))
+        
+        return plt

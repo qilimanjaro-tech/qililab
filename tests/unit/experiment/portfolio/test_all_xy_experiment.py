@@ -8,6 +8,7 @@ import qililab as ql
 from qililab.utils import Wait
 from qililab.experiment import AllXYExperiment
 from qililab.system_control import ReadoutSystemControl
+from qililab import build_platform
 from tests.data import Galadriel
 
 START = 1
@@ -26,7 +27,7 @@ def fixture_all_xy():
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = ql.build_platform(name="flux_qubit")
+            platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = AllXYExperiment(platform=platform, qubit=0, if_values=if_values)
@@ -51,7 +52,9 @@ class TestAllXY:
                                    "YpX9", "X9Xp", "XpX9",
                                    "Y9Yp", "YpY9", "XpI",
                                    "YpI", "X9X9", "Y9Y9"]
-
+        default_repetition_duration = 10000
+        default_hardware_average = 10000
+        
         all_xy_circuits = all_xy_experiment.circuit
         all_xy_circuits_names = all_xy_experiment.circuits_names
         assert len(all_xy_circuits) == expected_num_experiments
@@ -72,8 +75,8 @@ class TestAllXY:
         assert all_xy_experiment.loop.start == START
         assert all_xy_experiment.loop.stop == STOP
         assert all_xy_experiment.loop.num == NUM
-        assert all_xy_experiment.options.settings.repetition_duration == 10000
-        assert all_xy_experiment.options.settings.hardware_average == 10000
+        assert all_xy_experiment.options.settings.repetition_duration == default_repetition_duration
+        assert all_xy_experiment.options.settings.hardware_average == default_hardware_average
 
     def test_func(self, all_xy_experiment: AllXYExperiment):
         """Test the ``func`` method."""
