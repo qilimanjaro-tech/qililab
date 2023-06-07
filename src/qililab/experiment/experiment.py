@@ -9,7 +9,6 @@ from threading import Thread
 import numpy as np
 from qcodes.instrument import Instrument as QcodesInstrument
 from qibo.models.circuit import Circuit
-from sympy import Q
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
