@@ -4,6 +4,9 @@
 
 ### New features since last release
 
+- Added `All XY` portfolio experiment
+  [#410](https://github.com/qilimanjaro-tech/qililab/pull/410)
+
 - Added to the `draw()` method the option  of specifying if you want:
 
   - modulation or not,
