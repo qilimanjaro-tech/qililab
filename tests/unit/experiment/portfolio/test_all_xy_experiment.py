@@ -37,7 +37,6 @@ def fixture_all_xy():
     }
     return analysis
 
-
 class TestAllXY:
     """Unit tests for the ``all_xy_experiment`` class."""
 
