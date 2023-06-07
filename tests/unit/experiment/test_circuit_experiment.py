@@ -4,6 +4,7 @@ import time
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
@@ -13,7 +14,7 @@ from qpysequence import Sequence
 from qililab import build_platform
 from qililab.constants import RUNCARD, SCHEMA
 from qililab.execution import ExecutionManager
-from qililab.experiment import CircuitExperiment
+from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.typings import InstrumentName, Parameter
@@ -192,19 +193,19 @@ class TestMethods:
     def test_compile(self, experiment: CircuitExperiment):
         """Test the compile method of the ``Execution`` class."""
         experiment.build_execution()
-        sequences = experiment.compile()
-        assert isinstance(sequences, list)
-        assert len(sequences) == len(experiment.circuits)
-        sequence = sequences[0]
+        pulse_schedules = experiment.compile()
+        assert isinstance(pulse_schedules, list)
+        assert len(pulse_schedules) == len(experiment.circuits)
+        pulse_schedule = pulse_schedules[0]
         buses = experiment.execution_manager.buses
-        assert len(sequence) == len(buses)
-        for alias, bus_sequences in sequence.items():
+        assert len(pulse_schedule) == len(buses)
+        for alias, bus_schedule in pulse_schedule.items():
             assert alias in {bus.alias for bus in buses}
-            assert isinstance(bus_sequences, list)
-            assert len(bus_sequences) == 1
-            assert isinstance(bus_sequences[0], Sequence)
+            assert isinstance(bus_schedule, list)
+            assert len(bus_schedule) == 1
+            assert isinstance(bus_schedule[0], Sequence)
             assert (
-                bus_sequences[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
+                bus_schedule[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
             )  # additional 4ns for the initial wait_sync
 
     def test_compile_raises_error(self, experiment: CircuitExperiment):
@@ -216,8 +217,29 @@ class TestMethods:
     def test_draw_method(self, connected_experiment: CircuitExperiment):
         """Test draw method."""
         connected_experiment.build_execution()
-        figure = connected_experiment.draw()
-        assert isinstance(figure, Figure)
+
+        figures = [
+            connected_experiment.draw(),
+            connected_experiment.draw(
+                modulation=False,
+                linestyle="--",
+                resolution=1.3,
+            ),
+            connected_experiment.draw(
+                real=False,
+                imag=False,
+                absolute=True,
+                modulation=False,
+                linestyle=".",
+                resolution=0.11,
+            ),
+        ]
+
+        for figure in figures:
+            assert figure is not None
+            assert isinstance(figure, Figure)
+
+        plt.close()
 
     def test_draw_raises_error(self, experiment: CircuitExperiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""
@@ -253,6 +275,16 @@ class TestMethods:
         """Test the run method raises an exception if the execution manager was not previously built"""
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment."):
             experiment.run()
+
+    def test_set_parameter_method_with_gate_value(self, experiment: CircuitExperiment):
+        """Test the ``set_parameter`` method with a parameter of a gate."""
+        experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
+        assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
+
+    def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: CircuitExperiment):
+        """Test the ``set_parameter`` method with a parameter of a gate in circuit."""
+        experiment.set_parameter(alias="0", parameter=Parameter.GATE_PARAMETER, value=123)
+        assert experiment.circuits[0].get_parameters()[0][0] == 123
 
 
 class TestAttributes:

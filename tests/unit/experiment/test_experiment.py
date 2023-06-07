@@ -49,7 +49,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galdriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -347,6 +347,12 @@ class TestMethods:
         assert filtered_loops == []
         assert filtered_values == []
 
+    def test_prepare_results_returns_no_path(self, exp: Experiment):
+        """Test the prepare_results method with save_results=False returns no results_path"""
+        exp.build_execution()
+        _, results_path = exp.prepare_results(save_results=False)
+        assert results_path is None
+
 
 class TestSetParameter:
     """Unit tests for the ``set_parameter`` method."""
@@ -390,11 +396,6 @@ class TestSetParameter:
             ).settings.reset
             is False
         )
-
-    def test_set_parameter_method_with_gate_value(self, exp: Experiment):
-        """Test the ``set_parameter`` method with a parameter of a gate."""
-        exp.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
-        assert exp.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
 
 class TestReset:

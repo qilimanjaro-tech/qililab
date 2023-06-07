@@ -17,7 +17,8 @@ from .circuit import (
     X,
 )
 from .config import __version__, logger
-from .experiment import CircuitExperiment
+from .execute import execute
+from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .result.results import Results
 from .transpiler import Drag, Park, translate_circuit

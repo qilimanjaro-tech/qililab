@@ -7,7 +7,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
-from qililab.experiment import CircuitExperiment
+from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.instruments import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
@@ -128,7 +128,7 @@ class TestBusExecution:
 
     def test_compile(self, bus_execution: BusExecution):
         """Test compile method."""
-        sequences = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        sequences = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, list)
         assert len(sequences) == 1
         assert isinstance(sequences[0], Sequence)
@@ -139,7 +139,7 @@ class TestBusExecution:
         awg = bus_execution.system_control.instruments[0]
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
-        _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000)
+        _ = bus_execution.compile(idx=0, nshots=1000, repetition_duration=2000, num_bins=1)
         bus_execution.upload()
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
