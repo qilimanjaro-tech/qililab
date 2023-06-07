@@ -2,11 +2,12 @@
 from dataclasses import dataclass
 
 import numpy as np
+from scipy import signal
 
 from qililab.pulse.pulse_shape.pulse_shape import PulseShape
 from qililab.typings import PulseShapeName
 from qililab.utils import Factory
-from scipy import signal
+
 
 @Factory.register
 @dataclass(frozen=True, eq=True)
