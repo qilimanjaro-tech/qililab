@@ -4,11 +4,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from qibo.gates import M
+
 import qililab as ql
-from qililab.utils import Wait
+from qililab import build_platform
 from qililab.experiment import AllXYExperiment
 from qililab.system_control import ReadoutSystemControl
-from qililab import build_platform
+from qililab.utils import Wait
 from tests.data import Galadriel
 
 START = 1
