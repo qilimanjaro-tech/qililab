@@ -1,8 +1,8 @@
 """This submodule contains a portfolio of pre-defined experiments."""
-from .all_xy_experiment import AllXYExperiment
 from .experiment_analysis import ExperimentAnalysis
 from .fitting_models import *
 from .flipping_sequence import FlippingSequence
+from .all_xy_experiment import AllXYExperiment
 from .rabi import Rabi
 
 # from .resonator_spectroscopy import ResonatorSpectroscopy
