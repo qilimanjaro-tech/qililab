@@ -50,7 +50,8 @@ class Cos(FittingModel):
             offset (float): offset
         """
         return amplitude * np.cos(2 * np.pi * frequency * xdata + phase) + offset
-    
+
+
 class Exp(FittingModel):
     """Exponential model function."""
 

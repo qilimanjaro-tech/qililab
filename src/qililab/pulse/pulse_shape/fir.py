@@ -31,13 +31,12 @@ class LFilter(PulseShape):
         norm = np.amax(np.real(envelope))
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
         corr_norm = np.max(np.real(corr_envelope))
-        corr_envelope = corr_envelope * (norm / corr_norm ) * self.norm_factor
+        corr_envelope = corr_envelope * (norm / corr_norm) * self.norm_factor
 
         return corr_envelope
-    
-    
+
     def __hash__(self) -> int:
         return hash((self.name, tuple(self.a), tuple(self.b)))
-    
+
     def __eq__(self, other):
-        return self.name == other.name and all(self.a == other.a) and all(self.b == other.b) 
+        return self.name == other.name and all(self.a == other.a) and all(self.b == other.b)
