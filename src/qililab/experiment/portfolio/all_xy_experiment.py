@@ -1,7 +1,4 @@
 """This file contains a pre-defined version of an AllXY experiment."""
-from inspect import Parameter
-
-import matplotlib.pyplot as plt
 import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
@@ -9,9 +6,8 @@ from qibo.models import Circuit
 import qililab as ql
 from qililab.experiment.portfolio import Exp, ExperimentAnalysis
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings
-from qililab.utils import Wait
-from qililab.utils.loop import Loop
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
+from qililab.utils import Loop, Wait
 
 class AllXYExperiment(ExperimentAnalysis, Exp):
     """Class used to create an All XY Experiment. This experiment builds 21 circuits with all different combinations
@@ -52,7 +48,7 @@ class AllXYExperiment(ExperimentAnalysis, Exp):
         sequencer_mw = qubit_sequencer_mw_mapping[qubit]
     
         if if_values is not None:
-            if_loop = Loop(alias=f'drive_line_q{qubit}_bus', parameter=ql.Parameter.IF,
+            if_loop = Loop(alias=f'drive_line_q{qubit}_bus', parameter=Parameter.IF,
                        channel_id=sequencer_mw, values=if_values.astype(list))
 
         _, control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
@@ -63,7 +59,7 @@ class AllXYExperiment(ExperimentAnalysis, Exp):
             settings=ExperimentSettings(repetition_duration=repetition_duration,
                                         hardware_average=hardware_average)
             )
-        loop = ql.Loop(alias="Sequence", parameter=ql.Parameter.A, values=self.circuit_names)
+        loop = ql.Loop(alias="Sequence", parameter=Parameter.A, values=self.circuit_names)
 
         # Initialize experiment
         super().__init__(
