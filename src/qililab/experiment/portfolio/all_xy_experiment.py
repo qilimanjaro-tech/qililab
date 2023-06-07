@@ -14,7 +14,17 @@ from qililab.utils import Wait
 from qililab.utils.loop import Loop
 
 class AllXYExperiment(ExperimentAnalysis, Cos):
+    """Class used to create an All XY Experiment. This experiment builds 21 circuits with all different combinations
+    of two single-qubits rotations around the x and y axis using pi and pi/2 rotations.
 
+    Args:
+        platform (Platform): platform used to run the experiment
+        qubit (int): qubit index used in the experiment
+        repetition_duration (int, optional): duration of a single repetition in nanoseconds. Defaults to 10000.
+        measurement_buffer (int, optional): value for the measurement buffer Defaults to 100.
+        hardware_average (int, optional): number of repetitions used to average the result. Defaults to 10000.
+        if_values (numpy.ndarray, optional): array of values to loop through in the experiment, for the IF frecquencies
+    """
     def __init__(
         self,
         platform: Platform,
@@ -35,7 +45,7 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
             "M": M(self.qubit)
         }
         
-        self.circuits, self.circuit_names = self.get_circuits(qubits=self.qubit+1, gates=self.gates)
+        self.circuits, self.circuit_names = self._get_circuits(qubits=self.qubit+1, gates=self.gates)
         self.num_experiments = 21
         self.if_values = if_values
         qubit_sequencer_mw_mapping = {0: 0, 1: 1, 2: 0, 3: 0, 4: 1}
@@ -65,7 +75,17 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
             experiment_loop=loop
         )
 
-    def get_circuits(self, qubits:int, gates:dict):
+    def _get_circuits(self, qubits:int, gates:dict):
+        """Method to construct all necessary circuits for the experiment.
+
+        Args:
+            qubits (int): number of qubits for the circuit
+            gates (dict): dictionary containing gates definition and instantiation.
+            
+        Returns:
+            list[Circuit]: list with the 21 circuits
+            list[string]: list with circuit names
+        """
         # II circuit
         circuit_ii = Circuit(qubits)
         circuit_ii.add(gates["I"])
@@ -195,22 +215,14 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
         return circuits, circuits_names
 
     def post_process_results(self):
+        """Method to post-process the result of the experiment.
+            
+        Returns:
+            np.ndarray: post-processed results
+        """
         super().post_process_results()
         if self.if_values is not None:
             self.post_processed_results = self.post_processed_results.reshape(
                 len(self.if_values), 21
             )
         return self.post_processed_results
-    
-    def plot(self):
-        acq = self.post_processed_results.acquisitions()
-        i = np.array(acq['i']).reshape(21,10)
-        q = np.array(acq['q']).reshape(21,10)
-
-        mag = 20*np.log10(np.abs(i+1j*q))
-
-        for ii , freq in enumerate(self.if_values):
-            plt.plot(mag[:,ii], '-o', label=f'IF ={freq*1e-6:.2f} MHz')
-        plt.legend(loc='right', bbox_to_anchor=(1.4, 0.5))
-        
-        return plt
