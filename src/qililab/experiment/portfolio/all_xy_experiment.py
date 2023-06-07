@@ -7,13 +7,13 @@ from qibo.gates import M
 from qibo.models import Circuit
 
 import qililab as ql
-from qililab.experiment.portfolio import Cos, ExperimentAnalysis
+from qililab.experiment.portfolio import Exp, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings
 from qililab.utils import Wait
 from qililab.utils.loop import Loop
 
-class AllXYExperiment(ExperimentAnalysis, Cos):
+class AllXYExperiment(ExperimentAnalysis, Exp):
     """Class used to create an All XY Experiment. This experiment builds 21 circuits with all different combinations
     of two single-qubits rotations around the x and y axis using pi and pi/2 rotations.
 
