@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from qibo.gates import M, X
+from sympy import Q
 
 from qililab import build_platform
 from qililab.experiment import T1
@@ -12,12 +13,13 @@ from qililab.typings.enums import Parameter
 from qililab.utils import Wait
 from tests.data import Galadriel
 
-START = 1
-STOP = 1000
-NUM = 101
+START, STOP, NUM = (1, 1000, 101)
+I_AMPLITUDE, I_RATE, I_OFFSET = (5, -2, 0)
+Q_AMPLITUDE, Q_RATE, Q_OFFSET = (9, -2, 0)
+
 x = np.linspace(START, STOP, NUM)
-i = 5 * np.exp(-2 * x)
-q = 9 * np.exp(-2 * x)
+i = I_AMPLITUDE * np.exp(I_RATE * x)
+q = Q_AMPLITUDE * np.exp(Q_RATE * x)
 
 
 @pytest.fixture(name="t1")
@@ -59,6 +61,6 @@ class TestT1:
     def test_func(self, t1: T1):
         """Test the ``func`` method."""
         assert np.allclose(
-            t1.func(xdata=x, amplitude=5, rate=-2, offset=0),
+            t1.func(xdata=x, amplitude=I_AMPLITUDE, rate=I_RATE, offset=I_OFFSET),
             i,
         )
