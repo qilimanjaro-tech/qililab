@@ -71,8 +71,6 @@ class ExperimentAnalysis(Experiment, FittingModel):
         i = np.array(acquisitions["i"])
         q = np.array(acquisitions["q"])
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
-        # data_dimensions = len(self.loop.values) if self.loop.loop is None else len(self.loop.values) * len(self.loop.loop.values)
-        # self.post_processed_results = np.average(self.binned_post_processed_results.reshape(self.num_bins, data_dimensions), axis=1)
         return self.post_processed_results
 
     def fit(self, p0: tuple | None = None):
@@ -117,7 +115,6 @@ class ExperimentAnalysis(Experiment, FittingModel):
         axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
         axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
         axes.scatter(xdata, self.post_processed_results, color="blue")
-        axes.plot(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popt"):
             # Create label text
             args = list(inspect.signature(self.func).parameters.keys())[1:]
