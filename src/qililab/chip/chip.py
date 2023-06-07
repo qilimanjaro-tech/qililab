@@ -171,7 +171,7 @@ class Chip(DDBBElement):
         Returns:
             list[int]: List of integers containing the indices of the qubits inside the chip.
         """
-        return [node for node in self.nodes if isinstance(node, Qubit)]
+        return [node.qubit_index for node in self.nodes if isinstance(node, Qubit)]
 
     @property
     def num_qubits(self) -> int:
