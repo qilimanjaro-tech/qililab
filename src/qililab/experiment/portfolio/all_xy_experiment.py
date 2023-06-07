@@ -9,6 +9,7 @@ from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
+
 class AllXYExperiment(ExperimentAnalysis, Exp):
     """Class used to create an All XY Experiment. This experiment builds 21 circuits with all different combinations
     of two single-qubits rotations around the x and y axis using pi and pi/2 rotations.
