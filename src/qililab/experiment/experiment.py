@@ -332,7 +332,17 @@ class Experiment:
                 if isinstance(circuit, QiliCircuit):
                     circuit.set_operation_parameter(alias=alias, parameter_name=parameter_name, parameter_value=value)  # type: ignore[arg-type]
             self.build_execution()
-        elif element is None:
+            return
+
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = list(sum(circuit.get_parameters(), ()))  # type: ignore[union-attr]
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)  # type: ignore[union-attr]
+            self.build_execution()
+            return
+
+        if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
