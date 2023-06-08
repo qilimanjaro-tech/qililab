@@ -2,7 +2,6 @@
 import time
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from qililab import build_platform
@@ -41,13 +40,19 @@ def fixture_simulated_experiment(simulated_platform: Platform):
     return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.yaml.safe_dump")
 @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.experiment.experiment.os.makedirs")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
-    def test_execute(
+    def test_execute_without_saving_experiment(
         self,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
+        mock_makedirs: MagicMock,
         simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
@@ -59,6 +64,33 @@ class TestSimulatedExecution:
 
         # Assert simulator called
         mock_ssc_run.assert_called()
+
+        # Test result
+        with pytest.raises(ValueError):  # Result should be SimulatedResult
+            results.acquisitions()
+
+    def test_execute_with_saving_experiment(
+        self,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
+        mock_ssc_run: MagicMock,
+        mock_makedirs: MagicMock,
+        simulated_experiment: Experiment,
+    ):
+        """Test execute method with simulated qubit"""
+
+        # Method under test
+        results = simulated_experiment.execute()
+
+        time.sleep(0.3)
+
+        # Assert simulator called
+        mock_ssc_run.assert_called()
+
+        # Assert called functions
+        mock_makedirs.assert_called()
+        mock_open.assert_called()
+        mock_dump.assert_called()
 
         # Test result
         with pytest.raises(ValueError):  # Result should be SimulatedResult
