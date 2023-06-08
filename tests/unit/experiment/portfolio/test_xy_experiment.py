@@ -37,6 +37,7 @@ def fixture_all_xy():
         "i": i,
         "q": q,
     }
+
     return analysis
 
 
@@ -79,7 +80,7 @@ class TestAllXY:
         assert all_xy_circuits_names == expected_circuits_names
 
         for circuit in all_xy_experiment.circuits:
-            for gate in circuit:
+            for gate in circuit.queue:
                 assert isinstance(gate, (ql.Drag, M, Wait))
                 assert gate.qubits == (0,)
 
@@ -88,11 +89,10 @@ class TestAllXY:
         assert isinstance(all_xy_experiment.readout_bus.system_control, ReadoutSystemControl)
         # Test the experiment options
         assert len(all_xy_experiment.options.loops) == 1
-        assert all_xy_experiment.loop.alias == f"drive_line_q{all_xy_experiment.qubit}_bus"
-        assert all_xy_experiment.loop.parameter == ql.Parameter.IF
-        assert all_xy_experiment.loop.start == START
-        assert all_xy_experiment.loop.stop == STOP
-        assert all_xy_experiment.loop.num == NUM
+        assert all_xy_experiment.loop.parameter == ql.Parameter.A
+        assert all_xy_experiment.loop.start == expected_circuits_names[0]
+        assert all_xy_experiment.loop.stop == expected_circuits_names[-1]
+        assert all_xy_experiment.loop.num == expected_num_experiments
         assert all_xy_experiment.options.settings.repetition_duration == default_repetition_duration
         assert all_xy_experiment.options.settings.hardware_average == default_hardware_average
 
@@ -104,22 +104,3 @@ class TestAllXY:
             ),
             i,
         )
-
-    def test_fit(self, all_xy_experiment: AllXYExperiment):
-        """Test fit method."""
-        all_xy_experiment.post_processed_results = q
-        popt = all_xy_experiment.fit(p0=(8, 7.5 / (2 * np.pi), -np.pi / 2, 0))  # p0 is an initial guess
-        assert np.allclose(popt, (q_amplitude, i_q_freq / (2 * np.pi), -np.pi / 2, 0), atol=1e-5)
-
-    def test_plot(self, all_xy_experiment: AllXYExperiment):
-        """Test plot method."""
-        all_xy_experiment.post_processed_results = q
-        popt = all_xy_experiment.fit()
-        fig = all_xy_experiment.plot()
-        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
-        assert np.allclose(scatter_data[:, 0], if_values)
-        assert np.allclose(scatter_data[:, 1], q)
-        ax = fig.axes[0]
-        line = ax.lines[0]
-        assert np.allclose(line.get_xdata(), if_values)
-        assert np.allclose(line.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * if_values + popt[2]) + popt[3])

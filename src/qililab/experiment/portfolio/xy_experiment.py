@@ -61,9 +61,10 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
 
         experiment_options = ExperimentOptions(
             name="AllXY Sequence",
-            loops=None if if_values is not None else [if_loop],
+            loops=None if if_values is None else [if_loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
         )
+
         loop = ql.Loop(alias="Sequence", parameter=ql.Parameter.A, values=self.circuit_names)
 
         # Initialize experiment
