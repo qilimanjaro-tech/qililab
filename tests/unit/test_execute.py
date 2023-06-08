@@ -34,10 +34,12 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
             mock_open.assert_called()
     return platform
 
+
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
     """Return Experiment object."""
     return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
+
 
 @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
 class TestSimulatedExecution:
