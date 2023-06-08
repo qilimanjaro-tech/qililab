@@ -3,6 +3,11 @@
 ## 0.20.0 (2023-05-26)
 
 ### New features since last release
+- Added hotfixes for several issues encountered during the hackathon:
+  https://github.com/qilimanjaro-tech/qililab/pull/413
+  - Save experiments flag for experiments
+  - Empty sequences to avoid creating repeated programs.
+  - Create empty programs for all qubit flux lines to activate calibrated offsets.
 
 - Added to the `draw()` method the option  of specifying if you want:
 
