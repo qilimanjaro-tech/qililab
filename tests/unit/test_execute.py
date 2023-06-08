@@ -14,7 +14,12 @@ from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from tests.data import FluxQubitSimulator, Galadriel, experiment_params, simulated_experiment_circuit
+from tests.data import (
+    FluxQubitSimulator,
+    Galadriel,
+    experiment_params,
+    simulated_experiment_circuit,
+)
 from tests.utils import platform_db
 
 
