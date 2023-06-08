@@ -4,6 +4,12 @@
 
 ### New features since last release
 
+- Added `All XY` portfolio experiment
+  [#411](https://github.com/qilimanjaro-tech/qililab/pull/409)
+  - experiment definition
+  - example notebook
+  - unit tests
+
 - Added to the `draw()` method the option  of specifying if you want:
 
   - modulation or not,
