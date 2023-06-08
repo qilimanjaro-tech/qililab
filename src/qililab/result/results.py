@@ -10,7 +10,7 @@ from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
-from qililab.utils.dataframe_manipulation import concatenate_creating_new_concatenation_index_name
+from qililab.utils.dataframe_manipulation import concatenate_creating_new_index_name_and_concatenation_index_name
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_ranges_from_loops, compute_shapes_from_loops
@@ -90,8 +90,10 @@ class Results:
         """
 
         result_dataframes = [result.to_dataframe() for result in self.results]
-        return concatenate_creating_new_concatenation_index_name(
-            dataframe_list=result_dataframes, new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT
+        return concatenate_creating_new_index_name_and_concatenation_index_name(
+            dataframe_list=result_dataframes,
+            new_index_name=RESULTSDATAFRAME.RESULTS_INDEX,
+            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT,
         )
 
     def _build_empty_result_dataframe(self):
@@ -111,8 +113,10 @@ class Results:
             result.acquisitions().reset_index(drop=True) if result is not None else self._build_empty_result_dataframe()
             for result in self.results
         ]
-        return concatenate_creating_new_concatenation_index_name(
-            dataframe_list=result_acquisition_list, new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT
+        return concatenate_creating_new_index_name_and_concatenation_index_name(
+            dataframe_list=result_acquisition_list,
+            new_index_name=RESULTSDATAFRAME.RESULTS_INDEX,
+            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT,
         )
 
     def _generate_new_acquisition_column_names(self):

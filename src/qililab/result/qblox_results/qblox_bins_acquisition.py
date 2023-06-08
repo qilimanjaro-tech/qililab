@@ -14,7 +14,7 @@ class QbloxBinAcquisition(Acquisition):
 
     def _create_acquisition(self) -> pd.DataFrame:
         """transposes each of the acquired results arrays so that we have for each value
-        a structure with i, q, amplitude, phase.
+        a structure with:  bin, i, q, amplitude, phase.
         """
         acquisition_dataframe = super()._create_acquisition()
         acquisition_dataframe.index.rename(RESULTSDATAFRAME.BIN, inplace=True)

@@ -169,7 +169,6 @@ class TestsQbloxResult:
         """
         acquisitions = qblox_result_noscope.acquisitions()
         assert acquisitions.keys().tolist() == [
-            RESULTSDATAFRAME.ACQUISITION_INDEX,
             RESULTSDATAFRAME.BIN,
             "i",
             "q",
