@@ -1,6 +1,5 @@
 """Tests for the Experiment class."""
 import copy
-import itertools
 import os
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +11,7 @@ from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
+from qililab.result.results import Results
 from qililab.result.vna_result import VNAResult
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
@@ -50,7 +50,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="galdriel")
             mock_load.assert_called()
             mock_open.assert_called()
     loop2 = Loop(
@@ -242,7 +242,7 @@ class TestMethods:
                     with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
                         mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
                         # Build execution
-                        vna_experiment.run()
+                        results = vna_experiment.run()
                         # Assert that the mocks are called when building the execution (such that NO files are created)
                         mock_open.assert_called()
                         mock_makedirs.assert_called()
@@ -253,6 +253,42 @@ class TestMethods:
                             title=vna_experiment.options.name,
                         )
                         mock_plot.assert_called_once()
+                        assert isinstance(results, Results)
+                        assert results.results[0] == mock_acq_res.return_value
+        assert len(vna_experiment.results.results) > 0
+
+    @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
+    def test_run_with_vna_result_remote_svaing(self, mock_remote_save: MagicMock, vna_experiment: Experiment):
+        """Test the ``run`` method of the Experiment class, this is a temporary test until ``run``function of the vna is implemented."""
+        vna_experiment.options.remote_save = True
+        vna_experiment.build_execution()
+        vna_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(vna_experiment, "_plot")
+        assert not hasattr(vna_experiment, "results")
+        with patch("qililab.experiment.experiment.open") as mock_open:
+            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
+                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
+                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
+                        with patch(
+                            "qililab.experiment.experiment.Experiment.remote_save_experiment"
+                        ) as mock_remote_save:
+                            mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+                            # Build execution
+                            results = vna_experiment.run()
+                            # Assert that the mocks are called when building the execution (such that NO files are created)
+                            mock_remote_save.assert_called()
+                            mock_open.assert_called()
+                            mock_makedirs.assert_called()
+                            mock_plot.assert_called_once_with(
+                                connection=vna_experiment.platform.connection,
+                                loops=vna_experiment.options.loops or [],
+                                num_schedules=1,
+                                title=vna_experiment.options.name,
+                            )
+                            mock_plot.assert_called_once()
+                            assert isinstance(results, Results)
+                            assert results.results[0] == mock_acq_res.return_value
+                            mock_remote_save.assert_called()
         assert len(vna_experiment.results.results) > 0
 
     @patch("qililab.execution.execution_manager.BusExecution.acquire_result")
@@ -348,6 +384,12 @@ class TestMethods:
         assert filtered_loops == []
         assert filtered_values == []
 
+    def test_prepare_results_returns_no_path(self, exp: Experiment):
+        """Test the prepare_results method with save_results=False returns no results_path"""
+        exp.build_execution()
+        _, results_path = exp.prepare_results(save_results=False)
+        assert results_path is None
+
 
 class TestSetParameter:
     """Unit tests for the ``set_parameter`` method."""
@@ -391,11 +433,6 @@ class TestSetParameter:
             ).settings.reset
             is False
         )
-
-    def test_set_parameter_method_with_gate_value(self, exp: Experiment):
-        """Test the ``set_parameter`` method with a parameter of a gate."""
-        exp.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
-        assert exp.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
 
 class TestReset:

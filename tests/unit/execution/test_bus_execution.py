@@ -7,7 +7,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
-from qililab.experiment import CircuitExperiment
+from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.instruments import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter

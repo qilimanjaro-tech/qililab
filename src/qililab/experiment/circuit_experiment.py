@@ -6,15 +6,17 @@ from queue import Queue
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
+from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment.experiment import Experiment
+from qililab.experiment import Experiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
+from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
@@ -236,6 +238,31 @@ class CircuitExperiment(Experiment):
             pulse_schedules=pulse_schedules,
             options=experiment_options,
         )
+
+    def set_parameter(
+        self,
+        parameter: Parameter,
+        value: float | str | bool,
+        alias: str,
+        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        channel_id: int | None = None,
+    ):
+        """Set parameter of a platform element.
+
+        Args:
+            parameter (Parameter): name of the parameter to change
+            value (float): new value
+            alias (str): alias of the element that contains the given parameter
+            channel_id (int | None): channel id
+        """
+        if parameter == Parameter.GATE_PARAMETER:
+            for circuit in self.circuits:
+                parameters = list(sum(circuit.get_parameters(), ()))
+                parameters[int(alias)] = value
+                circuit.set_parameters(parameters)
+            self.build_execution()
+            return
+        super().set_parameter(parameter=parameter, value=value, alias=alias, element=element, channel_id=channel_id)
 
     def __str__(self):
         """String representation of an experiment."""

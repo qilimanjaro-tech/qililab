@@ -1,6 +1,5 @@
-""" Exp class."""
+""" Experiment class."""
 import csv
-import itertools
 import os
 from datetime import datetime
 from pathlib import Path
@@ -104,7 +103,7 @@ class Experiment:
             element = self.platform.get_element(alias=vna_alias[0])
             frequencies = self.get_hw_values(element, Parameter.FREQUENCY)
             frequencies_str_format = [str(freq) for freq in frequencies]
-            data = {"frequencies": frequencies_str_format}
+            data = {"vna_frequencies": frequencies_str_format}
             with open(file=self.results_path / RESULTS_FILENAME, mode="a", encoding="utf-8") as results_file:
                 yaml.dump(data=data, stream=results_file, sort_keys=False)
 
