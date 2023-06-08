@@ -12,11 +12,12 @@ from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
 from qililab.result.results import Results
+from qililab.result.vna_result import VNAResult
 from qililab.typings import Parameter
 from qililab.typings.enums import InstrumentName
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
-from tests.data import Galadriel, experiment_params
+from tests.data import Galadriel, SauronVNA, experiment_params
 from tests.utils import mock_instruments, platform_db
 
 
@@ -70,6 +71,12 @@ def fixture_connected_nested_experiment(
 def fixture_platform() -> Platform:
     """Return Platform object."""
     return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="sauron_platform")
+def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
@@ -158,6 +165,28 @@ def fixture_exp(request: pytest.FixtureRequest):
     return Experiment(platform=platform, options=options)
 
 
+@pytest.fixture(name="vna_experiment")
+@patch(
+    "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.VectorNetworkAnalyzerDriver",
+    autospec=True,
+)
+@patch(
+    "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.VectorNetworkAnalyzerDriver",
+    autospec=True,
+)
+def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform):
+    """Return a connected experiment with the VNA instrument"""
+    loop = Loop(
+        alias=SauronVNA.buses[0][RUNCARD.ALIAS],
+        parameter=Parameter.POWER,
+        values=np.linspace(0, 10, 10),
+    )
+    options = ExperimentOptions(loops=[loop])
+    vna_experiment = Experiment(platform=sauron_platform, options=options)
+    vna_experiment.connect()
+    return vna_experiment
+
+
 class TestAttributes:
     """Unit tests checking the Experiment attributes and methods"""
 
@@ -230,87 +259,80 @@ class TestMethods:
         if old_data is not None:
             os.environ[DATA] = old_data
 
-    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
-    def test_run(self, connected_experiment: Experiment):
-        """Test the ``run`` method of the Experiment class."""
-        connected_experiment.build_execution()
-        connected_experiment.platform.connection = MagicMock()  # mock connection
-        assert not hasattr(connected_experiment, "_plot")
-        assert not hasattr(connected_experiment, "results")
+    def test_run_with_vna_result(self, vna_experiment: Experiment):
+        """
+        THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
+
+        Test the ``run`` method of the Experiment class, this is a temporary test until ``run``function of the vna is implemented.
+        """
+        vna_experiment.build_execution()
+        vna_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(vna_experiment, "_plot")
+        assert not hasattr(vna_experiment, "results")
         with patch("qililab.experiment.experiment.open") as mock_open:
             with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
                 with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    # Build execution
-                    connected_experiment.run()
-                    # Assert that the mocks are called when building the execution (such that NO files are created)
-                    mock_open.assert_called()
-                    mock_makedirs.assert_called()
-                    mock_plot.assert_called_once_with(
-                        connection=connected_experiment.platform.connection,
-                        loops=connected_experiment.options.loops or [],
-                        num_schedules=1,
-                        title=connected_experiment.options.name,
-                    )
-                    mock_plot.assert_called_once()
-        assert len(connected_experiment.results.results) > 0
+                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
+                        with patch("qililab.execution.execution_manager.BusExecution.run") as mock_run:
+                            mock_acq_res.return_value = VNAResult(data=[])
+                            # Build execution
+                            results = vna_experiment.run()
+                            # Assert that the mocks are called when building the execution (such that NO files are created)
+                            mock_open.assert_called()
+                            mock_makedirs.assert_called()
+                            mock_open.assert_called()
+                            mock_plot.assert_called_once_with(
+                                connection=vna_experiment.platform.connection,
+                                loops=vna_experiment.options.loops or [],
+                                num_schedules=1,
+                                title=vna_experiment.options.name,
+                            )
+                            mock_plot.assert_called_once()
+                            mock_run.assert_called()
+                            mock_acq_res.assert_called()
+                            assert isinstance(results, Results)
+        assert len(vna_experiment.results.results) > 0
 
     def test_run_raises_error(self, exp: Experiment):
         """Test that the ``run`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             exp.run()
 
-    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
-    def test_run_with_nested_experiment(self, connected_nested_experiment: Experiment):
-        """Test the run method with experiments with nested loops"""
-        """Test the ``run`` method of the Experiment class."""
-        connected_nested_experiment.build_execution()
-        connected_nested_experiment.platform.connection = MagicMock()  # mock connection
-        assert not hasattr(connected_nested_experiment, "_plot")
-        assert not hasattr(connected_nested_experiment, "results")
-        with patch("qililab.experiment.experiment.open") as mock_open:
-            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
-                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    # Build execution
-                    connected_nested_experiment.run()
-                    # Assert that the mocks are called when building the execution (such that NO files are created)
-                    mock_open.assert_called()
-                    mock_makedirs.assert_called()
-                    mock_plot.assert_called_once_with(
-                        connection=connected_nested_experiment.platform.connection,
-                        loops=connected_nested_experiment.options.loops or [],
-                        num_schedules=1,
-                        title=connected_nested_experiment.options.name,
-                    )
-                    mock_plot.assert_called_once()
-        assert len(connected_nested_experiment.results.results) > 0
-
-    @pytest.mark.xfail(reason="VNA run not implemented, instruments on the Galadriel runcard won't test it propperly")
     @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
-    def test_run_with_remote_save(self, mock_remote_save: MagicMock, connected_experiment: Experiment):
-        """Test the run method with remote save set to True"""
-        connected_experiment.options.remote_save = True
-        connected_experiment.build_execution()
-        connected_experiment.platform.connection = MagicMock()  # mock connection
-        assert not hasattr(connected_experiment, "_plot")
-        assert not hasattr(connected_experiment, "results")
+    def test_run_with_vna_result_remote_save(self, mock_remote_save: MagicMock, vna_experiment: Experiment):
+        """
+        THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
+
+        Test the ``run`` method with remote save of the Experiment class, this is a temporary test until ``run``function of the vna is implemented.
+        """
+        vna_experiment.build_execution()
+        vna_experiment.platform.connection = MagicMock()  # mock connection
+        assert not hasattr(vna_experiment, "_plot")
+        assert not hasattr(vna_experiment, "results")
         with patch("qililab.experiment.experiment.open") as mock_open:
             with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
                 with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    # Build execution
-                    res = connected_experiment.run()
-                    # Assert that the mocks are called when building the execution (such that NO files are created)
-                    mock_remote_save.assert_called_once()
-                    mock_open.assert_called()
-                    mock_makedirs.assert_called()
-                    mock_plot.assert_called_once_with(
-                        connection=connected_experiment.platform.connection,
-                        loops=connected_experiment.options.loops or [],
-                        num_schedules=1,
-                        title=connected_experiment.options.name,
-                    )
-                    mock_plot.assert_called_once()
-                    assert isinstance(res, Results)
-        assert len(connected_experiment.results.results) > 0
+                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
+                        with patch("qililab.execution.execution_manager.BusExecution.run") as mock_run:
+                            mock_acq_res.return_value = VNAResult(data=[])
+                            vna_experiment.options.remote_save = True
+                            # Build execution
+                            vna_experiment.run()
+                            # Assert that the mocks are called when building the execution (such that NO files are created)
+                            mock_open.assert_called()
+                            mock_makedirs.assert_called()
+                            mock_open.assert_called()
+                            mock_plot.assert_called_once_with(
+                                connection=vna_experiment.platform.connection,
+                                loops=vna_experiment.options.loops or [],
+                                num_schedules=1,
+                                title=vna_experiment.options.name,
+                            )
+                            mock_plot.assert_called_once()
+                            mock_run.assert_called()
+                            mock_acq_res.assert_called()
+                            mock_remote_save.assert_called()
+        assert len(vna_experiment.results.results) > 0
 
     def test_turn_on_instruments(self, connected_experiment: Experiment):
         """Test the ``turn_on_instruments`` method of the Experiment class."""
