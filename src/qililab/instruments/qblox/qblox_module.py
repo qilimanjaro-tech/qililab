@@ -92,6 +92,7 @@ class QbloxModule(AWG):
     def initial_setup(self):
         """Initial setup"""
         self._map_outputs()
+        self.clear_cache()
         for sequencer in self.awg_sequencers:
             sequencer_id = sequencer.identifier
             # Set `sync_en` flag to False (this value will be set to True if the sequencer is used in the execution)
@@ -486,6 +487,7 @@ class QbloxModule(AWG):
     def clear_cache(self):
         """Empty cache."""
         self._cache = {}
+        self.sequences = {}
 
     @Instrument.CheckDeviceInitialized
     def reset(self):
