@@ -9,7 +9,6 @@ import qililab as ql
 from qililab import build_platform
 from qililab.experiment import AllXYExperiment
 from qililab.system_control import ReadoutSystemControl
-from qililab.utils import Loop
 from qililab.utils import Wait
 from tests.data import Galadriel
 
