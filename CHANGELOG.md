@@ -3,11 +3,33 @@
 ## 0.20.0 (2023-05-26)
 
 ### New features since last release
+
 - Added hotfixes for several issues encountered during the hackathon:
   https://github.com/qilimanjaro-tech/qililab/pull/413
-  - Save experiments flag for experiments
+
+  - Save experiments flag for experiments execute method
+
+  ```python
+  # Option 1 (Default, save_experiment=True)
+  experiment = Experiment(
+        platform=platform, circuits=circuits, options=options
+    )
+  experiment.execute()
+
+  # Option 2 (Equivalent to option 1, save_experiment=False)
+  experiment = Experiment(
+        platform=platform, circuits=circuits, options=options
+    )
+  experiment.execute(save_experiment=False)
+  ```
+  
   - Empty sequences to avoid creating repeated programs.
   - Create empty programs for all qubit flux lines to activate calibrated offsets.
+  - Added method to get qubits from the chip
+
+  ```python
+  qubits = ql.Chip.qubits()
+  ```
 
 - Added to the `draw()` method the option  of specifying if you want:
 
