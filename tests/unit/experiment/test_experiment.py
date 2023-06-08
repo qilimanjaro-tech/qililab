@@ -242,7 +242,7 @@ class TestMethods:
                     with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
                         mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
                         # Build execution
-                        vna_experiment.run()
+                        results = vna_experiment.run()
                         # Assert that the mocks are called when building the execution (such that NO files are created)
                         mock_open.assert_called()
                         mock_makedirs.assert_called()
@@ -253,9 +253,12 @@ class TestMethods:
                             title=vna_experiment.options.name,
                         )
                         mock_plot.assert_called_once()
+                        assert isinstance(results, Results)
+                        assert results.results[0] == mock_acq_res.return_value
         assert len(vna_experiment.results.results) > 0
 
-    def test_run_with_vna_result_remote_svaing(self, vna_experiment: Experiment):
+    @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
+    def test_run_with_vna_result_remote_svaing(self, mock_remote_save: MagicMock, vna_experiment: Experiment):
         """Test the ``run`` method of the Experiment class, this is a temporary test until ``run``function of the vna is implemented."""
         vna_experiment.options.remote_save = True
         vna_experiment.build_execution()
@@ -271,8 +274,7 @@ class TestMethods:
                         ) as mock_remote_save:
                             mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
                             # Build execution
-                            result = vna_experiment.run()
-                            assert isinstance(result, Results)
+                            results = vna_experiment.run()
                             # Assert that the mocks are called when building the execution (such that NO files are created)
                             mock_remote_save.assert_called()
                             mock_open.assert_called()
@@ -284,6 +286,9 @@ class TestMethods:
                                 title=vna_experiment.options.name,
                             )
                             mock_plot.assert_called_once()
+                            assert isinstance(results, Results)
+                            assert results.results[0] == mock_acq_res.return_value
+                            mock_remote_save.assert_called()
         assert len(vna_experiment.results.results) > 0
 
     @patch("qililab.execution.execution_manager.BusExecution.acquire_result")

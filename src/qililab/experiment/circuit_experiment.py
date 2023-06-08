@@ -3,7 +3,6 @@ import copy
 import itertools
 from queue import Queue
 
-from qcodes.instrument import Instrument as QcodesInstrument
 from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
