@@ -256,8 +256,6 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
         """
         super().post_process_results()
         if self.if_values is not None:
-            self.post_processed_results = self.post_processed_results.reshape(
-                len(self.if_values), 21
-            )
+            self.post_processed_results = self.post_processed_results.reshape(len(self.if_values), 21)
 
         return self.post_processed_results
