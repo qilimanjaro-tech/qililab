@@ -1,4 +1,4 @@
-""" Test Results """
+""" Test Result"""
 
 import numpy as np
 import pandas as pd
@@ -78,6 +78,22 @@ def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
 
+    # TODO: Modify dummy_qrm to to get better examples of acquisitions (the one below is the top one modified)
+    # acquisition = {
+    #     "scope": {
+    #         "path0": {"data": [], "out-of-range": False, "avg_cnt": 0},
+    #         "path1": {"data": [], "out-of-range": False, "avg_cnt": 0},
+    #     },
+    #     "bins": {
+    #         "integration": {"path0": [1000.0, 19, 20], "path1": [-1.3504188124071826e-15, 0.000000, 1.0]},
+    #         "threshold": [np.nan, np.nan],
+    #         "avg_cnt": [1, 1, 0],
+    #     },
+    # }
+    # return QbloxResult(
+    #     integration_lengths=[1000, 1000, 1000], qblox_raw_results=[acquisition, acquisition, acquisition]
+    # )
+
 
 @pytest.fixture(name="qblox_result_scope")
 def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
@@ -92,6 +108,7 @@ def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
     dummy_qrm.store_scope_acquisition(0, "single")
     acquisition = dummy_qrm.get_acquisitions(0)["single"]["acquisition"]
     return QbloxResult(integration_lengths=[1000], qblox_raw_results=[acquisition])
+    # return QbloxResult(integration_lengths=[1000, 1000], qblox_raw_results=[acquisition, acquisition])
 
 
 @pytest.fixture(name="qblox_asymmetric_bins_result")
@@ -124,7 +141,7 @@ def fixture_qblox_asymmetric_bins_result():
 
 
 class TestsQbloxResult:
-    """Test `QbloxResults` functionalities."""
+    """Test `QbloxResult` functionalities."""
 
     def test_qblox_result_instantiation(self, qblox_result_scope: QbloxResult):
         """Tests the instantiation of a QbloxResult object.
@@ -169,6 +186,7 @@ class TestsQbloxResult:
         """
         acquisitions = qblox_result_noscope.acquisitions()
         assert acquisitions.keys().tolist() == [
+            RESULTSDATAFRAME.SEQUENCER,
             RESULTSDATAFRAME.BIN,
             "i",
             "q",

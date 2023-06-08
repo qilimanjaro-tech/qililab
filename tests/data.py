@@ -841,8 +841,9 @@ results_one_loops_empty = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: NODE.FREQUENCY,
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
+            LOOP.CHANNEL_ID: None,
         }
     ],
     EXPERIMENT.RESULTS: [],
