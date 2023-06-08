@@ -1,4 +1,5 @@
 """This file contains a pre-defined version of a Ramsey experiment."""
+import matplotlib.pyplot as plt
 import numpy as np
 from qibo.gates import RX, M
 from qibo.models import Circuit
@@ -84,9 +85,32 @@ class Ramsey(ExperimentAnalysis, Exp):
         )
 
     def post_process_results(self):
+        """Method used to post-process the results of an experiment.
+
+        By default this method computes the magnitude of the IQ data and saves it into the ``post_processed_results``
+        attribute.
+
+        Returns:
+            np.ndarray: post-processed results
+        """
         super().post_process_results()
         if self.if_frequency_values is not None:
             self.post_processed_results = self.post_processed_results.reshape(
                 len(self.if_frequency_values), len(self.wait_loop_values)
             )
         return self.post_processed_results
+
+    def plot(self):
+        """Method used to plot the results of an experiment.
+
+        By default this method creates a figure with size (9, 7) and plots the magnitude of the IQ data.
+        """
+        if self.if_frequency_values is None:
+            super().plot
+        fig, axes = plt.subplots(figsize=(9, 7))
+        for ii, freq in enumerate(self.if_frequency_values):
+            axes.plot(self.wait_loop_values, self.post_processed_results[ii, :], "-o", label=f"IF={freq*1e-6}MHz")
+        axes.set_xlabel("Wait time [ns]")
+        axes.set_ylabel("IF")
+        axes.legend()
+        return fig
