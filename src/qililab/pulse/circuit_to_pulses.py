@@ -120,14 +120,14 @@ class CircuitToPulses:
                 if pulse_event is not None:  # this happens for the Identity gate
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
 
+            for qubit in chip.qubits:
+                with contextlib.suppress(ValueError):
+                    # If we find a flux port, create empty schedule for that port
+                    flux_port = chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
+                    if flux_port is not None:
+                        pulse_schedule.create_schedule(port=flux_port)
+                    
             pulse_schedule_list.append(pulse_schedule)
-
-        for qubit in chip.qubits:
-            with contextlib.suppress(ValueError):
-                # If we find a flux port, create empty schedule for that port
-                flux_port = chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
-                if flux_port is not None:
-                    pulse_schedule.create_schedule(port=flux_port)
 
         return pulse_schedule_list
 
