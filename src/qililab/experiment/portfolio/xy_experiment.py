@@ -64,7 +64,7 @@ class AllXYExperiment(ExperimentAnalysis, Cos):
             loops=None if if_values is not None else [if_loop],
             settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
         )
-        loop = ql.Loop(alias="Sequence", parameter=Parameter.A, values=self.circuit_names)
+        loop = ql.Loop(alias="Sequence", parameter=ql.Parameter.A, values=self.circuit_names)
 
         # Initialize experiment
         super().__init__(
