@@ -4,3 +4,4 @@ from .fitting_models import *
 from .flipping_sequence import FlippingSequence
 from .rabi import Rabi
 from .t1 import T1
+from .xy_experiment import AllXYExperiment
