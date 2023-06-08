@@ -74,7 +74,7 @@ class TestAllXY:
         default_hardware_average = 10000
 
         all_xy_circuits = all_xy_experiment.circuits
-        all_xy_circuits_names = all_xy_experiment.circuits_names
+        all_xy_circuits_names = all_xy_experiment.circuit_names
         assert len(all_xy_circuits) == expected_num_experiments
         assert all_xy_circuits_names == expected_circuits_names
 
