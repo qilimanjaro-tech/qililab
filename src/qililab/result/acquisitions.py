@@ -6,7 +6,7 @@ import pandas as pd
 
 from qililab.constants import RESULTSDATAFRAME
 from qililab.result.acquisition import Acquisition
-from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
+from qililab.utils.dataframe_manipulation import concatenate_creating_new_concatenation_index_name
 
 
 @dataclass
@@ -26,8 +26,8 @@ class Acquisitions:
         """
         acquisition_list = [acquisition.acquisition for acquisition in self._acquisitions]
 
-        return concatenate_creating_new_name_index(
-            dataframe_list=acquisition_list, new_index_name=RESULTSDATAFRAME.ACQUISITION_INDEX
+        return concatenate_creating_new_concatenation_index_name(
+            dataframe_list=acquisition_list, new_concatenation_index_name=RESULTSDATAFRAME.QUBIT_INDEX
         )
 
     def probabilities(self) -> dict[str, float]:
