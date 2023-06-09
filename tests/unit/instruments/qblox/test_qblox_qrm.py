@@ -203,6 +203,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "offset_awg_path0",
             "offset_awg_path1",
             "thresholded_acq_threshold",
+            "thresholded_acq_rotation",
             "marker_ovr_en",
             "marker_ovr_value",
         ]
@@ -261,6 +262,7 @@ class TestQbloxQRM:
         qrm.device.sequencers[0].demod_en_acq.assert_called()
         qrm.device.sequencers[0].integration_length_acq.assert_called()
         qrm.device.sequencers[0].thresholded_acq_threshold.assert_called()
+        qrm.device.sequencers[0].thresholded_acq_rotation.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""

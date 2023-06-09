@@ -85,6 +85,9 @@ class QbloxQRM(QbloxModule, AWGAnalogDigitalConverter):
                 value=cast(AWGQbloxADCSequencer, sequencer).hardware_demodulation, sequencer_id=sequencer_id
             )
             self._set_threshold(value=cast(AWGQbloxADCSequencer, sequencer).threshold, sequencer_id=sequencer_id)
+            self._set_threshold_rotation(
+                value=cast(AWGQbloxADCSequencer, sequencer).threshold_rotation, sequencer_id=sequencer_id
+            )
 
     def _obtain_scope_sequencer(self):
         """Checks that only one sequencer is storing the scope and saves that sequencer in `_scoping_sequencer`
