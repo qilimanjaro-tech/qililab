@@ -423,6 +423,7 @@ class Parameter(str, Enum):
     WEIGHTS_Q = "weights_q"
     WEIGHED_ACQ_ENABLED = "weighed_acq_enabled"
     THRESHOLD = "threshold"
+    THRESHOLD_ROTATION = "threshold_rotation"
     OUT0_LO_FREQ = "out0_lo_freq"
     OUT0_IN0_LO_FREQ = "out0_in0_lo_freq"
     OUT1_LO_FREQ = "out1_lo_freq"
