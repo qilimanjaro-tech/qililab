@@ -12,6 +12,22 @@ This document contains the changes of the current release.
   Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
   [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
 
+- Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
+
+```yml
+awg_sequencers:
+  - identifier: 0
+    chip_port_id: 1
+    intermediate_frequency: 1.e+08
+    weights_path0: [0.98, ...]
+    weights_path1: [0.72, ...]
+    weighed_acq_enabled: true
+    threshold: 0.5
+    threshold_angle: 45.0 # <-- new line
+```
+
+[#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
+
 ### Improvements
 
 - Addeds support for the `Wait` gate
