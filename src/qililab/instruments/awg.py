@@ -67,8 +67,12 @@ class AWG(Instrument):
         """
 
     @abstractmethod
-    def run(self):
+    def run(self, port: int):
         """Run the uploaded program"""
+        
+    @abstractmethod
+    def upload(self, port: int):
+        """Upload compiled program."""
 
     @property
     def num_sequencers(self):

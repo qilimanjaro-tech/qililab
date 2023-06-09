@@ -13,7 +13,7 @@ class ReadoutSystemControl(SystemControl):
 
     name = SystemControlName.READOUT_SYSTEM_CONTROL
 
-    def acquire_result(self) -> Result:
+    def acquire_result(self, port: int) -> Result:
         """Read the result from the vector network analyzer instrument
 
         Returns:

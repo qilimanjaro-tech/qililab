@@ -163,9 +163,9 @@ class QbloxModule(AWG):
         self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
-    def run(self):
+    def run(self, port: int):
         """Run the uploaded program"""
-        self.start_sequencer()
+        self.start_sequencer(port=port)
 
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, sequencer: AWGQbloxSequencer):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -269,9 +269,10 @@ class QbloxModule(AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def start_sequencer(self):
+    def start_sequencer(self, port: int):
         """Start sequencer and execute the uploaded instructions."""
-        for sequencer in self.awg_sequencers:
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
             if sequencer.identifier in self.sequences:
                 self.device.arm_sequencer(sequencer=sequencer.identifier)
                 self.device.start_sequencer(sequencer=sequencer.identifier)
@@ -495,13 +496,14 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self):
+    def upload(self, port: int):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""
         if self.nshots is None or self.repetition_duration is None:
             raise ValueError("Please compile the circuit before uploading it to the device.")
-        for sequencer in self.awg_sequencers:
+        sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
+        for sequencer in sequencers:
             if (seq_idx := sequencer.identifier) in self.sequences:
                 sequence, uploaded = self.sequences[seq_idx]
                 self.device.sequencers[seq_idx].sync_en(True)
