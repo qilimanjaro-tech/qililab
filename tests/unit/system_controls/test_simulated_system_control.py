@@ -56,14 +56,14 @@ class TestSimulatedSystemControl:
 
     def test_upload_method(self, simulated_system_control: SimulatedSystemControl):
         """Test upload method."""
-        simulated_system_control.upload()  # this method does nothing
+        simulated_system_control.upload(port=0)  # this method does nothing
 
     def test_run_method(self, simulated_system_control: SimulatedSystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test run method."""
         simulated_system_control._evo = MagicMock()
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
-        simulated_system_control.run()
-        result = simulated_system_control.acquire_result()
+        simulated_system_control.run(port=pulse_bus_schedule.port)
+        result = simulated_system_control.acquire_result(port=pulse_bus_schedule.port)
         assert isinstance(result, SimulatorResult)
 
     def test_name_property(self, simulated_system_control: SimulatedSystemControl):
@@ -77,6 +77,6 @@ class TestSimulatedSystemControl:
         simulated_system_control._evo = MagicMock()
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
         simulated_system_control.compile(pulse_bus_schedule=pulse_bus_schedule)
-        simulated_system_control.run()
-        result = simulated_system_control.acquire_result()
+        simulated_system_control.run(port=pulse_bus_schedule.port)
+        result = simulated_system_control.acquire_result(port=pulse_bus_schedule.port)
         assert result.probabilities() == {}

@@ -10,10 +10,15 @@ from qililab.typings import Category
 class DummyAWG(AWG):
     """Dummy AWG class."""
 
-    def compile(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int) -> list:
+    def compile(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ) -> list:
         return []
 
     def run(self):
+        pass
+
+    def upload(self, port: int):
         pass
 
 
