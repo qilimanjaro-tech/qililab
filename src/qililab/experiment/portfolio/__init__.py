@@ -4,3 +4,4 @@ from .fitting_models import *
 from .flipping_sequence import FlippingSequence
 from .rabi import Rabi
 from .resonator_spectroscopy import ResonatorSpectroscopy
+from .t1 import T1

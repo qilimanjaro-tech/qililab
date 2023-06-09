@@ -4,13 +4,13 @@ import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 
-from qililab.experiment.portfolio import CosFunc, ExperimentAnalysis
+from qililab.experiment.portfolio import Cos, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 
-class ResonatorSpectroscopy(ExperimentAnalysis, CosFunc):
+class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
     """Class used to run a rabi experiment on the given qubit. This experiment modifies the amplitude of the pulse
     associated to the X gate.
 
