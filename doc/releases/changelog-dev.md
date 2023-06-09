@@ -12,6 +12,9 @@ This document contains the changes of the current release.
   Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
   [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
 
+- Added `T2Echo` portfolio experiment
+  [#415](https://github.com/qilimanjaro-tech/qililab/pull/415)
+
 ### Improvements
 
 - Addeds support for the `Wait` gate
