@@ -21,6 +21,9 @@ class DummyAWG(AWGAnalogDigitalConverter):
     def run(self):
         pass
 
+    def upload(self, port: int):
+        pass
+
     def acquire_result(self):
         return []
 

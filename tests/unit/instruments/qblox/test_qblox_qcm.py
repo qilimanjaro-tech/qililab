@@ -132,7 +132,7 @@ class TestQbloxQCM:
 
     def test_start_sequencer_method(self, qcm: QbloxQCM):
         """Test start_sequencer method"""
-        qcm.start_sequencer()
+        qcm.start_sequencer(port=0)
         qcm.device.arm_sequencer.assert_not_called()
         qcm.device.start_sequencer.assert_not_called()
 
@@ -211,12 +211,12 @@ class TestQbloxQCM:
     def test_upload_raises_error(self, qcm):
         """Test upload method raises error."""
         with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
-            qcm.upload()
+            qcm.upload(port=0)
 
     def test_upload_method(self, qcm, pulse_bus_schedule):
         """Test upload method"""
         qcm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qcm.upload()
+        qcm.upload(port=pulse_bus_schedule.port)
         qcm.device.sequencer0.sequence.assert_called_once()
         qcm.device.sequencer0.sync_en.assert_called_once_with(True)
 

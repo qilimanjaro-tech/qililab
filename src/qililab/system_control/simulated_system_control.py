@@ -110,5 +110,5 @@ class SimulatedSystemControl(ReadoutSystemControl):
         self.sequence = [i_waveform]
         return []
 
-    def upload(self):
+    def upload(self, port: int):
         pass
