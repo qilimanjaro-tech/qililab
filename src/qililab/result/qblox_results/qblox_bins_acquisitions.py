@@ -32,7 +32,13 @@ class QbloxBinsAcquisitions(Acquisitions):
         """build a bin acquisition"""
         i_values = np.array(bins_data.integration.path0, dtype=np.float32)
         q_values = np.array(bins_data.integration.path1, dtype=np.float32)
-        return QbloxBinAcquisition(integration_length=integration_length, i_values=i_values, q_values=q_values)
+        binary_classification_values = np.array(bins_data.binary_classification, dtype=np.float32)
+        return QbloxBinAcquisition(
+            integration_length=integration_length,
+            i_values=i_values,
+            q_values=q_values,
+            binary_classification_values=binary_classification_values,
+        )
 
     def counts(self) -> Counts:
         """Return the counts of measurements in each state.
@@ -46,9 +52,9 @@ class QbloxBinsAcquisitions(Acquisitions):
         # TODO: Add limitations to check we are doing single-shot for multi qubit?
         counts_object = Counts(n_qubits=len(self.bins))
         for bin_idx in range(num_bins):
-            # The threshold inside of a qblox bin is the name they use for already classified data as a value between
-            # 0 and 1, not the value used in the comparator to perform such classification.
-            measurement_as_list = [int(bins_data.threshold[bin_idx]) for bins_data in self.bins]
+            # The binary_classification inside of a qblox bin is the name they use for already classified data as a
+            # value between 0 and 1, and threshold is the value used in the comparator to perform such classification.
+            measurement_as_list = [int(bins_data.binary_classification[bin_idx]) for bins_data in self.bins]
             measurement = "".join(str(bit) for bit in measurement_as_list)
             counts_object.add_measurement(state=measurement)
         return counts_object

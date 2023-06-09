@@ -230,6 +230,7 @@ class RESULTSDATAFRAME:
     Q = "q"
     AMPLITUDE = "amplitude"
     PHASE = "phase"
+    BINARY_CLASSIFICATION = "binary_classification"
 
 
 UNITS = {"frequency": "Hz"}

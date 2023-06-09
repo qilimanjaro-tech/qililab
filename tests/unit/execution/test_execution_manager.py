@@ -294,7 +294,7 @@ qblox_acquisition = {
             },
             "bins": {
                 "integration": {"path0": [1, 2, 3], "path1": [4, 5, 6]},
-                "threshold": [1, 1, 1],
+                "binary_classification": [1, 1, 1],
                 "avg_cnt": [1000, 1000, 1000],
             },
         },

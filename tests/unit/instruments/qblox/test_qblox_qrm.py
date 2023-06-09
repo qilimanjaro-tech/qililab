@@ -437,7 +437,7 @@ class TestQbloxQRM:
                     },
                     "bins": {
                         "integration": {"path0": [1, 1, 1, 1], "path1": [0, 0, 0, 0]},
-                        "threshold": [0.5, 0.5, 0.5, 0.5],
+                        "binary_classification": [1.0, 1.0, 1.0, 1.0],
                         "avg_cnt": [1000, 1000, 1000, 1000],
                     },
                 },

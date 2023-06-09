@@ -66,7 +66,7 @@ def fixture_dummy_qrm(qrm_sequence: Sequence) -> DummyPulsar:
 
 
 @pytest.fixture(name="qblox_result_noscope")
-def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
+def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar) -> QbloxResult:
     """fixture_qblox_result_noscope
 
     Args:
@@ -86,7 +86,7 @@ def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
     #     },
     #     "bins": {
     #         "integration": {"path0": [1000.0, 19, 20], "path1": [-1.3504188124071826e-15, 0.000000, 1.0]},
-    #         "threshold": [np.nan, np.nan],
+    #         "binary_classification": [1.0, 1.0, 1.0],
     #         "avg_cnt": [1, 1, 0],
     #     },
     # }
@@ -96,7 +96,7 @@ def fixture_qblox_result_noscope(dummy_qrm: DummyPulsar):
 
 
 @pytest.fixture(name="qblox_result_scope")
-def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
+def fixture_qblox_result_scope(dummy_qrm: DummyPulsar) -> QbloxResult:
     """fixture_qblox_result_scope
 
     Args:
@@ -112,7 +112,7 @@ def fixture_qblox_result_scope(dummy_qrm: DummyPulsar):
 
 
 @pytest.fixture(name="qblox_asymmetric_bins_result")
-def fixture_qblox_asymmetric_bins_result():
+def fixture_qblox_asymmetric_bins_result() -> QbloxResult:
     qblox_raw_results = [
         {
             "scope": {
@@ -121,7 +121,7 @@ def fixture_qblox_asymmetric_bins_result():
             },
             "bins": {
                 "integration": {"path0": [0.0, 0.0], "path1": [0.0, 0.0]},
-                "threshold": [0.0, 1.0],
+                "binary_classification": [0.0, 1.0],
                 "avg_cnt": [1, 1],
             },
         },
@@ -132,7 +132,7 @@ def fixture_qblox_asymmetric_bins_result():
             },
             "bins": {
                 "integration": {"path0": [0.0, 0.0, 0.0], "path1": [0.0, 0.0, 0.0]},
-                "threshold": [1.0, 0.0, 1.0],
+                "binary_classification": [1.0, 0.1, 1.0],
                 "avg_cnt": [1, 1, 1],
             },
         },
@@ -192,11 +192,13 @@ class TestsQbloxResult:
             "q",
             "amplitude",
             "phase",
+            "binary_classification",
         ]
         assert np.isclose(acquisitions["i"].iloc[0], 1.0, 1e-10)
         assert np.isclose(acquisitions["q"].iloc[0], 0.0, 1e-10)
         assert np.isclose(acquisitions["amplitude"].iloc[0], 0.0, 1e-10)
         assert np.isclose(acquisitions["phase"].iloc[0], 0.0, 1e-10)
+        assert np.isclose(acquisitions["binary_classification"].iloc[0], 1.0, 0.1)
 
     def test_qblox_result_acquisitions_scope(self, qblox_result_scope: QbloxResult):
         """Tests that the default acquisitions_scope method of QbloxResult returns the scope as it is.

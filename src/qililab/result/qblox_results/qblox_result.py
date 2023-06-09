@@ -26,7 +26,7 @@ class QbloxResult(Result):
     - integration: integration data.
         - path_0: input path 0 integration result bin list.
         - path_1: input path 1 integration result bin list.
-    - threshold: threshold result bin list.
+    - binary_classification: thresholded result bin list.
     - valid: list of valid indications per bin.
     - avg_cnt: list of number of averages per bin.
     Args:
