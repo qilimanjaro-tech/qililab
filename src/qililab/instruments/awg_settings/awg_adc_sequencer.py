@@ -32,6 +32,8 @@ class AWGADCSequencer(AWGSequencer):
     sequence_timeout: int  # minutes
     acquisition_timeout: int  # minutes
     scope_store_enabled: bool
+    threshold: float
+    threshold_rotation: float
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
