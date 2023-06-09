@@ -176,7 +176,7 @@ class Experiment:
         """Disconnects from the instruments and releases the device."""
         self.platform.disconnect()
 
-    def execute(self, save_experiment=True) -> Results:
+    def execute(self, save_experiment=True, save_results=True) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
             * Connect to the instruments.
@@ -196,7 +196,7 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        results = self.run(save_experiment=save_experiment)
+        results = self.run(save_experiment=save_experiment, save_results=save_results)
         self.turn_off_instruments()
         self.disconnect()
         QcodesInstrument.close_all()
