@@ -23,7 +23,7 @@ awg_sequencers:
     weights_path1: [0.72, ...]
     weighed_acq_enabled: true
     threshold: 0.5
-    threshold_angle: 45.0 # <-- new line
+    threshold_rotation: 45.0 # <-- new line
 ```
 
 [#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
