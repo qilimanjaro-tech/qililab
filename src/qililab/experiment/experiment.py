@@ -67,7 +67,7 @@ class Experiment:
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self, save_results=True) -> Results:
+    def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -93,7 +93,9 @@ class Experiment:
             raise ValueError("Please build the execution_manager before running an experiment.")
 
         # Prepares the results
-        self.results, self.results_path = self.prepare_results(save_results=save_results)
+        self.results, self.results_path = self.prepare_results(
+            save_experiment=save_experiment, save_results=save_results
+        )
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue)
@@ -174,7 +176,7 @@ class Experiment:
         """Disconnects from the instruments and releases the device."""
         self.platform.disconnect()
 
-    def execute(self, save_results=True) -> Results:
+    def execute(self, save_experiment=True, save_results=True) -> Results:
         """Runs the whole execution pipeline, which includes the following steps:
 
             * Connect to the instruments.
@@ -194,7 +196,7 @@ class Experiment:
         self.initial_setup()
         self.build_execution()
         self.turn_on_instruments()
-        results = self.run(save_results=save_results)
+        results = self.run(save_experiment=save_experiment, save_results=save_results)
         self.turn_off_instruments()
         self.disconnect()
         QcodesInstrument.close_all()
@@ -457,7 +459,7 @@ class Experiment:
         """
         return self.options.settings.repetition_duration
 
-    def prepare_results(self, save_results=True) -> tuple[Results, Path | None]:
+    def prepare_results(self, save_experiment=True, save_results=True) -> tuple[Results, Path | None]:
         """Creates the ``Results`` class, creates the ``results.yml`` file where the results will be saved, and dumps
         the experiment data into this file.
 
@@ -476,14 +478,14 @@ class Experiment:
             loops=self.options.loops,
         )
 
-        if save_results:
+        if save_results or save_experiment:
             # Create the folders & files needed to save the results locally
             results_path = self._path_to_results_folder()
             self._create_results_file(results_path)
-
-            # Dump the experiment data into the created file
-            with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
-                yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
+            if save_experiment:
+                # Dump the experiment data into the created file
+                with open(file=results_path / EXPERIMENT_FILENAME, mode="w", encoding="utf-8") as experiment_file:
+                    yaml.dump(data=self.to_dict(), stream=experiment_file, sort_keys=False)
         else:
             results_path = None
 

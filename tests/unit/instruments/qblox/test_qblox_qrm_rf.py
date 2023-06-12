@@ -35,6 +35,7 @@ def fixture_settings():
                 "weights_q": [1, 1, 1, 1],
                 "weighed_acq_enabled": False,
                 "threshold": 0.5,
+                "threshold_rotation": 45.0,
                 "num_bins": 1,
                 "intermediate_frequency": 20000000,
                 "gain_i": 0.001,

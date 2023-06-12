@@ -14,7 +14,7 @@ class BusExecution:
     pulse schedules that will be executed on this bus."""
 
     bus: Bus
-    pulse_schedule: list[PulseBusSchedule] = field(default_factory=list)
+    pulse_bus_schedules: list[PulseBusSchedule] = field(default_factory=list)
 
     def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> list:
         """Compiles the pulse schedule at index ``idx`` into an assembly program.
@@ -29,7 +29,7 @@ class BusExecution:
             list: list of compiled assembly programs
         """
         return self.system_control.compile(
-            pulse_bus_schedule=self.pulse_schedule[idx],
+            pulse_bus_schedule=self.pulse_bus_schedules[idx],
             nshots=nshots,
             repetition_duration=repetition_duration,
             num_bins=num_bins,
@@ -37,11 +37,11 @@ class BusExecution:
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload()
+        self.system_control.upload(port=self.port)
 
     def run(self):
         """Run the given pulse sequence."""
-        return self.system_control.run()
+        return self.system_control.run(port=self.port)
 
     def setup(self):
         """Generates the sequence for each bus and uploads it to the sequencer"""
@@ -54,7 +54,7 @@ class BusExecution:
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
 
-        self.pulse_schedule.append(pulse_bus_schedule)
+        self.pulse_bus_schedules.append(pulse_bus_schedule)
 
     def acquire_result(self) -> Result:
         """Read the result from the AWG instrument
@@ -67,7 +67,7 @@ class BusExecution:
                 f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
                 f"has a {self.system_control.name} instead."
             )
-        return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
+        return self.system_control.acquire_result(port=self.port)  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.
@@ -75,10 +75,10 @@ class BusExecution:
         Returns:
             int: Acquire time (in ns).
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_schedule list of length {num_sequences}")
-        readout_schedule = self.pulse_schedule[idx]
+        readout_schedule = self.pulse_bus_schedules[idx]
         time = readout_schedule.timeline[-1].start_time
         if isinstance(self.system_control, ReadoutSystemControl):
             time += self.system_control.acquisition_delay_time
@@ -94,10 +94,10 @@ class BusExecution:
             Waveforms: Object containing arrays of the I/Q amplitudes
             of the pulses applied on this bus.
         """
-        num_sequences = len(self.pulse_schedule)
+        num_sequences = len(self.pulse_bus_schedules)
         if idx >= num_sequences:
             raise IndexError(f"Index {idx} is out of bounds for pulse_sequences list of length {num_sequences}")
-        return self.pulse_schedule[idx].waveforms(modulation=modulation, resolution=resolution)
+        return self.pulse_bus_schedules[idx].waveforms(modulation=modulation, resolution=resolution)
 
     @property
     def port(self):

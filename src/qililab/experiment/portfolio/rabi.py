@@ -8,10 +8,10 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import CosFunc
+from .fitting_models import Cos
 
 
-class Rabi(ExperimentAnalysis, CosFunc):
+class Rabi(ExperimentAnalysis, Cos):
     """Class used to run a rabi experiment on the given qubit. This experiment modifies the amplitude of the pulse
     associated to the X gate.
 

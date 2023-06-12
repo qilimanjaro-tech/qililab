@@ -14,11 +14,14 @@ class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
 
     def compile(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:  # pylint disable=arguments-differ
         return []
 
     def run(self):
+        pass
+
+    def upload(self, port: int):
         pass
 
     def acquire_result(self):
@@ -28,6 +31,9 @@ class DummyAWG(AWGAnalogDigitalConverter):
         pass
 
     def _set_device_threshold(self, value: float, sequencer_id: int):
+        pass
+
+    def _set_device_threshold_rotation(self, value: float, sequencer_id: int):
         pass
 
     def _set_device_hardware_demodulation(self, value: bool, sequencer_id: int):

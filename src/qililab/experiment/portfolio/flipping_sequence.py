@@ -8,10 +8,10 @@ from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop
 
 from .experiment_analysis import ExperimentAnalysis
-from .fitting_models import CosFunc
+from .fitting_models import Cos
 
 
-class FlippingSequence(ExperimentAnalysis, CosFunc):
+class FlippingSequence(ExperimentAnalysis, Cos):
     """Class used to run a flipping sequence experiment on the given qubit.
 
     This experiment creates multiple circuits, each of which uses an RX(pi/2) gate to send the qubit to the equator of
