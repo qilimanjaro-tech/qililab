@@ -117,4 +117,6 @@ class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
             plt.legend()
             plt.title(self.results_path)
             # save_figure_from_exp(plt.gcf(),self)
-            plt.show()
+
+        plt.show()
+        return plt

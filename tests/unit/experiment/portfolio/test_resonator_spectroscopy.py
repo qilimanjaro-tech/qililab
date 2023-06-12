@@ -120,7 +120,11 @@ class TestResonatorSpectroscopy:
     def test_plot(self, resonator_spectroscopy0: ResonatorSpectroscopy):
         """Test the ``plot`` method."""
         resonator_spectroscopy0.post_process_results()
-        resonator_spectroscopy0.plot()
+        fig = resonator_spectroscopy0.plot()
+        line = fig.gca().lines[0]
+        x_data = line.get_xdata()
+
+        assert np.all(x_data == resonator_spectroscopy0.freq_values)
 
     def test_post_process_results_gain(self, resonator_spectroscopy_gain: ResonatorSpectroscopy):
         """Test the ``post_process_results`` method of an experiment with gain"""
@@ -130,7 +134,14 @@ class TestResonatorSpectroscopy:
         assert np.shape(resonator_spectroscopy_gain.post_processed_results) == (NUM, FREQUENCY_NUM)
         assert np.all(resonator_spectroscopy_gain.post_processed_results[0] == expected)
 
-        resonator_spectroscopy_gain.plot()
+        fig = resonator_spectroscopy_gain.plot()
+        ax = fig.gca()
+        collection = ax.collections[0]
+        masked_data = collection.get_array()
+
+        data = np.ma.getdata(masked_data)
+
+        assert np.all(data == resonator_spectroscopy_gain.post_processed_results.flatten())
 
     def test_post_process_results_aten(self, resonator_spectroscopy_atten: ResonatorSpectroscopy):
         """Test the ``post_process_results`` method of an experiment with atenuation"""
@@ -140,4 +151,11 @@ class TestResonatorSpectroscopy:
         assert np.shape(resonator_spectroscopy_atten.post_processed_results) == (NUM, FREQUENCY_NUM)
         assert np.all(resonator_spectroscopy_atten.post_processed_results[0] == expected)
 
-        resonator_spectroscopy_atten.plot()
+        fig = resonator_spectroscopy_atten.plot()
+        ax = fig.gca()
+        collection = ax.collections[0]
+        masked_data = collection.get_array()
+
+        data = np.ma.getdata(masked_data)
+
+        assert np.all(data == resonator_spectroscopy_atten.post_processed_results.flatten())
