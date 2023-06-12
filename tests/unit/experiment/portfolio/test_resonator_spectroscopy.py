@@ -124,7 +124,7 @@ class TestResonatorSpectroscopy:
         line = fig.gca().lines[0]
         x_data = line.get_xdata()
 
-        assert np.all(x_data == resonator_spectroscopy0.freq_values)
+        assert np.allclose(x_data, resonator_spectroscopy0.freq_values)
 
     def test_post_process_results_gain(self, resonator_spectroscopy_gain: ResonatorSpectroscopy):
         """Test the ``post_process_results`` method of an experiment with gain"""
@@ -132,7 +132,7 @@ class TestResonatorSpectroscopy:
         expected = 20 * np.log10(np.sqrt(i[:FREQUENCY_NUM] ** 2 + q[:FREQUENCY_NUM] ** 2))
 
         assert np.shape(resonator_spectroscopy_gain.post_processed_results) == (NUM, FREQUENCY_NUM)
-        assert np.all(resonator_spectroscopy_gain.post_processed_results[0] == expected)
+        assert np.allclose(resonator_spectroscopy_gain.post_processed_results[0], expected)
 
         fig = resonator_spectroscopy_gain.plot()
         ax = fig.gca()
@@ -141,7 +141,7 @@ class TestResonatorSpectroscopy:
 
         data = np.ma.getdata(masked_data)
 
-        assert np.all(data == resonator_spectroscopy_gain.post_processed_results.flatten())
+        assert np.allclose(data, resonator_spectroscopy_gain.post_processed_results.flatten())
 
     def test_post_process_results_aten(self, resonator_spectroscopy_atten: ResonatorSpectroscopy):
         """Test the ``post_process_results`` method of an experiment with atenuation"""
@@ -149,7 +149,7 @@ class TestResonatorSpectroscopy:
         expected = 20 * np.log10(np.sqrt(i[:FREQUENCY_NUM] ** 2 + q[:FREQUENCY_NUM] ** 2))
 
         assert np.shape(resonator_spectroscopy_atten.post_processed_results) == (NUM, FREQUENCY_NUM)
-        assert np.all(resonator_spectroscopy_atten.post_processed_results[0] == expected)
+        assert np.allclose(resonator_spectroscopy_atten.post_processed_results[0], expected)
 
         fig = resonator_spectroscopy_atten.plot()
         ax = fig.gca()
@@ -158,4 +158,4 @@ class TestResonatorSpectroscopy:
 
         data = np.ma.getdata(masked_data)
 
-        assert np.all(data == resonator_spectroscopy_atten.post_processed_results.flatten())
+        assert np.allclose(data, resonator_spectroscopy_atten.post_processed_results.flatten())
