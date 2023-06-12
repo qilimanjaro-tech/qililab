@@ -430,7 +430,7 @@ class TestMethods:
     def test_prepare_results_returns_no_path(self, exp: Experiment):
         """Test the prepare_results method with save_results=False returns no results_path"""
         exp.build_execution()
-        _, results_path = exp.prepare_results(save_results=False)
+        _, results_path = exp.prepare_results(save_experiment=False, save_results=False)
         assert results_path is None
 
 
