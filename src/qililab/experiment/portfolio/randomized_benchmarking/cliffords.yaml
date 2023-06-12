@@ -1,0 +1,47 @@
+# List of clifford gates gathered from page 82 of the following paper:
+# Dickel, C. (2018). Scalability and modularity for transmon-based quantum processors.
+# https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5
+
+primitive_gates:
+  0:
+    name: I
+    inv: 0  # inverse
+  1:
+    name: X_pi/2
+    inv: 31
+  2:
+    name: Y_pi/2
+    inv: 42
+  3:
+    name: X_pi
+    inv: 3
+  4:
+    name: Y_pi
+    inv: 4
+
+clifford_gates:
+  # Primitive decomposition of the 24 Clifford gates
+  - 0
+  - 21
+  - 123
+  - 3
+  - 214
+  - 124
+  - 4
+  - 2134
+  - 12
+  - 34
+  - 213
+  - 1234
+  - 23
+  - 13
+  - 1214
+  - 24
+  - 1
+  - 121
+  - 234
+  - 14
+  - 12134
+  - 2
+  - 134
+  - 1213
