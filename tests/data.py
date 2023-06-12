@@ -314,6 +314,7 @@ class Galadriel:
                 Parameter.WEIGHTS_Q.value: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
                 Parameter.WEIGHED_ACQ_ENABLED.value: True,
                 Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
             {
                 AWGSequencerTypes.IDENTIFIER.value: 1,
@@ -343,6 +344,7 @@ class Galadriel:
                 Parameter.WEIGHTS_Q.value: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                 Parameter.WEIGHED_ACQ_ENABLED.value: False,
                 Parameter.THRESHOLD.value: 0.5,
+                Parameter.THRESHOLD_ROTATION.value: 45.0,
             },
         ],
     }

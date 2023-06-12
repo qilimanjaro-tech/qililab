@@ -111,7 +111,7 @@ class TestMethods:
             AttributeError,
             match="The system control with alias test_alias doesn't have any AWG to upload a program",
         ):
-            system_control_without_awg.upload()
+            system_control_without_awg.upload(port=0)
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
@@ -119,7 +119,7 @@ class TestMethods:
         assert isinstance(awg, AWG)
         awg.device = MagicMock()
         _ = system_control.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
-        system_control.upload()
+        system_control.upload(port=pulse_bus_schedule.port)
         for seq_idx in range(awg.num_sequencers):
             awg.device.sequencers[seq_idx].sequence.assert_called_once()
 
@@ -129,7 +129,7 @@ class TestMethods:
             AttributeError,
             match="The system control with alias test_alias doesn't have any AWG to run a program",
         ):
-            system_control_without_awg.run()
+            system_control_without_awg.run(port=0)
 
 
 class TestProperties:
