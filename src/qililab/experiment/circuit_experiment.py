@@ -45,7 +45,7 @@ class CircuitExperiment(Experiment):
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self, save_results=True) -> Results:
+    def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -71,7 +71,9 @@ class CircuitExperiment(Experiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
-        self.results, self.results_path = self.prepare_results(save_results=save_results)
+        self.results, self.results_path = self.prepare_results(
+            save_experiment=save_experiment, save_results=save_results
+        )
         num_schedules = self.execution_manager.num_schedules
 
         data_queue: Queue = Queue()  # queue used to store the experiment results

@@ -163,7 +163,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
-    """Return CircuitExperiment object."""
+    """Return Experiment object."""
     return CircuitExperiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
@@ -369,7 +369,29 @@ class TestReset:
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
-    def test_execute(
+    def test_execute_without_saving_experiment(
+        self,
+        mock_open: MagicMock,
+        mock_dump: MagicMock,
+        mock_ssc_run: MagicMock,
+        mock_makedirs: MagicMock,
+        simulated_experiment: CircuitExperiment,
+    ):
+        """Test execute method with simulated qubit"""
+
+        # Method under test
+        results = simulated_experiment.execute(save_experiment=False)
+
+        time.sleep(0.3)
+
+        # Assert simulator called
+        mock_ssc_run.assert_called()
+
+        # Test result
+        with pytest.raises(ValueError):  # Result should be SimulatedResult
+            results.acquisitions()
+
+    def test_execute_with_saving_experiment(
         self,
         mock_open: MagicMock,
         mock_dump: MagicMock,

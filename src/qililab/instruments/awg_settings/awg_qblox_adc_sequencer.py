@@ -13,7 +13,6 @@ class AWGQbloxADCSequencer(AWGQbloxSequencer, AWGADCSequencer):
     weights_i: list[float]
     weights_q: list[float]
     weighed_acq_enabled: bool
-    threshold: float
 
     def __post_init__(self):
         super().__post_init__()

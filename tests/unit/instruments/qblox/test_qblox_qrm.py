@@ -31,6 +31,7 @@ def fixture_settings_6_sequencers():
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
             "threshold": 0.5,
+            "threshold_rotation": 30.0 * seq_idx,
             "num_bins": 1,
             "intermediate_frequency": 20000000,
             "gain_i": 0.001,
@@ -77,6 +78,7 @@ def fixture_settings_even_sequencers():
             "weights_q": [1, 1, 1, 1],
             "weighed_acq_enabled": False,
             "threshold": 0.5,
+            "threshold_rotation": 30.0 * seq_idx,
             "num_bins": 1,
             "intermediate_frequency": 20000000,
             "gain_i": 0.001,
@@ -201,6 +203,7 @@ def fixture_qrm(mock_pulsar: MagicMock, pulsar_controller_qrm: QbloxPulsarContro
             "offset_awg_path0",
             "offset_awg_path1",
             "thresholded_acq_threshold",
+            "thresholded_acq_rotation",
             "marker_ovr_en",
             "marker_ovr_value",
         ]
@@ -259,6 +262,7 @@ class TestQbloxQRM:
         qrm.device.sequencers[0].demod_en_acq.assert_called()
         qrm.device.sequencers[0].integration_length_acq.assert_called()
         qrm.device.sequencers[0].thresholded_acq_threshold.assert_called()
+        qrm.device.sequencers[0].thresholded_acq_rotation.assert_called()
 
     def test_double_scope_forbidden(self, qrm_two_scopes: QbloxQRM):
         """Tests that a QRM cannot have more than one sequencer storing the scope simultaneously."""
@@ -267,7 +271,7 @@ class TestQbloxQRM:
 
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
-        qrm.start_sequencer()
+        qrm.start_sequencer(port=1)
         qrm.device.arm_sequencer.assert_not_called()
         qrm.device.start_sequencer.assert_not_called()
 
@@ -405,7 +409,7 @@ class TestQbloxQRM:
     def test_acquisition_data_is_removed_when_calling_compile_twice(self, qrm, pulse_bus_schedule):
         """Test that the acquisition data of the QRM device is deleted when calling compile twice."""
         sequences = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qrm.upload()
+        qrm.upload(port=pulse_bus_schedule.port)
         sequences2 = qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         assert len(sequences) == 1
         assert len(sequences2) == 1
@@ -415,13 +419,13 @@ class TestQbloxQRM:
     def test_upload_raises_error(self, qrm):
         """Test upload method raises error."""
         with pytest.raises(ValueError, match="Please compile the circuit before uploading it to the device"):
-            qrm.upload()
+            qrm.upload(port=1)
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
         pulse_bus_schedule.port = 1
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
-        qrm.upload()
+        qrm.upload(port=pulse_bus_schedule.port)
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
         qrm.device.sequencers[1].sequence.assert_not_called()
 

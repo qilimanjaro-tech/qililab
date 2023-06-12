@@ -52,4 +52,4 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     # create experiment with options
     sample_experiment = CircuitExperiment(platform=platform, circuits=[circuit], options=options)
 
-    return sample_experiment.execute(save_results=False)
+    return sample_experiment.execute(save_experiment=False, save_results=False)
