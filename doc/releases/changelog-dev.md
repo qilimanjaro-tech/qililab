@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added `xBellStates` portfolio experiment. Checks for the CHSH paradox.
+  [#422](https://github.com/qilimanjaro-tech/qililab/pull/422)
+
 - Added `T1` portfolio experiment
   [#409](https://github.com/qilimanjaro-tech/qililab/pull/409)
 
