@@ -102,9 +102,15 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "Please call ``post_process_results`` first."
             )
 
-        self.popts =[curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=loop.values, ydata=self.post_processed_results, p0=p0
-        ) for loop in self.loops]
+        self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
+            self.func, xdata=self.loops[0].values, ydata=self.post_processed_results, p0=p0
+        )
+        self.popts = []
+        for loop in self.loops:
+            popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
+                self.func, xdata=loop.values, ydata=self.post_processed_results, p0=p0
+            )
+            self.popts.append(popt)
 
         return self.popts
 
@@ -135,18 +141,9 @@ class ExperimentAnalysis(Experiment, FittingModel):
         axes.scatter(xdata, self.post_processed_results, color="blue")
         if hasattr(self, "popts"):
             # Create label text
-            popt = self.popts[0]
             args = list(inspect.signature(self.func).parameters.keys())[1:]
-            print(popt[0])
-            print(type(popt[0]))
-            text = "".join(f"{arg}:{value}\n" for arg, value in zip(args, popt))
-            print("TEXT: ", text)
-            """print("TEXTO: ", text)
-            for arg, value in zip(args, self.popts[0]):
-                print(f"{arg}")
-                print("string for label: ", f"{arg}: {value:.5f}\n")
-            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popts[0]))"""
-            axes.plot(xdata, self.func(xdata, *popt), "--", label=text, color="red")
+            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popts[0]))
+            axes.plot(xdata, self.func(xdata, *self.popts[0]), "--", label=text, color="red")
             axes.legend(loc="upper right")
 
         return fig
@@ -167,7 +164,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
                         '-o', label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}")
         plt.xlabel(x_label)
         plt.ylabel(y_label)
-        plt.legend()
+        plt.legend(loc="right", bbox_to_anchor=(1.4, 0.5))
         
         return fig
         
