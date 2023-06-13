@@ -102,13 +102,16 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "Please call ``post_process_results`` first."
             )
 
-        self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.loops[0].values, ydata=self.post_processed_results, p0=p0
-        )
         self.popts = []
-        for loop in self.loops:
+        if len(self.loops) == 2:
+            for i, value in enumerate(self.loops[0].values):
+                popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
+                    self.func, xdata=self.loops[1].values, ydata=self.post_processed_results[i], p0=p0
+                )
+                self.popts.append(popt)
+        else:
             popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-                self.func, xdata=loop.values, ydata=self.post_processed_results, p0=p0
+                self.func, xdata=self.loops[0].values, ydata=self.post_processed_results, p0=p0
             )
             self.popts.append(popt)
 
