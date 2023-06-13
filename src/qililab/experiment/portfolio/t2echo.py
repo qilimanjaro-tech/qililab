@@ -1,5 +1,4 @@
 """This file contains a pre-defined version of the flux spectroscopy experiment."""
-import matplotlib.pyplot as plt
 import numpy as np
 from lmfit.models import Model
 from qibo.gates import M
@@ -27,9 +26,9 @@ class T2Echo(ExperimentAnalysis, Exp):
         platform (Platform): platform used to run the experiment.
         qubit (int): qubit index used in the experiment.
         wait_loop_values (ndarray): array of time values to wait for the `Wait` gates, the same value is used on both gates.
-        repetition_duration: Default to 10000.
-        measurement_buffer: Default to 100.
-        hardware_average: number of averages performed by the hardware. Default to 10000.
+        repetition_duration: repetition duration for the `ExperimentSettings`. Default to 10000.
+        measurement_buffer: time to wait before taking the measurment. Default to 100.
+        hardware_average: hardware average for the `ExperimentSettings`. Default to 10000.
     """
 
     def __init__(
