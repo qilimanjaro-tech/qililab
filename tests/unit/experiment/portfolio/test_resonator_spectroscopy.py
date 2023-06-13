@@ -1,6 +1,7 @@
 """Unit tests for the ``Rabi`` class."""
 from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -120,6 +121,7 @@ class TestResonatorSpectroscopy:
     def test_plot(self, resonator_spectroscopy0: ResonatorSpectroscopy):
         """Test the ``plot`` method."""
         resonator_spectroscopy0.post_process_results()
+        plt.clf()
         fig = resonator_spectroscopy0.plot()
         line = fig.gca().lines[0]
         x_data = line.get_xdata()
@@ -134,6 +136,7 @@ class TestResonatorSpectroscopy:
         assert np.shape(resonator_spectroscopy_gain.post_processed_results) == (NUM, FREQUENCY_NUM)
         assert np.allclose(resonator_spectroscopy_gain.post_processed_results[0], expected)
 
+        plt.clf()
         fig = resonator_spectroscopy_gain.plot()
         ax = fig.gca()
         collection = ax.collections[0]
@@ -151,6 +154,7 @@ class TestResonatorSpectroscopy:
         assert np.shape(resonator_spectroscopy_atten.post_processed_results) == (NUM, FREQUENCY_NUM)
         assert np.allclose(resonator_spectroscopy_atten.post_processed_results[0], expected)
 
+        plt.clf()
         fig = resonator_spectroscopy_atten.plot()
         ax = fig.gca()
         collection = ax.collections[0]
