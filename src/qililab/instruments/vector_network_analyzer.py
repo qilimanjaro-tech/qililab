@@ -1,6 +1,5 @@
 """VectorNetworkAnalyzer class."""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.typings.enums import Parameter, VNAScatteringParameters, VNATriggerModes
@@ -12,39 +11,6 @@ DEFAULT_NUMBER_POINTS = 1000
 class VectorNetworkAnalyzer(Instrument, ABC):
     """Abstract base class defining all vector network analyzers"""
 
-    @dataclass
-    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):
-        """Contains the settings of a specific signal generator.
-
-        Args:
-            power (float): Power of the instrument in dBm
-            scatering_parameter (str): Scatering parameter of the instrument
-            frequency_span (float): Frequency span of the instrument in KHz
-            frequency_center (float): Frequency center of the instrument in Hz
-            frequency_start (float): Frequency start of the instrument in Hz
-            frequency_stop (float): Frequency stop of the instrument in Hz
-            if_bandwidth (float): Bandwidth of the instrument in Hz
-            averaging_enabled (bool): Whether averaging is enabled or not in the instrument
-            trigger_mode (str): Trigger mode of the instrument
-            number_points (int): Number of points for sweep
-            device_timeout (float): Timeout of the instrument in ms
-            electrical_delay (float): Electrical delay of the instrument in s
-        """
-
-        power: float
-        scattering_parameter: VNAScatteringParameters = VNAScatteringParameters.S11
-        frequency_span: float | None = None
-        frequency_center: float | None = None
-        frequency_start: float | None = None
-        frequency_stop: float | None = None
-        if_bandwidth: float | None = None
-        averaging_enabled: bool = False
-        number_averages: int = 1
-        trigger_mode: VNATriggerModes = VNATriggerModes.INT
-        number_points: int = DEFAULT_NUMBER_POINTS
-        electrical_delay: float = 0.0
-
-    settings: VectorNetworkAnalyzerSettings
     device: VectorNetworkAnalyzerDriver
 
     @Instrument.CheckDeviceInitialized

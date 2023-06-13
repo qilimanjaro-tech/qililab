@@ -26,11 +26,6 @@ class QbloxS4g(CurrentSource):
 
     name = InstrumentName.QBLOX_S4G
 
-    @dataclass
-    class QbloxS4gSettings(CurrentSource.CurrentSourceSettings):
-        """Contains the settings of a specific signal generator."""
-
-    settings: QbloxS4gSettings
     device: QbloxS4gDriver
 
     def dac(self, dac_index: int):

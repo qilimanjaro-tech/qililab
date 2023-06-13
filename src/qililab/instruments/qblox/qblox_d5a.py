@@ -27,11 +27,6 @@ class QbloxD5a(VoltageSource):
 
     name = InstrumentName.QBLOX_D5A
 
-    @dataclass
-    class QbloxD5aSettings(VoltageSource.VoltageSourceSettings):
-        """Contains the settings of a specific signal generator."""
-
-    settings: QbloxD5aSettings
     device: QbloxD5aDriver
 
     def dac(self, dac_index: int):
@@ -45,21 +40,6 @@ class QbloxD5a(VoltageSource):
         """
         return getattr(self.device, f"dac{dac_index}")
 
-    def _channel_setup(self, dac_index: int) -> None:
-        """Setup for a specific dac channel
-
-        Args:
-            dac_index (int): dac specific index channel
-        """
-        channel = self.dac(dac_index=dac_index)
-        channel.ramping_enabled(self.ramping_enabled[dac_index])
-        channel.ramp_rate(self.ramp_rate[dac_index])
-        channel.span(self.span[dac_index])
-        channel.voltage(self.voltage[dac_index])
-        logger.debug("SPI voltage set to %f", channel.voltage())
-        while channel.is_ramping():
-            sleep(0.1)
-
     @Instrument.CheckDeviceInitialized
     def setup(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Set Qblox instrument calibration settings."""
@@ -72,49 +52,16 @@ class QbloxD5a(VoltageSource):
                 + " Number of dacs is 4 -> maximum channel_id should be 3."
             )
         channel = self.dac(dac_index=channel_id)
-        if parameter == Parameter.VOLTAGE:
-            self._set_voltage(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.SPAN:
-            self._set_span(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.RAMPING_ENABLED:
-            self._set_ramping_enabled(value=value, channel_id=channel_id, channel=channel)
-            return
-        if parameter == Parameter.RAMPING_RATE:
-            self._set_ramping_rate(value=value, channel_id=channel_id, channel=channel)
-            return
-        raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_voltage(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the voltage"""
-        self.settings.voltage[channel_id] = float(value)
-        channel.voltage(self.voltage[channel_id])
-
-    @Instrument.CheckParameterValueString
-    def _set_span(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the span"""
-        self.settings.span[channel_id] = str(value)
-        channel.span(self.span[channel_id])
-
-    @Instrument.CheckParameterValueBool
-    def _set_ramping_enabled(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the ramping_enabled"""
-        self.settings.ramping_enabled[channel_id] = bool(value)
-        channel.ramping_enabled(self.ramping_enabled[channel_id])
-
-    @Instrument.CheckParameterValueFloatOrInt
-    def _set_ramping_rate(self, value: float | str | bool, channel_id: int, channel: Any):
-        """Set the ramp_rate"""
-        self.settings.ramp_rate[channel_id] = float(value)
-        channel.ramp_rate(self.ramp_rate[channel_id])
+        channel.set(parameter.value, value)
+        self.parameters[parameter.value] = value
 
     @Instrument.CheckDeviceInitialized
     def initial_setup(self):
         """performs an initial setup."""
-        for dac_index in self.dacs:
-            self._channel_setup(dac_index=dac_index)
+        for dac in self.dacs:
+            dac_index = dac.index
+            for parameter, value in dac.parameters.items():
+                self.device.dacs[dac_index].set(parameter, value)
 
     @Instrument.CheckDeviceInitialized
     def turn_on(self):

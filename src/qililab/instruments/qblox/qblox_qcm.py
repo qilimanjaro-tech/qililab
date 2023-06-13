@@ -1,14 +1,13 @@
 """Qblox QCM class"""
-from dataclasses import dataclass
-
 from qpysequence.program import Loop, Register
 from qpysequence.weights import Weights
 
-from qililab.instruments.awg_settings import AWGQbloxSequencer
 from qililab.instruments.qblox.qblox_module import QbloxModule
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.typings.enums import InstrumentName
+
+from .sequencer import Sequencer
 
 
 @InstrumentFactory.register
@@ -21,13 +20,7 @@ class QbloxQCM(QbloxModule):
 
     name = InstrumentName.QBLOX_QCM
 
-    @dataclass
-    class QbloxQCMSettings(QbloxModule.QbloxModuleSettings):
-        """Contains the settings of a specific pulsar."""
-
-    settings: QbloxQCMSettings
-
-    def _generate_weights(self, sequencer: AWGQbloxSequencer) -> Weights:
+    def _generate_weights(self, sequencer: Sequencer) -> Weights:
         """Generate acquisition weights.
 
         Returns:

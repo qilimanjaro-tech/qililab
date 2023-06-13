@@ -77,7 +77,7 @@ class TestInitialization:
         assert awg.settings.category == Category.AWG
         assert awg.settings.firmware == "0.7.0"
         assert awg.settings.num_sequencers == 2
-        for idx, sequencer in enumerate(awg.settings.awg_sequencers):
+        for idx, sequencer in enumerate(awg.settings.sequencers):
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
             assert sequencer.chip_port_id == 100 + idx
@@ -102,12 +102,12 @@ class TestProperties:
 
     def test_awg_sequencers_property(self, awg: AWG):
         """Test the awg_sequencers property."""
-        assert awg.awg_sequencers == awg.settings.awg_sequencers
+        assert awg.awg_sequencers == awg.settings.sequencers
 
     def test_intermediate_frequencies_property(self, awg: AWG):
         """Test the intermediate_frequency property."""
         assert awg.intermediate_frequencies == [
-            sequencer.intermediate_frequency for sequencer in awg.settings.awg_sequencers
+            sequencer.intermediate_frequency for sequencer in awg.settings.sequencers
         ]
 
 
@@ -116,6 +116,6 @@ class TestMethods:
 
     def test_get_sequencer_raises_error(self, awg: AWG):
         """Test the get_sequencer method raises an error."""
-        awg.settings.awg_sequencers[1].identifier = 0
+        awg.settings.sequencers[1].identifier = 0
         with pytest.raises(ValueError, match="Each sequencer should have a unique id"):
             awg.get_sequencer(sequencer_id=0)

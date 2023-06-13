@@ -1,6 +1,4 @@
 """Keithley2600 instrument."""
-from dataclasses import dataclass
-
 import numpy as np
 
 from qililab.instruments.instrument import Instrument, ParameterNotFound
@@ -20,21 +18,9 @@ class Keithley2600(Instrument):
 
     name = InstrumentName.KEITHLEY2600
 
-    @dataclass
-    class Keithley2600Settings(Instrument.InstrumentSettings):
-        """Settings for Keithley2600 instrument."""
-
-        max_current: float
-        max_voltage: float
-
-    # TODO: This instruments contains two independent instruments inside: 'device.smua' and 'device.smub'.
-    # Right now we only use smua. Discuss how to handle them.
-
-    settings: Keithley2600Settings
     device: Keithley2600Driver
 
     @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,

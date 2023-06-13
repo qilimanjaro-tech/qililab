@@ -23,97 +23,7 @@ class Instrument(BusElement, ABC):
 
     name: InstrumentName
 
-    @dataclass
-    class InstrumentSettings(DDBBElement):
-        """Contains the settings of an instrument.
-
-        Args:
-            firmware (str): Firmware version installed on the instrument.
-            channels (int | None): Number of channels supported or None otherwise.
-        """
-
-        firmware: str
-
-    settings: InstrumentSettings  # a subtype of settings must be specified by the subclass
     device: Device
-
-    class CheckParameterValueString:
-        """Property used to check if the set parameter value is a string."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, str):
-                raise ValueError(f"value must be a string. Current type: {type(value)}")
-            return self._method(ref, *args, **kwargs)
-
-    class CheckParameterValueBool:
-        """Property used to check if the set parameter value is a bool."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, bool):
-                raise ValueError(f"value must be a bool. Current type: {type(value)}")
-            return self._method(ref, *args, **kwargs)
-
-    class CheckParameterValueFloatOrInt:
-        """Property used to check if the set parameter value is a float or int."""
-
-        def __init__(self, method: Callable):
-            self._method = method
-
-        def __get__(self, obj, objtype):
-            """Support instance methods."""
-            return partial(self.__call__, obj)
-
-        def __call__(self, ref: "Instrument", *args, **kwargs):
-            """
-            Args:
-                method (Callable): Class method.
-
-            Raises:
-                ValueError: If value is neither a float or int.
-            """
-            if "value" not in kwargs:
-                raise ValueError("'value' not specified to update instrument settings.")
-            value = kwargs["value"]
-            if not isinstance(value, float) and not isinstance(value, int):
-                raise ValueError(f"value must be a float or an int. Current type: {type(value)}")
-            if isinstance(value, int):
-                # setting a float as type as expected
-                kwargs["value"] = float(value)
-            return self._method(ref, *args, **kwargs)
 
     class CheckDeviceInitialized:
         """Property used to check if the device has been initialized."""
@@ -139,8 +49,8 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
-        self.settings = settings_class(**settings)
+        self.alias = settings.get("alias")
+        self.parameters = settings.get("parameters", {})
 
     @CheckDeviceInitialized
     @abstractmethod
@@ -178,45 +88,9 @@ class Instrument(BusElement, ABC):
     def turn_off(self):
         """Turn off an instrument."""
 
-    @property
-    def id_(self):
-        """Instrument 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
-    def alias(self):
-        """Instrument 'alias' property.
-
-        Returns:
-            str: settings.alias.
-        """
-        return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
-
-    @property
-    def firmware(self):
-        """Instrument 'firmware' property.
-
-        Returns:
-            str: settings.firmware.
-        """
-        return self.settings.firmware
-
     def __str__(self):
         """String representation of an instrument."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}" if self.alias is not None else f"{self.name}"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.

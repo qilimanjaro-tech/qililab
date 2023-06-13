@@ -1,12 +1,12 @@
 """ AWG Sequencer """
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
 from qililab.config import logger
 from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
-class AWGSequencer:
+class Sequencer:
     """AWG Sequencer
 
     Args:
@@ -26,30 +26,21 @@ class AWGSequencer:
     """
 
     identifier: int
-    chip_port_id: int | None
-    output_i: int | None
-    output_q: int | None
-    intermediate_frequency: float
-    gain_imbalance: float | None
-    phase_imbalance: float | None
-    hardware_modulation: bool
-    gain_i: float
-    gain_q: float
-    offset_i: float
-    offset_q: float
-    path_i: int = field(init=False)  # sequencer path that corresponds to the I channel
-    path_q: int = field(init=False)  # sequencer path that corresponds to the Q channel
+    chip_port_id: int
+    parameters: dict[str, float | int | str]
 
     def __post_init__(self):
-        if self.output_i in {0, 2, None} and self.output_q in {1, 3, None}:
+        output_i = self.parameters.get("output_i")
+        output_q = self.parameters.get("output_q")
+        if output_i in {0, 2, None} and output_q in {1, 3, None}:
             self.path_i = 0
             self.path_q = 1
-        elif self.output_i in {1, 3, None} and self.output_q in {0, 2, None}:
+        elif output_i in {1, 3, None} and output_q in {0, 2, None}:
             logger.warning(
                 "Cannot set `output_i=%i` and `output_q=%i` in hardware. The I/Q signals sent to sequencer %i will "
                 "be swapped to allow this setting.",
-                self.output_i,
-                self.output_q,
+                output_i,
+                output_q,
                 self.identifier,
             )
             self.path_i = 1
@@ -57,12 +48,14 @@ class AWGSequencer:
         else:
             raise ValueError(
                 f"Cannot map both paths of sequencer {self.identifier} into an even/odd output."
-                f" Obtained `output_i={self.output_i}` and `output_q={self.output_q}`."
+                f" Obtained `output_i={output_i}` and `output_q={output_q}`."
             )
 
     def to_dict(self):
         """Return a dict representation of an AWG Sequencer."""
-        dictionary = asdict(self, dict_factory=dict_factory) | {"output_i": self.output_i, "output_q": self.output_q}
+        output_i = self.parameters.get("output_i")
+        output_q = self.parameters.get("output_q")
+        dictionary = asdict(self, dict_factory=dict_factory) | {"output_i": output_i, "output_q": output_q}
         # Remove values not present in the __init__ function
         dictionary.pop("path_i")
         dictionary.pop("path_q")
