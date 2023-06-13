@@ -4,9 +4,9 @@ import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 
-from qililab import Drag
 from qililab.experiment.portfolio import Cos, ExperimentAnalysis
 from qililab.platform import Platform
+from qililab.transpiler import Drag
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
