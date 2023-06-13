@@ -41,7 +41,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         platform: Platform,
         circuits: list[Circuit],
         options: ExperimentOptions,
-        control_bus: Bus | None = None,  # TODO: This will probably change for 2-qubit experiments
+        control_bus: Bus | None = None,
         readout_bus: Bus | None = None,
         experiment_loop: Loop | None = None,
     ):
@@ -51,18 +51,23 @@ class ExperimentAnalysis(Experiment, FittingModel):
                     "A loop must be provided. Either an experiment loop in the `ExperimentOptions` class, or "
                     "an external loop in the `experiment_loop` argument."
                 )
-            self.loop = options.loops[0]  # TODO: Support nested loops
+            self.loops = options.loops
         else:
-            self.loop = experiment_loop
+            self.loops = [experiment_loop]
+
         self.control_bus = control_bus
         self.readout_bus = readout_bus
+        self.two_dimension_experiment = False
+        if len(self.loops) == 2:
+            self.two_dimension_experiment = True
+
         super().__init__(platform=platform, circuits=circuits, options=options)
 
     def post_process_results(self):
         """Method used to post-process the results of an experiment.
 
         By default this method computes the magnitude of the IQ data and saves it into the ``post_processed_results``
-        attribute.
+        attribute. If the experiment is a 2D one, it reshapes the data accordingly.
 
         Returns:
             np.ndarray: post-processed results
@@ -71,6 +76,12 @@ class ExperimentAnalysis(Experiment, FittingModel):
         i = np.array(acquisitions["i"])
         q = np.array(acquisitions["q"])
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
+        
+        if self.two_dimension_experiment:
+            self.post_processed_results = self.post_processed_results.reshape(
+                len(self.loops[0].values), len(self.loops[1].values)
+            )
+
         return self.post_processed_results
 
     def fit(self, p0: tuple | None = None):
@@ -82,7 +93,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
             p0 (tuple, optional): Initial guess for the parameters. Defaults to None.
 
         Returns:
-            float: optimal values for the parameters so that the sum of the squared residuals of
+            list(float): list with optimal values for the parameters so that the sum of the squared residuals of
                 ``f(xdata, *popt) - ydata is minimized.
         """
         if not hasattr(self, "post_processed_results"):
@@ -91,37 +102,92 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "Please call ``post_process_results`` first."
             )
 
-        self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.loop.values, ydata=self.post_processed_results, p0=p0
-        )
+        self.popts =[curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
+            self.func, xdata=loop.values, ydata=self.post_processed_results, p0=p0
+        ) for loop in self.loops]
 
-        return self.popt
+        return self.popts
 
-    def plot(self):
-        """Method used to plot the results of an experiment.
-
+    def plot_1D(self, y_label:str=""):
+        """Method used to generate default 1D plot.
+        
         By default this method creates a figure with size (9, 7) and plots the magnitude of the IQ data.
+        
+        Args:
+            y_label (str, optional): string indicating the y_label for 1D plot.
+        
+        Returns:
+            matplotlib.figure: matplotlib figure with 1D plot.
         """
         if not hasattr(self, "post_processed_results"):
             raise AttributeError(
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-        xdata = self.loop.values
+        loop = self.loops[0]
+        xdata = loop.values
 
         # Plot data
         fig, axes = plt.subplots(figsize=(9, 7))
         axes.set_title(self.options.name)
-        axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
-        axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
+        axes.set_xlabel(f"{loop.alias}: {loop.parameter.value}")
+        axes.set_ylabel(y_label)
         axes.scatter(xdata, self.post_processed_results, color="blue")
-        if hasattr(self, "popt"):
+        if hasattr(self, "popts"):
             # Create label text
+            popt = self.popts[0]
             args = list(inspect.signature(self.func).parameters.keys())[1:]
-            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
-            axes.plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
+            print(popt[0])
+            print(type(popt[0]))
+            text = "".join(f"{arg}:{value}\n" for arg, value in zip(args, popt))
+            print("TEXT: ", text)
+            """print("TEXTO: ", text)
+            for arg, value in zip(args, self.popts[0]):
+                print(f"{arg}")
+                print("string for label: ", f"{arg}: {value:.5f}\n")
+            text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popts[0]))"""
+            axes.plot(xdata, self.func(xdata, *popt), "--", label=text, color="red")
             axes.legend(loc="upper right")
+
         return fig
+
+    def plot_2D(self, x_label:str="", y_label:str=""):
+        """Method used to generate default 2D plots.
+        
+        Args:
+            x_label (str, optional): string indicating the x_label for the 2D plot.
+            y_label (str, optional): string indicating the y_label for the 2D plot.
+        
+        Returns:
+            matplotlib.figure: matplotlib figure with 2D plot.
+        """
+        fig = plt.figure()
+        for ii, _ in enumerate(self.loops[0].values):
+            plt.plot(self.loops[1].values, self.post_processed_results[ii, :],
+                        '-o', label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}")
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.legend()
+        
+        return fig
+        
+
+    def plot(self, x_label:str="", y_label:str=""):
+        """Method used to generate default plots. It checks if the experiment is 1D or 2D and calls the 
+        appropiate function.
+        
+        Args:
+            x_label (str, optional): string indicating the x_label for 2D plots
+            y_label (str, optional): string indicating the y_label for 1D and 2D plots
+        
+        Returns:
+            matplotlib.figure: matplotlib figure with either 1D plot or 2D plots.
+        """
+        if self.two_dimension_experiment:
+            return self.plot_2D(x_label=x_label,
+                                y_label=y_label)
+        else:
+            return self.plot_1D(y_label=y_label)
 
     def bus_setup(self, parameters: dict[Parameter, float | str | bool], control=False) -> None:
         """Method used to change parameters of the bus used in the experiment. Some possible bus parameters are:
