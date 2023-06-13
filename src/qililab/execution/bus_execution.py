@@ -43,9 +43,6 @@ class BusExecution:
         """Run the given pulse sequence."""
         return self.system_control.run(port=self.port)
 
-    def setup(self):
-        """Generates the sequence for each bus and uploads it to the sequencer"""
-
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
 
@@ -53,7 +50,6 @@ class BusExecution:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-
         self.pulse_bus_schedules.append(pulse_bus_schedule)
 
     def acquire_result(self) -> Result:
