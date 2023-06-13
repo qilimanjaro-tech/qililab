@@ -64,6 +64,7 @@ def fixture_experiment_analysis_1D():
     }
     return analysis
 
+
 @pytest.fixture(name="experiment_analysis_2D")
 def fixture_experiment_analysis_2D():
     """Return Experiment object."""
@@ -85,11 +86,9 @@ def fixture_experiment_analysis_2D():
     options = ExperimentOptions(loops=[outer_loop, inner_loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
     analysis.results = MagicMock()
-    analysis.results.acquisitions.return_value = {
-        "i": np.concatenate((i, i)),
-        "q": np.concatenate((q, q))
-    }
+    analysis.results.acquisitions.return_value = {"i": np.concatenate((i, i)), "q": np.concatenate((q, q))}
     return analysis
+
 
 class TestExperimentAnalysis:
     """Unit tests for the ``ExperimentAnalysis`` class."""
@@ -103,41 +102,43 @@ class TestExperimentAnalysis:
         ):
             DummyExperimentAnalysis(platform=MagicMock(), circuits=[circuit], options=ExperimentOptions())
 
-    def test_post_process_results(self,
-                                  experiment_analysis_1D: DummyExperimentAnalysis,
-                                  experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_post_process_results(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test post_process_results method."""
         res = experiment_analysis_1D.post_process_results()
         assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
-        
+
         res = experiment_analysis_2D.post_process_results()
         assert res.shape == (outer_loop_num_values, inner_loop_num_values)
-        assert all(res[0] == 20 * np.log10(np.sqrt(i[:inner_loop_num_values]**2 + q[:inner_loop_num_values]**2)))
+        assert all(res[0] == 20 * np.log10(np.sqrt(i[:inner_loop_num_values] ** 2 + q[:inner_loop_num_values] ** 2)))
 
-    def test_fit(self,
-                 experiment_analysis_1D: DummyExperimentAnalysis,
-                 experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_fit(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test fit method."""
         experiment_analysis_1D.post_processed_results = q
-        popts = experiment_analysis_1D.fit(p0=(8, 7.5)) # p0 is an initial guess
+        popts = experiment_analysis_1D.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert np.allclose(popts, (9, 7), atol=1e-5)
-        
-        experiment_analysis_2D.post_processed_results = np.concatenate((q,q)).reshape(outer_loop_num_values, inner_loop_num_values)
-        popts = experiment_analysis_2D.fit(p0=(8, 7.5)) # p0 is an initial guess
+
+        experiment_analysis_2D.post_processed_results = np.concatenate((q, q)).reshape(
+            outer_loop_num_values, inner_loop_num_values
+        )
+        popts = experiment_analysis_2D.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert np.allclose(popts[0], (9, 7), atol=1e-5)
 
-    def test_fit_raises_error_when_no_post_processing(self,
-                                                      experiment_analysis_1D: DummyExperimentAnalysis,
-                                                      experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_fit_raises_error_when_no_post_processing(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test that the ``fit`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
             experiment_analysis_1D.fit(p0=(8, 7.5))
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
             experiment_analysis_2D.fit(p0=(8, 7.5))
 
-    def test_plot(self,
-                  experiment_analysis_1D: DummyExperimentAnalysis,
-                  experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_plot(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test plot method."""
         experiment_analysis_1D.post_processed_results = q
         popts = experiment_analysis_1D.fit()
@@ -149,8 +150,10 @@ class TestExperimentAnalysis:
         line = ax.lines[0]
         assert np.allclose(line.get_xdata(), x)
         assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x))
-        
-        experiment_analysis_2D.post_processed_results = np.concatenate((q,q)).reshape(outer_loop_num_values, inner_loop_num_values)
+
+        experiment_analysis_2D.post_processed_results = np.concatenate((q, q)).reshape(
+            outer_loop_num_values, inner_loop_num_values
+        )
         popts = experiment_analysis_2D.fit(p0=(8, 7.5))
         fig = experiment_analysis_2D.plot()
         ax = fig.axes[0]
@@ -158,68 +161,75 @@ class TestExperimentAnalysis:
         assert np.allclose(line.get_xdata(), x[:inner_loop_num_values])
         assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x[:inner_loop_num_values]))
 
-    def test_plot_raises_error_when_no_post_processing(self,
-                                                       experiment_analysis_1D: DummyExperimentAnalysis):
+    def test_plot_raises_error_when_no_post_processing(self, experiment_analysis_1D: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""
         with pytest.raises(AttributeError, match="The post-processed results must be computed before fitting."):
             experiment_analysis_1D.plot()
 
-    def test_bus_setup_with_control_true(self,
-                                         experiment_analysis_1D: DummyExperimentAnalysis,
-                                         experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_bus_setup_with_control_true(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test the ``bus_setup`` method with ``control=True``."""
         experiment_analysis_1D.control_bus = MagicMock()
         experiment_analysis_1D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=True)
-        experiment_analysis_1D.control_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
+        experiment_analysis_1D.control_bus.set_parameter.assert_called_once_with(
+            parameter=Parameter.AMPLITUDE, value=0.6
+        )
 
         experiment_analysis_2D.control_bus = MagicMock()
         experiment_analysis_2D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=True)
-        experiment_analysis_2D.control_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
-        
-    def test_bus_setup_with_control_false(self,
-                                         experiment_analysis_1D: DummyExperimentAnalysis,
-                                         experiment_analysis_2D: DummyExperimentAnalysis):
+        experiment_analysis_2D.control_bus.set_parameter.assert_called_once_with(
+            parameter=Parameter.AMPLITUDE, value=0.6
+        )
+
+    def test_bus_setup_with_control_false(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test the ``bus_setup`` method with ``control=False``."""
         experiment_analysis_1D.readout_bus = MagicMock()
         experiment_analysis_1D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=False)
-        experiment_analysis_1D.readout_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
-        
+        experiment_analysis_1D.readout_bus.set_parameter.assert_called_once_with(
+            parameter=Parameter.AMPLITUDE, value=0.6
+        )
+
         experiment_analysis_2D.readout_bus = MagicMock()
         experiment_analysis_2D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6}, control=False)
-        experiment_analysis_2D.readout_bus.set_parameter.assert_called_once_with(parameter=Parameter.AMPLITUDE, value=0.6)
+        experiment_analysis_2D.readout_bus.set_parameter.assert_called_once_with(
+            parameter=Parameter.AMPLITUDE, value=0.6
+        )
 
-    def test_bus_setup_raises_error_when_no_bus_is_found(self,
-                                                         experiment_analysis_1D: DummyExperimentAnalysis,
-                                                         experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_bus_setup_raises_error_when_no_bus_is_found(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test that the ``bus_setup`` method raises an error when no bus is found."""
         with pytest.raises(ValueError, match="The experiment doesn't have a readout bus"):
             experiment_analysis_1D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6})
         with pytest.raises(ValueError, match="The experiment doesn't have a readout bus"):
             experiment_analysis_2D.bus_setup(parameters={Parameter.AMPLITUDE: 0.6})
 
-    def test_control_gate_setup(self,
-                                experiment_analysis_1D: DummyExperimentAnalysis,
-                                experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_control_gate_setup(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test the ``control_gate_setup`` method."""
         assert not hasattr(experiment_analysis_1D, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis_1D.gate_setup(gate="X(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis_1D, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis_1D.platform.get_element("X(0)").amplitude == 123
-        
+
         assert not hasattr(experiment_analysis_2D, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis_2D.gate_setup(gate="X(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis_2D, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis_2D.platform.get_element("X(0)").amplitude == 123
 
-    def test_measurement_setup(self,
-                               experiment_analysis_1D: DummyExperimentAnalysis,
-                               experiment_analysis_2D: DummyExperimentAnalysis):
+    def test_measurement_setup(
+        self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
+    ):
         """Test the ``measurement_setup`` method."""
         assert not hasattr(experiment_analysis_1D, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis_1D.gate_setup(gate="M(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis_1D, "execution_manager")  # ``build_execution`` has been called
         assert experiment_analysis_1D.platform.get_element("M(0)").amplitude == 123
-        
+
         assert not hasattr(experiment_analysis_2D, "execution_manager")  # ``build_execution`` has not been called
         experiment_analysis_2D.gate_setup(gate="M(0)", parameters={Parameter.AMPLITUDE: 123})
         assert hasattr(experiment_analysis_2D, "execution_manager")  # ``build_execution`` has been called

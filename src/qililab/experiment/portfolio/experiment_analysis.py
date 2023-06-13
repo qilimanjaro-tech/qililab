@@ -76,7 +76,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         i = np.array(acquisitions["i"])
         q = np.array(acquisitions["q"])
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
-        
+
         if self.two_dimension_experiment:
             self.post_processed_results = self.post_processed_results.reshape(
                 len(self.loops[0].values), len(self.loops[1].values)
@@ -117,14 +117,14 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
         return self.popts
 
-    def plot_1D(self, y_label:str=""):
+    def plot_1D(self, y_label: str = ""):
         """Method used to generate default 1D plot.
-        
+
         By default this method creates a figure with size (9, 7) and plots the magnitude of the IQ data.
-        
+
         Args:
             y_label (str, optional): string indicating the y_label for 1D plot.
-        
+
         Returns:
             matplotlib.figure: matplotlib figure with 1D plot.
         """
@@ -151,41 +151,43 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
         return fig
 
-    def plot_2D(self, x_label:str="", y_label:str=""):
+    def plot_2D(self, x_label: str = "", y_label: str = ""):
         """Method used to generate default 2D plots.
-        
+
         Args:
             x_label (str, optional): string indicating the x_label for the 2D plot.
             y_label (str, optional): string indicating the y_label for the 2D plot.
-        
+
         Returns:
             matplotlib.figure: matplotlib figure with 2D plot.
         """
         fig = plt.figure()
         for ii, _ in enumerate(self.loops[0].values):
-            plt.plot(self.loops[1].values, self.post_processed_results[ii, :],
-                        '-o', label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}")
+            plt.plot(
+                self.loops[1].values,
+                self.post_processed_results[ii, :],
+                "-o",
+                label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}",
+            )
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.legend(loc="right", bbox_to_anchor=(1.4, 0.5))
-        
-        return fig
-        
 
-    def plot(self, x_label:str="", y_label:str=""):
-        """Method used to generate default plots. It checks if the experiment is 1D or 2D and calls the 
+        return fig
+
+    def plot(self, x_label: str = "", y_label: str = ""):
+        """Method used to generate default plots. It checks if the experiment is 1D or 2D and calls the
         appropiate function.
-        
+
         Args:
             x_label (str, optional): string indicating the x_label for 2D plots
             y_label (str, optional): string indicating the y_label for 1D and 2D plots
-        
+
         Returns:
             matplotlib.figure: matplotlib figure with either 1D plot or 2D plots.
         """
         if self.two_dimension_experiment:
-            return self.plot_2D(x_label=x_label,
-                                y_label=y_label)
+            return self.plot_2D(x_label=x_label, y_label=y_label)
         else:
             return self.plot_1D(y_label=y_label)
 
