@@ -73,7 +73,7 @@ class RabiMuxNQubits(ExperimentAnalysis, Cos):
             options=experiment_options,
         )
 
-    def post_process_results(self):
+    def post_process_results(self) -> np.ndarray:
         """Process the results of the experiment and reshape it in n dimensional arrays (n=num_qubits)"""
         super().post_process_results()
         self.post_processed_results = self.post_processed_results.reshape(len(self.theta_values), self.num_qubits)

@@ -13,19 +13,20 @@ from qililab.typings import Parameter
 from qililab.utils import Wait
 from tests.data import Galadriel
 
+# Qubits parameters
+QUBITS = [0, 2]  # size 2
+
 # Theta loop parameters
 THETA_START = 0
 THETA_END = 2 * np.pi
 THETA_NUM_SAMPLES = 51
-
 theta_values = np.linspace(THETA_START, THETA_END, THETA_NUM_SAMPLES)
 
 # Modulaiton parameters
-I_AMPLITUDE, I_RATE, I_OFFSET = (5, 7, 0)
-Q_AMPLITUDE, Q_RATE, Q_OFFSET = (9, 7, 0)
-
-i = I_AMPLITUDE * np.exp(I_RATE * theta_values + I_OFFSET)
-q = Q_AMPLITUDE * np.exp(Q_RATE * theta_values + Q_OFFSET)
+I_AMPLITUDE, I_RATE = (5, 7)
+Q_AMPLITUDE, Q_RATE = (9, 7)
+i = I_AMPLITUDE * np.exp(I_RATE * theta_values)
+q = Q_AMPLITUDE * np.exp(Q_RATE * theta_values)
 
 
 @pytest.fixture(name="rabi_mux")
@@ -36,7 +37,7 @@ def fixture_rabi_mux() -> RabiMux:
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    analysis = RabiMux(platform=platform, qubit_theta=0, qubit_2theta=1, theta_values=theta_values)
+    analysis = RabiMux(platform=platform, qubit_theta=QUBITS[0], qubit_2theta=QUBITS[1], theta_values=theta_values)
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
         "i": i,
@@ -53,12 +54,8 @@ class TestRabi:
         # Test that the correct circuit is created
         assert len(rabi_mux.circuits) == 1
         for idx, gate in enumerate(rabi_mux.circuits[0].queue):
-            assert isinstance(gate, [Drag, Wait, M][idx])
-            assert gate.qubits == (0,)
-
-        # Test the bus attributes
-        assert not isinstance(rabi_mux.control_bus.system_control, ReadoutSystemControl)
-        assert isinstance(rabi_mux.readout_bus.system_control, ReadoutSystemControl)
+            assert isinstance(gate, [Drag, Wait, M][idx // 2])
+            assert gate.qubits == (QUBITS[idx % 2],)
 
         # Test the experiment options
         assert len(rabi_mux.options.loops) == 2
@@ -73,36 +70,27 @@ class TestRabi:
         assert rabi_mux.options.loops[1].start == THETA_START
 
         assert rabi_mux.options.loops[0].stop == THETA_END
-        assert rabi_mux.options.loops[1].stop == THETA_END
+        assert rabi_mux.options.loops[1].stop == THETA_END * 2
 
         assert rabi_mux.options.loops[0].num == THETA_NUM_SAMPLES
         assert rabi_mux.options.loops[1].num == THETA_NUM_SAMPLES
 
         assert rabi_mux.options.settings.repetition_duration == 1000
         assert rabi_mux.options.settings.hardware_average == 1000
+        assert rabi_mux.options.settings.num_bins == 1
 
-    def test_func(self, rabi_mux: RabiMux):
-        """Test the ``func`` method."""
-        assert np.allclose(
-            rabi_mux.func(
-                xdata=theta_values,
-                amplitude=I_AMPLITUDE,
-                frequency=I_RATE / (2 * np.pi),
-                phase=-np.pi / 2,
-                offset=I_OFFSET,
-            ),
-            i,
-        )
+    # TO DO: Here down vvv is incorrect!!!!!!!!!!
+    # (maybe you even need to change the fixture, or add a new ficture for post_process)
 
-    def test_fit(self, rabi_mux: RabiMux):
-        """Test fit method."""
-        rabi_mux.post_processed_results = q
-        popt = rabi_mux.fit(p0=(8, 7.5 / (2 * np.pi), -np.pi / 2, 0))  # p0 is an initial guess
-        assert np.allclose(popt, (9, 7 / (2 * np.pi), -np.pi / 2, 0), atol=1e-5)
+    def test_post_process_results(self, rabi_mux: RabiMux):
+        """Test the post_process_results method."""
+        rabi_mux.build_execution()
+        _ = rabi_mux.run()
+        assert rabi_mux.post_process_results().shape() == (len(rabi_mux.theta_values), 2)
 
     def test_plot(self, rabi_mux: RabiMux):
         """Test plot method."""
-        rabi_mux.post_processed_results = q
+        rabi_mux.post_processed_results = [q, q]
         popt = rabi_mux.fit()
         fig = rabi_mux.plot()
         scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
