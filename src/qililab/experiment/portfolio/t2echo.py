@@ -14,21 +14,20 @@ from qililab.utils import Loop, Wait
 class T2Echo(ExperimentAnalysis, Exp):
     """Class used to run a T2Echo experiment on the given qubit. The experiment performs the following circuit:
 
-    Drag(qubit, theta=np.pi / 2, phase=0)  # Equivalent to a pi/2 rotation arround the x axis
-    Wait(qubit, t)                         # Wait for a variable amount of time
-    Drag(qubit, theta=np.pi, phase=0)      # Equivalent to a pi rotation arround the x axis
-    Wait(qubit, t)                         # Wait for a variable amount of time
-    Drag(qubit, theta=np.pi / 2, phase=0)  # Equivalent to a pi/2 rotation arround the x axis
-    Wait(qubit, t=measurement_buffer)      # Wait for a fixed ammount of time
-    M(qubit)                               # Measurment of the qubit
+    1. Prepare the qubit in the ∣-i⟩ state by sending a π/2-pulse to the qubit.
+    2. Wait some time t.
+    4. Send a π-pulse to the qubit.
+    5. Wait some time t.
+    6. Send a π/2-pulse to the qubit.
+    7. Measure the qubit.
 
     Args:
         platform (Platform): platform used to run the experiment.
         qubit (int): qubit index used in the experiment.
         wait_loop_values (ndarray): array of time values to wait for the `Wait` gates, the same value is used on both gates.
-        repetition_duration: repetition duration for the `ExperimentSettings`. Default to 10000.
-        measurement_buffer: time to wait before taking the measurment. Default to 100.
-        hardware_average: hardware average for the `ExperimentSettings`. Default to 10000.
+        repetition_duration (int, optional): duration of a single repetition in nanoseconds. Default to 10000.
+        measurement_buffer(int, optional): time to wait before taking the measurment. Default to 100.
+        hardware_average (int, optional): number of repetitions used to average the result.`. Default to 10000.
     """
 
     def __init__(
@@ -68,20 +67,15 @@ class T2Echo(ExperimentAnalysis, Exp):
             options=experiment_options,
         )
 
-    def fit(self):
-        def func_model(x, A, C, offset):
-            return A * np.exp(-x / C) + offset
+    def fit(self, p0: tuple | None = None):
+        """
+        Fitting function for the T2Echo class. Calls the ExperimentAnalysis.fit() and returns the fitted T2 value.
 
-        model = Model(func_model)
-        initval_A = np.mean(self.post_processed_results)
-        initval_C = 15000
-
-        model.set_param_hint("A", value=initval_A, vary=True)
-        model.set_param_hint("C", value=initval_C, min=0, vary=True)
-        model.set_param_hint("offset", value=0, vary=True)
-        params = model.make_params()
-
-        results = model.fit(data=self.post_processed_results, x=self.wait_loop_values, params=params)
-        parameters = results.params.valuesdict()
-        self.t2 = parameters["C"]
+        Args:
+            p0 (tuple, optional): Initial guess for the parameters. Default to (-52, 2000, 0).
+        """
+        if p0 is None:
+            p0 = (-52, 2000, 0)
+        fitted_params = super().fit(p0=p0)
+        self.t2 = 2 * fitted_params[1]
         return self.t2

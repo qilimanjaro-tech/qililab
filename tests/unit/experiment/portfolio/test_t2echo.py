@@ -73,3 +73,13 @@ class TestT2Echo:
             t2echo.func(xdata=x, amplitude=I_AMPLITUDE, rate=I_RATE, offset=I_OFFSET),
             i,
         )
+
+    def test_fit(self, t2echo: T2Echo):
+        """Test the ``fit`` method."""
+        with patch("qililab.experiment.portfolio.experiment_analysis.ExperimentAnalysis.fit") as mock_parent_fit:
+            mocked_fitted_params = [0.1, 0.5]
+            mock_parent_fit.return_value = mocked_fitted_params
+            t2_test = t2echo.fit()
+            mock_parent_fit.assert_called_with(p0=(-52, 2000, 0))
+
+            assert t2_test == 2 * mocked_fitted_params[1]
