@@ -163,7 +163,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
-    """Return Experiment object."""
+    """Return CircuitExperiment object."""
     return CircuitExperiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
