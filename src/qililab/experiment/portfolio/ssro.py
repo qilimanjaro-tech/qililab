@@ -11,12 +11,10 @@ from qililab.utils import Loop, Wait
 
 
 class SSRO(ExperimentAnalysis, Cos):
-    """Experiment to determine the T1 value of a qubit.
+    """Experiment to perform SSRO to a qubit.
 
-    The value of T1 is measured through the following sequence of operations:
-        1. Prepare the qubit in the excited state by sending a π-pulse to the qubit.
-        2. Wait some time t.
-        3. Measure the state of the qubit.
+    The SSRO is measured through the following sequence of operations:
+        ...
 
     Args:
         platform (Platform): platform used to run the experiment
