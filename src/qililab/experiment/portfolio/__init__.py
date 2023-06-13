@@ -3,4 +3,6 @@ from .experiment_analysis import ExperimentAnalysis
 from .fitting_models import *
 from .flipping_sequence import FlippingSequence
 from .rabi import Rabi
+from .rabi_mux import RabiMux
+from .rabi_mux_n_qubits import RabiMuxNQubits
 from .t1 import T1

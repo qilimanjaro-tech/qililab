@@ -9,6 +9,7 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     Args:
         circuit (Circuit): qibo circuit
         runcard_name (str): name of the runcard to be loaded
+        nshots (int): number of shots/bins
     Returns:
         Results: ``Results`` class containing the experiment results
 
