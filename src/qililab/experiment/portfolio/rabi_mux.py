@@ -14,8 +14,13 @@ from qililab.utils import Loop, Wait
 class RabiMux(ExperimentAnalysis, Cos):
     """Class used to run a rabi mux experiment on the two given qubits.
 
-    This experiment modifies the amplitude of the pulse associated to the Drag gate for the first qubit and then
-    makes the same but with a factor of 2 for the other qubit. So we can see, that we are actually acting on two different qubits.
+    This experiment modifies the amplitude of the pulse associated to the Drag gate for the first qubit and then makes
+    the same but with a factor of 2 for the other qubit. So we can see, that we are actually acting on two different qubits.
+
+    This is done with the following operations for each qubit (the second one with theta_values doubled):
+    1. Send a Drag gate with theta = value of the loop (theta_values) and phase = 0.
+    2. Send a Wait gate of time = measurement_buffer.
+    3. Measure the qubit
 
     Args:
         qubits_theta (int): qubit index used in the experiment where we apply the normal loop with theta_values

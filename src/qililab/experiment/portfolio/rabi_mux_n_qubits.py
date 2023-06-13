@@ -17,6 +17,11 @@ class RabiMuxNQubits(ExperimentAnalysis, Cos):
     This experiment modifies the amplitude of the pulse associated to the Drag gate for the first qubit and then
     makes the same but with a factor of 2 for the other qubit. So we can see, that we are actually acting on two different qubits.
 
+    This is done with the following operations for each qubit (each one with bigger theta_values, and so bigger period):
+    1. Send a Drag gate with theta = value of the loop (i*theta_values) and phase = 0.
+    2. Send a Wait gate of time = measurement_buffer.
+    3. Measure the qubit
+
     Args:
         qubits (list[int]): list of the qubits index used in the experiment where we apply the different theta loops.
         platform (Platform): platform used to run the experiment
