@@ -1,5 +1,4 @@
 from itertools import product
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +9,7 @@ import qililab as ql
 from qililab.experiment.portfolio import Exp, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
-from qililab.utils import Loop, Wait
+from qililab.utils import Loop
 
 bell_state_names = ["phi_plus", "phi_minus", "psi_plus", "psi_minus"]
 
@@ -118,7 +117,7 @@ class xBellStates(ExperimentAnalysis, Exp):
             )
         return self.post_processed_results
 
-    def get_chsh_witness(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_chsh_witness(self) -> tuple[np.ndarray, np.ndarray]:
         self.chsh1 = (
             self.post_processed_results[0, 0]
             + self.post_processed_results[0, 1]
