@@ -52,11 +52,11 @@ class TestT1:
 
         # Test the experiment options
         assert len(t1.options.loops) == 1
-        assert t1.loop.alias == "2"
-        assert t1.loop.parameter == Parameter.GATE_PARAMETER
-        assert t1.loop.start == START
-        assert t1.loop.stop == STOP
-        assert t1.loop.num == NUM
+        assert t1.loops[0].alias == "2"
+        assert t1.loops[0].parameter == Parameter.GATE_PARAMETER
+        assert t1.loops[0].start == START
+        assert t1.loops[0].stop == STOP
+        assert t1.loops[0].num == NUM
 
     def test_func(self, t1: T1):
         """Test the ``func`` method."""

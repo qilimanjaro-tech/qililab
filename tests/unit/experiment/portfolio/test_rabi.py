@@ -50,11 +50,11 @@ class TestRabi:
         assert isinstance(rabi.readout_bus.system_control, ReadoutSystemControl)
         # Test the experiment options
         assert len(rabi.options.loops) == 1
-        assert rabi.loop.alias == "X"
-        assert rabi.loop.parameter == "amplitude"
-        assert rabi.loop.start == START
-        assert rabi.loop.stop == STOP
-        assert rabi.loop.num == NUM
+        assert rabi.loops[0].alias == "X"
+        assert rabi.loops[0].parameter == "amplitude"
+        assert rabi.loops[0].start == START
+        assert rabi.loops[0].stop == STOP
+        assert rabi.loops[0].num == NUM
         assert rabi.options.settings.repetition_duration == 10000
         assert rabi.options.settings.hardware_average == 10000
 
@@ -74,7 +74,7 @@ class TestRabi:
     def test_plot(self, rabi: Rabi):
         """Test plot method."""
         rabi.post_processed_results = q
-        popt = rabi.fit()
+        popt = rabi.fit()[0]
         fig = rabi.plot()
         scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
         assert np.allclose(scatter_data[:, 0], x)
