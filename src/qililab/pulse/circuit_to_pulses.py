@@ -126,7 +126,7 @@ class CircuitToPulses:
                     flux_port = chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
                         pulse_schedule.create_schedule(port=flux_port)
-                    
+
             pulse_schedule_list.append(pulse_schedule)
 
         return pulse_schedule_list
