@@ -299,7 +299,7 @@ class Experiment:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load Exp from dictionary.
+        """Load Experiment from dictionary.
 
         Args:
             dictionary (dict): Dictionary description of an Experiment.
