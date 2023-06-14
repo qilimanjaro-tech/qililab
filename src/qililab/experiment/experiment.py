@@ -290,7 +290,7 @@ class Experiment:
         """Convert Experiment into a dictionary.
 
         Returns:
-            dict: Dictionary representation of the Exp class.
+            dict: Dictionary representation of the Experiment class.
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
