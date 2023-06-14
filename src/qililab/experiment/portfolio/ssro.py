@@ -3,9 +3,9 @@ import numpy as np
 from qibo.gates import M
 from qibo.models import Circuit
 
-from qililab import Drag
 from qililab.experiment.portfolio import Cos, ExperimentAnalysis
 from qililab.platform import Platform
+from qililab.transpiler.native_gates import Drag
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
@@ -24,8 +24,8 @@ class SSRO(ExperimentAnalysis, Cos):
         loop_values (numpy.ndarray):
         repetition_duration (int, optional): duration of a single repetition in nanoseconds. Defaults to 200000.
         hardware_average (int, optional): number of repetitions used to average the result. Default to 1.
-        measurment_buffer (int, optional): number of repetitions used to average the result. Defaults to 100.
-        num_bins (int, optional): number of repetitions used to average the result. Defaults to 2000.
+        measurment_buffer (int, optional): time to wait before taking a measurment. Defaults to 100.
+        num_bins (int, optional): number of bins of the Experiment. Defaults to 2000.
     """
 
     def __init__(
@@ -69,9 +69,8 @@ class SSRO(ExperimentAnalysis, Cos):
             )
         elif loop_parameter == Parameter.ATTENUATION:
             loop = Loop(alias="attenuator", parameter=Parameter.ATTENUATION, values=loop_values)
-        # else:
-        #     raise ValueError(f"Incorrect parameter {loop_parameter.value}")
-        if loop_parameter is None:
+
+        elif loop_parameter is None:
             loop = Loop(alias="external", parameter=Parameter.EXTERNAL, values=np.array([1]))
 
         experiment_options = ExperimentOptions(
