@@ -38,6 +38,7 @@ class Bus:
         port: int
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
+        delay: int
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
