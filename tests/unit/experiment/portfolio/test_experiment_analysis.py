@@ -28,8 +28,10 @@ I_AMPLITUDE, I_RATE = (5, 7)
 Q_AMPLITUDE, Q_RATE = (9, 7)
 i = I_AMPLITUDE * np.sin(I_RATE * x)
 q = Q_AMPLITUDE * np.sin(Q_RATE * x)
-outer_loop_num_values = 50
-inner_loop_num_values = 40
+outer_loop_high_dim = 51
+inner_loop_high_dim = 41
+outer_loop_low_dim = 50
+inner_loop_low_dim = 40
 
 
 class DummyFittingModel(FittingModel):
@@ -73,17 +75,34 @@ def fixture_experiment_analysis_2D():
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    outer_loop = Loop(
-        alias="X(0)",
-        parameter=Parameter.DURATION,
-        values=x[:outer_loop_num_values],
-    )
-    inner_loop = Loop(
+
+    inner_loop_0 = Loop(
         alias="Y(0)",
         parameter=Parameter.DURATION,
-        values=x[:inner_loop_num_values],
+        values=x[:inner_loop_low_dim],
     )
-    options = ExperimentOptions(loops=[outer_loop, inner_loop])
+    
+    inner_loop_1 = Loop(
+        alias="Y(1)",
+        parameter=Parameter.DURATION,
+        values=x[:inner_loop_high_dim],
+    )
+    
+    outer_loop_0 = Loop(
+        alias="X(0)",
+        parameter=Parameter.DURATION,
+        values=x[:outer_loop_low_dim],
+        loop=inner_loop_0
+    )
+    
+    outer_loop_1 = Loop(
+        alias="X(1)",
+        parameter=Parameter.DURATION,
+        values=x[:outer_loop_high_dim],
+        loop=inner_loop_1
+    )
+    
+    options = ExperimentOptions(loops=[outer_loop_0, outer_loop_1])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {"i": np.concatenate((i, i)), "q": np.concatenate((q, q))}
@@ -110,22 +129,24 @@ class TestExperimentAnalysis:
         assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
 
         res = experiment_analysis_2D.post_process_results()
-        assert res.shape == (outer_loop_num_values, inner_loop_num_values)
-        assert all(res[0] == 20 * np.log10(np.sqrt(i[:inner_loop_num_values] ** 2 + q[:inner_loop_num_values] ** 2)))
+        assert res.shape == (outer_loop_low_dim, inner_loop_low_dim)
+        assert all(res[0] == 20 * np.log10(np.sqrt(i[:inner_loop_low_dim] ** 2 + q[:inner_loop_low_dim] ** 2)))
 
     def test_fit(
         self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
     ):
         """Test fit method."""
         experiment_analysis_1D.post_processed_results = q
-        popts = experiment_analysis_1D.fit(p0=(8, 7.5))  # p0 is an initial guess
+        popts = experiment_analysis_1D.fit(p0=(8, 7.5)) # p0 is an initial guess
         assert np.allclose(popts, (9, 7), atol=1e-5)
-
-        experiment_analysis_2D.post_processed_results = np.concatenate((q, q)).reshape(
-            outer_loop_num_values, inner_loop_num_values
-        )
-        popts = experiment_analysis_2D.fit(p0=(8, 7.5))  # p0 is an initial guess
+        
+        experiment_analysis_2D.min_dim = (2, len(q))
+        experiment_analysis_2D.min_loop_values = x
+        experiment_analysis_2D.post_processed_results = [q, q]
+        popts = experiment_analysis_2D.fit(p0=(8, 7.5)) # p0 is an initial guess
+        assert len(popts)==2
         assert np.allclose(popts[0], (9, 7), atol=1e-5)
+        assert np.allclose(popts[1], (9, 7), atol=1e-5)
 
     def test_fit_raises_error_when_no_post_processing(
         self, experiment_analysis_1D: DummyExperimentAnalysis, experiment_analysis_2D: DummyExperimentAnalysis
@@ -151,15 +172,15 @@ class TestExperimentAnalysis:
         assert np.allclose(line.get_xdata(), x)
         assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x))
 
-        experiment_analysis_2D.post_processed_results = np.concatenate((q, q)).reshape(
-            outer_loop_num_values, inner_loop_num_values
-        )
+        experiment_analysis_2D.min_dim = (2, len(q))
+        experiment_analysis_2D.min_loop_values = x
+        experiment_analysis_2D.post_processed_results = [q, q]
         popts = experiment_analysis_2D.fit(p0=(8, 7.5))
         fig = experiment_analysis_2D.plot()
         ax = fig.axes[0]
         line = ax.lines[0]
-        assert np.allclose(line.get_xdata(), x[:inner_loop_num_values])
-        assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x[:inner_loop_num_values]))
+        assert np.allclose(line.get_xdata(), x)
+        assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x), atol=1e-5)
 
     def test_plot_raises_error_when_no_post_processing(self, experiment_analysis_1D: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""

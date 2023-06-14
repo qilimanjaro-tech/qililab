@@ -58,13 +58,12 @@ class ExperimentAnalysis(Experiment, FittingModel):
         self.control_bus = control_bus
         self.readout_bus = readout_bus
         self.reshape_dim = None
-        self.two_dimension_experiment = False
         self.min_dim = (0, 0) # indicates 2D experiment if different than (0, 0)
         for loop in self.loops:
             if loop.loop is not None:
                 if self.min_dim[0] == 0 or len(loop.values) < self.min_dim[0]:
                     self.min_dim = (len(loop.values), len(loop.loop.values))
-
+                    self.min_loop_values = loop.values
 
         super().__init__(platform=platform, circuits=circuits, options=options)
 
@@ -112,7 +111,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         if self.min_dim[0] > 0:
             for i in range(self.min_dim[0]):
                 popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-                    self.func, xdata=self.min_dim[0], ydata=self.post_processed_results[i], p0=p0
+                    self.func, xdata=self.min_loop_values, ydata=self.post_processed_results[i], p0=p0
                 )
                 self.popts.append(popt)
         else:
@@ -170,11 +169,12 @@ class ExperimentAnalysis(Experiment, FittingModel):
         fig = plt.figure()
         for ii in range(self.min_dim[0]):
             plt.plot(
-                self.min_dim[1],
-                self.post_processed_results[ii, :],
+                self.min_loop_values,
+                self.post_processed_results[ii],
                 "-o",
-                label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}",
+                label=f"{self.loops[0].parameter.value}={ii}",
             )
+        
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.legend(loc="right", bbox_to_anchor=(1.4, 0.5))
