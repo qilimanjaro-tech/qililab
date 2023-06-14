@@ -58,7 +58,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         self.control_bus = control_bus
         self.readout_bus = readout_bus
         self.reshape_dim = None
-        self.min_dim = (0, 0) # indicates 2D experiment if different than (0, 0)
+        self.min_dim = (0, 0)  # indicates 2D experiment if different than (0, 0)
         for loop in self.loops:
             if loop.loop is not None:
                 if self.min_dim[0] == 0 or len(loop.values) < self.min_dim[0]:
@@ -79,13 +79,11 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         acquisitions = self.results.acquisitions()
         i = np.array(acquisitions["i"])
         q = np.array(acquisitions["q"])
-        
+
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
 
         if self.min_dim[0] > 0:
-            self.post_processed_results = self.post_processed_results.reshape(
-                self.min_dim[0], self.min_dim[1]
-            )
+            self.post_processed_results = self.post_processed_results.reshape(self.min_dim[0], self.min_dim[1])
 
         return self.post_processed_results
 
@@ -165,7 +163,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
 
         Returns:
             matplotlib.figure: matplotlib figure with 2D plot.
-        """ 
+        """
         fig = plt.figure()
         for ii in range(self.min_dim[0]):
             plt.plot(
@@ -174,7 +172,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
                 "-o",
                 label=f"{self.loops[0].parameter.value}={ii}",
             )
-        
+
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.legend(loc="right", bbox_to_anchor=(1.4, 0.5))

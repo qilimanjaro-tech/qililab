@@ -81,27 +81,17 @@ def fixture_experiment_analysis_2D():
         parameter=Parameter.DURATION,
         values=x[:inner_loop_low_dim],
     )
-    
+
     inner_loop_1 = Loop(
         alias="Y(1)",
         parameter=Parameter.DURATION,
         values=x[:inner_loop_high_dim],
     )
-    
-    outer_loop_0 = Loop(
-        alias="X(0)",
-        parameter=Parameter.DURATION,
-        values=x[:outer_loop_low_dim],
-        loop=inner_loop_0
-    )
-    
-    outer_loop_1 = Loop(
-        alias="X(1)",
-        parameter=Parameter.DURATION,
-        values=x[:outer_loop_high_dim],
-        loop=inner_loop_1
-    )
-    
+
+    outer_loop_0 = Loop(alias="X(0)", parameter=Parameter.DURATION, values=x[:outer_loop_low_dim], loop=inner_loop_0)
+
+    outer_loop_1 = Loop(alias="X(1)", parameter=Parameter.DURATION, values=x[:outer_loop_high_dim], loop=inner_loop_1)
+
     options = ExperimentOptions(loops=[outer_loop_0, outer_loop_1])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
     analysis.results = MagicMock()
@@ -137,14 +127,14 @@ class TestExperimentAnalysis:
     ):
         """Test fit method."""
         experiment_analysis_1D.post_processed_results = q
-        popts = experiment_analysis_1D.fit(p0=(8, 7.5)) # p0 is an initial guess
+        popts = experiment_analysis_1D.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert np.allclose(popts, (9, 7), atol=1e-5)
-        
+
         experiment_analysis_2D.min_dim = (2, len(q))
         experiment_analysis_2D.min_loop_values = x
         experiment_analysis_2D.post_processed_results = [q, q]
-        popts = experiment_analysis_2D.fit(p0=(8, 7.5)) # p0 is an initial guess
-        assert len(popts)==2
+        popts = experiment_analysis_2D.fit(p0=(8, 7.5))  # p0 is an initial guess
+        assert len(popts) == 2
         assert np.allclose(popts[0], (9, 7), atol=1e-5)
         assert np.allclose(popts[1], (9, 7), atol=1e-5)
 
