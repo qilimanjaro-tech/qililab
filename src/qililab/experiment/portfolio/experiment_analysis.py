@@ -57,9 +57,14 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
         self.control_bus = control_bus
         self.readout_bus = readout_bus
+        self.reshape_dim = None
         self.two_dimension_experiment = False
-        if len(self.loops) == 2:
-            self.two_dimension_experiment = True
+        self.min_dim = (0, 0) # indicates 2D experiment if different than (0, 0)
+        for loop in self.loops:
+            if loop.loop is not None:
+                if self.min_dim[0] == 0 or len(loop.values) < self.min_dim[0]:
+                    self.min_dim = (len(loop.values), len(loop.loop.values))
+
 
         super().__init__(platform=platform, circuits=circuits, options=options)
 
@@ -75,11 +80,12 @@ class ExperimentAnalysis(Experiment, FittingModel):
         acquisitions = self.results.acquisitions()
         i = np.array(acquisitions["i"])
         q = np.array(acquisitions["q"])
+        
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
 
-        if self.two_dimension_experiment:
+        if self.min_dim[0] > 0:
             self.post_processed_results = self.post_processed_results.reshape(
-                len(self.loops[0].values), len(self.loops[1].values)
+                self.min_dim[0], self.min_dim[1]
             )
 
         return self.post_processed_results
@@ -103,10 +109,10 @@ class ExperimentAnalysis(Experiment, FittingModel):
             )
 
         self.popts = []
-        if len(self.loops) == 2:
-            for i, value in enumerate(self.loops[0].values):
+        if self.min_dim[0] > 0:
+            for i in range(self.min_dim[0]):
                 popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-                    self.func, xdata=self.loops[1].values, ydata=self.post_processed_results[i], p0=p0
+                    self.func, xdata=self.min_dim[0], ydata=self.post_processed_results[i], p0=p0
                 )
                 self.popts.append(popt)
         else:
@@ -160,11 +166,11 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
         Returns:
             matplotlib.figure: matplotlib figure with 2D plot.
-        """
+        """ 
         fig = plt.figure()
-        for ii, _ in enumerate(self.loops[0].values):
+        for ii in range(self.min_dim[0]):
             plt.plot(
-                self.loops[1].values,
+                self.min_dim[1],
                 self.post_processed_results[ii, :],
                 "-o",
                 label=f"{self.loops[1].alias}: {self.loops[1].parameter.value}",
@@ -186,7 +192,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         Returns:
             matplotlib.figure: matplotlib figure with either 1D plot or 2D plots.
         """
-        if self.two_dimension_experiment:
+        if self.min_dim[0] > 0:
             return self.plot_2D(x_label=x_label, y_label=y_label)
         else:
             return self.plot_1D(y_label=y_label)
