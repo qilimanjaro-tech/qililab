@@ -287,7 +287,7 @@ class Experiment:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
 
     def to_dict(self):
-        """Convert Exp into a dictionary.
+        """Convert Experiment into a dictionary.
 
         Returns:
             dict: Dictionary representation of the Exp class.
