@@ -12,6 +12,21 @@ This document contains the changes of the current release.
   Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
   [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
 
+- The `ExecutionManager` can now be built from the loops of the experiment.
+  This is done by `alias` matching, the loops will be executed on the bus with the same `alias`.
+  Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
+  [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
+
+- The `Experiment` class has been changed to support a more general definition of experiment by removing the
+  `circuits` and `pulse_schedules`. A new class `CircuitExperiment` inherits from the new `Experiment` class has the previous attributes and all the functionality the old `Experiment` had.
+
+  ```python
+  experiment = Experiment(platform=platform, options=options)
+  experiment_2 = CircuitExperiment(platform=platform, options=options, circuits=[circuit])
+  ```
+
+  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
+
 - Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
 
 ```yml
@@ -37,6 +52,9 @@ awg_sequencers:
   [#404](https://github.com/qilimanjaro-tech/qililab/pull/404)
 
 ### Breaking changes
+
+- Old scripts using `Experiment` with circuits should be changed and use `CircuitExperiment` instead.
+  [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
 
 ### Deprecations / Removals
 
