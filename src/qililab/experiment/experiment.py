@@ -302,7 +302,7 @@ class Experiment:
         """Load Exp from dictionary.
 
         Args:
-            dictionary (dict): Dictionary description of an Exp.
+            dictionary (dict): Dictionary description of an Experiment.
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
