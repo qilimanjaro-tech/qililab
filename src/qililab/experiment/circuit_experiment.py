@@ -1,4 +1,4 @@
-""" Experiment class."""
+""" CircuitExperiment class."""
 import copy
 import itertools
 from queue import Queue
@@ -23,7 +23,7 @@ from qililab.utils.loop import Loop
 
 
 class CircuitExperiment(Experiment):
-    """Experiment class"""
+    """CircuitExperiment class"""
 
     def __init__(
         self,
@@ -45,7 +45,7 @@ class CircuitExperiment(Experiment):
         # Build ``ExecutionManager`` class
         self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
 
-    def run(self, save_results=True) -> Results:
+    def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
@@ -71,7 +71,9 @@ class CircuitExperiment(Experiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
         # Prepares the results
-        self.results, self.results_path = self.prepare_results(save_results=save_results)
+        self.results, self.results_path = self.prepare_results(
+            save_experiment=save_experiment, save_results=save_results
+        )
         num_schedules = self.execution_manager.num_schedules
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
@@ -150,7 +152,7 @@ class CircuitExperiment(Experiment):
 
     def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
-        experiment.
+        circuit experiment.
 
         Returns:
             list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
@@ -202,10 +204,10 @@ class CircuitExperiment(Experiment):
         )
 
     def to_dict(self):
-        """Convert Experiment into a dictionary.
+        """Convert CircuitExperiment into a dictionary.
 
         Returns:
-            dict: Dictionary representation of the Experiment class.
+            dict: Dictionary representation of the CircuitExperiment class.
         """
         exp_dict = super().to_dict()
         exp_dict[EXPERIMENT.CIRCUITS] = [circuit.to_qasm() for circuit in self.circuits]
@@ -214,10 +216,10 @@ class CircuitExperiment(Experiment):
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load experiment from dictionary.
+        """Load CircuitExperiment from dictionary.
 
         Args:
-            dictionary (dict): Dictionary description of an experiment.
+            dictionary (dict): Dictionary description of a CircuitExperiment.
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
@@ -265,7 +267,7 @@ class CircuitExperiment(Experiment):
         super().set_parameter(parameter=parameter, value=value, alias=alias, element=element, channel_id=channel_id)
 
     def __str__(self):
-        """String representation of an experiment."""
+        """String representation of a CircuitExperiment."""
         exp_str = super().__str__()
         exp_str = f"{exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
         return exp_str

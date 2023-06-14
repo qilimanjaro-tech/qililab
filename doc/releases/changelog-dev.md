@@ -17,7 +17,7 @@ This document contains the changes of the current release.
   Note that aliases are not unique, therefore the execution builder will use the first bus alias that matches the loop alias. An exception is raised if a `loop.alias` does not match any `bus.alias` specified in the runcard
   [#320](https://github.com/qilimanjaro-tech/qililab/pull/320)
 
-- The `Experiment`class has been changed to support a more general definition of experiment by removing the
+- The `Experiment` class has been changed to support a more general definition of experiment by removing the
   `circuits` and `pulse_schedules`. A new class `CircuitExperiment` inherits from the new `Experiment` class has the previous attributes and all the functionality the old `Experiment` had.
 
   ```python
@@ -26,6 +26,22 @@ This document contains the changes of the current release.
   ```
 
   [#334](https://github.com/qilimanjaro-tech/qililab/pull/334)
+
+- Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
+
+```yml
+awg_sequencers:
+  - identifier: 0
+    chip_port_id: 1
+    intermediate_frequency: 1.e+08
+    weights_path0: [0.98, ...]
+    weights_path1: [0.72, ...]
+    weighed_acq_enabled: true
+    threshold: 0.5
+    threshold_rotation: 45.0 # <-- new line
+```
+
+[#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
 
 - The `VectorNetworkAnalizer` instrument is now implemented into the workflow of qililab.
   The user can now create an `Experiment` and use all qililab features. The results of experiments using the VNA will now be saved into three different files: File containing the runcard, file containing the raw data (data saved in real time) and a file containing the metadata (experiment options and loops). Here is an example of a simple experiment using the `VectorNetworkAnalizer`:

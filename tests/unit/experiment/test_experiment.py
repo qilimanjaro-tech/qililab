@@ -1,6 +1,7 @@
 """Tests for the Experiment class."""
 import copy
 import os
+from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -42,6 +43,41 @@ def fixture_connected_experiment(
     mock_rs.assert_called()
     mock_pulsar.assert_called()
     return experiment_all_platforms
+
+
+@pytest.fixture(name="connected_nested_experiment")
+@patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
+@patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
+@patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
+@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
+def fixture_connected_nested_experiment(
+    mock_mini_circuits: MagicMock,
+    mock_keithley: MagicMock,
+    mock_rs: MagicMock,
+    mock_pulsar: MagicMock,
+    nested_experiment: Experiment,
+):
+    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
+    instance."""
+    mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
+    nested_experiment.connect()
+    mock_mini_circuits.assert_called()
+    mock_keithley.assert_called()
+    mock_rs.assert_called()
+    mock_pulsar.assert_called()
+    return nested_experiment
+
+
+@pytest.fixture(name="platform")
+def fixture_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=Galadriel.runcard)
+
+
+@pytest.fixture(name="sauron_platform")
+def fixture_sauron_platform() -> Platform:
+    """Return Platform object."""
+    return platform_db(runcard=SauronVNA.runcard)
 
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
@@ -152,12 +188,6 @@ def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sa
     return vna_experiment
 
 
-@pytest.fixture(name="sauron_platform")
-def fixture_sauron_platform() -> Platform:
-    """Return Platform object."""
-    return platform_db(runcard=SauronVNA.runcard)
-
-
 class TestAttributes:
     """Unit tests checking the Experiment attributes and methods"""
 
@@ -236,25 +266,28 @@ class TestMethods:
         vna_experiment.platform.connection = MagicMock()  # mock connection
         assert not hasattr(vna_experiment, "_plot")
         assert not hasattr(vna_experiment, "results")
-        with patch("qililab.experiment.experiment.open") as mock_open:
-            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
-                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
-                        mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
-                        # Build execution
-                        results = vna_experiment.run()
-                        # Assert that the mocks are called when building the execution (such that NO files are created)
-                        mock_open.assert_called()
-                        mock_makedirs.assert_called()
-                        mock_plot.assert_called_once_with(
-                            connection=vna_experiment.platform.connection,
-                            loops=vna_experiment.options.loops or [],
-                            num_schedules=1,
-                            title=vna_experiment.options.name,
-                        )
-                        mock_plot.assert_called_once()
-                        assert isinstance(results, Results)
-                        assert results.results[0] == mock_acq_res.return_value
+        mocks = ExitStack()
+        mock_open = mocks.enter_context(patch("qililab.experiment.experiment.open"))
+        mock_makedirs = mocks.enter_context(patch("qililab.experiment.experiment.os.makedirs"))
+        mock_plot = mocks.enter_context(patch("qililab.experiment.experiment.LivePlot"))
+        mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
+        mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+        # Build execution
+        results = vna_experiment.run()
+        # Assert that the mocks are called when building the execution (such that NO files are created)
+        mock_open.assert_called()
+        mock_makedirs.assert_called()
+        mock_plot.assert_called_once_with(
+            connection=vna_experiment.platform.connection,
+            loops=vna_experiment.options.loops or [],
+            num_schedules=1,
+            title=vna_experiment.options.name,
+        )
+        mock_plot.assert_called_once()
+        mocks.close()
+
+        assert isinstance(results, Results)
+        assert results.results[0] == mock_acq_res.return_value
         assert len(vna_experiment.results.results) > 0
 
     @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
@@ -265,30 +298,29 @@ class TestMethods:
         vna_experiment.platform.connection = MagicMock()  # mock connection
         assert not hasattr(vna_experiment, "_plot")
         assert not hasattr(vna_experiment, "results")
-        with patch("qililab.experiment.experiment.open") as mock_open:
-            with patch("qililab.experiment.experiment.os.makedirs") as mock_makedirs:
-                with patch("qililab.experiment.experiment.LivePlot") as mock_plot:
-                    with patch("qililab.execution.execution_manager.BusExecution.acquire_result") as mock_acq_res:
-                        with patch(
-                            "qililab.experiment.experiment.Experiment.remote_save_experiment"
-                        ) as mock_remote_save:
-                            mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
-                            # Build execution
-                            results = vna_experiment.run()
-                            # Assert that the mocks are called when building the execution (such that NO files are created)
-                            mock_remote_save.assert_called()
-                            mock_open.assert_called()
-                            mock_makedirs.assert_called()
-                            mock_plot.assert_called_once_with(
-                                connection=vna_experiment.platform.connection,
-                                loops=vna_experiment.options.loops or [],
-                                num_schedules=1,
-                                title=vna_experiment.options.name,
-                            )
-                            mock_plot.assert_called_once()
-                            assert isinstance(results, Results)
-                            assert results.results[0] == mock_acq_res.return_value
-                            mock_remote_save.assert_called()
+        mocks = ExitStack()
+        mock_open = mocks.enter_context(patch("qililab.experiment.experiment.open"))
+        mock_makedirs = mocks.enter_context(patch("qililab.experiment.experiment.os.makedirs"))
+        mock_plot = mocks.enter_context(patch("qililab.experiment.experiment.LivePlot"))
+        mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
+        mock_remote_save = mocks.enter_context(patch("qililab.experiment.experiment.Experiment.remote_save_experiment"))
+        mock_acq_res.return_value = VNAResult(i=np.array([1, 2]), q=np.array([3, 4]))
+        # Build execution
+        results = vna_experiment.run()
+        # Assert that the mocks are called when building the execution (such that NO files are created)
+        mock_remote_save.assert_called()
+        mock_open.assert_called()
+        mock_makedirs.assert_called()
+        mock_plot.assert_called_once_with(
+            connection=vna_experiment.platform.connection,
+            loops=vna_experiment.options.loops or [],
+            num_schedules=1,
+            title=vna_experiment.options.name,
+        )
+        mock_plot.assert_called_once()
+        assert isinstance(results, Results)
+        assert results.results[0] == mock_acq_res.return_value
+        mock_remote_save.assert_called()
         assert len(vna_experiment.results.results) > 0
 
     @patch("qililab.execution.execution_manager.BusExecution.acquire_result")
@@ -387,7 +419,7 @@ class TestMethods:
     def test_prepare_results_returns_no_path(self, exp: Experiment):
         """Test the prepare_results method with save_results=False returns no results_path"""
         exp.build_execution()
-        _, results_path = exp.prepare_results(save_results=False)
+        _, results_path = exp.prepare_results(save_experiment=False, save_results=False)
         assert results_path is None
 
 

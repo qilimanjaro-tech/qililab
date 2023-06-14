@@ -278,6 +278,7 @@ schema:
           weights_q: [1., 1., 1., 1., 1.] # to calibrate
           weighed_acq_enabled: False
           threshold: 0.5
+          threshold_rotation: 0.0
           num_bins: 1
           intermediate_frequency: 10.e+06
           gain_imbalance: 1.
@@ -305,6 +306,7 @@ schema:
           weights_q: [1., 1., 1., 1., 1.] # to calibrate
           weighed_acq_enabled: False
           threshold: 0.5
+          threshold_rotation: 0.0
           num_bins: 1
           intermediate_frequency: 20.e+06
           gain_imbalance: 1.
@@ -332,6 +334,7 @@ schema:
           weights_q: [1., 1., 1., 1., 1.] # to calibrate
           weighed_acq_enabled: False
           threshold: 0.5
+          threshold_rotation: 0.0
           num_bins: 1
           intermediate_frequency: 30.e+06
           gain_imbalance: 1.
@@ -359,6 +362,7 @@ schema:
           weights_q: [1., 1., 1., 1., 1.] # to calibrate
           weighed_acq_enabled: False
           threshold: 0.5
+          threshold_rotation: 0.0
           num_bins: 1
           intermediate_frequency: 40.e+06
           gain_imbalance: 1.
@@ -386,6 +390,7 @@ schema:
           weights_q: [1., 1., 1., 1., 1.] # to calibrate
           weighed_acq_enabled: False
           threshold: 0.5
+          threshold_rotation: 0.0
           num_bins: 1
           intermediate_frequency: 50.e+06
           gain_imbalance: 1.

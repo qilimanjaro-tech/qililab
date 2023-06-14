@@ -64,22 +64,22 @@ class SystemControl(BusElement, ABC):
             "sequence."
         )
 
-    def upload(self):
+    def upload(self, port: int):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
-                instrument.upload()
+                instrument.upload(port=port)
                 return
 
         raise AttributeError(
             f"The system control with alias {self.settings.alias} doesn't have any AWG to upload a program."
         )
 
-    def run(self) -> None:
+    def run(self, port: int) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, (AWG, VNA)):
-                instrument.run()  # type: ignore
+                instrument.run(port=port)  # type: ignore
                 return
 
         raise AttributeError(

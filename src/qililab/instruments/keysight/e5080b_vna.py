@@ -9,7 +9,7 @@ from qililab.instruments.utils import InstrumentFactory
 from qililab.instruments.vector_network_analyzer import VectorNetworkAnalyzer
 from qililab.result.vna_result import VNAResult
 from qililab.typings.enums import InstrumentName, Parameter, VNASweepModes
-from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAnalyzerDriver
+from qililab.typings.instruments.keysight_e5080b import E5080BDriver
 
 
 @InstrumentFactory.register
@@ -18,7 +18,7 @@ class E5080B(VectorNetworkAnalyzer):
     """KeySight Vector Network Analyzer E5080B"""
 
     name = InstrumentName.KEYSIGHT_E5080B
-    device: VectorNetworkAnalyzerDriver
+    device: E5080BDriver
 
     @dataclass
     class E5080BSettings(VectorNetworkAnalyzer.VectorNetworkAnalyzerSettings):
