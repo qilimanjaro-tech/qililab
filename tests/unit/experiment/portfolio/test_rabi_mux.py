@@ -96,7 +96,7 @@ class TestRabi:
 
     def test_plot(self, rabi_mux: RabiMux):
         """Test plot method."""
-        rabi_mux.post_processed_results = [q, q]
+        rabi_mux.post_processed_results = [q]
         popt = rabi_mux.fit()
         fig = rabi_mux.plot()
         scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
