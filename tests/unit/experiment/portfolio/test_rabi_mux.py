@@ -7,7 +7,6 @@ from qibo.gates import M
 
 from qililab import build_platform
 from qililab.experiment import RabiMux
-from qililab.system_control import ReadoutSystemControl
 from qililab.transpiler import Drag
 from qililab.typings import Parameter
 from qililab.utils import Wait
@@ -23,10 +22,10 @@ THETA_NUM_SAMPLES = 51
 theta_values = np.linspace(THETA_START, THETA_END, THETA_NUM_SAMPLES)
 
 # Modulaiton parameters
-I_AMPLITUDE, I_RATE = (5, 7)
-Q_AMPLITUDE, Q_RATE = (9, 7)
-i = I_AMPLITUDE * np.exp(I_RATE * theta_values)
-q = Q_AMPLITUDE * np.exp(Q_RATE * theta_values)
+I_AMPLITUDE, I_FREQ, I_PHASE, I_OFFSET = (5, 7, 0, 0)
+Q_AMPLITUDE, Q_FREQ, Q_PHASE, Q_OFFSET = (9, 7, 0, 0)
+i = I_AMPLITUDE * np.cos(2 * np.pi * I_FREQ * theta_values + I_PHASE) + I_OFFSET
+q = Q_AMPLITUDE * np.cos(2 * np.pi * Q_FREQ * theta_values + Q_PHASE) + Q_OFFSET
 
 
 @pytest.fixture(name="rabi_mux")
@@ -78,6 +77,13 @@ class TestRabi:
         assert rabi_mux.options.settings.repetition_duration == 1000
         assert rabi_mux.options.settings.hardware_average == 1000
         assert rabi_mux.options.settings.num_bins == 1
+
+    def test_func(self, rabi_mux: RabiMux):
+        """Test the ``func`` method."""
+        assert np.allclose(
+            rabi_mux.func(xdata=theta_values, amplitude=I_AMPLITUDE, frequency=I_FREQ, phase=I_PHASE, offset=I_OFFSET),
+            i,
+        )
 
     # TO DO: Here down vvv is incorrect!!!!!!!!!!
     # (maybe you even need to change the fixture, or add a new ficture for post_process)
