@@ -1,7 +1,7 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
 import contextlib
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
@@ -14,7 +14,6 @@ from qililab.platform import Platform
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
