@@ -89,8 +89,10 @@ class FlippingExperiment(ExperimentAnalysis, Cos):
         # ax.set_title(this_timestamp + ' ' +ax.get_title())
         # save_figure_from_exp(plt.gcf(),self)
         plt.show()
+        return plt
 
     def plot_lines(self):
         for _ in range(len(self.amplitude_values)):
             plt.plot(self.flips_values, self.post_processed_results[_, :])
         plt.show()
+        return plt
