@@ -37,14 +37,11 @@ class BusExecution:
 
     def upload(self):
         """Uploads any previously compiled program into the instrument."""
-        self.system_control.upload()
+        self.system_control.upload(port=self.port)
 
     def run(self):
         """Run the given pulse sequence."""
-        return self.system_control.run()
-
-    def setup(self):
-        """Generates the sequence for each bus and uploads it to the sequencer"""
+        return self.system_control.run(port=self.port)
 
     def add_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Add pulse to the BusPulseSequence given by idx.
@@ -53,7 +50,6 @@ class BusExecution:
             pulse (Pulse): Pulse object.
             idx (int): Index of the BusPulseSequence to add the pulse.
         """
-
         self.pulse_bus_schedules.append(pulse_bus_schedule)
 
     def acquire_result(self) -> Result:
@@ -67,7 +63,7 @@ class BusExecution:
                 f"The bus {self.bus.alias} needs a readout system control to acquire the results. This bus "
                 f"has a {self.system_control.name} instead."
             )
-        return self.system_control.acquire_result()  # type: ignore  # pylint: disable=no-member
+        return self.system_control.acquire_result(port=self.port)  # type: ignore  # pylint: disable=no-member
 
     def acquire_time(self, idx: int = 0) -> int:
         """BusExecution 'acquire_time' property.

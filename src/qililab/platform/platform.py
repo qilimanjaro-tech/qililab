@@ -28,8 +28,6 @@ class Platform:
         self.schema = Schema(**asdict(runcard_schema.schema))
         self.connection = connection
         self._connected_to_instruments: bool = False
-        self._initial_setup_applied: bool = False
-        self._instruments_turned_on: bool = False
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -53,29 +51,17 @@ class Platform:
 
     def initial_setup(self):
         """Set the initial setup of the instruments"""
-        if self._initial_setup_applied:
-            logger.info("Initial setup already applied to the instruments")
-            return
         self.instrument_controllers.initial_setup()
-        self._initial_setup_applied = True
         logger.info("Initial setup applied to the instruments")
 
     def turn_on_instruments(self):
         """Turn on the instruments"""
-        if self._instruments_turned_on:
-            logger.info("Instruments already turned on")
-            return
         self.instrument_controllers.turn_on_instruments()
-        self._instruments_turned_on = True
         logger.info("Instruments turned on")
 
     def turn_off_instruments(self):
         """Turn off the instruments"""
-        if not self._instruments_turned_on:
-            logger.info("Instruments already turned off")
-            return
         self.instrument_controllers.turn_off_instruments()
-        self._instruments_turned_on = False
         logger.info("Instruments turned off")
 
     def disconnect(self):
