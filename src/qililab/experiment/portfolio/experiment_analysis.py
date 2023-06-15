@@ -1,6 +1,5 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
-
 import matplotlib.pyplot as plt
 import numpy as np
 from qibo.models import Circuit
@@ -10,7 +9,7 @@ from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
-
+from typing import List
 from .fitting_models import FittingModel
 
 
@@ -57,13 +56,11 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
 
         self.control_bus = control_bus
         self.readout_bus = readout_bus
-        self.reshape_dim = None
-        self.min_dim = (0, 0)  # indicates 2D experiment if different than (0, 0)
+        self.shorter_loop:List[np.ndarray] = [] # indicates 2D experiment if not empty list
         for loop in self.loops:
             if loop.loop is not None:
-                if self.min_dim[0] == 0 or len(loop.values) < self.min_dim[0]:
-                    self.min_dim = (len(loop.values), len(loop.loop.values))
-                    self.min_loop_values = loop.values
+                if len(self.shorter_loop) == 0 or len(loop.values) < len(self.shorter_loop[0]):
+                    self.shorter_loop = [loop.values, loop.loop.values]
 
         super().__init__(platform=platform, circuits=circuits, options=options)
 
@@ -82,8 +79,8 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
 
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
 
-        if self.min_dim[0] > 0:
-            self.post_processed_results = self.post_processed_results.reshape(self.min_dim[0], self.min_dim[1])
+        if len(self.shorter_loop) > 0:
+            self.post_processed_results = self.post_processed_results.reshape(self.shorter_loop[0].size, self.shorter_loop[1].size)
 
         return self.post_processed_results
 
@@ -106,10 +103,10 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
             )
 
         self.popts = []
-        if self.min_dim[0] > 0:
-            for i in range(self.min_dim[0]):
+        if len(self.shorter_loop) > 0:
+            for i in range(len(self.shorter_loop)):
                 popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-                    self.func, xdata=self.min_loop_values, ydata=self.post_processed_results[i], p0=p0
+                    self.func, xdata=self.shorter_loop[0], ydata=self.post_processed_results[i], p0=p0
                 )
                 self.popts.append(popt)
         else:
@@ -165,9 +162,9 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
             matplotlib.figure: matplotlib figure with 2D plot.
         """
         fig = plt.figure()
-        for ii in range(self.min_dim[0]):
+        for ii in range(len(self.shorter_loop)):
             plt.plot(
-                self.min_loop_values,
+                self.shorter_loop[ii],
                 self.post_processed_results[ii],
                 "-o",
                 label=f"{self.loops[0].parameter.value}={ii}",
@@ -190,7 +187,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         Returns:
             matplotlib.figure: matplotlib figure with either 1D plot or 2D plots.
         """
-        if self.min_dim[0] > 0:
+        if len(self.shorter_loop) > 0:
             return self.plot_2D(x_label=x_label, y_label=y_label)
         else:
             return self.plot_1D(y_label=y_label)

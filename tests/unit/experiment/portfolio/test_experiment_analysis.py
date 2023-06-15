@@ -130,8 +130,7 @@ class TestExperimentAnalysis:
         popts = experiment_analysis_1D.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert np.allclose(popts, (9, 7), atol=1e-5)
 
-        experiment_analysis_2D.min_dim = (2, len(q))
-        experiment_analysis_2D.min_loop_values = x
+        experiment_analysis_2D.shorter_loop = [x, x]
         experiment_analysis_2D.post_processed_results = [q, q]
         popts = experiment_analysis_2D.fit(p0=(8, 7.5))  # p0 is an initial guess
         assert len(popts) == 2
@@ -162,8 +161,7 @@ class TestExperimentAnalysis:
         assert np.allclose(line.get_xdata(), x)
         assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x))
 
-        experiment_analysis_2D.min_dim = (2, len(q))
-        experiment_analysis_2D.min_loop_values = x
+        experiment_analysis_2D.shorter_loop = [x, x]
         experiment_analysis_2D.post_processed_results = [q, q]
         popts = experiment_analysis_2D.fit(p0=(8, 7.5))
         fig = experiment_analysis_2D.plot()
