@@ -7,6 +7,7 @@ import pytest
 
 from qililab import build_platform
 from qililab.experiment import ResonatorSpectroscopy
+from qililab.typings import Parameter
 from tests.data import Galadriel
 
 FREQUENCY_START = 8.1e9
@@ -106,6 +107,31 @@ def fixture_resonator_spectroscopy_atten(platform):
     return experiment
 
 
+@pytest.fixture(name="resonator_spectroscopy_sweep")
+def fixture_resonator_spectroscopy_sweep(platform):
+    """Return experiment object."""
+    frequency_array = np.linspace(FREQUENCY_START, FREQUENCY_STOP, FREQUENCY_NUM)
+
+    experiment = ResonatorSpectroscopy(
+        qubit=0,
+        platform=platform,
+        freq_values=frequency_array,
+        gain_values=None,
+        attenuation_values=None,
+        sweep_if=True,
+        repetition_duration=10000,
+        hardware_average=10000,
+    )
+
+    experiment.results = MagicMock()
+    experiment.results.acquisitions.return_value = {
+        "i": 5 * np.sin(7 * frequency_array),
+        "q": 9 * np.sin(7 * frequency_array),
+    }
+    experiment.results_path = MagicMock()
+    return experiment
+
+
 class TestResonatorSpectroscopy:
     """Unit tests for the ``ResonatorSpectroscopy`` class."""
 
@@ -117,6 +143,16 @@ class TestResonatorSpectroscopy:
         assert resonator_spectroscopy0.loop.alias == "feedline_bus"
         assert resonator_spectroscopy0.options.settings.repetition_duration == 10000
         assert resonator_spectroscopy0.options.settings.hardware_average == 10000
+        assert resonator_spectroscopy0.loop.parameter.value == Parameter.LO_FREQUENCY
+
+    def test_init_sweep(self, resonator_spectroscopy_sweep: ResonatorSpectroscopy):
+        assert resonator_spectroscopy_sweep.loop.start == FREQUENCY_START
+        assert resonator_spectroscopy_sweep.loop.stop == FREQUENCY_STOP
+        assert resonator_spectroscopy_sweep.loop.num == FREQUENCY_NUM
+        assert resonator_spectroscopy_sweep.loop.alias == "feedline_bus"
+        assert resonator_spectroscopy_sweep.options.settings.repetition_duration == 10000
+        assert resonator_spectroscopy_sweep.options.settings.hardware_average == 10000
+        assert resonator_spectroscopy_sweep.loop.parameter.value == Parameter.IF
 
     def test_plot(self, resonator_spectroscopy0: ResonatorSpectroscopy):
         """Test the ``plot`` method."""
