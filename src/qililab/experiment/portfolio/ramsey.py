@@ -5,13 +5,13 @@ from qibo.gates import RX, M
 from qibo.models import Circuit
 
 import qililab as ql
-from qililab.experiment.portfolio import Exp, ExperimentAnalysis
+from qililab.experiment.portfolio import CosExp, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Wait
 
 
-class Ramsey(ExperimentAnalysis, Exp):
+class Ramsey(ExperimentAnalysis, CosExp):
     """Experiment to perform Ramsey measurement on a qubit.
 
     The Ramsey measurement is used to determine the coherence time of a qubit.
@@ -106,7 +106,7 @@ class Ramsey(ExperimentAnalysis, Exp):
         By default this method creates a figure with size (9, 7) and plots the magnitude of the IQ data.
         """
         if self.if_frequency_values is None:
-            super().plot
+            return super().plot()
         fig, axes = plt.subplots(figsize=(9, 7))
         for ii, freq in enumerate(self.if_frequency_values):
             axes.plot(self.wait_loop_values, self.post_processed_results[ii, :], "-o", label=f"IF={freq*1e-6}MHz")
