@@ -56,7 +56,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
 
         self.control_bus = control_bus
         self.readout_bus = readout_bus
-        self.shorter_loop:List[np.ndarray] = [] # indicates 2D experiment if not empty list
+        self.shorter_loop: List[np.ndarray] = []  # indicates 2D experiment if not empty list
         for loop in self.loops:
             if loop.loop is not None:
                 if len(self.shorter_loop) == 0 or len(loop.values) < len(self.shorter_loop[0]):
@@ -80,7 +80,9 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         self.post_processed_results = 20 * np.log10(np.sqrt(i**2 + q**2))
 
         if len(self.shorter_loop) > 0:
-            self.post_processed_results = self.post_processed_results.reshape(self.shorter_loop[0].size, self.shorter_loop[1].size)
+            self.post_processed_results = self.post_processed_results.reshape(
+                self.shorter_loop[0].size, self.shorter_loop[1].size
+            )
 
         return self.post_processed_results
 
