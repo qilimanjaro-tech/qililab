@@ -48,6 +48,11 @@ awg_sequencers:
 
 ### Improvements
 
+- Allow CZ gates to use different pulse shapes
+  [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)
+
+- Add support for the `Wait` gate
+
 - Addeds support for the `Wait` gate
   [#405](https://github.com/qilimanjaro-tech/qililab/pull/405)
 
