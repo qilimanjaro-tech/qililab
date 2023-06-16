@@ -6,3 +6,4 @@ from .rabi import Rabi
 from .rabi_mux import RabiMux
 from .rabi_mux_n_qubits import RabiMuxNQubits
 from .t1 import T1
+from .t2echo import T2Echo
