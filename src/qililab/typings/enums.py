@@ -441,6 +441,7 @@ class Parameter(str, Enum):
     A = "a"
     B = "b"
     NORM_FACTOR = "norm_factor"
+    DELAY = "delay"
 
 
 class ResultName(str, Enum):

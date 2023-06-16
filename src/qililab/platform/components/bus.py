@@ -154,9 +154,12 @@ class Bus:
             value (float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        try:
-            self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-        except ParameterNotFound as error:
-            raise ParameterNotFound(
-                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
-            ) from error
+        if parameter == Parameter.DELAY:
+            self.settings.delay = value
+        else:
+            try:
+                self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            except ParameterNotFound as error:
+                raise ParameterNotFound(
+                    f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+                ) from error
