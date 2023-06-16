@@ -161,14 +161,9 @@ class TestExperimentAnalysis:
         assert np.allclose(line.get_xdata(), x)
         assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x))
 
-        experiment_analysis_2D.shorter_loop = [x, x]
-        experiment_analysis_2D.post_processed_results = [q, q]
-        popts = experiment_analysis_2D.fit(p0=(8, 7.5))
-        fig = experiment_analysis_2D.plot()
-        ax = fig.axes[0]
-        line = ax.lines[0]
-        assert np.allclose(line.get_xdata(), x)
-        assert np.allclose(line.get_ydata(), popts[0][0] * np.sin(popts[0][1] * x), atol=1e-5)
+        res = experiment_analysis_2D.post_process_results().flatten()
+        im = experiment_analysis_2D.plot()
+        assert np.array_equal(im.get_array(), res)
 
     def test_plot_raises_error_when_no_post_processing(self, experiment_analysis_1D: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""

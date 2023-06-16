@@ -164,19 +164,19 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
             matplotlib.figure: matplotlib figure with 2D plot.
         """
         fig = plt.figure()
-        for ii in range(len(self.shorter_loop)):
-            plt.plot(
-                self.shorter_loop[ii],
-                self.post_processed_results[ii],
-                "-o",
-                label=f"{self.loops[0].parameter.value}={ii}",
-            )
-
+        im = plt.pcolormesh(
+            np.insert(self.shorter_loop[1], 0, 0),
+            np.insert(self.shorter_loop[0], 0, 0),
+            self.post_processed_results,
+            cmap="coolwarm",
+        )
+        plt.legend()
         plt.xlabel(x_label)
         plt.ylabel(y_label)
+        plt.colorbar(im)
         plt.legend(loc="right", bbox_to_anchor=(1.4, 0.5))
 
-        return fig
+        return im
 
     def plot(self, x_label: str = "", y_label: str = ""):
         """Method used to generate default plots. It checks if the experiment is 1D or 2D and calls the
