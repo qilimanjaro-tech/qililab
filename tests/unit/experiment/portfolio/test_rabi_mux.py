@@ -33,7 +33,7 @@ def fixture_rabi_mux() -> RabiMux:
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = RabiMux(platform=platform, qubit_theta=QUBITS[0], qubit_2theta=QUBITS[1], theta_values=theta_values)

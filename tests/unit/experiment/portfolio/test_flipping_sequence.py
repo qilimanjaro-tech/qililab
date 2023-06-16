@@ -23,7 +23,7 @@ def fixture_flipping_sequence():
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = FlippingSequence(platform=platform, qubit=0, loop_values=np.arange(start=START, stop=STOP, step=STEP))

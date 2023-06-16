@@ -7,10 +7,8 @@ from qibo.gates import M
 
 from qililab import build_platform
 from qililab.experiment import RabiMuxNQubits
-from qililab.system_control import ReadoutSystemControl
 from qililab.transpiler import Drag
 from qililab.typings import Parameter
-from qililab.typings.enums import Qubits
 from qililab.utils import Wait
 from tests.data import Galadriel
 
@@ -31,11 +29,11 @@ q = Q_AMPLITUDE * np.cos(2 * np.pi * Q_FREQ * theta_values + Q_PHASE) + Q_OFFSET
 
 
 @pytest.fixture(name="rabi_mux_n_qubits")
-def fixture_rabi_mux_nqubits() -> RabiMuxNQubits:
+def fixture_rabi_mux_n_qubits() -> RabiMuxNQubits:
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = RabiMuxNQubits(platform=platform, qubits=QUBIT_LIST, theta_values=theta_values)
