@@ -165,7 +165,6 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         Returns:
             matplotlib.figure: matplotlib figure with 2D plot.
         """
-        fig = plt.figure()
         im = plt.pcolormesh(
             np.insert(self.shorter_loop[1], 0, 0),
             np.insert(self.shorter_loop[0], 0, 0),
