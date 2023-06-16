@@ -1,5 +1,7 @@
 """This file contains the ``ExperimentAnalysis`` class used to analyze the results of an experiment."""
 import inspect
+from typing import List
+
 import matplotlib.pyplot as plt
 import numpy as np
 from qibo.models import Circuit
@@ -9,7 +11,7 @@ from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
-from typing import List
+
 from .fitting_models import FittingModel
 
 
