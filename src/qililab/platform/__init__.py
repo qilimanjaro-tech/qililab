@@ -14,7 +14,7 @@ def build_platform(name: str, connection: API | None = None, database: bool = Fa
     """Build platform.
 
     Args:
-        platform_name (str): Platform name.
+        name (str): Platform name.
         database (bool, optional): If True, build platform from database. Defaults to False.
 
     Returns:
