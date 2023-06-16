@@ -26,7 +26,7 @@ def fixture_t2echo():
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="flux_qubit")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     analysis = T2Echo(platform=platform, qubit=0, wait_loop_values=np.linspace(start=START, stop=STOP, num=NUM))
@@ -77,7 +77,7 @@ class TestT2Echo:
     def test_fit(self, t2echo: T2Echo):
         """Test the ``fit`` method."""
         with patch("qililab.experiment.portfolio.experiment_analysis.ExperimentAnalysis.fit") as mock_parent_fit:
-            mocked_fitted_params = [0.1, 0.5]
+            mocked_fitted_params = np.array([0.1, 0.5])
             mock_parent_fit.return_value = mocked_fitted_params
             t2_test = t2echo.fit()
             mock_parent_fit.assert_called_with(p0=(-52, 2000, 0))
