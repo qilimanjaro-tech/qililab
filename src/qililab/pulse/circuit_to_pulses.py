@@ -1,7 +1,7 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
 import ast
 import contextlib
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
@@ -14,7 +14,6 @@ from qililab.platform import Platform
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
 from qililab.settings import RuncardSchema
@@ -114,12 +113,13 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port)
-                    with contextlib.suppress(ValueError):
-                        # If we find a flux port, create empty schedule for that port
-                        for qubit_idx in gate.qubits:
-                            flux_port = chip.get_port_from_qubit_idx(idx=qubit_idx, line=Line.FLUX)
-                            if flux_port is not None:
-                                pulse_schedule.create_schedule(port=flux_port)
+
+            for qubit in chip.qubits:
+                with contextlib.suppress(ValueError):
+                    # If we find a flux port, create empty schedule for that port
+                    flux_port = chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
+                    if flux_port is not None:
+                        pulse_schedule.create_schedule(port=flux_port)
 
             pulse_schedule_list.append(pulse_schedule)
 

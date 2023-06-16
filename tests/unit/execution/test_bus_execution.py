@@ -7,7 +7,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
-from qililab.experiment import Experiment
+from qililab.experiment.circuit_experiment import CircuitExperiment
 from qililab.instruments import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
@@ -30,7 +30,7 @@ def fixture_pulse_event() -> PulseEvent:
 
 
 @pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
+def fixture_execution_manager(experiment: CircuitExperiment) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
@@ -55,7 +55,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
         values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    return Experiment(
+    return CircuitExperiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
