@@ -272,7 +272,10 @@ class RandomizedBenchmarking:
 
         # transpile and optimize circuit
         circuit = ql.translate_circuit(circuit, optimize=True)
-        sample_experiment = ql.Experiment(
+        # TODO: weird that mypy complains but this has been run and worked
+        # did we move circuit to ExperimentAnalysis or something?
+        # pylint: disable = unexpected-keyword-arg
+        sample_experiment = ql.Experiment(  # type: ignore
             platform=self.platform,  # platform to run the experiment
             circuits=[circuit],  # circuits to run the experiment
             options=options,  # experiment options
@@ -317,104 +320,58 @@ class RandomizedBenchmarking:
 
         return circuits
 
-    def fit(self):
-        """Fit the experiment results."""
+    def plot_fit(
+        self, initial_params_I: dict[str, float] | None = None, initial_params_X: dict[str, float] | None = None
+    ):
+        def expfunc(x, a, tau, offset):
+            """exponential function to fit"""
 
-        def fit_exponential(x, ln_p, A, B):
-            return A * np.exp(ln_p) ** x + B
+            return offset + a * np.exp(-x / tau)
 
-        def residual(params, x, data, f):
-            ln_p = params["ln_p"]
-            A = params["A"]
-            B = params["B"]
+        if initial_params_I is None:
+            initial_params_I = {"tau": 45, "A": 2, "offset": -44.5}
+        if initial_params_X is None:
+            initial_params_X = {"tau": 45, "A": -2, "offset": -44.5}
 
-            model = f(x, ln_p, A, B)
-            return data - model
+        # TODO: fit is over linear signal, not logs(db) so this is an approximation
+        # analysis and results should run separately
 
-        A_init = 1
-        B_init = (self.Id.max() - self.Id.min()) / 2
+        this_I = self.Id.flatten()  # type: ignore
+        this_X = self.X.flatten()  # type: ignore
+        fit_mod_I = lm.Model(expfunc)
+        fit_mod_X = lm.Model(expfunc)
 
-        if not self.initial_fit_params_I:
-            self.initial_fit_params_I = {
-                "p": 0.9,
-                "A": A_init,
-                "B": B_init,
-            }
+        fit_mod_I.set_param_hint("a", value=np.min(this_I) - np.max(this_I), vary=False)
+        fit_mod_I.set_param_hint("offset", value=initial_params_I["offset"])
+        fit_mod_I.set_param_hint("tau", value=initial_params_I["tau"], min=0)
+        pars_I = fit_mod_I.make_params()
 
-        params_I = lm.Parameters()
-        params_I.add("ln_p", value=np.log(self.initial_fit_params_I["p"]))
-        params_I.add("A", value=self.initial_fit_params_I["A"])
-        params_I.add("B", value=self.initial_fit_params_I["B"])
+        fit_mod_X.set_param_hint("a", value=np.max(this_X) - np.min(this_X), vary=False)
+        fit_mod_X.set_param_hint("offset", value=initial_params_X["offset"])
+        fit_mod_X.set_param_hint("tau", value=initial_params_X["tau"], min=0)
+        pars_X = fit_mod_X.make_params()
 
-        result_I = lm.minimize(residual, params_I, args=(self.length, self.Id, fit_exponential))
+        fit_res_I = fit_mod_I.fit(data=this_I, x=self.length_list, params=pars_I)
+        fit_res_X = fit_mod_X.fit(data=this_X, x=self.length_list, params=pars_X)
 
-        A_init = 1
-        B_init = (self.X.max() - self.X.min()) / 2
+        gate_fid = np.exp(-1.0 / fit_res_I.best_values["tau"]) ** (1 / 1.875)
+        gate_fid = (1 + gate_fid) / 2
 
-        if not self.initial_fit_params_X:
-            self.initial_fit_params_X = {"p": 0.9, "A": A_init, "B": B_init}
-
-        params_X = lm.Parameters()
-        params_X.add("ln_p", value=np.log(self.initial_fit_params_X["p"]))
-        params_X.add("A", value=self.initial_fit_params_X["A"])
-        params_X.add("B", value=self.initial_fit_params_X["B"])
-
-        result_X = lm.minimize(residual, params_X, args=(self.length, self.X, fit_exponential))
-
-        ln_p_I = result_I.params["ln_p"]
-        A_I = result_I.params["A"]
-        B_I = result_I.params["B"]
-        I_fit = fit_exponential(self.length_list, ln_p_I.flatten(), A_I, B_I)
-
-        p_I = np.exp(ln_p_I)
-        avg_clifford_fidelity = (1 + p_I) / 2
-        avg_gate_fidelity = avg_clifford_fidelity ** (1 / NG)
-
-        ln_p_X = result_X.params["ln_p"]
-        A_X = result_X.params["A"]
-        B_X = result_X.params["B"]
-        X_fit = fit_exponential(self.length_list, ln_p_X.flatten(), A_X, B_X)
-
-        return I_fit, X_fit, avg_gate_fidelity, avg_clifford_fidelity
-
-    def plot(self, tg: float | None = None, T1: float | None = None):
-        """Fit and plot experiment results.
-
-        Params:
-            tg: (float) optional, average time per gate (in ns) # TODO in ns?
-            T1: (float) optional, T1 of the qubit used to compute upper bound on fidelity
-        """
-        I_fit, X_fit, avg_gate_fidelity, avg_clifford_fidelity = self.fit()
-
-        plt.figure(figsize=(12, 4))
-        plt.title(f"Qubit id: {self.qubit_idx}")
-        ax1 = plt.subplot()
-        ax1.plot(self.length_list, self.Id, "--*", label=r"$\langle signal I \rangle$")
-        ax1.plot(self.length_list, self.X, "--*", label=r"$\langle signal X \rangle$")
-        ax1.plot(self.length_list, I_fit, c="red", label=r"$\langle signal I \rangle$ fit")
-        ax1.plot(self.length_list, X_fit, c="teal", label=r"$\langle signal X \rangle$ fit")
-
-        if tg is not None and T1 is not None:
-            Fmax_per_gate = (1 / 6) * (3 + 2 * np.exp(-1 * tg / (2 * T1)) + np.exp(-1 * tg / T1))
-        else:
-            Fmax_per_gate = "undefined"
-
-        plt.text(
-            0.2,
-            0.1,
-            f"Avg. gate fidelity = {avg_gate_fidelity:.04f}\n"
-            + f"Avg. Clifford fidelity = {avg_clifford_fidelity:.04f}\n"
-            + f"$F_{{max}}$ = {Fmax_per_gate}",
-            transform=ax1.transAxes,
-        )
-        plt.legend()
+        fig = plt.figure()
+        plt.plot(self.length_list, this_I, "--*", label=r"$\langle signal I \rangle$")
+        plt.plot(self.length_list, this_X, "--*", label=r"$\langle signal X \rangle$")
+        plt.plot(self.length_list, fit_res_I.best_fit, c="red", label=r"$\langle signal I \rangle$ FIT")
+        plt.plot(self.length_list, fit_res_X.best_fit, c="teal", label=r"$\langle signal X \rangle$ FIT")
         plt.xlabel("# Cliffords")
-        plt.ylabel("probability")
+        plt.ylabel("Signal (a.u.)")
+        plt.title(f"Gate Fidelity = {gate_fid:.4f}")
+
+        return fig, fit_res_I, fit_res_X, gate_fid
 
     @property
     def length(self):
-        length = sorted(self.signal["I"].items(), key=lambda item: item[0])
-        return np.array([ll[0] for ll in length])
+        this_length = sorted(self.signal["I"].items(), key=lambda item: item[0])
+        return np.array([ll[0] for ll in this_length])
 
     @property
     def Id(self):
@@ -512,7 +469,7 @@ class RandomizedBenchmarkingWithLoops(RandomizedBenchmarking):
         self.loops = [outer_loop]
         self.results_shape = tuple(self.results_shape[::-1])  # type: ignore
 
-    def plot(  # type: ignore
+    def plot(
         self,
         length_idx: int = 0,
         x_axis: str = "amplitude",
@@ -559,22 +516,3 @@ class RandomizedBenchmarkingWithLoops(RandomizedBenchmarking):
         plt.title(f"I for # Cliffords: {self.length[length_idx]}")
         plt.colorbar()
         plt.show()
-
-
-# TODO: this code probably never ran
-# if __name__ == "__main__":
-#     import qibo
-
-#     qibo.set_backend("numpy")
-#     experiment = RandomizedBenchmarking([3, 4], num_seeds=100)
-#     print(experiment.run())
-#     # experiment.plot()
-#     # plt.show()
-
-
-def post_process_results(self):
-    super().post_process_results()
-    post_processed_results = self.post_processed_results.reshape((2, len(self.post_processed_results) // 2))
-    shape = (len(self.amplitudes), len(self.durations))
-    self.post_processed_results = [post_processed_results[ii].reshape(shape) for ii in range(2)]
-    return self.post_processed_results
