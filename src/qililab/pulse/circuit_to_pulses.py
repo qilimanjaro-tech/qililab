@@ -403,6 +403,12 @@ class CircuitToPulses:
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
         for qubits, gate_settings_list in list(self.platform.settings.gates.items()):
+            # parse string tupples for 2 qubit keys
+            if isinstance(qubits, str):
+                qubit_str = qubits
+                qubits = ast.literal_eval(qubit_str)
+                # get tuple from string
+                self.platform.settings.gates[qubits] = self.platform.settings.gates.pop(qubit_str)
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))
