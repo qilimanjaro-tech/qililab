@@ -294,7 +294,15 @@ class TestRandomizedBenchmarking:
         assert all(np.allclose(20.0 * np.ones(4), value) for value in signal["I"].values())
         assert all(np.allclose(20.0 * np.ones(4), value) for value in signal["X"].values())
 
-    def test_fit(self, rb):
+    @patch(
+        "qililab.experiment.portfolio.randomized_benchmarking.randomized_benchmarking.RandomizedBenchmarking.Id",
+        new=-44 - 2 * np.exp(-np.arange(0, 5, 1) / 45),
+    )
+    @patch(
+        "qililab.experiment.portfolio.randomized_benchmarking.randomized_benchmarking.RandomizedBenchmarking.X",
+        new=-44 + 2 * np.exp(-np.arange(0, 5, 1) / 45),
+    )
+    def test_plot_fit(self, rb):
         lengths = np.arange(0, 5, 1)
         i_vals = -44 - 2 * np.exp(-lengths / 45)
         x_vals = -44 + 2 * np.exp(-lengths / 45)
@@ -358,3 +366,10 @@ class TestRandomizedBenchmarkingWithLoops:
         assert loop_freq.alias == "drive_line_q0_bus"
 
         assert rbloops.results_shape == (2, 2, 2)
+
+    @patch(
+        "qililab.experiment.portfolio.randomized_benchmarking.randomized_benchmarking.RandomizedBenchmarking.Id",
+        new=np.full((2, 2, 2, 2), 7),
+    )
+    def test_plot(self, rbloops):
+        pass
