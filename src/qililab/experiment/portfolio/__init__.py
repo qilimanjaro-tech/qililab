@@ -5,3 +5,4 @@ from .flipping_sequence import FlippingSequence
 from .rabi import Rabi
 from .randomized_benchmarking.randomized_benchmarking import RandomizedBenchmarking, RandomizedBenchmarkingWithLoops
 from .t1 import T1
+from .t2echo import T2Echo
