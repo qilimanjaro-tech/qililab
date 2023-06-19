@@ -594,18 +594,6 @@ class Galadriel:
         "min_voltage": 950,
         "max_voltage": 1775,
     }
-    qubit_2: dict = {
-        RUNCARD.ID: 2,
-        RUNCARD.NAME: NodeName.QUBIT,
-        RUNCARD.CATEGORY: NodeName.QUBIT.value,
-        RUNCARD.ALIAS: NodeName.QUBIT.value,
-        "pi_pulse_amplitude": 1,
-        "pi_pulse_duration": 100,
-        "pi_pulse_frequency": 100000000.0,
-        "qubit_frequency": 4544000000.0,
-        "min_voltage": 950,
-        "max_voltage": 1775,
-    }
 
     resonator_0 = {
         RUNCARD.ID: 0,
