@@ -5,7 +5,7 @@
 ### New features since last release
 
 - Update qcodes to latest current version (0.38.1)
-  https://github.com/qilimanjaro-tech/qililab/pull/413
+  https://github.com/qilimanjaro-tech/qililab/pull/431
 
 - Added hotfixes for several issues encountered during the hackathon:
   https://github.com/qilimanjaro-tech/qililab/pull/413
