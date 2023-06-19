@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from matplotlib.figure import Figure
 from qibo.gates import M
 
 from qililab import build_platform
@@ -13,7 +14,7 @@ from qililab.utils import Wait
 from tests.data import Galadriel
 
 # Qubits parameters
-QUBIT_LIST = [0, 2]
+QUBIT_LIST = [0, 1]
 
 # Theta loop parameters
 THETA_START = 0
@@ -86,15 +87,29 @@ class TestRabi:
         """Test the post_process_results method."""
         assert rabi_mux_n_qubits.post_process_results().shape() == (len(rabi_mux_n_qubits.theta_values), 2)
 
-    def test_plot(self, rabi_mux_n_qubits: RabiMuxNQubits):
+    def test_plot_returns_figure(self, rabi_mux_n_qubits: RabiMuxNQubits):
         """Test plot method."""
-        rabi_mux_n_qubits.post_processed_results = q
-        popt = rabi_mux_n_qubits.fit()
+        rabi_mux_n_qubits.post_processed_results = np.concatenate([q, q]).reshape(THETA_NUM_SAMPLES, 2)
         fig = rabi_mux_n_qubits.plot()
-        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
-        assert np.allclose(scatter_data[:, 0], theta_values)
-        assert np.allclose(scatter_data[:, 1], q)
         ax = fig.axes[0]
-        line = ax.lines[0]
-        assert np.allclose(line.get_xdata(), theta_values)
-        assert np.allclose(line.get_ydata(), popt[0] * np.cos(2 * np.pi * popt[1] * theta_values + popt[2]) + popt[3])
+        line_0, line_1 = ax.lines[0], ax.lines[1]
+
+        assert np.allclose(line_0.get_xdata(), theta_values)
+        assert np.allclose(line_0.get_ydata(), rabi_mux_n_qubits.post_processed_results[:, 0])
+        assert np.allclose(line_1.get_ydata(), rabi_mux_n_qubits.post_processed_results[:, 1])
+        assert isinstance(fig, Figure)
+
+    @patch("qililab.experiment.portfolio.rabi_mux_n_qubits.plt")
+    def test_plot_steps(self, mock_plt, rabi_mux_n_qubits: RabiMuxNQubits):
+        """Test plot method steps."""
+        rabi_mux_n_qubits.post_processed_results = np.concatenate([q, q]).reshape(THETA_NUM_SAMPLES, 2)
+        _ = rabi_mux_n_qubits.plot()
+
+        mock_plt.figure.assert_called_once_with()
+        mock_plt.plot.assert_called()
+        mock_plt.title.assert_called_once_with(rabi_mux_n_qubits.options.name)
+        mock_plt.xlabel.assert_called_once_with(
+            f"{rabi_mux_n_qubits.loop.alias}:{rabi_mux_n_qubits.loop.parameter.value}"
+        )
+        mock_plt.ylabel.assert_called_once_with("|S21| [dB]")
+        mock_plt.legend.assert_called_once_with(loc="upper right")

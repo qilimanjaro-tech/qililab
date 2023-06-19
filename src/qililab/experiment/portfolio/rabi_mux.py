@@ -81,10 +81,12 @@ class RabiMux(ExperimentAnalysis, Cos):
 
     def plot(self):
         """Plots the results of the experiment for both qubits one over the other"""
+        fig = plt.figure()
         plt.plot(self.theta_values, self.post_processed_results[:, 0], label="2*theta")
         plt.plot(self.theta_values, self.post_processed_results[:, 1], label="theta")
         plt.title(self.options.name)
         plt.xlabel(f"{self.loop.alias}:{self.loop.parameter.value}")
         plt.ylabel("|S21| [dB]")
         plt.legend(loc="upper right")
-        plt.show()
+
+        return fig

@@ -81,10 +81,12 @@ class RabiMuxNQubits(ExperimentAnalysis, Cos):
 
     def plot(self):
         """Plots the results of the experiment for all qubits one over the others"""
-        for i in self.num_qubits:
+        fig = plt.figure()
+        for i in range(self.num_qubits):
             plt.plot(self.theta_values, self.post_processed_results[:, i], label=f"qubit_{i}")
         plt.title(self.options.name)
         plt.xlabel(f"{self.loop.alias}:{self.loop.parameter.value}")
         plt.ylabel("|S21| [dB]")
         plt.legend(loc="upper right")
-        plt.show()
+
+        return fig

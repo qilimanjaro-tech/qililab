@@ -89,19 +89,37 @@ class TestRabi:
     # TO DO: Here down vvv is incorrect!!!!!!!!!!
     # (maybe you even need to change the fixture, or add a new ficture for post_process)
 
-    @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results")
+    @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results", return_value=np.concatenate([q, q]))
     def test_post_process_results(self, mock_postprocess: np.ndarray, rabi_mux: RabiMux):
         """Test the post_process_results method."""
-        results = np.ones(THETA_NUM_SAMPLES * len(QUBITS))
-        rabi_mux.post_processed_results = results
+        rabi_mux.post_processed_results = mock_postprocess
         res = rabi_mux.post_process_results()
 
         assert res.shape == (THETA_NUM_SAMPLES, len(QUBITS))
         assert np.allclose(rabi_mux.options.loops[0].values, np.linspace(THETA_START, THETA_END, THETA_NUM_SAMPLES))
         assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
 
-    def test_plot(self, rabi_mux: RabiMux):
+    def test_plot_returns_figure(self, rabi_mux: RabiMux):
         """Test plot method."""
         rabi_mux.post_processed_results = np.concatenate([q, q]).reshape(THETA_NUM_SAMPLES, 2)
         fig = rabi_mux.plot()
+        ax = fig.axes[0]
+        line_0, line_1 = ax.lines[0], ax.lines[1]
+
+        assert np.allclose(line_0.get_xdata(), theta_values)
+        assert np.allclose(line_0.get_ydata(), rabi_mux.post_processed_results[:, 0])
+        assert np.allclose(line_1.get_ydata(), rabi_mux.post_processed_results[:, 1])
         assert isinstance(fig, Figure)
+
+    @patch("qililab.experiment.portfolio.rabi_mux.plt")
+    def test_plot_steps(self, mock_plt, rabi_mux: RabiMux):
+        """Test plot method steps."""
+        rabi_mux.post_processed_results = np.concatenate([q, q]).reshape(THETA_NUM_SAMPLES, 2)
+        _ = rabi_mux.plot()
+
+        mock_plt.figure.assert_called_once_with()
+        mock_plt.plot.assert_called()
+        mock_plt.title.assert_called_once_with(rabi_mux.options.name)
+        mock_plt.xlabel.assert_called_once_with(f"{rabi_mux.loop.alias}:{rabi_mux.loop.parameter.value}")
+        mock_plt.ylabel.assert_called_once_with("|S21| [dB]")
+        mock_plt.legend.assert_called_once_with(loc="upper right")
