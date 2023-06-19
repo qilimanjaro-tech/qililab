@@ -498,6 +498,14 @@ class Galadriel:
                 NODE.FREQUENCY: 3.451e09,
                 NODE.NODES: [0, 2, 10],
             },
+            {
+                RUNCARD.NAME: NodeName.QUBIT.value,
+                RUNCARD.ID: 4,
+                RUNCARD.ALIAS: NodeName.QUBIT.value,
+                NODE.QUBIT_INDEX: 1,
+                NODE.FREQUENCY: 4.451e09,
+                NODE.NODES: [0, 2, 10],
+            },
         ],
     }
 
@@ -564,6 +572,19 @@ class Galadriel:
         "pi_pulse_duration": 100,
         "pi_pulse_frequency": 100000000.0,
         "qubit_frequency": 3544000000.0,
+        "min_voltage": 950,
+        "max_voltage": 1775,
+    }
+
+    qubit_1: dict = {
+        RUNCARD.ID: 1,
+        RUNCARD.NAME: NodeName.QUBIT,
+        RUNCARD.CATEGORY: NodeName.QUBIT.value,
+        RUNCARD.ALIAS: NodeName.QUBIT.value,
+        "pi_pulse_amplitude": 1,
+        "pi_pulse_duration": 100,
+        "pi_pulse_frequency": 100000000.0,
+        "qubit_frequency": 4544000000.0,
         "min_voltage": 950,
         "max_voltage": 1775,
     }

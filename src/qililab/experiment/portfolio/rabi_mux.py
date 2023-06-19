@@ -77,8 +77,7 @@ class RabiMux(ExperimentAnalysis, Cos):
     def post_process_results(self) -> np.ndarray:
         """Process the results of the experiment and reshape it in two dimensional arrays"""
         super().post_process_results()
-        self.post_processed_results = self.post_processed_results.reshape(len(self.theta_values), 2)
-        return self.post_processed_results
+        return self.post_processed_results.reshape(len(self.theta_values), 2)
 
     def plot(self):
         """Plots the results of the experiment for both qubits one over the other"""
