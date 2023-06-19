@@ -15,7 +15,7 @@ from tests.data import Galadriel
 
 
 @pytest.fixture(name="cz_exp")
-def fixture_cz_exp():
+def fixture_cz_exp() -> CzConditional:
     """Return Experiment object."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -83,7 +83,7 @@ def apply_circuit(circuit: Circuit, target_qubit, control_qubit) -> np.ndarray:
 
 
 class TestCzConditional:
-    def test_init(self, cz_exp):
+    def test_init(self, cz_exp: CzConditional):
         assert cz_exp.control_qubit == 1
         assert cz_exp.target_qubit == 0
         assert np.allclose(cz_exp.phase_loop_values, np.linspace(0, np.pi, 2))
@@ -96,7 +96,7 @@ class TestCzConditional:
         assert cz_exp.drag_time == 50
         assert cz_exp.nqubits == 2
 
-    def test_get_off_on_c(self, cz_exp):
+    def test_get_off_on_c(self, cz_exp: CzConditional):
         # in both cases (park, cz) target and control are the same
         ctrl = cz_exp.control_qubit
         tgt = cz_exp.target_qubit
@@ -153,7 +153,7 @@ class TestCzConditional:
         ]
 
     @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results")
-    def test_post_process_results(self, mock_postprocess, cz_exp):
+    def test_post_process_results(self, mock_postprocess, cz_exp: CzConditional):
         cz_exp.amplitude_loop_values = np.linspace(1, 2, 2)
         # this_shape should be:
         #  len(loop) (duration or b_cz) = 2
@@ -212,7 +212,7 @@ class TestCzConditional:
         results = results.reshape((2, 2, 2))
         assert np.allclose(post_processed_results, results)
 
-    def test_fit_cosines(self, cz_exp):
+    def test_fit_cosines(self, cz_exp: CzConditional):
         # TODO: test plot methods
         cosines = np.array([[np.cos(np.linspace(0, 2 * np.pi, 40))], [np.sin(np.linspace(0, 2 * np.pi, 40))]])
         cz_exp.phase_loop_values = [np.linspace(0, 2 * np.pi, 40)]
@@ -222,7 +222,7 @@ class TestCzConditional:
 
     @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results")
     @patch("qililab.experiment.portfolio.CzConditional.fit_cosines", return_value=[0, 1])
-    def test_fit_all_curves(self, mock_postproces, mock_fit, cz_exp):
+    def test_fit_all_curves(self, mock_postproces, mock_fit, cz_exp: CzConditional):
         cz_exp.amplitude_loop_values = np.linspace(1, 2, 2)
         cz_exp.duration_loop_values = None
         results = np.ones(2**4)
