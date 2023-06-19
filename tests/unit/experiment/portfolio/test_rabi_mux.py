@@ -86,18 +86,14 @@ class TestRabi:
             i,
         )
 
-    # TO DO: Here down vvv is incorrect!!!!!!!!!!
-    # (maybe you even need to change the fixture, or add a new ficture for post_process)
-
-    @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results", return_value=np.concatenate([q, q]))
-    def test_post_process_results(self, mock_postprocess: np.ndarray, rabi_mux: RabiMux):
+    @patch("qililab.experiment.portfolio.ExperimentAnalysis.post_process_results")
+    def test_post_process_results(self, mock_parent_post_process_results: np.ndarray, rabi_mux: RabiMux):
         """Test the post_process_results method."""
-        rabi_mux.post_processed_results = mock_postprocess
+        rabi_mux.post_processed_results = np.concatenate([q, q])
         res = rabi_mux.post_process_results()
 
         assert res.shape == (THETA_NUM_SAMPLES, len(QUBITS))
         assert np.allclose(rabi_mux.options.loops[0].values, np.linspace(THETA_START, THETA_END, THETA_NUM_SAMPLES))
-        assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
 
     def test_plot_returns_figure(self, rabi_mux: RabiMux):
         """Test plot method."""
