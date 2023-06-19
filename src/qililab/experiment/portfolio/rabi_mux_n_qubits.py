@@ -87,3 +87,4 @@ class RabiMuxNQubits(ExperimentAnalysis, Cos):
         plt.xlabel(f"{self.loop.alias}:{self.loop.parameter.value}")
         plt.ylabel("|S21| [dB]")
         plt.legend(loc="upper right")
+        plt.show()
