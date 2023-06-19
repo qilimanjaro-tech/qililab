@@ -4,6 +4,9 @@
 
 ### New features since last release
 
+- Update qcodes to latest current version (0.38.1)
+  https://github.com/qilimanjaro-tech/qililab/pull/431
+
 - Added hotfixes for several issues encountered during the hackathon:
   https://github.com/qilimanjaro-tech/qililab/pull/413
 
@@ -11,18 +14,14 @@
 
   ```python
   # Option 1 (Default, save_experiment=True)
-  experiment = Experiment(
-        platform=platform, circuits=circuits, options=options
-    )
+  experiment = Experiment(platform=platform, circuits=circuits, options=options)
   experiment.execute()
 
   # Option 2 (Equivalent to option 1, save_experiment=False)
-  experiment = Experiment(
-        platform=platform, circuits=circuits, options=options
-    )
+  experiment = Experiment(platform=platform, circuits=circuits, options=options)
   experiment.execute(save_experiment=False)
   ```
-  
+
   - Empty sequences to avoid creating repeated programs.
   - Create empty programs for all qubit flux lines to activate calibrated offsets.
   - Added method to get qubits from the chip
