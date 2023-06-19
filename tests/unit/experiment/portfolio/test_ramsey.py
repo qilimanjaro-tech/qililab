@@ -93,11 +93,11 @@ class TestRamsey1D:
         # Test the loop options
         assert ramsey_1d.options.loops is not None
         assert len(ramsey_1d.options.loops) == 2
-        assert ramsey_1d.loop.alias == "2"
-        assert ramsey_1d.loop.parameter == Parameter.GATE_PARAMETER
-        assert ramsey_1d.loop.start == WAIT_LOOP_START
-        assert ramsey_1d.loop.stop == WAIT_LOOP_STOP
-        assert ramsey_1d.loop.num == WAIT_LOOP_NUM
+        assert ramsey_1d.loops[0].alias == "2"
+        assert ramsey_1d.loops[0].parameter == Parameter.GATE_PARAMETER
+        assert ramsey_1d.loops[0].start == WAIT_LOOP_START
+        assert ramsey_1d.loops[0].stop == WAIT_LOOP_STOP
+        assert ramsey_1d.loops[0].num == WAIT_LOOP_NUM
 
     def test_func(self, ramsey_1d: Ramsey):
         """Test the `func` method."""
@@ -138,7 +138,7 @@ class TestRamsey1D:
         ax = fig.axes[0]
         line = ax.lines[0]
         assert np.allclose(line.get_xdata(), x)
-        assert np.allclose(line.get_ydata(), ramsey_1d.func(x, *popt))
+        assert np.allclose(line.get_ydata(), ramsey_1d.func(x, *popt[0]))
 
 
 class TestRamsey2D:
@@ -156,17 +156,17 @@ class TestRamsey2D:
         # Test the loop options
         assert ramsey_2d.options.loops is not None
         assert len(ramsey_2d.options.loops) == 2
-        assert ramsey_2d.loop.alias == f"drive_line_q{QUBIT}_bus"
-        assert ramsey_2d.loop.parameter == Parameter.LO_FREQUENCY
-        assert ramsey_2d.loop.start == IF_LOOP_START
-        assert ramsey_2d.loop.stop == IF_LOOP_STOP
-        assert ramsey_2d.loop.num == IF_LOOP_NUM
-        assert ramsey_2d.loop.loop is not None
-        assert ramsey_2d.loop.loop.alias == "2"
-        assert ramsey_2d.loop.loop.parameter == Parameter.GATE_PARAMETER
-        assert ramsey_2d.loop.loop.start == WAIT_LOOP_START
-        assert ramsey_2d.loop.loop.stop == WAIT_LOOP_STOP
-        assert ramsey_2d.loop.loop.num == WAIT_LOOP_NUM
+        assert ramsey_2d.loops[0].alias == f"drive_line_q{QUBIT}_bus"
+        assert ramsey_2d.loops[0].parameter == Parameter.LO_FREQUENCY
+        assert ramsey_2d.loops[0].start == IF_LOOP_START
+        assert ramsey_2d.loops[0].stop == IF_LOOP_STOP
+        assert ramsey_2d.loops[0].num == IF_LOOP_NUM
+        assert ramsey_2d.loops[0].loop is not None
+        assert ramsey_2d.loops[0].loop.alias == "2"
+        assert ramsey_2d.loops[0].loop.parameter == Parameter.GATE_PARAMETER
+        assert ramsey_2d.loops[0].loop.start == WAIT_LOOP_START
+        assert ramsey_2d.loops[0].loop.stop == WAIT_LOOP_STOP
+        assert ramsey_2d.loops[0].loop.num == WAIT_LOOP_NUM
 
     def test_func(self, ramsey_2d: Ramsey):
         """Test the `func` method."""
@@ -182,3 +182,8 @@ class TestRamsey2D:
             ),
             q,
         )
+
+    def test_plot(self, ramsey_2d: Ramsey):
+        res = ramsey_2d.post_process_results().flatten()
+        im = ramsey_2d.plot()
+        assert np.array_equal(im.get_array(), res)
