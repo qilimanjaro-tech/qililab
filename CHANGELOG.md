@@ -3,6 +3,10 @@
 ## 0.20.0 (2023-05-26)
 
 ### New features since last release
+- Added support for 2D experiments:
+  - ExperimentAnalysis now support 2D post_processing results, fitting and plotting
+  - Working example
+  https://github.com/qilimanjaro-tech/qililab/pull/423
 
 - Added hotfixes for several issues encountered during the hackathon:
   https://github.com/qilimanjaro-tech/qililab/pull/413

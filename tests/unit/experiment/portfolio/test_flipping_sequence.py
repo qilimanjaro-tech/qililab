@@ -74,7 +74,7 @@ class TestFlippingSequence:
     def test_plot(self, flipping_sequence: FlippingSequence):
         """Test plot method."""
         flipping_sequence.post_processed_results = q
-        popt = flipping_sequence.fit()
+        popt = flipping_sequence.fit()[0]
         fig = flipping_sequence.plot()
         scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
         assert np.allclose(scatter_data[:, 0], x)
