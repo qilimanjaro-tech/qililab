@@ -26,7 +26,7 @@ def mock_instruments(mock_rs: MagicMock, mock_pulsar: MagicMock, mock_keithley: 
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
+                        "binary_classification": [1],
                         "avg_cnt": [1024],
                     },
                 },

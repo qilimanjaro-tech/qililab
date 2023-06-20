@@ -1,5 +1,4 @@
 """Results class."""
-from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
 
@@ -11,7 +10,10 @@ from qililab.result.counts import Counts
 from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.result.result import Result
 from qililab.utils import coordinate_decompose
-from qililab.utils.dataframe_manipulation import concatenate_creating_new_name_index
+from qililab.utils.dataframe_manipulation import (
+    concatenate_creating_new_concatenation_index_name,
+    concatenate_creating_new_index_name_and_concatenation_index_name,
+)
 from qililab.utils.factory import Factory
 from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_ranges_from_loops, compute_shapes_from_loops
@@ -91,7 +93,10 @@ class Results:
         """
 
         result_dataframes = [result.to_dataframe() for result in self.results]
-        return concatenate_creating_new_name_index(dataframe_list=result_dataframes, new_index_name="result_index")
+        return concatenate_creating_new_concatenation_index_name(
+            dataframe_list=result_dataframes,
+            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT,
+        )
 
     def _build_empty_result_dataframe(self):
         """Builds an empty result dataframe, with the minimal number of columns and nans as values"""
@@ -110,8 +115,10 @@ class Results:
             result.acquisitions().reset_index(drop=True) if result is not None else self._build_empty_result_dataframe()
             for result in self.results
         ]
-        return concatenate_creating_new_name_index(
-            dataframe_list=result_acquisition_list, new_index_name=RESULTSDATAFRAME.RESULTS_INDEX
+        return concatenate_creating_new_index_name_and_concatenation_index_name(
+            dataframe_list=result_acquisition_list,
+            new_index_name=RESULTSDATAFRAME.RESULTS_INDEX,
+            new_concatenation_index_name=RESULTSDATAFRAME.CIRCUIT,
         )
 
     def _generate_new_acquisition_column_names(self):
@@ -191,7 +198,11 @@ class Results:
         expanded_acquisition_df = self._add_meaningful_acquisition_indices(
             result_acquisition_dataframe=result_acquisition_df
         )
-        return self._process_acquisition_dataframe_if_needed(result_dataframe=expanded_acquisition_df, mean=mean)
+        processed_acquisition_df = self._process_acquisition_dataframe_if_needed(
+            result_dataframe=expanded_acquisition_df, mean=mean
+        )
+
+        return processed_acquisition_df.drop(columns=[RESULTSDATAFRAME.RESULTS_INDEX])
 
     def _fill_missing_values(self):
         """Fill with None the missing values."""

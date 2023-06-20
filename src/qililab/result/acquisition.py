@@ -15,7 +15,7 @@ class Acquisition:
     Args:
         pulse_length (int): Duration (in ns) of the pulse.
         i_values: (NDArray[numpy.float32]): I data normalized
-        q_values: (NDArray[numpy.float32]): I data normalize
+        q_values: (NDArray[numpy.float32]): Q data normalize
         amplitude_values: (NDArray[numpy.float32]): amplitude values from I/Q normalized
         phase_values: (NDArray[numpy.float32]): phase values from I/Q normalized
 
@@ -48,7 +48,6 @@ class Acquisition:
         amplitude, phase.
         For multiple values you may need to redefine this method.
         """
-
         return pd.DataFrame(
             {
                 RESULTSDATAFRAME.I: self.i_values,

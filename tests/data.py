@@ -758,7 +758,7 @@ results_two_loops = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
+                        "binary_classification": [1],
                         "avg_cnt": [1024],
                     },
                 }
@@ -775,7 +775,7 @@ results_two_loops = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
+                        "binary_classification": [0],
                         "avg_cnt": [1024],
                     },
                 }
@@ -809,7 +809,7 @@ results_one_loops = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.08875841551660968], "path1": [-0.4252879595139228]},
-                        "threshold": [0.48046875],
+                        "binary_classification": [1.0],
                         "avg_cnt": [1024],
                     },
                 }
@@ -826,7 +826,7 @@ results_one_loops = {
                     },
                     "bins": {
                         "integration": {"path0": [-0.14089025097703958], "path1": [-0.3594594414081583]},
-                        "threshold": [0.4599609375],
+                        "binary_classification": [0],
                         "avg_cnt": [1024],
                     },
                 }
@@ -843,8 +843,9 @@ results_one_loops_empty = {
         {
             RUNCARD.ALIAS: "rs_1",
             LOOP.PARAMETER: NODE.FREQUENCY,
-            LOOP.VALUES: np.arange(start=7342000000, stop=7352000000, step=100000),
+            LOOP.VALUES: (np.arange(start=7342000000, stop=7352000000, step=100000)).tolist(),
             LOOP.LOOP: None,
+            LOOP.CHANNEL_ID: None,
         }
     ],
     EXPERIMENT.RESULTS: [],

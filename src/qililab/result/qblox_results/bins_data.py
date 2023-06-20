@@ -24,13 +24,13 @@ class BinsData:
             self.path1 = [value for value in self.path1 if not np.isnan(value)]
 
     integration: QbloxIntegrationData
-    threshold: list
+    binary_classification: list
     avg_cnt: list
 
     def __post_init__(self):
         """Remove nan values."""  # FIXME: Since we cannot do ascending loops in Qpysequence, we need to
         # use always a number of bins = num_loops + 1. Thus the first bin is always a nan.
-        self.threshold = [value for value in self.threshold if not np.isnan(value)]
+        self.binary_classification = [value for value in self.binary_classification if not np.isnan(value)]
         self.avg_cnt = [value for value in self.avg_cnt if not np.isnan(value)]
 
     def __len__(self) -> int:
@@ -39,4 +39,4 @@ class BinsData:
         Returns:
             int: Length of the QbloxIntegrationData.
         """
-        return len(self.threshold)
+        return len(self.binary_classification)
