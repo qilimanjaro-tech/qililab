@@ -6,11 +6,7 @@ from typing import Any
 class AWG(Instrument):
     """
     Interface for AWG sequencer instrument types.
-    """
-    def __init__(self, name: str, address: Any | None = None):
-        print("IN THE INIT AWG")
-        super().__init__(name, address)
-        
+    """ 
     def set(self, param_name:str, value:Any):
         """Set parameter on the instrument.
         Args:

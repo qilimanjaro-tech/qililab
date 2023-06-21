@@ -14,11 +14,18 @@ from typing import Any
 
 class AWGSequencer(Sequencer, AWG):
     def __init__(self, name: str, address: Any | None = None, output_i: int | None = None, output_q: int | None = None):
-        super().__init__(name, address)
+        print("IN THE INIT AWG")
+        super().__init__(name=name, seq_idx=address)
         self.output_i = output_i
         self.output_q = output_q
-        print("IN THE INIT AWGSequencer")
         self._map_outputs()
+
+    def _map_outputs(self):
+        """Map sequencer paths with output channels."""
+        if self.output_i is not None:
+            self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
+        if self.output_q is not None:
+            self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
@@ -34,13 +41,6 @@ class AWGSequencer(Sequencer, AWG):
         self.sequence = self._compile(pulse_bus_schedule)
         gf.arm_sequencer(sequencer=self.seq_idx)
         gf.start_sequencer(sequencer=self.seq_idx)
-    
-    def _map_outputs(self):
-        """Map sequencer paths with output channels."""
-        if self.output_i is not None:
-            self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
-        if self.output_q is not None:
-            self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
 
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
