@@ -312,7 +312,7 @@ def fixture_platform(chip: Chip) -> Platform:
     platform.schema.chip = chip
     buses = Buses(
         elements=[
-            Bus(settings=bus, platform_instruments=platform.schema.instruments, chip=chip) for bus in bus_settings
+            Bus(settings=bus, platform_instruments=platform.schema.instruments, chip=chip, delay=delay) for bus in bus_settings
         ]
     )
     platform.schema.buses = buses
