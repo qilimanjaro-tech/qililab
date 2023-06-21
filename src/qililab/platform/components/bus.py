@@ -102,7 +102,7 @@ class Bus:
             list[PulseDistortion]: settings.distortions.
         """
         return self.settings.distortions
-    
+
     @property
     def delay(self):
         """Bus 'delay' property.
@@ -154,7 +154,7 @@ class Bus:
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
-            RUNCARD.DELAY: self.delay
+            RUNCARD.DELAY: self.delay,
         }
 
     def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
