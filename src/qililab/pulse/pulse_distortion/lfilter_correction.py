@@ -65,19 +65,26 @@ class LFilterCorrection(PulseDistortion):
         Corrects an envelope applying the scipy.signal.lfilter.
         And then normalizes the pulse to the same real amplitude as the initial one.
 
+        Filtered signal gets normalized with envelopes max/min heights (of the real parts)
+        depending if the envelope ends more positive/negative, respectively.
+
         Args:
             envelope (numpy.ndarray): array representing the envelope of a pulse for each time step.
 
         Returns:
             numpy.ndarray: Amplitude of the envelope for each time step.
         """
-        # Filtered signal, normalized with envelopes max heights (of the real parts)
-        norm = np.amax(np.real(envelope)) * self.norm_factor
+        # Compute the norms before and after the filter, for both cases of the if statement
+        norm = (np.max(np.real(envelope)), np.min(np.real(envelope)))
         corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
-        corr_norm = np.max(np.real(corr_envelope))
-        corr_envelope = corr_envelope * norm / corr_norm
+        corr_norm = (np.max(np.real(corr_envelope)), np.min(np.real(corr_envelope)))
 
-        return corr_envelope
+        if corr_norm[0] >= -corr_norm[1]:  # should this be with "if norm[0] >= -norm[1]:" instead?
+            corr_envelope = corr_envelope * norm[0] / corr_norm[0]
+        else:
+            corr_envelope = corr_envelope * norm[1] / corr_norm[1]
+
+        return corr_envelope * self.norm_factor
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> "LFilterCorrection":

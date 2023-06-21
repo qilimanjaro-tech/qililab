@@ -17,7 +17,7 @@ B = [[0.5, 0.6], [0.8, 1.3]]
 
 # Parameters of the Pulse and its envelope.
 AMPLITUDE = [0.9]
-PHASE = [0, np.pi / 3, 2 * np.pi]
+PHASE = [np.pi / 3, 2 * np.pi]
 DURATION = [47]
 FREQUENCY = [0.7e9]
 RESOLUTION = [1.1]
@@ -60,10 +60,14 @@ class TestLFilterCorrection:
         norm_factors = [1.2, 2.3]
         corr_envelopes = [pulse_distortion.apply(envelope=envelope)]
         corr_envelopes.append(
-            LFilterCorrection(norm_factor=norm_factors[0], a=[0.7, 1.3], b=[0.5, 0.6]).apply(envelope=corr_envelopes[0])
+            LFilterCorrection(norm_factor=norm_factors[0], a=[0.7, 1.3, 0.6, 0.5], b=[0.5, 0.6, 0.7, 0.9]).apply(
+                envelope=corr_envelopes[0]
+            )
         )
         corr_envelopes.append(
-            LFilterCorrection(norm_factor=norm_factors[1], a=[0.5, 0.6], b=[0.7, 1.3]).apply(envelope=corr_envelopes[1])
+            LFilterCorrection(norm_factor=norm_factors[1], a=[0.5, 0.6, 0.6, 0.5], b=[0.7, 1.3, 0.6, 0.5]).apply(
+                envelope=corr_envelopes[1]
+            )
         )
 
         for corr_envelope in corr_envelopes:
