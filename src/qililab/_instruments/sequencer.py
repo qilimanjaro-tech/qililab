@@ -1,9 +1,8 @@
 import numpy as np
 import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from qcodes import Instrument
-from qililab.config import logger
 from qililab._instruments import AWG
+from qililab.config import logger
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
@@ -14,40 +13,34 @@ from qpysequence.waveforms import Waveforms
 from typing import Any
 
 class AWGSequencer(Sequencer, AWG):
-    def __init__(self, parent:Instrument, name: str, seq_idx: int | None = None):
-        super().__init__(parent, name, seq_idx)
+    def __init__(self, name: str, address: Any | None = None, output_i: int | None = None, output_q: int | None = None):
+        super().__init__(name, address)
+        self.output_i = output_i
+        self.output_q = output_q
+        print("IN THE INIT AWGSequencer")
         self._map_outputs()
 
-    def set(self, param_name:str, value:Any):
-        self.set(param_name, value)
-
-    def get(self, param_name:str):
-        return self.get(param_name)
-
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
+        """Execute a PulseBusSchedule on the instrument.
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule to be translated into QASM program and executed.
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetition duration
+            num_bins (int): number of bins
+        """
         self.nshots = nshots
         self.repetition_duration = repetition_duration
         self.num_bins = num_bins
         self.sequence = self._compile(pulse_bus_schedule)
         gf.arm_sequencer(sequencer=self.seq_idx)
         gf.start_sequencer(sequencer=self.seq_idx)
-
+    
     def _map_outputs(self):
         """Map sequencer paths with output channels."""
         if self.output_i is not None:
             self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
         if self.output_q is not None:
             self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
-
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-        """
-        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
-
-        return sequence
 
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -64,6 +57,16 @@ class AWGSequencer(Sequencer, AWG):
         )
 
         return QpySequence(program=program, waveforms=waveforms)
+        
+    def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
+        """Compiles the ``PulseBusSchedule`` into an assembly program.
+
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
+        """
+        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
+
+        return sequence
     
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.

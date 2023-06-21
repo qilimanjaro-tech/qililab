@@ -1,36 +1,33 @@
 import numpy as np
-
 from qcodes import Instrument
-from qililab.pulse import PulseBusSchedule, PulseShape
-from qpysequence.sequence import Sequence as QpySequence
-from qpysequence.waveforms import Waveforms
+from qililab.pulse import PulseBusSchedule
+from typing import Any
 
-class AWG:
+class AWG(Instrument):
     """
-    Interface for AWG instrument types.
+    Interface for AWG sequencer instrument types.
     """
-    def set(self, param:str, value:float):
+    def __init__(self, name: str, address: Any | None = None):
+        print("IN THE INIT AWG")
+        super().__init__(name, address)
+        
+    def set(self, param_name:str, value:Any):
         """Set parameter on the instrument.
         Args:
             param (str): Parameter's name.
             value (float): Parameter's value
         """
+        self.add_parameter(param_name, vals=value)
 
     
-    def get(self, param:str):
+    def get(self, param_name:str):
         """Return value associated to a parameter on the instrument.
         Args:
             param (str): Parameter's name.
         Returns:
             value (float): Parameter's value
         """
-
+        return self.get(param_name)
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
-        """Execute a PulseBusSchedule on the instrument.
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule to be translated into QASM program and executed.
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): repetition duration
-            num_bins (int): number of bins
-        """
+        ...
