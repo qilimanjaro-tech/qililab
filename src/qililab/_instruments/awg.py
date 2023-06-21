@@ -1,9 +1,7 @@
-import numpy as np
-from qcodes import Instrument
 from qililab.pulse import PulseBusSchedule
 from typing import Any
 
-class AWG(Instrument):
+class AWG:
     """
     Interface for AWG sequencer instrument types.
     """ 
@@ -13,7 +11,7 @@ class AWG(Instrument):
             param (str): Parameter's name.
             value (float): Parameter's value
         """
-        self.add_parameter(param_name, vals=value)
+        pass
 
     
     def get(self, param_name:str):
@@ -23,7 +21,14 @@ class AWG(Instrument):
         Returns:
             value (float): Parameter's value
         """
-        return self.get(param_name)
+        pass
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
-        ...
+        """Compiles a pulse bus schedule, generates associated QASM program and runs it.
+        Args:
+            pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.
+            nshots (int): number of shots
+            repetition_duration (int): repetition duration.
+            num_bins (int): number of bins
+        """
+        pass

@@ -1,6 +1,7 @@
 import numpy as np
 import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+from qcodes import Instrument
 from qililab._instruments import AWG
 from qililab.config import logger
 from qililab.pulse import PulseBusSchedule, PulseShape
@@ -13,9 +14,9 @@ from qpysequence.waveforms import Waveforms
 from typing import Any
 
 class AWGSequencer(Sequencer, AWG):
-    def __init__(self, name: str, address: Any | None = None, output_i: int | None = None, output_q: int | None = None):
+    def __init__(self, parent:Instrument, name: str, address: Any | None = None, output_i: int | None = None, output_q: int | None = None):
         print("IN THE INIT AWG")
-        super().__init__(name=name, seq_idx=address)
+        super().__init__(parent=parent, name=name, seq_idx=address)
         self.output_i = output_i
         self.output_q = output_q
         self._map_outputs()
@@ -26,7 +27,24 @@ class AWGSequencer(Sequencer, AWG):
             self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
         if self.output_q is not None:
             self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
-
+    
+    def set(self, param_name:str, value:Any):
+        """Set parameter on the instrument.
+        Args:
+            param (str): Parameter's name.
+            value (float): Parameter's value
+        """
+        self.add_parameter(param_name, vals=value)
+        
+    def get(self, param_name:str):
+        """Return value associated to a parameter on the instrument.
+        Args:
+            param (str): Parameter's name.
+        Returns:
+            value (float): Parameter's value
+        """
+        self.get(param_name=param_name)
+        
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
         Args:
