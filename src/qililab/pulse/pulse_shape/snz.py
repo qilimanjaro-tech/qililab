@@ -55,9 +55,9 @@ class SNZ(PulseShape):
                 f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse
-        envelope[halfpulse_t] = self.b  # impulse b
+        envelope[halfpulse_t] = self.b * amplitude  # impulse b
         envelope[halfpulse_t + 2 + self.t_phi :] = 0  # t_phi
-        envelope[halfpulse_t + 1 + self.t_phi] = -self.b  # impulse -b
+        envelope[halfpulse_t + 1 + self.t_phi] = -self.b * amplitude  # impulse -b
         envelope[halfpulse_t + 2 + self.t_phi :] = -amplitude * np.ones(halfpulse_t)  # negative square halfpulse
 
         return envelope
