@@ -5,6 +5,7 @@
 ### New features since last release
 
 - Add qcodes_contrib_drivers (0.18.0) to requierements
+  [#440](https://github.com/qilimanjaro-tech/qililab/pull/440)
 
 - Update qcodes to latest current version (0.38.1)
   https://github.com/qilimanjaro-tech/qililab/pull/431
