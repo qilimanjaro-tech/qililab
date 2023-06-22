@@ -476,7 +476,14 @@ class TestSetParameter:
             ).settings.reset
             is False
         )
-
+    
+    def test_set_parameter_method_with_delay(self, exp: Experiment):
+        """Test set_parameter method with delay parameter."""
+        exp.build_execution = MagicMock()
+        bus_delay = 0
+        alias = Galadriel.buses[0][RUNCARD.ALIAS]
+        exp.set_parameter(alias=alias, parameter=Parameter.DELAY, value=bus_delay)
+        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay
 
 class TestReset:
     """Unit tests for the reset option."""

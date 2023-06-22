@@ -196,7 +196,6 @@ class PulseDistortionSettingsName(str, Enum):
     AMP = "amp"
     SAMPLING_RATE = "sampling_rate"
     NORM_FACTOR = "norm_factor"
-    DELAY = "delay"
     A = "a"
     B = "b"
 

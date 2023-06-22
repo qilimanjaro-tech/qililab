@@ -126,11 +126,3 @@ class TestPlatform:
             assert bus is None
         if bus is not None:
             assert bus in platform.buses
-
-    @pytest.mark.parametrize("alias", ["drive_line_bus"])
-    def test_set_bus_delay(self, platform: Platform, alias):
-        """Test set_parameter method with bus delay"""
-        bus_delay = 0
-        platform.set_parameter(Parameter.DELAY, value=bus_delay, alias=alias)
-        bus = platform.get_bus_by_alias(alias)
-        assert bus.settings.delay == bus_delay
