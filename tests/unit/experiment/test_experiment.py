@@ -480,9 +480,11 @@ class TestSetParameter:
     def test_set_parameter_method_with_delay(self, exp: Experiment):
         """Test set_parameter method with delay parameter."""
         bus_delay = 0
+        exp.build_execution = MagicMock()
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
         exp.set_parameter(alias=alias, parameter=Parameter.DELAY, value=bus_delay)
         assert exp.platform.get_bus_by_alias(alias).delay == bus_delay
+        exp.build_execution.assert_called
 
 
 class TestReset:
