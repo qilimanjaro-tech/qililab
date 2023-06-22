@@ -19,10 +19,15 @@ from qililab._drivers.interfaces import LocalOscillator
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
     """Qililab's driver for the ERASynthPlus local oscillator
 
-    Args:
-        QcdEraSynth: QCoDeS contributors driver for the ERASynthPlus instrument
-        LocalOscillator: Qililab's local oscillator interface
+    QcdEraSynth: QCoDeS contributors driver for the ERASynthPlus instrument
+    LocalOscillator: Qililab's local oscillator interface
     """
 
     def __init__(self, name: str, address: str, **kwargs: Any) -> None:
+        """Init method
+
+        Args:
+            name (str): name of the instrument
+            address (str): ip address of the instrument
+        """
         super().__init__(name=name, address=address, **kwargs)
