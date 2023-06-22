@@ -61,9 +61,10 @@ class CircuitToPulses:
                         )
                         if readout_pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
-                            pulse_schedule.add_event(
-                                pulse_event=readout_pulse_event, port=port, port_delay=bus.settings.delay
-                            )
+                            if bus is not None:
+                                pulse_schedule.add_event(
+                                    pulse_event=readout_pulse_event, port=port, port_delay=bus.settings.delay
+                                )
                             with contextlib.suppress(ValueError):
                                 # If we find a flux port, create empty schedule for that port
                                 flux_port = chip.get_port_from_qubit_idx(idx=m_gate.target_qubits[0], line=Line.FLUX)
@@ -96,7 +97,10 @@ class CircuitToPulses:
                         )
                         if pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
-                            pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
+                            if bus is not None:
+                                pulse_schedule.add_event(
+                                    pulse_event=pulse_event, port=port, port_delay=bus.settings.delay
+                                )
                     # add padd time to CZ target qubit to sync it with parking gate
                     # if there is more than 1 pad time, add max (this is a bit misleading)
                     pad_time = max((time for _, time in parking_gates_pads), default=0)
@@ -117,7 +121,8 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     _, bus = self.platform.get_bus(port=port)
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
+                    if bus is not None:
+                        pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
 
             for qubit in chip.qubits:
                 with contextlib.suppress(ValueError):
