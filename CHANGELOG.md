@@ -4,10 +4,6 @@
 
 ### New features since last release
 
-- Added hotfix for bus delay issue from Hardware:
-  This fix adds a delay for each pulse on a bus
-  https://github.com/qilimanjaro-tech/qililab/pull/439
-
 - Update qcodes to latest current version (0.38.1)
   https://github.com/qilimanjaro-tech/qililab/pull/431
 
