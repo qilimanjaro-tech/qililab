@@ -73,15 +73,17 @@ class LFilterCorrection(PulseDistortion):
         """
         # Filtered signal, normalized with envelopes max heights (of the real parts)
             
-        corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
         
-        if np.median(envelope) >=0:
-            norm = np.amax(np.real(envelope)) * self.norm_factor
-            corr_norm = np.max(np.real(corr_envelope))
-        else:
-            norm = np.amin(np.real(envelope)) * self.norm_factor
-            corr_norm = np.min(np.real(corr_envelope))
+        # if np.median(envelope) >=0:
+        #     norm = np.amax(np.real(envelope)) * self.norm_factor
+        #     corr_norm = np.max(np.real(corr_envelope))
+        # else:
+        #     norm = np.amin(np.real(envelope)) * self.norm_factor
+        #     corr_norm = np.min(np.real(corr_envelope))
             
+        norm = np.amax(np.real(envelope)) * self.norm_factor
+        corr_envelope = signal.lfilter(b=self.b, a=self.a, x=envelope)
+        corr_norm = np.max(np.real(corr_envelope))
         corr_envelope = corr_envelope * norm / corr_norm
 
         return corr_envelope
