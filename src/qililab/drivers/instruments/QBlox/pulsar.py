@@ -1,5 +1,5 @@
 from qblox_instruments.qcodes_drivers import Pulsar
-from qililab._instruments import AWGSequencer
+from qililab.drivers import AWGSequencer
 
 class QililabPulsar(Pulsar):
     def __init__(self, name: str, address: str | None = None, **kwargs):
