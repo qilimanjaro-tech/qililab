@@ -2,7 +2,7 @@ from typing import Any
 
 from qcodes.instrument_drivers.rohde_schwarz import RohdeSchwarzSGS100A as QcodesSGS100A
 
-from qililab._instruments.interfaces import LocalOscillator
+from qililab._drivers.interfaces import LocalOscillator
 
 
 class RhodeSchwarzSGS100A(QcodesSGS100A, LocalOscillator):
