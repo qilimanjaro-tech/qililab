@@ -61,7 +61,7 @@ class CircuitToPulses:
                         )
                         if readout_pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
-                            if bus is not None:
+                            if bus:
                                 pulse_schedule.add_event(
                                     pulse_event=readout_pulse_event, port=port, port_delay=bus.settings.delay
                                 )
@@ -97,7 +97,7 @@ class CircuitToPulses:
                         )
                         if pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
-                            if bus is not None:
+                            if bus:
                                 pulse_schedule.add_event(
                                     pulse_event=pulse_event, port=port, port_delay=bus.settings.delay
                                 )
@@ -121,7 +121,7 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     _, bus = self.platform.get_bus(port=port)
-                    if bus is not None:
+                    if bus:
                         pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
 
             for qubit in chip.qubits:
