@@ -174,6 +174,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 0,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 20,
@@ -187,6 +188,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 8,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 30,
@@ -200,6 +202,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 13,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 21,
@@ -213,6 +216,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 9,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 31,
@@ -226,6 +230,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 14,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 22,
@@ -239,6 +244,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 10,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 32,
@@ -252,6 +258,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 15,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 23,
@@ -265,6 +272,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 11,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 33,
@@ -278,6 +286,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 16,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 24,
@@ -291,6 +300,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 12,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 34,
@@ -304,6 +314,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 17,
             "distortions": [],
+            "delay": 0,
         },
     ]
     settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg

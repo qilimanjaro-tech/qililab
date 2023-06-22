@@ -37,7 +37,7 @@ class TestPulseSequences:
 
     def test_add_event_method(self, pulse_schedule: PulseSchedule, pulse_event: PulseEvent):
         """Tead add_event method."""
-        pulse_schedule.add_event(pulse_event=pulse_event, port=0)
+        pulse_schedule.add_event(pulse_event=pulse_event, port=0, port_delay=0)
 
     def test_to_dict_method(self, pulse_schedule: PulseSchedule):
         """Test to_dict method"""
