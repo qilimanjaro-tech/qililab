@@ -76,7 +76,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
         # self.post_processed_results = np.average(self.binned_post_processed_results.reshape(self.num_bins, data_dimensions), axis=1)
         return self.post_processed_results
 
-    def fit(self, p0: tuple | None = None):
+    def fit(self, p0: tuple | None = None, quadrature: str = "i"):
         """Method used to fit the results of an experiment.
 
         This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
@@ -93,12 +93,12 @@ class ExperimentAnalysis(Experiment, FittingModel):
                 "The post-processed results must be computed before fitting. "
                 "Please call ``post_process_results`` first."
             )
-
+        self.idx = 0 if quadrature == "i" else 1
         self.popt, _ = curve_fit(  # pylint: disable=unbalanced-tuple-unpacking
-            self.func, xdata=self.loop.values, ydata=self.post_processed_results, p0=p0
+            self.func, xdata=self.loop.values, ydata=self.post_processed_results[self.idx], p0=p0
         )
 
-        return self.popt
+        return self.popt, self.idx
 
     def plot(self):
         """Method used to plot the results of an experiment.
@@ -114,18 +114,24 @@ class ExperimentAnalysis(Experiment, FittingModel):
 
         # Plot data
         fig, axes = plt.subplots(1, 2, figsize=(13, 7))
-        axes.set_title(self.options.name)
-        axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
-        axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
-        axes.scatter(xdata, self.post_processed_results, color="blue")
-        axes[0].plot(xdata, self.post_processed_results[0], color="blue")
-        axes[1].plot(xdata, self.post_processed_results[1], color="blue")
+        # axes.set_title(self.options.name)
+        # axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
+        # axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
+        # axes.scatter(xdata, self.post_processed_results, color="blue")
+        axes[0].plot(xdata, self.post_processed_results[0], '--o', color="blue")
+        axes[1].plot(xdata, self.post_processed_results[1],'--o', color="blue")
+        axes[0].set_title('I')
+        axes[1].set_title('Q')
+        axes[0].set_xlabel('Amplitude')
+        axes[1].set_xlabel('Amplitude')
+        axes[0].set_ylabel('Voltage [a.u.]')
+        axes[1].set_ylabel('Voltage [a.u.]')
         if hasattr(self, "popt"):
             # Create label text
             args = list(inspect.signature(self.func).parameters.keys())[1:]
             text = "".join(f"{arg}: {value:.5f}\n" for arg, value in zip(args, self.popt))
-            axes.plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
-            axes.legend(loc="upper right")
+            axes[self.idx].plot(xdata, self.func(xdata, *self.popt), "--", label=text, color="red")
+            # axes.legend(loc="upper right")
         return fig
 
     def bus_setup(self, parameters: dict[Parameter, float | str | bool], control=False) -> None:
