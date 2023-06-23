@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added hotfix for bus delay issue from Hardware:
+  This fix adds a delay for each pulse on a bus
+  https://github.com/qilimanjaro-tech/qililab/pull/439
+  
 - Added `T1` portfolio experiment
   [#409](https://github.com/qilimanjaro-tech/qililab/pull/409)
 
