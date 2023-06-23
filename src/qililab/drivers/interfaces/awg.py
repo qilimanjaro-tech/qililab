@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from qililab.pulse import PulseBusSchedule
 from typing import Any
+
+from qililab.pulse import PulseBusSchedule
 
 
 class AWG:

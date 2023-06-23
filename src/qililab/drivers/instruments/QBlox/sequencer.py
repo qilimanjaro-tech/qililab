@@ -1,17 +1,19 @@
+from typing import Any
+
 import numpy as np
 import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
-from qililab.drivers import AWG
-from qililab.config import logger
-from qililab.pulse import PulseBusSchedule, PulseShape
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
-from typing import Any
+
+from qililab.config import logger
+from qililab.drivers import AWG
+from qililab.pulse import PulseBusSchedule, PulseShape
 
 
 class AWGSequencer(Sequencer, AWG):
