@@ -13,10 +13,13 @@ from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 from typing import Any
 
+
 class AWGSequencer(Sequencer, AWG):
-    """Qililab's driver for QBlox-instruments Sequencer
-    """
-    def __init__(self, parent:Instrument, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None):
+    """Qililab's driver for QBlox-instruments Sequencer"""
+
+    def __init__(
+        self, parent: Instrument, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
+    ):
         """Initialise the instrument.
         Args:
             parent (Instrument): Parent for the sequencer instance.
@@ -36,7 +39,7 @@ class AWGSequencer(Sequencer, AWG):
             self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
         if self.output_q is not None:
             self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
-        
+
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
         Args:
@@ -62,12 +65,10 @@ class AWGSequencer(Sequencer, AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        program = self._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms
-        )
+        program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
 
         return QpySequence(program=program, waveforms=waveforms)
-        
+
     def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
         """Compiles the ``PulseBusSchedule`` into an assembly program.
 
@@ -77,7 +78,7 @@ class AWGSequencer(Sequencer, AWG):
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
 
         return sequence
-    
+
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
         Args:
@@ -103,7 +104,7 @@ class AWGSequencer(Sequencer, AWG):
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms
-    
+
     def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms):
         """Generate Q1ASM program
 
@@ -147,14 +148,12 @@ class AWGSequencer(Sequencer, AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(
-            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx
-        )
+        self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx)
         if self.repetition_duration is not None:
             wait_time = self.repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
-        
+
         return program
