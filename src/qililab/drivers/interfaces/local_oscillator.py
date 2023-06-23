@@ -11,7 +11,6 @@ class LocalOscillator(ABC):
             param_name (str): The name of a parameter of this instrument.
             value (Any): The new value to set.
         """
-        pass
 
     @abstractmethod
     def get(self, param_name: str) -> Any:
@@ -24,14 +23,10 @@ class LocalOscillator(ABC):
             Any: Current value of the parameter.
         """
 
-        pass
-
     @abstractmethod
     def on(self) -> None:
         """Start RF output"""
-        pass
 
     @abstractmethod
     def off(self) -> None:
         """Stop RF outout"""
-        pass
