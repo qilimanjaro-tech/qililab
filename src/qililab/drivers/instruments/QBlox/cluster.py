@@ -4,7 +4,7 @@ from qililab.drivers import QililabQcmQrm
 from typing import Dict, Union
 
 
-class QililabPulsar(Cluster):
+class QililabCluster(Cluster):
     def __init__(self, name: str, address: str | None = None, **kwargs):
         super().__init__(name, **kwargs)
 
