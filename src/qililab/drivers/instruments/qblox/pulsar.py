@@ -1,10 +1,10 @@
-from qblox_instruments.qcodes_drivers import Pulsar
+from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qililab.drivers import AWGSequencer
 from typing import Dict, Union
 
 
-class QililabPulsar(Pulsar):
+class QililabPulsar(QcodesPulsar):
     def __init__(self, name: str, address: str | None = None, **kwargs):
         super().__init__(name, **kwargs)
 

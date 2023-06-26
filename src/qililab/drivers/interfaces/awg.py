@@ -16,7 +16,6 @@ class AWG:
             param (str): Parameter's name.
             value (float): Parameter's value
         """
-        pass
 
     @abstractmethod
     def get(self, param_name: str) -> Any:
@@ -26,7 +25,6 @@ class AWG:
         Returns:
             value (float): Parameter's value
         """
-        pass
 
     @abstractmethod
     def execute(
@@ -39,4 +37,3 @@ class AWG:
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        pass

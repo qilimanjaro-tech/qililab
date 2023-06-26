@@ -1,10 +1,10 @@
-from qblox_instruments.qcodes_drivers import Cluster
+from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qililab.drivers import QililabQcmQrm
 from typing import Dict, Union
 
 
-class QililabCluster(Cluster):
+class Cluster(QcodesCluster):
     def __init__(self, name: str, address: str | None = None, **kwargs):
         super().__init__(name, **kwargs)
 
