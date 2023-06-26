@@ -1,6 +1,7 @@
 from qblox_instruments.qcodes_drivers import Pulsar
-
+from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qililab.drivers import AWGSequencer
+from typing import Dict, Union
 
 
 class QililabPulsar(Pulsar):
@@ -8,6 +9,7 @@ class QililabPulsar(Pulsar):
         super().__init__(name, **kwargs)
 
         # Add sequencers
+        self.submodules: Dict[str, Union[InstrumentModule, ChannelTuple]] = {} # resetting superclass submodules
         for seq_idx in range(6):
             seq = AWGSequencer(self, f"sequencer{seq_idx}", seq_idx)
             self.add_submodule(f"sequencer{seq_idx}", seq)

@@ -4,7 +4,7 @@ from qililab.drivers import AWGSequencer
 
 
 class QililabQcmQrm(QcmQrm):
-    def __init__(self, parent: Instrument, name: str, slot_idx: int, address: str | None = None, **kwargs):
+    def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
         super().__init__(parent, name, slot_idx)
 
         # Add sequencers
