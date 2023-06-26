@@ -6,7 +6,16 @@ from typing import Dict, Union
 
 
 class QililabQcmQrm(QcodesQcmQrm):
+    """Qililab's driver for QBlox-instruments QcmQrm"""
+    
     def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
+        """Initialise the instrument.
+
+        Args:
+            parent (Instrument): Instrument´s parent
+            name (str): Name of the instrument
+            slot_idx (int): Index of the slot
+        """
         super().__init__(parent, name, slot_idx)
 
         # Add sequencers

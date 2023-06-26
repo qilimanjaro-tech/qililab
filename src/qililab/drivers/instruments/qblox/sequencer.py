@@ -48,6 +48,7 @@ class AWGSequencer(Sequencer, AWG):
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
+        
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule to be translated into QASM program and executed.
             nshots (int): number of shots / hardware average
@@ -84,8 +85,10 @@ class AWGSequencer(Sequencer, AWG):
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
+ 
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
+
         Returns:
             Waveforms: Waveforms object containing the generated waveforms.
         """

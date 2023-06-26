@@ -5,7 +5,15 @@ from typing import Dict, Union
 
 
 class QililabPulsar(QcodesPulsar):
+    """Qililab's driver for QBlox-instruments Pulsar"""
+    
     def __init__(self, name: str, address: str | None = None, **kwargs):
+        """Initialise the instrument.
+
+        Args:
+            name (str): Sequencer name
+            address (str): Instrument address
+        """
         super().__init__(name, **kwargs)
 
         # Add sequencers

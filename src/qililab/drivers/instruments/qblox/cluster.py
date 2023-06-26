@@ -4,8 +4,16 @@ from qililab.drivers import QililabQcmQrm
 from typing import Dict, Union
 
 
-class Cluster(QcodesCluster):
+class QililabCluster(QcodesCluster):
+    """Qililab's driver for QBlox-instruments Cluster"""
+
     def __init__(self, name: str, address: str | None = None, **kwargs):
+        """Initialise the instrument.
+
+        Args:
+            name (str): Sequencer name
+            address (str): Instrument address
+        """
         super().__init__(name, **kwargs)
 
         # Add qcm-qrm's to the cluster
