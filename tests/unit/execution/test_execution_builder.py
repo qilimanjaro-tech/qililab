@@ -84,7 +84,8 @@ class TestExecutionBuilder:
     ):
         """Test build method with wrong pulse sequence."""
         test_port = 1234
-        pulse_schedule.add_event(pulse_event=pulse_event, port=test_port)
+        delay = 0
+        pulse_schedule.add_event(pulse_event=pulse_event, port=test_port, port_delay=delay)
         with pytest.raises(ValueError, match=f"There is no bus connected to port {test_port}."):
             EXECUTION_BUILDER.build(platform=platform, pulse_schedules=[pulse_schedule])
 
