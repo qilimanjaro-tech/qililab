@@ -1,7 +1,7 @@
 """Tests for the Sequencer class."""
 import copy
 import pytest
-from qililab.drivers.instruments.QBlox import Sequencer
+from qililab.drivers.instruments.qblox import Sequencer
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qpysequence.sequence import Sequence as QpySequence
