@@ -26,6 +26,9 @@ class MiniCircuitsDriver(Device):
         """Set instrument settings."""
         self._http_request(command=f"SETATT={attenuation}")
 
+    def get(self):
+        return float(self._http_request('ATT?'))
+    
     def _http_request(self, command: str):
         """Send an HTTP request with the given command.
 
