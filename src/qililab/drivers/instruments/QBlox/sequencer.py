@@ -1,18 +1,19 @@
 from typing import Any
 
 import numpy as np
-import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers import AWG, QililabPulsar, QililabQcmQrm
+from qililab.drivers.interfaces import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
 
 
@@ -20,9 +21,10 @@ class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
     def __init__(
-        self, parent: QililabPulsar | QililabQcmQrm, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
+        self, parent: Instrument, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
     ):
         """Initialise the instrument.
+
         Args:
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
@@ -31,7 +33,7 @@ class AWGSequencer(Sequencer, AWG):
             output_q (int): output for q signal
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.device = parent
+
         self.output_i = output_i
         self.output_q = output_q
         self._map_outputs()
@@ -45,18 +47,18 @@ class AWGSequencer(Sequencer, AWG):
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
+
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule to be translated into QASM program and executed.
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        self.nshots = nshots
-        self.repetition_duration = repetition_duration
-        self.num_bins = num_bins
-        self.sequence = self._compile(pulse_bus_schedule)
-        self.device.arm_sequencer(sequencer=self.seq_idx)
-        self.device.start_sequencer(sequencer=self.seq_idx)
+        self.sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule)
+        # pylint: disable=E1102
+        self.sequence(self.sequence.todict())
+        self.arm_sequencer(sequencer=self.seq_idx)
+        self.start_sequencer(sequencer=self.seq_idx)
 
     def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
@@ -70,22 +72,14 @@ class AWGSequencer(Sequencer, AWG):
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
         program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
 
-        return QpySequence(program=program, waveforms=waveforms)
-
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-        """
-        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
-
-        return sequence
+        return QpySequence(program=program, waveforms=waveforms, weights=Weights(), acquisitions=Acquisitions())
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
+
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
+
         Returns:
             Waveforms: Waveforms object containing the generated waveforms.
         """

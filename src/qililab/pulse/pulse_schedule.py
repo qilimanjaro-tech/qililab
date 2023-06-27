@@ -16,12 +16,13 @@ class PulseSchedule:
 
     elements: list[PulseBusSchedule] = field(default_factory=list)
 
-    def add_event(self, pulse_event: PulseEvent, port: int):
+    def add_event(self, pulse_event: PulseEvent, port: int, port_delay: int):
         """Add pulse event.
 
         Args:
             pulse (PulseEvent): PulseEvent object.
         """
+        pulse_event.start_time += port_delay
         for pulse_sequence in self.elements:
             if port == pulse_sequence.port:
                 pulse_sequence.add_event(pulse_event=pulse_event)
