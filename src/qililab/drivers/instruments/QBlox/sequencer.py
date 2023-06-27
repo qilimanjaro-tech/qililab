@@ -12,15 +12,21 @@ from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
-from qililab.drivers import AWG, QililabPulsar, QililabQcmQrm
+from qililab.drivers import AWG, Digitiser, QililabPulsar, QililabQcmQrm
 from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
 class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
     def __init__(
-        self, parent: QililabPulsar | QililabQcmQrm, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
+        self,
+        parent: QililabPulsar | QililabQcmQrm,
+        name: str,
+        seq_idx: int,
+        output_i: int | None = None,
+        output_q: int | None = None,
     ):
         """Initialise the instrument.
         Args:
@@ -160,3 +166,50 @@ class AWGSequencer(Sequencer, AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
 
         return program
+
+
+class AWGDigitiserSequencer(AWGSequencer, Digitiser):
+    """Qililab's driver for QBlox-instruments digitiser Sequencer"""
+
+    def __init__(
+        self,
+        parent: QililabPulsar | QililabQcmQrm,
+        name: str,
+        seq_idx: int,
+        output_i: int | None = None,
+        output_q: int | None = None,
+        sequence_timeout: int = 1,
+        acquisition_timeout: int = 1,
+    ):
+        """Initialise the instrument.
+        Args:
+            parent (Instrument): Parent for the sequencer instance.
+            name (str): Sequencer name
+            seq_idx (int): sequencer identifier index
+            output_i (int): output for i signal
+            output_q (int): output for q signal
+            sequence_timeout (int): timeout to retrieve sequencer state in minutes
+            acquisition_timeout (int): timeout to retrieve acquisition state in minutes
+        """
+        super().__init__(parent=parent, name=name, seq_idx=seq_idx, output_i=output_i, output_q=output_q)
+        self.sequence_timeout = sequence_timeout
+        self.acquisition_timeout = acquisition_timeout
+
+    def get_results(self) -> QbloxResult:
+        """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
+        If any of the timeouts is reached, a TimeoutError is raised.
+
+        Returns:
+            QbloxResult: Class containing the acquisition results.
+
+        """
+        flags = self.device.get_sequencer_state(sequencer=self.seq_idx, timeout=self.sequence_timeout)
+        logger.info("Sequencer[%d] flags: \n%s", self.seq_idx, flags)
+        self.device.get_acquisition_state(sequencer=self.seq_idx, timeout=self.acquisition_timeout)
+        if self.scope_store_enabled:
+            self.device.store_scope_acquisition(sequencer=self.seq_idx, name="default")
+        results = [self.device.get_acquisitions(sequencer=self.seq_idx)["default"]["acquisition"]]
+        self.sync_en(False)
+        integration_lengths = [self.used_integration_length]
+
+        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
