@@ -56,6 +56,7 @@ class AWGSequencer(Sequencer, AWG):
             num_bins (int): number of bins
         """
         self.sequence = self._compile(pulse_bus_schedule)
+        self.sequence(self.sequence.todict())
         self.arm_sequencer(sequencer=self.seq_idx)
         self.start_sequencer(sequencer=self.seq_idx)
 
