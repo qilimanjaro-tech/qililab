@@ -1,7 +1,6 @@
 from typing import Any
 
 import numpy as np
-import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
 from qpysequence.acquisitions import Acquisitions
@@ -14,7 +13,7 @@ from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers import AWG, QililabPulsar, QililabQcmQrm
+from qililab.drivers import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
 
 
@@ -22,7 +21,7 @@ class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
     def __init__(
-        self, parent: QililabPulsar | QililabQcmQrm, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
+        self, parent: Instrument, name: str, seq_idx: int, output_i: int | None = None, output_q: int | None = None
     ):
         """Initialise the instrument.
 
@@ -55,7 +54,7 @@ class AWGSequencer(Sequencer, AWG):
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        self.sequence = self._compile(pulse_bus_schedule)
+        self.sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule)
         self.sequence(self.sequence.todict())
         self.arm_sequencer(sequencer=self.seq_idx)
         self.start_sequencer(sequencer=self.seq_idx)
@@ -73,16 +72,6 @@ class AWGSequencer(Sequencer, AWG):
         program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
 
         return QpySequence(program=program, waveforms=waveforms, weights=Weights(), acquisitions=Acquisitions())
-
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-        """
-        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
-
-        return sequence
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
