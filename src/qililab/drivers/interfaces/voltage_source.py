@@ -25,8 +25,8 @@ class VoltageSource(ABC):
 
     @abstractmethod
     def on(self) -> None:
-        """Start RF output"""
+        """Start VoltageSource output"""
 
     @abstractmethod
     def off(self) -> None:
-        """Stop RF outout"""
+        """Stop VoltageSource outout"""

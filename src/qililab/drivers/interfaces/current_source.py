@@ -25,8 +25,8 @@ class CurrentSource(ABC):
 
     @abstractmethod
     def on(self) -> None:
-        """Start RF output"""
+        """Start CurrentSource output"""
 
     @abstractmethod
     def off(self) -> None:
-        """Stop RF outout"""
+        """Stop CurrentSource outout"""
