@@ -8,6 +8,8 @@ class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSourc
     """
     Class to hold the two Keithley channels, i.e. SMUA and SMUB.
 
+    It inherits from QCdoes driver with extra on/off functionalities.
+
     Args:
         parent (QCodes.Instrument): The Instrument instance to which the channel is to be attached.
         name (str): The 'colloquial' name of the channel
@@ -16,10 +18,8 @@ class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSourc
 
     def on(self) -> None:
         """Turn output on"""
-        self.write("OUTPUT 1")
-        self.output = 1
+        self.set(param_name="output", value=1)
 
     def off(self) -> None:
         """Turn output off"""
-        self.write("OUTPUT 0")
-        self.output = 0
+        self.set(param_name="output", value=0)
