@@ -1,4 +1,4 @@
-"""YOkogawaGS200 driver."""
+"""YokogawaGS200 driver."""
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesYokogawaGS200
 
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
