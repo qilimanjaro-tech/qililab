@@ -13,7 +13,7 @@ from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers import AWG
+from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
 
 

@@ -1,11 +1,11 @@
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
-from qililab.drivers import AWGSequencer
+from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from typing import Dict, Union
 
 
-class QililabQcmQrm(QcodesQcmQrm):
+class QcmQrm(QcodesQcmQrm):
     """Qililab's driver for QBlox-instruments QcmQrm"""
     
     def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
