@@ -8,7 +8,7 @@ from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 class QbloxSpiRack(SpiRack):
     """
-    Qililab's driver for the YokogawaGS200 acting as VoltageSource and CurrentSource
+    Qililab's driver for the Qblox SpiRack.
 
     Args:
         name (str): What this instrument is called locally.
@@ -19,21 +19,17 @@ class QbloxSpiRack(SpiRack):
 
 class QbloxD5aDacChannel(D5aDacChannel, VoltageSource):
     """
-    Qililab's driver for the YokogawaGS200 acting as VoltageSource and CurrentSource
+    Qililab's driver for the Qblox D5a Module, D5a DAC Channel x16, acting as VoltageSource.
 
     Args:
-        name (str): What this instrument is called locally.
-        address (str): The GPIB or USB address of this instrument
-        kwargs (Any | dict): kwargs to be passed to VisaInstrument class
+
     """
 
 
 class QbloxS4gDacChannel(S4gDacChannel, CurrentSource):
     """
-    Qililab's driver for the YokogawaGS200 acting as VoltageSource and CurrentSource
+    Qililab's driver for the Qblox S4g Module, S4g DAC Channel x4, acting as CurrentSource.
 
     Args:
-        name (str): What this instrument is called locally.
-        address (str): The GPIB or USB address of this instrument
-        kwargs (Any | dict): kwargs to be passed to VisaInstrument class
+
     """
