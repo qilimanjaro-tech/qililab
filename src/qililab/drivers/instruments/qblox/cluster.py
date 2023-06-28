@@ -1,6 +1,6 @@
 from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
-from qililab.drivers.instruments.qblox.qcm_qrm import QcmQrm
+from .qcm_qrm import QcmQrm
 from typing import Dict, Union
 
 
@@ -18,6 +18,8 @@ class Cluster(QcodesCluster):
 
         # Add qcm-qrm's to the cluster
         self.submodules: Dict[str, Union[InstrumentModule, ChannelTuple]] = {} # resetting superclass submodules
+        self.instrument_modules: Dict[str, InstrumentModule] = {} # resetting superclass instrument modules
+        self._channel_lists: Dict[str, ChannelTuple] = {} # resetting superclass channel lists
         # registering only the slots specified in the dummy config if that is the case
         if 'dummy_cfg' in kwargs:
             slot_ids = list(kwargs['dummy_cfg'].keys())
