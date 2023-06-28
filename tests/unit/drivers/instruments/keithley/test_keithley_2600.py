@@ -1,8 +1,6 @@
 """ Test classes, Keithley2600 and Keithley2600Channel"""
 from unittest.mock import MagicMock
 
-from qcodes.instrument.instrument import Instrument
-
 from qililab.drivers import Keithley2600, Keithley2600Channel
 
 
