@@ -3,7 +3,6 @@ from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from typing import Dict, Union
 
-
 class Pulsar(QcodesPulsar):
     """Qililab's driver for QBlox-instruments Pulsar"""
     
