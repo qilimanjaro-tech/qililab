@@ -1,6 +1,6 @@
+from qcodes.tests.instrument_mocks import DummyInstrument
 from qililab.drivers.instruments.qblox.qcm_qrm import QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
-from qcodes.tests.instrument_mocks import DummyInstrument
 from unittest.mock import MagicMock
 
 NUM_SUBMODULES = 6
