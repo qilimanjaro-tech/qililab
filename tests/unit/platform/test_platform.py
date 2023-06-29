@@ -10,7 +10,7 @@ from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName
+from qililab.typings.enums import InstrumentName, Parameter
 from tests.data import Galadriel
 from tests.utils import platform_db, platform_yaml
 
