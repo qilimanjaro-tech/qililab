@@ -11,9 +11,14 @@ We only have the ERASynthPlus in the lab so for the time being we don't need to 
 """
 from typing import Any
 
+from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
 from qililab.drivers.interfaces import LocalOscillator
+from qililab.drivers.parameters import LO
+
+# TODO: TESTING
+pars_lo = LO()
 
 
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
@@ -22,3 +27,14 @@ class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
     QcdEraSynth: QCoDeS contributors driver for the ERASynthPlus instrument
     LocalOscillator: Qililab's local oscillator interface
     """
+
+    def __init__(self, name: str, address: str, **kwargs: Any) -> None:
+        super().__init__(name, address, **kwargs)
+
+        # change the name for frequency
+        self.add_parameter(
+            pars_lo.frequency,
+            label="Delegated parameter for local oscillator frequency",
+            source=self.parameters["frequency"],
+            parameter_class=DelegateParameter,
+        )
