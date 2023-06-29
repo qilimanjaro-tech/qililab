@@ -8,6 +8,12 @@ This document contains the changes of the current release.
   This is part of the "Promoting Modular Autonomy" epic.
   [#437](https://github.com/qilimanjaro-tech/qililab/pull/437)
 
+- Add qcodes_contrib_drivers (0.18.0) to requierements
+  [#440](https://github.com/qilimanjaro-tech/qililab/pull/440)
+
+- Update qcodes to latest current version (0.38.1)
+  [#431](https://github.com/qilimanjaro-tech/qililab/pull/431)
+
 - Added hotfix for bus delay issue from Hardware:
   This fix adds a delay for each pulse on a bus
   https://github.com/qilimanjaro-tech/qililab/pull/439
