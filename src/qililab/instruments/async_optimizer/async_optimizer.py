@@ -29,14 +29,13 @@ class AsyncOpt(Instrument):
         alias: str
         learner: None = None # not sure how to put it as a Scikit-Optimize or Adaptive learner
         data_process: None = None # not sure how to put it as a function type
-        iteration: int = 0
+        iteration: int = -1
         control_var_set_call: None = None # not sure how to put it as a function type
         experiment: None = None
 
     settings: AsyncOptSettings
+    device: int=0
 
-    @Instrument.CheckDeviceInitialized
-    @Instrument.CheckParameterValueFloatOrInt
     def setup(
         self,
         parameter: Parameter,
@@ -45,7 +44,7 @@ class AsyncOpt(Instrument):
     ):
         """Setup instrument."""
         if parameter == Parameter.ITERATION:
-            self.set_parameter
+            self.iteration =value
             return
         raise ParameterNotFound(f"Invalid Parameter: {parameter.value}")
 
@@ -71,8 +70,17 @@ class AsyncOpt(Instrument):
         """
         previous_value = self.settings.iteration
         self.settings.iteration = value
+        print(f'entered async iteration handling {previous_value}->{value}')
 
-        if previous_value>0:
+        if value==0:
+            print('Removed unfinished')
+            self.settings.learner.remove_unfinished()
+        elif previous_value==value:
+            print('Returned void')
+            return
+    
+
+        if previous_value>-1:
             # feed previous result values
             # 3. observe the outcome of running the experiment
             last_experiment_data = self.settings.experiment.results.results[-1] # line 243 experiment.py
@@ -80,11 +88,17 @@ class AsyncOpt(Instrument):
             last_y = self.settings.data_process(last_experiment_data)
             # feed it
             # 4. walk back to your laptop and tell the optimizer about the outcome
-            self.settings.learner.tell(self.last_x,last_y)
+            print(f'Last_x={self.last_x}; Last_y={last_y}')
+            if len(self.last_x)==1:
+                last_x = self.last_x[0]
+            else:
+                last_x = self.last_x
+            self.settings.learner.tell(last_x,last_y)
         # get next values
         # 1. ask for a new set of parameters
-        self.last_x = self.settings.learner.ask(n=1)
+        self.last_x = self.settings.learner.ask(n=1)[0]
+
         # set these values
         # 2. walk to the experiment and program in the new parameters
-        for i_x, this_x in enumerate(self.last_x):
-            self.settings.control_var_set_call[i_x](value=this_x)
+        for this_call, this_x in zip(self.settings.control_var_set_call,self.last_x):
+            this_call(value=this_x)
