@@ -6,7 +6,7 @@ from qcodes.instrument import DelegateParameter
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers import AWGSequencer, parameters
-from qililab.drivers.interfaces import LocalOscillator
+from qililab.drivers.interfaces import Attenuator, LocalOscillator
 
 
 class QcmQrm(QcodesQcmQrm):
@@ -24,10 +24,18 @@ class QcmQrm(QcodesQcmQrm):
 
         if super().is_rf_type:
             # Add local oscillators
-            lo_channels = 1 if super().is_qrm_type else 2
-            for channel in range(lo_channels):
-                lo = QcmQrmRfLo(name=f"{name}_lo{channel}", parent=self, channel=channel)
-                self.add_submodule(f"{name}_lo{channel}", lo)
+            # We use strings as channels to keep the in/out name and conserve the same
+            # logic as for the attenuator or other instruments
+            lo_channels = ["out0_in0"] if super().is_qrm_type else ["out0", "out1"]
+            for channel in lo_channels:
+                lo = QcmQrmRfLo(name=f"{name}_lo_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{name}_lo_{channel}", lo)
+
+            # Add attenuators
+            att_channels = ["out0", "in0"] if super().is_qrm_type else ["out0", "out1"]
+            for channel in att_channels:
+                att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
+                self.add_submodule(f"{name}_attenuator_{channel}", att)
 
         # Add sequencers
         self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}
@@ -41,42 +49,46 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
     Set and get methods from InstrumentModule override LocalOscillator's
     """
 
-    def __init__(self, name: str, parent: QcmQrm, channel: int = 0, **kwargs):
+    def __init__(self, name: str, parent: QcmQrm, channel: str, **kwargs):
         super().__init__(parent, name, **kwargs)
         self.device = parent
 
         # get the name of the parameter for the lo frequency
         lo_frequency = parameters.drivers.lo
-        if parent.is_qrm_type:  # qrm-rf has only one lo channel
-            self.add_parameter(
-                lo_frequency,
-                label="Delegated parameter for qrm local oscillator frequency",
-                source=self.parameters["out0_in0_lo_freq"],
-                parameter_class=DelegateParameter,
-            )
-            self.add_parameter(
-                "status",
-                label="Delegated parameter device status",
-                source=self.parameters["out0_in0_lo_en"],
-                parameter_class=DelegateParameter,
-            )
-
-        else:  # qcm-rf
-            self.add_parameter(
-                lo_frequency,
-                label="Delegated parameter for qcm local oscillator frequency",
-                source=self.parameters[f"out{channel}_lo_freq"],
-                parameter_class=DelegateParameter,
-            )
-            self.add_parameter(
-                "status",
-                label="Delegated parameter device status",
-                source=self.parameters[f"out{channel}_lo_en"],
-                parameter_class=DelegateParameter,
-            )
+        self.add_parameter(
+            lo_frequency,
+            label="Delegated parameter for local oscillator frequency",
+            source=self.parameters[f"{channel}_lo_freq"],
+            parameter_class=DelegateParameter,
+        )
+        self.add_parameter(
+            "status",
+            label="Delegated parameter device status",
+            source=self.parameters[f"{channel}_lo_en"],
+            parameter_class=DelegateParameter,
+        )
 
     def on(self):
         self.device.set("status", True)
 
     def off(self):
         self.device.set("status", False)
+
+
+class QcmQrmRfAtt(InstrumentModule, Attenuator):
+    """Attenuator driver for the QCM / QRM - RF instrument
+    Set and get methods from InstrumentModule override Attenuator's
+    """
+
+    def __init__(self, name: str, parent: QcmQrm, channel: str, **kwargs):
+        super().__init__(parent, name, **kwargs)
+        self.device = parent
+
+        # get the name of the parameter for the attenuation
+        attenuation = parameters.drivers.attenuator
+        self.add_parameter(
+            attenuation,
+            label="Delegated parameter for attenuation",
+            source=self.parameters[f"{channel}_att"],
+            parameter_class=DelegateParameter,
+        )

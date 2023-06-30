@@ -7,7 +7,10 @@ This document contains the changes of the current release.
 - New AWG Interface + Sequencer, Pulsar, QCM-QRM drivers
   [#442](https://github.com/qilimanjaro-tech/qililab/pull/442)
 
-- Added new drivers for Local Oscillators inheriting from QCoDeS drivers and Local Oscillator interface.
+- Add interface for the Attenuator
+  [#432](https://github.com/qilimanjaro-tech/qililab/pull/432)
+
+- Add new drivers for Local Oscillators inheriting from QCoDeS drivers and Local Oscillator interface.
   This is part of the "Promoting Modular Autonomy" epic.
   [#437](https://github.com/qilimanjaro-tech/qililab/pull/437)
 
