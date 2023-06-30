@@ -12,6 +12,7 @@ class AWG:
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the instrument.
+
         Args:
             param (str): Parameter's name.
             value (float): Parameter's value
@@ -20,6 +21,7 @@ class AWG:
     @abstractmethod
     def get(self, param_name: str) -> Any:
         """Return value associated to a parameter on the instrument.
+
         Args:
             param (str): Parameter's name.
         Returns:
@@ -31,6 +33,7 @@ class AWG:
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> None:
         """Compiles a pulse bus schedule, generates associated QASM program and runs it.
+
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.
             nshots (int): number of shots
