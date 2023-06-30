@@ -2,8 +2,7 @@ from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.channel import InstrumentModule
 from qblox_instruments.types import ClusterType
-from qililab.drivers.instruments.qblox.cluster import Cluster
-from qililab.drivers.instruments.qblox.qcm_qrm import QcmQrm
+from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from unittest.mock import MagicMock, patch, PropertyMock
 
 NUM_SLOTS = 20
