@@ -1,5 +1,5 @@
 from qcodes.tests.instrument_mocks import DummyInstrument
-from qililab.drivers.instruments.qblox.qcm_qrm import QcmQrm
+from qililab.drivers.instruments.qblox.cluster import QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from unittest.mock import MagicMock
 
@@ -34,7 +34,7 @@ class TestQcmQrm:
         qcm_qrn_name = "test_qcm_qrm"
         sequencers_prefix = "sequencer"
         cluster = MockCluster(name="test_cluster")
-        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, address='none', slot_idx=0)
+        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
         expected_names = [f'{qcm_qrn_name}_{sequencers_prefix}{idx}' for idx in range(6)]

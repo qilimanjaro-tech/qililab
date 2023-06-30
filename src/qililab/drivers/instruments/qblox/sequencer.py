@@ -1,8 +1,10 @@
+from abc import abstractmethod
+from dataclasses import field
 from typing import Any
-
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
+from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
@@ -34,18 +36,86 @@ class AWGSequencer(Sequencer, AWG):
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
 
-        self.output_i = output_i
-        self.output_q = output_q
-        self._map_outputs()
-
-    def _map_outputs(self):
+        self.add_parameter(
+            "output_i",
+            label="Output I",
+            docstring="Sets/gets sequencer output I signal.",
+            unit="",
+            vals=vals.Numbers(),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        
+        self.add_parameter(
+            "output_q",
+            label="Output Q",
+            docstring="Sets/gets sequencer output Q signal.",
+            unit="",
+            vals=vals.Numbers(),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        
+        self.add_parameter(
+            "path_i",
+            label="Path I",
+            docstring="Sets/gets sequencer path for I signal.",
+            unit="",
+            vals=vals.Numbers(),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        
+        self.add_parameter(
+            "path_q",
+            label="Path Q",
+            docstring="Sets/gets sequencer path for Q signal.",
+            unit="",
+            vals=vals.Numbers(),
+            set_parser=int,
+            get_parser=int,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        
+        self.add_parameter(
+            "sequence",
+            label="QpySequence for the sequencer",
+            docstring="Sets/gets sequence to execute.",
+            unit="",
+            vals=vals.Anything(),
+            set_parser=Any,
+            get_parser=Any,
+            set_cmd=None,
+            get_cmd=None,
+        )
+        
+        self.set("path_i", 0)
+        self.set("path_q", 1)
+        if output_i is not None:
+            self.set("output_i", output_i)
+        if output_q is not None:
+            self.set("output_q", output_q)
+        
+    def set(self, param_name, param_value):
+        super().set(param_name, param_value)
+        if param_name == 'output_i' or param_name == 'output_q':
+            self._map_outputs(param_name)
+            
+    def _map_outputs(self, param_name):
         """Map sequencer paths with output channels."""
-        if self.output_i is not None:
-            self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
-        if self.output_q is not None:
-            self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
+        if param_name == 'output_i':
+            self.set(f"channel_map_path{self.get('path_i')}_out{self.get('output_i')}_en", True)
+        if param_name == 'output_q':
+            self.set(f"channel_map_path{self.get('path_q')}_out{self.get('output_q')}_en", True)
 
-    def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
+    def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int, min_wait_time: int):
         """Execute a PulseBusSchedule on the instrument.
         
         Args:
@@ -54,12 +124,12 @@ class AWGSequencer(Sequencer, AWG):
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        self.sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule)
-        self.sequence(self.sequence.todict())
-        self.arm_sequencer(sequencer=self.seq_idx)
-        self.start_sequencer(sequencer=self.seq_idx)
+        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins, min_wait_time)
+        self.set("sequence", sequence.todict())
+        self.arm_sequencer()
+        self.start_sequencer()
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
+    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule, nshots:int, repetition_duration:int, num_bins: int, min_wait_time: int):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
@@ -69,7 +139,7 @@ class AWGSequencer(Sequencer, AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
+        program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins, min_wait_time=min_wait_time)
 
         return QpySequence(program=program, waveforms=waveforms, weights=Weights(), acquisitions=Acquisitions())
 
@@ -101,7 +171,7 @@ class AWGSequencer(Sequencer, AWG):
 
         return waveforms
 
-    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms):
+    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, nshots:int, repetition_duration:int, num_bins: int, min_wait_time:int):
         """Generate Q1ASM program
 
         Args:
@@ -118,8 +188,8 @@ class AWGSequencer(Sequencer, AWG):
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
+        avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
+        bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -144,12 +214,24 @@ class AWGSequencer(Sequencer, AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx)
-        if self.repetition_duration is not None:
-            wait_time = self.repetition_duration - bin_loop.duration_iter
-            if wait_time > self._MIN_WAIT_TIME:
+        self._append_acquire_instruction(
+            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx, weight_regs=weight_registers
+        )
+        if repetition_duration is not None:
+            wait_time = repetition_duration - bin_loop.duration_iter
+            if wait_time > min_wait_time:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
 
         return program
+    
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
+        
+    @abstractmethod
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
+    ):
+        """Append an acquire instruction to the loop."""
