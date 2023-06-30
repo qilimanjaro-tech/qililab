@@ -34,10 +34,10 @@ class MockCluster(DummyInstrument):
 
         self.address = address
         self.submodules = {'test_submodule':MagicMock()}
-
+        
 class MockQcmQrm(DummyInstrument):
 
-    def __init__(self, parent, name, address, slot_idx, **kwargs):
+    def __init__(self, name, slot_idx, **kwargs):
         super().__init__(name, **kwargs)
 
         # Store sequencer index
@@ -121,8 +121,7 @@ class TestSequencer:
         expected_path_i = 0
         expected_path_q = 1
         
-        cluster = MockCluster(name="test_cluster_init")
-        qcm_qrm = MockQcmQrm(parent=cluster, name="test_qcm_qrm_init", address='none', slot_idx=0)
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_init", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
                                  seq_idx=seq_idx,
@@ -142,8 +141,7 @@ class TestSequencer:
         output_q = 1
         expected_waveforms_keys = [f"Gaussian(name=<{PULSE_NAME}: '{PULSE_NAME.lower()}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
                                    F"Gaussian(name=<{PULSE_NAME}: '{PULSE_NAME.lower()}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q"]
-        cluster = MockCluster(name="test_cluster_waveforms")
-        qcm_qrm = MockQcmQrm(parent=cluster, name="test_qcm_qrm_waveforms", address='none', slot_idx=0)
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_waveforms", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
                                  seq_idx=seq_idx,
@@ -161,8 +159,7 @@ class TestSequencer:
         seq_idx = 0
         output_i = 0
         output_q = 1
-        cluster = MockCluster(name="test_cluster_program")
-        qcm_qrm = MockQcmQrm(parent=cluster, name="test_qcm_qrm_program", address='none', slot_idx=0)
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_program", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
                                  seq_idx=seq_idx,
@@ -180,8 +177,7 @@ class TestSequencer:
         seq_idx = 0
         output_i = 0
         output_q = 1
-        cluster = MockCluster(name="test_cluster_acquire_instruction")
-        qcm_qrm = MockQcmQrm(parent=cluster, name="test_qcm_qrm_acquire_instruction", address='none', slot_idx=0)
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_acquire_instruction", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
                                  seq_idx=seq_idx,
@@ -201,8 +197,7 @@ class TestSequencer:
         seq_idx = 0
         output_i = 0
         output_q = 1
-        cluster = MockCluster(name="test_cluster_init_weights_registers")
-        qcm_qrm = MockQcmQrm(parent=cluster, name="test_qcm_qrm_init_weights_registers", address='none', slot_idx=0)
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_init_weights_registers", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
                                  seq_idx=seq_idx,
