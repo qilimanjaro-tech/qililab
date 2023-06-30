@@ -25,6 +25,7 @@ from .instruments import (
     Cluster,
     Device,
     Keithley2600Driver,
+    AsyncOptDriver,
     MiniCircuitsDriver,
     Pulsar,
     QbloxD5a,

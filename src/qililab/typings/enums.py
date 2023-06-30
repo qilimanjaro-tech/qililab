@@ -290,6 +290,7 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     QCMRF = "QCM-RF"
+    ASYNC_OPT = "async_opt"
 
 
 class InstrumentControllerName(str, Enum):
@@ -441,6 +442,7 @@ class Parameter(str, Enum):
     A = "a"
     B = "b"
     NORM_FACTOR = "norm_factor"
+    ITERATION = "iteration"
 
 
 class ResultName(str, Enum):
