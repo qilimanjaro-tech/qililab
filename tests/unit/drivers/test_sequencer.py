@@ -8,6 +8,7 @@ from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 from qpysequence.sequence import Sequence as QpySequence
+from textwrap import dedent
 from unittest.mock import MagicMock
 
 PULSE_SIGMAS = 4
@@ -166,26 +167,8 @@ class TestSequencer:
                                  seq_idx=seq_idx,
                                  output_i=output_i,
                                  output_q=output_q)
-        expected_program_str = """setup:
-        move             1, R0
-        wait_sync        4
-        
-    average:
-        move             0, R1
-        bin:
-            reset_ph
-            set_awg_gain     32767, 32767
-            set_ph           0
-            play             0, 1, 4
-            long_wait_1:
-                wait             996
-                
-            add              R1, 1, R1
-            nop
-            jlt              R1, 1, @bin
-        loop             R0, @average
-    stop:
-        stop"""
+        expected_program_str = 'setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n'
+        expected_program_str = repr(expected_program_str)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1, min_wait_time=1)
-        assert (repr(program) == expected_program_str)
+        assert (repr(dedent(repr(program))) == expected_program_str)
