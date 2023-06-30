@@ -7,9 +7,8 @@ from qililab.instruments.instrument import Instrument, ParameterNotFound
 from qililab.instruments.utils import InstrumentFactory
 
 from typing import Union
-from qililab.typings import InstrumentName, AsyncOptDriver
+from qililab.typings import InstrumentName
 from qililab.typings.enums import Parameter
-from qililab.experiment.experiment import Experiment
 
 
 @InstrumentFactory.register
@@ -24,17 +23,17 @@ class AsyncOpt(Instrument):
     name = InstrumentName.ASYNC_OPT
 
     @dataclass
-    class AsyncOptSettings(Instrument.InstrumentSettings):
+    class AsyncOptSettings:
         """Settings for AsyncOpt instrument."""
 
+        alias: str
         learner: None = None # not sure how to put it as a Scikit-Optimize or Adaptive learner
         data_process: None = None # not sure how to put it as a function type
         iteration: int = 0
         control_var_set_call: None = None # not sure how to put it as a function type
-        experiment: Experiment
+        experiment: None = None
 
     settings: AsyncOptSettings
-    device: AsyncOptDriver
 
     @Instrument.CheckDeviceInitialized
     @Instrument.CheckParameterValueFloatOrInt
