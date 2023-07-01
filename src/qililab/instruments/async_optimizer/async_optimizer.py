@@ -27,6 +27,7 @@ class AsyncOpt(Instrument):
         """Settings for AsyncOpt instrument."""
 
         alias: str
+        list_points: list = None
         learner: None = None # not sure how to put it as a Scikit-Optimize or Adaptive learner
         data_process: None = None # not sure how to put it as a function type
         iteration: int = -1
@@ -94,6 +95,9 @@ class AsyncOpt(Instrument):
             else:
                 last_x = self.last_x
             self.settings.learner.tell(last_x,last_y)
+            if self.settings.list_points == None:
+                self.settings.list_points = []
+            self.settings.list_points.append([last_x,last_y])
         # get next values
         # 1. ask for a new set of parameters
         self.last_x = self.settings.learner.ask(n=1)[0]
