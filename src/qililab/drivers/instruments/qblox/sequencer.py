@@ -84,18 +84,6 @@ class AWGSequencer(Sequencer, AWG):
             get_cmd=None,
         )
         
-        self.add_parameter(
-            "sequence",
-            label="QpySequence for the sequencer",
-            docstring="Sets/gets sequence to execute.",
-            unit="",
-            vals=vals.Anything(),
-            set_parser=Any,
-            get_parser=Any,
-            set_cmd=None,
-            get_cmd=None,
-        )
-        
         self.set("path_i", 0)
         self.set("path_q", 1)
         if output_i is not None:
