@@ -1,6 +1,6 @@
 import pytest
 from qblox_instruments.types import ClusterType
-from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
+from qililab.drivers.instruments.qblox.cluster import Cluster
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
