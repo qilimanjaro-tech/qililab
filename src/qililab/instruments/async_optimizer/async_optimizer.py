@@ -75,11 +75,11 @@ class AsyncOpt(Instrument):
 
         if value==0:
             print('Removed unfinished')
-            self.settings.learner.remove_unfinished()
+            # only for adaptive
+            # self.settings.learner.remove_unfinished()
         elif previous_value==value:
             print('Returned void')
             return
-    
 
         if previous_value>-1:
             # feed previous result values
@@ -90,17 +90,23 @@ class AsyncOpt(Instrument):
             # feed it
             # 4. walk back to your laptop and tell the optimizer about the outcome
             print(f'Last_x={self.last_x}; Last_y={last_y}')
-            if len(self.last_x)==1:
-                last_x = self.last_x[0]
-            else:
-                last_x = self.last_x
+            # # only for adaptive
+            # if len(self.last_x)==1:
+            #     last_x = self.last_x[0]
+            # else:
+            #     last_x = self.last_x
+            last_x = self.last_x
+            
             self.settings.learner.tell(last_x,last_y)
             if self.settings.list_points == None:
                 self.settings.list_points = []
             self.settings.list_points.append([last_x,last_y])
         # get next values
         # 1. ask for a new set of parameters
-        self.last_x = self.settings.learner.ask(n=1)[0]
+        # # only for adaptive
+        # self.last_x = self.settings.learner.ask(n=1)[0]
+        self.last_x = self.settings.learner.ask()
+        print(self.last_x )
 
         # set these values
         # 2. walk to the experiment and program in the new parameters
