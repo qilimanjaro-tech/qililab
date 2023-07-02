@@ -1,5 +1,4 @@
 """Tests for the Sequencer class."""
-import copy
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -7,8 +6,7 @@ from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
-from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.program import Loop, Program, Register
 from textwrap import dedent
 from unittest.mock import MagicMock
 
@@ -150,6 +148,7 @@ class TestSequencer:
 
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
+
         assert (len(waveforms_keys) == len(expected_waveforms_keys))
         assert (waveforms_keys == expected_waveforms_keys)
 
@@ -169,6 +168,8 @@ class TestSequencer:
         expected_program_str = repr(expected_program_str)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1, min_wait_time=1)
+
+        assert isinstance(program, Program)
         assert (repr(dedent(repr(program))) == expected_program_str)
 
     def test_append_acquire_instruction(self):
@@ -207,6 +208,5 @@ class TestSequencer:
         program = Program()
         weight_registers = Register(), Register()
         weight_regs = sequencer._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-        
-        
+
         assert (weight_regs == None)
