@@ -142,7 +142,6 @@ class TestSequencer:
         assert len(waveforms_keys) == len(expected_waveforms_keys)
         assert waveforms_keys == expected_waveforms_keys
 
-
     def test_generate_program(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_program"

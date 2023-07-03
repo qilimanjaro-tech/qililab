@@ -49,7 +49,7 @@ class QcmQrm(QcodesQcmQrm):
         super().__init__(parent, name, slot_idx)
 
         # Add sequencers
-        self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {} # resetting superclass submodules
+        self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
         self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         for seq_idx in range(6):
