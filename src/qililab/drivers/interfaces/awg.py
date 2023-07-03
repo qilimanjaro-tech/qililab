@@ -34,8 +34,7 @@ class AWG:
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        num_bins: int,
-        min_wait_time: int,
+        num_bins: int
     ) -> None:
         """Compiles a pulse bus schedule, generates associated QASM program and runs it.
 
