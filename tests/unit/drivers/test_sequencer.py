@@ -102,6 +102,9 @@ class MockSequencer(DummyInstrument):
                 set_cmd=None,
                 get_cmd=None,
             )
+            
+        def set(self):
+            return None
 
 
 class TestSequencer:
@@ -118,7 +121,8 @@ class TestSequencer:
         assert sequencer._swap is False
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
-    def test_set(self, mock_map_outputs):
+    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
+    def test_set(self, mock_super_set, mock_map_outputs):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_set"
         seq_idx = 0
@@ -127,6 +131,30 @@ class TestSequencer:
 
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
+        
+        sequencer.set("channel_map_path0_out0_en", True)
+        mock_super_set.assert_called()
+
+    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
+    def test_map_outputs(self, mock_super_set):
+        AWGSequencer.__bases__ = (MockSequencer, AWG)
+        sequencer_name = "test_sequencer_map_outputs"
+        seq_idx = 0
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_map_outputs", slot_idx=0)
+        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+
+        sequencer._map_outputs("path0", 0)
+        mock_super_set.assert_called()
+        assert (sequencer._swap is False)
+
+        sequencer._map_outputs("path0", 1)
+        mock_super_set.assert_called()
+        assert (sequencer._swap is True)
+
+        with pytest.raises(ValueError):
+            sequencer._map_outputs("path0", 10)
+            mock_super_set.assert_not_called()
+            assert (sequencer._swap is False)
 
     def test_generate_waveforms(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
