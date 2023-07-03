@@ -51,6 +51,8 @@ class AWGSequencer(Sequencer, AWG):
         elif (param_name, param_value) in swappable_conf:
             self._swap = True
             self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
+        else:
+            raise ValueError(f'The param value {param_value} cannot be matched to {param_name}')
 
     def execute(
         self,
