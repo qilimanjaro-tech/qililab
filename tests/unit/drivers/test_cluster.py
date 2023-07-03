@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from qblox_instruments.types import ClusterType
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
+
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
@@ -18,16 +20,23 @@ PULSE_DURATION = 50
 PULSE_FREQUENCY = 1e9
 PULSE_NAME = Gaussian.name
 
+
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
-    pulse = Pulse(amplitude=PULSE_AMPLITUDE, phase=PULSE_PHASE, duration=PULSE_DURATION, frequency=PULSE_FREQUENCY, pulse_shape=pulse_shape)
+    pulse = Pulse(
+        amplitude=PULSE_AMPLITUDE,
+        phase=PULSE_PHASE,
+        duration=PULSE_DURATION,
+        frequency=PULSE_FREQUENCY,
+        pulse_shape=pulse_shape,
+    )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
-class MockSequencer(DummyInstrument):
 
+class MockSequencer(DummyInstrument):
     def __init__(self, parent, name, seq_idx, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -37,8 +46,7 @@ class MockSequencer(DummyInstrument):
         self.add_parameter(
             "channel_map_path0_out0_en",
             label="Sequencer path 0 output 0 enable",
-            docstring="Sets/gets sequencer channel map enable of path 0 to "
-                      "output 0.",
+            docstring="Sets/gets sequencer channel map enable of path 0 to " "output 0.",
             unit="",
             vals=vals.Bool(),
             set_parser=bool,
@@ -50,8 +58,7 @@ class MockSequencer(DummyInstrument):
         self.add_parameter(
             "channel_map_path1_out1_en",
             label="Sequencer path 1 output 1 enable",
-            docstring="Sets/gets sequencer channel map enable of path 1 to "
-                      "output 1.",
+            docstring="Sets/gets sequencer channel map enable of path 1 to " "output 1.",
             unit="",
             vals=vals.Bool(),
             set_parser=bool,
@@ -64,8 +71,7 @@ class MockSequencer(DummyInstrument):
             self.add_parameter(
                 "channel_map_path0_out2_en",
                 label="Sequencer path 0 output 2 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 0 "
-                          "to output 2.",
+                docstring="Sets/gets sequencer channel map enable of path 0 " "to output 2.",
                 unit="",
                 vals=vals.Bool(),
                 set_parser=bool,
@@ -77,8 +83,7 @@ class MockSequencer(DummyInstrument):
             self.add_parameter(
                 "channel_map_path1_out3_en",
                 label="Sequencer path 1 output 3 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 1 "
-                          "to output 3.",
+                docstring="Sets/gets sequencer channel map enable of path 1 " "to output 3.",
                 unit="",
                 vals=vals.Bool(),
                 set_parser=bool,
@@ -87,26 +92,27 @@ class MockSequencer(DummyInstrument):
                 get_cmd=None,
             )
 
-class MockQcmQrm(DummyInstrument):
 
+class MockQcmQrm(DummyInstrument):
     def __init__(self, parent, name, slot_idx, **kwargs):
         super().__init__(name, **kwargs)
 
         # Store sequencer index
         self._slot_idx = slot_idx
-        self.submodules = {'test_submodule':MagicMock()}
+        self.submodules = {"test_submodule": MagicMock()}
         self.is_qcm_type = True
         self.is_qrm_type = False
         self.is_rf_type = False
 
-class MockCluster(DummyInstrument):
 
+class MockCluster(DummyInstrument):
     def __init__(self, name, address=None, **kwargs):
         super().__init__(name)
 
         self.address = address
         self._num_slots = NUM_SLOTS
-        self.submodules = {'test_submodule':MagicMock()}
+        self.submodules = {"test_submodule": MagicMock()}
+
 
 class TestCluster:
     """Unit tests checking the Cluster attributes and methods"""
@@ -134,18 +140,19 @@ class TestCluster:
         qcm_qrm_submodules = qcm_qrm.submodules
         qcm_qrm_idxs = list(cluster_submodules.keys())
         seq_idxs = list(qcm_qrm_submodules.keys())
-        cluster_submodules_expected_names = [f'{qcm_qrm_prefix}{idx}' for idx in range(1, NUM_SLOTS+1)]
+        cluster_submodules_expected_names = [f"{qcm_qrm_prefix}{idx}" for idx in range(1, NUM_SLOTS + 1)]
         cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
-        expected_names = [f'{sequencers_prefix}{idx}' for idx in range(6)]
+        expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
         registered_names = [qcm_qrm_submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(cluster_submodules) == NUM_SLOTS
         assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
-        assert (cluster_submodules_expected_names == cluster_registered_names)
+        assert cluster_submodules_expected_names == cluster_registered_names
 
         assert len(cluster.submodules) == NUM_SLOTS
         assert all(isinstance(qcm_qrm_submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
-        assert (expected_names == registered_names)
+        assert expected_names == registered_names
+
 
 class TestIntegration:
     """Integration tests of the QbloxQCMRF class."""
