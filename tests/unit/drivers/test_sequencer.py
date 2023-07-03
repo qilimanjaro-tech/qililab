@@ -102,7 +102,7 @@ class MockSequencer(DummyInstrument):
                 set_cmd=None,
                 get_cmd=None,
             )
-            
+
         def set(self):
             return None
 
@@ -131,7 +131,7 @@ class TestSequencer:
 
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
-        
+
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called()
 
@@ -145,16 +145,16 @@ class TestSequencer:
 
         sequencer._map_outputs("path0", 0)
         mock_super_set.assert_called()
-        assert (sequencer._swap is False)
+        assert sequencer._swap is False
 
         sequencer._map_outputs("path0", 1)
         mock_super_set.assert_called()
-        assert (sequencer._swap is True)
+        assert sequencer._swap is True
 
         with pytest.raises(ValueError):
             sequencer._map_outputs("path0", 10)
             mock_super_set.assert_not_called()
-            assert (sequencer._swap is False)
+            assert sequencer._swap is False
 
     def test_generate_waveforms(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
