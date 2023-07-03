@@ -36,11 +36,11 @@ class AWGSequencer(Sequencer, AWG):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self._swap = False
 
-    def set(self, param_name, param_value):
+    def set(self, param_name, value):
         if param_name in {"path0", "path1"}:
-            self._map_outputs(param_name, param_value)
+            self._map_outputs(param_name, value)
         else:
-            super().set(param_name, param_value)
+            super().set(param_name, value)
 
     def _map_outputs(self, param_name, param_value):
         """Map sequencer paths with output channels."""

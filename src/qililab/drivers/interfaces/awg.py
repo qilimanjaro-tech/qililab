@@ -10,7 +10,7 @@ class AWG:
     """
 
     @abstractmethod
-    def set(self, param_name: str, param_value: Any) -> None:
+    def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the instrument.
 
         Args:
