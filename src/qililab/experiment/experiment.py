@@ -285,6 +285,8 @@ class Experiment:
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
+            if parameter == Parameter.DELAY:
+                self.build_execution()
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
