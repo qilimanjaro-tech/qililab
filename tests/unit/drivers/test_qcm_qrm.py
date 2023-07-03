@@ -33,7 +33,7 @@ class TestQcmQrm:
 
     def test_init(self):
         QcmQrm.__bases__ = (MockQcmQrm,)
-        qcm_qrn_name = "test_qcm_qrm"
+        qcm_qrn_name = "qcm_qrm"
         sequencers_prefix = "sequencer"
         cluster = MockCluster(name="test_cluster")
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
