@@ -14,11 +14,8 @@ from typing import Any
 from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
+from qililab.drivers import parameters
 from qililab.drivers.interfaces import LocalOscillator
-from qililab.drivers.parameters import LO
-
-# TODO: TESTING
-pars_lo = LO()
 
 
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
@@ -33,7 +30,7 @@ class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
 
         # change the name for frequency
         self.add_parameter(
-            pars_lo.frequency,
+            parameters.lo.frequency,
             label="Delegated parameter for local oscillator frequency",
             source=self.parameters["frequency"],
             parameter_class=DelegateParameter,
