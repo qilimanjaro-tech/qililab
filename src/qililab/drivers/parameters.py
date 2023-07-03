@@ -4,11 +4,11 @@
 # TESTING this feature
 
 
-class LO:
+class lo:
     """Local Oscillator"""
 
     frequency = "lo_frequency"
 
 
-class Drivers:
-    lo = LO()
+class drivers:
+    lo = lo

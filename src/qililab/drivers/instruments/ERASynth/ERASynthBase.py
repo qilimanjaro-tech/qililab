@@ -15,10 +15,10 @@ from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
 from qililab.drivers.interfaces import LocalOscillator
-from qililab.drivers.parameters import LO
+from qililab.drivers.parameters import lo
 
 # TODO: TESTING
-pars_lo = LO()
+pars_lo = lo()
 
 
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):

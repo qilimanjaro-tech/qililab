@@ -4,10 +4,10 @@ from qcodes.instrument import DelegateParameter
 from qcodes.instrument_drivers.rohde_schwarz import RohdeSchwarzSGS100A as QcodesSGS100A
 
 from qililab.drivers.interfaces import LocalOscillator
-from qililab.drivers.parameters import LO
+from qililab.drivers.parameters import lo
 
 # TODO: TESTING
-pars_lo = LO()
+pars_lo = lo()
 
 
 class RhodeSchwarzSGS100A(QcodesSGS100A, LocalOscillator):
