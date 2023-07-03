@@ -6,7 +6,7 @@ import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
 from qpysequence.program import Program
-
+from qpysequence.sequence import Sequence as QpySequence
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
@@ -120,6 +120,8 @@ class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
     def test_init(self):
+        """Unit tests for init method"""
+
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -134,6 +136,8 @@ class TestSequencer:
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
     @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
     def test_set(self, mock_super_set, mock_map_outputs):
+        """Unit tests for set method"""
+
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -151,6 +155,8 @@ class TestSequencer:
 
     @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
     def test_map_outputs(self, mock_super_set):
+        """Unit tests for _map_outputs method"""
+
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -174,6 +180,8 @@ class TestSequencer:
             assert sequencer._swap is False
 
     def test_generate_waveforms(self, pulse_bus_schedule):
+        """Unit tests for _generate_waveforms method"""
+
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -195,7 +203,31 @@ class TestSequencer:
         assert all("index" in waveforms[key] for key in waveforms)
         assert all(isinstance(waveforms[waveforms_keys[0]]["data"], list) for key in waveforms)
 
+    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
+    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
+    def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
+        """Unit tests for _translate_pulse_bus_schedule method"""
+
+        AWGSequencer.__bases__ = (MockSequencer, AWG)
+        QcmQrm.__bases__ = (MockQcmQrm,)
+        Cluster.__bases__ = (MockCluster,)
+        sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
+        seq_idx = 0
+        cluster = Cluster(name="test_cluster_translate_pulse_bus_schedule")
+        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_translate_pulse_bus_schedule", slot_idx=0)
+        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+
+        sequence = sequencer._translate_pulse_bus_schedule(
+            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
+        )
+
+        assert isinstance(sequence, QpySequence)
+        mock_generate_waveforms.assert_called_once()
+        mock_generate_program.assert_called_once()
+
     def test_generate_program(self, pulse_bus_schedule):
+        """Unit tests for _generate_program method"""
+
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -220,6 +252,8 @@ class TestIntegration:
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
     def test_execute(self, mock_execute, pulse_bus_schedule):
+        """Unit tests for execute method"""
+
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
