@@ -5,12 +5,13 @@ from unittest.mock import MagicMock
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
-from qpysequence.program import Loop, Program, Register
+from qpysequence.program import Program
 
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
+from qililab.typings import PulseShapeName
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -130,8 +131,8 @@ class TestSequencer:
         sequencer_name = "test_sequencer_waveforms"
         seq_idx = 0
         expected_waveforms_keys = [
-            f"Gaussian(name=<{PULSE_NAME.value}: '{PULSE_NAME.value}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
-            f"Gaussian(name=<{PULSE_NAME.value}: '{PULSE_NAME.value}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
+            f"Gaussian(name=<{PulseShapeName.GAUSSIAN}: '{PULSE_NAME.value}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
+            f"Gaussian(name=<{PulseShapeName.GAUSSIAN}: '{PULSE_NAME.value}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_waveforms", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
