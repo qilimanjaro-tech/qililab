@@ -23,10 +23,6 @@ class QCodesCluster:
         self.submodules[module_name] = module
 
 
-def mock_add_submodule(self, module_name, module):
-    self.submodules[module_name] = module
-
-
 class TestCluster:
     """Unit tests checking the Cluster attributes and methods"""
 
