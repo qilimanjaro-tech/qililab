@@ -127,7 +127,7 @@ class TestSequencer:
         Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_set")
+        cluster = Cluster(name="test_cluster_init")
         qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_init", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
