@@ -10,7 +10,7 @@ class AWG:
     """
 
     @abstractmethod
-    def set(self, param_name: str, value: Any) -> None:
+    def set(self, param_name: str, param_value: Any) -> None:
         """Set parameter on the instrument.
 
         Args:
@@ -30,7 +30,12 @@ class AWG:
 
     @abstractmethod
     def execute(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int, min_wait_time:int
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
+        min_wait_time: int,
     ) -> None:
         """Compiles a pulse bus schedule, generates associated QASM program and runs it.
 
