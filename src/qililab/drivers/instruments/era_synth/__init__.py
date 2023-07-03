@@ -1,1 +1,1 @@
-from .era_synth_base import ERASynthPlus
+from .era_synth_plus import ERASynthPlus

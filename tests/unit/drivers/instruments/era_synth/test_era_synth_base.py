@@ -7,9 +7,7 @@ from qililab.drivers.interfaces import LocalOscillator
 
 
 def teardown_module():
-    """teardown any state that was previously setup with a setup_module
-    method.
-    """
+    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
     Instrument.close_all()
 
 
@@ -30,6 +28,8 @@ class MockInstrument(DummyInstrument):
 
 class TestERASynthPlus:
     def test_init(self):
+        # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
+        # to the actual instrument
         ERASynthPlus.__bases__ = (MockInstrument, LocalOscillator)
         es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
         assert isinstance(es.parameters["lo_frequency"], DelegateParameter)
@@ -37,4 +37,3 @@ class TestERASynthPlus:
         es.set("frequency", 2)
         assert es.get("lo_frequency") == 2
         assert es.lo_frequency.label == "Delegated parameter for local oscillator frequency"
-        # es.close()

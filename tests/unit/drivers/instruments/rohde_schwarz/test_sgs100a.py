@@ -7,9 +7,7 @@ from qililab.drivers.interfaces import LocalOscillator
 
 
 def teardown_module():
-    """teardown any state that was previously setup with a setup_module
-    method.
-    """
+    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
     Instrument.close_all()
 
 
@@ -30,6 +28,8 @@ class MockInstrument(DummyInstrument):
 
 class TestRhodeSchwarzSGS100A:
     def test_init(self):
+        # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
+        # to the actual instrument
         RhodeSchwarzSGS100A.__bases__ = (MockInstrument, LocalOscillator)
         rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
         assert isinstance(rs.parameters["lo_frequency"], DelegateParameter)
