@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Added new drivers for Local Oscillators inheriting from QCoDeS drivers and Local Oscillator interface.
+  This is part of the "Promoting Modular Autonomy" epic.
+  [#437](https://github.com/qilimanjaro-tech/qililab/pull/437)
+
 - Add qcodes_contrib_drivers (0.18.0) to requierements
   [#440](https://github.com/qilimanjaro-tech/qililab/pull/440)
 
