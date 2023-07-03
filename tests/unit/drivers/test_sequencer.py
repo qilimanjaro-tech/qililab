@@ -1,6 +1,7 @@
 """Tests for the Sequencer class."""
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
+
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -123,10 +124,10 @@ class TestSequencer:
         seq_idx = 0
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_set", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
-        
+
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
-        
+
     def test_generate_waveforms(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_waveforms"
