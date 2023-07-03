@@ -21,6 +21,7 @@ PULSE_FREQUENCY = 1e9
 PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 
+
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
@@ -47,6 +48,7 @@ class MockQcmQrm(DummyInstrument):
         self.is_qrm_type = False
         self.is_rf_type = False
 
+
 class MockCluster(DummyInstrument):
     def __init__(self, name, address=None, **kwargs):
         super().__init__(name)
@@ -55,6 +57,7 @@ class MockCluster(DummyInstrument):
         self._num_slots = NUM_SLOTS
         self.submodules = {"test_submodule": MagicMock()}
         self._present_at_init = MagicMock()
+
 
 class MockSequencer(DummyInstrument):
     def __init__(self, parent, name, seq_idx, **kwargs):
@@ -211,6 +214,7 @@ class TestSequencer:
         assert isinstance(program, Program)
         assert repr(dedent(repr(program))) == expected_program_str
 
+
 class TestIntegration:
     """Integration tests of the QbloxQCMRF class."""
 
@@ -223,6 +227,6 @@ class TestIntegration:
         cluster = Cluster(name="test_cluster_execute")
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name="sequencer_execute", seq_idx=0)
-        
+
         sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
         mock_execute.assert_called_once()
