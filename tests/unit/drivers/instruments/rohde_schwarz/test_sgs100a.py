@@ -1,9 +1,16 @@
 import qcodes.validators as vals
-from qcodes.instrument import DelegateParameter
+from qcodes.instrument import DelegateParameter, Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers.instruments import RhodeSchwarzSGS100A
 from qililab.drivers.interfaces import LocalOscillator
+
+
+def teardown_module():
+    """teardown any state that was previously setup with a setup_module
+    method.
+    """
+    Instrument.close_all()
 
 
 class MockInstrument(DummyInstrument):
