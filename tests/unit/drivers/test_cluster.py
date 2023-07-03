@@ -1,9 +1,7 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qblox_instruments.types import ClusterType
-from qcodes.instrument.base import InstrumentBase
-from qcodes.instrument.channel import InstrumentModule
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 
