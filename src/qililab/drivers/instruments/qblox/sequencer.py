@@ -23,7 +23,7 @@ from qililab.pulse import PulseBusSchedule, PulseShape
 class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
-    _MIN_WAIT_TIME: int = 4 
+    _MIN_WAIT_TIME: int = 4
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
@@ -54,15 +54,9 @@ class AWGSequencer(Sequencer, AWG):
             self._swap = True
             self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
         else:
-            raise ValueError(f'The param value {param_value} cannot be matched to {param_name}')
+            raise ValueError(f"The param value {param_value} cannot be matched to {param_name}")
 
-    def execute(
-        self,
-        pulse_bus_schedule: PulseBusSchedule,
-        nshots: int,
-        repetition_duration: int,
-        num_bins: int
-    ):
+    def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
 
         Args:
@@ -71,19 +65,13 @@ class AWGSequencer(Sequencer, AWG):
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        sequence = self._translate_pulse_bus_schedule(
-            pulse_bus_schedule, nshots, repetition_duration, num_bins
-        )
+        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
         self.set("sequence", sequence.todict())
         self.arm_sequencer()
         self.start_sequencer()
 
     def _translate_pulse_bus_schedule(
-        self,
-        pulse_bus_schedule: PulseBusSchedule,
-        nshots: int,
-        repetition_duration: int,
-        num_bins: int
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -102,7 +90,7 @@ class AWGSequencer(Sequencer, AWG):
             waveforms=waveforms,
             nshots=nshots,
             repetition_duration=repetition_duration,
-            num_bins=num_bins
+            num_bins=num_bins,
         )
 
         return QpySequence(program=program, waveforms=waveforms, weights=Weights(), acquisitions=Acquisitions())
@@ -141,7 +129,7 @@ class AWGSequencer(Sequencer, AWG):
         waveforms: Waveforms,
         nshots: int,
         repetition_duration: int,
-        num_bins: int
+        num_bins: int,
     ):
         """Generate Q1ASM program
 
