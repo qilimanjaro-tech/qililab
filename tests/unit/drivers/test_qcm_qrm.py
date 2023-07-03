@@ -39,7 +39,7 @@ class TestQcmQrm:
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
-        expected_names = [f"{qcm_qrn_name}_{sequencers_prefix}{idx}" for idx in range(6)]
+        expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SUBMODULES

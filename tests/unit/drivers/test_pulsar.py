@@ -15,7 +15,7 @@ class TestPulsar:
         pulsar = Pulsar(name=pulsar_name, dummy_type=PulsarType.PULSAR_QCM)
         submodules = pulsar.submodules
         seq_idxs = list(submodules.keys())
-        expected_names = [f"{pulsar_name}_{sequencers_prefix}{idx}" for idx in range(6)]
+        expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SUBMODULES
