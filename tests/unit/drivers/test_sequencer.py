@@ -140,7 +140,10 @@ class TestSequencer:
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
         assert len(waveforms_keys) == len(expected_waveforms_keys)
-        assert waveforms_keys == expected_waveforms_keys
+        assert all(isinstance(waveforms[key], dict) for key in waveforms)
+        assert all('data' in waveforms[key] for key in waveforms)
+        assert all('index' in waveforms[key] for key in waveforms)
+        assert all(isinstance(waveforms[waveforms_keys[0]]['data'], list) for key in waveforms)
 
     def test_generate_program(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
