@@ -85,7 +85,7 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
         self.device = parent
 
         # get the name of the parameter for the attenuation
-        attenuation = parameters.drivers.attenuator.attenuation
+        attenuation = parameters.drivers.att.attenuation
         self.add_parameter(
             attenuation,
             label="Delegated parameter for attenuation",

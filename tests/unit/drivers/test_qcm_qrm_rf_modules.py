@@ -2,12 +2,19 @@ from unittest.mock import patch
 
 import pytest
 import qcodes.validators as vals
-from qcodes.instrument import DelegateParameter
+from qcodes.instrument import DelegateParameter, Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers import QcmQrm, parameters
 from qililab.drivers.instruments.qblox.qcm_qrm import QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
+
+
+def teardown_module():
+    """teardown any state that was previously setup with a setup_module
+    method.
+    """
+    Instrument.close_all()
 
 
 class MockQCMQRMRF(DummyInstrument):
@@ -97,7 +104,7 @@ def test_qcmqrfatt(channel):
     BaseInstrument = MockQRMRF if channel in ["out0", "in0"] else MockQCMRF
     att_parent = BaseInstrument(f"test_qcmqrfatt_{channel}")
     att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
-    attenuation = parameters.drivers.attenuator.attenuation
+    attenuation = parameters.drivers.att.attenuation
     att_parameter = f"{channel}_att"
     assert isinstance(att.parameters[attenuation], DelegateParameter)
     # test set get with frequency and lo_frequency
@@ -109,13 +116,18 @@ def test_qcmqrfatt(channel):
 
 class TestQcmQrm:
     @pytest.mark.parametrize(
-        "qrm_qcm",
-        ["qrm", "qcm"],
+        ("qrm_qcm", "channels"),
+        [
+            ("qrm", ["out0_in0_lo_freq", "out0_in0_lo_en", "out0_att", "in0_att"]),
+            ("qcm", ["out0_lo_freq", "out0_lo_en", "out1_lo_freq", "out1_lo_en", "out0_att", "out1_att"]),
+        ],
     )
-    def test_init_rf_modules(self, qrm_qcm):
+    def test_init_rf_modules(self, qrm_qcm, channels):
         """Test init for the lo and attenuator in the rf instrument"""
         BaseInstrument = MockQRMRF if qrm_qcm == "qrm" else MockQCMRF if qrm_qcm == "qcm" else None
         QcmQrm.__bases__ = (BaseInstrument,)
         qcmqrm_rf = QcmQrm(parent=None, name=f"{qrm_qcm}_test_init_rf", slot_idx=0)
+
+        assert all((channel in qcmqrm_rf.parameters.keys() for channel in channels))
 
         qcmqrm_rf.close()

@@ -4,19 +4,18 @@
 # TESTING this feature
 
 
-class LO:
+class lo:
     """Local Oscillator"""
 
     frequency = "lo_frequency"
 
 
-class Attenuator:  # This is the same name as the interface but I felt like naming it ATT would make things complicated
+class attenuator:
+    """Attenuator"""
+
     attenuation = "attenuation"
 
 
-class Drivers:
-    lo = LO()
-    attenuator = Attenuator()
-
-
-drivers = Drivers()
+class drivers:
+    lo = lo
+    att = attenuator
