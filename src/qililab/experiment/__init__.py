@@ -1,3 +1,3 @@
 """__init__.py"""
 from .experiment import Experiment
-from .portfolio import T1, FlippingSequence, Rabi, xBellStates
+from .portfolio import T1, FlippingSequence, Rabi, T2Echo, xBellStates

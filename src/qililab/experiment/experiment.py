@@ -1,5 +1,4 @@
 """ Experiment class."""
-import itertools
 import os
 from datetime import datetime
 from pathlib import Path
@@ -8,16 +7,13 @@ from threading import Thread
 
 import numpy as np
 from qcodes.instrument import Instrument as QcodesInstrument
-from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
 from qililab.config import __version__, logger
 from qililab.constants import DATA, EXPERIMENT, EXPERIMENT_FILENAME, RESULTS_FILENAME, RUNCARD
 from qililab.execution import EXECUTION_BUILDER, ExecutionManager
-from qililab.platform import Platform
-from qililab.pulse import PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
+from qililab.platform.platform import Platform
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Instrument, Parameter
@@ -38,16 +34,8 @@ class Experiment:
     _plot: LivePlot | None
     _remote_id: int
 
-    def __init__(
-        self,
-        platform: Platform,
-        circuits: list[Circuit] | None = None,
-        pulse_schedules: list[PulseSchedule] | None = None,
-        options: ExperimentOptions = ExperimentOptions(),
-    ):
+    def __init__(self, platform: Platform, options: ExperimentOptions = ExperimentOptions()):
         self.platform = platform
-        self.circuits = circuits or []
-        self.pulse_schedules = pulse_schedules or []
         self.options = options
 
     def connect(self, manual_override=False):
@@ -59,21 +47,15 @@ class Experiment:
         self.platform.initial_setup()
 
     def build_execution(self):
-        """Translates the list of circuits to pulse sequences (if needed) and creates the ``ExecutionManager`` class."""
-        # Translate circuits into pulses if needed
-        if self.circuits:
-            translator = CircuitToPulses(platform=self.platform)
-            self.pulse_schedules = translator.translate(circuits=self.circuits)
+        """Creates the ``ExecutionManager`` class from loops."""
         # Build ``ExecutionManager`` class
-        self.execution_manager = EXECUTION_BUILDER.build(platform=self.platform, pulse_schedules=self.pulse_schedules)
+        self.execution_manager = EXECUTION_BUILDER.build_from_loops(platform=self.platform, loops=self.options.loops)
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
         * Creating the live plotting (if connection is provided).
         * Preparing the `Results` class and the `results.yml` file.
-        * Looping over all the given circuits, loops and/or software averages. And for each loop:
-            * Generating and uploading the program corresponding to the circuit.
-            * Executing the circuit.
+        * Looping over all given loops and/or software averages. And for each loop:
             * Saving the results to the ``results.yml`` file.
             * Sending the data to the live plotting (if asked to).
             * Save the results to the ``results`` attribute.
@@ -83,12 +65,14 @@ class Experiment:
         if self.platform.connection is None:
             self._plot = None
         else:
+            # TODO: Live plotting should be able to hable num_schedules=0
             self._plot = LivePlot(
                 connection=self.platform.connection,
                 loops=self.options.loops or [],
-                num_schedules=len(self.pulse_schedules),
+                num_schedules=1,
                 title=self.options.name,
             )
+
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before running an experiment.")
 
@@ -99,12 +83,7 @@ class Experiment:
 
         data_queue: Queue = Queue()  # queue used to store the experiment results
         self._asynchronous_data_handling(queue=data_queue)
-        num_schedules = self.execution_manager.num_schedules
-        for idx, _ in itertools.product(
-            tqdm(range(num_schedules), desc="Sequences", leave=False, disable=num_schedules == 1),
-            range(self.software_average),
-        ):
-            self._execute_recursive_loops(loops=self.options.loops, idx=idx, queue=data_queue)
+        self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
 
         if self.options.remote_save:
             self.remote_save_experiment()
@@ -144,21 +123,6 @@ class Experiment:
 
         thread = Thread(target=_threaded_function)
         thread.start()
-
-    def compile(self) -> list[dict]:
-        """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
-        experiment.
-
-        Returns:
-            list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
-                compiled sequences as values.
-        """
-        if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before compilation.")
-        return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
-            for schedule_idx in range(len(self.pulse_schedules))
-        ]
 
     def turn_on_instruments(self):
         """Turn on instruments."""
@@ -223,37 +187,28 @@ class Experiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: list[Loop] | None, idx: int, queue: Queue, depth=0):
+    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0, **kwargs):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
             loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         if loops is None or len(loops) == 0:
-            self.execution_manager.compile(
-                idx=idx,
-                nshots=self.hardware_average,
-                repetition_duration=self.repetition_duration,
-                num_bins=self.num_bins,
-            )
-            self.execution_manager.upload()
             result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
 
-        self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
+        self._process_loops(loops=loops, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: list[Loop], idx: int, queue: Queue, depth: int):
+    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
             loops (list[Loop]): list of Loop classes containing the info of one or more Platform element and the
             parameter values to loop over.
-            idx (int): index of the circuit to execute
             depth (int): depth of the recursive loop.
         """
         is_the_top_loop = all(loop.previous is False for loop in loops)
@@ -269,7 +224,7 @@ class Experiment:
                 )
                 self._update_parameters_from_loops(values=filtered_values, loops=filtered_loops)
                 inner_loops = list(filter(None, [loop.loop for loop in loops]))
-                self._execute_recursive_loops(idx=idx, loops=inner_loops, queue=queue, depth=depth + 1)
+                self._execute_recursive_loops(loops=inner_loops, queue=queue, depth=depth + 1)
 
     def _update_tqdm_bar(self, loops: list[Loop], values: tuple[float], pbar):
         """Updates TQDM bar"""
@@ -320,14 +275,6 @@ class Experiment:
             alias (str): alias of the element that contains the given parameter
             channel_id (int | None): channel id
         """
-        if parameter == Parameter.GATE_PARAMETER:
-            for circuit in self.circuits:
-                parameters = list(sum(circuit.get_parameters(), ()))
-                parameters[int(alias)] = value
-                circuit.set_parameters(parameters)
-            self.build_execution()
-            return
-
         if element is None:
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value, channel_id=channel_id)
         elif isinstance(element, RuncardSchema.PlatformSettings):
@@ -338,44 +285,8 @@ class Experiment:
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
-
-    def draw(
-        self,
-        real: bool = True,
-        imag: bool = True,
-        absolute: bool = False,
-        modulation: bool = True,
-        linestyle: str = "-",
-        resolution: float = 1.0,
-        idx: int = 0,
-    ):
-        """Return figure with the waveforms/envelopes sent to each bus.
-
-        You can plot any combination of the real (blue), imaginary (orange) and absolute (green) parts of the function.
-
-        Args:
-            real (bool): True to plot the real part of the function, False otherwise. Default to True.
-            imag (bool): True to plot the imaginary part of the function, False otherwise. Default to True.
-            absolute (bool): True to plot the absolute of the function, False otherwise. Default to False.
-            modulation (bool): True to plot the modulated wave form, False for only envelope. Default to True.
-            linestyle (str): lineplot ("-", "--", ":"), point plot (".", "o", "x") or any other linestyle matplotlib accepts. Defaults to "-".
-            resolution (float, optional): The resolution of the pulses in ns. Defaults to 1.0.
-
-        Returns:
-            Figure: Matplotlib figure with the waveforms sent to each bus.
-        """
-        if not hasattr(self, "execution_manager"):
-            raise ValueError("Please build the execution_manager before drawing the experiment.")
-
-        return self.execution_manager.draw(
-            real=real,
-            imag=imag,
-            absolute=absolute,
-            modulation=modulation,
-            linestyle=linestyle,
-            resolution=resolution,
-            idx=idx,
-        )
+            if parameter == Parameter.DELAY:
+                self.build_execution()
 
     def to_dict(self):
         """Convert Experiment into a dictionary.
@@ -385,47 +296,28 @@ class Experiment:
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
-            EXPERIMENT.CIRCUITS: [circuit.to_qasm() for circuit in self.circuits],
-            EXPERIMENT.PULSE_SCHEDULES: [pulse_schedule.to_dict() for pulse_schedule in self.pulse_schedules],
             EXPERIMENT.OPTIONS: self.options.to_dict(),
         }
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load experiment from dictionary.
+        """Load Experiment from dictionary.
 
         Args:
-            dictionary (dict): Dictionary description of an experiment.
+            dictionary (dict): Dictionary description of an Experiment.
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
-        circuits = (
-            [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
-            if EXPERIMENT.CIRCUITS in dictionary
-            else []
-        )
-        pulse_schedules = (
-            [PulseSchedule.from_dict(settings) for settings in dictionary[EXPERIMENT.PULSE_SCHEDULES]]
-            if EXPERIMENT.PULSE_SCHEDULES in dictionary
-            else []
-        )
+
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
         return Experiment(
             platform=platform,
-            circuits=circuits,
-            pulse_schedules=pulse_schedules,
             options=experiment_options,
         )
 
     def __str__(self):
         """String representation of an experiment."""
-        return (
-            f"Experiment {self.options.name}:\n"
-            + f"{str(self.platform)}\n"
-            + f"{str(self.circuits)}\n"
-            + f"{str(self.pulse_schedules)}\n"
-            + f"{str(self.options)}"
-        )
+        return f"Experiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
 
     @property
     def software_average(self):

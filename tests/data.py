@@ -514,6 +514,7 @@ class Galadriel:
             },
             NodeName.PORT.value: 0,
             RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
         },
         {
             RUNCARD.ID: 1,
@@ -527,6 +528,7 @@ class Galadriel:
             },
             NodeName.PORT.value: 1,
             RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
         },
         {
             RUNCARD.ID: 2,
@@ -540,6 +542,7 @@ class Galadriel:
             },
             NodeName.PORT.value: 10,
             RUNCARD.DISTORTIONS: [],
+            RUNCARD.DELAY: 0,
         },
     ]
 
