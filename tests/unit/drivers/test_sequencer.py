@@ -1,7 +1,6 @@
 """Tests for the Sequencer class."""
 from textwrap import dedent
-from unittest.mock import MagicMock
-
+from unittest.mock import MagicMock, patch
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -11,7 +10,6 @@ from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
-from qililab.typings import PulseShapeName
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -34,14 +32,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
-
-
-class MockCluster(DummyInstrument):
-    def __init__(self, name, address=None, **kwargs):
-        super().__init__(name, **kwargs)
-
-        self.address = address
-        self.submodules = {"test_submodule": MagicMock()}
 
 
 class MockQcmQrm(DummyInstrument):
@@ -124,8 +114,19 @@ class TestSequencer:
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_init", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
-        assert sequencer.get_swap_state() is False
+        assert sequencer._swap is False
 
+    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
+    def test_set(self, mock_map_outputs):
+        AWGSequencer.__bases__ = (MockSequencer, AWG)
+        sequencer_name = "test_sequencer_set"
+        seq_idx = 0
+        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_set", slot_idx=0)
+        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        
+        sequencer.set("path0", 1)
+        mock_map_outputs.assert_called()
+        
     def test_generate_waveforms(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_waveforms"
