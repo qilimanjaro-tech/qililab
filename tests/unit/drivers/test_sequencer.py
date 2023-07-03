@@ -7,6 +7,7 @@ from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
+
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
