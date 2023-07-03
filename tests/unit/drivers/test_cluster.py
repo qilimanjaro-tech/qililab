@@ -134,7 +134,7 @@ class TestCluster:
         qcm_qrn_name = "test_qcm_qrm"
         qcm_qrm_prefix = "module"
         sequencers_prefix = "sequencer"
-        cluster = Cluster(name="test_cluster")
+        cluster = Cluster(name="test_cluster_without_dummy")
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
         cluster_submodules = cluster.submodules
         qcm_qrm_submodules = qcm_qrm.submodules
@@ -158,11 +158,11 @@ class TestIntegration:
     """Integration tests of the QbloxQCMRF class."""
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
-    def test_init_without_dummy_cfg(self, mock_execute, pulse_bus_schedule):
+    def test_execute(self, mock_execute, pulse_bus_schedule):
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
-        cluster = Cluster(name="test_cluster")
+        cluster = Cluster(name="test_cluster_integration")
         submodules = cluster.submodules
         result_submodules_ids = list(submodules.keys())
 
@@ -172,5 +172,4 @@ class TestIntegration:
             for sequencer_key in sequencers.keys():
                 sequencer = sequencers[sequencer_key]
                 sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
-
-        mock_execute.assert_called()
+                mock_execute.assert_called()
