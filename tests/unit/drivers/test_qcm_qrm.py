@@ -28,7 +28,7 @@ class MockCluster(DummyInstrument):
 
 class TestQcmQrm:
     """Unit tests checking the QililabQcmQrm attributes and methods"""
-    
+
     def test_init(self):
         QcmQrm.__bases__ = (MockQcmQrm,)
         qcm_qrn_name = "test_qcm_qrm"

@@ -126,6 +126,15 @@ class AWGSequencer(Sequencer, AWG):
 
         return waveforms
 
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
+
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, weight_regs: tuple[Register, Register]
+    ):
+        """Append an acquire instruction to the loop."""
+
     def _generate_program(
         self,
         pulse_bus_schedule: PulseBusSchedule,
@@ -149,6 +158,9 @@ class AWGSequencer(Sequencer, AWG):
 
         # Define program's blocks
         program = Program()
+        # Create registers with 0 and 1 (necessary for qblox)
+        weight_registers = Register(), Register()
+        self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
@@ -175,6 +187,9 @@ class AWGSequencer(Sequencer, AWG):
                     wait_time=int(wait_time),
                 )
             )
+        self._append_acquire_instruction(
+            loop=bin_loop, bin_index=bin_loop.counter_register, weight_regs=weight_registers
+        )
         if repetition_duration is not None:
             wait_time = repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
