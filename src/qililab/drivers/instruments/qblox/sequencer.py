@@ -23,6 +23,8 @@ from qililab.pulse import PulseBusSchedule, PulseShape
 class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
+    _MIN_WAIT_TIME: int = 4 
+
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
 
@@ -59,8 +61,7 @@ class AWGSequencer(Sequencer, AWG):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        num_bins: int,
-        min_wait_time: int,
+        num_bins: int
     ):
         """Execute a PulseBusSchedule on the instrument.
 
@@ -69,10 +70,9 @@ class AWGSequencer(Sequencer, AWG):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
-            min_wait_time (int): minimum wait time
         """
         sequence = self._translate_pulse_bus_schedule(
-            pulse_bus_schedule, nshots, repetition_duration, num_bins, min_wait_time
+            pulse_bus_schedule, nshots, repetition_duration, num_bins
         )
         self.set("sequence", sequence.todict())
         self.arm_sequencer()
@@ -83,8 +83,7 @@ class AWGSequencer(Sequencer, AWG):
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
-        num_bins: int,
-        min_wait_time: int,
+        num_bins: int
     ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
@@ -93,7 +92,6 @@ class AWGSequencer(Sequencer, AWG):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
-            min_wait_time (int): minimum wait time
 
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
@@ -104,8 +102,7 @@ class AWGSequencer(Sequencer, AWG):
             waveforms=waveforms,
             nshots=nshots,
             repetition_duration=repetition_duration,
-            num_bins=num_bins,
-            min_wait_time=min_wait_time,
+            num_bins=num_bins
         )
 
         return QpySequence(program=program, waveforms=waveforms, weights=Weights(), acquisitions=Acquisitions())
@@ -144,8 +141,7 @@ class AWGSequencer(Sequencer, AWG):
         waveforms: Waveforms,
         nshots: int,
         repetition_duration: int,
-        num_bins: int,
-        min_wait_time: int,
+        num_bins: int
     ):
         """Generate Q1ASM program
 
@@ -155,7 +151,6 @@ class AWGSequencer(Sequencer, AWG):
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
-            min_wait_time (int): minimum wait time
 
         Returns:
             Program: Q1ASM program.
@@ -197,7 +192,7 @@ class AWGSequencer(Sequencer, AWG):
         )
         if repetition_duration is not None:
             wait_time = repetition_duration - bin_loop.duration_iter
-            if wait_time > min_wait_time:
+            if wait_time > self._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
