@@ -33,6 +33,14 @@ class AWGSequencer(Sequencer, AWG):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self._swap = False
 
+    def get_swap_state(self):
+        """Returns swap state.
+
+        Return:
+            _swap (Boolean): state for waveforms to be swapped or not.
+        """
+        return self._swap
+
     def set(self, param_name, value):
         if param_name in {"path0", "path1"}:
             self._map_outputs(param_name, value)
@@ -112,7 +120,7 @@ class AWGSequencer(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if (self.path_i, self.path_q) == (1, 0):
+                if self._swap:
                     pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
@@ -141,9 +149,6 @@ class AWGSequencer(Sequencer, AWG):
 
         # Define program's blocks
         program = Program()
-        # Create registers with 0 and 1 (necessary for qblox)
-        weight_registers = Register(), Register()
-        self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
         avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
         bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
@@ -170,9 +175,6 @@ class AWGSequencer(Sequencer, AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(
-            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx, weight_regs=weight_registers
-        )
         if repetition_duration is not None:
             wait_time = repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
@@ -181,12 +183,3 @@ class AWGSequencer(Sequencer, AWG):
         logger.info("Q1ASM program: \n %s", repr(program))  # pylint: disable=protected-access
 
         return program
-
-    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
-        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
-        setup block of the `program`."""
-
-    def _append_acquire_instruction(
-        self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
-    ):
-        """Append an acquire instruction to the loop."""

@@ -49,10 +49,10 @@ class MockSequencer(DummyInstrument):
 
     def __init__(self, parent, name, seq_idx, **kwargs):
         super().__init__(name, **kwargs)
-        
+
         # Store sequencer index
         self.seq_idx = seq_idx
-        
+
         self.add_parameter(
             "channel_map_path0_out0_en",
             label="Sequencer path 0 output 0 enable",
@@ -114,37 +114,24 @@ class TestSequencer:
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
-        expected_output_i = 0
-        expected_output_q = 1
-        expected_path_i = 0
-        expected_path_q = 1
-        
+
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_init", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
-                                 seq_idx=seq_idx,
-                                 output_i=expected_output_i,
-                                 output_q=expected_output_q)
-        
-        assert (expected_output_i == sequencer.get('output_i'))
-        assert (expected_output_q == sequencer.get('output_q'))
-        assert (expected_path_i == sequencer.get('path_i'))
-        assert (expected_path_q == sequencer.get('path_q'))
-        
+                                 seq_idx=seq_idx)
+
+        assert (sequencer.get_swap_state() is False)
+
     def test_generate_waveforms(self, pulse_bus_schedule):
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_waveforms"
         seq_idx = 0
-        output_i = 0
-        output_q = 1
         expected_waveforms_keys = [f"Gaussian(name=<{PULSE_NAME}: '{PULSE_NAME.lower()}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
                                    F"Gaussian(name=<{PULSE_NAME}: '{PULSE_NAME.lower()}'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q"]
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_waveforms", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
-                                 seq_idx=seq_idx,
-                                 output_i=output_i,
-                                 output_q=output_q)
+                                 seq_idx=seq_idx)
 
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
@@ -156,57 +143,14 @@ class TestSequencer:
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         sequencer_name = "test_sequencer_program"
         seq_idx = 0
-        output_i = 0
-        output_q = 1
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_program", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm,
                                  name=sequencer_name,
-                                 seq_idx=seq_idx,
-                                 output_i=output_i,
-                                 output_q=output_q)
+                                 seq_idx=seq_idx)
         expected_program_str = 'setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n'
         expected_program_str = repr(expected_program_str)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
-        program = sequencer._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1, min_wait_time=1)
+        program = sequencer._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1)
 
         assert isinstance(program, Program)
         assert (repr(dedent(repr(program))) == expected_program_str)
-
-    def test_append_acquire_instruction(self):
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        sequencer_name = "test_sequencer_acquire_instruction"
-        seq_idx = 0
-        output_i = 0
-        output_q = 1
-        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_acquire_instruction", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm,
-                                 name=sequencer_name,
-                                 seq_idx=seq_idx,
-                                 output_i=output_i,
-                                 output_q=output_q)
-        weight_registers = Register(), Register()
-        bin_loop = Loop(name="bin", begin=0, end=1, step=1)
-        acquire_instruction  = sequencer._append_acquire_instruction(
-            loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=seq_idx, weight_regs=weight_registers
-        )
-        
-        assert (acquire_instruction == None)
-        
-    def test_init_weights_registers(self):
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        sequencer_name = "test_sequencer_init_weights_registers"
-        seq_idx = 0
-        output_i = 0
-        output_q = 1
-        qcm_qrm = MockQcmQrm(name="test_qcm_qrm_init_weights_registers", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm,
-                                 name=sequencer_name,
-                                 seq_idx=seq_idx,
-                                 output_i=output_i,
-                                 output_q=output_q)
-        
-        program = Program()
-        weight_registers = Register(), Register()
-        weight_regs = sequencer._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-
-        assert (weight_regs == None)
