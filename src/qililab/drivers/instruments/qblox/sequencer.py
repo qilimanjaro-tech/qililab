@@ -206,7 +206,6 @@ class AWGSequencer(Sequencer, AWG):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
         setup block of the `program`."""
 
-    @abstractmethod
     def _append_acquire_instruction(
         self, loop: Loop, bin_index: Register | int, sequencer_id: int, weight_regs: tuple[Register, Register]
     ):
