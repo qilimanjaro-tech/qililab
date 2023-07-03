@@ -131,8 +131,8 @@ class TestSequencer:
         sequencer_name = "test_sequencer_waveforms"
         seq_idx = 0
         expected_waveforms_keys = [
-            f"Gaussian(name=<gaussian: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
-            f"Gaussian(name=<gaussian: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
+            f"Gaussian(name=<{PulseShapeName.GAUSSIAN}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
+            f"Gaussian(name=<{PulseShapeName.GAUSSIAN}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
         qcm_qrm = MockQcmQrm(name="test_qcm_qrm_waveforms", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
