@@ -205,7 +205,7 @@ class TestSequencer:
         assert all("data" in waveforms[key] for key in waveforms)
         assert all("index" in waveforms[key] for key in waveforms)
         assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
-        assert (len(set(waveform_i))!=1)
+        assert len(set(waveform_i)) != 1
 
         # testing with swapping
         sequencer.set("path0", 1)
@@ -217,8 +217,7 @@ class TestSequencer:
         assert all("data" in waveforms[key] for key in waveforms)
         assert all("index" in waveforms[key] for key in waveforms)
         assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
-        assert (len(set(waveform_i))==1)
-
+        assert len(set(waveform_i)) == 1
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
