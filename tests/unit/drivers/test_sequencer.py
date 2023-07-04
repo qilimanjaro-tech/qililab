@@ -286,7 +286,7 @@ class TestSequencer:
 
         assert isinstance(program, Program)
         assert repr(dedent(repr(program))) == expected_program_str
-        
+
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
     def test_execute(self, mock_execute, pulse_bus_schedule):
         """Unit tests for execute method"""
