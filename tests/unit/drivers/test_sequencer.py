@@ -196,13 +196,29 @@ class TestSequencer:
         qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_waveforms", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
+        # testing without swapping
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
+        waveform_i = waveforms[waveforms_keys[0]]["data"]
         assert len(waveforms_keys) == len(expected_waveforms_keys)
         assert all(isinstance(waveforms[key], dict) for key in waveforms)
         assert all("data" in waveforms[key] for key in waveforms)
         assert all("index" in waveforms[key] for key in waveforms)
-        assert all(isinstance(waveforms[waveforms_keys[0]]["data"], list) for key in waveforms)
+        assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
+        assert (len(set(waveform_i))!=1)
+
+        # testing with swapping
+        sequencer.set("path0", 1)
+        waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
+        waveforms_keys = list(waveforms.keys())
+        waveform_i = waveforms[waveforms_keys[0]]["data"]
+        assert len(waveforms_keys) == len(expected_waveforms_keys)
+        assert all(isinstance(waveforms[key], dict) for key in waveforms)
+        assert all("data" in waveforms[key] for key in waveforms)
+        assert all("index" in waveforms[key] for key in waveforms)
+        assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
+        assert (len(set(waveform_i))==1)
+
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
