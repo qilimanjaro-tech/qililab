@@ -62,8 +62,8 @@ class AWGSequencer(Sequencer, AWG):
         """
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
         self.set("sequence", sequence.todict())
-        self.arm_sequencer()
-        self.start_sequencer()
+        self._parent.arm_sequencer()
+        self._parent.start_sequencer()
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
@@ -165,6 +165,7 @@ class AWGSequencer(Sequencer, AWG):
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
+            print("Pulse label: ", pulse_event.pulse.label())
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())

@@ -5,8 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.weights import Weights
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
@@ -64,6 +66,12 @@ class MockQcmQrm(DummyInstrument):
         self.is_qrm_type = False
         self.is_rf_type = False
 
+    def arm_sequencer(self):
+        return None
+
+    def start_sequencer(self):
+        return None
+
 
 class MockCluster(DummyInstrument):
     def __init__(self, name, address=None, **kwargs):
@@ -81,7 +89,7 @@ class MockSequencer(DummyInstrument):
 
         # Store sequencer index
         self.seq_idx = seq_idx
-
+        self._parent = parent
         self.add_parameter(
             "channel_map_path0_out0_en",
             label="Sequencer path 0 output 0 enable",
@@ -287,8 +295,7 @@ class TestSequencer:
         assert isinstance(program, Program)
         assert repr(dedent(repr(program))) == expected_program_str
 
-    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
-    def test_execute(self, mock_execute, pulse_bus_schedule):
+    def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""
 
         QcmQrm.__bases__ = (MockQcmQrm,)
@@ -299,5 +306,16 @@ class TestSequencer:
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name="sequencer_execute", seq_idx=0)
 
-        sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
-        mock_execute.assert_called_once()
+        with patch(
+            "qililab.drivers.instruments.qblox.sequencer.AWGSequencer._translate_pulse_bus_schedule"
+        ) as mock_translate:
+            with patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.set") as mock_set:
+                with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.arm_sequencer") as mock_arm_sequencer:
+                    with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.start_sequencer") as mock_start_sequencer:
+                        sequencer.execute(
+                            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
+                        )
+                        mock_set.assert_called_once()
+                        mock_translate.assert_called_once()
+                        mock_arm_sequencer.assert_called_once()
+                        mock_start_sequencer.assert_called_once()
