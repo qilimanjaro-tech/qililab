@@ -88,7 +88,9 @@ class AWGSequencer(Sequencer, AWG):
             num_bins=num_bins,
         )
 
-        return QpySequence(program=program, waveforms=waveforms, weights=Weights().to_dict(), acquisitions=Acquisitions())
+        return QpySequence(
+            program=program, waveforms=waveforms, weights=Weights().to_dict(), acquisitions=Acquisitions()
+        )
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
