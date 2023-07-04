@@ -21,11 +21,36 @@ PULSE_DURATION = 50
 PULSE_FREQUENCY = 1e9
 PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
+START_TIME_DEFAULT = 0
+START_TIME_NON_ZERO = 4
+
+
+def get_pulse_bus_schedule(start_time):
+    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
+    pulse = Pulse(
+        amplitude=PULSE_AMPLITUDE,
+        phase=PULSE_PHASE,
+        duration=PULSE_DURATION,
+        frequency=PULSE_FREQUENCY,
+        pulse_shape=pulse_shape,
+    )
+    pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+
+    return PulseBusSchedule(timeline=[pulse_event], port=0)
+
+
+expected_program_str_0 = repr(
+    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
+)
+expected_program_str_1 = repr(
+    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        long_wait_2:\n            wait             4\n\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_3:\n            wait             992\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
+)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
+
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=PULSE_AMPLITUDE,
@@ -36,22 +61,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
-
-
-@pytest.fixture(name="pulse_bus_schedule_timeline_no_zero")
-def fixture_pulse_bus_schedule_timeline_no_zero() -> PulseBusSchedule:
-    """Return PulseBusSchedule instance."""
-    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
-    pulse = Pulse(
-        amplitude=PULSE_AMPLITUDE,
-        phase=PULSE_PHASE,
-        duration=PULSE_DURATION,
-        frequency=PULSE_FREQUENCY,
-        pulse_shape=pulse_shape,
-    )
-    pulse_event = PulseEvent(pulse=pulse, start_time=4)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
-
 
 class MockQcmQrm(DummyInstrument):
     def __init__(self, parent, name, slot_idx, **kwargs):
@@ -262,36 +271,27 @@ class TestSequencer:
         mock_generate_waveforms.assert_called_once()
         mock_generate_program.assert_called_once()
 
-    def test_generate_program(self, pulse_bus_schedule, pulse_bus_schedule_timeline_no_zero):
+    @pytest.mark.parametrize(
+        "pulse_bus_schedule, name, expected_program_str",
+        [
+            (get_pulse_bus_schedule(START_TIME_DEFAULT), "0", expected_program_str_0),
+            (get_pulse_bus_schedule(START_TIME_NON_ZERO), "1", expected_program_str_1),
+        ],
+    )
+    def test_generate_program(self, pulse_bus_schedule, name, expected_program_str):
         """Unit tests for _generate_program method"""
 
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
-        sequencer_name = "test_sequencer_program"
+        sequencer_name = f"test_sequencer_program{name}"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_program")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_program", slot_idx=0)
+        cluster = Cluster(name=f"test_cluster_program{name}")
+        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_program{name}", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
-        expected_program_str = "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-        expected_program_str = repr(expected_program_str)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
-        )
-
-        assert isinstance(program, Program)
-        assert repr(dedent(repr(program))) == expected_program_str
-
-        expected_program_str = "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_2:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-        expected_program_str = repr(expected_program_str)
-        waveforms = sequencer._generate_waveforms(pulse_bus_schedule_timeline_no_zero)
-        program = sequencer._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule_timeline_no_zero,
-            waveforms=waveforms,
-            nshots=1,
-            repetition_duration=1000,
-            num_bins=1,
         )
 
         assert isinstance(program, Program)
