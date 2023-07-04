@@ -62,6 +62,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
+
 class MockQcmQrm(DummyInstrument):
     def __init__(self, parent, name, slot_idx, **kwargs):
         super().__init__(name, **kwargs)
