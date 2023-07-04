@@ -186,48 +186,51 @@ class TestSequencer:
         mock_super_set.assert_called()
 
     @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
-    def test_map_outputs(self, mock_super_set):
+    @pytest.mark.parametrize("path0", [0, 1, 10])
+    def test_map_outputs(self, mock_super_set, path0):
         """Unit tests for _map_outputs method"""
 
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
-        sequencer_name = "test_sequencer_map_outputs"
+        sequencer_name = f"test_sequencer_map_outputs{path0}"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_map_outputs")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_map_outputs", slot_idx=0)
+        cluster = Cluster(name=f"test_cluster_map_outputs{path0}")
+        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_map_outputs{path0}", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
-        sequencer._map_outputs("path0", 0)
-        mock_super_set.assert_called()
-        assert sequencer._swap is False
+        if path0 == 10:
+            with pytest.raises(ValueError):
+                sequencer._map_outputs("path0", path0)
+                mock_super_set.assert_not_called()
+                assert sequencer._swap is False
 
-        sequencer._map_outputs("path0", 1)
-        mock_super_set.assert_called()
-        assert sequencer._swap is True
+        else:
+            sequencer._map_outputs("path0", path0)
+            mock_super_set.assert_called()
+            if path0 == 0:
+                assert sequencer._swap is False
+            elif path0 == 1:
+                assert sequencer._swap is True
 
-        with pytest.raises(ValueError):
-            sequencer._map_outputs("path0", 10)
-            mock_super_set.assert_not_called()
-            assert sequencer._swap is False
-
-    def test_generate_waveforms(self, pulse_bus_schedule):
+    @pytest.mark.parametrize("path0", [0, 1])
+    def test_generate_waveforms(self, pulse_bus_schedule, path0):
         """Unit tests for _generate_waveforms method"""
 
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
-        sequencer_name = "test_sequencer_waveforms"
+        sequencer_name = f"test_sequencer_waveforms{path0}"
         seq_idx = 0
         expected_waveforms_keys = [
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
-        cluster = Cluster(name="test_cluster_waveforms")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_waveforms", slot_idx=0)
+        cluster = Cluster(name=f"test_cluster_waveforms{path0}")
+        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_waveforms{path0}", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
-        # testing without swapping
+        sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
         waveform_i = waveforms[waveforms_keys[0]]["data"]
@@ -236,19 +239,10 @@ class TestSequencer:
         assert all("data" in waveforms[key] for key in waveforms)
         assert all("index" in waveforms[key] for key in waveforms)
         assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
-        assert len(set(waveform_i)) != 1
-
-        # testing with swapping
-        sequencer.set("path0", 1)
-        waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
-        waveforms_keys = list(waveforms.keys())
-        waveform_i = waveforms[waveforms_keys[0]]["data"]
-        assert len(waveforms_keys) == len(expected_waveforms_keys)
-        assert all(isinstance(waveforms[key], dict) for key in waveforms)
-        assert all("data" in waveforms[key] for key in waveforms)
-        assert all("index" in waveforms[key] for key in waveforms)
-        assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
-        assert len(set(waveform_i)) == 1
+        if path0 % 2 != 0:
+            assert len(set(waveform_i)) == 1
+        else:
+            assert len(set(waveform_i)) > 1
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
