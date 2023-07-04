@@ -5,10 +5,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
-from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
-from qpysequence.weights import Weights
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
@@ -51,7 +49,7 @@ def fixture_pulse_bus_schedule_timeline_no_zero() -> PulseBusSchedule:
         frequency=PULSE_FREQUENCY,
         pulse_shape=pulse_shape,
     )
-    pulse_event = PulseEvent(pulse=pulse, start_time=1)
+    pulse_event = PulseEvent(pulse=pulse, start_time=4)
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
@@ -289,7 +287,11 @@ class TestSequencer:
         expected_program_str = repr(expected_program_str)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule_timeline_no_zero)
         program = sequencer._generate_program(
-            pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
+            pulse_bus_schedule=pulse_bus_schedule_timeline_no_zero,
+            waveforms=waveforms,
+            nshots=1,
+            repetition_duration=1000,
+            num_bins=1,
         )
 
         assert isinstance(program, Program)
