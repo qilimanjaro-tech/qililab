@@ -135,7 +135,7 @@ class TestCluster:
         qcm_qrm_prefix = "module"
         sequencers_prefix = "sequencer"
         cluster = Cluster(name="test_cluster_without_dummy")
-        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrm_name, slot_idx=0)
         cluster_submodules = cluster.submodules
         qcm_qrm_submodules = qcm_qrm.submodules
         qcm_qrm_idxs = list(cluster_submodules.keys())
