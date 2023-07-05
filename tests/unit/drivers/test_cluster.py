@@ -164,3 +164,23 @@ class TestCluster:
         assert len(qcm_qrm_submodules) == NUM_SEQUENCERS
         assert all(isinstance(qcm_qrm_submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
         assert expected_names == registered_names
+        
+class TestQcmQrm:
+    """Unit tests checking the QililabQcmQrm attributes and methods"""
+
+    def test_init(self):
+        """Test init method for QcmQrm"""
+
+        QcmQrm.__bases__ = (MockQcmQrm,)
+        qcm_qrn_name = "qcm_qrm"
+        sequencers_prefix = "sequencer"
+        cluster = MockCluster(name="test_cluster")
+        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
+        submodules = qcm_qrm.submodules
+        seq_idxs = list(submodules.keys())
+        expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
+        registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
+
+        assert len(submodules) == NUM_SEQUENCERS
+        assert all(isinstance(submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
+        assert expected_names == registered_names
