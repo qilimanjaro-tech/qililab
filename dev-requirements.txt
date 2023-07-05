@@ -5,7 +5,7 @@ commitizen==2.40.0
 coverage==6.5.0
 cryptography==39.0.1
 flake8==5.0.4
-interrogate==1.5.0
+interrogate[png]==1.5.0
 ipykernel==6.16.0
 jupyter-client==7.4.4
 jupyter-core==4.11.2
