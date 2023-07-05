@@ -162,9 +162,7 @@ class TestSequencer:
 
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_init")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_init", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         assert sequencer._swap is False
 
@@ -175,9 +173,7 @@ class TestSequencer:
 
         sequencer_name = "test_sequencer_set"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_set")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_set", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
@@ -192,9 +188,7 @@ class TestSequencer:
 
         sequencer_name = f"test_sequencer_map_outputs{path0}"
         seq_idx = 0
-        cluster = Cluster(name=f"test_cluster_map_outputs{path0}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_map_outputs{path0}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         if path0 == 10:
             with pytest.raises(ValueError):
@@ -220,9 +214,7 @@ class TestSequencer:
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
-        cluster = Cluster(name=f"test_cluster_waveforms{path0}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_waveforms{path0}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
@@ -245,9 +237,7 @@ class TestSequencer:
 
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_translate_pulse_bus_schedule")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_translate_pulse_bus_schedule", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequence = sequencer._translate_pulse_bus_schedule(
             pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
@@ -269,9 +259,7 @@ class TestSequencer:
 
         sequencer_name = f"test_sequencer_program{name}"
         seq_idx = 0
-        cluster = Cluster(name=f"test_cluster_program{name}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_program{name}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
