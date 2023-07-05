@@ -185,7 +185,7 @@ class TestSequencer:
         sequencer_name = "test_sequencer_set_qblox_parameter"
         seq_idx = 0
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-                
+ 
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
 
