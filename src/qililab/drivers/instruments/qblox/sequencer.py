@@ -49,7 +49,7 @@ class AWGSequencer(Sequencer, AWG):
             self._swap = True
             self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
         else:
-            raise ValueError(f"The param value {param_value} cannot be matched to {param_name}")
+            raise ValueError(f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}.")
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
@@ -89,7 +89,7 @@ class AWGSequencer(Sequencer, AWG):
         )
 
         return QpySequence(
-            program=program, waveforms=waveforms, weights=Weights().to_dict(), acquisitions=Acquisitions()
+            program=program, waveforms=waveforms, weights={}, acquisitions=Acquisitions()
         )
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
