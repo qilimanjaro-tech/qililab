@@ -186,8 +186,7 @@ class TestQcmQrm:
 
         qcm_qrn_name = "qcm_qrm"
         sequencers_prefix = "sequencer"
-        cluster = MockCluster(name="test_cluster")
-        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=MagicMock(), name=qcm_qrn_name, slot_idx=0)
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
         expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
