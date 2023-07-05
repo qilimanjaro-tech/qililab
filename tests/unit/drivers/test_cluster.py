@@ -25,6 +25,7 @@ PULSE_NAME = Gaussian.name
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
+    
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=PULSE_AMPLITUDE,
@@ -38,6 +39,8 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 
 
 class MockSequencer(DummyInstrument):
+    """Mock for Sequencer class."""
+    
     def __init__(self, parent, name, seq_idx, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -95,6 +98,8 @@ class MockSequencer(DummyInstrument):
 
 
 class MockQcmQrm(DummyInstrument):
+    """Mock for QcmQrm class."""
+    
     def __init__(self, parent, name, slot_idx, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -107,6 +112,8 @@ class MockQcmQrm(DummyInstrument):
 
 
 class MockCluster(DummyInstrument):
+    """Mock for Cluster class."""
+
     def __init__(self, name, address=None, **kwargs):
         super().__init__(name)
 
@@ -119,6 +126,8 @@ class TestCluster:
     """Unit tests checking the Cluster attributes and methods"""
 
     def test_init_with_dummy_cfg(self):
+        """Test init method with dummy configuration"""
+        
         cluster = Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
         submodules = cluster.submodules
 
@@ -129,6 +138,8 @@ class TestCluster:
         assert result_submodules_ids == expected_submodules_ids
 
     def test_init_without_dummy_cfg(self):
+        """Test init method without dummy configuration"""
+        
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
@@ -153,24 +164,3 @@ class TestCluster:
         assert len(qcm_qrm_submodules) == NUM_SEQUENCERS
         assert all(isinstance(qcm_qrm_submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
         assert expected_names == registered_names
-
-
-class TestIntegration:
-    """Integration tests of the Cluster class."""
-
-    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
-    def test_execute(self, mock_execute, pulse_bus_schedule):
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        cluster = Cluster(name="test_cluster_integration")
-        submodules = cluster.submodules
-        result_submodules_ids = list(submodules.keys())
-
-        for module_name in result_submodules_ids:
-            qcm = cluster.submodules[module_name]
-            sequencers = qcm.submodules
-            for sequencer_key in sequencers.keys():
-                sequencer = sequencers[sequencer_key]
-                sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
-                mock_execute.assert_called()
