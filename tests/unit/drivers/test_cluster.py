@@ -125,7 +125,7 @@ class TestCluster:
         result_submodules_ids = list(submodules.keys())
         assert len(result_submodules_ids) == len(expected_submodules_ids)
         assert all(isinstance(submodules[id], QcmQrm) for id in result_submodules_ids)
-        assert all([expected_id in result_submodules_ids for expected_id in expected_submodules_ids])
+        assert result_submodules_idx == expected_submodules_ids
 
     def test_init_without_dummy_cfg(self):
         QcmQrm.__bases__ = (MockQcmQrm,)
