@@ -32,12 +32,14 @@ class Bus:
             system_control (SystemControl): System control used to control and readout the qubits of the bus.
             port (int): Chip's port where bus is connected.
             distortions (list[PulseDistotion]): List of the distortions to apply to the Bus.
+            delay (int): Bus delay
         """
 
         system_control: SystemControl
         port: int
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
+        delay: int
 
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             if isinstance(self.system_control, dict):
@@ -102,6 +104,15 @@ class Bus:
         return self.settings.distortions
 
     @property
+    def delay(self):
+        """Bus 'delay' property.
+
+        Returns:
+            int: settings.delay.
+        """
+        return self.settings.delay
+
+    @property
     def category(self):
         """Bus 'category' property.
 
@@ -143,19 +154,23 @@ class Bus:
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
+            RUNCARD.DELAY: self.delay,
         }
 
-    def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
+    def set_parameter(self, parameter: Parameter, value: int | float | str | bool, channel_id: int | None = None):
         """_summary_
 
         Args:
             parameter (Parameter): parameter settings of the instrument to update
-            value (float | str | bool): value to update
+            value (int | float | str | bool): value to update
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
-        try:
-            self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
-        except ParameterNotFound as error:
-            raise ParameterNotFound(
-                f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
-            ) from error
+        if parameter == Parameter.DELAY:
+            self.settings.delay = int(value)
+        else:
+            try:
+                self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+            except ParameterNotFound as error:
+                raise ParameterNotFound(
+                    f"No parameter with name {parameter.value} was found in the bus with alias {self.alias}"
+                ) from error

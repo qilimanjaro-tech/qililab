@@ -42,6 +42,7 @@ class RUNCARD:
     VOLTAGE_SOURCE = "voltage_source"
     CURRENT_SOURCE = "current_source"
     DISTORTIONS = "distortions"
+    DELAY = "delay"
 
 
 class PLATFORM:

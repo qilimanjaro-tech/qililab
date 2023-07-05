@@ -1,18 +1,17 @@
-from typing import Any
-
 import numpy as np
-import qblox_instruments.native.generic_func as gf
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers import AWG, Digitiser, QililabPulsar, QililabQcmQrm
+from qililab.drivers.interfaces import AWG, Digitiser
 from qililab.pulse import PulseBusSchedule, PulseShape
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
@@ -20,15 +19,11 @@ from qililab.result.qblox_results.qblox_result import QbloxResult
 class AWGSequencer(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
-    def __init__(
-        self,
-        parent: QililabPulsar | QililabQcmQrm,
-        name: str,
-        seq_idx: int,
-        output_i: int | None = None,
-        output_q: int | None = None,
-    ):
+    _MIN_WAIT_TIME: int = 4
+
+    def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
+
         Args:
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
@@ -37,61 +32,73 @@ class AWGSequencer(Sequencer, AWG):
             output_q (int): output for q signal
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.device = parent
-        self.output_i = output_i
-        self.output_q = output_q
-        self._map_outputs()
+        self._swap = False
 
-    def _map_outputs(self):
+    def set(self, param_name, value):
+        if param_name in {"path0", "path1"}:
+            self._map_outputs(param_name, value)
+        else:
+            super().set(param_name, value)
+
+    def _map_outputs(self, param_name, param_value):
         """Map sequencer paths with output channels."""
-        if self.output_i is not None:
-            self.set(f"channel_map_path{self.path_i}_out{self.output_i}_en", True)
-        if self.output_q is not None:
-            self.set(f"channel_map_path{self.path_q}_out{self.output_q}_en", True)
+        allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
+        swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
+        if (param_name, param_value) in allowed_conf:
+            self.set(f"channel_map_{param_name}_out{param_value}_en", True)
+        elif (param_name, param_value) in swappable_conf:
+            self._swap = True
+            self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
+        else:
+            raise ValueError(
+                f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}."
+            )
 
     def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
         """Execute a PulseBusSchedule on the instrument.
+
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseBusSchedule to be translated into QASM program and executed.
             nshots (int): number of shots / hardware average
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        self.nshots = nshots
-        self.repetition_duration = repetition_duration
-        self.num_bins = num_bins
-        self.sequence = self._compile(pulse_bus_schedule)
-        self.device.arm_sequencer(sequencer=self.seq_idx)
-        self.device.start_sequencer(sequencer=self.seq_idx)
+        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+        self.set("sequence", sequence.todict())
+        self._parent.arm_sequencer()
+        self._parent.start_sequencer()
 
-    def _translate_pulse_bus_schedule(self, pulse_bus_schedule: PulseBusSchedule):
+    def _translate_pulse_bus_schedule(
+        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+    ):
         """Translate a pulse sequence into a Q1ASM program and a waveform dictionary.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse bus schedule to translate.
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
-        program = self._generate_program(pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms)
+        program = self._generate_program(
+            pulse_bus_schedule=pulse_bus_schedule,
+            waveforms=waveforms,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
+        )
 
-        return QpySequence(program=program, waveforms=waveforms)
-
-    def _compile(self, pulse_bus_schedule: PulseBusSchedule) -> QpySequence:
-        """Compiles the ``PulseBusSchedule`` into an assembly program.
-
-        Args:
-            pulse_bus_schedule (PulseBusSchedule): the list of pulses to be converted into a program
-        """
-        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule=pulse_bus_schedule)
-
-        return sequence
+        return QpySequence(program=program, waveforms=waveforms, weights={}, acquisitions=Acquisitions())
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
+
         Args:
             pulse_bus_schedule (PulseBusSchedule): PulseSequence object.
+
         Returns:
             Waveforms: Waveforms object containing the generated waveforms.
         """
@@ -108,19 +115,37 @@ class AWGSequencer(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if (self.path_i, self.path_q) == (1, 0):
+                if self._swap:
                     pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
         return waveforms
 
-    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms):
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
+
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, weight_regs: tuple[Register, Register]
+    ):
+        """Append an acquire instruction to the loop."""
+
+    def _generate_program(
+        self,
+        pulse_bus_schedule: PulseBusSchedule,
+        waveforms: Waveforms,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
+    ):
         """Generate Q1ASM program
 
         Args:
             pulse_sequence (PulseSequence): pulse sequence
             waveforms (Waveforms): waveforms
-            sequencer (int): index of the sequencer to generate the program
+            nshots (int): number of shots / hardware average
+            repetition_duration (int): repetition duration
+            num_bins (int): number of bins
 
         Returns:
             Program: Q1ASM program.
@@ -131,8 +156,8 @@ class AWGSequencer(Sequencer, AWG):
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-        avg_loop = Loop(name="average", begin=int(self.nshots))  # type: ignore
-        bin_loop = Loop(name="bin", begin=0, end=self.num_bins, step=1)
+        avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
+        bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
         stop = Block(name="stop")
@@ -143,6 +168,7 @@ class AWGSequencer(Sequencer, AWG):
             bin_loop.append_component(long_wait(wait_time=int(timeline[0].start_time)))
 
         for i, pulse_event in enumerate(timeline):
+            print("Pulse label: ", pulse_event.pulse.label())
             waveform_pair = waveforms.find_pair_by_name(pulse_event.pulse.label())
             wait_time = timeline[i + 1].start_time - pulse_event.start_time if (i < (len(timeline) - 1)) else 4
             bin_loop.append_component(ResetPh())
@@ -157,9 +183,11 @@ class AWGSequencer(Sequencer, AWG):
                     wait_time=int(wait_time),
                 )
             )
-        self._append_acquire_instruction(loop=bin_loop, bin_index=bin_loop.counter_register, sequencer_id=self.seq_idx)
-        if self.repetition_duration is not None:
-            wait_time = self.repetition_duration - bin_loop.duration_iter
+        self._append_acquire_instruction(
+            loop=bin_loop, bin_index=bin_loop.counter_register, weight_regs=weight_registers
+        )
+        if repetition_duration is not None:
+            wait_time = repetition_duration - bin_loop.duration_iter
             if wait_time > self._MIN_WAIT_TIME:
                 bin_loop.append_component(long_wait(wait_time=wait_time))
 
@@ -172,14 +200,7 @@ class AWGDigitiserSequencer(AWGSequencer, Digitiser):
     """Qililab's driver for QBlox-instruments digitiser Sequencer"""
 
     def __init__(
-        self,
-        parent: QililabPulsar | QililabQcmQrm,
-        name: str,
-        seq_idx: int,
-        output_i: int | None = None,
-        output_q: int | None = None,
-        sequence_timeout: int = 1,
-        acquisition_timeout: int = 1,
+        self, parent: Instrument, name: str, seq_idx: int, sequence_timeout: int = 1, acquisition_timeout: int = 1
     ):
         """Initialise the instrument.
         Args:
@@ -191,7 +212,7 @@ class AWGDigitiserSequencer(AWGSequencer, Digitiser):
             sequence_timeout (int): timeout to retrieve sequencer state in minutes
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
         """
-        super().__init__(parent=parent, name=name, seq_idx=seq_idx, output_i=output_i, output_q=output_q)
+        super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.sequence_timeout = sequence_timeout
         self.acquisition_timeout = acquisition_timeout
 
