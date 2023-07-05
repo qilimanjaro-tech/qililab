@@ -1,10 +1,11 @@
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
+from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
+from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
@@ -28,11 +29,9 @@ class AWGSequencer(Sequencer, AWG):
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
             seq_idx (int): sequencer identifier index
-            output_i (int): output for i signal
-            output_q (int): output for q signal
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self._swap = False
+        self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
     def set(self, param_name, value):
         if param_name in {"path0", "path1"}:
@@ -47,7 +46,7 @@ class AWGSequencer(Sequencer, AWG):
         if (param_name, param_value) in allowed_conf:
             self.set(f"channel_map_{param_name}_out{param_value}_en", True)
         elif (param_name, param_value) in swappable_conf:
-            self._swap = True
+            self.set("swap_paths", True)
             self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
         else:
             raise ValueError(
@@ -115,7 +114,7 @@ class AWGSequencer(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if self._swap:
+                if self.get("swap_paths"):
                     pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
@@ -156,7 +155,7 @@ class AWGSequencer(Sequencer, AWG):
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-        avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
+        avg_loop = Loop(name="average", begin=nshots)
         bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
@@ -207,14 +206,15 @@ class AWGDigitiserSequencer(AWGSequencer, Digitiser):
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
             seq_idx (int): sequencer identifier index
-            output_i (int): output for i signal
-            output_q (int): output for q signal
             sequence_timeout (int): timeout to retrieve sequencer state in minutes
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.sequence_timeout = sequence_timeout
         self.acquisition_timeout = acquisition_timeout
+        self.add_parameter(name="weights_i", vals=vals.Lists(), set_cmd=None, initial_value=[])
+        self.add_parameter(name="weights_q", vals=vals.Lists(), set_cmd=None, initial_value=[])
+        self.add_parameter(name="weighed_acq_enabled", vals=vals.Bool(), set_cmd=None, initial_value=False)
 
     def get_results(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
@@ -234,3 +234,43 @@ class AWGDigitiserSequencer(AWGSequencer, Digitiser):
         integration_lengths = [self.used_integration_length]
 
         return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+
+    def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
+        """Initialize the weights `registers` to the `values` specified and place the required instructions in the
+        setup block of the `program`."""
+        move_0 = Move(values[0], registers[0])
+        move_1 = Move(values[1], registers[1])
+        setup_block = program.get_block(name="setup")
+        setup_block.append_components([move_0, move_1], bot_position=1)
+
+    def _generate_weights(self) -> Weights:  # type: ignore
+        """Generate acquisition weights.
+
+        Returns:
+            Weights: Acquisition weights.
+        """
+        weights = Weights()
+        pair = (self.weights_i, self.weights_q)
+        if self.get("swap_paths"):
+            pair = pair[::-1]  # swap paths
+        weights.add_pair(pair=pair, indices=(0, 1))
+        return weights
+
+    def _append_acquire_instruction(
+        self, loop: Loop, bin_index: Register | int, weight_regs: tuple[Register, Register]
+    ):
+        """Append an acquire instruction to the loop."""
+        weighed_acq = self.weighed_acq_enabled
+
+        acq_instruction = (
+            AcquireWeighed(
+                acq_index=0,
+                bin_index=bin_index,
+                weight_index_0=weight_regs[0],
+                weight_index_1=weight_regs[1],
+                wait_time=self._MIN_WAIT_TIME,
+            )
+            if weighed_acq
+            else Acquire(acq_index=0, bin_index=bin_index, wait_time=self._MIN_WAIT_TIME)
+        )
+        loop.append_component(acq_instruction)

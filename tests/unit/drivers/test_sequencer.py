@@ -1,10 +1,11 @@
 """Tests for the Sequencer class."""
+# pylint: disable=protected-access
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
 from qcodes import validators as vals
-from qcodes.tests.instrument_mocks import DummyInstrument
+from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
 
@@ -63,9 +64,9 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
-class MockQcmQrm(DummyInstrument):
+class MockQcmQrm(DummyChannel):
     def __init__(self, parent, name, slot_idx, **kwargs):
-        super().__init__(name, **kwargs)
+        super().__init__(parent=parent, name=name, channel="", **kwargs)
 
         # Store sequencer index
         self._slot_idx = slot_idx
@@ -91,9 +92,9 @@ class MockCluster(DummyInstrument):
         self._present_at_init = MagicMock()
 
 
-class MockSequencer(DummyInstrument):
+class MockSequencer(DummyChannel):
     def __init__(self, parent, name, seq_idx, **kwargs):
-        super().__init__(name, **kwargs)
+        super().__init__(parent=parent, name=name, channel="", **kwargs)
 
         # Store sequencer index
         self.seq_idx = seq_idx
@@ -163,7 +164,7 @@ class TestSequencer:
         qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_init", slot_idx=0)
         sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
 
-        assert sequencer._swap is False
+        assert sequencer.get("swap_paths") is False
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
     @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
@@ -185,33 +186,24 @@ class TestSequencer:
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called()
 
-    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
     @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, mock_super_set, path0):
+    def test_map_outputs(self, path0):
         """Unit tests for _map_outputs method"""
-
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_map_outputs{path0}"
         seq_idx = 0
-        cluster = Cluster(name=f"test_cluster_map_outputs{path0}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_map_outputs{path0}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         if path0 == 10:
             with pytest.raises(ValueError):
                 sequencer._map_outputs("path0", path0)
-                mock_super_set.assert_not_called()
-                assert sequencer._swap is False
+                assert sequencer.get("swap_paths") is False
 
         else:
             sequencer._map_outputs("path0", path0)
-            mock_super_set.assert_called()
             if path0 == 0:
-                assert sequencer._swap is False
+                assert sequencer.get("swap_paths") is False
             elif path0 == 1:
-                assert sequencer._swap is True
+                assert sequencer.get("swap_paths") is True
 
     @pytest.mark.parametrize("path0", [0, 1])
     def test_generate_waveforms(self, pulse_bus_schedule, path0):
