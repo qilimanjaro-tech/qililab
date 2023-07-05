@@ -176,10 +176,10 @@ class TestSequencer:
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", 1)
-        mock_map_outputs.assert_called()
+        mock_map_outputs.assert_called_once_with("path0", 1)
 
         sequencer.set("channel_map_path0_out0_en", True)
-        mock_super_set.assert_called()
+        mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
 
     @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
     @pytest.mark.parametrize("path0", [0, 1, 10])
@@ -198,7 +198,7 @@ class TestSequencer:
 
         else:
             sequencer._map_outputs("path0", path0)
-            mock_super_set.assert_called()
+            mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
             if path0 == 0:
                 assert sequencer._swap is False
             elif path0 == 1:
