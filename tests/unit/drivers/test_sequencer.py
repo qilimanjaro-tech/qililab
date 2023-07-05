@@ -219,10 +219,8 @@ class TestSequencer:
 
         sequencer_name = f"test_sequencer_waveforms{path0}"
         seq_idx = 0
-        expected_waveforms_keys = [
-            f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
-            f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
-        ]
+        label = pulse_bus_schedule.timeline[0].pulse.label()
+        expected_waveforms_keys = [f"{label}_I", f"{label}_Q"]
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", path0)
