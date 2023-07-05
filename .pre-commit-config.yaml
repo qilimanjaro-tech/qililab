@@ -22,7 +22,9 @@ repos:
     rev: 1.5.0
     hooks:
       - id: interrogate
-        args: [src, -vv, -i, --fail-under=80]
+        args: [src, -vv, -i, --fail-under=80, --badge-format=png]
+        additional_dependencies:
+          [cairocffi==1.6.0, cairosvg==2.7.0, cssselect2==0.7.0]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.4.1" # Use the sha / tag you want to point at
