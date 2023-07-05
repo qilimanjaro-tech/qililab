@@ -156,7 +156,7 @@ class TestCluster:
 
 
 class TestIntegration:
-    """Integration tests of the QbloxQCMRF class."""
+    """Integration tests of the Cluster class."""
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.execute")
     def test_execute(self, mock_execute, pulse_bus_schedule):
