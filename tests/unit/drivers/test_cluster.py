@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from qblox_instruments.types import ClusterType
+from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
 
@@ -125,6 +126,20 @@ class MockCluster(DummyInstrument):
 class TestCluster:
     """Unit tests checking the Cluster attributes and methods"""
 
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+
+        AWGSequencer.__bases__ = (MockSequencer, AWG)
+        QcmQrm.__bases__ = (MockQcmQrm,)
+        Cluster.__bases__ = (MockCluster,)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        Instrument.close_all()
+
     def test_init_with_dummy_cfg(self):
         """Test init method with dummy configuration"""
 
@@ -140,9 +155,6 @@ class TestCluster:
     def test_init_without_dummy_cfg(self):
         """Test init method without dummy configuration"""
 
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
         qcm_qrm_name = "test_qcm_qrm"
         qcm_qrm_prefix = "module"
         sequencers_prefix = "sequencer"
@@ -172,7 +184,6 @@ class TestQcmQrm:
     def test_init(self):
         """Test init method for QcmQrm"""
 
-        QcmQrm.__bases__ = (MockQcmQrm,)
         qcm_qrn_name = "qcm_qrm"
         sequencers_prefix = "sequencer"
         cluster = MockCluster(name="test_cluster")
