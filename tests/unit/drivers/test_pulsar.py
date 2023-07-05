@@ -17,6 +17,8 @@ class TestPulsar:
         Instrument.close_all()
 
     def test_init(self):
+        """Unittest for init method"""
+
         pulsar_name = "test"
         sequencers_prefix = "sequencer"
         pulsar = Pulsar(name=pulsar_name, dummy_type=PulsarType.PULSAR_QCM)
