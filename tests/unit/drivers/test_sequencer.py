@@ -3,6 +3,7 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyInstrument
 from qpysequence.program import Program
@@ -142,12 +143,23 @@ class MockSequencer(DummyInstrument):
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
-    def test_init(self):
-        """Unit tests for init method"""
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
 
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        Instrument.close_all()
+
+    def test_init(self):
+        """Unit tests for init method"""
+
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
         cluster = Cluster(name="test_cluster_init")
@@ -161,9 +173,6 @@ class TestSequencer:
     def test_set(self, mock_super_set, mock_map_outputs):
         """Unit tests for set method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_set"
         seq_idx = 0
         cluster = Cluster(name="test_cluster_set")
@@ -181,9 +190,6 @@ class TestSequencer:
     def test_map_outputs(self, mock_super_set, path0):
         """Unit tests for _map_outputs method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_map_outputs{path0}"
         seq_idx = 0
         cluster = Cluster(name=f"test_cluster_map_outputs{path0}")
@@ -208,9 +214,6 @@ class TestSequencer:
     def test_generate_waveforms(self, pulse_bus_schedule, path0):
         """Unit tests for _generate_waveforms method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_waveforms{path0}"
         seq_idx = 0
         expected_waveforms_keys = [
@@ -240,9 +243,6 @@ class TestSequencer:
     def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
         """Unit tests for _translate_pulse_bus_schedule method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
         seq_idx = 0
         cluster = Cluster(name="test_cluster_translate_pulse_bus_schedule")
@@ -267,9 +267,6 @@ class TestSequencer:
     def test_generate_program(self, pulse_bus_schedule, name, expected_program_str):
         """Unit tests for _generate_program method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_program{name}"
         seq_idx = 0
         cluster = Cluster(name=f"test_cluster_program{name}")
@@ -286,9 +283,6 @@ class TestSequencer:
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""
 
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
         qcm_qrn_name = "test_qcm_qrm_execute"
         cluster = Cluster(name="test_cluster_execute")
         qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)

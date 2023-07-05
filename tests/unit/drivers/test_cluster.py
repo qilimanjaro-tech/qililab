@@ -25,7 +25,7 @@ PULSE_NAME = Gaussian.name
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
-    
+
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=PULSE_AMPLITUDE,
@@ -40,7 +40,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 
 class MockSequencer(DummyInstrument):
     """Mock for Sequencer class."""
-    
+
     def __init__(self, parent, name, seq_idx, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -99,7 +99,7 @@ class MockSequencer(DummyInstrument):
 
 class MockQcmQrm(DummyInstrument):
     """Mock for QcmQrm class."""
-    
+
     def __init__(self, parent, name, slot_idx, **kwargs):
         super().__init__(name, **kwargs)
 
@@ -127,7 +127,7 @@ class TestCluster:
 
     def test_init_with_dummy_cfg(self):
         """Test init method with dummy configuration"""
-        
+
         cluster = Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
         submodules = cluster.submodules
 
@@ -139,7 +139,7 @@ class TestCluster:
 
     def test_init_without_dummy_cfg(self):
         """Test init method without dummy configuration"""
-        
+
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
@@ -164,7 +164,8 @@ class TestCluster:
         assert len(qcm_qrm_submodules) == NUM_SEQUENCERS
         assert all(isinstance(qcm_qrm_submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
         assert expected_names == registered_names
-        
+
+
 class TestQcmQrm:
     """Unit tests checking the QililabQcmQrm attributes and methods"""
 
