@@ -1,3 +1,2 @@
-from .cluster import Cluster, QcmQrm
+from .cluster import Cluster
 from .pulsar import Pulsar
-from .sequencer import AWGSequencer

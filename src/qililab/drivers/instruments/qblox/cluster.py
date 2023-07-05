@@ -5,7 +5,7 @@ from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
+from .sequencer import AWGSequencer
 
 
 class Cluster(QcodesCluster):

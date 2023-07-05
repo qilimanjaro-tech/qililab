@@ -3,7 +3,7 @@ from typing import Dict, Union
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
+from .sequencer import AWGSequencer
 
 
 class Pulsar(QcodesPulsar):
