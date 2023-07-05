@@ -12,6 +12,7 @@ from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
 NUM_SLOTS = 20
+NUM_SEQUENCERS = 6
 DUMMY_CFG = {"1": ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -149,7 +150,7 @@ class TestCluster:
         assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
         assert cluster_submodules_expected_names == cluster_registered_names
 
-        assert len(cluster.submodules) == NUM_SLOTS
+        assert len(qcm_qrm_submodules) == NUM_SEQUENCERS
         assert all(isinstance(qcm_qrm_submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
         assert expected_names == registered_names
 
