@@ -125,17 +125,17 @@ class TestCluster:
         result_submodules_ids = list(submodules.keys())
         assert len(result_submodules_ids) == len(expected_submodules_ids)
         assert all(isinstance(submodules[id], QcmQrm) for id in result_submodules_ids)
-        assert all([expected_id in result_submodules_ids for expected_id in expected_submodules_ids])
+        assert result_submodules_ids == expected_submodules_ids
 
     def test_init_without_dummy_cfg(self):
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
-        qcm_qrn_name = "test_qcm_qrm"
+        qcm_qrm_name = "test_qcm_qrm"
         qcm_qrm_prefix = "module"
         sequencers_prefix = "sequencer"
         cluster = Cluster(name="test_cluster_without_dummy")
-        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrm_name, slot_idx=0)
         cluster_submodules = cluster.submodules
         qcm_qrm_submodules = qcm_qrm.submodules
         qcm_qrm_idxs = list(cluster_submodules.keys())
