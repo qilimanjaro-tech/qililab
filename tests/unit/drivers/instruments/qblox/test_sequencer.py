@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from .mock_utils import MockCluster, MockQcmQrm, MockSequencer
 from qcodes import Instrument
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
@@ -14,6 +13,8 @@ from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
+
+from .mock_utils import MockCluster, MockQcmQrm, MockSequencer
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
