@@ -131,7 +131,7 @@ class TestCluster:
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
         AWGSequencer.__bases__ = (MockSequencer, AWG)
-        qcm_qrn_name = "test_qcm_qrm"
+        qcm_qrm_name = "test_qcm_qrm"
         qcm_qrm_prefix = "module"
         sequencers_prefix = "sequencer"
         cluster = Cluster(name="test_cluster_without_dummy")
