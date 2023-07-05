@@ -51,16 +51,7 @@ expected_program_str_1 = repr(
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
 
-    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
-    pulse = Pulse(
-        amplitude=PULSE_AMPLITUDE,
-        phase=PULSE_PHASE,
-        duration=PULSE_DURATION,
-        frequency=PULSE_FREQUENCY,
-        pulse_shape=pulse_shape,
-    )
-    pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return get_pulse_bus_schedule(start_time=0)
 
 
 class MockQcmQrm(DummyInstrument):
