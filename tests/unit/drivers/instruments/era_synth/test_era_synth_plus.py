@@ -5,10 +5,13 @@ from qcodes.tests.instrument_mocks import DummyInstrument
 from qililab.drivers.instruments import ERASynthPlus
 from qililab.drivers.interfaces import LocalOscillator
 
+old_bases = ERASynthPlus.__bases__
+
 
 def teardown_module():
     """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
     Instrument.close_all()
+    ERASynthPlus.__bases__ = old_bases
 
 
 class MockInstrument(DummyInstrument):

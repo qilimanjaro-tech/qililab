@@ -64,127 +64,31 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
-class MockQcmQrm(DummyChannel):
-    def __init__(self, parent, name, slot_idx, **kwargs):
-        super().__init__(parent=parent, name=name, channel="", **kwargs)
-
-        # Store sequencer index
-        self._slot_idx = slot_idx
-        self.submodules = {"test_submodule": MagicMock()}
-        self.is_qcm_type = True
-        self.is_qrm_type = False
-        self.is_rf_type = False
-
-    def arm_sequencer(self):
-        return None
-
-    def start_sequencer(self):
-        return None
-
-
-class MockCluster(DummyInstrument):
-    def __init__(self, name, address=None, **kwargs):
-        super().__init__(name)
-
-        self.address = address
-        self._num_slots = NUM_SLOTS
-        self.submodules = {"test_submodule": MagicMock()}
-        self._present_at_init = MagicMock()
-
-
-class MockSequencer(DummyChannel):
-    def __init__(self, parent, name, seq_idx, **kwargs):
-        super().__init__(parent=parent, name=name, channel="", **kwargs)
-
-        # Store sequencer index
-        self.seq_idx = seq_idx
-        self._parent = parent
-        self.add_parameter(
-            "channel_map_path0_out0_en",
-            label="Sequencer path 0 output 0 enable",
-            docstring="Sets/gets sequencer channel map enable of path 0 to " "output 0.",
-            unit="",
-            vals=vals.Bool(),
-            set_parser=bool,
-            get_parser=bool,
-            set_cmd=None,
-            get_cmd=None,
-        )
-
-        self.add_parameter(
-            "channel_map_path1_out1_en",
-            label="Sequencer path 1 output 1 enable",
-            docstring="Sets/gets sequencer channel map enable of path 1 to " "output 1.",
-            unit="",
-            vals=vals.Bool(),
-            set_parser=bool,
-            get_parser=bool,
-            set_cmd=None,
-            get_cmd=None,
-        )
-
-        if parent.is_qcm_type:
-            self.add_parameter(
-                "channel_map_path0_out2_en",
-                label="Sequencer path 0 output 2 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 0 " "to output 2.",
-                unit="",
-                vals=vals.Bool(),
-                set_parser=bool,
-                get_parser=bool,
-                set_cmd=None,
-                get_cmd=None,
-            )
-
-            self.add_parameter(
-                "channel_map_path1_out3_en",
-                label="Sequencer path 1 output 3 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 1 " "to output 3.",
-                unit="",
-                vals=vals.Bool(),
-                set_parser=bool,
-                get_parser=bool,
-                set_cmd=None,
-                get_cmd=None,
-            )
-
-
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
     def test_init(self):
         """Unit tests for init method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_init")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_init", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         assert sequencer.get("swap_paths") is False
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
-    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
-    def test_set(self, mock_super_set, mock_map_outputs):
+    def test_set(self, mock_map_outputs):
         """Unit tests for set method"""
 
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_set"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_set")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_set", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
 
         sequencer.set("channel_map_path0_out0_en", True)
-        mock_super_set.assert_called()
+        assert sequencer.get("channel_map_path0_out0_en") is True
 
     @pytest.mark.parametrize("path0", [0, 1, 10])
     def test_map_outputs(self, path0):
@@ -208,19 +112,13 @@ class TestSequencer:
     @pytest.mark.parametrize("path0", [0, 1])
     def test_generate_waveforms(self, pulse_bus_schedule, path0):
         """Unit tests for _generate_waveforms method"""
-
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_waveforms{path0}"
         seq_idx = 0
         expected_waveforms_keys = [
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
-        cluster = Cluster(name=f"test_cluster_waveforms{path0}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_waveforms{path0}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
@@ -240,15 +138,9 @@ class TestSequencer:
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
     def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
         """Unit tests for _translate_pulse_bus_schedule method"""
-
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
         seq_idx = 0
-        cluster = Cluster(name="test_cluster_translate_pulse_bus_schedule")
-        qcm_qrm = MockQcmQrm(cluster, name="test_qcm_qrm_translate_pulse_bus_schedule", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequence = sequencer._translate_pulse_bus_schedule(
             pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
@@ -267,15 +159,9 @@ class TestSequencer:
     )
     def test_generate_program(self, pulse_bus_schedule, name, expected_program_str):
         """Unit tests for _generate_program method"""
-
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
         sequencer_name = f"test_sequencer_program{name}"
         seq_idx = 0
-        cluster = Cluster(name=f"test_cluster_program{name}")
-        qcm_qrm = MockQcmQrm(cluster, name=f"test_qcm_qrm_program{name}", slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name=sequencer_name, seq_idx=seq_idx)
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
@@ -286,25 +172,15 @@ class TestSequencer:
 
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""
-
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        Cluster.__bases__ = (MockCluster,)
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
-        qcm_qrn_name = "test_qcm_qrm_execute"
-        cluster = Cluster(name="test_cluster_execute")
-        qcm_qrm = QcmQrm(parent=cluster, name=qcm_qrn_name, slot_idx=0)
-        sequencer = AWGSequencer(parent=qcm_qrm, name="sequencer_execute", seq_idx=0)
+        parent = MagicMock()
+        sequencer = AWGSequencer(parent=parent, name="sequencer_execute", seq_idx=0)
 
         with patch(
             "qililab.drivers.instruments.qblox.sequencer.AWGSequencer._translate_pulse_bus_schedule"
         ) as mock_translate:
             with patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.set") as mock_set:
-                with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.arm_sequencer") as mock_arm_sequencer:
-                    with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.start_sequencer") as mock_start_sequencer:
-                        sequencer.execute(
-                            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
-                        )
-                        mock_set.assert_called_once()
-                        mock_translate.assert_called_once()
-                        mock_arm_sequencer.assert_called_once()
-                        mock_start_sequencer.assert_called_once()
+                sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
+                mock_set.assert_called_once()
+                mock_translate.assert_called_once()
+                parent.arm_sequencer.assert_called_once()
+                parent.start_sequencer.assert_called_once()

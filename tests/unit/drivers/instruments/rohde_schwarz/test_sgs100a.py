@@ -5,10 +5,13 @@ from qcodes.tests.instrument_mocks import DummyInstrument
 from qililab.drivers.instruments import RhodeSchwarzSGS100A
 from qililab.drivers.interfaces import LocalOscillator
 
+old_bases = RhodeSchwarzSGS100A.__bases__
+
 
 def teardown_module():
     """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
     Instrument.close_all()
+    RhodeSchwarzSGS100A.__bases__ = old_bases
 
 
 class MockInstrument(DummyInstrument):
