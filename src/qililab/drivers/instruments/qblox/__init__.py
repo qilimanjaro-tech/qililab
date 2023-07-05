@@ -1,1 +1,1 @@
-from .spi_rack import QbloxD5aDacChannel, QbloxS4gDacChannel, QbloxSpiRack
+from .spi_rack import D5aModule, S4gDacChannel, SpiRack

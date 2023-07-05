@@ -1,3 +1,3 @@
-from .keithley import Keithley2600, Keithley2600Channel
-from .qblox import QbloxD5aDacChannel, QbloxS4gDacChannel, QbloxSpiRack
+from .keithley import Keithley2600
+from .qblox import D5aModule, S4gDacChannel, SpiRack
 from .yokogawa import YokogawaGS200
