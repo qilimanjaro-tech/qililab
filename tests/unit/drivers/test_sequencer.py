@@ -167,17 +167,25 @@ class TestSequencer:
         assert sequencer._swap is False
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
-    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
-    def test_set(self, mock_super_set, mock_map_outputs):
-        """Unit tests for set method"""
+    @pytest.mark.parametrize("path0", [0, 1])
+    def test_set_with_qililab_path(self, mock_map_outputs, path0):
+        """Unit tests for set method with qililab path"""
 
-        sequencer_name = "test_sequencer_set"
+        sequencer_name = "test_sequencer_set_qililab_path"
         seq_idx = 0
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
-        sequencer.set("path0", 1)
-        mock_map_outputs.assert_called_once_with("path0", 1)
+        sequencer.set("path0", path0)
+        mock_map_outputs.assert_called_once_with("path0", path0)
 
+    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
+    def test_set_with_qblox_parameter(self, mock_super_set):
+        """Unit tests for set method with qblox parameter"""
+
+        sequencer_name = "test_sequencer_set_qblox_parameter"
+        seq_idx = 0
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+                
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
 
@@ -191,7 +199,8 @@ class TestSequencer:
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         if path0 == 10:
-            with pytest.raises(ValueError):
+            error_str = f"Impossible path configuration detected. path0 cannot be mapped to output {path0}."
+            with pytest.raises(ValueError, match=error_str):
                 sequencer._map_outputs("path0", path0)
                 mock_super_set.assert_not_called()
                 assert sequencer._swap is False
