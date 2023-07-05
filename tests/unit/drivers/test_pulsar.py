@@ -1,5 +1,6 @@
 from qblox_instruments.types import PulsarType
 from qcodes import Instrument
+
 from qililab.drivers.instruments.qblox.pulsar import Pulsar
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
 

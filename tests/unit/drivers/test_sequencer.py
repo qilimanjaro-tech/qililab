@@ -2,6 +2,7 @@
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from qcodes import Instrument
 from qcodes import validators as vals
@@ -26,7 +27,22 @@ START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 
 
-def get_pulse_bus_schedule(start_time):
+def get_pulse_bus_schedule(start_time, negative_amplitude=False, number_pulses=1):
+    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
+    pulse = Pulse(
+        amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
+        phase=PULSE_PHASE,
+        duration=PULSE_DURATION,
+        frequency=PULSE_FREQUENCY,
+        pulse_shape=pulse_shape,
+    )
+    pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+    timeline = [pulse_event for i in range(number_pulses)]
+
+    return PulseBusSchedule(timeline=timeline, port=0)
+
+
+def get_envelope():
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=PULSE_AMPLITUDE,
@@ -35,9 +51,8 @@ def get_pulse_bus_schedule(start_time):
         frequency=PULSE_FREQUENCY,
         pulse_shape=pulse_shape,
     )
-    pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
 
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return pulse.envelope()
 
 
 expected_program_str_0 = repr(
@@ -53,6 +68,20 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
 
     return get_pulse_bus_schedule(start_time=0)
+
+
+@pytest.fixture(name="pulse_bus_schedule_repeated_pulses")
+def fixture_pulse_bus_schedule_repeated_pulses() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance with same pulse repeated."""
+
+    return get_pulse_bus_schedule(start_time=0, number_pulses=3)
+
+
+@pytest.fixture(name="pulse_bus_schedule_negative_amplitude")
+def fixture_pulse_bus_schedule_negative_amplitude() -> PulseBusSchedule:
+    """Return PulseBusSchedule instance with same pulse repeated."""
+
+    return get_pulse_bus_schedule(start_time=0, negative_amplitude=True)
 
 
 class MockQcmQrm(DummyInstrument):
@@ -185,7 +214,7 @@ class TestSequencer:
         sequencer_name = "test_sequencer_set_qblox_parameter"
         seq_idx = 0
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
- 
+
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
 
@@ -220,22 +249,51 @@ class TestSequencer:
         sequencer_name = f"test_sequencer_waveforms{path0}"
         seq_idx = 0
         label = pulse_bus_schedule.timeline[0].pulse.label()
-        expected_waveforms_keys = [f"{label}_I", f"{label}_Q"]
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
+        envelope = get_envelope()
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
         waveforms_keys = list(waveforms.keys())
-        waveform_i = waveforms[waveforms_keys[0]]["data"]
-        assert len(waveforms_keys) == len(expected_waveforms_keys)
-        assert all(isinstance(waveforms[key], dict) for key in waveforms)
-        assert all("data" in waveforms[key] for key in waveforms)
-        assert all("index" in waveforms[key] for key in waveforms)
-        assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
+
+        assert len(waveforms) == 2 * len(pulse_bus_schedule.timeline)
+        assert waveforms_keys[0] == f"{label}_I"
+        assert waveforms_keys[1] == f"{label}_Q"
+
         if path0 % 2 != 0:
-            assert len(set(waveform_i)) == 1
+            # swapped waveforms should have I component all zeros
+            assert np.all(waveforms[waveforms_keys[0]]["data"]) == 0
+            # swapped waveforms should have Q component equal to gaussian pulse envelope
+            assert np.alltrue(envelope == waveforms[waveforms_keys[1]]["data"])
         else:
-            assert len(set(waveform_i)) > 1
+            # swapped waveforms should have Q component all zeros
+            assert np.all(waveforms[waveforms_keys[1]]["data"]) == 0
+            # swapped waveforms should have Q component equal to gaussian pulse envelope
+            assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
+
+    @pytest.mark.parametrize("path0", [0, 1])
+    def test_generate_waveforms_multiple_pulses(self, pulse_bus_schedule_repeated_pulses, path0):
+        """Unit tests for _generate_waveforms method with repeated pulses"""
+
+        sequencer_name = f"test_sequencer_waveforms{path0}"
+        seq_idx = 0
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer.set("path0", path0)
+        waveforms = sequencer._generate_waveforms(pulse_bus_schedule_repeated_pulses).to_dict()
+
+        assert len(waveforms) == 2
+
+    @pytest.mark.parametrize("path0", [0, 1])
+    def test_generate_waveforms_negative_amplitude(self, pulse_bus_schedule_negative_amplitude, path0):
+        """Unit tests for _generate_waveforms method with negative amplitude"""
+
+        sequencer_name = f"test_sequencer_waveforms{path0}"
+        seq_idx = 0
+        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer.set("path0", path0)
+        waveforms = sequencer._generate_waveforms(pulse_bus_schedule_negative_amplitude).to_dict()
+
+        print("waveforms: ", waveforms)
+        assert len(waveforms) == 2
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
