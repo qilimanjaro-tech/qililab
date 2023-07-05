@@ -4,9 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from .mock_utils import MockCluster, MockQcmQrm, MockSequencer
 from qcodes import Instrument
-from qcodes import validators as vals
-from qcodes.tests.instrument_mocks import DummyInstrument
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
 
@@ -84,91 +83,6 @@ def fixture_pulse_bus_schedule_negative_amplitude() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0, negative_amplitude=True)
 
 
-class MockQcmQrm(DummyInstrument):
-    def __init__(self, parent, name, slot_idx, **kwargs):
-        super().__init__(name, **kwargs)
-
-        # Store sequencer index
-        self._slot_idx = slot_idx
-        self.submodules = {"test_submodule": MagicMock()}
-        self.is_qcm_type = True
-        self.is_qrm_type = False
-        self.is_rf_type = False
-
-    def arm_sequencer(self):
-        return None
-
-    def start_sequencer(self):
-        return None
-
-
-class MockCluster(DummyInstrument):
-    def __init__(self, name, address=None, **kwargs):
-        super().__init__(name)
-
-        self.address = address
-        self._num_slots = NUM_SLOTS
-        self.submodules = {"test_submodule": MagicMock()}
-        self._present_at_init = MagicMock()
-
-
-class MockSequencer(DummyInstrument):
-    def __init__(self, parent, name, seq_idx, **kwargs):
-        super().__init__(name, **kwargs)
-
-        # Store sequencer index
-        self.seq_idx = seq_idx
-        self._parent = parent
-        self.add_parameter(
-            "channel_map_path0_out0_en",
-            label="Sequencer path 0 output 0 enable",
-            docstring="Sets/gets sequencer channel map enable of path 0 to " "output 0.",
-            unit="",
-            vals=vals.Bool(),
-            set_parser=bool,
-            get_parser=bool,
-            set_cmd=None,
-            get_cmd=None,
-        )
-
-        self.add_parameter(
-            "channel_map_path1_out1_en",
-            label="Sequencer path 1 output 1 enable",
-            docstring="Sets/gets sequencer channel map enable of path 1 to " "output 1.",
-            unit="",
-            vals=vals.Bool(),
-            set_parser=bool,
-            get_parser=bool,
-            set_cmd=None,
-            get_cmd=None,
-        )
-
-        if parent.is_qcm_type:
-            self.add_parameter(
-                "channel_map_path0_out2_en",
-                label="Sequencer path 0 output 2 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 0 " "to output 2.",
-                unit="",
-                vals=vals.Bool(),
-                set_parser=bool,
-                get_parser=bool,
-                set_cmd=None,
-                get_cmd=None,
-            )
-
-            self.add_parameter(
-                "channel_map_path1_out3_en",
-                label="Sequencer path 1 output 3 enable.",
-                docstring="Sets/gets sequencer channel map enable of path 1 " "to output 3.",
-                unit="",
-                vals=vals.Bool(),
-                set_parser=bool,
-                get_parser=bool,
-                set_cmd=None,
-                get_cmd=None,
-            )
-
-
 class TestSequencer:
     """Unit tests checking the Sequencer attributes and methods"""
 
@@ -207,7 +121,7 @@ class TestSequencer:
         sequencer.set("path0", path0)
         mock_map_outputs.assert_called_once_with("path0", path0)
 
-    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
+    @patch("tests.unit.drivers.instruments.qblox.mock_utils.MockSequencer.set")
     def test_set_with_qblox_parameter(self, mock_super_set):
         """Unit tests for set method with qblox parameter"""
 
@@ -218,7 +132,7 @@ class TestSequencer:
         sequencer.set("channel_map_path0_out0_en", True)
         mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
 
-    @patch("tests.unit.drivers.test_sequencer.MockSequencer.set")
+    @patch("tests.unit.drivers.instruments.qblox.test_sequencer.MockSequencer.set")
     @pytest.mark.parametrize("path0", [0, 1, 10])
     def test_map_outputs(self, mock_super_set, path0):
         """Unit tests for _map_outputs method"""
@@ -345,8 +259,12 @@ class TestSequencer:
             "qililab.drivers.instruments.qblox.sequencer.AWGSequencer._translate_pulse_bus_schedule"
         ) as mock_translate:
             with patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.set") as mock_set:
-                with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.arm_sequencer") as mock_arm_sequencer:
-                    with patch("tests.unit.drivers.test_sequencer.MockQcmQrm.start_sequencer") as mock_start_sequencer:
+                with patch(
+                    "tests.unit.drivers.instruments.qblox.mock_utils.MockQcmQrm.arm_sequencer"
+                ) as mock_arm_sequencer:
+                    with patch(
+                        "tests.unit.drivers.instruments.qblox.mock_utils.MockQcmQrm.start_sequencer"
+                    ) as mock_start_sequencer:
                         sequencer.execute(
                             pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
                         )
