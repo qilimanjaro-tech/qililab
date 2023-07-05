@@ -27,7 +27,7 @@ repos:
           [cairocffi==1.6.0, cairosvg==2.7.0, cssselect2==0.7.0]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.991" # Use the sha / tag you want to point at
+    rev: "v1.4.1" # Use the sha / tag you want to point at
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
