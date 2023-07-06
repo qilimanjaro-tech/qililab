@@ -95,6 +95,9 @@ class TestSequencer:
     def setup_class(cls):
         """Set up for all tests"""
 
+        cls.old_awg_sequencer_bases = AWGSequencer.__bases__
+        cls.old_qcm_qrm_bases = QcmQrm.__bases__
+        cls.old_cluster_bases = Cluster.__bases__
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -104,6 +107,9 @@ class TestSequencer:
         """Tear down after all tests have been run"""
 
         Instrument.close_all()
+        AWGSequencer.__bases__ = cls.old_awg_sequencer_bases
+        QcmQrm.__bases__ = cls.old_qcm_qrm_bases
+        Cluster.__bases__ = cls.old_cluster_bases
 
     def test_init(self):
         """Unit tests for init method"""
