@@ -25,8 +25,8 @@ class SequencerQRM(SequencerQCM, Digitiser):
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.add_parameter(name="sequence_timeout", vals=vals.Ints, set_cmd=None, initial_value=1)
-        self.add_parameter(name="acquisition_timeout", vals=vals.Ints, set_cmd=None, initial_value=1)
+        self.add_parameter(name="sequence_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
+        self.add_parameter(name="acquisition_timeout", vals=vals.Ints(), set_cmd=None, initial_value=1)
         self.add_parameter(name="weights_i", vals=vals.Lists(), set_cmd=None, initial_value=[])
         self.add_parameter(name="weights_q", vals=vals.Lists(), set_cmd=None, initial_value=[])
         self.add_parameter(name="weighed_acq_enabled", vals=vals.Bool(), set_cmd=None, initial_value=False)

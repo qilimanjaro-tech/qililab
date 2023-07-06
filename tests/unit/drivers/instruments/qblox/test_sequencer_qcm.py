@@ -1,4 +1,4 @@
-"""Tests for the Sequencer class."""
+"""Tests for the SequencerQCM class."""
 # pylint: disable=protected-access
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
