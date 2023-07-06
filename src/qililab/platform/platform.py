@@ -25,7 +25,7 @@ class Platform:
 
     def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
         self.settings = runcard_schema.settings
-        self.schema = Schema(**asdict(runcard_schema.schema))
+        self.schema = Schema(**asdict(runcard_schema.schema))  # type: ignore
         self.connection = connection
         self._connected_to_instruments: bool = False
 
