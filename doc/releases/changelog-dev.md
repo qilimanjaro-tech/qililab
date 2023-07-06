@@ -4,9 +4,6 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
-- Add interface for Voltage and Current sources
-  [#448](https://github.com/qilimanjaro-tech/qililab/pull/448)
-
 - Add interface for the Attenuator.
   This is part of the "Promoting Modular Autonomy" epic.
   [#432](https://github.com/qilimanjaro-tech/qililab/pull/432)
