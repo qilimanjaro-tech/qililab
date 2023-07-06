@@ -1,3 +1,4 @@
+"""This file contains the code of the sequencer of the Qblox QRM."""
 from qcodes import Instrument
 from qcodes import validators as vals
 from qpysequence.program import Loop, Program, Register
@@ -14,9 +15,7 @@ from .sequencer_qcm import SequencerQCM
 class SequencerQRM(SequencerQCM, Digitiser):
     """Qililab's driver for QBlox-instruments digitiser Sequencer"""
 
-    def __init__(
-        self, parent: Instrument, name: str, seq_idx: int, sequence_timeout: int = 1, acquisition_timeout: int = 1
-    ):
+    def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
         Args:
             parent (Instrument): Parent for the sequencer instance.
@@ -26,8 +25,8 @@ class SequencerQRM(SequencerQCM, Digitiser):
             acquisition_timeout (int): timeout to retrieve acquisition state in minutes
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self.sequence_timeout = sequence_timeout
-        self.acquisition_timeout = acquisition_timeout
+        self.add_parameter(name="sequence_timeout", vals=vals.Ints, set_cmd=None, initial_value=1)
+        self.add_parameter(name="acquisition_timeout", vals=vals.Ints, set_cmd=None, initial_value=1)
         self.add_parameter(name="weights_i", vals=vals.Lists(), set_cmd=None, initial_value=[])
         self.add_parameter(name="weights_q", vals=vals.Lists(), set_cmd=None, initial_value=[])
         self.add_parameter(name="weighed_acq_enabled", vals=vals.Bool(), set_cmd=None, initial_value=False)
@@ -40,16 +39,19 @@ class SequencerQRM(SequencerQCM, Digitiser):
             QbloxResult: Class containing the acquisition results.
 
         """
-        flags = self.device.get_sequencer_state(sequencer=self.seq_idx, timeout=self.sequence_timeout)
+        flags = self.parent.get_sequencer_state(sequencer=self.seq_idx, timeout=self.get("sequence_timeout"))
         logger.info("Sequencer[%d] flags: \n%s", self.seq_idx, flags)
-        self.device.get_acquisition_state(sequencer=self.seq_idx, timeout=self.acquisition_timeout)
-        if self.scope_store_enabled:
-            self.device.store_scope_acquisition(sequencer=self.seq_idx, name="default")
-        results = [self.device.get_acquisitions(sequencer=self.seq_idx)["default"]["acquisition"]]
-        self.sync_en(False)
-        integration_lengths = [self.used_integration_length]
+        self.parent.get_acquisition_state(sequencer=self.seq_idx, timeout=self.get("acquisition_timeout"))
+        if self.parent.get("scope_acq_sequencer_select") == self.seq_idx:
+            self.parent.store_scope_acquisition(sequencer=self.seq_idx, name="default")
+        result = self.device.get_acquisitions(sequencer=self.seq_idx)["default"]["acquisition"]
 
-        return QbloxResult(integration_lengths=integration_lengths, qblox_raw_results=results)
+        integration_length = (
+            len(self.get("weights_i")) if self.get("weighed_acq_enabled") else self.get("integration_length_acq")
+        )
+
+        self.set("sync_en", False)
+        return QbloxResult(integration_lengths=[integration_length], qblox_raw_results=[result])
 
     def _init_weights_registers(self, registers: tuple[Register, Register], values: tuple[int, int], program: Program):
         """Initialize the weights `registers` to the `values` specified and place the required instructions in the
@@ -66,7 +68,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = (self.weights_i, self.weights_q)
+        pair = (self.get("weights_i"), self.get("weights_q"))
         if self.get("swap_paths"):
             pair = pair[::-1]  # swap paths
         weights.add_pair(pair=pair, indices=(0, 1))
@@ -76,7 +78,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
         self, loop: Loop, bin_index: Register | int, weight_regs: tuple[Register, Register]
     ):
         """Append an acquire instruction to the loop."""
-        weighed_acq = self.weighed_acq_enabled
+        weighed_acq = self.get("weighed_acq_enabled")
 
         acq_instruction = (
             AcquireWeighed(

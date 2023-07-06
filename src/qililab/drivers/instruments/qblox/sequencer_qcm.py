@@ -5,16 +5,14 @@ from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
-from qpysequence.program.instructions import Acquire, AcquireWeighed, Move, Play, ResetPh, SetAwgGain, SetPh, Stop
+from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
-from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers.interfaces import AWG, Digitiser
+from qililab.drivers.interfaces import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
-from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
 class SequencerQCM(Sequencer, AWG):
