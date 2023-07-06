@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from qcodes.tests.instrument_mocks import DummyInstrument
+from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
 
@@ -40,3 +40,43 @@ class MockS4gModule(DummyInstrument):
             ch_name = f"dac{dac}"
             channel = S4gDacChannel(self, ch_name, dac)
             self._channels.append(channel)
+
+
+class MockD5aDacChannel(DummyChannel):
+    """Mocking classes for D5aDacChannel"""
+
+    def __init__(self, parent, name, dac, **kwargs):
+        """Init method for the mock D5a module"""
+
+        super().__init__(parent, name, "test_channel", **kwargs)
+
+        self.add_parameter(
+            "voltage",
+            get_cmd=None,
+            set_cmd=None,
+            unit="V",
+            vals=None,
+            docstring="Sets the output voltage of the dac channel. Depending "
+            "on the value of ramping_enabled, the output value is either "
+            "achieved through slowly ramping, or instantaneously set.",
+        )
+
+
+class MockS4gDacChannel(DummyChannel):
+    """Mocking classes for S4gDacChannel"""
+
+    def __init__(self, parent, name, dac, **kwargs):
+        """Init method for the mock D5a module"""
+
+        super().__init__(parent, name, "test_channel", **kwargs)
+
+        self.add_parameter(
+            "current",
+            get_cmd=None,
+            set_cmd=None,
+            unit="V",
+            vals=None,
+            docstring="Sets the output voltage of the dac channel. Depending "
+            "on the value of ramping_enabled, the output value is either "
+            "achieved through slowly ramping, or instantaneously set.",
+        )

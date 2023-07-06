@@ -10,7 +10,9 @@ from qililab.drivers.instruments.qblox.spi_rack import (
 from .mock_utils import (
     NUM_DACS_D5AMODULE,
     NUM_DACS_S4GMODULE,
+    MockD5aDacChannel,
     MockD5aModule,
+    MockS4gDacChannel,
     MockS4gModule,
 )
 
@@ -47,3 +49,29 @@ class TestS4gModule:
         assert len(channels) == NUM_DACS_S4GMODULE
         assert all(isinstance(submodules[dac_idx], S4gDacChannel) for dac_idx in dac_idxs)
         assert all(isinstance(channels[dac_idx], S4gDacChannel) for dac_idx in range(NUM_DACS_S4GMODULE))
+
+
+class TestD5aDacChannel:
+    """Unit tests checking the qililab D5aDacChannel attributes and methods"""
+
+    def test_off(self):
+        """Unit tests for turning of the channel instrument"""
+
+        D5aDacChannel.__bases__ = (MockD5aDacChannel,)
+        d5a_dac_channel = D5aDacChannel(parent=MagicMock(), name="test_d5a_dac_channel", dac=0)
+        d5a_dac_channel.off()
+
+        assert d5a_dac_channel.get("voltage") == 0
+
+
+class TestS4gDacChannel:
+    """Unit tests checking the qililab S4gDacChannel attributes and methods"""
+
+    def test_off(self):
+        """Unit tests for turning of the channel instrument"""
+
+        S4gDacChannel.__bases__ = (MockS4gDacChannel,)
+        s4g_dac_channel = S4gDacChannel(parent=MagicMock(), name="test_s4g_dac_channel", dac=0)
+        s4g_dac_channel.off()
+
+        assert s4g_dac_channel.get("current") == 0
