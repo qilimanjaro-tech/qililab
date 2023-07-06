@@ -27,10 +27,21 @@ class MockInstrument(DummyInstrument):
 
 
 class TestRhodeSchwarzSGS100A:
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+        cls.old_lo_bases = RhodeSchwarzSGS100A.__bases__
+        RhodeSchwarzSGS100A.__bases__ = (MockInstrument, LocalOscillator)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+        Instrument.close_all()
+        RhodeSchwarzSGS100A.__bases__ = cls.old_lo_bases
+
     def test_init(self):
         # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
         # to the actual instrument
-        RhodeSchwarzSGS100A.__bases__ = (MockInstrument, LocalOscillator)
         rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
         assert isinstance(rs.parameters["lo_frequency"], DelegateParameter)
         # test set get with frequency and lo_frequency

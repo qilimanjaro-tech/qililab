@@ -14,8 +14,3 @@ class attenuator:
     """Attenuator"""
 
     attenuation = "attenuation"
-
-
-class drivers:
-    lo = lo
-    attenuator = attenuator

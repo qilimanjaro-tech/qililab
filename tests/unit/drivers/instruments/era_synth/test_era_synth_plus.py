@@ -27,10 +27,21 @@ class MockInstrument(DummyInstrument):
 
 
 class TestERASynthPlus:
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+        cls.old_lo_bases = ERASynthPlus.__bases__
+        ERASynthPlus.__bases__ = (MockInstrument, LocalOscillator)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+        Instrument.close_all()
+        ERASynthPlus.__bases__ = cls.old_lo_bases
+
     def test_init(self):
         # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
         # to the actual instrument
-        ERASynthPlus.__bases__ = (MockInstrument, LocalOscillator)
         es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
         assert isinstance(es.parameters["lo_frequency"], DelegateParameter)
         # test set get with frequency and lo_frequency
