@@ -106,8 +106,7 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
     """
 
     def on(self) -> None:
-        """Turn output on"""
-        self.set(param_name="voltage", value=1)
+        """Start D5aDacChannel"""
 
     def off(self) -> None:
         """Turn output off"""
@@ -127,8 +126,7 @@ class S4gDacChannel(QcodesS4gDacChannel, CurrentSource):
     """
 
     def on(self) -> None:
-        """Turn output on"""
-        self.set(param_name="voltage", value=1)
+        """Start S4gDacChannel"""
 
     def off(self) -> None:
         """Turn output off"""
