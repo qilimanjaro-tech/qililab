@@ -1,10 +1,9 @@
 from unittest.mock import MagicMock
 
 from qcodes.instrument import Instrument
-from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
-from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
-from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
+from qililab.drivers.instruments.qblox.cluster import QcmQrm
+from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 
 NUM_SUBMODULES = 6
 
@@ -27,5 +26,5 @@ class TestQcmQrm:
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SUBMODULES
-        assert all(isinstance(submodules[seq_idx], AWGSequencer) for seq_idx in seq_idxs)
+        assert all(isinstance(submodules[seq_idx], SequencerQCM) for seq_idx in seq_idxs)
         assert expected_names == registered_names

@@ -3,6 +3,8 @@ from typing import Any
 
 
 class LocalOscillator(ABC):
+    """Interface of a local oscillator."""
+
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter from name

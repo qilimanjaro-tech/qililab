@@ -4,14 +4,10 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qcodes import validators as vals
-from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
 
-from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
-from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
-from qililab.drivers.interfaces.awg import AWG
+from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -64,7 +60,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
-class TestSequencer:
+class TestSequencerQCM:
     """Unit tests checking the Sequencer attributes and methods"""
 
     def test_init(self):
@@ -72,17 +68,17 @@ class TestSequencer:
 
         sequencer_name = "test_sequencer_init"
         seq_idx = 0
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         assert sequencer.get("swap_paths") is False
 
-    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
+    @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._map_outputs")
     def test_set(self, mock_map_outputs):
         """Unit tests for set method"""
 
         sequencer_name = "test_sequencer_set"
         seq_idx = 0
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", 1)
         mock_map_outputs.assert_called()
@@ -95,7 +91,7 @@ class TestSequencer:
         """Unit tests for _map_outputs method"""
         sequencer_name = f"test_sequencer_map_outputs{path0}"
         seq_idx = 0
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         if path0 == 10:
             with pytest.raises(ValueError):
@@ -118,7 +114,7 @@ class TestSequencer:
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
             f"Gaussian(name=<{Gaussian.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
         ]
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("path0", path0)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
@@ -134,13 +130,13 @@ class TestSequencer:
         else:
             assert len(set(waveform_i)) > 1
 
-    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
-    @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
+    @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._generate_waveforms")
+    @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._generate_program")
     def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
         """Unit tests for _translate_pulse_bus_schedule method"""
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
         seq_idx = 0
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequence = sequencer._translate_pulse_bus_schedule(
             pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
@@ -161,7 +157,7 @@ class TestSequencer:
         """Unit tests for _generate_program method"""
         sequencer_name = f"test_sequencer_program{name}"
         seq_idx = 0
-        sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
+        sequencer = SequencerQCM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
         waveforms = sequencer._generate_waveforms(pulse_bus_schedule)
         program = sequencer._generate_program(
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, nshots=1, repetition_duration=1000, num_bins=1
@@ -173,12 +169,12 @@ class TestSequencer:
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""
         parent = MagicMock()
-        sequencer = AWGSequencer(parent=parent, name="sequencer_execute", seq_idx=0)
+        sequencer = SequencerQCM(parent=parent, name="sequencer_execute", seq_idx=0)
 
         with patch(
-            "qililab.drivers.instruments.qblox.sequencer.AWGSequencer._translate_pulse_bus_schedule"
+            "qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._translate_pulse_bus_schedule"
         ) as mock_translate:
-            with patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer.set") as mock_set:
+            with patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.set") as mock_set:
                 sequencer.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1)
                 mock_set.assert_called_once()
                 mock_translate.assert_called_once()

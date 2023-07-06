@@ -5,7 +5,7 @@ from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from .sequencer import AWGSequencer
+from .sequencer_qcm import SequencerQCM
 
 
 class Cluster(QcodesCluster):
@@ -28,11 +28,11 @@ class Cluster(QcodesCluster):
         if "dummy_cfg" in kwargs:
             slot_ids = list(kwargs["dummy_cfg"].keys())
         else:
-            slot_ids = [i for i in range(1, self._num_slots + 1)]
+            slot_ids = list(range(1, self._num_slots + 1))
 
         for slot_idx in slot_ids:
-            module = QcmQrm(self, "module{}".format(slot_idx), slot_idx)
-            self.add_submodule("module{}".format(slot_idx), module)
+            module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+            self.add_submodule(f"module{slot_idx}", module)
 
 
 class QcmQrm(QcodesQcmQrm):
@@ -53,5 +53,5 @@ class QcmQrm(QcodesQcmQrm):
         self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         for seq_idx in range(6):
-            seq = AWGSequencer(self, f"sequencer{seq_idx}", seq_idx)
+            seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
             self.add_submodule(f"sequencer{seq_idx}", seq)
