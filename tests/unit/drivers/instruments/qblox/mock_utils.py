@@ -2,12 +2,39 @@
 
 from unittest.mock import MagicMock
 
+from qblox_instruments.qcodes_drivers.spi_rack_modules import (
+    D5aModule,
+    DummySpiModule,
+    S4gModule,
+)
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
 
 NUM_DACS_D5AMODULE = 16
 NUM_DACS_S4GMODULE = 4
+
+
+class MockSpiRack(DummyInstrument):
+    """Mocking classes for SpiRack"""
+
+    def __init__(self, name, address, **kwargs):
+        """Init method for the mock D5a module"""
+
+        self.api = MagicMock()
+        super().__init__(name, **kwargs)
+
+        self._channels = []
+        for dac in range(NUM_DACS_D5AMODULE):
+            ch_name = f"dac{dac}"
+            channel = D5aDacChannel(self, ch_name, dac)
+            self._channels.append(channel)
+
+        self._MODULES_MAP = {
+            "S4g": S4gModule,
+            "D5a": D5aModule,
+            "dummy": DummySpiModule,
+        }
 
 
 class MockD5aModule(DummyInstrument):
