@@ -19,7 +19,7 @@ class MockSpiRack(DummyInstrument):
     """Mocking classes for SpiRack"""
 
     def __init__(self, name, address, **kwargs):
-        """Init method for the mock D5a module"""
+        """Init method for the mock SpiRack module"""
 
         self.api = MagicMock()
         super().__init__(name, **kwargs)
@@ -73,7 +73,7 @@ class MockD5aDacChannel(DummyChannel):
     """Mocking classes for D5aDacChannel"""
 
     def __init__(self, parent, name, dac, **kwargs):
-        """Init method for the mock D5a module"""
+        """Init method for the mock D5aDacChannel"""
 
         super().__init__(parent, name, "test_channel", **kwargs)
 
@@ -93,7 +93,7 @@ class MockS4gDacChannel(DummyChannel):
     """Mocking classes for S4gDacChannel"""
 
     def __init__(self, parent, name, dac, **kwargs):
-        """Init method for the mock D5a module"""
+        """Init method for the mock S4gDacChannel"""
 
         super().__init__(parent, name, "test_channel", **kwargs)
 
