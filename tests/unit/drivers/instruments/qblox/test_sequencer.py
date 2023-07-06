@@ -27,7 +27,9 @@ START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 
 
-def get_pulse_bus_schedule(start_time, negative_amplitude=False, number_pulses=1):
+def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
+    """Returns a gaussian pulse bus schedule"""
+
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
@@ -43,6 +45,8 @@ def get_pulse_bus_schedule(start_time, negative_amplitude=False, number_pulses=1
 
 
 def get_envelope():
+    """Returns a gaussian pulse bus schedule envelope"""
+
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=PULSE_AMPLITUDE,
@@ -112,7 +116,7 @@ class TestSequencer:
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._map_outputs")
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_set_with_qililab_path(self, mock_map_outputs, path0):
+    def test_set_with_qililab_path(self, mock_map_outputs: MagicMock, path0: int):
         """Unit tests for set method with qililab path"""
 
         sequencer_name = "test_sequencer_set_qililab_path"
@@ -123,7 +127,7 @@ class TestSequencer:
         mock_map_outputs.assert_called_once_with("path0", path0)
 
     @patch("tests.unit.drivers.instruments.qblox.mock_utils.MockSequencer.set")
-    def test_set_with_qblox_parameter(self, mock_super_set):
+    def test_set_with_qblox_parameter(self, mock_super_set: MagicMock):
         """Unit tests for set method with qblox parameter"""
 
         sequencer_name = "test_sequencer_set_qblox_parameter"
@@ -135,7 +139,7 @@ class TestSequencer:
 
     @patch("tests.unit.drivers.instruments.qblox.test_sequencer.MockSequencer.set")
     @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, mock_super_set, path0):
+    def test_map_outputs(self, mock_super_set: MagicMock, path0: int):
         """Unit tests for _map_outputs method"""
 
         sequencer_name = f"test_sequencer_map_outputs{path0}"
@@ -158,7 +162,7 @@ class TestSequencer:
                 assert sequencer._swap is True
 
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms(self, pulse_bus_schedule, path0):
+    def test_generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule, path0: int):
         """Unit tests for _generate_waveforms method"""
 
         sequencer_name = f"test_sequencer_waveforms{path0}"
@@ -186,7 +190,7 @@ class TestSequencer:
             assert np.alltrue(envelope == waveforms[waveforms_keys[0]]["data"])
 
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms_multiple_pulses(self, pulse_bus_schedule_repeated_pulses, path0):
+    def test_generate_waveforms_multiple_pulses(self, pulse_bus_schedule_repeated_pulses: PulseBusSchedule, path0: int):
         """Unit tests for _generate_waveforms method with repeated pulses"""
 
         sequencer_name = f"test_sequencer_waveforms{path0}"
@@ -198,7 +202,9 @@ class TestSequencer:
         assert len(waveforms) == 2
 
     @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms_negative_amplitude(self, pulse_bus_schedule_negative_amplitude, path0):
+    def test_generate_waveforms_negative_amplitude(
+        self, pulse_bus_schedule_negative_amplitude: PulseBusSchedule, path0: int
+    ):
         """Unit tests for _generate_waveforms method with negative amplitude"""
 
         sequencer_name = f"test_sequencer_waveforms{path0}"
@@ -212,7 +218,9 @@ class TestSequencer:
 
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_waveforms")
     @patch("qililab.drivers.instruments.qblox.sequencer.AWGSequencer._generate_program")
-    def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
+    def test_translate_pulse_bus_schedule(
+        self, mock_generate_program: MagicMock, mock_generate_waveforms: MagicMock, pulse_bus_schedule: PulseBusSchedule
+    ):
         """Unit tests for _translate_pulse_bus_schedule method"""
 
         sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
@@ -234,7 +242,7 @@ class TestSequencer:
             (get_pulse_bus_schedule(START_TIME_NON_ZERO), "1", expected_program_str_1),
         ],
     )
-    def test_generate_program(self, pulse_bus_schedule, name, expected_program_str):
+    def test_generate_program(self, pulse_bus_schedule: PulseBusSchedule, name: str, expected_program_str: str):
         """Unit tests for _generate_program method"""
 
         sequencer_name = f"test_sequencer_program{name}"
@@ -248,7 +256,7 @@ class TestSequencer:
         assert isinstance(program, Program)
         assert repr(dedent(repr(program))) == expected_program_str
 
-    def test_execute(self, pulse_bus_schedule):
+    def test_execute(self, pulse_bus_schedule: PulseBusSchedule):
         """Unit tests for execute method"""
 
         qcm_qrn_name = "test_qcm_qrm_execute"
