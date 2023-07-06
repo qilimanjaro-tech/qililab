@@ -130,6 +130,9 @@ class TestCluster:
     def setup_class(cls):
         """Set up for all tests"""
 
+        cls.old_awg_sequencer_bases = AWGSequencer.__bases__
+        cls.old_qcm_qrm_bases = QcmQrm.__bases__
+        cls.old_cluster_bases = Cluster.__bases__
         AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
@@ -139,6 +142,9 @@ class TestCluster:
         """Tear down after all tests have been run"""
 
         Instrument.close_all()
+        AWGSequencer.__bases__ = cls.old_awg_sequencer_bases
+        QcmQrm.__bases__ = cls.old_qcm_qrm_bases
+        Cluster.__bases__ = cls.old_cluster_bases
 
     def test_init_with_dummy_cfg(self):
         """Test init method with dummy configuration"""
@@ -189,7 +195,7 @@ class TestQcmQrm:
         qcm_qrm = QcmQrm(parent=MagicMock(), name=qcm_qrn_name, slot_idx=0)
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
-        expected_names = [f"{sequencers_prefix}{idx}" for idx in range(6)]
+        expected_names = [f"{qcm_qrn_name}_{sequencers_prefix}{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SEQUENCERS

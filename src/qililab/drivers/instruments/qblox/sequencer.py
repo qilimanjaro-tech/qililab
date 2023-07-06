@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
@@ -12,7 +14,6 @@ from qpysequence.waveforms import Waveforms
 from qililab.config import logger
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
-from typing import Any
 
 
 class AWGSequencer(Sequencer, AWG):
