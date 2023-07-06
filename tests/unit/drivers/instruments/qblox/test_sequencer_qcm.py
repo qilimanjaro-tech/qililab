@@ -264,9 +264,9 @@ class TestSequencer:
         sequencer = SequencerQCM(parent=qcm_qrm, name="sequencer_execute", seq_idx=0)
 
         with patch(
-            "qililab.drivers.instruments.qblox.sequencer.SequencerQCM._translate_pulse_bus_schedule"
+            "qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM._translate_pulse_bus_schedule"
         ) as mock_translate:
-            with patch("qililab.drivers.instruments.qblox.sequencer.SequencerQCM.set") as mock_set:
+            with patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.set") as mock_set:
                 with patch(
                     "tests.unit.drivers.instruments.qblox.mock_utils.MockQcmQrm.arm_sequencer"
                 ) as mock_arm_sequencer:
