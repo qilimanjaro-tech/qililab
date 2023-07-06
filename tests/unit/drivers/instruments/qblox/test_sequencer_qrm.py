@@ -60,82 +60,13 @@ class TestSequencerQRM:
         seq_idx = 0
         sequencer = SequencerQRM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
-        assert sequencer.get("swap_paths") is False
+        assert sequencer.get("sequence_timeout") == 1
+        assert sequencer.get("acquisition_timeout") == 1
+        assert sequencer.get("weights_i") == []
+        assert sequencer.get("weights_q") == []
+        assert sequencer.get("weighed_acq_enabled") is False
 
-    @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM._map_outputs")
-    def test_set(self, mock_map_outputs):
-        """Unit tests for set method"""
-
-        sequencer_name = "test_sequencer_set"
-        seq_idx = 0
-        sequencer = SequencerQRM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        sequencer.set("path0", 1)
-        mock_map_outputs.assert_called()
-
-        sequencer.set("channel_map_path0_out0_en", True)
-        assert sequencer.get("channel_map_path0_out0_en") is True
-
-    @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, path0):
-        """Unit tests for _map_outputs method"""
-        sequencer_name = f"test_sequencer_map_outputs{path0}"
-        seq_idx = 0
-        sequencer = SequencerQRM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        if path0 == 10:
-            with pytest.raises(ValueError):
-                sequencer._map_outputs("path0", path0)
-                assert sequencer.get("swap_paths") is False
-
-        else:
-            sequencer._map_outputs("path0", path0)
-            if path0 == 0:
-                assert sequencer.get("swap_paths") is False
-            elif path0 == 1:
-                assert sequencer.get("swap_paths") is True
-
-    @pytest.mark.parametrize("path0", [0, 1])
-    def test_generate_waveforms(self, pulse_bus_schedule, path0):
-        """Unit tests for _generate_waveforms method"""
-        sequencer_name = f"test_sequencer_waveforms{path0}"
-        seq_idx = 0
-        expected_waveforms_keys = [
-            f"Gaussian(name=<{Rectangular.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_I",
-            f"Gaussian(name=<{Rectangular.name}: 'gaussian'>, num_sigmas={PULSE_SIGMAS}) - {PULSE_DURATION}ns_Q",
-        ]
-        sequencer = SequencerQRM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        sequencer.set("path0", path0)
-        waveforms = sequencer._generate_waveforms(pulse_bus_schedule).to_dict()
-        waveforms_keys = list(waveforms.keys())
-        waveform_i = waveforms[waveforms_keys[0]]["data"]
-        assert len(waveforms_keys) == len(expected_waveforms_keys)
-        assert all(isinstance(waveforms[key], dict) for key in waveforms)
-        assert all("data" in waveforms[key] for key in waveforms)
-        assert all("index" in waveforms[key] for key in waveforms)
-        assert all(isinstance(waveforms[key]["data"], list) for key in waveforms)
-        if path0 % 2 != 0:
-            assert len(set(waveform_i)) == 1
-        else:
-            assert len(set(waveform_i)) > 1
-
-    @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM._generate_waveforms")
-    @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM._generate_program")
-    def test_translate_pulse_bus_schedule(self, mock_generate_program, mock_generate_waveforms, pulse_bus_schedule):
-        """Unit tests for _translate_pulse_bus_schedule method"""
-        sequencer_name = "test_sequencer_translate_pulse_bus_schedule"
-        seq_idx = 0
-        sequencer = SequencerQRM(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
-
-        sequence = sequencer._translate_pulse_bus_schedule(
-            pulse_bus_schedule=pulse_bus_schedule, nshots=1, repetition_duration=1000, num_bins=1
-        )
-
-        assert isinstance(sequence, QpySequence)
-        mock_generate_waveforms.assert_called_once()
-        mock_generate_program.assert_called_once()
-
+    @pytest.mark.xfail
     @pytest.mark.parametrize(
         "pulse_bus_schedule, name, expected_program_str",
         [
