@@ -44,7 +44,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
         self.parent.get_acquisition_state(sequencer=self.seq_idx, timeout=self.get("acquisition_timeout"))
         if self.parent.get("scope_acq_sequencer_select") == self.seq_idx:
             self.parent.store_scope_acquisition(sequencer=self.seq_idx, name="default")
-        result = self.device.get_acquisitions(sequencer=self.seq_idx)["default"]["acquisition"]
+        result = self.parent.get_acquisitions(sequencer=self.seq_idx)["default"]["acquisition"]
 
         integration_length = (
             len(self.get("weights_i")) if self.get("weighed_acq_enabled") else self.get("integration_length_acq")
@@ -61,7 +61,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
 
-    def _generate_weights(self) -> Weights:  # type: ignore
+    def _generate_weights(self) -> Weights:
         """Generate acquisition weights.
 
         Returns:

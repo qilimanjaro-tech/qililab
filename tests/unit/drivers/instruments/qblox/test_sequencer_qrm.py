@@ -1,15 +1,18 @@
 """Tests for the SequencerQRM class."""
 # pylint: disable=protected-access
+import re
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qblox_instruments.types import PulsarType
 from qpysequence.program import Program
-from qpysequence.sequence import Sequence as QpySequence
 
+from qililab.drivers import Pulsar
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
+from qililab.result.qblox_results import QbloxResult
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -36,12 +39,60 @@ def get_pulse_bus_schedule(start_time):
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
-expected_program_str_0 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_1:\n            wait             996\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
-expected_program_str_1 = repr(
-    "setup:\n    move             1, R0\n    wait_sync        4\n\naverage:\n    move             0, R1\n    bin:\n        long_wait_2:\n            wait             4\n\n        reset_ph\n        set_awg_gain     32767, 32767\n        set_ph           0\n        play             0, 1, 4\n        long_wait_3:\n            wait             992\n\n        add              R1, 1, R1\n        nop\n        jlt              R1, 1, @bin\n    loop             R0, @average\nstop:\n    stop\n\n"
-)
+expected_program_str_0 = r"""setup:
+    move             0, R0
+    move             1, R1
+    move             1, R2
+    wait_sync        4
+
+average:
+    move             0, R3
+    bin:
+        reset_ph
+        set_awg_gain     32767, 32767
+        set_ph           0
+        play             0, 1, 4
+        acquire          0, R3, 4
+        long_wait_\d+:
+            wait             992
+            # noqa: W293
+        add              R3, 1, R3
+        nop
+        jlt              R3, 1, @bin
+    loop             R2, @average
+stop:
+    stop
+    # noqa: W293
+"""
+
+expected_program_str_1 = r"""setup:
+    move             0, R0
+    move             1, R1
+    move             1, R2
+    wait_sync        4
+
+average:
+    move             0, R3
+    bin:
+        long_wait_\d+:
+            wait             4
+            # noqa: W293
+        reset_ph
+        set_awg_gain     32767, 32767
+        set_ph           0
+        play             0, 1, 4
+        acquire          0, R3, 4
+        long_wait_\d+:
+            wait             988
+            # noqa: W293
+        add              R3, 1, R3
+        nop
+        jlt              R3, 1, @bin
+    loop             R2, @average
+stop:
+    stop
+    # noqa: W293
+"""
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -66,7 +117,64 @@ class TestSequencerQRM:
         assert sequencer.get("weights_q") == []
         assert sequencer.get("weighed_acq_enabled") is False
 
-    @pytest.mark.xfail
+    def test_get_results(self):
+        """Unit test for the ``get_results`` method."""
+        seq_idx = 1
+        sequence_timeout = 4
+        acquisition_timeout = 6
+        parent = MagicMock()
+        sequencer = SequencerQRM(parent=parent, name="test", seq_idx=seq_idx)
+
+        # Set test values
+        sequencer.set("sequence_timeout", sequence_timeout)
+        sequencer.set("acquisition_timeout", acquisition_timeout)
+
+        # Get results
+        with patch.object(QbloxResult, "__post_init__") as post_init:
+            results = sequencer.get_results()
+            post_init.assert_called_once_with()
+
+        # Assert calls and results
+        parent.get_sequencer_state.assert_called_once_with(sequencer=seq_idx, timeout=sequence_timeout)
+        parent.get_acquisition_state.assert_called_once_with(sequencer=seq_idx, timeout=acquisition_timeout)
+        parent.store_scope_acquisition.assert_not_called()
+        parent.get_acquisitions(sequencer=seq_idx)
+        # assert sequencer.get("sync_en") is False  # TODO: Uncomment this once qblox dummy driver is fixed
+        assert results.integration_lengths == [sequencer.get("integration_length_acq")]
+
+    def test_get_results_with_weights(self):
+        """Test that calling ``get_results`` with a weighed acquisition, the integration length
+        corresponds to the length of the weights' list."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+        # Set values
+        sequencer.set("weights_i", [1, 2, 3, 4, 5])
+        sequencer.set("weights_q", [6, 7, 8, 9, 10])
+        sequencer.set("weighed_acq_enabled", True)
+
+        # Get results
+        with patch.object(QbloxResult, "__post_init__") as post_init:
+            results = sequencer.get_results()
+            post_init.assert_called_once_with()
+
+        # Asserts
+        assert results.integration_lengths == [len(sequencer.get("weights_i"))]
+
+    def test_get_results_with_scope_acquisition(self):
+        """Test calling ``get_results`` when scope acquisition is enabled."""
+        seq_idx = 4
+        parent = MagicMock()
+        parent.get.return_value = seq_idx
+        sequencer = SequencerQRM(parent=parent, name="test", seq_idx=seq_idx)
+
+        # Execute and get results
+        with patch.object(QbloxResult, "__post_init__") as post_init:
+            _ = sequencer.get_results()
+            post_init.assert_called_once_with()
+
+        # Asserts
+        parent.store_scope_acquisition.assert_called_once_with(sequencer=seq_idx, name="default")
+
     @pytest.mark.parametrize(
         "pulse_bus_schedule, name, expected_program_str",
         [
@@ -85,7 +193,24 @@ class TestSequencerQRM:
         )
 
         assert isinstance(program, Program)
-        assert repr(dedent(repr(program))) == expected_program_str
+        assert re.match(expected_program_str, repr(program))
+
+    def test_generate_weights(self):
+        """Test the ``_generate_weights`` method."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+        # Set values
+        weights_i = [1, 2, 3, 4]
+        weights_q = [5, 6, 7, 8]
+        sequencer.set("weights_i", weights_i)
+        sequencer.set("weights_q", weights_q)
+
+        weights = sequencer._generate_weights()
+
+        assert len(weights._weight_pairs) == 1
+        pair = weights._weight_pairs[0]
+        assert pair.weight_i.data == weights_i
+        assert pair.weight_q.data == weights_q
 
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""

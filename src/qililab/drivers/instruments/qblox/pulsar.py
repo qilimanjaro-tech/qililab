@@ -4,6 +4,7 @@ from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from .sequencer_qcm import SequencerQCM
+from .sequencer_qrm import SequencerQRM
 
 
 class Pulsar(QcodesPulsar):
@@ -23,5 +24,8 @@ class Pulsar(QcodesPulsar):
         self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         for seq_idx in range(6):
-            seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
+            if self.is_qcm_type:
+                seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
+            else:
+                seq = SequencerQRM(self, f"sequencer{seq_idx}", seq_idx)
             self.add_submodule(f"sequencer{seq_idx}", seq)
