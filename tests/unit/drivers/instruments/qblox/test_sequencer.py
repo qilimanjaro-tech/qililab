@@ -1,4 +1,5 @@
 """Tests for the Sequencer class."""
+# pylint: disable=protected-access
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
@@ -10,11 +11,10 @@ from qpysequence.sequence import Sequence as QpySequence
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer import AWGSequencer
-from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
-from .mock_utils import MockCluster, MockQcmQrm, MockSequencer
+from .mock_utils import MockCluster, MockQcmQrm
 
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -39,7 +39,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
         pulse_shape=pulse_shape,
     )
     pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
-    timeline = [pulse_event for i in range(number_pulses)]
+    timeline = [pulse_event for _ in range(number_pulses)]
 
     return PulseBusSchedule(timeline=timeline, port=0)
 
@@ -95,10 +95,8 @@ class TestSequencer:
     def setup_class(cls):
         """Set up for all tests"""
 
-        cls.old_awg_sequencer_bases = AWGSequencer.__bases__
         cls.old_qcm_qrm_bases = QcmQrm.__bases__
         cls.old_cluster_bases = Cluster.__bases__
-        AWGSequencer.__bases__ = (MockSequencer, AWG)
         QcmQrm.__bases__ = (MockQcmQrm,)
         Cluster.__bases__ = (MockCluster,)
 
@@ -107,7 +105,6 @@ class TestSequencer:
         """Tear down after all tests have been run"""
 
         Instrument.close_all()
-        AWGSequencer.__bases__ = cls.old_awg_sequencer_bases
         QcmQrm.__bases__ = cls.old_qcm_qrm_bases
         Cluster.__bases__ = cls.old_cluster_bases
 
@@ -132,8 +129,7 @@ class TestSequencer:
         sequencer.set("path0", path0)
         mock_map_outputs.assert_called_once_with("path0", path0)
 
-    @patch("tests.unit.drivers.instruments.qblox.mock_utils.MockSequencer.set")
-    def test_set_with_qblox_parameter(self, mock_super_set: MagicMock):
+    def test_set_with_qblox_parameter(self):
         """Unit tests for set method with qblox parameter"""
 
         sequencer_name = "test_sequencer_set_qblox_parameter"
@@ -141,11 +137,10 @@ class TestSequencer:
         sequencer = AWGSequencer(parent=MagicMock(), name=sequencer_name, seq_idx=seq_idx)
 
         sequencer.set("channel_map_path0_out0_en", True)
-        mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
+        assert sequencer.get("channel_map_path0_out0_en") is True
 
-    @patch("tests.unit.drivers.instruments.qblox.test_sequencer.MockSequencer.set")
     @pytest.mark.parametrize("path0", [0, 1, 10])
-    def test_map_outputs(self, mock_super_set: MagicMock, path0: int):
+    def test_map_outputs(self, path0: int):
         """Unit tests for _map_outputs method"""
 
         sequencer_name = f"test_sequencer_map_outputs{path0}"
@@ -156,12 +151,10 @@ class TestSequencer:
             error_str = f"Impossible path configuration detected. path0 cannot be mapped to output {path0}."
             with pytest.raises(ValueError, match=error_str):
                 sequencer._map_outputs("path0", path0)
-                mock_super_set.assert_not_called()
                 assert sequencer._swap is False
 
         else:
             sequencer._map_outputs("path0", path0)
-            mock_super_set.assert_called_once_with("channel_map_path0_out0_en", True)
             if path0 == 0:
                 assert sequencer._swap is False
             elif path0 == 1:
