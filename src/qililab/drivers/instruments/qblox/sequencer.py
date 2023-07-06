@@ -8,11 +8,11 @@ from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, S
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
-from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
+from typing import Any
 
 
 class AWGSequencer(Sequencer, AWG):
@@ -33,14 +33,25 @@ class AWGSequencer(Sequencer, AWG):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self._swap = False
 
-    def set(self, param_name, value):
+    def set(self, param_name: str, value: Any):
+        """Sets a parameter value checking if is an output mapping.
+
+        Args:
+            param_name (str): Parameter name
+            value (Any): Parameter value
+        """
         if param_name in {"path0", "path1"}:
             self._map_outputs(param_name, value)
         else:
             super().set(param_name, value)
 
-    def _map_outputs(self, param_name, param_value):
-        """Map sequencer paths with output channels."""
+    def _map_outputs(self, param_name: str, param_value: Any):
+        """Map sequencer paths with output channels and set the swapping.
+
+        Args:
+            param_name (str): Parameter name
+            param_value (Any): Parameter value
+        """
         allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
         swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
         if (param_name, param_value) in allowed_conf:
@@ -149,7 +160,6 @@ class AWGSequencer(Sequencer, AWG):
         Returns:
             Program: Q1ASM program.
         """
-
         # Define program's blocks
         program = Program()
         # Create registers with 0 and 1 (necessary for qblox)
