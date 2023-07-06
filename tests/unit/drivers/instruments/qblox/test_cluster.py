@@ -2,20 +2,17 @@ from unittest.mock import MagicMock
 
 import pytest
 from qblox_instruments.types import ClusterType
-from qcodes.instrument import Instrument
-from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
+from qcodes import Instrument
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
+from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
-
-def teardown_module():
-    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
-    Instrument.close_all()
-
+from .mock_utils import MockCluster, MockQcmQrm
 
 NUM_SLOTS = 20
+NUM_SEQUENCERS = 6
 DUMMY_CFG = {"1": ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
@@ -40,32 +37,29 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return PulseBusSchedule(timeline=[pulse_event], port=0)
 
 
-class MockQcmQrm(DummyChannel):
-    def __init__(self, parent, name, slot_idx, **kwargs):
-        super().__init__(parent=parent, name=name, channel="", **kwargs)
-
-        # Store sequencer index
-        self._slot_idx = slot_idx
-        self.submodules = {"test_submodule": MagicMock()}
-        self.is_qcm_type = True
-        self.is_qrm_type = False
-        self.is_rf_type = False
-
-
-class MockCluster(DummyInstrument):
-    def __init__(self, name, address=None, **kwargs):
-        super().__init__(name)
-
-        self.address = address
-        self._num_slots = NUM_SLOTS
-        self._present_at_init = MagicMock()
-        self.submodules = {"test_submodule": MagicMock()}
-
-
 class TestCluster:
     """Unit tests checking the Cluster attributes and methods"""
 
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+
+        cls.old_qcm_qrm_bases = QcmQrm.__bases__
+        cls.old_cluster_bases = Cluster.__bases__
+        QcmQrm.__bases__ = (MockQcmQrm,)
+        Cluster.__bases__ = (MockCluster,)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        Instrument.close_all()
+        QcmQrm.__bases__ = cls.old_qcm_qrm_bases
+        Cluster.__bases__ = cls.old_cluster_bases
+
     def test_init_with_dummy_cfg(self):
+        """Test init method with dummy configuration"""
+
         cluster = Cluster(name="test_cluster_dummy", dummy_cfg=DUMMY_CFG)
         submodules = cluster.submodules
 
@@ -76,16 +70,31 @@ class TestCluster:
         assert result_submodules_ids == expected_submodules_ids
 
     def test_init_without_dummy_cfg(self):
-        Cluster.__bases__ = (MockCluster,)
-        QcmQrm.__bases__ = (MockQcmQrm,)
-        cluster_name = "test_cluster_without_dummy"
-        qcm_qrm_prefix = "module"
-        cluster = Cluster(name=cluster_name)
+        """Test init method without dummy configuration"""
+        cluster = Cluster(name="test_cluster_without_dummy")
         cluster_submodules = cluster.submodules
         qcm_qrm_idxs = list(cluster_submodules.keys())
-        cluster_submodules_expected_names = [f"{cluster_name}_{qcm_qrm_prefix}{idx}" for idx in range(1, NUM_SLOTS + 1)]
+        cluster_submodules_expected_names = [f"module{idx}" for idx in range(1, NUM_SLOTS + 1)]
         cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
 
         assert len(cluster_submodules) == NUM_SLOTS
         assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
         assert cluster_submodules_expected_names == cluster_registered_names
+
+
+class TestQcmQrm:
+    """Unit tests checking the QililabQcmQrm attributes and methods"""
+
+    def test_init(self):
+        """Test init method for QcmQrm"""
+
+        qcm_qrn_name = "qcm_qrm"
+        qcm_qrm = QcmQrm(parent=MagicMock(), name=qcm_qrn_name, slot_idx=0)
+        submodules = qcm_qrm.submodules
+        seq_idxs = list(submodules.keys())
+        expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
+        registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
+
+        assert len(submodules) == NUM_SEQUENCERS
+        assert all(isinstance(submodules[seq_idx], SequencerQCM) for seq_idx in seq_idxs)
+        assert expected_names == registered_names

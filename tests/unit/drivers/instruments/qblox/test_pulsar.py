@@ -1,5 +1,5 @@
 from qblox_instruments.types import PulsarType
-from qcodes.instrument import Instrument
+from qcodes import Instrument
 
 from qililab.drivers.instruments.qblox.pulsar import Pulsar
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
@@ -15,7 +15,15 @@ def teardown_module():
 class TestPulsar:
     """Unit tests checking the QililabPulsar attributes and methods"""
 
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        Instrument.close_all()
+
     def test_init(self):
+        """Unittest for init method"""
+
         pulsar_name = "test"
         sequencers_prefix = "sequencer"
         pulsar = Pulsar(name=pulsar_name, dummy_type=PulsarType.PULSAR_QCM)

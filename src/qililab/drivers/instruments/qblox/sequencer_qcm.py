@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
@@ -31,14 +33,25 @@ class SequencerQCM(Sequencer, AWG):
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
-    def set(self, param_name, value):
+    def set(self, param_name: str, value: Any):
+        """Sets a parameter value checking if is an output mapping.
+
+        Args:
+            param_name (str): Parameter name
+            value (Any): Parameter value
+        """
         if param_name in {"path0", "path1"}:
             self._map_outputs(param_name, value)
         else:
             super().set(param_name, value)
 
-    def _map_outputs(self, param_name, param_value):
-        """Map sequencer paths with output channels."""
+    def _map_outputs(self, param_name: str, param_value: Any):
+        """Map sequencer paths with output channels and set the swapping.
+
+        Args:
+            param_name (str): Parameter name
+            param_value (Any): Parameter value
+        """
         allowed_conf = {("path0", 0), ("path0", 2), ("path1", 1), ("path1", 3)}
         swappable_conf = {("path0", 1), ("path0", 3), ("path1", 0), ("path1", 2)}
         if (param_name, param_value) in allowed_conf:
@@ -147,7 +160,6 @@ class SequencerQCM(Sequencer, AWG):
         Returns:
             Program: Q1ASM program.
         """
-
         # Define program's blocks
         program = Program()
         # Create registers with 0 and 1 (necessary for qblox)
