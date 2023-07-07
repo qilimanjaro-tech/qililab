@@ -4,7 +4,7 @@ from typing import Any
 from qililab.pulse import PulseBusSchedule
 
 
-class AWG:
+class AWG(ABC):
     """
     Interface for AWG sequencer instrument types.
     """
