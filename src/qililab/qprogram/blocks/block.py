@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Self  # type: ignore
 
 from qililab.qprogram.operations.operation import Operation
 

@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Self, TypeVar
+from typing import Self, TypeVar  # type: ignore
 
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.operations.operation import Operation
