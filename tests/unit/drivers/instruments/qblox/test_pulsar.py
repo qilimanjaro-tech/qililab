@@ -12,7 +12,7 @@ class TestPulsar:
     """Unit tests checking the QililabPulsar attributes and methods"""
 
     @classmethod
-    def teardown_class(cls):
+    def teardown_method(cls):
         """Tear down after all tests have been run"""
 
         Instrument.close_all()

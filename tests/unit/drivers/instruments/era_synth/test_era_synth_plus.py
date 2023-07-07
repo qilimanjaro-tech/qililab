@@ -36,7 +36,6 @@ class TestERASynthPlus:
     def teardown_class(cls):
         """Tear down after all tests have been run"""
 
-        Instrument.close_all()
         ERASynthPlus.__bases__ = cls.old_era_synth_bases
 
     def test_init(self):

@@ -94,7 +94,6 @@ class TestCluster:
     def teardown_class(cls):
         """Tear down after all tests have been run"""
 
-        Instrument.close_all()
         QcmQrm.__bases__ = cls.old_qcm_qrm_bases
         Cluster.__bases__ = cls.old_cluster_bases
 
@@ -115,6 +114,12 @@ class TestCluster:
 class TestClusterIntegration:
     """Integration tests for the Cluster class. These tests use the `dummy_cfg` attribute to be able to use the
     code from qcodes (without mocking the parent class)."""
+
+    @classmethod
+    def teardown_method(cls):
+        """Tear down after all tests have been run"""
+
+        Instrument.close_all()
 
     def test_init_with_dummy_cfg(self):
         """Test init method with dummy configuration"""
