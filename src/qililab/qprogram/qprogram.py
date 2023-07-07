@@ -45,12 +45,51 @@ class QProgram:
         self._active_block.append(element=element)
 
     def block(self):
+        """Define a generic block for scoping operations.
+
+        Blocks need to open a scope in the following way::
+
+            with qp.block(...):
+                # here come the operations that shall be executed in the block
+
+        Returns:
+            Block: The block.
+        """
         return QProgram._BlockContext(qprogram=self)
 
     def acquire_loop(self, iterations: int, bins: int = 1):
+        """Define an acquire loop block with averaging in real time.
+
+        Blocks need to open a scope in the following way::
+
+            with qp.acquire_loop(...):
+                # here come the operations that shall be executed in the acquire_loop block
+
+        Args:
+            iterations (int): The number of acquire iterations.
+            bins (int, optional): The number of bins used for acquisition. Defaults to 1.
+
+        Returns:
+            AcquireLoop: The acquire_loop block.
+        """
         return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations, bins=bins)
 
     def loop(self, variable: Variable, values: np.ndarray):
+        """Define a loop block to iterate values over a variable.
+
+        Blocks need to open a scope in the following way::
+
+            with qp.loop(...):
+                # here come the operations that shall be executed in the loop block
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            values (np.ndarray): The values to iterate over.
+
+        Returns:
+            Loop: The loop block.
+        """
+
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
 
     def play(self, bus: str, waveform: Waveform | IQPair):
@@ -74,22 +113,50 @@ class QProgram:
         self._active_block.append(operation)
 
     def acquire(self, bus: str, weights: IQPair | None = None):
+        """Acquire results
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            weights (IQPair | None, optional): Weights used during acquisition. Defaults to None.
+        """
         operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
 
     def sync(self, buses: list[str]):
+        """Synchronize between buses
+
+        Args:
+            buses (list[str]): List of unique idetifiers of the buses.
+        """
         operation = Sync(buses=buses)
         self._active_block.append(operation)
 
-    def reset_phase(self, bus: str):
+    def reset_nco_phase(self, bus: str):
+        """Reset the phase of the NCO associated with bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+        """
         operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
 
     def set_nco_frequency(self, bus: str, frequency: int):
+        """Set the frequency of the NCO associated with bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            frequency (int): The new frequency of the NCO.
+        """
         operation = SetNCOFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
 
-    def set_gain(self, bus: str, gain: float):
+    def set_awg_gain(self, bus: str, gain: float):
+        """Set the gain of the AWG associated with bus.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            gain (float): The new gain of the AWG.
+        """
         operation = SetGain(bus=bus, gain=gain)
         self._active_block.append(operation)
 
