@@ -3,13 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 from qblox_instruments.types import ClusterType
 from qcodes import Instrument
+from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
-
-from .mock_utils import MockCluster, MockQcmQrm
 
 NUM_SLOTS = 20
 NUM_SEQUENCERS = 6
@@ -20,6 +19,46 @@ PULSE_PHASE = 0
 PULSE_DURATION = 50
 PULSE_FREQUENCY = 1e9
 PULSE_NAME = Gaussian.name
+
+
+class MockQcmQrm(DummyChannel):
+    """Mock class for QcmQrm"""
+
+    def __init__(self, parent, name, slot_idx, **kwargs):
+        """Mock init method"""
+
+        super().__init__(parent=parent, name=name, channel="", **kwargs)
+
+        # Store sequencer index
+        self._slot_idx = slot_idx
+        self.submodules = {"test_submodule": MagicMock()}
+        self.is_qcm_type = True
+        self.is_qrm_type = False
+        self.is_rf_type = False
+
+    def arm_sequencer(self):
+        """Mock arm_sequencer method"""
+
+        return None
+
+    def start_sequencer(self):
+        """Mock start_sequencer method"""
+
+        return None
+
+
+class MockCluster(DummyInstrument):
+    """Mock class for Cluster"""
+
+    def __init__(self, name, identifier=None, **kwargs):
+        """Mock init method"""
+
+        super().__init__(name, **kwargs)
+
+        self.address = identifier
+        self._num_slots = 20
+        self.submodules = {"test_submodule": MagicMock()}
+        self._present_at_init = MagicMock()
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -38,7 +77,8 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 
 
 class TestCluster:
-    """Unit tests checking the Cluster attributes and methods"""
+    """Unit tests checking the Cluster attributes and methods. These tests mock the parent class of the `Cluster`,
+    such that the code from `qcodes` is never executed."""
 
     @classmethod
     def setup_class(cls):
@@ -57,6 +97,24 @@ class TestCluster:
         QcmQrm.__bases__ = cls.old_qcm_qrm_bases
         Cluster.__bases__ = cls.old_cluster_bases
 
+    def test_init_without_dummy_cfg(self):
+        """Test init method without dummy configuration"""
+        cluster_name = "test_cluster_without_dummy"
+        cluster = Cluster(name=cluster_name)
+        cluster_submodules = cluster.submodules
+        qcm_qrm_idxs = list(cluster_submodules.keys())
+        cluster_submodules_expected_names = [f"{cluster_name}_module{idx}" for idx in range(1, NUM_SLOTS + 1)]
+        cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
+
+        assert len(cluster_submodules) == NUM_SLOTS
+        assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
+        assert cluster_submodules_expected_names == cluster_registered_names
+
+
+class TestClusterIntegration:
+    """Integration tests for the Cluster class. These tests use the `dummy_cfg` attribute to be able to use the
+    code from qcodes (without mocking the parent class)."""
+
     def test_init_with_dummy_cfg(self):
         """Test init method with dummy configuration"""
 
@@ -68,18 +126,6 @@ class TestCluster:
         assert len(result_submodules_ids) == len(expected_submodules_ids)
         assert all(isinstance(submodules[id], QcmQrm) for id in result_submodules_ids)
         assert result_submodules_ids == expected_submodules_ids
-
-    def test_init_without_dummy_cfg(self):
-        """Test init method without dummy configuration"""
-        cluster = Cluster(name="test_cluster_without_dummy")
-        cluster_submodules = cluster.submodules
-        qcm_qrm_idxs = list(cluster_submodules.keys())
-        cluster_submodules_expected_names = [f"module{idx}" for idx in range(1, NUM_SLOTS + 1)]
-        cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
-
-        assert len(cluster_submodules) == NUM_SLOTS
-        assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
-        assert cluster_submodules_expected_names == cluster_registered_names
 
 
 class TestQcmQrm:
