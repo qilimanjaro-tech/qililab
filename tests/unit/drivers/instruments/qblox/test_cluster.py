@@ -7,6 +7,7 @@ from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
+from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
@@ -131,11 +132,18 @@ class TestClusterIntegration:
 class TestQcmQrm:
     """Unit tests checking the QililabQcmQrm attributes and methods"""
 
-    def test_init(self):
-        """Test init method for QcmQrm"""
+    def test_init_qcm_type(self):
+        """Test init method for QcmQrm for a QCM module."""
+
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = True
+        parent._is_qrm_type.return_value = False
 
         qcm_qrn_name = "qcm_qrm"
-        qcm_qrm = QcmQrm(parent=MagicMock(), name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
+
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
         expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
@@ -143,4 +151,25 @@ class TestQcmQrm:
 
         assert len(submodules) == NUM_SEQUENCERS
         assert all(isinstance(submodules[seq_idx], SequencerQCM) for seq_idx in seq_idxs)
+        assert expected_names == registered_names
+
+    def test_init_qrm_type(self):
+        """Test init method for QcmQrm for a QRM module."""
+
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_qcm_type.return_value = False
+        parent._is_qrm_type.return_value = True
+
+        qcm_qrn_name = "qcm_qrm"
+        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
+
+        submodules = qcm_qrm.submodules
+        seq_idxs = list(submodules.keys())
+        expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
+        registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
+
+        assert len(submodules) == NUM_SEQUENCERS
+        assert all(isinstance(submodules[seq_idx], SequencerQRM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
