@@ -56,25 +56,7 @@ class QbloxQRMRF(QbloxQRM):
             channel_id (int | None, optional): ID of the sequencer. Defaults to None.
         """
         if parameter == Parameter.LO_FREQUENCY:
-            if channel_id is None:
-                raise ValueError(
-                    "`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter."
-                    "Please specify the sequencer index or use the specific Qblox parameter."
-                )
-            sequencer: AWGQbloxADCSequencer = self._get_sequencer_by_id(channel_id)
-            # Remember that a set is ordered! Thus `{1, 0} == {0, 1}` returns True.
-            # For this reason, the following checks also take into account swapped paths!
-            if {sequencer.output_i, sequencer.output_q} == {0, 1}:
-                output = 0
-            elif {sequencer.output_i, sequencer.output_q} == {2, 3}:
-                output = 1
-            else:
-                raise ValueError(
-                    f"Cannot set the LO frequency of sequencer {channel_id} because it is connected to two LOs. "
-                    f"The paths of the sequencer are mapped to outputs {sequencer.output_i} and {sequencer.output_q} "
-                    "respectively."
-                )
-            parameter = Parameter(f"out{output}_lo_freq")
+            parameter = Parameter.OUT0_IN0_LO_FREQ
 
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)

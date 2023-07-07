@@ -141,3 +141,34 @@ class TestIntegration:
         assert qcm_rf.device.sequencers[0].get("gain_awg_path0") == pytest.approx(0.123)
         assert qcm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
         cluster.close()
+
+    def test_setup_with_lo_frequency(self, settings):
+        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
+        qcm_rf.device.set.assert_called_once_with("out0_lo_freq", 2e9)
+
+    def test_setup_with_lo_frequency_without_channel_id_raises_error(self, settings):
+        """Test that calling `setup` when using the `Parameter.LO_FREQUENCY` generic parameter without
+        a channel id raises an error."""
+        qcm_rf = QbloxQCMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        with pytest.raises(ValueError, match="`channel_id` cannot be None when setting the `LO_FREQUENCY` parameter"):
+            qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9)
+
+    def test_setup_with_lo_frequency_with_2_los(self, settings):
+        """Test that calling `setup` with `Parameter.LO_FREQUENCY` when the sequencer is connected to
+        2 LOs raises an error."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQCMRF(settings=settings)
+        sequencer = qcm_rf._get_sequencer_by_id(sequencer_idx)
+        sequencer.output_i = 0
+        sequencer.output_q = 2
+        qcm_rf.device = MagicMock()
+        with pytest.raises(
+            ValueError,
+            match=f"Cannot set the LO frequency of sequencer {sequencer_idx} because it is connected to two LOs. ",
+        ):
+            qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
