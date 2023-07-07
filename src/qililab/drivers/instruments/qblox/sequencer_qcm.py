@@ -75,8 +75,8 @@ class SequencerQCM(Sequencer, AWG):
         """
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
         self.set("sequence", sequence.todict())
-        self._parent.arm_sequencer()
-        self._parent.start_sequencer()
+        self.parent.arm_sequencer(sequencer=self.seq_idx)
+        self.parent.start_sequencer(sequencer=self.seq_idx)
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
