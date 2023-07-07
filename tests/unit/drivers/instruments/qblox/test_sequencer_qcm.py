@@ -278,5 +278,5 @@ class TestSequencer:
                         )
                         mock_set.assert_called_once()
                         mock_translate.assert_called_once()
-                        mock_arm_sequencer.assert_called_once_with()
-                        mock_start_sequencer.assert_called_once_with()
+                        mock_arm_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
+                        mock_start_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
