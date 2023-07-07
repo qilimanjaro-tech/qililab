@@ -20,8 +20,8 @@ from qililab.waveforms import IQPair, Waveform
 
 class QProgram:
     def __init__(self):
-        self.variables = []
         self.program: Block = Block()
+        self.variables: list[Variable] = []
 
         self._block_stack: deque[Block] = deque([self.program])
 
