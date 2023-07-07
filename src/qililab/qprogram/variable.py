@@ -8,19 +8,7 @@ class Variable:
         return str(self.value)
 
     def __repr__(self):
-        return str(self.value)
-
-    def __add__(self, other):
-        return self.value + other
-
-    def __sub__(self, other):
-        return self.value - other
-
-    def __mul__(self, other):
-        return self.value * other
-
-    def __truediv__(self, other):
-        return self.value / other
+        return self.value
 
 
 class IntVariable(Variable, int):

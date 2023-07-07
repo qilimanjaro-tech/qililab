@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 import numpy as np
 
@@ -15,9 +14,3 @@ class Waveform(ABC):
         Returns:
             np.ndarray: pulse matrix
         """
-
-
-@dataclass
-class IQPair:
-    I: Waveform
-    Q: Waveform

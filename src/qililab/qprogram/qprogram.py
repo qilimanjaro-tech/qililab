@@ -6,8 +6,13 @@ import numpy as np
 from qililab.qprogram.blocks.acquire_loop import AcquireLoop
 from qililab.qprogram.blocks.block import Block
 from qililab.qprogram.blocks.loop import Loop
+from qililab.qprogram.operations.acquire import Acquire
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.operations.play import Play
+from qililab.qprogram.operations.reset_phase import ResetPhase
+from qililab.qprogram.operations.set_gain import SetGain
+from qililab.qprogram.operations.set_nco_frequency import SetNCOFrequency
+from qililab.qprogram.operations.sync import Sync
 from qililab.qprogram.operations.wait import Wait
 from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Waveform
@@ -68,11 +73,25 @@ class QProgram:
         operation = Wait(bus=bus, time=time)
         self._active_block.append(operation)
 
-    def acquire(self, bus: str, weights: Waveform | None = None):
-        pass
+    def acquire(self, bus: str, weights: IQPair | None = None):
+        operation = Acquire(bus=bus, weights=weights)
+        self._active_block.append(operation)
 
     def sync(self, buses: list[str]):
-        pass
+        operation = Sync(buses=buses)
+        self._active_block.append(operation)
+
+    def reset_phase(self, bus: str):
+        operation = ResetPhase(bus=bus)
+        self._active_block.append(operation)
+
+    def set_nco_frequency(self, bus: str, frequency: int):
+        operation = SetNCOFrequency(bus=bus, frequency=frequency)
+        self._active_block.append(operation)
+
+    def set_gain(self, bus: str, gain: float):
+        operation = SetGain(bus=bus, gain=gain)
+        self._active_block.append(operation)
 
     def variable(self, type: int | float):
         """Declare a variable.

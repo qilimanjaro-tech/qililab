@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 from qililab.qprogram.operations.operation import Operation
-from qililab.waveforms import IQPair, Waveform
+from qililab.waveforms import IQPair
 
 
 @dataclass
-class Play(Operation):
+class Acquire(Operation):
     bus: str
-    waveform: Waveform | IQPair
+    weights: IQPair | None
