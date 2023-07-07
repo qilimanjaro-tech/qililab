@@ -7,11 +7,6 @@ from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 NUM_SUBMODULES = 6
 
 
-def teardown_module():
-    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
-    Instrument.close_all()
-
-
 class TestPulsar:
     """Unit tests checking the QililabPulsar attributes and methods"""
 
