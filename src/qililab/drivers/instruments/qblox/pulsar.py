@@ -1,9 +1,9 @@
-from typing import Dict, Union
-
+"""Driver for the Qblox Pulsar class."""
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from .sequencer import AWGSequencer
+from .sequencer_qcm import SequencerQCM
+from .sequencer_qrm import SequencerQRM
 
 
 class Pulsar(QcodesPulsar):
@@ -19,9 +19,11 @@ class Pulsar(QcodesPulsar):
         super().__init__(name, identifier=address, **kwargs)
 
         # Add sequencers
-        self.submodules: Dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
-        self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+        self.submodules: dict[str, SequencerQCM | SequencerQRM] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+
+        sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
         for seq_idx in range(6):
-            seq = AWGSequencer(self, f"sequencer{seq_idx}", seq_idx)
+            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
             self.add_submodule(f"sequencer{seq_idx}", seq)

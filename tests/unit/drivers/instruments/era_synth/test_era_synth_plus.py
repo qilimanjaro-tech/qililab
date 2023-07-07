@@ -6,11 +6,6 @@ from qililab.drivers.instruments import ERASynthPlus
 from qililab.drivers.interfaces import LocalOscillator
 
 
-def teardown_module():
-    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
-    Instrument.close_all()
-
-
 class MockInstrument(DummyInstrument):
     def __init__(self, name, address="test", **kwargs):
         super().__init__(name, **kwargs)
@@ -27,21 +22,29 @@ class MockInstrument(DummyInstrument):
 
 
 class TestERASynthPlus:
+    """Unit tests for the ERASynthPlus driver. These tests mock the qcodes class to be able to instantiate the
+    driver."""
+
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-        cls.old_lo_bases = ERASynthPlus.__bases__
+
+        cls.old_era_synth_bases = ERASynthPlus.__bases__
         ERASynthPlus.__bases__ = (MockInstrument, LocalOscillator)
 
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
+
+        ERASynthPlus.__bases__ = cls.old_era_synth_bases
+
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
         Instrument.close_all()
-        ERASynthPlus.__bases__ = cls.old_lo_bases
 
     def test_init(self):
-        # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
-        # to the actual instrument
+        """Test the init method of the ERASynthPlus class."""
         es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")
         assert isinstance(es.parameters["lo_frequency"], DelegateParameter)
         # test set get with frequency and lo_frequency
