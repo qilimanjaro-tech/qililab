@@ -4,8 +4,11 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
-- New AWG Interface + Sequencer, Pulsar, QCM-QRM drivers
+- New AWG Interface + SequencerQCM, Pulsar, QCM-QRM drivers
   [#442](https://github.com/qilimanjaro-tech/qililab/pull/442)
+
+- New Digitiser interface + SequencerQRM driver
+  [#443](https://github.com/qilimanjaro-tech/qililab/pull/442)
 
 - Add interface for the Attenuator.
   This is part of the "Promoting Modular Autonomy" epic.
@@ -23,7 +26,7 @@ This document contains the changes of the current release.
 
 - Added hotfix for bus delay issue from Hardware:
   This fix adds a delay for each pulse on a bus
-  https://github.com/qilimanjaro-tech/qililab/pull/439
+  <https://github.com/qilimanjaro-tech/qililab/pull/439>
 
 - Added `T1` portfolio experiment
   [#409](https://github.com/qilimanjaro-tech/qililab/pull/409)
