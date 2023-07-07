@@ -38,6 +38,11 @@ class TestERASynthPlus:
 
         ERASynthPlus.__bases__ = cls.old_era_synth_bases
 
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
+
     def test_init(self):
         """Test the init method of the ERASynthPlus class."""
         es = ERASynthPlus(name="dummy_ERASynthPlus", address="none")

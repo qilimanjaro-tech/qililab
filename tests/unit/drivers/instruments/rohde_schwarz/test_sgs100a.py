@@ -36,8 +36,12 @@ class TestRhodeSchwarzSGS100A:
     def teardown_class(cls):
         """Tear down after all tests have been run"""
 
-        Instrument.close_all()
         RhodeSchwarzSGS100A.__bases__ = cls.old_era_synth_bases
+
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
 
     def test_init(self):
         """Test the init method of the RhodeSchwarzSGS100A class."""
