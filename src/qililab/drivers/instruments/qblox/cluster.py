@@ -6,6 +6,7 @@ from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from .sequencer_qcm import SequencerQCM
+from .sequencer_qrm import SequencerQRM
 
 
 class Cluster(QcodesCluster):
@@ -38,7 +39,7 @@ class Cluster(QcodesCluster):
 class QcmQrm(QcodesQcmQrm):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
-    def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
+    def __init__(self, parent: Instrument, name: str, slot_idx: int):
         """Initialise the instrument.
 
         Args:
@@ -53,5 +54,8 @@ class QcmQrm(QcodesQcmQrm):
         self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         for seq_idx in range(6):
-            seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
+            if self.is_qcm_type:
+                seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
+            else:
+                seq = SequencerQRM(self, f"sequencer{seq_idx}", seq_idx)
             self.add_submodule(f"sequencer{seq_idx}", seq)
