@@ -53,9 +53,7 @@ class QcmQrm(QcodesQcmQrm):
         self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
         self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+        sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
         for seq_idx in range(6):
-            if self.is_qcm_type:
-                seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
-            else:
-                seq = SequencerQRM(self, f"sequencer{seq_idx}", seq_idx)
+            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
             self.add_submodule(f"sequencer{seq_idx}", seq)
