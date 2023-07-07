@@ -161,6 +161,24 @@ class TestSequencerQRM:
         assert pair.weight_i.data == weights_i
         assert pair.weight_q.data == weights_q
 
+    def test_generate_weights_with_swap(self):
+        """Test the ``_generate_weights`` method when `swap_paths` is True."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+        # Set values
+        weights_i = [1, 2, 3, 4]
+        weights_q = [5, 6, 7, 8]
+        sequencer.set("weights_i", weights_i)
+        sequencer.set("weights_q", weights_q)
+        sequencer.set("swap_paths", True)
+
+        weights = sequencer._generate_weights()
+
+        assert len(weights._weight_pairs) == 1
+        pair = weights._weight_pairs[0]
+        assert pair.weight_i.data == weights_q
+        assert pair.weight_q.data == weights_i
+
     def test_execute(self, pulse_bus_schedule):
         """Unit tests for execute method"""
         parent = MagicMock()
