@@ -1,3 +1,3 @@
 from .arbitrary import Arbitrary
 from .square import Square
-from .waveform import Waveform
+from .waveform import IQPair, Waveform

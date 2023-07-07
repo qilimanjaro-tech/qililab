@@ -1,13 +1,16 @@
 from collections import deque
-from typing import Self, TypeVar  # type: ignore
+from typing import Self
 
+import numpy as np
+
+from qililab.qprogram.blocks.acquire_loop import AcquireLoop
 from qililab.qprogram.blocks.block import Block
+from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.operations.operation import Operation
+from qililab.qprogram.operations.play import Play
 from qililab.qprogram.operations.wait import Wait
-from qililab.qprogram.variable import FloatVariable, IntVariable
-from qililab.waveforms.waveform import Waveform
-
-T = TypeVar("T")
+from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
+from qililab.waveforms import IQPair, Waveform
 
 
 class QProgram:
@@ -39,14 +42,31 @@ class QProgram:
     def block(self):
         return QProgram._BlockContext(qprogram=self)
 
-    def acquire_loop(self, iterations: int = 1000, bins: int = 1):
-        pass
+    def acquire_loop(self, iterations: int, bins: int = 1):
+        return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations, bins=bins)
 
-    def loop(self):
-        pass
+    def loop(self, variable: Variable, values: np.ndarray):
+        return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
 
-    def play(self, bus: str, waveform: Waveform | tuple[Waveform, Waveform]):
-        pass
+    def play(self, bus: str, waveform: Waveform | IQPair):
+        """Play a single waveform or an I/Q pair of waveforms on the bus
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            waveform (Waveform | IQPair): A single waveform or an I/Q pair of waveforms
+        """
+        operation = Play(bus=bus, waveform=waveform)
+        self._active_block.append(operation)
+
+    def wait(self, bus: str, time: int):
+        """Adds a delay on the bus with a specified time.
+
+        Args:
+            bus (str): Unique identifier of the bus.
+            time (int): Duration of the delay.
+        """
+        operation = Wait(bus=bus, time=time)
+        self._active_block.append(operation)
 
     def acquire(self, bus: str, weights: Waveform | None = None):
         pass
@@ -66,51 +86,26 @@ class QProgram:
         Returns:
             IntVariable | FloatVariable: The variable.
         """
+
+        def _int_variable(value: int = 0) -> IntVariable:
+            variable = IntVariable(value)
+            self.variables.append(variable)
+            return variable
+
+        def _float_variable(value: float = 0.0) -> FloatVariable:
+            variable = FloatVariable(value)
+            self.variables.append(variable)
+            return variable
+
         if type == int:
-            return self._int_variable()
+            return _int_variable()
         elif type == float:
-            return self._float_variable()
+            return _float_variable()
         else:
             raise NotImplementedError
 
-    def _int_variable(self, value: int = 0) -> IntVariable:
-        """Declare an integer variable
-
-        Args:
-            value (int, optional): Initial value of the variable. Defaults to 0.
-
-        Returns:
-            IntVariable: An instance of an integer variable
-        """
-        variable = IntVariable(value)
-        self.variables.append(variable)
-        return variable
-
-    def _float_variable(self, value: float = 0.0) -> FloatVariable:
-        """Declare a float variable
-
-        Args:
-            value (float, optional): Initial value of the variable. Defaults to 0.0.
-
-        Returns:
-            FloatVariable: An instance of a float variable
-        """
-        variable = FloatVariable(value)
-        self.variables.append(variable)
-        return variable
-
-    def wait(self, bus: str, time: int):
-        """Adds a delay on the bus with a specified time.
-
-        Args:
-            bus (str): Unique identifier of the bus where the delay should be applied.
-            time (int): Duration of the delay.
-        """
-        operation = Wait(bus=bus, time=time)
-        self._active_block.append(operation)
-
     class _BlockContext:
-        def __init__(self, qprogram: Self):
+        def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
             self.block = Block()
 
@@ -121,3 +116,13 @@ class QProgram:
         def __exit__(self, exc_type, exc_value, exc_tb):
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._append_to_active_block(block)
+
+    class _LoopContext(_BlockContext):
+        def __init__(self, qprogram: "QProgram", variable: Variable, values: np.ndarray):
+            self.qprogram = qprogram
+            self.block = Loop(variable=variable, values=values)
+
+    class _AcquireLoopContext(_BlockContext):
+        def __init__(self, qprogram: "QProgram", iterations: int, bins: int):
+            self.qprogram = qprogram
+            self.block = AcquireLoop(iterations=iterations, bins=bins)
