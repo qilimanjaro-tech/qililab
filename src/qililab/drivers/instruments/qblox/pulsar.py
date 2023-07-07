@@ -1,5 +1,3 @@
-from typing import Dict, Union
-
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
@@ -20,9 +18,9 @@ class Pulsar(QcodesPulsar):
         super().__init__(name, identifier=address, **kwargs)
 
         # Add sequencers
-        self.submodules: Dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
-        self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+        self.submodules: dict[str, SequencerQCM | SequencerQRM] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         for seq_idx in range(6):
             if self.is_qcm_type:
                 seq = SequencerQCM(self, f"sequencer{seq_idx}", seq_idx)
