@@ -4,6 +4,7 @@ from qililab.qprogram.operations.operation import Operation
 
 
 @dataclass
-class SetGain(Operation):
+class SetAWGOffset(Operation):
     bus: str
-    gain: float
+    offset_path0: float
+    offset_path1: float
