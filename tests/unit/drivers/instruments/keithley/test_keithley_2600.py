@@ -105,10 +105,7 @@ class TestKeithley2600Channel:
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-
-        cls.old_keithley_2600_bases: tuple[type, ...] = Keithley2600.__bases__
         cls.old_keithley_2600_channel_bases: tuple[type, ...] = Keithley2600Channel.__bases__
-        Keithley2600.__bases__ = (MockKeithley2600,)
         Keithley2600Channel.__bases__ = (MockKeithley2600Channel,)
 
     @classmethod
@@ -116,14 +113,12 @@ class TestKeithley2600Channel:
         """Tear down after all tests have been run"""
 
         Instrument.close_all()
-        Keithley2600.__bases__ = cls.old_keithley_2600_bases
         Keithley2600Channel.__bases__ = cls.old_keithley_2600_channel_bases
 
     def test_on(self):
         """Unit tests for on method"""
-        keithley_2600 = Keithley2600(name="test_keithley", address="192.168.1.68")
-        channel_smua = Keithley2600Channel(parent=keithley_2600, name="test_channel_smua", channel="smua")
-        channel_smub = Keithley2600Channel(parent=keithley_2600, name="test_channel_smub", channel="smub")
+        channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
+        channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
         channel_smua.on()
         channel_smub.on()
 
@@ -132,7 +127,6 @@ class TestKeithley2600Channel:
 
     def test_off(self):
         """Unit tests for off method"""
-
         channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
         channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
         # check the whole on/off cycle works as expected
