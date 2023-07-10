@@ -2,11 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from qblox_instruments.qcodes_drivers.spi_rack_modules import (
-    D5aModule,
-    DummySpiModule,
-    S4gModule,
-)
+from qblox_instruments.qcodes_drivers.spi_rack_modules import D5aModule, DummySpiModule, S4gModule
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
