@@ -119,8 +119,8 @@ class TestKeithley2600Channel:
         channel_smua.on()
         channel_smub.on()
 
-        assert channel_smua.get("output") == True
-        assert channel_smub.get("output") == True
+        assert (channel_smua.get("output") == True)
+        assert (channel_smub.get("output") == True)
 
     def test_off(self):
         """Unit tests for off method"""
@@ -129,9 +129,9 @@ class TestKeithley2600Channel:
         # check the whole on/off cycle works as expected
         channel_smua.on()
         channel_smub.on()
-        assert channel_smua.get("output") == True
-        assert channel_smub.get("output") == True
+        assert (channel_smua.get("output") == True)
+        assert (channel_smub.get("output") == True)
         channel_smua.off()
         channel_smub.off()
-        assert channel_smua.get("output") == False
-        assert channel_smub.get("output") == False
+        assert (channel_smua.get("output") == False)
+        assert (channel_smub.get("output") == False)
