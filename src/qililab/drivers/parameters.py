@@ -1,8 +1,6 @@
 """ Contains parameters for the drivers
 """
 
-# TESTING this feature
-
 
 class lo:
     """Local Oscillator"""
