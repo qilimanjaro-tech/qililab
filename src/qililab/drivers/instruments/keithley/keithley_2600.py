@@ -24,7 +24,7 @@ class Keithley2600(QCodesKeithley2600):
         super().__init__(name, address, **kwargs)
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self.channels = []  # resetting superclass instrument channels
+        self.channels: list[QCodesKeithley2600Channel] = []  # resetting superclass instrument channels
         # Add the channel to the instrument
         for ch in ["a", "b"]:
             ch_name = f"smu{ch}"
@@ -47,8 +47,8 @@ class Keithley2600Channel(QCodesKeithley2600Channel, VoltageSource, CurrentSourc
 
     def on(self) -> None:
         """Turn output on"""
-        self.set(param_name="output", value=1)
+        self.set(param_name="output", value="on")
 
     def off(self) -> None:
         """Turn output off"""
-        self.set(param_name="output", value=0)
+        self.set(param_name="output", value="off")
