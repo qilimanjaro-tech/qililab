@@ -8,6 +8,23 @@ This document contains the changes of the current release.
   This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
   [#438](https://github.com/qilimanjaro-tech/qililab/pull/438)
 
+- Add interface for Voltage and Current sources
+  [#448](https://github.com/qilimanjaro-tech/qililab/pull/448)
+
+- New AWG Interface + SequencerQCM, Pulsar, QCM-QRM drivers
+  [#442](https://github.com/qilimanjaro-tech/qililab/pull/442)
+
+- New Digitiser interface + SequencerQRM driver
+  [#443](https://github.com/qilimanjaro-tech/qililab/pull/442)
+
+- Add interface for the Attenuator.
+  This is part of the "Promoting Modular Autonomy" epic.
+  [#432](https://github.com/qilimanjaro-tech/qililab/pull/432)
+
+- Added new drivers for Local Oscillators inheriting from QCoDeS drivers and Local Oscillator interface.
+  This is part of the "Promoting Modular Autonomy" epic.
+  [#437](https://github.com/qilimanjaro-tech/qililab/pull/437)
+
 - Add qcodes_contrib_drivers (0.18.0) to requierements
   [#440](https://github.com/qilimanjaro-tech/qililab/pull/440)
 
@@ -16,7 +33,7 @@ This document contains the changes of the current release.
 
 - Added hotfix for bus delay issue from Hardware:
   This fix adds a delay for each pulse on a bus
-  https://github.com/qilimanjaro-tech/qililab/pull/439
+  [#439](https://github.com/qilimanjaro-tech/qililab/pull/439)
 
 - Added `T1` portfolio experiment
   [#409](https://github.com/qilimanjaro-tech/qililab/pull/409)
@@ -46,19 +63,19 @@ This document contains the changes of the current release.
 
 - Added `threshold_rotation` parameter to `AWGADCSequencer`. This adds a new parameter to the runcard of sequencers of that type, QRM sequencers in the case of Qblox. This value is an angle expressed in degrees from 0.0 to 360.0.
 
-```yml
-awg_sequencers:
-  - identifier: 0
-    chip_port_id: 1
-    intermediate_frequency: 1.e+08
-    weights_path0: [0.98, ...]
-    weights_path1: [0.72, ...]
-    weighed_acq_enabled: true
-    threshold: 0.5
-    threshold_rotation: 45.0 # <-- new line
-```
+  ```yml
+  awg_sequencers:
+    - identifier: 0
+      chip_port_id: 1
+      intermediate_frequency: 1.e+08
+      weights_path0: [0.98, ...]
+      weights_path1: [0.72, ...]
+      weighed_acq_enabled: true
+      threshold: 0.5
+      threshold_rotation: 45.0 # <-- new line
+  ```
 
-[#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
+  [#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
 
 ### Improvements
 
