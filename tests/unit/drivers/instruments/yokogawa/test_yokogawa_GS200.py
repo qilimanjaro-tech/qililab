@@ -83,7 +83,7 @@ class TestYokogawaGS200:
             isinstance(submodules[name], YokogawaGS200Monitor | GS200Program) for name in list(submodules.keys())
         )
         assert expected_names == registered_names
-        assert yokogawa_monitor.present == True
+        assert yokogawa_monitor.present is True
 
 
 class TestYokogawaGS200Monitor:
