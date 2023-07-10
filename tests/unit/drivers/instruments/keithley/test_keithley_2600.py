@@ -4,9 +4,6 @@ from unittest.mock import MagicMock
 
 from qcodes import Instrument
 from qcodes.instrument_drivers.Keithley._Keithley_2600 import (
-    Keithley2600 as QcodesKeithley2600,
-)
-from qcodes.instrument_drivers.Keithley._Keithley_2600 import (
     Keithley2600Channel as QcodesKeithley2600Channel,
 )
 from qcodes.parameters.val_mapping import create_on_off_val_mapping
@@ -52,10 +49,22 @@ class MockKeithley2600Channel(DummyChannel):
         self.add_parameter(
             "output",
             get_cmd=f"{channel}.source.output",
-            get_parser=float,
+            get_parser=None,
             set_cmd=f"{channel}.source.output={{:d}}",
             val_mapping=create_on_off_val_mapping(on_val=1, off_val=0),
         )
+        self.output = "off"
+
+    # Pass any commands to read or write from the instrument up to the parent
+    def write(self, cmd: str) -> None:
+        if "output" in cmd:
+            self.output = cmd[-1] if int(cmd[-1]) == 1 else "0"
+
+    def ask(self, cmd: str) -> str:
+        if "output" in cmd:
+            return self.output
+        else:
+            return ""
 
 
 class TestKeithley2600:
@@ -112,11 +121,9 @@ class TestKeithley2600Channel:
 
     def test_on(self):
         """Unit tests for on method"""
-
-        keithley_2600 = MagicMock()
+        keithley_2600 = Keithley2600(name="test_keithley", address="192.168.1.68")
         channel_smua = Keithley2600Channel(parent=keithley_2600, name="test_channel_smua", channel="smua")
         channel_smub = Keithley2600Channel(parent=keithley_2600, name="test_channel_smub", channel="smub")
-
         channel_smua.on()
         channel_smub.on()
 
@@ -126,15 +133,14 @@ class TestKeithley2600Channel:
     def test_off(self):
         """Unit tests for off method"""
 
-        # TODO: this test will fail and needs to investigate why setting the output in channel is not workin as expected
-        keithley_2600 = MagicMock()
-        channel_smua = Keithley2600Channel(parent=keithley_2600, name="test_channel_smua", channel="smua")
-        channel_smub = Keithley2600Channel(parent=keithley_2600, name="test_channel_smub", channel="smub")
-
+        channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
+        channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
+        # check the whole on/off cycle works as expected
         channel_smua.on()
         channel_smub.on()
+        assert channel_smua.get("output") == True
+        assert channel_smub.get("output") == True
         channel_smua.off()
         channel_smub.off()
-
         assert channel_smua.get("output") == False
         assert channel_smub.get("output") == False
