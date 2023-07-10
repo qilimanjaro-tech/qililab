@@ -2,9 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class LocalOscillator(ABC):
-    """Interface of a local oscillator."""
-
+class CurrentSource(ABC):
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter from name
@@ -27,8 +25,8 @@ class LocalOscillator(ABC):
 
     @abstractmethod
     def on(self) -> None:
-        """Start RF output"""
+        """Start CurrentSource output"""
 
     @abstractmethod
     def off(self) -> None:
-        """Stop RF outout"""
+        """Stop CurrentSource outout"""

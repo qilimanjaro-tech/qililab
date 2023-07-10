@@ -6,11 +6,6 @@ from qililab.drivers.instruments import RhodeSchwarzSGS100A
 from qililab.drivers.interfaces import LocalOscillator
 
 
-def teardown_module():
-    """Closes all instruments after tests terminate (either successfully or stop because of an error)."""
-    Instrument.close_all()
-
-
 class MockInstrument(DummyInstrument):
     def __init__(self, name, address="test", **kwargs):
         super().__init__(name, **kwargs)
@@ -27,10 +22,29 @@ class MockInstrument(DummyInstrument):
 
 
 class TestRhodeSchwarzSGS100A:
-    def test_init(self):
-        # Substitute base of the instrument by a mock instrument so that we can run tests without connecting
-        # to the actual instrument
+    """Unit tests for the RhodeSchwarzSGS100A driver. These tests mock the qcodes class to be able to instantiate the
+    driver."""
+
+    @classmethod
+    def setup_class(cls):
+        """Set up for all tests"""
+
+        cls.old_era_synth_bases = RhodeSchwarzSGS100A.__bases__
         RhodeSchwarzSGS100A.__bases__ = (MockInstrument, LocalOscillator)
+
+    @classmethod
+    def teardown_class(cls):
+        """Tear down after all tests have been run"""
+
+        RhodeSchwarzSGS100A.__bases__ = cls.old_era_synth_bases
+
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
+
+    def test_init(self):
+        """Test the init method of the RhodeSchwarzSGS100A class."""
         rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
         assert isinstance(rs.parameters["lo_frequency"], DelegateParameter)
         # test set get with frequency and lo_frequency

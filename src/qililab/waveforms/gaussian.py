@@ -27,12 +27,11 @@ class Gaussian(Waveform):
         self.resolution = resolution
         self.num_sigmas = num_sigmas
 
+        # This allows to later modify these values to have different gaussian shapes
+        # eg. displace the peak of the gaussian from the center of duration
         self.sigma = self.duration / self.num_sigmas
         self.mu = self.duration / 2
 
-    # TODO: investigate https://docs.python.org/3/faq/programming.html#faq-cache-method-calls
-    # this is so we don't call the envelope twice when applying a drag pulse?
-    @cached_property
     def envelope(self):
         """Returns the pulse matrix
 
