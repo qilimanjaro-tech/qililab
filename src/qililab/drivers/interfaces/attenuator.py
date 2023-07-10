@@ -4,6 +4,8 @@ from typing import Any
 
 
 class Attenuator(ABC):
+    """Interface of an attenuator."""
+
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter from attenuator name

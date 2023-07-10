@@ -5,7 +5,7 @@
 ### New features since last release
 
 - Added hotfixes for several issues encountered during the hackathon:
-  https://github.com/qilimanjaro-tech/qililab/pull/413
+  <https://github.com/qilimanjaro-tech/qililab/pull/413>
 
   - Save experiments flag for experiments execute method
 
@@ -283,6 +283,9 @@
 - The parameter `sync_en` of the Qblox sequencers is now updated automatically when uploading a program to a sequencer.
   This parameter can no longer be set using `set_parameter`.
   [#353](https://github.com/qilimanjaro-tech/qililab/pull/353)
+
+- The Qblox RF modules now support setting their LO frequency using the generic `Parameter.LO_FREQUENCY` parameter.
+  [#455](https://github.com/qilimanjaro-tech/qililab/pull/455)
 
 ### Deprecations / Removals
 
