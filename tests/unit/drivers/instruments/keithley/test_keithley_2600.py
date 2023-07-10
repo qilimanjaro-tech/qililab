@@ -3,9 +3,6 @@
 from unittest.mock import MagicMock
 
 from qcodes import Instrument
-from qcodes.instrument_drivers.Keithley._Keithley_2600 import (
-    Keithley2600Channel as QcodesKeithley2600Channel,
-)
 from qcodes.parameters.val_mapping import create_on_off_val_mapping
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
