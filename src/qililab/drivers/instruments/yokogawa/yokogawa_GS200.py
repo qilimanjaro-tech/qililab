@@ -1,10 +1,17 @@
 """YokogawaGS200 driver."""
+from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesYokogawaGS200
+from qcodes.instrument_drivers.yokogawa.GS200 import (
+    GS200_Monitor as QCodesYokowageGS200Monitor,
+)
+from qcodes.instrument_drivers.yokogawa.GS200 import (
+    GS200Program as QCodesYokowagaGS200Program,
+)
 
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 
-class YokogawaGS200(QCodesYokogawaGS200, VoltageSource, CurrentSource):
+class YokogawaGS200(QCodesYokogawaGS200):
     """
     Qililab's driver for the YokogawaGS200 acting as VoltageSource and CurrentSource
 
@@ -12,4 +19,29 @@ class YokogawaGS200(QCodesYokogawaGS200, VoltageSource, CurrentSource):
         name (str): What this instrument is called locally.
         address (str): The GPIB or USB address of this instrument
         kwargs (Any | dict): kwargs to be passed to VisaInstrument class
+    """
+
+    def __init__(self, name: str, address: str, **kwargs):
+        """Initialize the instrument driver."""
+        super().__init__(name, address, **kwargs)
+        self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self.channels: list[QCodesYokowageGS200Monitor] = []  # resetting superclass instrument channels
+        # Add the Monitor to the instrument
+        measure = YokogawaGS200Monitor(self, "measure", True)
+        self.add_submodule("measure", measure)
+        # Add the Program to the instrument
+        self.add_submodule("program", QCodesYokowagaGS200Program(self, "program"))
+
+
+class YokogawaGS200Monitor(QCodesYokowageGS200Monitor, VoltageSource, CurrentSource):
+    """
+    Class for the Yokowaga GS200 Monitor.
+
+    It inherits from QCodes driver.
+
+    Args:
+        parent (QCodes.Instrument): The Instrument instance to which the channel is to be attached.
+        name (str): The 'colloquial' name of the channel
+        present (bool): Monitor is present
     """
