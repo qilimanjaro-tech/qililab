@@ -1,5 +1,4 @@
 """Unit tests for SpiRack, D5aModule, D5aDacChannel, S4gModule and S4gDacChannel"""
-
 from unittest.mock import MagicMock
 
 from qcodes import Instrument
@@ -13,13 +12,13 @@ from qililab.drivers.instruments.qblox.spi_rack import (
 )
 
 from .mock_utils import (
-    NUM_DACS_D5AMODULE,
-    NUM_DACS_S4GMODULE,
     MockD5aDacChannel,
     MockD5aModule,
     MockS4gDacChannel,
     MockS4gModule,
     MockSpiRack,
+    NUM_DACS_D5AMODULE,
+    NUM_DACS_S4GMODULE,
 )
 
 
