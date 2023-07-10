@@ -78,12 +78,12 @@ class TestYokogawaGS200:
         registered_names = [submodules[key].name for key in list(submodules.keys())]
         yokogawa_monitor = yokogawa_gs_200.submodules[MONITOR_NAME]
 
-        assert (len(submodules) == NUM_SUBMODULES)
+        assert len(submodules) == NUM_SUBMODULES
         assert all(
             isinstance(submodules[name], YokogawaGS200Monitor | GS200Program) for name in list(submodules.keys())
         )
-        assert (expected_names == registered_names)
-        assert (yokogawa_monitor.present == True)
+        assert expected_names == registered_names
+        assert yokogawa_monitor.present == True
 
 
 class TestYokogawaGS200Monitor:
