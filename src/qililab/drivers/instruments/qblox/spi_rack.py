@@ -2,18 +2,10 @@
 from typing import Union
 
 from qblox_instruments import SpiRack as QcodesSpiRack
-from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import (
-    D5aDacChannel as QcodesD5aDacChannel,
-)
-from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import (
-    D5aModule as QcodesD5aModule,
-)
-from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import (
-    S4gDacChannel as QcodesS4gDacChannel,
-)
-from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import (
-    S4gModule as QcodesS4gModule,
-)
+from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import D5aDacChannel as QcodesD5aDacChannel
+from qblox_instruments.qcodes_drivers.spi_rack_modules.d5a_module import D5aModule as QcodesD5aModule
+from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import S4gDacChannel as QcodesS4gDacChannel
+from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import S4gModule as QcodesS4gModule
 from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 

@@ -1,12 +1,8 @@
 """YokogawaGS200 driver."""
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesYokogawaGS200
-from qcodes.instrument_drivers.yokogawa.GS200 import (
-    GS200_Monitor as QCodesYokowageGS200Monitor,
-)
-from qcodes.instrument_drivers.yokogawa.GS200 import (
-    GS200Program as QCodesYokowagaGS200Program,
-)
+from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesYokowageGS200Monitor
+from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesYokowagaGS200Program
 
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
