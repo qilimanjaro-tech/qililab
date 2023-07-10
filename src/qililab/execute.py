@@ -2,9 +2,10 @@ from qibo.models import Circuit
 
 import qililab as ql
 from qililab.experiment.circuit_experiment import CircuitExperiment
+from qililab.platform import Platform
 
 
-def execute(circuit: Circuit, runcard_name: str, nshots=1):
+def execute(circuit: Circuit, platform: str | Platform, nshots=1):
     """Execute a qibo with qililab and native gates
 
     Args:
@@ -41,8 +42,9 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     # transpile and optimize circuit
     circuit = ql.translate_circuit(circuit, optimize=True)
 
-    # create platform
-    platform = ql.build_platform(name=runcard_name)
+    if isinstance(platform, str):
+        # create platform
+        platform = ql.build_platform(name=platform)
 
     settings = ql.ExperimentSettings(
         hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots
