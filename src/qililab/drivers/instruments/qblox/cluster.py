@@ -1,5 +1,3 @@
-from typing import Dict, Union
-
 from qblox_instruments.qcodes_drivers import Cluster as QcodesCluster
 from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
@@ -9,7 +7,8 @@ from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qililab.drivers import parameters
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
 
-from .sequencer import AWGSequencer
+from .sequencer_qcm import SequencerQCM
+from .sequencer_qrm import SequencerQRM
 
 
 class Cluster(QcodesCluster):
@@ -25,24 +24,24 @@ class Cluster(QcodesCluster):
         super().__init__(name, identifier=address, **kwargs)
 
         # Add qcm-qrm's to the cluster
-        self.submodules: Dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
-        self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+        self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         # registering only the slots specified in the dummy config if that is the case
         if "dummy_cfg" in kwargs:
             slot_ids = list(kwargs["dummy_cfg"].keys())
         else:
-            slot_ids = [i for i in range(1, self._num_slots + 1)]
+            slot_ids = list(range(1, self._num_slots + 1))
 
         for slot_idx in slot_ids:
-            module = QcmQrm(self, "module{}".format(slot_idx), slot_idx)
-            self.add_submodule("module{}".format(slot_idx), module)
+            module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+            self.add_submodule(f"module{slot_idx}", module)
 
 
 class QcmQrm(QcodesQcmQrm):
     """Qililab's driver for QBlox-instruments QcmQrm"""
 
-    def __init__(self, parent: Instrument, name: str, slot_idx: int, **kwargs):
+    def __init__(self, parent: Instrument, name: str, slot_idx: int):
         """Initialise the instrument.
 
         Args:
@@ -52,6 +51,16 @@ class QcmQrm(QcodesQcmQrm):
         """
         super().__init__(parent, name, slot_idx)
 
+        # Add sequencers
+        self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+        sequencer_class = SequencerQCM if self.is_qcm_type else SequencerQRM
+        for seq_idx in range(6):
+            seq = sequencer_class(parent=self, name=f"sequencer{seq_idx}", seq_idx=seq_idx)  # type: ignore
+            self.add_submodule(f"sequencer{seq_idx}", seq)
+
+        # Add RF submodules
         if super().is_rf_type:
             # Add local oscillators
             # We use strings as channels to keep the in/out name and conserve the same
@@ -66,14 +75,6 @@ class QcmQrm(QcodesQcmQrm):
             for channel in att_channels:
                 att = QcmQrmRfAtt(name=f"{name}_attenuator_{channel}", parent=self, channel=channel)
                 self.add_submodule(f"{name}_attenuator_{channel}", att)
-
-        # Add sequencers
-        self.submodules: dict[str, Union[InstrumentModule, ChannelTuple]] = {}  # resetting superclass submodules
-        self.instrument_modules: Dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self._channel_lists: Dict[str, ChannelTuple] = {}  # resetting superclass channel lists
-        for seq_idx in range(6):
-            seq = AWGSequencer(self, f"sequencer{seq_idx}", seq_idx)
-            self.add_submodule(f"sequencer{seq_idx}", seq)
 
 
 class QcmQrmRfLo(InstrumentModule, LocalOscillator):

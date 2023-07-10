@@ -3,6 +3,7 @@ from typing import Any
 import numpy as np
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 from qcodes import Instrument
+from qcodes import validators as vals
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.library import long_wait
 from qpysequence.program import Block, Loop, Program, Register
@@ -12,11 +13,11 @@ from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
 
 from qililab.config import logger
-from qililab.drivers.interfaces.awg import AWG
+from qililab.drivers.interfaces import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
 
 
-class AWGSequencer(Sequencer, AWG):
+class SequencerQCM(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
 
     _MIN_WAIT_TIME: int = 4
@@ -28,11 +29,9 @@ class AWGSequencer(Sequencer, AWG):
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
             seq_idx (int): sequencer identifier index
-            output_i (int): output for i signal
-            output_q (int): output for q signal
         """
         super().__init__(parent=parent, name=name, seq_idx=seq_idx)
-        self._swap = False
+        self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
     def set(self, param_name: str, value: Any):
         """Sets a parameter value checking if is an output mapping.
@@ -58,7 +57,7 @@ class AWGSequencer(Sequencer, AWG):
         if (param_name, param_value) in allowed_conf:
             self.set(f"channel_map_{param_name}_out{param_value}_en", True)
         elif (param_name, param_value) in swappable_conf:
-            self._swap = True
+            self.set("swap_paths", True)
             self.set(f"channel_map_{param_name}_out{1 - param_value}_en", True)
         else:
             raise ValueError(
@@ -76,8 +75,8 @@ class AWGSequencer(Sequencer, AWG):
         """
         sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
         self.set("sequence", sequence.todict())
-        self._parent.arm_sequencer()
-        self._parent.start_sequencer()
+        self.parent.arm_sequencer(sequencer=self.seq_idx)
+        self.parent.start_sequencer(sequencer=self.seq_idx)
 
     def _translate_pulse_bus_schedule(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
@@ -126,7 +125,7 @@ class AWGSequencer(Sequencer, AWG):
                 real = np.real(envelope)
                 imag = np.imag(envelope)
                 pair = (real, imag)
-                if self._swap:
+                if self.get("swap_paths"):
                     pair = pair[::-1]  # swap paths
                 waveforms.add_pair(pair=pair, name=pulse_event.pulse.label())
 
@@ -166,7 +165,7 @@ class AWGSequencer(Sequencer, AWG):
         # Create registers with 0 and 1 (necessary for qblox)
         weight_registers = Register(), Register()
         self._init_weights_registers(registers=weight_registers, values=(0, 1), program=program)
-        avg_loop = Loop(name="average", begin=int(nshots))  # type: ignore
+        avg_loop = Loop(name="average", begin=nshots)
         bin_loop = Loop(name="bin", begin=0, end=num_bins, step=1)
         avg_loop.append_component(bin_loop)
         program.append_block(avg_loop)
