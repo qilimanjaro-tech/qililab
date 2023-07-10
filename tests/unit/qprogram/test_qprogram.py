@@ -212,8 +212,12 @@ class TestQProgram:
             float_variable = qp.variable(float)
             assert isinstance(int_variable, int)
             assert isinstance(int_variable, IntVariable)
+            assert int_variable == 0
+            assert str(int_variable) == "0"
             assert isinstance(float_variable, float)
             assert isinstance(float_variable, FloatVariable)
+            assert float_variable == 0.0
+            assert str(float_variable) == "0.0"
             assert len(qp.variables) == 2
             assert qp.variables[0] is int_variable
             assert qp.variables[1] is float_variable
