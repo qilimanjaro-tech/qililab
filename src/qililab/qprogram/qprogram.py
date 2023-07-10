@@ -217,7 +217,7 @@ class QProgram:
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
             self.qprogram = qprogram
-            self.block = Block()
+            self.block: Block = Block()
 
         def __enter__(self):
             self.qprogram._append_to_block_stack(block=self.block)
@@ -230,9 +230,17 @@ class QProgram:
     class _LoopContext(_BlockContext):
         def __init__(self, qprogram: "QProgram", variable: Variable, values: np.ndarray):
             self.qprogram = qprogram
-            self.block = Loop(variable=variable, values=values)
+            self.block: Loop = Loop(variable=variable, values=values)
+
+        def __enter__(self) -> Loop:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
 
     class _AcquireLoopContext(_BlockContext):
         def __init__(self, qprogram: "QProgram", iterations: int, bins: int):
             self.qprogram = qprogram
-            self.block = AcquireLoop(iterations=iterations, bins=bins)
+            self.block: AcquireLoop = AcquireLoop(iterations=iterations, bins=bins)
+
+        def __enter__(self) -> AcquireLoop:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
