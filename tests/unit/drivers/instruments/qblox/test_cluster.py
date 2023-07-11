@@ -28,6 +28,8 @@ PULSE_NAME = Gaussian.name
 class MockQcmQrm(DummyChannel):
     """Mock class for QcmQrm"""
 
+    is_rf_type = False
+
     def __init__(self, parent, name, slot_idx, **kwargs):
         """Mock init method"""
 
@@ -51,7 +53,23 @@ class MockQcmQrm(DummyChannel):
         return None
 
 
-class MockQCMQRMRF(DummyInstrument):
+class MockCluster(DummyInstrument):
+    """Mock class for Cluster"""
+
+    is_rf_type = True
+
+    def __init__(self, name, identifier=None, **kwargs):
+        """Mock init method"""
+
+        super().__init__(name, **kwargs)
+        self.is_rf_type = True
+        self.address = identifier
+        self._num_slots = 20
+        self.submodules = {"test_submodule": MagicMock()}
+        self._present_at_init = MagicMock()
+
+
+class MockQcmQrmRF(DummyInstrument):
     is_rf_type = True
 
     def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
@@ -93,7 +111,7 @@ class MockQCMQRMRF(DummyInstrument):
             )
 
 
-class MockQCMRF(MockQCMQRMRF):
+class MockQcmRF(MockQcmQrmRF):
     is_rf_type = True
     is_qrm_type = False
     is_qcm_type = True
@@ -102,27 +120,13 @@ class MockQCMRF(MockQCMQRMRF):
         super().__init__(name, qcm_qrm="qcm", parent=None, slot_idx=0)
 
 
-class MockQRMRF(MockQCMQRMRF):
+class MockQrmRF(MockQcmQrmRF):
     is_rf_type = True
     is_qrm_type = True
     is_qcm_type = False
 
     def __init__(self, name, parent=None, slot_idx=0):
         super().__init__(name=name, qcm_qrm="qrm", parent=None, slot_idx=0)
-
-
-class MockCluster(DummyInstrument):
-    """Mock class for Cluster"""
-
-    def __init__(self, name, identifier=None, **kwargs):
-        """Mock init method"""
-
-        super().__init__(name, **kwargs)
-
-        self.address = identifier
-        self._num_slots = 20
-        self.submodules = {"test_submodule": MagicMock()}
-        self._present_at_init = MagicMock()
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -212,6 +216,7 @@ class TestQcmQrm:
         # Set qcm/qrm attributes
         parent._is_qcm_type.return_value = True
         parent._is_qrm_type.return_value = False
+        parent._is_rf_type.return_value = False
 
         qcm_qrn_name = "qcm_qrm"
         qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
@@ -233,6 +238,7 @@ class TestQcmQrm:
         # Set qcm/qrm attributes
         parent._is_qcm_type.return_value = False
         parent._is_qrm_type.return_value = True
+        parent._is_rf_type.return_value = False
 
         qcm_qrn_name = "qcm_qrm"
         qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
@@ -276,7 +282,7 @@ class TestQcmQrmRF:
     )
     def test_init_rf_modules(self, qrm_qcm, channels):
         """Test init for the lo and attenuator in the rf instrument"""
-        BaseInstrument = MockQRMRF if qrm_qcm == "qrm" else MockQCMRF
+        BaseInstrument = MockQrmRF if qrm_qcm == "qrm" else MockQcmRF
         QcmQrm.__bases__ = (BaseInstrument,)
         qcmqrm_rf = QcmQrm(parent=None, name=f"{qrm_qcm}_test_init_rf", slot_idx=0)
 
@@ -290,7 +296,7 @@ class TestQcmQrmRF:
     ["out0_in0", "out0", "out1"],
 )
 def test_qcmqrflo(channel):
-    BaseInstrument = MockQRMRF if channel == "out0_in0" else MockQCMRF
+    BaseInstrument = MockQrmRF if channel == "out0_in0" else MockQcmRF
     lo_parent = BaseInstrument(f"test_qcmqrflo_{channel}")
     lo = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
     lo_frequency = parameters.lo.frequency
@@ -309,7 +315,7 @@ def test_qcmqrflo(channel):
     ["out0", "in0", "out1"],
 )
 def test_qcmqrfatt(channel):
-    BaseInstrument = MockQRMRF if channel in ["out0", "in0"] else MockQCMRF
+    BaseInstrument = MockQrmRF if channel in ["out0", "in0"] else MockQcmRF
     att_parent = BaseInstrument(f"test_qcmqrfatt_{channel}")
     att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
     attenuation = parameters.attenuator.attenuation
