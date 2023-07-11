@@ -2,29 +2,28 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks.acquire_loop import AcquireLoop
-from qililab.qprogram.blocks.block import Block
-from qililab.qprogram.blocks.loop import Loop
-from qililab.qprogram.operations.acquire import Acquire
-from qililab.qprogram.operations.operation import Operation
-from qililab.qprogram.operations.play import Play
-from qililab.qprogram.operations.reset_phase import ResetPhase
-from qililab.qprogram.operations.set_frequency import SetFrequency
-from qililab.qprogram.operations.set_gain import SetGain
-from qililab.qprogram.operations.set_offset import SetOffset
-from qililab.qprogram.operations.set_phase import SetPhase
-from qililab.qprogram.operations.sync import Sync
-from qililab.qprogram.operations.wait import Wait
+from qililab.qprogram.blocks import AcquireLoop, Block, Loop
+from qililab.qprogram.operations import (
+    Acquire,
+    Operation,
+    Play,
+    ResetPhase,
+    SetFrequency,
+    SetGain,
+    SetOffset,
+    SetPhase,
+    Sync,
+    Wait,
+)
 from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
 from qililab.waveforms import IQPair, Waveform
 
 
 class QProgram:
     def __init__(self):
-        self.program: Block = Block()
-        self.variables: list[Variable] = []
-
-        self._block_stack: deque[Block] = deque([self.program])
+        self._program: Block = Block()
+        self._variables: list[Variable] = []
+        self._block_stack: deque[Block] = deque([self._program])
 
     def __enter__(self):
         return self
@@ -41,9 +40,6 @@ class QProgram:
     @property
     def _active_block(self) -> Block:
         return self._block_stack[-1]
-
-    def _append_to_active_block(self, element: Block | Operation):
-        self._active_block.append(element=element)
 
     def block(self):
         """Define a generic block for scoping operations.
@@ -198,12 +194,12 @@ class QProgram:
 
         def _int_variable(value: int = 0) -> IntVariable:
             variable = IntVariable(value)
-            self.variables.append(variable)
+            self._variables.append(variable)
             return variable
 
         def _float_variable(value: float = 0.0) -> FloatVariable:
             variable = FloatVariable(value)
-            self.variables.append(variable)
+            self._variables.append(variable)
             return variable
 
         if type == int:
@@ -224,7 +220,7 @@ class QProgram:
 
         def __exit__(self, exc_type, exc_value, exc_tb):
             block = self.qprogram._pop_from_block_stack()
-            self.qprogram._append_to_active_block(block)
+            self.qprogram._active_block.append(block)
 
     class _LoopContext(_BlockContext):
         def __init__(self, qprogram: "QProgram", variable: Variable, values: np.ndarray):

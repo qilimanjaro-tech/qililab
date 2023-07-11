@@ -8,7 +8,7 @@ class Variable:
         return str(self.value)
 
     def __repr__(self):
-        return self.value
+        return repr(self.value)
 
 
 class IntVariable(Variable, int):
