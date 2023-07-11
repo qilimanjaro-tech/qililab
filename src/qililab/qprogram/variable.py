@@ -18,6 +18,6 @@ class IntVariable(Variable, int):
 
 
 class FloatVariable(Variable, float):
-    def __init__(self, value: float = 0):
+    def __init__(self, value: float = 0.0):
         self.value: float = value
         super().__init__()
