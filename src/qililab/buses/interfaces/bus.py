@@ -4,7 +4,7 @@ from typing import Any
 
 from qililab.pulse import PulseBusSchedule
 
-class Bus(ABC):
+class BusInterface(ABC):
     """Interface of a Bus."""
 
     @abstractmethod

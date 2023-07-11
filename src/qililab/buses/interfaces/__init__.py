@@ -1,1 +1,1 @@
-from .bus import Bus
+from .bus import BusInterface
