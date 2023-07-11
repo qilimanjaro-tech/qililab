@@ -4,6 +4,7 @@ from qililab.qprogram.operations.operation import Operation
 
 
 @dataclass
-class SetNCOPhase(Operation):
+class SetGain(Operation):
     bus: str
-    phase: float
+    gain_path0: float
+    gain_path1: float

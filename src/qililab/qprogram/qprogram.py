@@ -1,5 +1,4 @@
 from collections import deque
-from typing import Self
 
 import numpy as np
 
@@ -9,11 +8,11 @@ from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.operations.acquire import Acquire
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.operations.play import Play
-from qililab.qprogram.operations.reset_nco_phase import ResetNCOPhase
-from qililab.qprogram.operations.set_awg_gain import SetAWGGain
-from qililab.qprogram.operations.set_awg_offset import SetAWGOffset
-from qililab.qprogram.operations.set_nco_frequency import SetNCOFrequency
-from qililab.qprogram.operations.set_nco_phase import SetNCOPhase
+from qililab.qprogram.operations.reset_phase import ResetPhase
+from qililab.qprogram.operations.set_frequency import SetFrequency
+from qililab.qprogram.operations.set_gain import SetGain
+from qililab.qprogram.operations.set_offset import SetOffset
+from qililab.qprogram.operations.set_phase import SetPhase
 from qililab.qprogram.operations.sync import Sync
 from qililab.qprogram.operations.wait import Wait
 from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
@@ -133,36 +132,36 @@ class QProgram:
         operation = Sync(buses=buses)
         self._active_block.append(operation)
 
-    def reset_nco_phase(self, bus: str):
+    def reset_phase(self, bus: str):
         """Reset the absolute phase of the NCO associated with the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
         """
-        operation = ResetNCOPhase(bus=bus)
+        operation = ResetPhase(bus=bus)
         self._active_block.append(operation)
 
-    def set_nco_phase(self, bus: str, phase: float):
+    def set_phase(self, bus: str, phase: float):
         """Set the absolute phase of the NCO associated with the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             phase (float): The new absolute phase of the NCO.
         """
-        operation = SetNCOPhase(bus=bus, phase=phase)
+        operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
-    def set_nco_frequency(self, bus: str, frequency: int):
+    def set_frequency(self, bus: str, frequency: int):
         """Set the frequency of the NCO associated with bus.
 
         Args:
             bus (str): Unique identifier of the bus.
             frequency (int): The new frequency of the NCO.
         """
-        operation = SetNCOFrequency(bus=bus, frequency=frequency)
+        operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
 
-    def set_awg_gain(self, bus: str, gain_path0: float, gain_path1: float):
+    def set_gain(self, bus: str, gain_path0: float, gain_path1: float):
         """Set the gain of the AWG associated with bus.
 
         Args:
@@ -170,10 +169,10 @@ class QProgram:
             gain_path0 (float): The new gain of the AWG for path0.
             gain_path1 (float): The new gain of the AWG for path1.
         """
-        operation = SetAWGGain(bus=bus, gain_path0=gain_path0, gain_path1=gain_path1)
+        operation = SetGain(bus=bus, gain_path0=gain_path0, gain_path1=gain_path1)
         self._active_block.append(operation)
 
-    def set_awg_offset(self, bus: str, offset_path0: float, offset_path1: float):
+    def set_offset(self, bus: str, offset_path0: float, offset_path1: float):
         """Set the gain of the AWG associated with bus.
 
         Args:
@@ -181,7 +180,7 @@ class QProgram:
             offset_path0 (float): The new offset of the AWG for path0.
             offset_path1 (float): The new offset of the AWG for path1.
         """
-        operation = SetAWGOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
+        operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
     def variable(self, type: int | float):

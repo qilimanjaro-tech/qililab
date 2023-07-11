@@ -10,11 +10,11 @@ from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.operations.acquire import Acquire
 from qililab.qprogram.operations.operation import Operation
 from qililab.qprogram.operations.play import Play
-from qililab.qprogram.operations.reset_nco_phase import ResetNCOPhase
-from qililab.qprogram.operations.set_awg_gain import SetAWGGain
-from qililab.qprogram.operations.set_awg_offset import SetAWGOffset
-from qililab.qprogram.operations.set_nco_frequency import SetNCOFrequency
-from qililab.qprogram.operations.set_nco_phase import SetNCOPhase
+from qililab.qprogram.operations.reset_phase import ResetPhase
+from qililab.qprogram.operations.set_frequency import SetFrequency
+from qililab.qprogram.operations.set_gain import SetGain
+from qililab.qprogram.operations.set_offset import SetOffset
+from qililab.qprogram.operations.set_phase import SetPhase
 from qililab.qprogram.operations.sync import Sync
 from qililab.qprogram.operations.wait import Wait
 from qililab.qprogram.variable import FloatVariable, IntVariable, Variable
@@ -26,14 +26,18 @@ class TestQProgram:
 
     def test_init(self):
         """Test init method"""
+        qp = QProgram()
+        assert isinstance(qp.program, Block)
+        assert len(qp.program.elements) == 0
+        assert isinstance(qp._block_stack, deque)
+        assert len(qp._block_stack) == 1
+        assert isinstance(qp.variables, list)
+        assert len(qp.variables) == 0
+
+    def test_context_manager(self):
         with QProgram() as qp:
             # __enter__
-            assert isinstance(qp.program, Block)
-            assert len(qp.program.elements) == 0
-            assert isinstance(qp._block_stack, deque)
-            assert len(qp._block_stack) == 1
-            assert isinstance(qp.variables, list)
-            assert len(qp.variables) == 0
+            assert isinstance(qp, QProgram)
 
         # __exit__
         assert len(qp._block_stack) == 0
@@ -147,22 +151,22 @@ class TestQProgram:
         """Test reset_nco_phase method"""
         with QProgram() as qp:
             # __enter__
-            qp.reset_nco_phase(bus="drive")
+            qp.reset_phase(bus="drive")
             assert len(qp._active_block.elements) == 1
         # __exit__
         assert len(qp.program.elements) == 1
-        assert isinstance(qp.program.elements[0], ResetNCOPhase)
+        assert isinstance(qp.program.elements[0], ResetPhase)
         assert qp.program.elements[0].bus == "drive"
 
     def test_set_nco_phase(self):
         """Test set_nco_phase method"""
         with QProgram() as qp:
             # __enter__
-            qp.set_nco_phase(bus="drive", phase=2 * np.pi)
+            qp.set_phase(bus="drive", phase=2 * np.pi)
             assert len(qp._active_block.elements) == 1
         # __exit__
         assert len(qp.program.elements) == 1
-        assert isinstance(qp.program.elements[0], SetNCOPhase)
+        assert isinstance(qp.program.elements[0], SetPhase)
         assert qp.program.elements[0].bus == "drive"
         assert qp.program.elements[0].phase == 2 * np.pi
 
@@ -170,11 +174,11 @@ class TestQProgram:
         """Test set_nco_frequency method"""
         with QProgram() as qp:
             # __enter__
-            qp.set_nco_frequency(bus="drive", frequency=1e6)
+            qp.set_frequency(bus="drive", frequency=1e6)
             assert len(qp._active_block.elements) == 1
         # __exit__
         assert len(qp.program.elements) == 1
-        assert isinstance(qp.program.elements[0], SetNCOFrequency)
+        assert isinstance(qp.program.elements[0], SetFrequency)
         assert qp.program.elements[0].bus == "drive"
         assert qp.program.elements[0].frequency == 1e6
 
@@ -182,11 +186,11 @@ class TestQProgram:
         """Test set_awg_gain method"""
         with QProgram() as qp:
             # __enter__
-            qp.set_awg_gain(bus="drive", gain_path0=1.0, gain_path1=0.0)
+            qp.set_gain(bus="drive", gain_path0=1.0, gain_path1=0.0)
             assert len(qp._active_block.elements) == 1
         # __exit__
         assert len(qp.program.elements) == 1
-        assert isinstance(qp.program.elements[0], SetAWGGain)
+        assert isinstance(qp.program.elements[0], SetGain)
         assert qp.program.elements[0].bus == "drive"
         assert qp.program.elements[0].gain_path0 == 1.0
         assert qp.program.elements[0].gain_path1 == 0.0
@@ -195,11 +199,11 @@ class TestQProgram:
         """Test set_awg_offset method"""
         with QProgram() as qp:
             # __enter__
-            qp.set_awg_offset(bus="drive", offset_path0=1.0, offset_path1=0.0)
+            qp.set_offset(bus="drive", offset_path0=1.0, offset_path1=0.0)
             assert len(qp._active_block.elements) == 1
         # __exit__
         assert len(qp.program.elements) == 1
-        assert isinstance(qp.program.elements[0], SetAWGOffset)
+        assert isinstance(qp.program.elements[0], SetOffset)
         assert qp.program.elements[0].bus == "drive"
         assert qp.program.elements[0].offset_path0 == 1.0
         assert qp.program.elements[0].offset_path1 == 0.0

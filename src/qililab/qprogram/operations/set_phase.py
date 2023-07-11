@@ -4,6 +4,6 @@ from qililab.qprogram.operations.operation import Operation
 
 
 @dataclass
-class SetNCOFrequency(Operation):
+class SetPhase(Operation):
     bus: str
-    frequency: int
+    phase: float
