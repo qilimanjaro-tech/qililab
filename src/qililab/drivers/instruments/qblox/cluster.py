@@ -102,10 +102,10 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
         )
 
     def on(self):
-        self.device.set("status", True)
+        self.set("status", True)
 
     def off(self):
-        self.device.set("status", False)
+        self.set("status", False)
 
 
 class QcmQrmRfAtt(InstrumentModule, Attenuator):

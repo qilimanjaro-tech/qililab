@@ -290,39 +290,43 @@ class TestQcmQrmRF:
 
         qcmqrm_rf.close()
 
+    # Test the LO and Attenuator submodules
 
-@pytest.mark.parametrize(
-    "channel",
-    ["out0_in0", "out0", "out1"],
-)
-def test_qcmqrflo(channel):
-    BaseInstrument = MockQrmRF if channel == "out0_in0" else MockQcmRF
-    lo_parent = BaseInstrument(f"test_qcmqrflo_{channel}")
-    lo = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
-    lo_frequency = parameters.lo.frequency
-    freq_parameter = f"{channel}_lo_freq"
-    assert isinstance(lo.parameters[lo_frequency], DelegateParameter)
-    # test set get with frequency and lo_frequency
-    lo_parent.set(freq_parameter, 2)
-    assert lo.get(lo_frequency) == 2
-    assert lo.lo_frequency.label == "Delegated parameter for local oscillator frequency"
-    # close instruments
-    lo_parent.close()
+    @pytest.mark.parametrize(
+        "channel",
+        ["out0_in0", "out0", "out1"],
+    )
+    def test_qcmqrflo(self, channel):
+        BaseInstrument = MockQrmRF if channel == "out0_in0" else MockQcmRF
+        lo_parent = BaseInstrument(f"test_qcmqrflo_{channel}")
+        lo = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
+        lo_frequency = parameters.lo.frequency
+        freq_parameter = f"{channel}_lo_freq"
+        assert isinstance(lo.parameters[lo_frequency], DelegateParameter)
+        # test set get with frequency and lo_frequency
+        lo_parent.set(freq_parameter, 2)
+        assert lo.get(lo_frequency) == 2
+        assert lo.lo_frequency.label == "Delegated parameter for local oscillator frequency"
+        # test on and off
+        lo.on()
+        assert lo_parent.get(f"{channel}_lo_en") is True
+        assert lo.get("status") is True
+        lo.off()
+        assert lo_parent.get(f"{channel}_lo_en") is False
+        assert lo.get("status") is False
 
-
-@pytest.mark.parametrize(
-    "channel",
-    ["out0", "in0", "out1"],
-)
-def test_qcmqrfatt(channel):
-    BaseInstrument = MockQrmRF if channel in ["out0", "in0"] else MockQcmRF
-    att_parent = BaseInstrument(f"test_qcmqrfatt_{channel}")
-    att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
-    attenuation = parameters.attenuator.attenuation
-    att_parameter = f"{channel}_att"
-    assert isinstance(att.parameters[attenuation], DelegateParameter)
-    # test set get with frequency and lo_frequency
-    att_parent.set(att_parameter, 2)
-    assert att.get(attenuation) == 2
-    assert att.attenuation.label == "Delegated parameter for attenuation"
-    att_parent.close()
+    @pytest.mark.parametrize(
+        "channel",
+        ["out0", "in0", "out1"],
+    )
+    def test_qcmqrfatt(self, channel):
+        BaseInstrument = MockQrmRF if channel in ["out0", "in0"] else MockQcmRF
+        att_parent = BaseInstrument(f"test_qcmqrfatt_{channel}")
+        att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+        attenuation = parameters.attenuator.attenuation
+        att_parameter = f"{channel}_att"
+        assert isinstance(att.parameters[attenuation], DelegateParameter)
+        # test set get with frequency and lo_frequency
+        att_parent.set(att_parameter, 2)
+        assert att.get(attenuation) == 2
+        assert att.attenuation.label == "Delegated parameter for attenuation"
