@@ -44,10 +44,12 @@ class QProgram:
     def block(self):
         """Define a generic block for scoping operations.
 
-        Blocks need to open a scope in the following way::
+        Blocks need to open a scope.
 
-            with qp.block(...):
-                # here come the operations that shall be executed in the block
+        Examples:
+
+            >>> with qp.block() as block:
+            >>>    # operations that shall be executed in the block
 
         Returns:
             Block: The block.
@@ -57,10 +59,12 @@ class QProgram:
     def acquire_loop(self, iterations: int, bins: int = 1):
         """Define an acquire loop block with averaging in real time.
 
-        Blocks need to open a scope in the following way::
+        Blocks need to open a scope.
 
-            with qp.acquire_loop(...):
-                # here come the operations that shall be executed in the acquire_loop block
+        Examples:
+
+            >>> with qp.acquire_loop(iterations=1000):
+            >>>    # operations that shall be executed in the acquire_loop block
 
         Args:
             iterations (int): The number of acquire iterations.
@@ -74,10 +78,13 @@ class QProgram:
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
 
-        Blocks need to open a scope in the following way::
+        Blocks need to open a scope.
 
-            with qp.loop(...):
-                # here come the operations that shall be executed in the loop block
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.loop(variable=variable, values=np.array(range(100))):
+            >>>    # operations that shall be executed in the loop block
 
         Args:
             variable (Variable): The variable to be affected from the loop.
