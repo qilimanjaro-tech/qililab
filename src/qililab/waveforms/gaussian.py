@@ -1,5 +1,3 @@
-from functools import cached_property
-
 import numpy as np
 
 from .waveform import Waveform
@@ -43,7 +41,6 @@ class Gaussian(Waveform):
         gaussian = self.amplitude * np.exp(-0.5 * (x - self.mu) ** 2 / self.sigma**2)
         norm = np.amax(np.real(gaussian))
 
-        # TODO: do we want to do this like this?
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
         corr_norm = np.amax(np.real(gaussian))
 
