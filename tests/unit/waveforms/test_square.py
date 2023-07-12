@@ -16,7 +16,7 @@ class TestSquare:
         assert square.duration == 100
         assert square.resolution == 1
 
-    def test_envelope(self, gaussian):
+    def test_envelope(self, square):
         # test envelope method
         envelope = 0.5 * np.ones(round(100 / 1))
-        assert np.allclose(gaussian.envelope, envelope)
+        assert np.allclose(square.envelope(), envelope)

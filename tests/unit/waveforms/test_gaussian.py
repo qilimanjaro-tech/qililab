@@ -31,10 +31,10 @@ class TestGaussian:
 
         # calculate envelope
         x = np.arange(5) * 2
-        gaussian = np.exp(-0.5 * (x - mu) ** 2 / sigma**2)
-        norm = np.amax(np.real(gaussian))
-        gaussian = gaussian - gaussian[0]
-        corr_norm = np.amax(np.real(gaussian))
-        envelope = gaussian * norm / corr_norm
+        envelope = np.exp(-0.5 * (x - mu) ** 2 / sigma**2)
+        norm = np.amax(np.real(envelope))
+        envelope = envelope - envelope[0]
+        corr_norm = np.amax(np.real(envelope))
+        envelope = envelope * norm / corr_norm
 
-        assert np.allclose(gaussian.envelope, envelope)
+        assert np.allclose(gaussian.envelope(), envelope)

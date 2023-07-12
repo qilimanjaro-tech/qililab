@@ -29,4 +29,4 @@ class TestDragCorrection:
         square = Square(amplitude=0.5, duration=100, resolution=1)
         drag_correction = DragCorrection(0.8, square)
         with pytest.raises(NotImplementedError):
-            drag_correction.envelope
+            drag_correction.envelope()
