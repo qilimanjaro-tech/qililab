@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
-import numpy as np
+from numpy import np
 
 
 class Waveform(Protocol):
@@ -9,7 +9,7 @@ class Waveform(Protocol):
     resolution: int
 
     @abstractmethod
-    def envelope(self):
+    def envelope(self) -> np.ndarray:
         """Returns the pulse matrix
 
         Returns:
