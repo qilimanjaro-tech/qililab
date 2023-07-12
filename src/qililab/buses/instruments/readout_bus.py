@@ -1,7 +1,8 @@
 """Driver for the Readout Bus class."""
-from qililab.buses.interfaces import Bus
+from qililab.buses.instruments.bus import GenericBus
+from qililab.buses.interfaces import BusInterface
 
-class ReadoutBus(Bus):
+class ReadoutBus(GenericBus, BusInterface):
     """Qililab's driver for Readout Bus"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
@@ -11,4 +12,4 @@ class ReadoutBus(Bus):
             name (str): Sequencer name
             address (str): Instrument address
         """
-        pass
+        super().__init__()
