@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
-from numpy import np
+import numpy as np
 
 
 class Waveform(Protocol):
