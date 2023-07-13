@@ -123,7 +123,7 @@ class QProgram:
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
 
     def play(self, bus: str, waveform: Waveform | IQPair):
-        """Play a single waveform or an I/Q pair of waveforms on the bus
+        """Play a single waveform or an I/Q pair of waveforms on the bus.
 
         Args:
             bus (str): Unique identifier of the bus.
@@ -143,7 +143,7 @@ class QProgram:
         self._active_block.append(operation)
 
     def acquire(self, bus: str, weights: IQPair | None = None):
-        """Acquire results
+        """Acquire results.
 
         Args:
             bus (str): Unique identifier of the bus.
@@ -152,11 +152,11 @@ class QProgram:
         operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
 
-    def sync(self, buses: list[str]):
-        """Synchronize between buses
+    def sync(self, buses: list[str] | None):
+        """Synchronize operations between buses, so the operations following will start at the same time. If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
-            buses (list[str]): List of unique idetifiers of the buses.
+            buses (list[str] | None, optional): List of unique identifiers of the buses. Defaults to None.
         """
         operation = Sync(buses=buses)
         self._active_block.append(operation)
