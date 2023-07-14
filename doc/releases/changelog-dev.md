@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add waveforms for the new QProgram
+  [456](https://github.com/qilimanjaro-tech/qililab/pull/456)
+
 - Add interface for Voltage and Current sources
   [#448](https://github.com/qilimanjaro-tech/qililab/pull/448)
 

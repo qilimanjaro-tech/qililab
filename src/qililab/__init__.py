@@ -25,3 +25,4 @@ from .transpiler import Drag, Park, translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
 from .utils.load_data import load
+from .waveforms import Arbitrary, DragPulse, Gaussian, Square, Waveform
