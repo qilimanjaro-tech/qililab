@@ -31,6 +31,9 @@ class Gaussian(Waveform):
     def envelope(self, resolution: float = 1):
         """Returns the pulse matrix
 
+        Args:
+            resolution (int, optional): Pulse resolution. Defaults to 1.
+
         Returns:
             np.ndarray: pulse matrix
             resolution (int, optional): Pulse resolution. Defaults to 1.
