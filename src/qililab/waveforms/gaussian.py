@@ -10,7 +10,7 @@ class Gaussian(Waveform):
     defined by mu = duration / 2 and sigma = duration / num_sigmas
     """
 
-    def __init__(self, amplitude: float, duration: int, num_sigmas: float, resolution: int = 1):
+    def __init__(self, amplitude: float, duration: int, num_sigmas: float):
         """Init method
 
         Args:
@@ -22,7 +22,6 @@ class Gaussian(Waveform):
 
         self.amplitude = amplitude
         self.duration = duration
-        self.resolution = resolution
         self.num_sigmas = num_sigmas
 
         # This allows to later modify these values to have different gaussian shapes
@@ -30,13 +29,13 @@ class Gaussian(Waveform):
         self.sigma = self.duration / self.num_sigmas
         self.mu = self.duration / 2
 
-    def envelope(self):
+    def envelope(self, resolution: float = 1):
         """Returns the pulse matrix
 
         Returns:
             np.ndarray: pulse matrix
         """
-        x = np.arange(self.duration / self.resolution) * self.resolution
+        x = np.arange(self.duration / resolution) * resolution
 
         gaussian = self.amplitude * np.exp(-0.5 * (x - self.mu) ** 2 / self.sigma**2)
         norm = np.amax(np.real(gaussian))

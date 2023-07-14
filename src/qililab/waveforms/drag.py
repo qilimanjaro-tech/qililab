@@ -9,9 +9,7 @@ class Drag(IQPair):
     and the Q is the drag correction, which corresponds to the derivative of the I channel times a drag_coefficient
     """
 
-    def __init__(
-        self, drag_coefficient: float, amplitude: float, duration: int, num_sigmas: float, resolution: int = 1
-    ):
+    def __init__(self, drag_coefficient: float, amplitude: float, duration: int, num_sigmas: float):
         """Init method
 
         Args:
@@ -21,7 +19,7 @@ class Drag(IQPair):
             num_sigmas (float): number of sigmas in the gaussian pulse
             resolution (int, optional): Pulse resolution. Defaults to 1.
         """
-        waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas, resolution=resolution)
-        waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)  # type: ignore
+        waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
+        waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)
 
         super().__init__(I=waveform_i, Q=waveform_q)

@@ -6,7 +6,7 @@ from qililab.waveforms import Square
 
 @pytest.fixture(name="square")
 def fixture_square():
-    return Square(amplitude=0.5, duration=100, resolution=1)
+    return Square(amplitude=0.5, duration=100)
 
 
 class TestSquare:
@@ -14,7 +14,6 @@ class TestSquare:
         # test init method
         assert square.amplitude == 0.5
         assert square.duration == 100
-        assert square.resolution == 1
 
     def test_envelope(self, square):
         # test envelope method

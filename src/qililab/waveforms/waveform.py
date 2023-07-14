@@ -6,7 +6,6 @@ import numpy as np
 
 class Waveform(Protocol):
     duration: int
-    resolution: int
 
     @abstractmethod
     def envelope(self) -> np.ndarray:

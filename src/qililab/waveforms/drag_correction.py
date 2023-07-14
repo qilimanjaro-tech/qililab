@@ -18,15 +18,16 @@ class DragCorrection(Waveform):
         """
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
+        self.duration = waveform.duration
 
-    def envelope(self):
+    def envelope(self, resolution: float = 1):
         """Returns the envelope corresponding to the drag correction
 
         Returns:
             np.ndarray
         """
         if isinstance(self.waveform, Gaussian):
-            x = np.arange(self.waveform.duration / self.waveform.resolution) * self.waveform.resolution
+            x = np.arange(self.waveform.duration / resolution) * resolution
 
             return (
                 -1 * self.drag_coefficient * (x - self.waveform.mu) / self.waveform.sigma**2

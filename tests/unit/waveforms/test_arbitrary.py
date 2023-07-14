@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -21,7 +23,7 @@ samples = np.array(
 
 @pytest.fixture(name="arbitrary")
 def fixture_square():
-    return Arbitrary(samples=samples, resolution=0.1)
+    return Arbitrary(samples=samples, duration=1)
 
 
 class TestArbitrary:
@@ -29,8 +31,12 @@ class TestArbitrary:
         # test init method
         assert np.allclose(arbitrary.samples, samples)
         assert arbitrary.duration == 1
-        assert arbitrary.resolution == 0.1
 
     def test_envelope(self, arbitrary):
         # test envelope method
-        assert np.allclose(arbitrary.envelope(), samples)
+        assert np.allclose(arbitrary.envelope(resolution=0.1), samples)
+
+    def test_raise_resolution_duration_error(self, arbitrary):
+        error_string = "Duration / resolution does not correspond to len(samples): 1 / 2 != 10"
+        with pytest.raises(ValueError, match=re.escape(error_string)):
+            arbitrary.envelope(resolution=2)
