@@ -51,12 +51,6 @@ class QProgram:
         self._variables: list[Variable] = []
         self._block_stack: deque[Block] = deque([self._program])
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        self._block_stack.pop()
-
     def _append_to_block_stack(self, block: Block):
         self._block_stack.append(block)
 
