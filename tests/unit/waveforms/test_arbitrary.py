@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -21,15 +23,13 @@ samples = np.array(
 
 @pytest.fixture(name="arbitrary")
 def fixture_square():
-    return Arbitrary(samples=samples, resolution=0.1)
+    return Arbitrary(envelope=samples)
 
 
 class TestArbitrary:
     def test_init(self, arbitrary):
         # test init method
         assert np.allclose(arbitrary.samples, samples)
-        assert arbitrary.duration == 1
-        assert arbitrary.resolution == 0.1
 
     def test_envelope(self, arbitrary):
         # test envelope method

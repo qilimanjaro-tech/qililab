@@ -6,22 +6,23 @@ from .waveform import Waveform
 class Square(Waveform):
     """Square (rectangular) waveform"""
 
-    def __init__(self, amplitude: float, duration: int, resolution: int = 1):
+    def __init__(self, amplitude: float, duration: int):
         """Init method
 
         Args:
             amplitude (float): pulse amplitude
             duration (int): pulse duration
-            resolution (int, optional): Pulse resolution. Defaults to 1.
         """
         self.amplitude = amplitude
         self.duration = duration
-        self.resolution = resolution
 
-    def envelope(self):
+    def envelope(self, resolution: float = 1):
         """Returns the pulse matrix
+
+        Args:
+            resolution (int, optional): Pulse resolution. Defaults to 1.
 
         Returns:
             np.ndarray: pulse matrix
         """
-        return self.amplitude * np.ones(round(self.duration / self.resolution))
+        return self.amplitude * np.ones(round(self.duration / resolution))

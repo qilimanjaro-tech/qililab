@@ -6,7 +6,7 @@ from qililab.waveforms import Gaussian
 
 @pytest.fixture(name="gaussian")
 def fixture_gaussian():
-    return Gaussian(amplitude=1, duration=10, num_sigmas=2.5, resolution=2)
+    return Gaussian(amplitude=1, duration=10, num_sigmas=2.5)
 
 
 class TestGaussian:
@@ -14,7 +14,6 @@ class TestGaussian:
         # test init method
         assert gaussian.amplitude == 1
         assert gaussian.duration == 10
-        assert gaussian.resolution == 2
         assert gaussian.num_sigmas == 2.5
 
         assert gaussian.sigma == 4
@@ -37,4 +36,4 @@ class TestGaussian:
         corr_norm = np.amax(np.real(envelope))
         envelope = envelope * norm / corr_norm
 
-        assert np.allclose(gaussian.envelope(), envelope)
+        assert np.allclose(gaussian.envelope(resolution=2), envelope)
