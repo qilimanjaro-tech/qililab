@@ -28,5 +28,6 @@ class TestDragCorrection:
     def test_envelope_not_implemented_error(self):
         square = Square(amplitude=0.5, duration=100)
         drag_correction = DragCorrection(0.8, square)
-        with pytest.raises(NotImplementedError):
+        error_string = "Cannot apply drag correction on a Square waveform."
+        with pytest.raises(NotImplementedError, match=error_string):
             drag_correction.envelope()

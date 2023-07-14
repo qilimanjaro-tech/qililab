@@ -13,11 +13,10 @@ class Drag(IQPair):
         """Init method
 
         Args:
-            drag_correction (float): drag coefficient
+            drag_coefficient (float): drag coefficient
             amplitude (float): amplitude of the pulse
             duration (int): duration of the pulse
             num_sigmas (float): number of sigmas in the gaussian pulse
-            resolution (int, optional): Pulse resolution. Defaults to 1.
         """
         waveform_i = Gaussian(amplitude=amplitude, duration=duration, num_sigmas=num_sigmas)
         waveform_q = DragCorrection(drag_coefficient=drag_coefficient, waveform=waveform_i)

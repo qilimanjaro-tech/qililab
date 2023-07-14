@@ -22,6 +22,9 @@ class DragCorrection(Waveform):
     def envelope(self, resolution: float = 1):
         """Returns the envelope corresponding to the drag correction
 
+        Args:
+            resolution (int, optional): Pulse resolution. Defaults to 1.
+
         Returns:
             np.ndarray
         """
@@ -32,4 +35,4 @@ class DragCorrection(Waveform):
                 -1 * self.drag_coefficient * (x - self.waveform.mu) / self.waveform.sigma**2
             ) * self.waveform.envelope()
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")

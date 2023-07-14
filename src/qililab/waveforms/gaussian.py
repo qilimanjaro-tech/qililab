@@ -17,7 +17,6 @@ class Gaussian(Waveform):
             amplitude (float): pulse amplitude
             duration (int): pulse duration
             num_sigmas (float): number of sigmas in the gaussian pulse
-            resolution (int, optional): Pulse resolution. Defaults to 1.
         """
 
         self.amplitude = amplitude
@@ -34,6 +33,7 @@ class Gaussian(Waveform):
 
         Returns:
             np.ndarray: pulse matrix
+            resolution (int, optional): Pulse resolution. Defaults to 1.
         """
         x = np.arange(self.duration / resolution) * resolution
 
