@@ -23,7 +23,7 @@ samples = np.array(
 
 @pytest.fixture(name="arbitrary")
 def fixture_square():
-    return Arbitrary(samples=samples, duration=1)
+    return Arbitrary(envelope=samples, duration=1)
 
 
 class TestArbitrary:

@@ -6,9 +6,9 @@ from .waveform import Waveform
 
 
 class Arbitrary(Waveform):
-    def __init__(self, samples: np.ndarray, duration: int | None = None):
-        self.samples = samples
-        self.duration = len(samples) if duration is None else duration
+    def __init__(self, envelope: np.ndarray, duration: int | None = None):
+        self.samples = envelope
+        self.duration = len(envelope) if duration is None else duration
 
     def envelope(self, resolution: float = 1) -> np.ndarray:
         """Returns the pulse matrix

@@ -15,7 +15,6 @@ class TestDragCorrection:
         # test init method
         drag_correction = DragCorrection(0.8, gaussian)
         assert drag_correction.drag_coefficient == 0.8
-        assert drag_correction.duration == gaussian.duration
         assert isinstance(drag_correction.waveform, Gaussian)
 
     def test_envelope_gaussian(self, gaussian):

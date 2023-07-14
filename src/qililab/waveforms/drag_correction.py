@@ -18,7 +18,6 @@ class DragCorrection(Waveform):
         """
         self.drag_coefficient = drag_coefficient
         self.waveform = waveform
-        self.duration = waveform.duration
 
     def envelope(self, resolution: float = 1):
         """Returns the envelope corresponding to the drag correction

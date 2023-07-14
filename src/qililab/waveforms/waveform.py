@@ -5,8 +5,6 @@ import numpy as np
 
 
 class Waveform(Protocol):
-    duration: int
-
     @abstractmethod
     def envelope(self) -> np.ndarray:
         """Returns the pulse matrix
