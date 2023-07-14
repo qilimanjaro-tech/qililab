@@ -24,7 +24,5 @@ class Square(Waveform):
 
         Returns:
             np.ndarray: pulse matrix
-                        resolution (int, optional): Pulse resolution. Defaults to 1.
-
         """
         return self.amplitude * np.ones(round(self.duration / resolution))
