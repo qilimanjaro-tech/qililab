@@ -33,17 +33,21 @@ class QProgram:
         _block_stack (deque[Block]): A stack to manage nested blocks within the program.
 
     Examples:
-        >>> # Rabi sequence with QProgram
-        >>> qp = QProgram()
-        >>> amplitude = qp.variable(float)
-        >>> drag = DRAG(amplitude=amplitude, duration=40, num_sigmas=4, drag_correction=1.2)
-        >>> square_wf = Square(amplitude=1.0, duration=1000)
-        >>> zeros_wf = Square(amplitude=0.0, duration=1000)
-        >>> with qp.loop(variable=amplitude, values=np.arange(0, 1, 101)):
-        >>>     qp.play(bus="drive", waveform=drag)
-        >>>     qp.sync(buses=["drive", "readout"])
-        >>>     qp.play(bus="readout", waveform=IQPair(I=square_wf, Q=zeros_wf))
-        >>>     qp.acquire(bus="readout")
+
+        The following example illustrates how to define a Rabi sequence using QProgram.
+
+        .. code-block:: python3
+
+            qp = QProgram()
+            amplitude = qp.variable(float)
+            drag = DRAG(amplitude=amplitude, duration=40, num_sigmas=4, drag_correction=1.2)
+            square_wf = Square(amplitude=1.0, duration=1000)
+            zeros_wf = Square(amplitude=0.0, duration=1000)
+            with qp.loop(variable=amplitude, values=np.arange(0, 1, 101)):
+                qp.play(bus="drive", waveform=drag)
+                qp.sync()
+                qp.play(bus="readout", waveform=IQPair(I=square_wf, Q=zeros_wf))
+                qp.acquire(bus="readout")
     """
 
     def __init__(self):
