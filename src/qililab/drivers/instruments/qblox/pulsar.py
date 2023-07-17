@@ -4,10 +4,14 @@ from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
+from qililab.instruments.utils import InstrumentFactory
+from qililab.typings import InstrumentName
 
-
+@InstrumentFactory.register
 class Pulsar(QcodesPulsar):
     """Qililab's driver for QBlox-instruments Pulsar"""
+
+    name = InstrumentName.PULSAR
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
         """Initialise the instrument.

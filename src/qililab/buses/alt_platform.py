@@ -63,8 +63,7 @@ class Platform:
         for bus in buses:
             if bus['type'] == 'DriveBus':
                 awg_settings = bus['AWG']
-                
-                
+
         return []
 
     def find_instrument(self, instruments_dict: dict, key: str, value: str) -> dict:

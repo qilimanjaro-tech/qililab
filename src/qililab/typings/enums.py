@@ -276,6 +276,7 @@ class InstrumentName(str, Enum):
     KEYSIGHT_E5080B = "keysight_e5080b"
     AGILENT_E5071B = "agilent_e5071B"
     QCMRF = "QCM-RF"
+    PULSAR = "Pulsar"
 
 
 class InstrumentControllerName(str, Enum):
