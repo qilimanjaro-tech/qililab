@@ -105,7 +105,7 @@ class SequencerQCM(Sequencer, AWG):
         )
         weights = self._generate_weights().to_dict()
 
-        return QpySequence(program=program, waveforms=waveforms, weights={}, acquisitions=acquisitions)
+        return QpySequence(program=program, waveforms=waveforms, weights=weights, acquisitions=acquisitions)
 
     def _generate_weights(self) -> Weights:
         """Generate acquisition weights.
