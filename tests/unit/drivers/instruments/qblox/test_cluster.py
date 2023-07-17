@@ -111,24 +111,6 @@ class MockQcmQrmRF(DummyInstrument):
             )
 
 
-class MockQcmRF(MockQcmQrmRF):
-    is_rf_type = True
-    is_qrm_type = False
-    is_qcm_type = True
-
-    def __init__(self, name, parent=None, slot_idx=0):
-        super().__init__(name, qcm_qrm="qcm", parent=None, slot_idx=0)
-
-
-class MockQrmRF(MockQcmQrmRF):
-    is_rf_type = True
-    is_qrm_type = True
-    is_qcm_type = False
-
-    def __init__(self, name, parent=None, slot_idx=0):
-        super().__init__(name=name, qcm_qrm="qrm", parent=None, slot_idx=0)
-
-
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
@@ -252,27 +234,6 @@ class TestQcmQrm:
         assert all(isinstance(submodules[seq_idx], SequencerQRM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
 
-
-class TestQcmQrmRF:
-    @classmethod
-    def setup_class(cls):
-        """Set up for all tests"""
-
-        cls.old_qcm_qrm_bases = QcmQrm.__bases__
-        cls.old_cluster_bases = Cluster.__bases__
-        # new bases are set at each parametrize
-
-    @classmethod
-    def teardown_class(cls):
-        """Tear down after all tests have been run"""
-
-        QcmQrm.__bases__ = cls.old_qcm_qrm_bases
-
-    def teardown_method(self):
-        """Close all instruments after each test has been run"""
-
-        Instrument.close_all()
-
     @pytest.mark.parametrize(
         ("qrm_qcm", "channels"),
         [
@@ -282,23 +243,36 @@ class TestQcmQrmRF:
     )
     def test_init_rf_modules(self, qrm_qcm, channels):
         """Test init for the lo and attenuator in the rf instrument"""
-        BaseInstrument = MockQrmRF if qrm_qcm == "qrm" else MockQcmRF
-        QcmQrm.__bases__ = (BaseInstrument,)
-        qcmqrm_rf = QcmQrm(parent=None, name=f"{qrm_qcm}_test_init_rf", slot_idx=0)
 
-        assert all((channel in qcmqrm_rf.parameters.keys() for channel in channels))
+        parent = MagicMock()
 
-        qcmqrm_rf.close()
+        # Set qcm/qrm attributes
+        parent._is_rf_type.return_value = True
+        parent._is_qcm_type.return_value = qrm_qcm == "qcm"
+        parent._is_qrm_type.return_value = qrm_qcm == "qrm"
 
-    # Test the LO and Attenuator submodules
+        qcm_qrm_rf = "qcm_qrm_rf"
+        qcm_qrm_rf = QcmQrm(parent=parent, name=qcm_qrm_rf, slot_idx=0)
+
+        assert all((channel in qcm_qrm_rf.parameters.keys() for channel in channels))
+
+
+class TestQcmQrmRFModules:
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
 
     @pytest.mark.parametrize(
         "channel",
         ["out0_in0", "out0", "out1"],
     )
     def test_qcmqrflo(self, channel):
-        BaseInstrument = MockQrmRF if channel == "out0_in0" else MockQcmRF
-        lo_parent = BaseInstrument(f"test_qcmqrflo_{channel}")
+        qcm_qrm = "qrm" if channel == "out0_in0" else "qcm"
+        MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
+        MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
+
+        lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm=qcm_qrm)
         lo = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
         lo_frequency = parameters.lo.frequency
         freq_parameter = f"{channel}_lo_freq"
@@ -320,8 +294,11 @@ class TestQcmQrmRF:
         ["out0", "in0", "out1"],
     )
     def test_qcmqrfatt(self, channel):
-        BaseInstrument = MockQrmRF if channel in ["out0", "in0"] else MockQcmRF
-        att_parent = BaseInstrument(f"test_qcmqrfatt_{channel}")
+        qcm_qrm = "qrm" if channel in ["out0", "in0"] else "qcm"
+        MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
+        MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
+
+        att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm=qcm_qrm)
         att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
         attenuation = parameters.attenuator.attenuation
         att_parameter = f"{channel}_att"
