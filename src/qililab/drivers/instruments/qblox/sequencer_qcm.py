@@ -116,15 +116,13 @@ class SequencerQCM(Sequencer, AWG):
         return Weights()
 
     def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
-        and index = 0.
+        """Generate Acquisitions object.
 
         Returns:
             Acquisitions: Acquisitions object.
         """
-        # FIXME: is it really necessary to generate acquisitions for a QCM??
         acquisitions = Acquisitions()
-        acquisitions.add(name="default", num_bins=num_bins, index=0)
+
         return acquisitions
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):

@@ -1,6 +1,7 @@
 """This file contains the code of the sequencer of the Qblox QRM."""
 from qcodes import Instrument
 from qcodes import validators as vals
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Program, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
 from qpysequence.weights import Weights
@@ -60,6 +61,18 @@ class SequencerQRM(SequencerQCM, Digitiser):
         move_1 = Move(values[1], registers[1])
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
+
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
+        and index = 0.
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = Acquisitions()
+        acquisitions.add(name="default", num_bins=num_bins, index=0)
+
+        return acquisitions
 
     def _generate_weights(self) -> Weights:
         """Generate acquisition weights.
