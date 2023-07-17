@@ -150,7 +150,7 @@ class QProgram:
         operation = Acquire(bus=bus, weights=weights)
         self._active_block.append(operation)
 
-    def sync(self, buses: list[str] | None):
+    def sync(self, buses: list[str] | None = None):
         """Synchronize operations between buses, so the operations following will start at the same time. If no buses are given, then the synchronization will involve all buses present in the QProgram.
 
         Args:
