@@ -267,7 +267,7 @@ class TestQcmQrmRFModules:
         "channel",
         ["out0_in0", "out0", "out1"],
     )
-    def test_qcmqrflo(self, channel):
+    def test_qcm_qrm_rf_lo(self, channel):
         qcm_qrm = "qrm" if channel == "out0_in0" else "qcm"
         MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
         MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
@@ -293,7 +293,7 @@ class TestQcmQrmRFModules:
         "channel",
         ["out0", "in0", "out1"],
     )
-    def test_qcmqrfatt(self, channel):
+    def test_qcm_qrm_rf_att(self, channel):
         qcm_qrm = "qrm" if channel in ["out0", "in0"] else "qcm"
         MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
         MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
