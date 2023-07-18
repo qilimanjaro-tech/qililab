@@ -12,7 +12,9 @@ We only have the ERASynthPlus in the lab so for the time being we don't need to 
 from typing import Any
 
 from qcodes.instrument import DelegateParameter
-from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
+from qcodes_contrib_drivers.drivers.ERAInstruments import (
+    ERASynthPlus as QcdERASynthPlus,
+)
 
 from qililab.drivers import parameters
 from qililab.drivers.interfaces import LocalOscillator
