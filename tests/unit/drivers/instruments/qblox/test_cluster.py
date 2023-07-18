@@ -200,12 +200,12 @@ class TestQcmQrm:
         parent._is_qrm_type.return_value = False
         parent._is_rf_type.return_value = False
 
-        qcm_qrn_name = "qcm_qrm"
-        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm_name = "qcm_qrm"
+        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrm_name, slot_idx=0)
 
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
-        expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
+        expected_names = [f"{qcm_qrm_name}_sequencer{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SEQUENCERS
