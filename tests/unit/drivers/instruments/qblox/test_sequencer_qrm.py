@@ -5,7 +5,7 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qblox_instruments.types import PulsarType
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
 
 from qililab.drivers import Pulsar
@@ -160,6 +160,20 @@ class TestSequencerQRM:
         pair = weights._weight_pairs[0]
         assert pair.weight_i.data == weights_i
         assert pair.weight_q.data == weights_q
+
+    def test_generate_acquisitions(self):
+        """Test the ``_generate_acquisitions`` method."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+        num_bins = 1
+        acquisitions = sequencer._generate_acquisitions(num_bins=num_bins)
+        acquisitions_dict = acquisitions.to_dict()
+
+        assert isinstance(acquisitions, Acquisitions)
+        assert "default" in acquisitions_dict
+        default_acq = acquisitions_dict["default"]
+
+        assert "num_bins" in default_acq
+        assert default_acq["num_bins"] == num_bins
 
     def test_generate_weights_with_swap(self):
         """Test the ``_generate_weights`` method when `swap_paths` is True."""
