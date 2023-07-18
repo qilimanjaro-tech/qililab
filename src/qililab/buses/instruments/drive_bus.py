@@ -9,7 +9,7 @@ from typing import Any
 class DriveBus(BusInterface):
     """Qililab's driver for Drive Bus"""
 
-    def __init__(self, qubit:int, awg: AWG, local_oscilator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs):
+    def __init__(self, qubit:int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs):
         """Initialise the bus.
 
         Args:
@@ -18,11 +18,11 @@ class DriveBus(BusInterface):
         """
         super().__init__(**kwargs)
         self.qubit = qubit
-        self.add_submodule('awg', awg)
-        if local_oscilator:
-            self.add_submodule('lo', local_oscilator)
+        self.awg = awg
+        if local_oscillator:
+            self.lo = local_oscillator
         if attenuator:
-            self.add_submodule('attenuator', attenuator)
+            self.attenuator = attenuator
 
     def execute(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
@@ -35,25 +35,27 @@ class DriveBus(BusInterface):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.submodules['awg'].execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
+        self.awg.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
 
     def set_parameter(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
         Args:
+            instrument_name (str): Name of the instrument to set parameter on
             param (str): Parameter's name.
             value (float): Parameter's value
         """
-        self.submodules[instrument_name].set(param_name, value)
+        getattr(self, instrument_name).set(param_name, value)
 
     def get_parameter(self, instrument_name: str, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
 
         Args:
+            instrument_name (str): Name of the instrument to get parameter from
             param (str): Parameter's name.
         Returns:
             value (float): Parameter's value
         """
-        param_value = self.submodules[instrument_name].get("param_name")
+        param_value = getattr(self, instrument_name).get(param_name)
 
         return param_value

@@ -26,30 +26,6 @@ class BusInterface(ABC):
         """
 
     @abstractmethod
-    def add_submodule(
-        self, name: str, submodule: ABC
-    ) -> None:
-        """
-        Bind one submodule to this bus.
-
-        Instrument subclasses can call this repeatedly in their ``__init__``
-        method for every submodule of the instrument.
-
-        Args:
-            name: How the submodule will be stored within
-                bus and also how it can be
-                addressed.
-            submodule: The submodule to be stored.
-
-        Raises:
-            KeyError: If this instrument already contains a submodule with this
-                name.
-        """
-        if name in self.submodules:
-            raise KeyError(f"Duplicate submodule name {name}")
-        self.submodules[name] = submodule
-
-    @abstractmethod
     def set_parameter(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
