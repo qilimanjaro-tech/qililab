@@ -18,9 +18,11 @@ class DriveBus(BusInterface):
         """
         super().__init__(**kwargs)
         self.qubit = qubit
-        self.awg = awg
-        self.local_oscillator = local_oscilator
-        self.attenuator = attenuator
+        self.add_submodule('awg', awg)
+        if local_oscilator:
+            self.add_submodule('lo', local_oscilator)
+        if attenuator:
+            self.add_submodule('attenuator', attenuator)
 
     def execute(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
@@ -33,17 +35,18 @@ class DriveBus(BusInterface):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.awg.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
+        self.submodules['awg'].execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
 
-    def set_parameter(self, param_name: str, value: Any) -> None:
+    def set_parameter(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
         Args:
             param (str): Parameter's name.
             value (float): Parameter's value
         """
+        self.submodules[instrument_name].set(param_name, value)
 
-    def get_parameter(self, param_name: str) -> Any:
+    def get_parameter(self, instrument_name: str, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
 
         Args:
@@ -51,3 +54,6 @@ class DriveBus(BusInterface):
         Returns:
             value (float): Parameter's value
         """
+        param_value = self.submodules[instrument_name].get("param_name")
+
+        return param_value
