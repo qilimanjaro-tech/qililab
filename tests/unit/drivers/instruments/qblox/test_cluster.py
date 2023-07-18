@@ -3,9 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 from qblox_instruments.types import ClusterType
 from qcodes import Instrument
+from qcodes import validators as vals
+from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
-from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm
+from qililab.drivers import parameters
+from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm, QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
@@ -24,6 +27,8 @@ PULSE_NAME = Gaussian.name
 
 class MockQcmQrm(DummyChannel):
     """Mock class for QcmQrm"""
+
+    is_rf_type = False
 
     def __init__(self, parent, name, slot_idx, **kwargs):
         """Mock init method"""
@@ -51,15 +56,59 @@ class MockQcmQrm(DummyChannel):
 class MockCluster(DummyInstrument):
     """Mock class for Cluster"""
 
+    is_rf_type = True
+
     def __init__(self, name, identifier=None, **kwargs):
         """Mock init method"""
 
         super().__init__(name, **kwargs)
-
+        self.is_rf_type = True
         self.address = identifier
         self._num_slots = 20
         self.submodules = {"test_submodule": MagicMock()}
         self._present_at_init = MagicMock()
+
+
+class MockQcmQrmRF(DummyInstrument):
+    is_rf_type = True
+
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
+        super().__init__(name=name, gates=["dac1"])
+
+        # local oscillator parameters
+        lo_channels = ["out0_in0"] if qcm_qrm == "qrm" else ["out0", "out1"]
+        for channel in lo_channels:
+            self.add_parameter(
+                name=f"{channel}_lo_freq",
+                label="Frequency",
+                unit="Hz",
+                get_cmd=None,
+                set_cmd=None,
+                get_parser=float,
+                vals=vals.Numbers(0, 20e9),
+            )
+            self.add_parameter(
+                f"{channel}_lo_en",
+                label="Status",
+                vals=vals.Bool(),
+                set_parser=bool,
+                get_parser=bool,
+                set_cmd=None,
+                get_cmd=None,
+            )
+
+        # attenuator parameters
+        att_channels = ["out0", "in0"] if qcm_qrm == "qrm" else ["out0", "out1"]
+        for channel in att_channels:
+            self.add_parameter(
+                name=f"{channel}_att",
+                label="Attenuation",
+                unit="dB",
+                get_cmd=None,
+                set_cmd=None,
+                get_parser=float,
+                vals=vals.Numbers(0, 20e9),
+            )
 
 
 @pytest.fixture(name="pulse_bus_schedule")
@@ -149,13 +198,14 @@ class TestQcmQrm:
         # Set qcm/qrm attributes
         parent._is_qcm_type.return_value = True
         parent._is_qrm_type.return_value = False
+        parent._is_rf_type.return_value = False
 
-        qcm_qrn_name = "qcm_qrm"
-        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
+        qcm_qrm_name = "qcm_qrm"
+        qcm_qrm = QcmQrm(parent=parent, name=qcm_qrm_name, slot_idx=0)
 
         submodules = qcm_qrm.submodules
         seq_idxs = list(submodules.keys())
-        expected_names = [f"{qcm_qrn_name}_sequencer{idx}" for idx in range(6)]
+        expected_names = [f"{qcm_qrm_name}_sequencer{idx}" for idx in range(6)]
         registered_names = [submodules[seq_idx].name for seq_idx in seq_idxs]
 
         assert len(submodules) == NUM_SEQUENCERS
@@ -170,6 +220,7 @@ class TestQcmQrm:
         # Set qcm/qrm attributes
         parent._is_qcm_type.return_value = False
         parent._is_qrm_type.return_value = True
+        parent._is_rf_type.return_value = False
 
         qcm_qrn_name = "qcm_qrm"
         qcm_qrm = QcmQrm(parent=parent, name=qcm_qrn_name, slot_idx=0)
@@ -182,3 +233,77 @@ class TestQcmQrm:
         assert len(submodules) == NUM_SEQUENCERS
         assert all(isinstance(submodules[seq_idx], SequencerQRM) for seq_idx in seq_idxs)
         assert expected_names == registered_names
+
+    @pytest.mark.parametrize(
+        ("qrm_qcm", "channels"),
+        [
+            ("qrm", ["out0_in0_lo_freq", "out0_in0_lo_en", "out0_att", "in0_att"]),
+            ("qcm", ["out0_lo_freq", "out0_lo_en", "out1_lo_freq", "out1_lo_en", "out0_att", "out1_att"]),
+        ],
+    )
+    def test_init_rf_modules(self, qrm_qcm, channels):
+        """Test init for the lo and attenuator in the rf instrument"""
+
+        parent = MagicMock()
+
+        # Set qcm/qrm attributes
+        parent._is_rf_type.return_value = True
+        parent._is_qcm_type.return_value = qrm_qcm == "qcm"
+        parent._is_qrm_type.return_value = qrm_qcm == "qrm"
+
+        qcm_qrm_rf = "qcm_qrm_rf"
+        qcm_qrm_rf = QcmQrm(parent=parent, name=qcm_qrm_rf, slot_idx=0)
+
+        assert all((channel in qcm_qrm_rf.parameters.keys() for channel in channels))
+
+
+class TestQcmQrmRFModules:
+    def teardown_method(self):
+        """Close all instruments after each test has been run"""
+
+        Instrument.close_all()
+
+    @pytest.mark.parametrize(
+        "channel",
+        ["out0_in0", "out0", "out1"],
+    )
+    def test_qcm_qrm_rf_lo(self, channel):
+        qcm_qrm = "qrm" if channel == "out0_in0" else "qcm"
+        MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
+        MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
+
+        lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm=qcm_qrm)
+        lo = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
+        lo_frequency = parameters.lo.frequency
+        freq_parameter = f"{channel}_lo_freq"
+        assert isinstance(lo.parameters[lo_frequency], DelegateParameter)
+        # test set get with frequency and lo_frequency
+        lo_parent.set(freq_parameter, 2)
+        assert lo.get(lo_frequency) == 2
+        assert lo.lo_frequency.label == "Delegated parameter for local oscillator frequency"
+        # test on and off
+        lo.on()
+        assert lo_parent.get(f"{channel}_lo_en") is True
+        assert lo.get("status") is True
+        lo.off()
+        assert lo_parent.get(f"{channel}_lo_en") is False
+        assert lo.get("status") is False
+
+    @pytest.mark.parametrize(
+        "channel",
+        ["out0", "in0", "out1"],
+    )
+    def test_qcm_qrm_rf_att(self, channel):
+        qcm_qrm = "qrm" if channel in ["out0", "in0"] else "qcm"
+        MockQcmQrmRF.is_qrm_type = qcm_qrm == "qrm"
+        MockQcmQrmRF.is_qcm_type = qcm_qrm == "qcm"
+
+        att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm=qcm_qrm)
+        att = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+        attenuation = parameters.attenuator.attenuation
+        att_parameter = f"{channel}_att"
+        assert isinstance(att.parameters[attenuation], DelegateParameter)
+        # test set get with frequency and lo_frequency
+        att_parent.set(att_parameter, 2)
+        assert att.get(attenuation) == 2
+        assert att.attenuation.label == "Delegated parameter for attenuation"

@@ -8,6 +8,12 @@ This document contains the changes of the current release.
   This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
   [#438](https://github.com/qilimanjaro-tech/qililab/pull/438)
 
+- Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
+  [452](https://github.com/qilimanjaro-tech/qililab/pull/452)
+
+- Add waveforms for the new QProgram
+  [456](https://github.com/qilimanjaro-tech/qililab/pull/456)
+
 - Add interface for Voltage and Current sources
   [#448](https://github.com/qilimanjaro-tech/qililab/pull/448)
 
