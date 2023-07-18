@@ -28,6 +28,8 @@ class CircuitToPulses:
     def __init__(self, platform: Platform):
         self.platform = platform
         self._instantiate_gates_from_settings()
+        # TODO: coupler topology condition
+        self.coupler_qpu = False
 
     def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
@@ -70,20 +72,29 @@ class CircuitToPulses:
                     continue
 
                 elif isinstance(gate, CZ):
-                    # CZ sends a SNZ pulse to target in CZ(control, target)
-                    # handle parking and padding for CZ gates
+                    # handle CZ gate. Depends on qpu architecture
                     gate = self._parse_check_cz(gate)
-                    if (
-                        chip.get_node_from_qubit_idx(idx=gate.target_qubits[0], readout=False).frequency
-                        < chip.get_node_from_qubit_idx(idx=gate.control_qubits[0], readout=False).frequency
-                    ):
-                        raise ValueError(
-                            f"Attempting to perform {gate.name} on qubits {gate.qubits} by targeting qubit {gate.target_qubits[0]} which has lower frequency than {gate.control_qubits[0]}"
-                        )
-                    parking_gates_pads = self._get_parking_gates(cz=gate, chip=chip)
-                    # sync times for all qubits involved
-                    cz_qubits = [gate.qubits[0] for gate, _ in parking_gates_pads]
-                    cz_qubits.extend(gate.qubits)
+
+                    # TODO: Resonator transmon chip
+                    parking_gates_pads = []  # define here so it's empty for coupler's cz
+                    if self.coupler_qpu is False:
+                        # handle parking and padding for CZ gates
+                        if (
+                            chip.get_node_from_qubit_idx(idx=gate.target_qubits[0], readout=False).frequency
+                            < chip.get_node_from_qubit_idx(idx=gate.control_qubits[0], readout=False).frequency
+                        ):
+                            raise ValueError(
+                                f"Attempting to perform {gate.name} on qubits {gate.qubits} by targeting qubit {gate.target_qubits[0]} which has lower frequency than {gate.control_qubits[0]}"
+                            )
+                        parking_gates_pads = self._get_parking_gates(cz=gate, chip=chip)
+                        # sync times for all qubits involved
+                        cz_qubits = [gate.qubits[0] for gate, _ in parking_gates_pads]
+                        cz_qubits.extend(gate.qubits)
+
+                    # TODO: Coupler transmon chip
+                    else:
+                        cz_qubits = gate.qubits
+
                     self._sync_qubit_times(cz_qubits, time)
 
                     for parking_gate, _ in parking_gates_pads:
@@ -191,7 +202,14 @@ class CircuitToPulses:
         # get adjacent flux line (drive line) for CZ,Park gates (all others)
         node = chip.get_node_from_qubit_idx(idx=qubit_idx, readout=False)
         if isinstance(control_gate, (CZ, Park)):
-            port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.FLUX)
+            if self.coupler_qpu is False:
+                port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.FLUX)
+            else:
+                # TODO: should do something like:
+                # port = chip.get_coupler_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.FLUX)
+                # probably without line=Line.FLUX bcs couplers only have flux lines
+                raise NotImplementedError
+
         else:
             port = chip.get_port_from_qubit_idx(idx=control_gate.target_qubits[0], line=Line.DRIVE)
 
