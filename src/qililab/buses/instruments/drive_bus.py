@@ -43,9 +43,11 @@ class DriveBus(BusInterface):
         Args:
             instrument_name (str): Name of the instrument to set parameter on
             param (str): Parameter's name.
-            value (float): Parameter's value
+            value (Any): Parameter's value
         """
-        getattr(self, instrument_name).set(param_name, value)
+        instrument = getattr(self, instrument_name, None)
+        if instrument:
+            instrument.set(param_name, value)
 
     def get_parameter(self, instrument_name: str, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
@@ -54,8 +56,11 @@ class DriveBus(BusInterface):
             instrument_name (str): Name of the instrument to get parameter from
             param (str): Parameter's name.
         Returns:
-            value (float): Parameter's value
+            value (Any): Parameter's value
         """
-        param_value = getattr(self, instrument_name).get(param_name)
+        param_value = None
+        instrument = getattr(self, instrument_name, None)
+        if instrument:
+            param_value = instrument.get(param_name)
 
         return param_value
