@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock
 from qcodes import Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -46,6 +47,31 @@ class MockQcmQrmRF(DummyInstrument):
                 vals=vals.Numbers(0, 20e9),
             )
 
+@pytest.fixture(name="sequencer")
+def fixture_sequencer() -> SequencerQCM:
+    """Return SequencerQCM instance."""
+    sequencer = SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
+
+    return sequencer
+
+@pytest.fixture(name="local_oscillator")
+def fixture_local_oscillator() -> QcmQrmRfLo:
+    """Return QcmQrmRfLo instance"""
+    channel = "out0"
+    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
+    local_oscillator = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
+
+    return local_oscillator
+
+@pytest.fixture(name="attenuator")
+def fixture_attenuator() -> QcmQrmRfAtt:
+    """Return QcmQrmRfAtt instance"""
+    channel = "out1"
+    att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
+    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+
+    return attenuator
+
 class TestDriveBus:
     """Unit tests checking the DriveBus attributes and methods. These tests mock the parent classes of the instruments,
     such that the code from `qcodes` is never executed."""
@@ -55,17 +81,9 @@ class TestDriveBus:
 
         Instrument.close_all()
 
-    def test_init(self):
+    def test_init(self, sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
         """Test init method"""
-        channel_lo = "out0"
-        channel_att = "out1"
-        qcm_qrm = "qcm"
         qubit = 0
-        sequencer = SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
-        lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel_lo}", qcm_qrm=qcm_qrm)
-        local_oscillator = QcmQrmRfLo(name=f"test_lo_{channel_lo}", parent=lo_parent, channel=channel_lo)
-        att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel_att}", qcm_qrm=qcm_qrm)
-        attenuator = QcmQrmRfAtt(name=f"test_att_{channel_att}", parent=att_parent, channel=channel_att)
         drive_bus = DriveBus(qubit=qubit, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
 
         assert (drive_bus.qubit == qubit)
