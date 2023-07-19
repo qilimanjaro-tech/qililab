@@ -6,7 +6,7 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program
 from qcodes.tests.instrument_mocks import DummyChannelInstrument, DummyInstrument
 
 from qililab.drivers import YokogawaGS200
-from qililab.drivers.instruments.yokogawa.yokogawa_GS200 import YokogawaGS200Monitor
+from qililab.drivers.instruments.yokogawa.yokogawa_gs200 import YokogawaGS200Monitor
 
 NUM_SUBMODULES = 2
 MONITOR_NAME = "measure"
