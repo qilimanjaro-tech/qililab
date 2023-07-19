@@ -5,7 +5,7 @@ import qcodes.validators as vals
 from qcodes import Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
 
-from qililab.buses.instruments.drive_bus import DriveBus
+from qililab.platform.components.drive_bus import DriveBus
 from qililab.drivers import parameters
 from qililab.drivers.instruments.qblox.cluster import QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
