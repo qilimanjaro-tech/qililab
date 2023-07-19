@@ -5,10 +5,10 @@ import qcodes.validators as vals
 from qcodes import Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
 
-from qililab.platform.components.drive_bus import DriveBus
 from qililab.drivers import parameters
 from qililab.drivers.instruments.qblox.cluster import QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
+from qililab.platform.components.drive_bus import DriveBus
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
