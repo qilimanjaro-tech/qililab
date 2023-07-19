@@ -20,6 +20,7 @@ class Keithley2600(QCodesKeithley2600):
         super().__init__(name, address, **kwargs)
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass instrument channel lists
         self.channels: list[QCodesKeithley2600Channel] = []  # resetting superclass instrument channels
         # Add the channel to the instrument
         for ch in ["a", "b"]:

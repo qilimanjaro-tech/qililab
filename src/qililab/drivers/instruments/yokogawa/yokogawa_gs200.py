@@ -22,7 +22,7 @@ class GS200(QCodesGS200):
         super().__init__(name, address, **kwargs)
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self.channels: list[QCodesGS200Monitor] = []  # resetting superclass instrument channels
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass instrument channel lists
         # Add the Monitor to the instrument
         self.add_submodule("measure", GS200Monitor(self, name="measure", present=True))
         # Add the Program to the instrument
