@@ -26,7 +26,7 @@ class BusInterface(ABC):
         """
 
     @abstractmethod
-    def set_parameter(self, instrument_name: str, param_name: str, value: Any) -> None:
+    def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
         Args:
@@ -36,7 +36,7 @@ class BusInterface(ABC):
         """
 
     @abstractmethod
-    def get_parameter(self, instrument_name: str, param_name: str) -> Any:
+    def get(self, instrument_name: str, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
 
         Args:

@@ -20,7 +20,7 @@ class DriveBus(BusInterface):
         self.qubit = qubit
         self.awg = awg
         if local_oscillator:
-            self.lo = local_oscillator
+            self.local_oscillator = local_oscillator
         if attenuator:
             self.attenuator = attenuator
 
@@ -37,7 +37,7 @@ class DriveBus(BusInterface):
         """
         self.awg.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
 
-    def set_parameter(self, instrument_name: str, param_name: str, value: Any) -> None:
+    def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
         Args:
@@ -49,7 +49,7 @@ class DriveBus(BusInterface):
         if instrument:
             instrument.set(param_name, value)
 
-    def get_parameter(self, instrument_name: str, param_name: str) -> Any:
+    def get(self, instrument_name: str, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
 
         Args:
