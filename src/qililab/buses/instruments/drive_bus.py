@@ -1,15 +1,19 @@
 """Driver for the Drive Bus class."""
+from typing import Any
+
+from qililab.buses.interfaces import BusInterface
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
-from qililab.buses.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
-from typing import Any
+
 
 class DriveBus(BusInterface):
     """Qililab's driver for Drive Bus"""
 
-    def __init__(self, qubit:int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs):
+    def __init__(
+        self, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs
+    ):
         """Initialise the bus.
 
         Args:
@@ -35,7 +39,12 @@ class DriveBus(BusInterface):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.awg.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
+        self.awg.execute(
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
+        )
 
     def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.

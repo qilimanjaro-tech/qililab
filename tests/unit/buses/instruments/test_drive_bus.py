@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+import qcodes.validators as vals
 from qcodes import Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
-import qcodes.validators as vals
+
 from qililab.buses.instruments.drive_bus import DriveBus
 from qililab.drivers import parameters
 from qililab.drivers.instruments.qblox.cluster import QcmQrmRfAtt, QcmQrmRfLo
@@ -20,6 +22,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 
+
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
 
@@ -36,8 +39,8 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
     return PulseBusSchedule(timeline=timeline, port=0)
 
-class MockQcmQrmRF(DummyInstrument):
 
+class MockQcmQrmRF(DummyInstrument):
     def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         super().__init__(name=name, gates=["dac1"])
 
@@ -75,11 +78,13 @@ class MockQcmQrmRF(DummyInstrument):
                 vals=vals.Numbers(0, 20e9),
             )
 
+
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
 
     return get_pulse_bus_schedule(start_time=0)
+
 
 @pytest.fixture(name="sequencer")
 def fixture_sequencer() -> SequencerQCM:
@@ -87,6 +92,7 @@ def fixture_sequencer() -> SequencerQCM:
     sequencer = SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
 
     return sequencer
+
 
 @pytest.fixture(name="local_oscillator")
 def fixture_local_oscillator() -> QcmQrmRfLo:
@@ -97,6 +103,7 @@ def fixture_local_oscillator() -> QcmQrmRfLo:
 
     return local_oscillator
 
+
 @pytest.fixture(name="attenuator")
 def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
@@ -105,6 +112,7 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
     return attenuator
+
 
 class TestDriveBus:
     """Unit tests checking the DriveBus attributes and methods. These tests mock the parent classes of the instruments,
@@ -120,7 +128,7 @@ class TestDriveBus:
         qubit = 0
         drive_bus = DriveBus(qubit=qubit, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
 
-        assert (drive_bus.qubit == qubit)
+        assert drive_bus.qubit == qubit
         assert isinstance(drive_bus.awg, SequencerQCM)
         assert isinstance(drive_bus.local_oscillator, QcmQrmRfLo)
         assert isinstance(drive_bus.attenuator, QcmQrmRfAtt)
@@ -137,8 +145,8 @@ class TestDriveBus:
         drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
 
         assert sequencer.get(sequencer_param) is True
-        assert (local_oscillator.get(lo_frequency_param) == 2)
-        assert (attenuator.get(attenuation_param) == 2)
+        assert local_oscillator.get(lo_frequency_param) == 2
+        assert attenuator.get(attenuation_param) == 2
 
     def test_get(self, sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
         """Test get method"""
@@ -152,17 +160,34 @@ class TestDriveBus:
         drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
 
         assert drive_bus.get("awg", sequencer_param) is True
-        assert (drive_bus.get("local_oscillator", lo_frequency_param) == 2)
-        assert (drive_bus.get("attenuator", attenuation_param) == 2)
+        assert drive_bus.get("local_oscillator", lo_frequency_param) == 2
+        assert drive_bus.get("attenuator", attenuation_param) == 2
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
-    def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
+    def test_execute(
+        self,
+        mock_execute: MagicMock,
+        pulse_bus_schedule: PulseBusSchedule,
+        sequencer: SequencerQCM,
+        local_oscillator: QcmQrmRfLo,
+        attenuator: QcmQrmRfAtt,
+    ):
         """Test execute method"""
         qubit = 0
         nshots = 1
         repetition_duration = 1000
         num_bins = 1
         drive_bus = DriveBus(qubit=qubit, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
-        drive_bus.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
+        drive_bus.execute(
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
+        )
 
-        mock_execute.assert_called_once_with(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins)
+        mock_execute.assert_called_once_with(
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
+        )

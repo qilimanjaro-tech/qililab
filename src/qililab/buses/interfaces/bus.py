@@ -1,9 +1,11 @@
 """Bus Class Interface."""
 from abc import ABC, abstractmethod
-from qcodes import Instrument
 from typing import Any
 
+from qcodes import Instrument
+
 from qililab.pulse import PulseBusSchedule
+
 
 class BusInterface(ABC):
     """Interface of a Bus."""
