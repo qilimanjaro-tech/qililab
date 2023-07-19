@@ -24,10 +24,9 @@ class GS200(QCodesGS200):
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self.channels: list[QCodesGS200Monitor] = []  # resetting superclass instrument channels
         # Add the Monitor to the instrument
-        measure = GS200Monitor(self, "measure", True)
-        self.add_submodule("measure", measure)
+        self.add_submodule("measure", GS200Monitor(self, name="measure", present=True))
         # Add the Program to the instrument
-        self.add_submodule("program", QCodesGS200Program(self, "program"))
+        self.add_submodule("program", QCodesGS200Program(self, name="program"))
 
 
 class GS200Monitor(QCodesGS200Monitor, VoltageSource, CurrentSource):
