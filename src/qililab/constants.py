@@ -43,7 +43,6 @@ class RUNCARD:
     CURRENT_SOURCE = "current_source"
     DISTORTIONS = "distortions"
     DELAY = "delay"
-    TYPE = "type"
 
 
 class PLATFORM:
