@@ -1,4 +1,4 @@
-"""Tests for the QbloxQCMRF class."""
+"""Tests for the QbloxQRMRF class."""
 from unittest.mock import MagicMock
 
 import pytest
@@ -60,7 +60,7 @@ def fixture_settings():
 
 
 class TestInitialization:
-    """Unit tests for the initialization of the QbloxQCMRF class."""
+    """Unit tests for the initialization of the QbloxQRMRF class."""
 
     def test_init(self, settings):
         """Test the __init__ method."""
@@ -75,10 +75,10 @@ class TestInitialization:
 
 
 class TestMethods:
-    """Unit tests for the methods of the QbloxQCMRF class."""
+    """Unit tests for the methods of the QbloxQRMRF class."""
 
     def test_initial_setup(self, settings):
-        """Test the `initial_setup` method of the QbloxQCMRF class."""
+        """Test the `initial_setup` method of the QbloxQRMRF class."""
         qcm_rf = QbloxQRMRF(settings=settings)
         qcm_rf.device = MagicMock()
         qcm_rf.initial_setup()
@@ -94,7 +94,7 @@ class TestMethods:
         }
 
     def test_setup(self, settings):
-        """Test the `setup` method of the QbloxQCMRF class."""
+        """Test the `setup` method of the QbloxQRMRF class."""
         qcm_rf = QbloxQRMRF(settings=settings)
         qcm_rf.device = MagicMock()
         qcm_rf.setup(parameter=Parameter.OUT0_IN0_LO_FREQ, value=3.8e9)
@@ -105,10 +105,10 @@ class TestMethods:
 
 
 class TestIntegration:
-    """Integration tests of the QbloxQCMRF class."""
+    """Integration tests of the QbloxQRMRF class."""
 
     def test_initial_setup(self, settings):
-        """Test the `initial_setup` method of the QbloxQCMRF class."""
+        """Test the `initial_setup` method of the QbloxQRMRF class."""
         qrm_rf = QbloxQRMRF(settings=settings)
         cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
         qrm_rf.device = cluster.modules[0]
@@ -119,7 +119,7 @@ class TestIntegration:
 
     @pytest.mark.xfail
     def test_initial_setup_with_failing_setters(self, settings):
-        """Test the `initial_setup` method of the QbloxQCMRF class with the attributes
+        """Test the `initial_setup` method of the QbloxQRMRF class with the attributes
         that don't get updated in the version 0.8.1 of the `qblox_instruments`."""
         # This test is marked as `xfail` because the setters for the attributes that are
         # asserted below don't work properly in the version 0.8.1 of the `qblox_instruments` package.
@@ -135,7 +135,7 @@ class TestIntegration:
         assert qrm_rf.device.out0_offset_path1() == settings["out0_offset_path1"]
 
     def test_setup(self, settings):
-        """Test the `setup` method of the QbloxQCMRF class."""
+        """Test the `setup` method of the QbloxQRMRF class."""
         qrm_rf = QbloxQRMRF(settings=settings)
         cluster = Cluster(name="test", dummy_cfg={"1": ClusterType.CLUSTER_QRM_RF})
         qrm_rf.device = cluster.modules[0]
@@ -145,3 +145,11 @@ class TestIntegration:
         assert qrm_rf.device.sequencers[0].get("gain_awg_path0") == pytest.approx(0.123)
         assert qrm_rf.device.sequencers[0].get("gain_awg_path1") == pytest.approx(0.123)
         cluster.close()
+
+    def test_setup_with_lo_frequency(self, settings):
+        """Test the `setup` method when using the `Parameter.LO_FREQUENCY` generic parameter."""
+        sequencer_idx = 0
+        qcm_rf = QbloxQRMRF(settings=settings)
+        qcm_rf.device = MagicMock()
+        qcm_rf.setup(parameter=Parameter.LO_FREQUENCY, value=2e9, channel_id=sequencer_idx)
+        qcm_rf.device.set.assert_called_once_with(Parameter.OUT0_IN0_LO_FREQ, 2e9)
