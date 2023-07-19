@@ -1,10 +1,10 @@
 """Driver for the Drive Bus class."""
 from typing import Any
 
-from qililab.platform.components.interfaces import BusInterface
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
+from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
 
