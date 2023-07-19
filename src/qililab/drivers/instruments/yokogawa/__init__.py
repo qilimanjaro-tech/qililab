@@ -1,1 +1,1 @@
-from .yokogawa_gs200 import YokogawaGS200
+from .yokogawa_gs200 import GS200

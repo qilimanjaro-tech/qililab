@@ -1,15 +1,15 @@
-"""YokogawaGS200 driver."""
+"""Yokogawa GS200 driver."""
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
-from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesYokogawaGS200
-from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesYokowageGS200Monitor
-from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesYokowagaGS200Program
+from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesGS200
+from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS200Monitor
+from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 
-class YokogawaGS200(QCodesYokogawaGS200):
+class GS200(QCodesGS200):
     """
-    Qililab's driver for the YokogawaGS200 acting as VoltageSource and CurrentSource
+    Qililab's driver for the Yokogawa GS200 acting as VoltageSource and CurrentSource
 
     Args:
         name (str): What this instrument is called locally.
@@ -22,17 +22,17 @@ class YokogawaGS200(QCodesYokogawaGS200):
         super().__init__(name, address, **kwargs)
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self.channels: list[QCodesYokowageGS200Monitor] = []  # resetting superclass instrument channels
+        self.channels: list[QCodesGS200Monitor] = []  # resetting superclass instrument channels
         # Add the Monitor to the instrument
-        measure = YokogawaGS200Monitor(self, "measure", True)
+        measure = GS200Monitor(self, "measure", True)
         self.add_submodule("measure", measure)
         # Add the Program to the instrument
-        self.add_submodule("program", QCodesYokowagaGS200Program(self, "program"))
+        self.add_submodule("program", QCodesGS200Program(self, "program"))
 
 
-class YokogawaGS200Monitor(QCodesYokowageGS200Monitor, VoltageSource, CurrentSource):
+class GS200Monitor(QCodesGS200Monitor, VoltageSource, CurrentSource):
     """
-    Class for the Yokowaga GS200 Monitor.
+    Class for the Yokogawa GS200 Monitor.
 
     It inherits from QCodes driver.
 

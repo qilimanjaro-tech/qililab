@@ -1,23 +1,23 @@
-""" Test empty abstract class, YokogawaGS200"""
+""" Test empty abstract class, Yokogawa GS200"""
 from unittest.mock import MagicMock
 
 from qcodes import Instrument
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program
 from qcodes.tests.instrument_mocks import DummyChannelInstrument, DummyInstrument
 
-from qililab.drivers import YokogawaGS200
-from qililab.drivers.instruments.yokogawa.yokogawa_gs200 import YokogawaGS200Monitor
+from qililab.drivers import GS200
+from qililab.drivers.instruments.yokogawa.yokogawa_gs200 import GS200Monitor
 
 NUM_SUBMODULES = 2
 MONITOR_NAME = "measure"
 PROGRAM_NAME = "program"
 
 
-class MockYokowagaGS200Monitor(DummyChannelInstrument):
-    """Mocking classes for YokowagaGS200Monitor"""
+class MockGS200Monitor(DummyChannelInstrument):
+    """Mocking classes for Yokowaga GS200Monitor"""
 
     def __init__(self, parent: Instrument, name: str, present: bool = False):
-        """Init method for the mock YokowagaGS200Monitor"""
+        """Init method for the mock Yokowaga GS200Monitor"""
 
         super().__init__(name)
         self.present = present
@@ -52,59 +52,57 @@ class MockYokowagaGS200Monitor(DummyChannelInstrument):
         return self._enabled
 
 
-class TestYokogawaGS200:
-    """Unit tests checking the qililab YokogawaGS200 attributes and methods"""
+class TestGS200:
+    """Unit tests checking the qililab Yokogawa GS200 attributes and methods"""
 
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
 
-        cls.old_yokowaga_gs_200_bases: tuple[type, ...] = YokogawaGS200.__bases__
-        YokogawaGS200.__bases__ = (DummyInstrument,)
+        cls.old_yokowaga_gs_200_bases: tuple[type, ...] = GS200.__bases__
+        GS200.__bases__ = (DummyInstrument,)
 
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
 
         Instrument.close_all()
-        YokogawaGS200.__bases__ = cls.old_yokowaga_gs_200_bases
+        GS200.__bases__ = cls.old_yokowaga_gs_200_bases
 
     def test_init(self):
         """Unit tests for init method"""
         yokogawa_name = "test_yokowaga"
-        yokogawa_gs_200 = YokogawaGS200(name=yokogawa_name, address="")
+        yokogawa_gs_200 = GS200(name=yokogawa_name, address="")
         submodules = yokogawa_gs_200.submodules
         expected_names = [f"{yokogawa_name}_{MONITOR_NAME}", f"{yokogawa_name}_{PROGRAM_NAME}"]
         registered_names = [submodules[key].name for key in list(submodules.keys())]
         yokogawa_monitor = yokogawa_gs_200.submodules[MONITOR_NAME]
 
         assert len(submodules) == NUM_SUBMODULES
-        assert all(
-            isinstance(submodules[name], YokogawaGS200Monitor | GS200Program) for name in list(submodules.keys())
-        )
+        assert all(isinstance(submodules[name], GS200Monitor | GS200Program) for name in list(submodules.keys()))
         assert expected_names == registered_names
         assert yokogawa_monitor.present is True
 
 
-class TestYokogawaGS200Monitor:
-    """Unit tests checking the qililab YokogawaGS200 attributes and methods"""
+class TestGS200Monitor:
+    """Unit tests checking the qililab Yokogawa GS200 attributes and methods"""
 
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-        cls.old_yokowaga_gs_200_monitor_bases: tuple[type, ...] = YokogawaGS200Monitor.__bases__
-        YokogawaGS200Monitor.__bases__ = (MockYokowagaGS200Monitor,)
+        cls.old_yokowaga_gs_200_monitor_bases: tuple[type, ...] = GS200Monitor.__bases__
+        GS200Monitor.__bases__ = (MockGS200Monitor,)
 
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
         Instrument.close_all()
-        YokogawaGS200Monitor.__bases__ = cls.old_yokowaga_gs_200_monitor_bases
+        GS200Monitor.__bases__ = cls.old_yokowaga_gs_200_monitor_bases
 
     def test_off(self):
         """Unit tests for on method"""
         yokogawa_name_monitor = "test_yokowaga_monitor_on"
-        yokogawa_gs_200 = YokogawaGS200Monitor(parent=MagicMock(), name=yokogawa_name_monitor, present=True)
+        yokogawa_gs_200 = GS200Monitor(parent=MagicMock(), name=yokogawa_name_monitor, present=True)
 
         # testing the whole on/off cycle works fine
         assert yokogawa_gs_200.get("enabled") == "off"
@@ -116,7 +114,7 @@ class TestYokogawaGS200Monitor:
     def test_on(self):
         """Unit tests for on method"""
         yokogawa_name_monitor = "test_yokowaga_monitor_on"
-        yokogawa_gs_200 = YokogawaGS200Monitor(parent=MagicMock(), name=yokogawa_name_monitor, present=True)
+        yokogawa_gs_200 = GS200Monitor(parent=MagicMock(), name=yokogawa_name_monitor, present=True)
 
         yokogawa_gs_200.on()
         assert yokogawa_gs_200.get("enabled") == "on"
