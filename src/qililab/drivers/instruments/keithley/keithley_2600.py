@@ -25,7 +25,7 @@ class Keithley2600(QCodesKeithley2600):
         # Add the channel to the instrument
         for ch in ["a", "b"]:
             ch_name = f"smu{ch}"
-            channel = Keithley2600Channel(self, ch_name, ch_name)
+            channel = Keithley2600Channel(self, name=ch_name, channel=ch_name)
             self.add_submodule(ch_name, channel)
             self.channels.append(channel)
 
