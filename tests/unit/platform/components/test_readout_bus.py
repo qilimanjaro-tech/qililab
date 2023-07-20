@@ -94,12 +94,14 @@ def fixture_sequencer() -> SequencerQCM:
 
     return sequencer
 
+
 @pytest.fixture(name="digitiser")
 def fixture_digitiser() -> SequencerQRM:
     """Return SequencerQRM instance."""
     digitiser = SequencerQRM(parent=MagicMock(), name="test_digitiser", seq_idx=0)
 
     return digitiser
+
 
 @pytest.fixture(name="local_oscillator")
 def fixture_local_oscillator() -> QcmQrmRfLo:
@@ -130,10 +132,14 @@ class TestReadoutBus:
 
         Instrument.close_all()
 
-    def test_init(self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
+    def test_init(
+        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
+    ):
         """Test init method"""
         qubit = 0
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
 
         assert drive_bus.qubit == qubit
         assert isinstance(drive_bus.awg, SequencerQCM)
@@ -141,13 +147,17 @@ class TestReadoutBus:
         assert isinstance(drive_bus.local_oscillator, QcmQrmRfLo)
         assert isinstance(drive_bus.attenuator, QcmQrmRfAtt)
 
-    def test_set(self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
+    def test_set(
+        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
+    ):
         """Test set method"""
         qubit = 0
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
         drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         drive_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
         drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
@@ -158,13 +168,17 @@ class TestReadoutBus:
         assert local_oscillator.get(lo_frequency_param) == 2
         assert attenuator.get(attenuation_param) == 2
 
-    def test_get(self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt):
+    def test_get(
+        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
+    ):
         """Test get method"""
         qubit = 0
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
         drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         drive_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
         drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
@@ -190,7 +204,9 @@ class TestReadoutBus:
         nshots = 1
         repetition_duration = 1000
         num_bins = 1
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
         drive_bus.execute(
             instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
@@ -221,7 +237,9 @@ class TestReadoutBus:
         nshots = 1
         repetition_duration = 1000
         num_bins = 1
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
         drive_bus.execute(
             instrument_name="digitiser",
             pulse_bus_schedule=pulse_bus_schedule,
@@ -248,7 +266,9 @@ class TestReadoutBus:
     ):
         """Test acquire_results method"""
         qubit = 0
-        drive_bus = ReadoutBus(qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator)
+        drive_bus = ReadoutBus(
+            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        )
         drive_bus.acquire_results()
 
         mock_acquire.assert_called_once()
