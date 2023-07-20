@@ -118,6 +118,9 @@ class SequencerQCM(Sequencer, AWG):
     def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
         """Generate Acquisitions object.
 
+        Args:
+            num_bins (int): number of bins
+
         Returns:
             Acquisitions: Acquisitions object.
         """

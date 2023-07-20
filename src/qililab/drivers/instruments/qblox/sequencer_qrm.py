@@ -18,6 +18,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
+
         Args:
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
@@ -65,6 +66,9 @@ class SequencerQRM(SequencerQCM, Digitiser):
     def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
         """Generate Acquisitions object, currently containing a single acquisition named "default", with num_bins = 1
         and index = 0.
+
+        Args:
+            num_bins (int): number of bins
 
         Returns:
             Acquisitions: Acquisitions object.
