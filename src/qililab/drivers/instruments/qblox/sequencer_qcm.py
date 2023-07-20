@@ -124,9 +124,7 @@ class SequencerQCM(Sequencer, AWG):
         Returns:
             Acquisitions: Acquisitions object.
         """
-        acquisitions = Acquisitions()
-
-        return acquisitions
+        return Acquisitions()
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
