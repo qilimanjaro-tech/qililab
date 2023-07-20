@@ -87,13 +87,16 @@ class TestKeithley2600:
         keithley_name = "test_keithley"
         keithley_2600 = Keithley2600(name=keithley_name, address="192.168.1.68")
         submodules = keithley_2600.submodules
+        instrument_modules = keithley_2600.instrument_modules
         channels_names = [f"smu{ch}" for ch in ["a", "b"]]
         expected_names = [f"{keithley_name}_{name}" for name in channels_names]
-        registered_names = [submodules[key].name for key in list(submodules.keys())]
+        registered_submodules_names = [submodules[key].name for key in list(submodules.keys())]
+        registered_instrument_modules_names = [instrument_modules[key].name for key in list(instrument_modules.keys())]
 
         assert len(submodules) == NUM_SUBMODULES
         assert all(isinstance(submodules[name], Keithley2600Channel) for name in channels_names)
-        assert expected_names == registered_names
+        assert expected_names == registered_submodules_names
+        assert expected_names == registered_instrument_modules_names
 
 
 class TestKeithley2600Channel:

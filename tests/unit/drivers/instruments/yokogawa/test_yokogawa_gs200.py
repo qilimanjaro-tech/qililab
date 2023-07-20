@@ -74,14 +74,23 @@ class TestGS200:
         yokogawa_name = "test_yokowaga"
         yokogawa_gs_200 = GS200(name=yokogawa_name, address="")
         submodules = yokogawa_gs_200.submodules
-        expected_names = [f"{yokogawa_name}_{MONITOR_NAME}", f"{yokogawa_name}_{PROGRAM_NAME}"]
-        registered_names = [submodules[key].name for key in list(submodules.keys())]
+        instrument_modules = yokogawa_gs_200.instrument_modules
+        submodules_expected_names = [f"{yokogawa_name}_{MONITOR_NAME}", f"{yokogawa_name}_{PROGRAM_NAME}"]
+        registered_submodules_names = [submodules[key].name for key in list(submodules.keys())]
+        registered_instrument_modules_names = [submodules[key].name for key in list(submodules.keys())]
         yokogawa_monitor = yokogawa_gs_200.submodules[MONITOR_NAME]
 
         assert len(submodules) == NUM_SUBMODULES
         assert all(isinstance(submodules[name], GS200Monitor | GS200Program) for name in list(submodules.keys()))
-        assert expected_names == registered_names
+        assert submodules_expected_names == registered_submodules_names
+        assert len(instrument_modules) == NUM_SUBMODULES
+        assert all(
+            isinstance(instrument_modules[name], GS200Monitor | GS200Program)
+            for name in list(instrument_modules.keys())
+        )
+        assert submodules_expected_names == registered_instrument_modules_names
         assert yokogawa_monitor.present is True
+        assert len(yokogawa_gs_200._channel_lists) == 0
 
 
 class TestGS200Monitor:
