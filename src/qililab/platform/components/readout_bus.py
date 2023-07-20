@@ -1,18 +1,20 @@
 """Driver for the Drive Bus class."""
 from typing import Any
 
-from qililab.drivers.interfaces.attenuator import Attenuator
-from qililab.drivers.interfaces.awg import AWG
-from qililab.drivers.interfaces.local_oscillator import LocalOscillator
-from qililab.platform.components.interfaces.bus import BusInterface
+from qililab.drivers.interfaces import Attenuator
+from qililab.drivers.interfaces import AWG
+from qililab.drivers.interfaces import Digitiser
+from qililab.drivers.interfaces import LocalOscillator
+from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
+from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
 class ReadoutBus(BusInterface):
     """Qililab's driver for Readout Bus"""
 
     def __init__(
-        self, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs
+        self, qubit: int, awg: AWG, digitiser: Digitiser, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs
     ):
         """Initialise the bus.
 
@@ -23,28 +25,40 @@ class ReadoutBus(BusInterface):
         super().__init__(**kwargs)
         self.qubit = qubit
         self.awg = awg
+        self.digitiser = digitiser
         if local_oscillator:
             self.local_oscillator = local_oscillator
         if attenuator:
             self.attenuator = attenuator
 
     def execute(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+        self, instrument_name:str, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> None:
-        """Execute a pulse bus schedule through an AWG Instrument belonging to the bus.
+        """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
+           Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
+           defining the abstrac method for execution of Qprograms.
 
         Args:
+            instrument_name (str): Name of the instrument
             pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.
             nshots (int): number of shots
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.awg.execute(
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
+        instrument = getattr(self, instrument_name, None)
+        if isinstance(instrument, AWG):
+            instrument.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins,
         )
+
+    def acquire_results(self) -> QbloxResult:
+        """Acquires results using the digitiser of the bus.
+
+        Returns:
+            results (QbloxResult): acquisitions of results
+        """
+        results = self.digitiser.get_results()
+
+        return results
 
     def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
