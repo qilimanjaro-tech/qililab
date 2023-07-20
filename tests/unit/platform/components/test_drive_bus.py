@@ -179,6 +179,7 @@ class TestDriveBus:
         num_bins = 1
         drive_bus = DriveBus(qubit=qubit, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
         drive_bus.execute(
+            instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,

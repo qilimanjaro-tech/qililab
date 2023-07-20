@@ -29,22 +29,32 @@ class DriveBus(BusInterface):
             self.attenuator = attenuator
 
     def execute(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+        self,
+        instrument_name: str,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
     ) -> None:
-        """Execute a pulse bus schedule through an AWG Instrument belonging to the bus.
+        """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
+           Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
+           defining the abstrac method for execution of Qprograms.
 
         Args:
+            instrument_name (str): Name of the instrument
             pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.
             nshots (int): number of shots
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.awg.execute(
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
+        instrument = getattr(self, instrument_name, None)
+        if isinstance(instrument, AWG):
+            instrument.execute(
+                pulse_bus_schedule=pulse_bus_schedule,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+                num_bins=num_bins,
+            )
 
     def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
