@@ -9,7 +9,6 @@ from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
 from qpysequence.weights import Weights
 
-from qililab.drivers import Pulsar
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
