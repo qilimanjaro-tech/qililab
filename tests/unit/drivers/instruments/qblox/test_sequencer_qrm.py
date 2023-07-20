@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
+from qpysequence.weights import Weights
 
 from qililab.drivers import Pulsar
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
@@ -143,6 +144,31 @@ class TestSequencerQRM:
 
         assert isinstance(program, Program)
         assert re.match(expected_program_str, repr(program))
+
+    def test_generate_empty_weights(self):
+        """Test the ``_generate_weights`` method when no weights have been set beforehand."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+        weights = sequencer._generate_weights()
+        assert isinstance(weights, Weights)
+
+        weights = weights.to_dict()
+        # must be empty dictionary
+        assert not weights
+
+        # Set values only for channel i
+        weights_i = [1, 2, 3, 4]
+        weights = sequencer._generate_weights().to_dict()
+
+        # must be empty dictionary
+        assert not weights
+
+        # Set values only for channel q
+        weights_q = [1, 2, 3, 4]
+        weights = sequencer._generate_weights().to_dict()
+
+        # must be empty dictionary
+        assert not weights
 
     def test_generate_weights(self):
         """Test the ``_generate_weights`` method."""
