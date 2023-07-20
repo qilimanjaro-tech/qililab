@@ -28,8 +28,9 @@ class CircuitToPulses:
     def __init__(self, platform: Platform):
         self.platform = platform
         self._instantiate_gates_from_settings()
-        # TODO: coupler topology condition
-        self.coupler_qpu = False
+        # check if qubit 0 has a coupler
+        # the qubit index is arbitrary
+        self.coupler_qpu = self.platform.chip.has_couplers(0)
 
     def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for

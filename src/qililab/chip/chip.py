@@ -156,6 +156,19 @@ class Chip(DDBBElement):
                 return self.get_qubit_idx_from_node(node=adj_node)
         raise ValueError(f"Could not find qubit connected to node with id {node.id_}")
 
+    def has_couplers(self, idx: int) -> bool:
+        """Returns true if the qubit has a neighbouring coupler
+
+        Args:
+            qubit_id (int): Qubit id
+
+        Returns:
+            bool
+        """
+        qubit = self._get_qubit(idx=idx)
+        adj_nodes = self._get_adjacent_nodes(node=qubit)
+        return any(isinstance(node, Coupler) for node in adj_nodes)
+
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {
