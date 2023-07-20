@@ -64,7 +64,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
         setup_block.append_components([move_0, move_1], bot_position=1)
 
     def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
-        """Generate Acquisitions object, currently containing a single acquisition named "default" with 
+        """Generate Acquisitions object, currently containing a single acquisition named "default" with
         index = 0.
 
         Args:
