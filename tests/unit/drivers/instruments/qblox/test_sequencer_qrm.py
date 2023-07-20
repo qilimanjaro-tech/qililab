@@ -157,6 +157,7 @@ class TestSequencerQRM:
 
         # Set values only for channel i
         weights_i = [1, 2, 3, 4]
+        sequencer.set("weights_i", weights_i)
         weights = sequencer._generate_weights().to_dict()
 
         # must be empty dictionary
@@ -164,6 +165,8 @@ class TestSequencerQRM:
 
         # Set values only for channel q
         weights_q = [1, 2, 3, 4]
+        sequencer.set("weights_i", [])
+        sequencer.set("weights_q", weights_q)
         weights = sequencer._generate_weights().to_dict()
 
         # must be empty dictionary
