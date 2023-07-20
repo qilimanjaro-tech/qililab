@@ -13,7 +13,12 @@ class BusInterface(ABC):
 
     @abstractmethod
     def execute(
-        self, instrument_name: str, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+        self,
+        instrument_name: str,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
     ) -> None:
         """Execute a pulse bus schedule through an AWG Sequencer belonging to the bus.
 

@@ -14,7 +14,13 @@ class ReadoutBus(BusInterface):
     """Qililab's driver for Readout Bus"""
 
     def __init__(
-        self, qubit: int, awg: AWG, digitiser: Digitiser, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs
+        self,
+        qubit: int,
+        awg: AWG,
+        digitiser: Digitiser,
+        local_oscillator: LocalOscillator | None,
+        attenuator: Attenuator | None,
+        **kwargs
     ):
         """Initialise the bus.
 
@@ -32,7 +38,12 @@ class ReadoutBus(BusInterface):
             self.attenuator = attenuator
 
     def execute(
-        self, instrument_name:str, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
+        self,
+        instrument_name: str,
+        pulse_bus_schedule: PulseBusSchedule,
+        nshots: int,
+        repetition_duration: int,
+        num_bins: int,
     ) -> None:
         """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
            Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
@@ -47,8 +58,12 @@ class ReadoutBus(BusInterface):
         """
         instrument = getattr(self, instrument_name, None)
         if isinstance(instrument, AWG):
-            instrument.execute(pulse_bus_schedule=pulse_bus_schedule, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins,
-        )
+            instrument.execute(
+                pulse_bus_schedule=pulse_bus_schedule,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+                num_bins=num_bins,
+            )
 
     def acquire_results(self) -> QbloxResult:
         """Acquires results using the digitiser of the bus.
