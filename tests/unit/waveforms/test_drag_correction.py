@@ -22,7 +22,9 @@ class TestDragCorrection:
 
         drag_correction = DragCorrection(0.8, gaussian)
         x = np.arange(gaussian.duration)
-        envelope = (-0.8 * (x - gaussian.mu) / gaussian.sigma**2) * gaussian.envelope()
+        envelope = (
+            -0.8 * (x - (gaussian.duration / gaussian.num_sigmas)) / (gaussian.num_sigmas / 2) ** 2
+        ) * gaussian.envelope()
         assert np.allclose(drag_correction.envelope(), envelope)
 
     def test_envelope_not_implemented_error(self):

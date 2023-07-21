@@ -32,7 +32,10 @@ class DragCorrection(Waveform):
             x = np.arange(self.waveform.duration / resolution) * resolution
 
             return (
-                -1 * self.drag_coefficient * (x - self.waveform.mu) / self.waveform.sigma**2
+                -1
+                * self.drag_coefficient
+                * (x - (self.waveform.duration / self.waveform.num_sigmas))
+                / (self.waveform.num_sigmas / 2) ** 2
             ) * self.waveform.envelope()
         else:
             raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
