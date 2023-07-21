@@ -23,11 +23,6 @@ class Gaussian(Waveform):
         self.duration = duration
         self.num_sigmas = num_sigmas
 
-        # This allows to later modify these values to have different gaussian shapes
-        # eg. displace the peak of the gaussian from the center of duration
-        self.sigma = self.duration / self.num_sigmas
-        self.mu = self.duration / 2
-
     def envelope(self, resolution: float = 1):
         """Returns the pulse matrix
 
@@ -38,6 +33,8 @@ class Gaussian(Waveform):
             np.ndarray: pulse matrix
             resolution (int, optional): Pulse resolution. Defaults to 1.
         """
+        self.sigma = self.duration / self.num_sigmas
+        self.mu = self.duration / 2
         x = np.arange(self.duration / resolution) * resolution
 
         gaussian = self.amplitude * np.exp(-0.5 * (x - self.mu) ** 2 / self.sigma**2)
