@@ -17,7 +17,6 @@ class MockKeithley2600(DummyInstrument):
 
     def __init__(self, name: str, address: str, **kwargs):
         """Init method for the mock Keithley2600"""
-
         super().__init__(name, **kwargs)
         self.model = "test_model"
         self._vranges = {"test_model": [0, 1]}
@@ -31,7 +30,6 @@ class MockKeithley2600Channel(DummyChannel):
 
     def __init__(self, parent: Instrument, name: str, channel: str):
         """Init method for the mock Keithley2600Channel"""
-
         super().__init__(parent, name, channel=channel)
 
         self.add_parameter(
@@ -70,14 +68,12 @@ class TestKeithley2600:
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-
         cls.old_keithley_2600_bases: tuple[type, ...] = Keithley2600.__bases__
         Keithley2600.__bases__ = (MockKeithley2600,)
 
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
-
         Instrument.close_all()
         Keithley2600.__bases__ = cls.old_keithley_2600_bases
 
@@ -94,6 +90,7 @@ class TestKeithley2600:
         registered_instrument_modules_names = [instrument_modules[key].name for key in list(instrument_modules.keys())]
 
         assert len(submodules) == NUM_SUBMODULES
+        assert len(channels_names) == 2
         assert all(isinstance(submodules[name], Keithley2600Channel) for name in channels_names)
         assert expected_names == registered_submodules_names
         assert expected_names == registered_instrument_modules_names
@@ -111,7 +108,6 @@ class TestKeithley2600Channel:
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
-
         Instrument.close_all()
         Keithley2600Channel.__bases__ = cls.old_keithley_2600_channel_bases
 

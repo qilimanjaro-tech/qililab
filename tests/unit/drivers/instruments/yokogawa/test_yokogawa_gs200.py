@@ -58,14 +58,12 @@ class TestGS200:
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-
         cls.old_yokowaga_gs_200_bases: tuple[type, ...] = GS200.__bases__
         GS200.__bases__ = (DummyInstrument,)
 
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
-
         Instrument.close_all()
         GS200.__bases__ = cls.old_yokowaga_gs_200_bases
 
