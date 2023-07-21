@@ -103,7 +103,7 @@ class SequencerQCM(Sequencer, AWG):
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
-        weights = self._generate_weights().to_dict()
+        weights = self._generate_weights()
 
         return QpySequence(program=program, waveforms=waveforms, weights=weights, acquisitions=acquisitions)
 
