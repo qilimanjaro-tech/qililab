@@ -78,15 +78,13 @@ class TestGS200:
         registered_instrument_modules_names = [submodules[key].name for key in list(instrument_modules.keys())]
         yokogawa_monitor = yokogawa_gs_200.submodules[MONITOR_NAME]
 
-        assert len(submodules) == NUM_SUBMODULES
+        assert len(submodules) == len(instrument_modules) == NUM_SUBMODULES
+        assert submodules_expected_names == registered_submodules_names == registered_instrument_modules_names
         assert all(isinstance(submodules[name], GS200Monitor | GS200Program) for name in list(submodules.keys()))
-        assert submodules_expected_names == registered_submodules_names
-        assert len(instrument_modules) == NUM_SUBMODULES
         assert all(
             isinstance(instrument_modules[name], GS200Monitor | GS200Program)
             for name in list(instrument_modules.keys())
         )
-        assert submodules_expected_names == registered_instrument_modules_names
         assert yokogawa_monitor.present is True
         assert yokogawa_gs_200._channel_lists == {}
 

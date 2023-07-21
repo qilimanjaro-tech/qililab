@@ -89,11 +89,11 @@ class TestKeithley2600:
         registered_submodules_names = [submodules[key].name for key in list(submodules.keys())]
         registered_instrument_modules_names = [instrument_modules[key].name for key in list(instrument_modules.keys())]
 
-        assert len(submodules) == NUM_SUBMODULES
-        assert len(channels_names) == 2
+        assert len(submodules) == len(channels_names) == NUM_SUBMODULES
+        assert expected_names == registered_submodules_names == registered_instrument_modules_names
         assert all(isinstance(submodules[name], Keithley2600Channel) for name in channels_names)
-        assert expected_names == registered_submodules_names
-        assert expected_names == registered_instrument_modules_names
+        assert all(isinstance(instrument_modules[name], Keithley2600Channel) for name in channels_names)
+        assert keithley_2600.channels == [submodules["smua"], submodules["smub"]]
 
 
 class TestKeithley2600Channel:
