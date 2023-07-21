@@ -39,7 +39,7 @@ class Variable:
         return float(self.value)
 
     def __complex__(self):
-        return self.value + 0j
+        return complex(self.value)
 
     def __add__(self, other):
         return self.value + other
