@@ -17,8 +17,10 @@ class DriveBus(BusInterface):
         """Initialise the bus.
 
         Args:
-            name (str): Sequencer name
-            address (str): Instrument address
+            qubit (int): Qubit
+            awg (AWG): Sequencer
+            local_oscillator (LocalOscillator | None): Local oscillator
+            attenuator (Attenuator | None): Attenuator
         """
         super().__init__(**kwargs)
         self.qubit = qubit
