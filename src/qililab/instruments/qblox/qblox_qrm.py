@@ -2,10 +2,11 @@
 from dataclasses import dataclass
 from typing import Sequence, cast
 
+from qpysequence import Program
 from qpysequence import Sequence as QpySequence
-from qpysequence.program import Loop, Program, Register
+from qpysequence import Weights
+from qpysequence.program import Loop, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
-from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg_analog_digital_converter import AWGAnalogDigitalConverter
