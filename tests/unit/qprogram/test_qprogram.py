@@ -1,3 +1,4 @@
+import math
 from collections import deque
 
 import numpy as np
@@ -222,6 +223,10 @@ class TestQProgram:
         assert "{0:=}".format(int_variable) == "{0:=}".format(int_value)
         assert +int_variable == +int_value
         assert -int_variable == -int_value
+        assert abs(int_variable) == abs(int_value)
+        assert math.floor(int_variable) == math.floor(int_value)
+        assert math.ceil(int_variable) == math.ceil(int_value)
+        assert math.trunc(int_variable) == math.trunc(int_value)
         assert int_variable + other_value == int_value + other_value
         assert int_variable - other_value == int_value - other_value
         assert int_variable * other_value == int_value * other_value
