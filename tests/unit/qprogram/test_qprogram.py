@@ -196,15 +196,68 @@ class TestQProgram:
         int_variable = qp.variable(int)
         float_variable = qp.variable(float)
 
+        # Test instantiation
         assert isinstance(int_variable, int)
         assert isinstance(int_variable, IntVariable)
         assert int_variable == 0
-        assert str(int_variable) == "0"
         assert isinstance(float_variable, float)
         assert isinstance(float_variable, FloatVariable)
         assert float_variable == 0.0
-        assert str(float_variable) == "0.0"
+
+        # Test storing in QProgram's _variables
         assert len(qp._variables) == 2
         assert qp._variables[0] is int_variable
         assert qp._variables[1] is float_variable
         assert len(qp._variables) == 2
+
+        # Test magic methods
+        int_value = 2
+        other_value = 5
+        int_variable.value = int_value
+        assert str(int_variable) == str(int_value)
+        assert int(int_variable) == int(int_value)
+        assert float(int_variable) == float(int_value)
+        assert complex(int_variable) == complex(int_value)
+        assert repr(int_variable) == repr(int_value)
+        assert "{0:=}".format(int_variable) == "{0:=}".format(int_value)
+        assert +int_variable == +int_value
+        assert -int_variable == -int_value
+        assert int_variable + other_value == int_value + other_value
+        assert int_variable - other_value == int_value - other_value
+        assert int_variable * other_value == int_value * other_value
+        assert int_variable / other_value == int_value / other_value
+        assert int_variable // other_value == int_value // other_value
+        assert int_variable**other_value == int_value**other_value
+        assert int_variable % other_value == int_value % other_value
+        assert other_value + int_variable == other_value + int_value
+        assert other_value - int_variable == other_value - int_value
+        assert other_value * int_variable == other_value * int_value
+        assert other_value / int_variable == other_value / int_value
+        assert other_value // int_variable == other_value // int_value
+        assert other_value**int_variable == other_value**int_value
+        assert other_value % int_variable == other_value % int_value
+        assert (int_variable == other_value) == (int_value == other_value)
+        assert (int_variable != other_value) == (int_value != other_value)
+        assert (int_variable < other_value) == (int_value < other_value)
+        assert (int_variable > other_value) == (int_value > other_value)
+        assert (int_variable <= other_value) == (int_value <= other_value)
+        assert (int_variable >= other_value) == (int_value >= other_value)
+
+        int_variable += other_value
+        int_value += other_value
+        assert int_variable == int_value
+        int_variable -= other_value
+        int_value -= other_value
+        assert int_variable == int_value
+        int_variable *= other_value
+        int_value *= other_value
+        assert int_variable == int_value
+        int_variable /= other_value
+        int_value /= other_value
+        assert int_variable == int_value
+        int_variable **= other_value
+        int_value **= other_value
+        assert int_variable == int_value
+        int_variable %= other_value
+        int_value %= other_value
+        assert int_variable == int_value

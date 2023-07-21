@@ -1,8 +1,9 @@
+import math
 from typing import Any
 
 
 class Variable:
-    value: Any
+    value: int | float
 
     def __str__(self):
         return str(self.value)
@@ -10,14 +11,134 @@ class Variable:
     def __repr__(self):
         return repr(self.value)
 
+    def __format__(self, formatstr):
+        return self.value.__format__(formatstr)
 
-class IntVariable(Variable, int):
+    def __pos__(self):
+        return +self.value
+
+    def __neg__(self):
+        return -self.value
+
+    def __abs__(self):
+        return abs(self.value)
+
+    def __floor__(self):
+        return math.floor(self.value)
+
+    def __ceil__(self):
+        return math.ceil(self.value)
+
+    def __trunc__(self):
+        return math.trunc(self.value)
+
+    def __int__(self):
+        return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+    def __complex__(self):
+        return self.value + 0j
+
+    def __add__(self, other):
+        return self.value + other
+
+    def __sub__(self, other):
+        return self.value - other
+
+    def __mul__(self, other):
+        return self.value * other
+
+    def __div__(self, other):
+        return self.value / other
+
+    def __truediv__(self, other):
+        return self.value / other
+
+    def __floordiv__(self, other):
+        return self.value // other
+
+    def __mod__(self, other):
+        return self.value % other
+
+    def __pow__(self, other):
+        return self.value**other
+
+    def __radd__(self, other):
+        return other + self.value
+
+    def __rsub__(self, other):
+        return other - self.value
+
+    def __rmul__(self, other):
+        return other * self.value
+
+    def __rdiv__(self, other):
+        return other / self.value
+
+    def __rtruediv__(self, other):
+        return other / self.value
+
+    def __rfloordiv__(self, other):
+        return other // self.value
+
+    def __rmod__(self, other):
+        return other % self.value
+
+    def __rpow__(self, other):
+        return other**self.value
+
+    def __iadd__(self, other):
+        return self.value + other
+
+    def __isub__(self, other):
+        return self.value - other
+
+    def __imul__(self, other):
+        return self.value * other
+
+    def __idiv__(self, other):
+        return self.value / other
+
+    def __itruediv__(self, other):
+        return self.value / other
+
+    def __ifloordiv__(self, other):
+        return self.value // other
+
+    def __imod__(self, other):
+        return self.value % other
+
+    def __ipow__(self, other):
+        return self.value**other
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __ne__(self, other):
+        return self.value != other
+
+    def __lt__(self, other):
+        return self.value < other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    def __le__(self, other):
+        return self.value <= other
+
+    def __ge__(self, other):
+        return self.value >= other
+
+
+class IntVariable(Variable, int):  # type: ignore
     def __init__(self, value: int = 0):
         self.value: int = value
         super().__init__()
 
 
-class FloatVariable(Variable, float):
+class FloatVariable(Variable, float):  # type: ignore
     def __init__(self, value: float = 0.0):
         self.value: float = value
         super().__init__()
