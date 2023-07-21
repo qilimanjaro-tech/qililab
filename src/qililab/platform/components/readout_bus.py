@@ -22,8 +22,11 @@ class ReadoutBus(BusInterface):
         """Initialise the bus.
 
         Args:
-            name (str): Sequencer name
-            address (str): Instrument address
+            qubit (int): Qubit
+            awg (AWG): Arbitrary Wave Generator instance
+            digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results
+            local_oscillator (LocalOscillator): Local Oscillator
+            attenuator (Attenuator): Attenuator
         """
         super().__init__(**kwargs)
         self.qubit = qubit
