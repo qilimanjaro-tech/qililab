@@ -492,7 +492,7 @@ class TestQbloxQRM:
         waveforms = sequences[0]._waveforms._waveforms
         assert np.allclose(waveforms[0].data, 0)
         assert np.allclose(waveforms[1].data, pulse.envelope(amplitude=1))
-        weights = sequences[0]._weights
+        weights = sequences[0]._weights.to_dict()
         assert np.allclose(weights["pair_0_I"]["data"], [4, 5, 6])
         assert np.allclose(weights["pair_0_Q"]["data"], [1, 2, 3])
 
