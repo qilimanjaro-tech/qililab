@@ -33,11 +33,11 @@ class Gaussian(Waveform):
             np.ndarray: pulse matrix
             resolution (int, optional): Pulse resolution. Defaults to 1.
         """
-        self.sigma = self.duration / self.num_sigmas
-        self.mu = self.duration / 2
+        sigma = self.duration / self.num_sigmas
+        mu = self.duration / 2
         x = np.arange(self.duration / resolution) * resolution
 
-        gaussian = self.amplitude * np.exp(-0.5 * (x - self.mu) ** 2 / self.sigma**2)
+        gaussian = self.amplitude * np.exp(-0.5 * (x - mu) ** 2 / sigma**2)
         norm = np.amax(np.real(gaussian))
 
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
