@@ -301,7 +301,7 @@ class BaseExperiment:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load Experiment from dictionary.
+        """Load BaseExperiment from dictionary.
 
         Args:
             dictionary (dict): Dictionary description of an Experiment.
@@ -310,14 +310,14 @@ class BaseExperiment:
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
 
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
-        return Experiment(
+        return BaseExperiment(
             platform=platform,
             options=experiment_options,
         )
 
     def __str__(self):
         """String representation of an experiment."""
-        return f"Experiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
+        return f"BaseExperiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
 
     @property
     def software_average(self):

@@ -10,8 +10,8 @@ import qililab as ql
 class TestExecute:
     """Test execute mehod in the `execute.py` script"""
 
-    @patch("qililab.experiment.circuit_experiment.Experiment.execute")
-    @patch("qililab.experiment.circuit_experiment.Experiment", autospec=True)
+    @patch("qililab.experiment.experiment.Experiment.execute")
+    @patch("qililab.experiment.experiment.Experiment", autospec=True)
     @patch("qililab.ExperimentOptions", autospec=True)
     @patch("qililab.ExperimentSettings", autospec=True)
     @patch("qililab.build_platform")
