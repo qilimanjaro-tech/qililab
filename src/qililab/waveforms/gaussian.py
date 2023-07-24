@@ -46,4 +46,6 @@ class Gaussian(Waveform):
         gaussian = gaussian - gaussian[0]  # Shift to avoid introducing noise at time 0
         corr_norm = np.amax(np.real(gaussian))
 
-        return gaussian * norm / corr_norm
+        gaussian = gaussian * norm / corr_norm if norm != 0 else gaussian  # handle amplitude 0 corner case
+
+        return gaussian
