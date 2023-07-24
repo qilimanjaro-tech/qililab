@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Fix: add acquisitions and weights to Sequencer QRM
+  [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
+
 - Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
   [452](https://github.com/qilimanjaro-tech/qililab/pull/452)
 

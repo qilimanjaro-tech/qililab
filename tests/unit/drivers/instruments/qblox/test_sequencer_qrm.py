@@ -5,10 +5,10 @@ from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qblox_instruments.types import PulsarType
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
+from qpysequence.weights import Weights
 
-from qililab.drivers import Pulsar
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Pulse, PulseBusSchedule, Rectangular
 from qililab.pulse.pulse_event import PulseEvent
@@ -144,6 +144,34 @@ class TestSequencerQRM:
         assert isinstance(program, Program)
         assert re.match(expected_program_str, repr(program))
 
+    def test_generate_empty_weights(self):
+        """Test the ``_generate_weights`` method when no weights have been set beforehand."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+
+        weights = sequencer._generate_weights()
+        assert isinstance(weights, Weights)
+
+        weights = weights.to_dict()
+        # must be empty dictionary
+        assert not weights
+
+        # Set values only for channel i
+        weights_i = [1, 2, 3, 4]
+        sequencer.set("weights_i", weights_i)
+        weights = sequencer._generate_weights().to_dict()
+
+        # must be empty dictionary
+        assert not weights
+
+        # Set values only for channel q
+        weights_q = [1, 2, 3, 4]
+        sequencer.set("weights_i", [])
+        sequencer.set("weights_q", weights_q)
+        weights = sequencer._generate_weights().to_dict()
+
+        # must be empty dictionary
+        assert not weights
+
     def test_generate_weights(self):
         """Test the ``_generate_weights`` method."""
         sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
@@ -160,6 +188,20 @@ class TestSequencerQRM:
         pair = weights._weight_pairs[0]
         assert pair.weight_i.data == weights_i
         assert pair.weight_q.data == weights_q
+
+    def test_generate_acquisitions(self):
+        """Test the ``_generate_acquisitions`` method."""
+        sequencer = SequencerQRM(parent=MagicMock(), name="test", seq_idx=4)
+        num_bins = 1
+        acquisitions = sequencer._generate_acquisitions(num_bins=num_bins)
+        acquisitions_dict = acquisitions.to_dict()
+
+        assert isinstance(acquisitions, Acquisitions)
+        assert "default" in acquisitions_dict
+        default_acq = acquisitions_dict["default"]
+
+        assert "num_bins" in default_acq
+        assert default_acq["num_bins"] == num_bins
 
     def test_generate_weights_with_swap(self):
         """Test the ``_generate_weights`` method when `swap_paths` is True."""

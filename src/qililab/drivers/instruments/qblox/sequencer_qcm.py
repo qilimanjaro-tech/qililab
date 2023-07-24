@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any
 
 import numpy as np
@@ -11,6 +12,7 @@ from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, S
 from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
 from qpysequence.waveforms import Waveforms
+from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.drivers.interfaces import AWG
@@ -93,6 +95,7 @@ class SequencerQCM(Sequencer, AWG):
             Sequence: Qblox Sequence object containing the program and waveforms.
         """
         waveforms = self._generate_waveforms(pulse_bus_schedule=pulse_bus_schedule)
+        acquisitions = self._generate_acquisitions(num_bins=num_bins)
         program = self._generate_program(
             pulse_bus_schedule=pulse_bus_schedule,
             waveforms=waveforms,
@@ -100,8 +103,28 @@ class SequencerQCM(Sequencer, AWG):
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
+        weights = self._generate_weights()
 
-        return QpySequence(program=program, waveforms=waveforms, weights={}, acquisitions=Acquisitions())
+        return QpySequence(program=program, waveforms=waveforms, weights=weights, acquisitions=acquisitions)
+
+    def _generate_weights(self) -> Weights:
+        """Generate acquisition weights.
+
+        Returns:
+            dict: Acquisition weights.
+        """
+        return Weights()
+
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
+        """Generate Acquisitions object.
+
+        Args:
+            num_bins (int): number of bins
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        return Acquisitions()
 
     def _generate_waveforms(self, pulse_bus_schedule: PulseBusSchedule):
         """Generate I and Q waveforms from a PulseSequence object.
