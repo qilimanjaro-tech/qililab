@@ -1,4 +1,5 @@
 """This file contains unit tests for the ``CircuitToPulses`` class."""
+import logging
 import re
 
 import numpy as np
@@ -7,6 +8,7 @@ from qibo import gates
 from qibo.models import Circuit
 
 from qililab.chip import Chip
+from qililab.config import logger
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -17,6 +19,7 @@ from qililab.pulse.hardware_gates import Park as ParkGate
 from qililab.settings import RuncardSchema
 from qililab.transpiler import Drag, Park
 from qililab.typings import Parameter
+from qililab.utils import Wait
 from tests.data import Galadriel
 from tests.utils import platform_db
 
@@ -171,6 +174,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 0,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 20,
@@ -184,6 +188,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 8,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 30,
@@ -197,6 +202,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 13,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 21,
@@ -210,6 +216,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 9,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 31,
@@ -223,6 +230,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 14,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 22,
@@ -236,6 +244,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 10,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 32,
@@ -249,6 +258,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 15,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 23,
@@ -262,6 +272,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 11,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 33,
@@ -275,6 +286,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 16,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 24,
@@ -288,6 +300,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 12,
             "distortions": [],
+            "delay": 0,
         },
         {
             "id_": 34,
@@ -301,6 +314,7 @@ def fixture_platform(chip: Chip) -> Platform:
             },
             "port": 17,
             "distortions": [],
+            "delay": 0,
         },
     ]
     settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
@@ -552,6 +566,47 @@ class TestTranslation:
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit])
 
+    def test_bus_error_is_raised(self, platform: Platform, chip: Chip):
+        circuit = Circuit(1)
+        circuit.add(Drag(0, 1, 1))
+        # create platform without buses for qubit 0
+        buses = Buses(elements=[platform.buses[3], platform.buses[4]])
+        platform.schema.buses = buses
+        translator = CircuitToPulses(platform=platform)
+        error_string = "bus cannot be None to get the distortions"
+        with pytest.raises(TypeError, match=error_string):
+            translator.translate(circuits=[circuit])
+
+    def test_no_park_raises_warning(self, caplog, platform: Platform, chip: Chip):
+        cz = gates.CZ(1, 2)
+        park_qubit = 3
+        circuit = Circuit(3)
+        circuit.add(cz)
+
+        # delete parking gate for q3
+        del platform.settings.gates[park_qubit][3]
+        translator = CircuitToPulses(platform=platform)
+        caplog.set_level(logging.WARNING)
+        translator.translate(circuits=[circuit])
+        warning_string = f"Found parking candidate qubit {park_qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {park_qubit}"
+        assert warning_string in caplog.text
+
+    def test_error_on_pad_time_negative(self, caplog, platform: Platform, chip: Chip):
+        cz = gates.CZ(1, 2)
+        circuit = Circuit(3)
+        circuit.add(cz)
+
+        # decrease park time for gate for q3, q4
+        pad_time = (10 - 83) / 2
+        platform.settings.gates[3][3].duration = 10
+        platform.settings.gates[4][3].duration = 10
+        translator = CircuitToPulses(platform=platform)
+        error_string = re.escape(
+            f"Negative value pad_time {pad_time} for park gate at 3 and CZ {cz.qubits}. Pad time is calculated as (ParkGate.duration - CZ pulse duration) / 2"
+        )
+        with pytest.raises(ValueError, match=error_string):
+            translator.translate(circuits=[circuit])
+
     def test_translate_pulses_with_duration_not_multiple_of_minimum_clock_time(self, platform: Platform):
         """Test that when the duration of a pulse is not a multiple of the minimum clock time, the next pulse
         start time is delayed by ``pulse_time mod min_clock_time``."""
@@ -562,20 +617,21 @@ class TestTranslation:
         circuit.add(gates.Y(0))
         circuit.add(Park(0))
         circuit.add(Drag(0, 1, 0.5))
+        circuit.add(Wait(1, 17))  # wait on q1 which will be parked by CZ(3,2)
         circuit.add(gates.CZ(3, 2))
         circuit.add(gates.M(0))
 
         pulse_schedule = translator.translate(circuits=[circuit])[0]
 
-        # minimum_clock_time is 4ns so every start time will be multiple of 4
+        # minimum_clock_time is 5ns so every start time will be multiple of 5
         # the order respects drive-flux-resonator (line 337)
         # duration for CZ is 30*2+2+1
         bus0_start_times = [220]
         bus8_start_times = [0, 45, 180]
         bus13_start_times = [85]
-        bus14_start_times = [0]
-        bus15_start_times = [5]  # padding
-        bus17_start_times = [0]
+        bus14_start_times = [20]
+        bus15_start_times = [25]  # padding (5) + wait (20)
+        bus17_start_times = [20]
 
         expected_start_times = (
             bus0_start_times
@@ -597,10 +653,10 @@ class TestTranslation:
     "circuit_gates, expected",
     [
         (
-            [Drag(0, 1, 1), gates.M(*range(5))],
+            [Drag(0, 1, 1), Wait(0, 40), gates.M(*range(5))],
             {
-                "gates": [Drag(0, 1, 1), gates.M(0), gates.M(1), gates.M(2), gates.M(3), gates.M(4)],
-                "pulse_times": [0, 0, 40, 0, 0, 0],
+                "gates": [Drag(0, 1, 1), Wait(0, 40), gates.M(0), gates.M(1), gates.M(2), gates.M(3), gates.M(4)],
+                "pulse_times": [0, 0, 80, 0, 0, 0],
                 "pulse_name": ["drag", "rectangular", "rectangular", "rectangular", "rectangular", "rectangular"],
                 "nodes": [8, 0, 0, 0, 0, 0],
             },
@@ -656,10 +712,13 @@ class TestTranslation:
             [
                 Drag(1, 1, 1),
                 Drag(2, 1, 1),
+                Wait(2, 10),
                 gates.CZ(2, 3),
+                Wait(2, 10),
                 Drag(0, 1, 0),
                 Drag(3, 2, 2),
                 gates.M(0),
+                Wait(1, 4),
                 gates.M(2),
                 gates.CZ(4, 2),
                 gates.CZ(2, 3),
@@ -669,12 +728,15 @@ class TestTranslation:
                 "pulse_events": [
                     Drag(1, 1, 1),
                     Drag(2, 1, 1),
+                    Wait(2, 10),
                     gates.CZ(2, 3),
+                    Wait(2, 10),
                     Park(1),
                     Park(4),
                     Drag(0, 1, 0),
                     Drag(3, 2, 2),
                     gates.M(0),
+                    Wait(1, 4),
                     gates.M(2),
                     gates.CZ(4, 2),
                     Park(1),
@@ -684,7 +746,7 @@ class TestTranslation:
                     Park(4),
                     gates.M(4),
                 ],
-                "pulse_times": [0, 0, 45, 40, 40, 0, 135, 40, 135, 240, 235, 235, 335, 330, 330, 415],
+                "pulse_times": [0, 0, 55, 50, 50, 0, 145, 40, 155, 260, 255, 255, 355, 350, 350, 435],
                 "pulse_name": [
                     "drag",
                     "drag",

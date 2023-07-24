@@ -85,6 +85,7 @@ class QbloxQCMRF(QbloxQCM):
                     "respectively."
                 )
             parameter = Parameter(f"out{output}_lo_freq")
+
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
             self.device.set(parameter.value, value)

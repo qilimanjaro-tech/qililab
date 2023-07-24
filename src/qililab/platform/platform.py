@@ -25,7 +25,7 @@ class Platform:
 
     def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
         self.settings = runcard_schema.settings
-        self.schema = Schema(**asdict(runcard_schema.schema))
+        self.schema = Schema(**asdict(runcard_schema.schema))  # type: ignore
         self.connection = connection
         self._connected_to_instruments: bool = False
 
@@ -142,14 +142,7 @@ class Platform:
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        for bus in self.buses:
-            if bus.alias == alias:
-                return bus
-
-        return next(
-            (element for element in self.buses if element.settings.alias == alias),
-            None,
-        )
+        return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
         self,

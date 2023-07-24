@@ -1,6 +1,7 @@
 from qibo.models import Circuit
 
 import qililab as ql
+from qililab.experiment.experiment import Experiment
 
 
 def execute(circuit: Circuit, runcard_name: str, nshots=1):
@@ -49,6 +50,6 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     options = ql.ExperimentOptions(settings=settings)
 
     # create experiment with options
-    sample_experiment = ql.Experiment(platform=platform, circuits=[circuit], options=options)
+    sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
 
-    return sample_experiment.execute(save_experiment=False)
+    return sample_experiment.execute(save_experiment=False, save_results=False)

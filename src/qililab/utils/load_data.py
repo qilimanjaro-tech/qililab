@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from qililab.constants import DATA, EXPERIMENT_FILENAME, RESULTS_FILENAME
-from qililab.experiment import Experiment
+from qililab.experiment.experiment import Experiment
 from qililab.result.results import Results
 
 

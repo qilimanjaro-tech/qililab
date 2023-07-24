@@ -39,6 +39,7 @@ class RuncardSchema:
             port: int
             distortions: list[dict]
             alias: str | None = None
+            delay: int = 0
 
         @dataclass
         class ChipSchema:

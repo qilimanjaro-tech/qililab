@@ -12,7 +12,7 @@ from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName
+from qililab.typings.enums import InstrumentName, Parameter
 from tests.data import Galadriel
 from tests.utils import platform_db, platform_yaml
 
@@ -119,3 +119,12 @@ class TestPlatform:
         platform.buses[0].settings.port = 100
         with pytest.raises(ValueError, match="Could not find buses for qubit 0 connected to the ports"):
             platform.get_bus_by_qubit_index(0)
+
+    @pytest.mark.parametrize("alias", ["drive_line_bus", "feedline_input_output_bus", "foobar"])
+    def test_get_bus_by_alias(self, platform: Platform, alias):
+        """Test get_bus_by_alias method"""
+        bus = platform.get_bus_by_alias(alias)
+        if alias == "foobar":
+            assert bus is None
+        if bus is not None:
+            assert bus in platform.buses

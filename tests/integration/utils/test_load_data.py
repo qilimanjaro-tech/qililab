@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from qililab import load
-from qililab.experiment import Experiment
+from qililab.experiment.experiment import Experiment
 from qililab.result.results import Results
 
 os.environ["DATA"] = str(Path(__file__).parent.parent.parent.parent / "examples" / "data")

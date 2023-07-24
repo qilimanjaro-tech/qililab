@@ -45,14 +45,11 @@ class CircuitToPulses:
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
             time: dict[int, int] = {}  # restart time
-            wait_of_next_pulse_event = {}  # type: ignore
             for gate in circuit.queue:
                 if isinstance(gate, qibo_gates.Wait):
-                    wait_of_next_pulse_event[gate.qubits[0]] = (
-                        wait_of_next_pulse_event.get(gate.qubits[0], 0) + gate.parameters[0]
-                    )
+                    self._update_time(time, gate.target_qubits[0], gate.parameters[0])
                     continue
-                if isinstance(gate, M):
+                elif isinstance(gate, M):
                     # handle measurement gates
                     for qubit_idx in gate.target_qubits:
                         m_gate = M(qubit_idx)
@@ -61,11 +58,16 @@ class CircuitToPulses:
                             readout_gate=m_gate,
                             qubit_idx=qubit_idx,
                             chip=chip,
-                            wait_time=wait_of_next_pulse_event.get(qubit_idx, 0),
                         )
                         wait_of_next_pulse_event[qubit_idx] = 0
                         if readout_pulse_event is not None:
-                            pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port)
+                            _, bus = self.platform.get_bus(port=port)
+                            pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port, port_delay=bus.settings.delay)  # type: ignore
+                            with contextlib.suppress(ValueError):
+                                # If we find a flux port, create empty schedule for that port
+                                flux_port = chip.get_port_from_qubit_idx(idx=m_gate.target_qubits[0], line=Line.FLUX)
+                                if flux_port is not None:
+                                    pulse_schedule.create_schedule(port=flux_port)
                     continue
 
                 elif isinstance(gate, CZ):
@@ -90,10 +92,10 @@ class CircuitToPulses:
                             time=time,
                             control_gate=parking_gate,
                             chip=chip,
-                            wait_time=wait_of_next_pulse_event.get(parking_gate.qubits[0], 0),
                         )
                         if pulse_event is not None:
-                            pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                            _, bus = self.platform.get_bus(port=port)
+                            pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)  # type: ignore
                     # add padd time to CZ target qubit to sync it with parking gate
                     # if there is more than 1 pad time, add max (this is a bit misleading)
                     pad_time = max((time for _, time in parking_gates_pads), default=0)
@@ -102,9 +104,7 @@ class CircuitToPulses:
                             time=time,
                             qubit_idx=gate.target_qubits[0],
                             pulse_time=pad_time,
-                            wait_time=wait_of_next_pulse_event.get(gate.qubits[0], 0),
                         )
-                        wait_of_next_pulse_event[qubit_idx] = 0
 
                 # add control gates
                 pulse_event, port = self._control_gate_to_pulse_event(
@@ -118,7 +118,8 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.target_qubits[0], pulse_time=pad_time, wait_time=0)
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time, wait_time=0)
                 if pulse_event is not None:  # this happens for the Identity gate
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=port)
+                    _, bus = self.platform.get_bus(port=port)
+                    pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)  # type: ignore
 
             for qubit in chip.qubits:
                 with contextlib.suppress(ValueError):
@@ -126,7 +127,7 @@ class CircuitToPulses:
                     flux_port = chip.get_port_from_qubit_idx(idx=qubit, line=Line.FLUX)
                     if flux_port is not None:
                         pulse_schedule.create_schedule(port=flux_port)
-                    
+
             pulse_schedule_list.append(pulse_schedule)
 
         return pulse_schedule_list
@@ -386,12 +387,12 @@ class CircuitToPulses:
         Args:
             time (Dict[int, int]): Dictionary with the time of each qubit.
             qubit_idx (int | tuple[int,int]): Index of the qubit or index of 2 qubits for 2 qubit gates.
-            pulse_time (int): Duration of the puls + wait time.
+            pulse_time (int): Duration of the pulse.
         """
         if qubit_idx not in time:
             time[qubit_idx] = 0
-        old_time = wait_time + time[qubit_idx]
-        residue = (pulse_time + wait_time) % self.platform.settings.minimum_clock_time
+        old_time = time[qubit_idx]
+        residue = (pulse_time) % self.platform.settings.minimum_clock_time
         if residue != 0:
             pulse_time += self.platform.settings.minimum_clock_time - residue
         time[qubit_idx] += wait_time + pulse_time

@@ -343,6 +343,7 @@ class Parameter(str, Enum):
     DELAY_BETWEEN_PULSES = "delay_between_pulses"
     DELAY_BEFORE_READOUT = "delay_before_readout"
     GATE_DURATION = "gate_duration"
+    GATE_PARAMETER = "gate_parameter"
     NUM_SIGMAS = "num_sigmas"
     DRAG_COEFFICIENT = "drag_coefficient"
     T_PHI = "t_phi"
@@ -441,6 +442,7 @@ class Parameter(str, Enum):
     A = "a"
     B = "b"
     NORM_FACTOR = "norm_factor"
+    DELAY = "delay"
 
 
 class ResultName(str, Enum):

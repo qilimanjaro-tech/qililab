@@ -4,6 +4,29 @@
 
 ### New features since last release
 
+- Added hotfixes for several issues encountered during the hackathon:
+  <https://github.com/qilimanjaro-tech/qililab/pull/413>
+
+  - Save experiments flag for experiments execute method
+
+  ```python
+  # Option 1 (Default, save_experiment=True)
+  experiment = Experiment(platform=platform, circuits=circuits, options=options)
+  experiment.execute()
+
+  # Option 2 (Equivalent to option 1, save_experiment=False)
+  experiment = Experiment(platform=platform, circuits=circuits, options=options)
+  experiment.execute(save_experiment=False)
+  ```
+
+  - Empty sequences to avoid creating repeated programs.
+  - Create empty programs for all qubit flux lines to activate calibrated offsets.
+  - Added method to get qubits from the chip
+
+  ```python
+  qubits = ql.Chip.qubits()
+  ```
+
 - Added to the `draw()` method the option  of specifying if you want:
 
   - modulation or not,
@@ -260,6 +283,9 @@
 - The parameter `sync_en` of the Qblox sequencers is now updated automatically when uploading a program to a sequencer.
   This parameter can no longer be set using `set_parameter`.
   [#353](https://github.com/qilimanjaro-tech/qililab/pull/353)
+
+- The Qblox RF modules now support setting their LO frequency using the generic `Parameter.LO_FREQUENCY` parameter.
+  [#455](https://github.com/qilimanjaro-tech/qililab/pull/455)
 
 ### Deprecations / Removals
 

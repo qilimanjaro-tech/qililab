@@ -1,25 +1,11 @@
-from qibo.gates.abstract import Gate, ParametrizedGate
-
-
-class Reset(Gate):
-    """The Reset operation.
-
-    Args:
-        q (int): the qubit id number.
-    """
-
-    def __init__(self, q):
-        super().__init__()
-        self.name = "reset"
-        self.target_qubits = (q,)
-        self.init_args = [q]
+from qibo.gates.abstract import ParametrizedGate
 
 
 class Wait(ParametrizedGate):
-    """The Reset operation.
+    """The Wait gate.
 
     Args:
-        q (int): the qubit id number.
+        q (int): the qubit index.
         t (int): the time to wait (ns)
     """
 

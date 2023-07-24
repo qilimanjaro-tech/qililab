@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 
 from qililab.instruments import Instrument
+from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter
 
@@ -56,6 +57,7 @@ class QbloxQRMRF(QbloxQRM):
         """
         if parameter == Parameter.LO_FREQUENCY:
             parameter = Parameter.OUT0_IN0_LO_FREQ
+
         if parameter in self.parameters:
             setattr(self.settings, parameter.value, value)
             self.device.set(parameter.value, value)
