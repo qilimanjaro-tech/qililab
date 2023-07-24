@@ -84,7 +84,7 @@ class TestFluxBus:
         flux_bus = FluxBus(source=sequencer)
         flux_bus.set(instrument_name="source", param_name=sequencer_param, value=True)
 
-        assert flux_bus.get("awg", sequencer_param) is True
+        assert flux_bus.get("source", sequencer_param) is True
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute_sequencer(
