@@ -40,6 +40,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
     return PulseBusSchedule(timeline=timeline, port=0)
 
+
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
@@ -88,10 +89,7 @@ class TestFluxBus:
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute_sequencer(
-        self,
-        mock_execute: MagicMock,
-        pulse_bus_schedule: PulseBusSchedule,
-        sequencer: SequencerQCM
+        self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, sequencer: SequencerQCM
     ):
         """Test execute method"""
         nshots = 1
