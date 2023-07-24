@@ -5,6 +5,7 @@ from qililab.drivers.interfaces import AWG, CurrentSource
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
+
 class FluxBus(BusInterface):
     """Qililab's driver for Flux Bus"""
 
