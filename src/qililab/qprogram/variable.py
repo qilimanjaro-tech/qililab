@@ -53,9 +53,6 @@ class Variable:
     def __mul__(self, other):
         return self.value * other
 
-    def __div__(self, other):
-        return self.value / other
-
     def __truediv__(self, other):
         return self.value / other
 
@@ -76,9 +73,6 @@ class Variable:
 
     def __rmul__(self, other):
         return other * self.value
-
-    def __rdiv__(self, other):
-        return other / self.value
 
     def __rtruediv__(self, other):
         return other / self.value
