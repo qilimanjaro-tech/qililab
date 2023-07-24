@@ -23,6 +23,9 @@ class Variable:
     def __abs__(self):
         return abs(self.value)
 
+    def __round__(self, ndigits=None):
+        return round(self.value, ndigits)
+
     def __floor__(self):
         return math.floor(self.value)
 
@@ -88,30 +91,6 @@ class Variable:
 
     def __rpow__(self, other):
         return other**self.value
-
-    def __iadd__(self, other):
-        return self.value + other
-
-    def __isub__(self, other):
-        return self.value - other
-
-    def __imul__(self, other):
-        return self.value * other
-
-    def __idiv__(self, other):
-        return self.value / other
-
-    def __itruediv__(self, other):
-        return self.value / other
-
-    def __ifloordiv__(self, other):
-        return self.value // other
-
-    def __imod__(self, other):
-        return self.value % other
-
-    def __ipow__(self, other):
-        return self.value**other
 
     def __eq__(self, other):
         return self.value == other
