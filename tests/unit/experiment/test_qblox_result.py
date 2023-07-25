@@ -5,10 +5,7 @@ import pandas as pd
 import pytest
 from dummy_qblox import DummyPulsar
 from qblox_instruments import PulsarType
-from qpysequence import Sequence
-from qpysequence.acquisitions import Acquisitions
-from qpysequence.program import Program
-from qpysequence.waveforms import Waveforms
+from qpysequence import Acquisitions, Program, Sequence, Waveforms, Weights
 
 from qililab.constants import QBLOXCONSTANTS, RESULTSDATAFRAME
 from qililab.exceptions.data_unavailable import DataUnavailable
@@ -31,8 +28,9 @@ def fixture_qrm_sequence() -> Sequence:
     waveforms = Waveforms()
     waveforms.add_pair_from_complex(np.ones(1000))
     acquisitions = Acquisitions()
+    weights = Weights()
     acquisitions.add("single")
-    return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights={})
+    return Sequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
 
 @pytest.fixture(name="dummy_qrm")
