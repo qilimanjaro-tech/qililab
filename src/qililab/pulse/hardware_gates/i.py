@@ -14,11 +14,10 @@ class I(HardwareGate):  # pylint: disable=invalid-name # noqa: E742
     class_type = gates.I
 
     @classmethod
-    def translate(cls, gate: gates.I, gate_schedule: list[dict]) -> list[dict]:
+    def translate(cls, gate: gates.I, gate_schedule: list[dict]) -> list[dict]: # noqa: E741
         """Translate gate into pulse.
 
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
         return gate_schedule
-
