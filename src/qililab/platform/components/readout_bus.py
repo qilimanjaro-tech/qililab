@@ -16,8 +16,7 @@ class ReadoutBus(BusInterface):
         awg: AWG,
         digitiser: Digitiser,
         local_oscillator: LocalOscillator | None,
-        attenuator: Attenuator | None,
-        **kwargs
+        attenuator: Attenuator | None
     ):
         """Initialise the bus.
 
@@ -28,7 +27,7 @@ class ReadoutBus(BusInterface):
             local_oscillator (LocalOscillator): Local Oscillator
             attenuator (Attenuator): Attenuator
         """
-        super().__init__(**kwargs)
+        super().__init__()
         self.qubit = qubit
         self.awg = awg
         self.digitiser = digitiser
