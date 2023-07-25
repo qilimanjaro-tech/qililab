@@ -18,7 +18,6 @@ class MockGS200Monitor(DummyChannelInstrument):
 
     def __init__(self, parent: Instrument, name: str, present: bool = False):
         """Init method for the mock Yokowaga GS200Monitor"""
-
         super().__init__(name)
         self.present = present
         self._enabled = False

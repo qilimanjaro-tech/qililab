@@ -79,7 +79,6 @@ class TestKeithley2600:
 
     def test_init(self):
         """Unit tests for init method"""
-
         keithley_name = "test_keithley"
         keithley_2600 = Keithley2600(name=keithley_name, address="192.168.1.68")
         submodules = keithley_2600.submodules

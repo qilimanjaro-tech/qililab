@@ -16,15 +16,8 @@ class MockSpiRack(DummyInstrument):
 
     def __init__(self, name, address, **kwargs):
         """Init method for the mock SpiRack module"""
-
         self.api = MagicMock()
         super().__init__(name, **kwargs)
-
-        self._channels = []
-        for dac in range(NUM_DACS_D5AMODULE):
-            ch_name = f"dac{dac}"
-            channel = D5aDacChannel(self, ch_name, dac)
-            self._channels.append(channel)
 
         self._MODULES_MAP = {
             "S4g": S4gModule,
@@ -38,7 +31,6 @@ class MockD5aModule(DummyInstrument):
 
     def __init__(self, parent, name, address, **kwargs):
         """Init method for the mock D5a module"""
-
         self.api = MagicMock()
         super().__init__(name, **kwargs)
 
@@ -54,7 +46,6 @@ class MockS4gModule(DummyInstrument):
 
     def __init__(self, parent, name, address, **kwargs):
         """Init method for the mock S4g module"""
-
         self.api = MagicMock()
         super().__init__(name, **kwargs)
 
@@ -70,7 +61,6 @@ class MockD5aDacChannel(DummyChannel):
 
     def __init__(self, parent, name, dac, **kwargs):
         """Init method for the mock D5aDacChannel"""
-
         super().__init__(parent, name, "test_channel", **kwargs)
 
         self.add_parameter(
@@ -90,16 +80,15 @@ class MockS4gDacChannel(DummyChannel):
 
     def __init__(self, parent, name, dac, **kwargs):
         """Init method for the mock S4gDacChannel"""
-
         super().__init__(parent, name, "test_channel", **kwargs)
 
         self.add_parameter(
             "current",
             get_cmd=None,
             set_cmd=None,
-            unit="V",
+            unit="A",
             vals=None,
-            docstring="Sets the output voltage of the dac channel. Depending "
+            docstring="Sets the output current of the dac channel. Depending "
             "on the value of ramping_enabled, the output value is either "
             "achieved through slowly ramping, or instantaneously set.",
         )
