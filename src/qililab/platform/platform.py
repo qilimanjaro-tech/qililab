@@ -89,8 +89,8 @@ class Platform:
                 return self.settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is not None:
-                name = regex_match.group("gate")
-                qubits_str = regex_match.group("qubits")
+                name = regex_match["gate"]
+                qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if name in self.gate_names:
                     return self.settings.get_gate(name=name, qubits=qubits)
@@ -142,7 +142,10 @@ class Platform:
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        return next((bus for bus in self.buses if bus.alias == alias), None)
+        bus = next((bus for bus in self.buses if bus.alias == alias), None)
+        if bus is not None:
+            return bus
+        raise NameError(f"Did not find bus for bus alias {alias}")
 
     def set_parameter(
         self,

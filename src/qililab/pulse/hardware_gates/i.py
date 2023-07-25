@@ -14,11 +14,11 @@ class I(HardwareGate):  # pylint: disable=invalid-name # noqa: E742
     class_type = gates.I
 
     @classmethod
-    def translate(cls, gate: gates.I) -> HardwareGate.HardwareGateSettings:  # noqa: E741
+    def translate(cls, gate: gates.I, gate_schedule: list[dict]) -> list[dict]:
         """Translate gate into pulse.
 
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
-        qubit = gate.target_qubits[0]
-        return cls.settings[qubit]
+        return gate_schedule
+

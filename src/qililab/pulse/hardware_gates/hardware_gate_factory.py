@@ -24,18 +24,19 @@ class HardwareGateFactory:
         """Return class attribute."""
         return cls.pulsed_gates[name]
 
-    @classmethod
-    def gate_settings(cls, gate: Gate) -> HardwareGate.HardwareGateSettings:
-        """Return the settings of the specified gate.
+    # TODO: this does not make sense if gate settings are defined at the runcard
+    # @classmethod
+    # def gate_settings(cls, gate: Gate) -> HardwareGate.HardwareGateSettings:
+    #     """Return the settings of the specified gate.
 
-        Args:
-            gate (Gate): Qibo Gate class.
+    #     Args:
+    #         gate (Gate): Qibo Gate class.
 
-        Returns:
-            tuple[float, float]: Amplitude and phase of the translated pulse.
-        """
-        for pulsed_gate in cls.pulsed_gates.values():
-            if isinstance(gate, pulsed_gate.class_type):
-                return pulsed_gate.translate(gate=gate)
+    #     Returns:
+    #         tuple[float, float]: Amplitude and phase of the translated pulse.
+    #     """
+    #     for pulsed_gate in cls.pulsed_gates.values():
+    #         if isinstance(gate, pulsed_gate.class_type):
+    #             return pulsed_gate.translate(gate=gate)
 
-        raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")
+    #     raise NotImplementedError(f"Qililab has not defined a gate {gate.__class__.__name__}")

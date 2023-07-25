@@ -8,17 +8,16 @@ from qililab.typings import GateName
 
 @HardwareGateFactory.register
 class M(HardwareGate):  # pylint: disable=invalid-name
-    """X gate."""
+    """Measurement gate."""
 
     name = GateName.M
     class_type = gates.M
 
     @classmethod
-    def translate(cls, gate: gates.M) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.M, gate_schedule: list[dict]) -> list[dict]:
         """Translate gate into pulse.
 
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
-        qubit = gate.target_qubits[0]
-        return cls.settings[qubit]
+        return gate_schedule

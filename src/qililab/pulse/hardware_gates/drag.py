@@ -18,15 +18,19 @@ class Drag(HardwareGate):
     class_type = Drag_gate
 
     @classmethod
-    def translate(cls, gate: Drag_gate) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: Drag_gate, gate_schedule: list[dict]) -> list[dict]:
         """Translate gate into pulse.
 
         Returns:
             Tuple[float, float]: Amplitude and phase of the pulse.
         """
-        qubit = gate.target_qubits[0]
-        params = cls.settings[qubit]
+        gate_schedule = gate_schedule[0]
+
         theta = cls.normalize_angle(angle=gate.parameters[0])
-        amplitude = params.amplitude * theta / np.pi
+        amplitude = gate_schedule.amplitude * theta / np.pi
         phase = cls.normalize_angle(angle=gate.parameters[1])
-        return cls.HardwareGateSettings(amplitude=amplitude, phase=phase, duration=params.duration, shape=params.shape)
+
+        gate_schedule.amplitude = amplitude
+        gate_schedule.phase = phase
+
+        return [gate_schedule]

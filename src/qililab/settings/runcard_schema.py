@@ -1,10 +1,11 @@
 """PlatformSchema class."""
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
+from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory
 from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
@@ -80,23 +81,35 @@ class RuncardSchema:
             name: str
             pulse: PulseSettings
 
+        # TODO: docstrings
         @dataclass
         class GateSettings:
             """GatesSchema class."""
 
-            name: str
-            amplitude: float
-            phase: float
-            duration: int
-            shape: dict
+            @dataclass
+            class CircuitPulseSettings:
+                """GatesSchema class."""
 
-            def set_parameter(self, parameter: Parameter, value: float | str | bool):
-                """Change a gate parameter with the given value."""
-                param = parameter.value
-                if not hasattr(self, param):
-                    self.shape[param] = value
-                else:
-                    setattr(self, param, value)
+                bus: str
+                qubit: int
+                amplitude: float
+                phase: float
+                frequency: float
+                duration: int
+                shape: dict
+                wait_time: int = 0
+
+                def set_parameter(self, parameter: Parameter, value: float | str | bool):
+                    """Change a gate parameter with the given value."""
+                    param = parameter.value
+                    if not hasattr(self, param):
+                        self.shape[param] = value
+                    else:
+                        setattr(self, param, value)
+
+            name: str
+            qubits: int | tuple[int]
+            schedule: list[CircuitPulseSettings]
 
         name: str
         device_id: int
@@ -113,11 +126,25 @@ class RuncardSchema:
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = (
-                {qubit: [self.GateSettings(**gate) for gate in gate_list] for qubit, gate_list in self.gates.items()}
-                if self.gates is not None
-                else None
-            )
+            gates = {}
+            for gate, schedule in self.gates.items():
+                qubit_str = re.findall(r"\(.*?\)", gate)[0]
+                qubits = ast.literal_eval(qubit_str)
+                schedule = [
+                    self.GateSettings.CircuitPulseSettings(
+                        bus=circuit_pulse["bus"], qubit=circuit_pulse["qubit"], **circuit_pulse["pulse"]
+                    )
+                    for circuit_pulse in schedule
+                ]
+                if qubits not in gates:
+                    gates[qubits] = [self.GateSettings(name=gate[: -len(qubit_str)], qubits=qubits, schedule=schedule)]
+                else:
+                    gates[qubits].append(
+                        self.GateSettings(name=gate[: -len(qubit_str)], qubits=qubits, schedule=schedule)
+                    )
+
+            self.gates = gates
+            # TODO: do we want to keep GateScheduleSettings?
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name

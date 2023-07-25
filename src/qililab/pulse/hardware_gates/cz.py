@@ -19,16 +19,9 @@ class CZ(HardwareGate):  # pylint: disable=invalid-name
     class_type = gates.CZ
 
     @classmethod
-    def translate(cls, gate: gates.CZ) -> HardwareGate.HardwareGateSettings:
+    def translate(cls, gate: gates.CZ, gate_schedule: list[dict]) -> list[dict]:
         """Translate gate into pulse.
         Returns:
             tuple[float, float]: Amplitude and phase of the pulse.
         """
-        cz_params = CZ.settings[gate.qubits]
-        if "t_phi" in cz_params.shape:  # allow to choose different shapes for the pulse
-            cz_duration = 2 * cz_params.duration + 2 + cz_params.shape["t_phi"]
-        else:
-            cz_duration = cz_params.duration
-        return cls.HardwareGateSettings(
-            amplitude=cz_params.amplitude, phase=cz_params.phase, duration=cz_duration, shape=cz_params.shape
-        )
+        return gate_schedule

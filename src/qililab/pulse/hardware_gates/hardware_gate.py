@@ -12,18 +12,8 @@ from qililab.utils import SingletonABC
 class HardwareGate(ABC, metaclass=SingletonABC):
     """Settings of a specific pulsed gate."""
 
-    @dataclass
-    class HardwareGateSettings:
-        """HardwareGate settings."""
-
-        amplitude: float
-        phase: float
-        duration: int
-        shape: dict
-
     name: GateName
     class_type: type[Gate]
-    settings: dict[int | tuple[int, int], HardwareGateSettings]  # qubit -> HardwareGateSettings
 
     @classmethod
     def normalize_angle(cls, angle: float):
@@ -39,7 +29,9 @@ class HardwareGate(ABC, metaclass=SingletonABC):
 
     @classmethod
     @abstractmethod
-    def translate(cls, gate: Gate) -> HardwareGateSettings:
+    def translate(
+        cls, gate: Gate, gate_schedule: list[dict]
+    ) -> list[dict]:  # TODO: if we go for this implementation, maybe create a GateSchedule class
         """Translate gate into pulse.
 
         Args:
