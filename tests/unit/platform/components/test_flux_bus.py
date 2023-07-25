@@ -24,7 +24,7 @@ START_TIME_NON_ZERO = 4
 
 
 class MockQcodesS4gD5aDacChannels(DummyChannel):
-    """Mock class for Qcodes S4gDacChannel"""
+    """Mock class for Qcodes S4gDacChannel and D5aDacChannel"""
 
     def __init__(self, parent, name, dac, **kwargs):
         """Mock init method"""
