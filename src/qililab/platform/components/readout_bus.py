@@ -16,7 +16,7 @@ class ReadoutBus(BusInterface):
         awg: AWG,
         digitiser: Digitiser,
         local_oscillator: LocalOscillator | None,
-        attenuator: Attenuator | None
+        attenuator: Attenuator | None,
     ):
         """Initialise the bus.
 
