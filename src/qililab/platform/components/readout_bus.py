@@ -95,9 +95,8 @@ class ReadoutBus(BusInterface):
         Returns:
             value (Any): Parameter's value
         """
-        param_value = None
-        instrument = getattr(self, instrument_name, None)
-        if instrument:
-            param_value = instrument.get(param_name)
-
-        return param_value
+        return (
++            instrument.get(param_name)
++            if (instrument := getattr(self, instrument_name, None))
++            else None
++        )
