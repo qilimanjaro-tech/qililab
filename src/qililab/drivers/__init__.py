@@ -1,3 +1,2 @@
 """__init__.py"""
-from .instruments import ERASynthPlus, RhodeSchwarzSGS100A
-from .instruments.qblox import Cluster, Pulsar
+from .instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
