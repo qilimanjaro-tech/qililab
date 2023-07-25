@@ -5,8 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Program
 from qpysequence.sequence import Sequence as QpySequence
+from qpysequence.weights import Weights
 
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
@@ -248,3 +250,26 @@ class TestSequencer:
                 mock_translate.assert_called_once()
                 parent.arm_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
                 parent.start_sequencer.assert_called_once_with(sequencer=sequencer.seq_idx)
+
+    def test_generate_weights(self):
+        """Test the ``_generate_weights`` method."""
+        sequencer = SequencerQCM(parent=MagicMock(), name="test", seq_idx=4)
+
+        weights = sequencer._generate_weights()
+        assert isinstance(weights, Weights)
+
+        weights = weights.to_dict()
+        # must be empty dictionary
+        assert not weights
+
+    def test_generate_acquisitions(self):
+        """Test the ``_generate_acquisitions`` method."""
+        sequencer = SequencerQCM(parent=MagicMock(), name="test", seq_idx=4)
+        num_bins = 1
+        acquisitions = sequencer._generate_acquisitions(num_bins=num_bins)
+
+        assert isinstance(acquisitions, Acquisitions)
+
+        acquisitions = acquisitions.to_dict()
+        # must be empty dictionary
+        assert not acquisitions
