@@ -1,3 +1,4 @@
+"""Unittest for testing readout_bus class methods"""
 from unittest.mock import MagicMock, patch
 
 import pytest
