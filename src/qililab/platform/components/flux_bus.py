@@ -1,7 +1,7 @@
 """Driver for the Drive Bus class."""
 from typing import Any
 
-from qililab.drivers.interfaces import AWG, CurrentSource
+from qililab.drivers.interfaces import AWG, CurrentSource, VoltageSource
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
@@ -9,13 +9,14 @@ from qililab.pulse import PulseBusSchedule
 class FluxBus(BusInterface):
     """Qililab's driver for Flux Bus"""
 
-    def __init__(self, source: AWG | CurrentSource, **kwargs):
+    def __init__(self, awg: AWG, source: CurrentSource | VoltageSource, **kwargs):
         """Initialise the bus.
 
         Args:
             source (AWG | CurrentSource): Bus source instrument
         """
         super().__init__(**kwargs)
+        self.awg = awg
         self.source = source
 
     def execute(
