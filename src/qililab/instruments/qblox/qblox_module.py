@@ -6,14 +6,13 @@ from lib2to3.pgen2.token import AMPER
 from typing import Sequence, cast
 
 import numpy as np
-from qpysequence.acquisitions import Acquisitions
+from qpysequence import Acquisitions, Program
+from qpysequence import Sequence as QpySequence
+from qpysequence import Waveforms, Weights
 from qpysequence.library import long_wait, set_awg_gain_relative
-from qpysequence.program import Block, Loop, Program, Register
+from qpysequence.program import Block, Loop, Register
 from qpysequence.program.instructions import Play, ResetPh, SetAwgGain, SetPh, Stop, Wait
-from qpysequence.sequence import Sequence as QpySequence
 from qpysequence.utils.constants import AWG_MAX_GAIN
-from qpysequence.waveforms import Waveforms
-from qpysequence.weights import Weights
 
 from qililab.config import logger
 from qililab.instruments.awg import AWG
@@ -183,7 +182,7 @@ class QbloxModule(AWG):
             pulse_bus_schedule=pulse_bus_schedule, waveforms=waveforms, sequencer=sequencer.identifier
         )
         weights = self._generate_weights(sequencer=sequencer)
-        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights.to_dict())
+        return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
     def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int):
         """Generate Q1ASM program
