@@ -130,7 +130,6 @@ class TestReadoutBus:
 
     def teardown_method(self):
         """Close all instruments after each test has been run"""
-
         Instrument.close_all()
 
     def test_init(
