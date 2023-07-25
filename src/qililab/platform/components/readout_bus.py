@@ -46,7 +46,7 @@ class ReadoutBus(BusInterface):
     ) -> None:
         """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
            Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
-           defining the abstrac method for execution of Qprograms.
+           defining the abstract method for execution of Qprograms.
 
         Args:
             instrument_name (str): Name of the instrument
@@ -92,6 +92,7 @@ class ReadoutBus(BusInterface):
         Args:
             instrument_name (str): Name of the instrument to get parameter from
             param (str): Parameter's name.
+
         Returns:
             value (Any): Parameter's value
         """
