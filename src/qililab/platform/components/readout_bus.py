@@ -70,7 +70,6 @@ class ReadoutBus(BusInterface):
         Returns:
             results (QbloxResult): acquisitions of results
         """
-
         return self.digitiser.get_results()
 
     def set(self, instrument_name: str, param_name: str, value: Any) -> None:
