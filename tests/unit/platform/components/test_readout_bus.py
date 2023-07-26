@@ -83,7 +83,6 @@ class MockQcmQrmRF(DummyInstrument):
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
-
     return get_pulse_bus_schedule(start_time=0)
 
 
