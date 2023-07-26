@@ -96,7 +96,6 @@ def fixture_sequencer() -> SequencerQCM:
 @pytest.fixture(name="digitiser")
 def fixture_digitiser() -> SequencerQRM:
     """Return SequencerQRM instance."""
-
     return SequencerQRM(parent=MagicMock(), name="test_digitiser", seq_idx=0)
 
 
