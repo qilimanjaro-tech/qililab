@@ -110,6 +110,11 @@ class RuncardSchema:
             name: str
             qubits: int | tuple[int]
             schedule: list[CircuitPulseSettings]
+            
+            # TODO: do we want this?
+            def set_parameter(self, parameter: Parameter, value: float | str | bool, schedule_element: int):
+                """Set a parameter of a schedule element."""
+                self.schedule[schedule_element].set_parameter(parameter, value)
 
         name: str
         device_id: int

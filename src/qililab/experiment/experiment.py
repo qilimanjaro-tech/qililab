@@ -281,7 +281,7 @@ class Experiment:
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
         elif isinstance(element, RuncardSchema.PlatformSettings.GateSettings):
-            element.set_parameter(parameter=parameter, value=value)
+            element.schedule[int(alias.split("_")[1])].set_parameter(parameter=parameter, value=value)
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore

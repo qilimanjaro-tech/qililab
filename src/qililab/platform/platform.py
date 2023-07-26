@@ -87,7 +87,7 @@ class Platform:
         if alias is not None:
             if alias == Category.PLATFORM.value:
                 return self.settings
-            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
