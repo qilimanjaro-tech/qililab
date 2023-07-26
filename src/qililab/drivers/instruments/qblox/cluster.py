@@ -5,7 +5,7 @@ from qcodes.instrument import DelegateParameter
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers import parameters
-from qililab.drivers.instruments import InstrumentDriverFactory
+from qililab.drivers.instruments.utils import InstrumentDriverFactory
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
 from qililab.typings import InstrumentDriverName
 

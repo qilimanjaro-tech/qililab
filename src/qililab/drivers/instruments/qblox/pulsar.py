@@ -2,7 +2,7 @@
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from qililab.drivers.instruments import InstrumentDriverFactory
+from qililab.drivers.instruments.utils import InstrumentDriverFactory
 from qililab.typings import InstrumentDriverName
 
 from .sequencer_qcm import SequencerQCM
