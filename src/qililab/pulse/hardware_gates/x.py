@@ -3,6 +3,7 @@ from qibo import gates
 
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.hardware_gates.hardware_gate_factory import HardwareGateFactory
+from qililab.settings.gate_settings import CircuitPulseSettings
 from qililab.typings import GateName
 
 
@@ -14,7 +15,7 @@ class X(HardwareGate):  # pylint: disable=invalid-name
     class_type = gates.X
 
     @classmethod
-    def translate(cls, gate: gates.X, gate_schedule: list[dict]) -> list[dict]:
+    def translate(cls, gate: gates.X, gate_schedule: list[CircuitPulseSettings]) -> list[CircuitPulseSettings]:
         """Translate gate into pulse.
 
         Returns:

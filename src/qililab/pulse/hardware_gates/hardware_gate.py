@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from qibo.gates import Gate
 
+from qililab.settings.gate_settings import CircuitPulseSettings
 from qililab.typings import GateName
 from qililab.utils import SingletonABC
 
@@ -30,8 +31,8 @@ class HardwareGate(ABC, metaclass=SingletonABC):
     @classmethod
     @abstractmethod
     def translate(
-        cls, gate: Gate, gate_schedule: list[dict]
-    ) -> list[dict]:  # TODO: if we go for this implementation, maybe create a GateSchedule class
+        cls, gate: Gate, gate_schedule: list[CircuitPulseSettings]
+    ) -> list[CircuitPulseSettings]:  # TODO: if we go for this implementation, maybe create a GateSchedule class
         """Translate gate into pulse.
 
         Args:

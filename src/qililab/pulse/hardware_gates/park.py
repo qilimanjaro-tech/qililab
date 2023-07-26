@@ -1,6 +1,7 @@
 """Parking gate"""
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.hardware_gates.hardware_gate_factory import HardwareGateFactory
+from qililab.settings.gate_settings import CircuitPulseSettings
 from qililab.transpiler import Park as Park_gate
 from qililab.typings import GateName
 
@@ -14,7 +15,7 @@ class Park(HardwareGate):  # pylint: disable=invalid-name
     class_type = Park_gate
 
     @classmethod
-    def translate(cls, gate: Park_gate, gate_schedule: list[dict]) -> list[dict]:
+    def translate(cls, gate: Park_gate, gate_schedule: list[CircuitPulseSettings]) -> list[CircuitPulseSettings]:
         """Translate gate into pulse.
 
         Returns:
