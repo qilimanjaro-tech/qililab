@@ -324,7 +324,7 @@ class InstrumentDriverName(str, Enum):
     QBLOX_SEQUENCER_QRM = "sequencer_qrm"
     QBLOX_SPI_RACK = "spi_rack"
     ROHDE_SCHWARZ_SGS100A = "sgs100a"
-    KEITHLEY2600 = "keithley_2600"
+    KEITHLEY_2600 = "keithley_2600"
     ERA_SYNTH_PLUS = "era_synth_plus"
     YOKOGAWA_GS200 = "yokogawa_gs200"
 

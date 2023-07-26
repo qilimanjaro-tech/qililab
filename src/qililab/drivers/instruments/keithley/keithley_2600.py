@@ -18,7 +18,7 @@ class Keithley2600(QCodesKeithley2600):
         address (str): VISA resource address
     """
 
-    name = InstrumentDriverName.KEITHLEY2600
+    name = InstrumentDriverName.KEITHLEY_2600
 
     def __init__(self, name: str, address: str, **kwargs):
         """Initialize the instrument driver."""
