@@ -91,17 +91,15 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="sequencer")
 def fixture_sequencer() -> SequencerQCM:
     """Return SequencerQCM instance."""
-    sequencer = SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
 
-    return sequencer
+    return SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
 
 
 @pytest.fixture(name="digitiser")
 def fixture_digitiser() -> SequencerQRM:
     """Return SequencerQRM instance."""
-    digitiser = SequencerQRM(parent=MagicMock(), name="test_digitiser", seq_idx=0)
 
-    return digitiser
+    return SequencerQRM(parent=MagicMock(), name="test_digitiser", seq_idx=0)
 
 
 @pytest.fixture(name="local_oscillator")
@@ -109,9 +107,8 @@ def fixture_local_oscillator() -> QcmQrmRfLo:
     """Return QcmQrmRfLo instance"""
     channel = "out0"
     lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-    local_oscillator = QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
 
-    return local_oscillator
+    return QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
 
 
 @pytest.fixture(name="attenuator")
@@ -119,9 +116,8 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
     att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
-    return attenuator
+    return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
 
 class TestReadoutBus:
