@@ -1,6 +1,7 @@
 """This file contains the code of the sequencer of the Qblox QRM."""
 from qcodes import Instrument
 from qcodes import validators as vals
+from qpysequence.acquisitions import Acquisitions
 from qpysequence.program import Loop, Program, Register
 from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
 from qpysequence.weights import Weights
@@ -17,6 +18,7 @@ class SequencerQRM(SequencerQCM, Digitiser):
 
     def __init__(self, parent: Instrument, name: str, seq_idx: int):
         """Initialise the instrument.
+
         Args:
             parent (Instrument): Parent for the sequencer instance.
             name (str): Sequencer name
@@ -61,6 +63,21 @@ class SequencerQRM(SequencerQCM, Digitiser):
         setup_block = program.get_block(name="setup")
         setup_block.append_components([move_0, move_1], bot_position=1)
 
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
+        """Generate Acquisitions object, currently containing a single acquisition named "default" with
+        index = 0.
+
+        Args:
+            num_bins (int): number of bins
+
+        Returns:
+            Acquisitions: Acquisitions object.
+        """
+        acquisitions = Acquisitions()
+        acquisitions.add(name="default", num_bins=num_bins, index=0)
+
+        return acquisitions
+
     def _generate_weights(self) -> Weights:
         """Generate acquisition weights.
 
@@ -68,10 +85,11 @@ class SequencerQRM(SequencerQCM, Digitiser):
             Weights: Acquisition weights.
         """
         weights = Weights()
-        pair = (self.get("weights_i"), self.get("weights_q"))
-        if self.get("swap_paths"):
-            pair = pair[::-1]  # swap paths
-        weights.add_pair(pair=pair, indices=(0, 1))
+        if len(self.get("weights_i")) > 0 and len(self.get("weights_q")) > 0:
+            pair = (self.get("weights_i"), self.get("weights_q"))
+            if self.get("swap_paths"):
+                pair = pair[::-1]  # swap paths
+            weights.add_pair(pair=pair, indices=(0, 1))
         return weights
 
     def _append_acquire_instruction(

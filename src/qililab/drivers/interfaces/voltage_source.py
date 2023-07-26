@@ -1,8 +1,11 @@
+""" Module containing the interface for the voltage_sources """
 from abc import ABC, abstractmethod
 from typing import Any
 
 
 class VoltageSource(ABC):
+    """Voltage source interface with set, get, on & off abstract methods"""
+
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter from name
