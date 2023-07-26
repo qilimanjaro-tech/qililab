@@ -4,9 +4,12 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesGS200
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS200Monitor
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
+from qililab.drivers.instruments import InstrumentDriverFactory
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
+from qililab.typings import InstrumentDriverName
 
 
+@InstrumentDriverFactory.register
 class GS200(QCodesGS200):
     """
     Qililab's driver for the Yokogawa GS200 acting as VoltageSource and CurrentSource
@@ -16,6 +19,8 @@ class GS200(QCodesGS200):
         address (str): The GPIB or USB address of this instrument
         kwargs (Any | dict): kwargs to be passed to VisaInstrument class
     """
+
+    name = InstrumentDriverName.YOKOGAWA_GS200
 
     def __init__(self, name: str, address: str, **kwargs):
         """Initialize the instrument driver."""

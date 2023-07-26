@@ -15,15 +15,20 @@ from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
 from qililab.drivers import parameters
+from qililab.drivers.instruments import InstrumentDriverFactory
 from qililab.drivers.interfaces import LocalOscillator
+from qililab.typings import InstrumentDriverName
 
 
+@InstrumentDriverFactory.register
 class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
     """Qililab's driver for the ERASynthPlus local oscillator
 
     QcdEraSynth: QCoDeS contributors driver for the ERASynthPlus instrument
     LocalOscillator: Qililab's local oscillator interface
     """
+
+    name = InstrumentDriverName.ERA_SYNTH_PLUS
 
     def __init__(self, name: str, address: str, **kwargs: Any) -> None:
         super().__init__(name, address, **kwargs)

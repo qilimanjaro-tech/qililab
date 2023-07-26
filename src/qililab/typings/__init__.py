@@ -6,6 +6,7 @@ from .enums import (
     ConnectionName,
     GateName,
     Instrument,
+    InstrumentDriverName,
     InstrumentName,
     IntegrationMode,
     NodeName,

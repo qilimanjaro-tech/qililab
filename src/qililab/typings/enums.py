@@ -302,6 +302,33 @@ class InstrumentControllerName(str, Enum):
     AGILENT_E5071B = "agilent_e5071B_controller"
 
 
+class InstrumentDriverName(str, Enum):
+    """Instrument Controller names.
+
+    Args:
+        enum (str): Available instrument controller element names:
+        * pulsar
+        * cluster
+        * sequencer_qcm
+        * sequencer_qrm
+        * spi_rack
+        * sgs100a
+        * keithley_2600
+        * era_synth_plus
+        * yokogawa_gs200
+    """
+
+    QBLOX_PULSAR = "pulsar"
+    QBLOX_CLUSTER = "cluster"
+    QBLOX_SEQUENCER_QCM = "sequencer_qcm"
+    QBLOX_SEQUENCER_QRM = "sequencer_qrm"
+    QBLOX_SPI_RACK = "spi_rack"
+    ROHDE_SCHWARZ_SGS100A = "sgs100a"
+    KEITHLEY2600 = "keithley_2600"
+    ERA_SYNTH_PLUS = "era_synth_plus"
+    YOKOGAWA_GS200 = "yokogawa_gs200"
+
+
 class SystemControlName(str, Enum):
     """System Control names.
 

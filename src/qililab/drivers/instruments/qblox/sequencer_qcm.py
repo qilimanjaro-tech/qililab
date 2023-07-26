@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Any
 
 import numpy as np
@@ -15,12 +14,17 @@ from qpysequence.waveforms import Waveforms
 from qpysequence.weights import Weights
 
 from qililab.config import logger
+from qililab.drivers.instruments import InstrumentDriverFactory
 from qililab.drivers.interfaces import AWG
 from qililab.pulse import PulseBusSchedule, PulseShape
+from qililab.typings import InstrumentDriverName
 
 
+@InstrumentDriverFactory.register
 class SequencerQCM(Sequencer, AWG):
     """Qililab's driver for QBlox-instruments Sequencer"""
+
+    name = InstrumentDriverName.QBLOX_SEQUENCER_QCM
 
     _MIN_WAIT_TIME: int = 4
 
