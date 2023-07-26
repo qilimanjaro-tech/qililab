@@ -27,7 +27,6 @@ START_TIME_NON_ZERO = 4
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
-
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
