@@ -1,20 +1,19 @@
 """InstrumentFactory class."""
 from typing import TypeVar
 
-from qcodes.instrument.instrument import Instrument
-
 from qililab.typings.enums import InstrumentDriverName
+from qililab.typings.factory_element import FactoryElement
 
-Element = TypeVar("Element", bound=Instrument)
+Element = TypeVar("Element", bound=FactoryElement)
 
 
 class InstrumentDriverFactory:
     """Hash table that loads a specific class given an object's name."""
 
-    handlers: dict[str, type[Instrument]] = {}
+    handlers: dict[str, type[FactoryElement]] = {}
 
     @classmethod
-    def register(cls, handler_cls: type[Element]) -> type[Instrument]:
+    def register(cls, handler_cls: type[Element]) -> type[FactoryElement]:
         """Register handler in the factory.
 
         Args:
@@ -24,6 +23,6 @@ class InstrumentDriverFactory:
         return handler_cls
 
     @classmethod
-    def get(cls, name: str | InstrumentDriverName) -> type[Instrument]:
+    def get(cls, name: str | InstrumentDriverName) -> type[FactoryElement]:
         """Return class attribute."""
         return cls.handlers[name.value] if isinstance(name, InstrumentDriverName) else cls.handlers[name]

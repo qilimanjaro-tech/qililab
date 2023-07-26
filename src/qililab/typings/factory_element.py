@@ -2,6 +2,7 @@
 from qililab.typings.enums import (
     ConnectionName,
     InstrumentControllerName,
+    InstrumentDriverName,
     InstrumentName,
     NodeName,
     PulseDistortionName,
@@ -23,4 +24,5 @@ class FactoryElement:
         | NodeName
         | ConnectionName
         | InstrumentControllerName
+        | InstrumentDriverName
     )
