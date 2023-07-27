@@ -20,8 +20,12 @@ class TestInstrumentDriverFactory:
     @staticmethod
     def test_handlers(driver):
         """Test that the registered handlers are correct"""
-        assert InstrumentDriverFactory.handlers[driver.__name__] == driver
-        assert len(InstrumentDriverFactory.handlers) != 0
+        handlers = InstrumentDriverFactory.handlers
+
+        assert handlers[driver.__name__] == driver
+        assert len(handlers) > 1
+        assert handlers is not None
+        assert isinstance(handlers, dict)
 
     @staticmethod
     def test_register(driver):
@@ -31,4 +35,7 @@ class TestInstrumentDriverFactory:
     @staticmethod
     def test_get(driver):
         """Test that the get method works properly"""
-        assert InstrumentDriverFactory.get(name=driver.__name__) == driver
+        gotten_driver = InstrumentDriverFactory.get(name=driver.__name__)
+
+        assert gotten_driver == driver
+        assert gotten_driver is not None
