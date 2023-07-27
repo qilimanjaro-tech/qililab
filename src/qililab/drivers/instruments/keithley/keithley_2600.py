@@ -3,9 +3,8 @@ from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600 as QCodesKeithley2600
 from qcodes.instrument_drivers.Keithley._Keithley_2600 import Keithley2600Channel as QCodesKeithley2600Channel
 
-from qililab.drivers.instruments.utils import InstrumentDriverFactory
+from qililab.drivers.instruments.utils.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
-from qililab.typings import InstrumentDriverName
 
 
 @InstrumentDriverFactory.register
@@ -17,8 +16,6 @@ class Keithley2600(QCodesKeithley2600):
         name (str): Name to use internally in QCoDeS
         address (str): VISA resource address
     """
-
-    name = InstrumentDriverName.KEITHLEY_2600
 
     def __init__(self, name: str, address: str, **kwargs):
         """Initialize the instrument driver."""
