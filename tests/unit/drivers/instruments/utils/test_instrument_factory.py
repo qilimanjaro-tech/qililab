@@ -26,6 +26,7 @@ class TestInstrumentDriverFactory:
     @staticmethod
     def test_register(driver):
         """Test that the register method works properly"""
+        # TODO: Think if this test needs to be here, or if the test of handlers is enough
 
     @staticmethod
     def test_get(driver):
