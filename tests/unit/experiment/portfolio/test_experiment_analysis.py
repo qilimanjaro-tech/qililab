@@ -76,12 +76,15 @@ class TestExperimentAnalysis:
     def test_post_process_results(self, experiment_analysis: DummyExperimentAnalysis):
         """Test post_process_results method."""
         res = experiment_analysis.post_process_results()
-        assert all(res == 20 * np.log10(np.sqrt(i**2 + q**2)))
+
+        assert all(res[0]==i)
+        assert all(res[1]==q)
 
     def test_fit(self, experiment_analysis: DummyExperimentAnalysis):
         """Test fit method."""
         experiment_analysis.post_processed_results = q
-        popt = experiment_analysis.fit(p0=(8, 7.5))  # p0 is an initial guess
+        popt = experiment_analysis.fit(p0=(8, 7.5)) # p0 is an initial guess
+        print(popt)
         assert np.allclose(popt, (9, 7), atol=1e-5)
 
     def test_fit_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):

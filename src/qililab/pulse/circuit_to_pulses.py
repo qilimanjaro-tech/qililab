@@ -59,7 +59,6 @@ class CircuitToPulses:
                             qubit_idx=qubit_idx,
                             chip=chip,
                         )
-                        wait_of_next_pulse_event[qubit_idx] = 0
                         if readout_pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
                             pulse_schedule.add_event(pulse_event=readout_pulse_event, port=port, port_delay=bus.settings.delay)  # type: ignore
@@ -107,16 +106,13 @@ class CircuitToPulses:
                         )
 
                 # add control gates
-                pulse_event, port = self._control_gate_to_pulse_event(
-                    time=time, control_gate=gate, chip=chip, wait_time=wait_of_next_pulse_event.get(gate.qubits[0], 0)
-                )
-                wait_of_next_pulse_event[gate.qubits[0]] = 0
+                pulse_event, port = self._control_gate_to_pulse_event(time=time, control_gate=gate, chip=chip)
                 # add pad time at the end of CZ to both target and control
                 # note that we dont need to do this for the control qubit at the beginning of the pulse
                 # since its time is already synced with the target qubit in _control_gate_to_pulse_event
                 if isinstance(gate, CZ) and pad_time != 0:
-                    self._update_time(time=time, qubit_idx=gate.target_qubits[0], pulse_time=pad_time, wait_time=0)
-                    self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time, wait_time=0)
+                    self._update_time(time=time, qubit_idx=gate.target_qubits[0], pulse_time=pad_time)
+                    self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     _, bus = self.platform.get_bus(port=port)
                     pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)  # type: ignore
@@ -174,7 +170,7 @@ class CircuitToPulses:
         return Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
 
     def _control_gate_to_pulse_event(
-        self, time: dict[int, int], control_gate: Gate, chip: Chip, wait_time: int
+        self, time: dict[int, int], control_gate: Gate, chip: Chip
     ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse event.
 
@@ -207,7 +203,6 @@ class CircuitToPulses:
             time=time,
             qubit_idx=qubit_idx,
             pulse_time=gate_settings.duration + self.platform.settings.delay_between_pulses,
-            wait_time=wait_time,
         )
 
         if isinstance(control_gate, CZ):
@@ -315,7 +310,7 @@ class CircuitToPulses:
         return park_gates
 
     def _readout_gate_to_pulse_event(
-        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip, wait_time: int
+        self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
     ) -> tuple[PulseEvent | None, int]:
         """Translate a gate into a pulse.
 
@@ -337,7 +332,6 @@ class CircuitToPulses:
             time=time,
             qubit_idx=qubit_idx,
             pulse_time=gate_settings.duration + self.platform.settings.delay_before_readout,
-            wait_time=wait_time,
         )
         _, bus = self.platform.get_bus(port=port)
 
@@ -381,7 +375,7 @@ class CircuitToPulses:
             return CZ(cz_qubits[1], cz_qubits[0])
         raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
-    def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int, wait_time: int):
+    def _update_time(self, time: dict[int, int], qubit_idx: int, pulse_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
@@ -395,7 +389,7 @@ class CircuitToPulses:
         residue = (pulse_time) % self.platform.settings.minimum_clock_time
         if residue != 0:
             pulse_time += self.platform.settings.minimum_clock_time - residue
-        time[qubit_idx] += wait_time + pulse_time
+        time[qubit_idx] += pulse_time
         return old_time
 
     def _sync_qubit_times(self, qubits: list[int], time: dict[int, int]):
