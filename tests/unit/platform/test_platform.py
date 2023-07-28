@@ -7,10 +7,10 @@ from qililab import save_platform
 from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
-from qililab.platform import Bus, Buses, Platform, Schema
+from qililab.platform import Bus, Buses, Platform
 from qililab.settings import RuncardSchema
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName, Parameter
+from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
 from tests.utils import platform_db, platform_yaml
 
@@ -67,10 +67,6 @@ class TestPlatform:
         """Test settings instance."""
         assert isinstance(platform.settings, RuncardSchema.PlatformSettings)
 
-    def test_schema_instance(self, platform: Platform):
-        """Test schema instance."""
-        assert isinstance(platform.schema, Schema)
-
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""
         assert isinstance(platform.buses, Buses)
@@ -126,3 +122,15 @@ class TestPlatform:
             assert bus is None
         if bus is not None:
             assert bus in platform.buses
+
+    def test_print_platform(self, platform: Platform):
+        """Test print schema."""
+        print(platform)
+
+    def test_print_instruments(self, platform: Platform):
+        """Test print instruments."""
+        print(platform.instruments)
+
+    def test_print_chip(self, platform: Platform):
+        """Test print chip."""
+        print(platform.chip)

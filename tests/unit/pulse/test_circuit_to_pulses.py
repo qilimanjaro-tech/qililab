@@ -320,13 +320,11 @@ def fixture_platform(chip: Chip) -> Platform:
     settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
     platform.settings = settings  # type: ignore
-    platform.schema.chip = chip
+    platform.chip = chip
     buses = Buses(
-        elements=[
-            Bus(settings=bus, platform_instruments=platform.schema.instruments, chip=chip) for bus in bus_settings
-        ]
+        elements=[Bus(settings=bus, platform_instruments=platform.instruments, chip=chip) for bus in bus_settings]
     )
-    platform.schema.buses = buses
+    platform.buses = buses
     return platform
 
 
@@ -571,7 +569,7 @@ class TestTranslation:
         circuit.add(Drag(0, 1, 1))
         # create platform without buses for qubit 0
         buses = Buses(elements=[platform.buses[3], platform.buses[4]])
-        platform.schema.buses = buses
+        platform.buses = buses
         translator = CircuitToPulses(platform=platform)
         error_string = "bus cannot be None to get the distortions"
         with pytest.raises(TypeError, match=error_string):

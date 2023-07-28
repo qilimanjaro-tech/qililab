@@ -5,9 +5,15 @@ from dataclasses import asdict
 
 from qiboconnection.api import API
 
+from qililab.chip import Chip
 from qililab.config import logger
-from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
-from qililab.platform.components import Bus, Schema
+from qililab.constants import GATE_ALIAS_REGEX, RUNCARD, SCHEMA
+from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.utils import InstrumentControllerFactory
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.utils import InstrumentFactory
+from qililab.platform.components import Bus, Buses
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Line, Parameter
@@ -24,8 +30,22 @@ class Platform:
     """
 
     def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
+        """instantiate the platform"""
         self.settings = runcard_schema.settings
-        self.schema = Schema(**asdict(runcard_schema.schema))  # type: ignore
+
+        schema = asdict(runcard_schema.schema)  # type: ignore
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=schema["instruments"]))
+        self.chip = Chip(**schema["chip"])
+        self.buses = Buses(
+            elements=[
+                Bus(settings=bus, platform_instruments=self.instruments, chip=self.chip) for bus in schema["buses"]
+            ]
+        )
+
+        self.instrument_controllers = InstrumentControllers(
+            elements=self._load_instrument_controllers(instrument_controllers_dict=schema["instrument_controllers"])
+        )
+
         self.connection = connection
         self._connected_to_instruments: bool = False
 
@@ -166,6 +186,36 @@ class Platform:
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
 
+    def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
+        """Instantiate all instrument classes from their respective dictionaries.
+
+        Args:
+            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
+
+        Returns:
+            list[Instrument]: List of instantiated instrument classes.
+        """
+        return [
+            InstrumentFactory.get(instrument.pop(RUNCARD.NAME))(settings=instrument) for instrument in instruments_dict
+        ]
+
+    def _load_instrument_controllers(self, instrument_controllers_dict: list[dict]) -> list[InstrumentController]:
+        """Instantiate all instrument controller classes from their respective dictionaries.
+
+        Args:
+            instrument_controllers_dict (list[dict]): List of dictionaries containing
+            the settings of each instrument controller.
+
+        Returns:
+            list[InstrumentController]: List of instantiated instrument controller classes.
+        """
+        return [
+            InstrumentControllerFactory.get(instrument_controller.pop(RUNCARD.NAME))(
+                settings=instrument_controller, loaded_instruments=self.instruments
+            )
+            for instrument_controller in instrument_controllers_dict
+        ]
+
     @property
     def id_(self):
         """Platform 'id_' property.
@@ -194,15 +244,6 @@ class Platform:
         return self.settings.category
 
     @property
-    def buses(self):
-        """Platform 'buses' property.
-
-        Returns:
-            Buses: schema.buses.
-        """
-        return self.schema.buses
-
-    @property
     def num_qubits(self):
         """Platform 'num_qubits' property.
 
@@ -221,33 +262,6 @@ class Platform:
         return self.settings.gate_names
 
     @property
-    def instruments(self):
-        """Platform 'instruments' property.
-
-        Returns:
-            Instruments: List of all instruments.
-        """
-        return self.schema.instruments
-
-    @property
-    def chip(self):
-        """Platform 'chip' property.
-
-        Returns:
-            Chip: Class descibing the chip properties.
-        """
-        return self.schema.chip
-
-    @property
-    def instrument_controllers(self):
-        """Platform 'instrument_controllers' property.
-
-        Returns:
-            InstrumentControllers: List of all instrument controllers.
-        """
-        return self.schema.instrument_controllers
-
-    @property
     def device_id(self):
         """Returns the id of the platform device.
 
@@ -259,7 +273,16 @@ class Platform:
     def to_dict(self):
         """Return all platform information as a dictionary."""
         platform_dict = {RUNCARD.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {RUNCARD.SCHEMA: self.schema.to_dict()}
+        schema_dict = {
+            RUNCARD.SCHEMA: {
+                SCHEMA.CHIP: self.chip.to_dict() if self.chip is not None else None,
+                SCHEMA.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None,
+                SCHEMA.BUSES: self.buses.to_dict() if self.buses is not None else None,
+                SCHEMA.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
+                if self.instrument_controllers is not None
+                else None,
+            }
+        }
         return platform_dict | schema_dict
 
     def __str__(self) -> str:
@@ -268,4 +291,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return str(yaml.dump(self.to_dict(), sort_keys=False))
+        return str(yaml.dump(self.to_dict(), sort_keys=False)) + "\n".join(str(bus) for bus in self.buses)
