@@ -67,13 +67,13 @@ class T2Echo(ExperimentAnalysis, Exp):
             options=experiment_options,
         )
 
-    def fit(self, p0: tuple | None = (-52, 2000, 0)):
+    def fit(self, p0: tuple | None = (-52, 2000, 0), quadrature: str = "i"):
         """
         Fitting function for the T2Echo class. Calls the ExperimentAnalysis.fit() and returns the fitted T2 value.
 
         Args:
             p0 (tuple, optional): Initial guess for the parameters. Default to (-52, 2000, 0).
         """
-        fitted_params = super().fit(p0=p0)
+        fitted_params = super().fit(p0=p0, quadrature=quadrature)
         self.t2 = 2 * fitted_params[1]
         return self.t2
