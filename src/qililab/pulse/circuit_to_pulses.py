@@ -94,7 +94,7 @@ class CircuitToPulses:
                         )
                         if pulse_event is not None:
                             _, bus = self.platform.get_bus(port=port)
-                            pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
+                            pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay) # type: ignore
                     # add padd time to CZ target qubit to sync it with parking gate
                     # if there is more than 1 pad time, add max (this is a bit misleading)
                     pad_time = max((time for _, time in parking_gates_pads), default=0)
@@ -115,7 +115,7 @@ class CircuitToPulses:
                     self._update_time(time=time, qubit_idx=gate.control_qubits[0], pulse_time=pad_time)
                 if pulse_event is not None:  # this happens for the Identity gate
                     _, bus = self.platform.get_bus(port=port)
-                    pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay)
+                    pulse_schedule.add_event(pulse_event=pulse_event, port=port, port_delay=bus.settings.delay) # type: ignore
 
             for qubit in chip.qubits:
                 with contextlib.suppress(ValueError):
