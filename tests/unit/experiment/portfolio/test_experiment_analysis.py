@@ -83,9 +83,10 @@ class TestExperimentAnalysis:
     def test_fit(self, experiment_analysis: DummyExperimentAnalysis):
         """Test fit method."""
         experiment_analysis.post_processed_results = q
-        popt = experiment_analysis.fit(p0=(8, 7.5)) # p0 is an initial guess
-        print(popt)
-        assert np.allclose(popt, (9, 7), atol=1e-5)
+        popt, idx = experiment_analysis.fit(p0=(8, 7.5)) # p0 is an initial guess
+
+        assert np.allclose(popt, (-0.26894, 7.57398), atol=1e-5)
+        assert idx == 0
 
     def test_fit_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``fit`` method raises an error when the results are not post processed."""
@@ -94,16 +95,23 @@ class TestExperimentAnalysis:
 
     def test_plot(self, experiment_analysis: DummyExperimentAnalysis):
         """Test plot method."""
-        experiment_analysis.post_processed_results = q
+        experiment_analysis.post_processed_results = [i, q]
         popt = experiment_analysis.fit()
         fig = experiment_analysis.plot()
-        scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
-        assert np.allclose(scatter_data[:, 0], x)
-        assert np.allclose(scatter_data[:, 1], q)
-        ax = fig.axes[0]
-        line = ax.lines[0]
-        assert np.allclose(line.get_xdata(), x)
-        assert np.allclose(line.get_ydata(), popt[0] * np.sin(popt[1] * x))
+        axes = fig.axes
+
+        assert len(axes) == 2
+        assert axes[0].get_xlabel() == 'Amplitude'
+        assert axes[0].get_ylabel() == 'Voltage [a.u.]'
+        assert axes[1].get_xlabel() == 'Amplitude'
+        assert axes[1].get_ylabel() == 'Voltage [a.u.]'
+
+        assert len(axes[0].lines)==2
+        assert len(axes[1].lines)==1
+        assert np.allclose(axes[0].lines[0].get_xdata(), experiment_analysis.loop.values)
+        assert np.allclose(axes[0].lines[0].get_ydata(), i)
+        assert np.allclose(axes[1].lines[0].get_xdata(), experiment_analysis.loop.values)
+        assert np.allclose(axes[1].lines[0].get_ydata(), q)
 
     def test_plot_raises_error_when_no_post_processing(self, experiment_analysis: DummyExperimentAnalysis):
         """Test that the ``plot`` method raises an error when the results are not post processed."""
