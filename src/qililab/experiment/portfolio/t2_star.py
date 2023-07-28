@@ -4,7 +4,7 @@ from qibo.gates import RX, RY, M
 from qibo.models import Circuit
 
 from qililab.platform import Platform
-from qililab.typings import ExperimentOptions, ExperimentSettings, LoopOptions, Parameter
+from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
 
 from .experiment_analysis import ExperimentAnalysis
@@ -29,7 +29,7 @@ class T2Star(ExperimentAnalysis, Exp):
         self,
         platform: Platform,
         qubit: int,
-        loop_options: LoopOptions,
+        values: np.ndarray,
         repetition_duration=10000,
         hardware_average=10000,
     ):
@@ -42,14 +42,13 @@ class T2Star(ExperimentAnalysis, Exp):
         circuit.add(RY(qubit, theta=np.pi / 2))
         circuit.add(M(qubit))
 
-        control_bus, readout_bus = platform.get_bus_by_qubit_index(qubit)
+        control_bus, readout_bus, _ = platform.get_bus_by_qubit_index(qubit)
 
-        wait_loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, options=loop_options)
+        wait_loop = Loop(alias="0", parameter=Parameter.GATE_PARAMETER, values=values)
         experiment_options = ExperimentOptions(
             name="T2*",
             loops=[wait_loop],
-            settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
-            plot_y_label="|S21| [dB]",
+            settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average)
         )
 
         # Initialize experiment
