@@ -71,7 +71,7 @@ class TestRabi:
         popt, idx = rabi.fit(p0=(8, 7.5 / (2 * np.pi), -np.pi / 2, 0))  # p0 is an initial guess
 
         assert idx == 0
-        assert np.allclose(popt, (5.16800491e-11, 1.19387485e+00, -1.57050903e+00, 5.91287939e+00), atol=1e-5)
+        assert np.allclose(popt, (5.16800491e-11, 1.19387485e00, -1.57050903e00, 5.91287939e00), atol=1e-5)
 
     def test_plot(self, rabi: Rabi):
         """Test plot method."""
@@ -81,13 +81,13 @@ class TestRabi:
         axes = fig.axes
 
         assert len(axes) == 2
-        assert axes[0].get_xlabel() == 'Amplitude'
-        assert axes[0].get_ylabel() == 'Voltage [a.u.]'
-        assert axes[1].get_xlabel() == 'Amplitude'
-        assert axes[1].get_ylabel() == 'Voltage [a.u.]'
+        assert axes[0].get_xlabel() == "Amplitude"
+        assert axes[0].get_ylabel() == "Voltage [a.u.]"
+        assert axes[1].get_xlabel() == "Amplitude"
+        assert axes[1].get_ylabel() == "Voltage [a.u.]"
 
-        assert len(axes[0].lines)==2
-        assert len(axes[1].lines)==1
+        assert len(axes[0].lines) == 2
+        assert len(axes[1].lines) == 1
         assert np.allclose(axes[0].lines[0].get_xdata(), rabi.loop.values)
         assert np.allclose(axes[0].lines[0].get_ydata(), i)
         assert np.allclose(axes[1].lines[0].get_xdata(), rabi.loop.values)

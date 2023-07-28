@@ -118,14 +118,14 @@ class ExperimentAnalysis(Experiment, FittingModel):
         # axes.set_xlabel(f"{self.loop.alias}: {self.loop.parameter.value}")
         # axes.set_ylabel("|S21| [dB]")  # TODO: Change label for 2D plots
         # axes.scatter(xdata, self.post_processed_results, color="blue")
-        axes[0].plot(xdata, self.post_processed_results[0], '--o', color="blue")
-        axes[1].plot(xdata, self.post_processed_results[1],'--o', color="blue")
-        axes[0].set_title('I')
-        axes[1].set_title('Q')
-        axes[0].set_xlabel('Amplitude')
-        axes[1].set_xlabel('Amplitude')
-        axes[0].set_ylabel('Voltage [a.u.]')
-        axes[1].set_ylabel('Voltage [a.u.]')
+        axes[0].plot(xdata, self.post_processed_results[0], "--o", color="blue")
+        axes[1].plot(xdata, self.post_processed_results[1], "--o", color="blue")
+        axes[0].set_title("I")
+        axes[1].set_title("Q")
+        axes[0].set_xlabel("Amplitude")
+        axes[1].set_xlabel("Amplitude")
+        axes[0].set_ylabel("Voltage [a.u.]")
+        axes[1].set_ylabel("Voltage [a.u.]")
         if hasattr(self, "popt"):
             # Create label text
             args = list(inspect.signature(self.func).parameters.keys())[1:]

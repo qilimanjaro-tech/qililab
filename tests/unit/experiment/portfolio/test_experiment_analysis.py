@@ -77,13 +77,13 @@ class TestExperimentAnalysis:
         """Test post_process_results method."""
         res = experiment_analysis.post_process_results()
 
-        assert all(res[0]==i)
-        assert all(res[1]==q)
+        assert all(res[0] == i)
+        assert all(res[1] == q)
 
     def test_fit(self, experiment_analysis: DummyExperimentAnalysis):
         """Test fit method."""
         experiment_analysis.post_processed_results = q
-        popt, idx = experiment_analysis.fit(p0=(8, 7.5)) # p0 is an initial guess
+        popt, idx = experiment_analysis.fit(p0=(8, 7.5))  # p0 is an initial guess
 
         assert np.allclose(popt, (-0.26894, 7.57398), atol=1e-5)
         assert idx == 0
@@ -101,13 +101,13 @@ class TestExperimentAnalysis:
         axes = fig.axes
 
         assert len(axes) == 2
-        assert axes[0].get_xlabel() == 'Amplitude'
-        assert axes[0].get_ylabel() == 'Voltage [a.u.]'
-        assert axes[1].get_xlabel() == 'Amplitude'
-        assert axes[1].get_ylabel() == 'Voltage [a.u.]'
+        assert axes[0].get_xlabel() == "Amplitude"
+        assert axes[0].get_ylabel() == "Voltage [a.u.]"
+        assert axes[1].get_xlabel() == "Amplitude"
+        assert axes[1].get_ylabel() == "Voltage [a.u.]"
 
-        assert len(axes[0].lines)==2
-        assert len(axes[1].lines)==1
+        assert len(axes[0].lines) == 2
+        assert len(axes[1].lines) == 1
         assert np.allclose(axes[0].lines[0].get_xdata(), experiment_analysis.loop.values)
         assert np.allclose(axes[0].lines[0].get_ydata(), i)
         assert np.allclose(axes[1].lines[0].get_xdata(), experiment_analysis.loop.values)
