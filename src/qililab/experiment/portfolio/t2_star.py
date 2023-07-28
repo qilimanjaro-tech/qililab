@@ -48,7 +48,7 @@ class T2Star(ExperimentAnalysis, Exp):
         experiment_options = ExperimentOptions(
             name="T2*",
             loops=[wait_loop],
-            settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average)
+            settings=ExperimentSettings(repetition_duration=repetition_duration, hardware_average=hardware_average),
         )
 
         # Initialize experiment
