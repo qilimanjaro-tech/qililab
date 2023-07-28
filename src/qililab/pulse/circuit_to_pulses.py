@@ -6,6 +6,7 @@ from dataclasses import asdict
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
+from qililab.chip.nodes import Coupler, Qubit
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
@@ -191,7 +192,7 @@ class CircuitToPulses:
 
         shape_settings = gate_event.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-
+        qubit = [target for target in bus.targets if isinstance(target, (Qubit, Coupler))][0]
         return PulseEvent(
             pulse=Pulse(
                 amplitude=gate_event.amplitude,
@@ -202,9 +203,7 @@ class CircuitToPulses:
             ),
             start_time=time + gate_event.wait_time + self.platform.settings.delay_before_readout,
             pulse_distortions=bus.distortions,
-            qubit=bus.targets[
-                0
-            ].qubit_index,  # type: ignore # TODO: ensure qubit / resonator is ALWAYS 0th element and/or there's only one qubit / resonator in targets
+            qubit=qubit,  # type: ignore # TODO: ensure qubit / resonator is ALWAYS 0th element and/or there's only one qubit / resonator in targets
         )
 
     def _parse_check_cz(self, cz: CZ):
