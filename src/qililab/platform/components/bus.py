@@ -166,7 +166,7 @@ class Bus:
             channel_id (int | None, optional): instrument channel to update, if multiple. Defaults to None.
         """
         if parameter == Parameter.DELAY:
-            self.settings.delay = value
+            self.settings.delay = int(value)
         else:
             try:
                 self.system_control.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
