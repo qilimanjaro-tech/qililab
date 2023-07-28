@@ -7,11 +7,11 @@ from qibo.models.circuit import Circuit
 from tqdm.auto import tqdm
 
 from qililab.chip import Node
-from qililab.config import __version__
+from qililab.config import __version__, logger
 from qililab.constants import EXPERIMENT, RUNCARD
-from qililab.execution import EXECUTION_BUILDER
+from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.experiment import BaseExperiment
-from qililab.platform.platform import Platform
+from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results

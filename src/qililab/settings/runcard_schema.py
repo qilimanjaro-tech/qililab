@@ -6,7 +6,8 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
+from qililab.typings.enums import (Category, OperationTimingsCalculationMethod,
+                                   Parameter, ResetMethod)
 from qililab.utils import nested_dataclass
 
 
