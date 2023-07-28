@@ -80,6 +80,6 @@ class TestT2Echo:
             mocked_fitted_params = np.array([0.1, 0.5])
             mock_parent_fit.return_value = mocked_fitted_params
             t2_test = t2echo.fit()
-            mock_parent_fit.assert_called_with(p0=(-52, 2000, 0), quadrature='i')
+            mock_parent_fit.assert_called_with(p0=(-52, 2000, 0), quadrature="i")
 
             assert t2_test == 2 * mocked_fitted_params[1]
