@@ -75,7 +75,7 @@ class TestFlippingSequence:
     def test_plot(self, flipping_sequence: FlippingSequence):
         """Test plot method."""
         flipping_sequence.post_processed_results = [i, q]
-        popt = flipping_sequence.fit()
+        flipping_sequence.fit()
         fig = flipping_sequence.plot()
         axes = fig.axes
 

@@ -96,7 +96,7 @@ class TestExperimentAnalysis:
     def test_plot(self, experiment_analysis: DummyExperimentAnalysis):
         """Test plot method."""
         experiment_analysis.post_processed_results = [i, q]
-        popt = experiment_analysis.fit()
+        experiment_analysis.fit()
         fig = experiment_analysis.plot()
         axes = fig.axes
 

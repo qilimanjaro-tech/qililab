@@ -76,7 +76,7 @@ class TestRabi:
     def test_plot(self, rabi: Rabi):
         """Test plot method."""
         rabi.post_processed_results = [i, q]
-        popt = rabi.fit()
+        rabi.fit()
         fig = rabi.plot()
         axes = fig.axes
 

@@ -442,6 +442,7 @@ class Parameter(str, Enum):
     B = "b"
     NORM_FACTOR = "norm_factor"
     DELAY = "delay"
+    SYNC_ENABLED = "sync_enabled"
 
 
 class ResultName(str, Enum):
