@@ -44,7 +44,7 @@ class ResonatorSpectroscopy(ExperimentAnalysis, Cos):
 
         # Define loop used in the experiment
         loop = Loop(alias=readout_bus.alias, parameter=Parameter.LO_FREQUENCY, values=values)
-    
+
         experiment_options = ExperimentOptions(
             name="ResonatorSpectroscopy",
             loops=[loop],
