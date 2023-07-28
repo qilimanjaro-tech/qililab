@@ -10,7 +10,6 @@ class CircuitPulseSettings:
     """GatesSchema class."""
 
     bus: str
-    qubit: int
     amplitude: float
     phase: float
     frequency: float
@@ -32,7 +31,6 @@ class GateSettings:
     """GatesSchema class."""
 
     name: str
-    qubits: int | tuple[int]
     schedule: list[CircuitPulseSettings]
 
     # TODO: do we want this?

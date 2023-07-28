@@ -101,15 +101,12 @@ class RuncardSchema:
                 qubit_str = re.findall(r"\(.*?\)", gate)[0]
                 qubits = ast.literal_eval(qubit_str)
                 schedule = [
-                    CircuitPulseSettings(
-                        bus=circuit_pulse["bus"], qubit=circuit_pulse["qubit"], **circuit_pulse["pulse"]
-                    )
-                    for circuit_pulse in schedule
+                    CircuitPulseSettings(bus=gate_event["bus"], **gate_event["pulse"]) for gate_event in schedule
                 ]
                 if qubits not in gates:
-                    gates[qubits] = [GateSettings(name=gate[: -len(qubit_str)], qubits=qubits, schedule=schedule)]
+                    gates[qubits] = [GateSettings(name=gate[: -len(qubit_str)], schedule=schedule)]
                 else:
-                    gates[qubits].append(GateSettings(name=gate[: -len(qubit_str)], qubits=qubits, schedule=schedule))
+                    gates[qubits].append(GateSettings(name=gate[: -len(qubit_str)], schedule=schedule))
 
             self.gates = gates
             # TODO: do we want to keep GateScheduleSettings?
