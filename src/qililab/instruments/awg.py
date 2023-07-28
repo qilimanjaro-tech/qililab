@@ -74,10 +74,6 @@ class AWG(Instrument):
     def upload(self, port: int):
         """Upload compiled program."""
 
-    @abstractmethod
-    def upload(self, port: int):
-        """Upload compiled program."""
-
     @property
     def num_sequencers(self):
         """Number of sequencers in the AWG
