@@ -124,8 +124,12 @@ class TestPlatform:
             assert bus in platform.buses
 
     def test_print_platform(self, platform: Platform):
-        """Test print schema."""
+        """Test print platform."""
         print(platform)
+
+    def test_print_buses(self, platform: Platform):
+        """Test print buses."""
+        print(platform.buses)
 
     def test_print_instruments(self, platform: Platform):
         """Test print instruments."""
