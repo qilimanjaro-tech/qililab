@@ -1,5 +1,6 @@
 """ Unit testing module for the Factory of instrument drivers"""
 import pytest
+from qcodes.instrument.instrument import Instrument
 
 from qililab.drivers.instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
@@ -10,7 +11,7 @@ class TestInstrumentDriverFactoryWithParametrize:
     """Unit test for the Factory of instrument drivers passing parameters"""
 
     @staticmethod
-    def test_handlers(driver):
+    def test_handlers(driver: Instrument):
         """Test that the registered handlers are correct"""
         handlers = InstrumentDriverFactory.handlers
 
@@ -20,7 +21,7 @@ class TestInstrumentDriverFactoryWithParametrize:
         assert isinstance(handlers, dict)
 
     @staticmethod
-    def test_get(driver):
+    def test_get(driver: Instrument):
         """Test that the get method works properly"""
         gotten_driver = InstrumentDriverFactory.get(name=driver.__name__)
 
