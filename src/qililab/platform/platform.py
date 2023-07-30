@@ -109,8 +109,8 @@ class Platform:
                 return self.settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is not None:
-                name = regex_match.group("gate")
-                qubits_str = regex_match.group("qubits")
+                name = regex_match["gate"]
+                qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if name in self.gate_names:
                     return self.settings.get_gate(name=name, qubits=qubits)
@@ -291,4 +291,4 @@ class Platform:
         Returns:
             str: Name of the platform
         """
-        return str(yaml.dump(self.to_dict(), sort_keys=False)) + "\n".join(str(bus) for bus in self.buses)
+        return str(yaml.dump(self.to_dict(), sort_keys=False))
