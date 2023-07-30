@@ -3,7 +3,7 @@ import pytest
 from qcodes.instrument.instrument import Instrument
 
 from qililab.drivers.instruments import GS200, Cluster, ERASynthPlus, Keithley2600, Pulsar, RhodeSchwarzSGS100A, SpiRack
-from qililab.drivers.instruments.utils.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 
 
 @pytest.fixture(

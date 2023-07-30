@@ -15,7 +15,7 @@ from qcodes.instrument import DelegateParameter
 from qcodes_contrib_drivers.drivers.ERAInstruments import ERASynthPlus as QcdERASynthPlus
 
 from qililab.drivers import parameters
-from qililab.drivers.instruments.utils.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import LocalOscillator
 
 

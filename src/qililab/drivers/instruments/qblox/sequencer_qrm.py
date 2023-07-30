@@ -7,7 +7,7 @@ from qpysequence.program.instructions import Acquire, AcquireWeighed, Move
 from qpysequence.weights import Weights
 
 from qililab.config import logger
-from qililab.drivers.instruments.utils.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import Digitiser
 from qililab.result.qblox_results.qblox_result import QbloxResult
 

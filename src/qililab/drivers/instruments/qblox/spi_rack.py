@@ -9,7 +9,7 @@ from qblox_instruments.qcodes_drivers.spi_rack_modules.s4g_module import S4gModu
 from qcodes import Instrument
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
-from qililab.drivers.instruments.utils.instrument_factory import InstrumentDriverFactory
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 
