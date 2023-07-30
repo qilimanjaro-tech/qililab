@@ -7,13 +7,13 @@ Element = TypeVar("Element", bound=Instrument)
 
 
 class InstrumentDriverFactory:
-    """Hash table that loads a specific class given an object's name."""
+    """Hash table that loads a specific class given an object's __name__."""
 
     handlers: dict[str, type[Instrument]] = {}
 
     @classmethod
     def register(cls, handler_cls: type[Element]) -> type[Instrument]:
-        """Register handler in the factory.
+        """Register handler in the factory with its __name__.
 
         Args:
             output_type (type): Class type to register.
@@ -23,5 +23,5 @@ class InstrumentDriverFactory:
 
     @classmethod
     def get(cls, name: str) -> type[Instrument]:
-        """Return class attribute."""
+        """Return class attribute given its __name__"""
         return cls.handlers[name]
