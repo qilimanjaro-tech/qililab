@@ -6,7 +6,7 @@ from dataclasses import asdict
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip.nodes import Coupler, Qubit
+from qililab.chip.nodes import Coupler, Qubit, Resonator
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
@@ -82,7 +82,7 @@ class CircuitToPulses:
             # update time
             start_time = self._update_time(time=time, target=bus.targets[0].alias, gate_time=gate_event.duration)
             # add pulse event
-            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate_event=gate_event, bus=bus)
+            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate=m_gate, gate_event=gate_event, bus=bus)
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
 
     def _control_gate_to_pulses(self, gate: Gate, time: dict[str, int], pulse_schedule: PulseSchedule):
@@ -102,7 +102,7 @@ class CircuitToPulses:
             # find bus
             bus = self.platform.get_bus_by_alias(gate_event.bus)
             # add control gate schedule
-            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate_event=gate_event, bus=bus)
+            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event, bus=bus)
             # add event
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
 
@@ -178,7 +178,7 @@ class CircuitToPulses:
         ]  # TODO: i dont like this parsing, it's too hidden
         return schedule_qubits + gate_qubits
 
-    def _circuit_pulse_to_pulse_event(self, time: int, gate_event: CircuitPulseSettings, bus: Bus) -> PulseEvent:
+    def _circuit_pulse_to_pulse_event(self, time: int, gate: Gate, gate_event: CircuitPulseSettings, bus: Bus) -> PulseEvent:
         """Translate a gate into a pulse.
 
         Args:
@@ -192,7 +192,14 @@ class CircuitToPulses:
 
         shape_settings = gate_event.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-        qubit = [target for target in bus.targets if isinstance(target, (Qubit, Coupler))][0]
+        # TODO: save for future
+        # targets = [node for node in bus.targets if isinstance(node, (Qubit, Coupler, Resonator))]
+        # if all((isinstance(target, Resonator) for target in targets)): # handle resonators
+        #     # TODO: look for a method to make this parsing better
+        #     target = [res for res in targets if res.alias == f"resonator_q{gate.qubits[0]}"][0]
+        # elif len(targets) > 1:
+        #     raise ValueError(f"Found more than one target for {gate_event.bus}")
+        # target = targets[0]
         return PulseEvent(
             pulse=Pulse(
                 amplitude=gate_event.amplitude,
@@ -203,7 +210,7 @@ class CircuitToPulses:
             ),
             start_time=time + gate_event.wait_time + self.platform.settings.delay_before_readout,
             pulse_distortions=bus.distortions,
-            qubit=qubit,  # type: ignore # TODO: ensure qubit / resonator is ALWAYS 0th element and/or there's only one qubit / resonator in targets
+            qubit=gate.qubits[0],
         )
 
     def _parse_check_cz(self, cz: CZ):
