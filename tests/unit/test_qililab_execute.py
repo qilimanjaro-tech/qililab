@@ -22,7 +22,7 @@ class TestExecute:
         mock_build_platform: MagicMock,
         mock_settings: MagicMock,
         mock_options: MagicMock,
-        mock_circuit_experiment: MagicMock,
+        mock_circuit_experiment: MagicMock,  # pylint: disable=unused-argument
         mock_execute: MagicMock,
     ):
         n_qubits = 5

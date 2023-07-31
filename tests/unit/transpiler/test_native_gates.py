@@ -16,7 +16,7 @@ def test_native_gates_drag():
 
     # try different parameters
     rng = np.random.default_rng(seed=42)  # init random number generator
-    for i in range(50):
+    for _ in range(50):
         theta = rng.random()
         phi = rng.random()
         qubit = rng.integers(0, 100)

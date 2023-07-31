@@ -15,7 +15,7 @@ class DummyAWG(AWG):
     ) -> list:
         return []
 
-    def run(self):
+    def run(self):  # pylint: disable=arguments-differ
         pass
 
     def upload(self, port: int):

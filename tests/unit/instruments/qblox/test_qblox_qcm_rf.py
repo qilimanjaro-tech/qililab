@@ -70,7 +70,7 @@ class TestMethods:
         qcm_rf = QbloxQCMRF(settings=settings)
         qcm_rf.device = MagicMock()
         qcm_rf.initial_setup()
-        qcm_rf.device.set.call_count == 10
+        assert qcm_rf.device.set.call_count == 10
         call_args = {call[0] for call in qcm_rf.device.set.call_args_list}
         assert call_args == {
             ("out0_lo_freq", 3700000000.0),
