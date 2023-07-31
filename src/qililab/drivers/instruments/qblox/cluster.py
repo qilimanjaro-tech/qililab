@@ -3,7 +3,6 @@ from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm as QcodesQcmQrm
 from qcodes import Instrument
 from qcodes.instrument import DelegateParameter
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
-from qcodes.tests.instrument_mocks import DummyInstrument
 from qililab.drivers import parameters
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
 
@@ -38,12 +37,13 @@ class Cluster(QcodesCluster):
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
         for slot_idx in slot_ids:
-            if submodules_present[slot_idx-1]:
+            if submodules_present[slot_idx - 1]:
                 module = QcmQrm(self, f"module{slot_idx}", slot_idx)
                 self.add_submodule(f"module{slot_idx}", module)
             else:
                 old_module = old_submodules[f"module{slot_idx}"]
                 self.add_submodule(f"module{slot_idx}", old_module)
+
 
 class QcmQrm(QcodesQcmQrm):
     """Qililab's driver for QBlox-instruments QcmQrm"""
