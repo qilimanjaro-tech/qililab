@@ -183,7 +183,9 @@ class QbloxModule(AWG):
         weights = self._generate_weights(sequencer=sequencer)
         return QpySequence(program=program, waveforms=waveforms, acquisitions=acquisitions, weights=weights)
 
-    def _generate_program(self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int):
+    def _generate_program(  # pylint: disable=too-many-locals
+        self, pulse_bus_schedule: PulseBusSchedule, waveforms: Waveforms, sequencer: int
+    ):
         """Generate Q1ASM program
 
         Args:
@@ -276,7 +278,7 @@ class QbloxModule(AWG):
                 self.device.start_sequencer(sequencer=sequencer.identifier)
 
     @Instrument.CheckDeviceInitialized
-    def setup(  # pylint: disable=too-many-branches
+    def setup(  # pylint: disable=too-many-branches, too-many-return-statements
         self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None
     ):
         """Set Qblox instrument calibration settings."""

@@ -14,7 +14,7 @@ from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
-class Platform:
+class Platform:  # pylint: disable=too-many-public-methods
     """Platform object that describes setup used to control quantum devices.
 
     Args:

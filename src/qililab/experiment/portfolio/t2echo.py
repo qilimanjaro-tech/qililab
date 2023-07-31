@@ -4,10 +4,12 @@ from qibo.gates import M
 from qibo.models import Circuit
 
 import qililab as ql
-from qililab.experiment.portfolio import Exp, ExperimentAnalysis
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
+
+from .experiment_analysis import ExperimentAnalysis
+from .fitting_models import Exp
 
 
 class T2Echo(ExperimentAnalysis, Exp):

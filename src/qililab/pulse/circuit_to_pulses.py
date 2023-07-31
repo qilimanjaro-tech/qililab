@@ -29,7 +29,9 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         self.platform = platform
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:  # pylint: disable=too-many-locals
+    def translate(  # pylint: disable=too-many-locals, too-many-branches
+        self, circuits: list[Circuit]
+    ) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -69,7 +71,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                                     pulse_schedule.create_schedule(port=flux_port)
                     continue
 
-                elif isinstance(gate, CZ):
+                if isinstance(gate, CZ):
                     # CZ sends a SNZ pulse to target in CZ(control, target)
                     # handle parking and padding for CZ gates
                     gate = self._parse_check_cz(gate)
@@ -272,7 +274,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
         target = cz.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=target, readout=False)
         # get adjacent nodes
-        adj_nodes = chip._get_adjacent_nodes(node)
+        adj_nodes = chip._get_adjacent_nodes(node)  # pylint: disable=protected-access
         # return adjacent qubits with lower frequency than target not in CZ gate
         park_qubits = [
             adj_node.qubit_index
@@ -289,7 +291,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
                 settings_gate for settings_gate in self.platform.settings.gates[qubit] if "Park" in settings_gate.name
             ]
             if not park_gate_settings:
-                logger.warning(
+                logger.warning(  # pylint: disable=logging-fstring-interpolation
                     f"Found parking candidate qubit {qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {qubit}"
                 )
                 continue

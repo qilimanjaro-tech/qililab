@@ -162,7 +162,7 @@ class SequencerQCM(Sequencer, AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def _generate_program(
+    def _generate_program(  # pylint: disable=too-many-locals
         self,
         pulse_bus_schedule: PulseBusSchedule,
         waveforms: Waveforms,

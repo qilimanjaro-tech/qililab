@@ -1,12 +1,13 @@
 """ExecutionBuilder class"""
 from warnings import warn
 
-from qililab.execution import BusExecution
-from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.utils import Loop, Singleton
+
+from .bus_execution import BusExecution
+from .execution_manager import ExecutionManager
 
 
 class ExecutionBuilder(metaclass=Singleton):

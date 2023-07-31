@@ -9,7 +9,7 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instance-attributes
+class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
@@ -99,7 +99,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instan
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(self, parameter: Parameter, value: float):  # pylint: disable=too-many-branches
+    def _set_parameter_float(  # pylint: disable=too-many-branches, too-many-return-statements
+        self, parameter: Parameter, value: float
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:

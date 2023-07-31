@@ -89,7 +89,7 @@ class CircuitTranspiler:
         if not circuit.has_timings_calculated:
             circuit = self.calculate_timings(circuit)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
-        for layer in layers:
+        for layer in layers:  # pylint: disable=too-many-nested-blocks
             for operation_node in layer:
                 if isinstance(operation_node.operation, SpecialOperation):
                     predecessors = circuit.graph.predecessors(operation_node.index)

@@ -138,7 +138,7 @@ class Operation(ABC):
         if match := re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation):
             operation_name, parameters_str = match.groups()
             operation_class = OperationFactory.get(operation_name)
-            operation_signature = operation_class._get_signature()
+            operation_signature = operation_class._get_signature()  # pylint: disable=protected-access
             parameters = {}
             if parameters_str is not None:
                 for parameter_str in parameters_str.split(","):
