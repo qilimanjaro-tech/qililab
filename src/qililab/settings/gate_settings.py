@@ -6,7 +6,7 @@ from qililab.typings.enums import Parameter
 
 
 @dataclass
-class CircuitPulseSettings:
+class GateEventSettings:
     """GatesSchema class."""
 
     bus: str
@@ -31,7 +31,7 @@ class GateSettings:
     """GatesSchema class."""
 
     name: str
-    schedule: list[CircuitPulseSettings]
+    schedule: list[GateEventSettings]
 
     # TODO: do we want this?
     def set_parameter(self, parameter: Parameter, value: float | str | bool, schedule_element: int):

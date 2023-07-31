@@ -3,6 +3,7 @@ import ast
 import contextlib
 from dataclasses import asdict
 
+import numpy as np
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
@@ -10,11 +11,11 @@ from qililab.chip.nodes import Coupler, Qubit, Resonator
 from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
-from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings.gate_settings import CircuitPulseSettings
+from qililab.settings.gate_settings import GateEventSettings
+from qililab.transpiler import Drag
 from qililab.utils import Factory, qibo_gates
 
 
@@ -24,7 +25,6 @@ class CircuitToPulses:
     def __init__(self, platform: Platform):
         self.platform = platform
         self.runcard_gate_settings = self.platform.settings.gates
-        self.hardware_gates = HardwareGateFactory.pulsed_gates
         self.chip = self.platform.chip
 
     def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
@@ -40,7 +40,7 @@ class CircuitToPulses:
         pulse_schedule_list: list[PulseSchedule] = []
         for circuit in circuits:
             pulse_schedule = PulseSchedule()
-            time: dict[str, int] = {}  # restart time
+            time: dict[int, int] = {}  # restart time
             for gate in circuit.queue:
                 # Measurement gates need to be handled on their own because qibo allows to define
                 # an M gate as eg. gates.M(*range(5))
@@ -72,7 +72,7 @@ class CircuitToPulses:
         return pulse_schedule_list
 
     # TODO: simplify further measurement and control to unify code
-    def _measurement_gate_to_pulses(self, gate: Gate, time: dict[str, int], pulse_schedule: PulseSchedule):
+    def _measurement_gate_to_pulses(self, gate: Gate, time: dict[int, int], pulse_schedule: PulseSchedule):
         for qubit_idx in gate.target_qubits:
             # get measurement schedule for relevant qubit
             m_gate = M(qubit_idx)
@@ -82,10 +82,12 @@ class CircuitToPulses:
             # update time
             start_time = self._update_time(time=time, target=bus.targets[0].alias, gate_time=gate_event.duration)
             # add pulse event
-            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate=m_gate, gate_event=gate_event, bus=bus)
+            pulse_event = self._circuit_pulse_to_pulse_event(
+                time=start_time, gate=m_gate, gate_event=gate_event, bus=bus
+            )
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
 
-    def _control_gate_to_pulses(self, gate: Gate, time: dict[str, int], pulse_schedule: PulseSchedule):
+    def _control_gate_to_pulses(self, gate: Gate, time: dict[int, int], pulse_schedule: PulseSchedule):
         # extract gate schedule
         gate_schedule = self._gate_schedule_from_settings(gate)
         # get total duration for the gate
@@ -106,7 +108,8 @@ class CircuitToPulses:
             # add event
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
 
-    def _gate_schedule_from_settings(self, gate: Gate) -> list[CircuitPulseSettings]:
+    def _gate_schedule_from_settings(self, gate: Gate) -> list[GateEventSettings]:
+        # sourcery skip: extract-method
         """Get the gate schedule. The gate schedule is the list of pulses to apply
         to a given bus for a given gate
 
@@ -114,37 +117,55 @@ class CircuitToPulses:
             gate (Gate): Qibo gate
 
         Returns:
-            list[CircuitPulseSettings]: schedule list with each of the pulses settings
+            list[GateEventSettings]: schedule list with each of the pulses settings
         """
-        qubits = gate.qubits[0] if len(gate.qubits) == 1 else gate.qubits
-        # check if gate in hardware gates
-        name, hardware_gate = next(
-            (
-                (name, hardware_gate)
-                for name, hardware_gate in self.hardware_gates.items()
-                if isinstance(gate, hardware_gate.class_type)
-            ),
-            (None, None),
-        )
 
-        if hardware_gate is not None:
-            runcard_gate = next((gate for gate in self.runcard_gate_settings[qubits] if gate.name == name), None)
-            if runcard_gate is None:
-                raise NotImplementedError(
-                    f"Did not find definition in runcard for circuit gate {gate.name} corresponding to HardwareGate {hardware_gate.name}"
+        qubits = gate.qubits[0] if len(gate.qubits) == 1 else gate.qubits
+
+        try:
+            gate_schedule = next(
+                runcard_gate
+                for runcard_gate in self.runcard_gate_settings[qubits]
+                if gate.__class__.__name__ == runcard_gate.name
+            ).schedule
+        except ValueError as e:
+            print(e)
+
+        # handle drag gate (parametrized)
+        if isinstance(gate, Drag):
+            if len(gate_schedule) > 1:
+                raise ValueError(
+                    f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
                 )
-            return hardware_gate.translate(gate=gate, gate_schedule=runcard_gate.schedule)
+            drag_schedule = gate_schedule[0]
+            theta = self.normalize_angle(angle=gate.parameters[0])
+            amplitude = drag_schedule.amplitude * theta / np.pi
+            phase = self.normalize_angle(angle=gate.parameters[1])
+            drag_schedule.amplitude = amplitude
+            drag_schedule.phase = phase
+            return [drag_schedule]
 
         # allow "arbitrary" gates as long as they are defined in the runcard
         for runcard_gate in self.runcard_gate_settings[qubits]:
-            if gate.name == runcard_gate.name:
+            if gate.__class__.__name__ == runcard_gate.name:
                 # raise warning
-                logger.warning(f"Using arbitrary with name {runcard_gate.name} for qubits {qubits}")
+                logger.warning(f"Using gate with name {runcard_gate.name} for qubits {qubits}")
                 return runcard_gate.schedule
 
         raise NameError(f"Did not find gate settings for gate {gate.name} at qubits {qubits}")
 
-    def _get_total_schedule_duration(self, schedule: list[CircuitPulseSettings]) -> int:
+    def normalize_angle(self, angle: float):
+        """Normalize angle in range [-pi, pi].
+
+        Args:
+            angle (float): Normalized angle.
+        """
+        angle %= 2 * np.pi
+        if angle > np.pi:
+            angle -= 2 * np.pi
+        return angle
+
+    def _get_total_schedule_duration(self, schedule: list[GateEventSettings]) -> int:
         """Return total time for a gate schedule. This is done by taking the max of (init + duration)
         for all the elements in the schedule
 
@@ -159,7 +180,7 @@ class CircuitToPulses:
             time = max(time, schedule_element.duration + schedule_element.wait_time)
         return time
 
-    def _get_gate_qubits(self, gate: Gate, schedule: list[CircuitPulseSettings]) -> list[str]:
+    def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings]) -> list[int]:
         """Get qubits involved in gate
         # TODO: also gets couplers
 
@@ -171,14 +192,19 @@ class CircuitToPulses:
         """
 
         schedule_qubits = [
-            self.platform.get_bus_by_alias(schedule_element.bus).targets[0].alias for schedule_element in schedule
+            target.qubit_index
+            for schedule_element in schedule
+            for target in self.platform.get_bus_by_alias(schedule_element.bus).targets
+            if isinstance(target, Qubit)
         ]
-        gate_qubits = [
-            f"qubit_{qubit}" for qubit in gate.qubits if qubit not in schedule_qubits
-        ]  # TODO: i dont like this parsing, it's too hidden
-        return schedule_qubits + gate_qubits
 
-    def _circuit_pulse_to_pulse_event(self, time: int, gate: Gate, gate_event: CircuitPulseSettings, bus: Bus) -> PulseEvent:
+        gate_qubits = list(gate.qubits)
+
+        return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
+
+    def _circuit_pulse_to_pulse_event(
+        self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
+    ) -> PulseEvent:
         """Translate a gate into a pulse.
 
         Args:
@@ -231,7 +257,7 @@ class CircuitToPulses:
             return CZ(cz_qubits[1], cz_qubits[0])
         raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
-    def _update_time(self, time: dict[str, int], target: str, gate_time: int):
+    def _update_time(self, time: dict[int, int], target: int, gate_time: int):
         """Create new timeline if not already created and update time.
 
         Args:
@@ -248,7 +274,7 @@ class CircuitToPulses:
         time[target] += gate_time
         return old_time
 
-    def _sync_qubit_times(self, qubits: list[str], time: dict[str, int]):
+    def _sync_qubit_times(self, qubits: list[int], time: dict[int, int]):
         """Syncs the time of the given qubit list
 
         Args:

@@ -6,7 +6,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.settings.gate_settings import CircuitPulseSettings, GateSettings
+from qililab.settings.gate_settings import GateEventSettings, GateSettings
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -100,9 +100,7 @@ class RuncardSchema:
             for gate, schedule in self.gates.items():
                 qubit_str = re.findall(r"\(.*?\)", gate)[0]
                 qubits = ast.literal_eval(qubit_str)
-                schedule = [
-                    CircuitPulseSettings(bus=gate_event["bus"], **gate_event["pulse"]) for gate_event in schedule
-                ]
+                schedule = [GateEventSettings(bus=gate_event["bus"], **gate_event["pulse"]) for gate_event in schedule]
                 if qubits not in gates:
                     gates[qubits] = [GateSettings(name=gate[: -len(qubit_str)], schedule=schedule)]
                 else:
