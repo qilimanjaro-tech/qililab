@@ -30,7 +30,7 @@ class Cluster(QcodesCluster):
             slot_ids = list(range(1, self._num_slots + 1))
 
         # Save information about modules actually being present in the cluster
-        submodules_present = [self._present_at_init(slot_idx) for slot_idx in self.slot_ids]
+        submodules_present = [self._present_at_init(slot_idx) for slot_idx in slot_ids]
         # Add qcm-qrm's to the cluster
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
