@@ -16,7 +16,7 @@ class QbloxQCMRF(QbloxQCM):
     name = InstrumentName.QCMRF
 
     @dataclass
-    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):
+    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):  # pylint: disable=too-many-instance-attributes
         """Contains the settings of a specific Qblox QCM-RF module."""
 
         out0_lo_freq: float

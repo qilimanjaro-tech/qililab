@@ -36,7 +36,7 @@ class CircuitTranspiler:
         for index, layer in enumerate(layers):
             # Calculate maximum end time of previous layer
             max_end_time_of_previous_layer = (
-                max([op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None])
+                max(op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None)
                 if index >= 1
                 else 0
             )

@@ -22,14 +22,14 @@ from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
 
 
-class CircuitToPulses:
+class CircuitToPulses:  # pylint: disable=too-few-public-methods
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     def __init__(self, platform: Platform):
         self.platform = platform
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:  # pylint: disable=too-many-locals
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -49,7 +49,7 @@ class CircuitToPulses:
                 if isinstance(gate, qibo_gates.Wait):
                     self._update_time(time, gate.target_qubits[0], gate.parameters[0])
                     continue
-                elif isinstance(gate, M):
+                if isinstance(gate, M):
                     # handle measurement gates
                     for qubit_idx in gate.target_qubits:
                         m_gate = M(qubit_idx)
@@ -249,8 +249,7 @@ class CircuitToPulses:
                     f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). "
                     "The gate duration must be an integer or a float with 0 decimal part"
                 )
-            else:
-                gate_duration = int(gate_duration)
+            gate_duration = int(gate_duration)
 
         return gate_settings
 
@@ -371,7 +370,7 @@ class CircuitToPulses:
         two_qubit_gates = [qubit for qubit in self.platform.settings.gates.keys() if isinstance(qubit, tuple)]
         if cz_qubits in two_qubit_gates:
             return cz
-        elif cz_qubits[::-1] in two_qubit_gates:
+        if cz_qubits[::-1] in two_qubit_gates:
             return CZ(cz_qubits[1], cz_qubits[0])
         raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 

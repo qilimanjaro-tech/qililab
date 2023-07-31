@@ -3,7 +3,7 @@ import numpy as np
 from .waveform import Waveform
 
 
-class Gaussian(Waveform):
+class Gaussian(Waveform):  # pylint: disable=too-few-public-methods
     """Gaussian waveform with peak at duration/2 and spanning for num_sigmas over the pule duration.
 
     The normal distribution's parameters mu (mean) and sigma (standard deviation) will be therefore

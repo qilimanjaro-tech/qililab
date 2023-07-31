@@ -1,6 +1,5 @@
 """This file contains a pre-defined version of the flux spectroscopy experiment."""
 import numpy as np
-from lmfit.models import Model
 from qibo.gates import M
 from qibo.models import Circuit
 

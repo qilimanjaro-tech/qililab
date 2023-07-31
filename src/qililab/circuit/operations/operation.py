@@ -135,8 +135,7 @@ class Operation(ABC):
         Returns:
             Operation: An instance of the parsed operation.
         """
-        match = re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation)
-        if match:
+        if match := re.match(r"(\w+)(?:\((\w+=.+,?)\))?", string_representation):
             operation_name, parameters_str = match.groups()
             operation_class = OperationFactory.get(operation_name)
             operation_signature = operation_class._get_signature()
@@ -150,5 +149,4 @@ class Operation(ABC):
                     value = parameter_signature.annotation(value)
                     parameters[name] = value
             return operation_class(**parameters)
-        else:
-            raise ValueError(f"Invalid string representation: {string_representation}")
+        raise ValueError(f"Invalid string representation: {string_representation}")

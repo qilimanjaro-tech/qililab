@@ -1,4 +1,6 @@
-class ClassPropertyDescriptor(object):
+class ClassPropertyDescriptor(  # pylint: disable=too-few-public-methods # pylint: disable=missing-class-docstring
+    object
+):
     def __init__(self, fget):
         self.fget = fget
 
@@ -6,7 +8,7 @@ class ClassPropertyDescriptor(object):
         return self.fget.__get__(obj, klass)()
 
 
-def classproperty(func):
+def classproperty(func):  # pylint: disable=missing-function-docstring
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
 

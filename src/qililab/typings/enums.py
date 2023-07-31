@@ -532,7 +532,7 @@ class Line(str, Enum):
     FEEDLINE_OUTPUT = "feedline_output"
 
 
-class Qubits(str, Enum):
+class Qubits(str, Enum):  # pylint: disable=missing-class-docstring
     ANY = "any"
     ONE = "one"
     TWO = "two"
@@ -567,11 +567,11 @@ class OperationName(str, Enum):
     SQUARE = "Square"
 
 
-class OperationTimingsCalculationMethod(str, Enum):
+class OperationTimingsCalculationMethod(str, Enum):  # pylint: disable=missing-class-docstring
     AS_SOON_AS_POSSIBLE = "as_soon_as_possible"
     AS_LATE_AS_POSSIBLE = "as_late_as_possible"
 
 
-class ResetMethod(str, Enum):
+class ResetMethod(str, Enum):  # pylint: disable=missing-class-docstring
     PASSIVE = "passive"
     ACTIVE = "active"

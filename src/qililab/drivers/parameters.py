@@ -1,5 +1,6 @@
 """ Contains parameters for the drivers
 """
+# pylint: disable=too-few-public-methods
 
 
 class lo:

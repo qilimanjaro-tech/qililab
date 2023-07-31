@@ -165,7 +165,7 @@ class CircuitExperiment(Experiment):
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 
-    def draw(
+    def draw(  # pylint: disable=too-many-arguments
         self,
         real: bool = True,
         imag: bool = True,
@@ -241,7 +241,7 @@ class CircuitExperiment(Experiment):
             options=experiment_options,
         )
 
-    def set_parameter(
+    def set_parameter(  # pylint: disable=too-many-arguments
         self,
         parameter: Parameter,
         value: float | str | bool,

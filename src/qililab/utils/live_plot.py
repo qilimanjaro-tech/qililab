@@ -10,7 +10,7 @@ from qililab.typings.enums import LivePlotTypes
 from qililab.utils.loop import Loop
 
 
-class LivePlot:
+class LivePlot:  # pylint: disable=too-many-instance-attributes
     """Class used to live plot experiment results.
 
     This class supports 1D and 2D plots. When running multiple sequences, the sequencer index will always be plotted

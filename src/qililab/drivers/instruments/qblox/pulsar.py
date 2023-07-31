@@ -6,7 +6,7 @@ from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
 
-class Pulsar(QcodesPulsar):
+class Pulsar(QcodesPulsar):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):

@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Any
 
 import numpy as np
@@ -115,7 +114,7 @@ class SequencerQCM(Sequencer, AWG):
         """
         return Weights()
 
-    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:  # pylint: disable=unused-argument
         """Generate Acquisitions object.
 
         Args:

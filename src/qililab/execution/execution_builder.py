@@ -50,7 +50,7 @@ class ExecutionBuilder(metaclass=Singleton):
                     raise ValueError(
                         f"There is no bus with alias '{alias}'\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
                     )
-                elif alias in buses:
+                if alias in buses:
                     warn(
                         f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
                     )

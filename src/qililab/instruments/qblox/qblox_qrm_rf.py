@@ -2,7 +2,6 @@
 from dataclasses import dataclass, field
 
 from qililab.instruments import Instrument
-from qililab.instruments.awg_settings import AWGQbloxADCSequencer
 from qililab.instruments.utils.instrument_factory import InstrumentFactory
 from qililab.typings import InstrumentName, Parameter
 
