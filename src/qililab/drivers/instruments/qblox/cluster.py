@@ -4,6 +4,7 @@ from qcodes import Instrument
 from qcodes.instrument import DelegateParameter
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 from qcodes.tests.instrument_mocks import DummyInstrument
+
 from qililab.drivers import parameters
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
 
