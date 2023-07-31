@@ -36,13 +36,15 @@ class Cluster(QcodesCluster):
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
+        print("slot ids: ", slot_ids)
         for slot_idx in slot_ids:
-            if submodules_present[slot_idx]:
-                module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-                self.add_submodule(f"module{slot_idx}", module)
+            if submodules_present[slot_idx-1]:
+                module: Instrument = QcmQrm(self, f"module{slot_idx}", slot_idx)
             else:
-                dummy_module:DummyInstrument = DummyInstrument(name="dummy")
-                self.add_submodule(f"module{slot_idx}", dummy_module)
+                # name registering of dummy instruments is slightly different
+                module = DummyInstrument(name=f"{name}_module{slot_idx}")
+
+            self.add_submodule(f"module{slot_idx}", module)
 
 
 class QcmQrm(QcodesQcmQrm):

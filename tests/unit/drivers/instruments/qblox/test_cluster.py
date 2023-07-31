@@ -15,8 +15,9 @@ from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
 NUM_SLOTS = 20
+PRESENT_SUBMODULES = [1, 2]
 NUM_SEQUENCERS = 6
-DUMMY_CFG = {"1": ClusterType.CLUSTER_QCM_RF}
+DUMMY_CFG = {1: ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
 PULSE_PHASE = 0
@@ -66,8 +67,11 @@ class MockCluster(DummyInstrument):
         self.address = identifier
         self._num_slots = 20
         self.submodules = {"test_submodule": MagicMock()}
-        self._present_at_init = MagicMock()
 
+    def _present_at_init(self, slot_idx: int):
+        """Mock _present_at_init method"""
+
+        return True if slot_idx in PRESENT_SUBMODULES else False
 
 class MockQcmQrmRF(DummyInstrument):
     is_rf_type = True
@@ -159,10 +163,12 @@ class TestCluster:
         qcm_qrm_idxs = list(cluster_submodules.keys())
         cluster_submodules_expected_names = [f"{cluster_name}_module{idx}" for idx in range(1, NUM_SLOTS + 1)]
         cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
+        present_idxs = [slot_idx for slot_idx in range(1, 20) if cluster._present_at_init(slot_idx)]
 
         assert len(cluster_submodules) == NUM_SLOTS
-        assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
-        assert cluster_submodules_expected_names == cluster_registered_names
+        assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm | DummyInstrument) for qcm_qrm_idx in qcm_qrm_idxs)
+        assert all(isinstance(cluster_submodules[f'module{idx}'], QcmQrm) for idx in present_idxs)
+        assert cluster_submodules_expected_names == cluster_registered_names 
 
 
 class TestClusterIntegration:
