@@ -77,12 +77,14 @@ class CircuitToPulses:
             # get measurement schedule for relevant qubit
             m_gate = M(qubit_idx)
             gate_event = self._gate_schedule_from_settings(m_gate)[0]
+
             # find bus
             bus = self.platform.get_bus_by_alias(gate_event.bus)
             # update time
             start_time = self._update_time(time=time, target=bus.targets[0].alias, gate_time=gate_event.duration)
+
             # add pulse event
-            pulse_event = self._circuit_pulse_to_pulse_event(
+            pulse_event = self._gate_element_to_pulse_event(
                 time=start_time, gate=m_gate, gate_event=gate_event, bus=bus
             )
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
@@ -104,7 +106,7 @@ class CircuitToPulses:
             # find bus
             bus = self.platform.get_bus_by_alias(gate_event.bus)
             # add control gate schedule
-            pulse_event = self._circuit_pulse_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event, bus=bus)
+            pulse_event = self._gate_element_to_pulse_event(time=start_time, gate=gate, gate_event=gate_event, bus=bus)
             # add event
             pulse_schedule.add_event(pulse_event=pulse_event, port=bus.port, port_delay=bus.settings.delay)  # type: ignore
 
@@ -128,8 +130,10 @@ class CircuitToPulses:
                 for runcard_gate in self.runcard_gate_settings[qubits]
                 if gate.__class__.__name__ == runcard_gate.name
             ).schedule
-        except ValueError as e:
-            print(e)
+        except StopIteration as e:
+            raise NameError(
+                f"Did not find runcard definition for circuit gate {gate.__class__.__name__} at qubits {qubits}"
+            ) from e
 
         # handle drag gate (parametrized)
         if isinstance(gate, Drag):
@@ -148,8 +152,6 @@ class CircuitToPulses:
         # allow "arbitrary" gates as long as they are defined in the runcard
         for runcard_gate in self.runcard_gate_settings[qubits]:
             if gate.__class__.__name__ == runcard_gate.name:
-                # raise warning
-                logger.warning(f"Using gate with name {runcard_gate.name} for qubits {qubits}")
                 return runcard_gate.schedule
 
         raise NameError(f"Did not find gate settings for gate {gate.name} at qubits {qubits}")
@@ -182,7 +184,6 @@ class CircuitToPulses:
 
     def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings]) -> list[int]:
         """Get qubits involved in gate
-        # TODO: also gets couplers
 
         Args:
             schedule (list[CircuitPulseSettings]): Gate schedule
@@ -202,7 +203,7 @@ class CircuitToPulses:
 
         return list(set(schedule_qubits + gate_qubits))  # converto to set and back to list to remove repeated items
 
-    def _circuit_pulse_to_pulse_event(
+    def _gate_element_to_pulse_event(
         self, time: int, gate: Gate, gate_event: GateEventSettings, bus: Bus
     ) -> PulseEvent:
         """Translate a gate into a pulse.
@@ -218,25 +219,24 @@ class CircuitToPulses:
 
         shape_settings = gate_event.shape.copy()
         pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
-        # TODO: save for future
-        # targets = [node for node in bus.targets if isinstance(node, (Qubit, Coupler, Resonator))]
-        # if all((isinstance(target, Resonator) for target in targets)): # handle resonators
-        #     # TODO: look for a method to make this parsing better
-        #     target = [res for res in targets if res.alias == f"resonator_q{gate.qubits[0]}"][0]
-        # elif len(targets) > 1:
-        #     raise ValueError(f"Found more than one target for {gate_event.bus}")
-        # target = targets[0]
+
+        # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
+        if all(isinstance(target, Resonator) for target in bus.targets):  # measurement gate
+            qubit = gate.qubits[0]
+        else:  # control gate with schedule element targeting specific qubit / coupler
+            qubit = next(target.qubit_index for target in bus.targets if isinstance(target, Qubit))
+
         return PulseEvent(
             pulse=Pulse(
                 amplitude=gate_event.amplitude,
                 phase=gate_event.phase,
                 duration=gate_event.duration,
-                frequency=gate_event.frequency,  # TODO: if we dont want to use node info we need to give the frequency somehow
+                frequency=gate_event.frequency,
                 pulse_shape=pulse_shape,
             ),
             start_time=time + gate_event.wait_time + self.platform.settings.delay_before_readout,
             pulse_distortions=bus.distortions,
-            qubit=gate.qubits[0],
+            qubit=qubit,
         )
 
     def _parse_check_cz(self, cz: CZ):
