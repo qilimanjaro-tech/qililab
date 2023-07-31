@@ -31,21 +31,19 @@ class Cluster(QcodesCluster):
 
         # Save information about modules actually being present in the cluster
         submodules_present = [self._present_at_init(slot_idx) for slot_idx in slot_ids]
+        old_submodules = self.submodules
         # Add qcm-qrm's to the cluster
         self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
 
-        print("slot ids: ", slot_ids)
         for slot_idx in slot_ids:
             if submodules_present[slot_idx-1]:
-                module: Instrument = QcmQrm(self, f"module{slot_idx}", slot_idx)
+                module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+                self.add_submodule(f"module{slot_idx}", module)
             else:
-                # name registering of dummy instruments is slightly different
-                module = DummyInstrument(name=f"{name}_module{slot_idx}")
-
-            self.add_submodule(f"module{slot_idx}", module)
-
+                old_module = old_submodules[f"module{slot_idx}"]
+                self.add_submodule(f"module{slot_idx}", old_module)
 
 class QcmQrm(QcodesQcmQrm):
     """Qililab's driver for QBlox-instruments QcmQrm"""
