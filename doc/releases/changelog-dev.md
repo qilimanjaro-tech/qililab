@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Fix: add checking to add only present submodules in Cluster
+  [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
+
 - Fix: add acquisitions and weights to Sequencer QRM
   [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
 
