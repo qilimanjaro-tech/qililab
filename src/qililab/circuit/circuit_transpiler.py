@@ -2,10 +2,10 @@
 from copy import deepcopy
 from dataclasses import dataclass
 
-from qililab.circuit import Circuit
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
 
+from .circuit import Circuit
 from .nodes.operation_node import OperationTiming
 from .operation_factory import OperationFactory
 from .operations import Barrier, Measure, PulseOperation, Reset, SpecialOperation, TranslatableToPulseOperation, Wait

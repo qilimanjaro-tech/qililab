@@ -1,8 +1,8 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.instruments import Instrument  # pylint: disable=cyclic-import
+from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qrm import QbloxQRM
