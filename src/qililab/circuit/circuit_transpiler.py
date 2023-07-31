@@ -3,13 +3,12 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 from qililab.circuit import Circuit
-from qililab.circuit.nodes.operation_node import OperationTiming
-from qililab.circuit.operation_factory import OperationFactory
-from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
-from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
-from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
+
+from .nodes.operation_node import OperationTiming
+from .operation_factory import OperationFactory
+from .operations import Barrier, Measure, PulseOperation, Reset, SpecialOperation, TranslatableToPulseOperation, Wait
 
 
 @dataclass

@@ -10,7 +10,6 @@ from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment import Experiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -20,6 +19,8 @@ from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
+
+from .experiment import Experiment
 
 
 class CircuitExperiment(Experiment):
