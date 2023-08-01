@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Rename Experiment and CircuitExperiment classes and dependencies:
+  This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
+  [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
+
 - Add interfaces and drivers for Voltage and Current sources:
   This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
   [#438](https://github.com/qilimanjaro-tech/qililab/pull/438)
