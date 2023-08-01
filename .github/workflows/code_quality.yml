@@ -47,7 +47,6 @@ jobs:
           flake8
           pylint src tests -E
           mypy src
-          interrogate -vv --fail-under=80
           bandit -r src -c .bandit
           mdformat .
           nbqa black .

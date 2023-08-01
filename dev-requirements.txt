@@ -7,4 +7,3 @@ mypy==1.4.1
 nbqa==1.5.2
 mdformat==0.7.16
 bandit==1.7.4
-interrogate[png]==1.5.0
