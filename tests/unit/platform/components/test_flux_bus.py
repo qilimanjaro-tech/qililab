@@ -169,8 +169,8 @@ class TestFluxBus:
         flux_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         flux_bus.set(instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value)
 
-        assert sequencer.get(sequencer_param) is True
-        assert voltage_source.get(voltage_source_param) == voltage_source_param_value
+        assert flux_bus.awg.get(sequencer_param) is True
+        assert flux_bus.source.get(voltage_source_param) == voltage_source_param_value
 
     def test_set_with_current_source(self, sequencer: SequencerQCM, current_source: S4gDacChannel):
         """Test set method with current source"""
