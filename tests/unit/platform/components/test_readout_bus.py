@@ -89,7 +89,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="sequencer")
 def fixture_sequencer() -> SequencerQCM:
     """Return SequencerQCM instance."""
-
     return SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
 
 
