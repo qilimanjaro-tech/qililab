@@ -43,6 +43,7 @@ class BusInterface(ABC):
         Args:
             instrument_name (str): Name of the instrument to get parameter
             param (str): Parameter's name.
+
         Returns:
             value (float): Parameter's value
         """
