@@ -27,7 +27,6 @@ class ReadoutBus(BusInterface):
             local_oscillator (LocalOscillator): Local Oscillator
             attenuator (Attenuator): Attenuator
         """
-        super().__init__()
         self.qubit = qubit
         self.awg = awg
         self.digitiser = digitiser

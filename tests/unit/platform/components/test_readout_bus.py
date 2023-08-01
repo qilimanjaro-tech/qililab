@@ -42,6 +42,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
 
 class MockQcmQrmRF(DummyInstrument):
+    """Returns a mock instance of QcmQrmRF"""
     def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         super().__init__(name=name, gates=["dac1"])
 
@@ -67,8 +68,7 @@ class MockQcmQrmRF(DummyInstrument):
                 get_cmd=None,
             )
 
-        # attenuator parameters
-        for channel in channels:
+            # attenuator parameters
             self.add_parameter(
                 name=f"{channel}_att",
                 label="Attenuation",
@@ -78,7 +78,6 @@ class MockQcmQrmRF(DummyInstrument):
                 get_parser=float,
                 vals=vals.Numbers(0, 20e9),
             )
-
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
@@ -102,7 +101,7 @@ def fixture_digitiser() -> SequencerQRM:
 def fixture_local_oscillator() -> QcmQrmRfLo:
     """Return QcmQrmRfLo instance"""
     channel = "out0"
-    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
+    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qrm")
 
     return QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
 
