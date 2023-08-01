@@ -52,8 +52,7 @@ class FluxBus(BusInterface):
             param (str): Parameter's name.
             value (Any): Parameter's value
         """
-        instrument = getattr(self, instrument_name, None)
-        if instrument:
+        if instrument := getattr(self, instrument_name, None):
             instrument.set(param_name, value)
 
     def get(self, instrument_name: str, param_name: str) -> Any:
