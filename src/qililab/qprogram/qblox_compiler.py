@@ -8,7 +8,6 @@ import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram import QProgram
 from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
 from qililab.qprogram.operations import (
     Acquire,
@@ -22,6 +21,7 @@ from qililab.qprogram.operations import (
     Sync,
     Wait,
 )
+from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
 from qililab.waveforms import Waveform
 
@@ -266,9 +266,7 @@ class QBloxCompiler:
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
         variables = element.get_variables()
-        if variables:
-            raise NotImplementedError("TODO: Waveforms with variables not support yet.")
-        else:
+        if not variables:
             index_I, index_Q = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )

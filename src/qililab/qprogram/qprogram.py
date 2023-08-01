@@ -232,7 +232,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: int | float):
+    def variable(self, type: type[int | float]):
         """Declare a variable.
 
         Args:
