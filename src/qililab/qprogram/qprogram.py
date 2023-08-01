@@ -2,7 +2,7 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import AcquireLoop, Block, Loop
+from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -92,12 +92,11 @@ class QProgram:
 
         Args:
             iterations (int): The number of acquire iterations.
-            bins (int, optional): The number of bins used for acquisition. Defaults to 1.
 
         Returns:
             AcquireLoop: The acquire_loop block.
         """
-        return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations, bins=bins)
+        return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -119,6 +118,29 @@ class QProgram:
         """
 
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
+
+    def for_loop(self, variable: Variable, start: int | float, stop: int | float, step: int | float = 1):
+        """Define a for_loop block to iterate values over a variable.
+
+        Blocks need to open a scope.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
+            >>>    # operations that shall be executed in the for_loop block
+
+        Args:
+            variable (Variable): The variable to be affected from the loop.
+            start (int | float): The start value.
+            stop (int | float): The stop value.
+            step (int | float, optional): The step value. Defaults to 1.
+
+        Returns:
+            Loop: The loop block.
+        """
+
+        return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
 
     def play(self, bus: str, waveform: Waveform | IQPair):
         """Play a single waveform or an I/Q pair of waveforms on the bus.
@@ -178,12 +200,12 @@ class QProgram:
         operation = SetPhase(bus=bus, phase=phase)
         self._active_block.append(operation)
 
-    def set_frequency(self, bus: str, frequency: int):
+    def set_frequency(self, bus: str, frequency: float):
         """Set the frequency of the NCO associated with bus.
 
         Args:
             bus (str): Unique identifier of the bus.
-            frequency (int): The new frequency of the NCO.
+            frequency (float): The new frequency of the NCO.
         """
         operation = SetFrequency(bus=bus, frequency=frequency)
         self._active_block.append(operation)
@@ -262,10 +284,21 @@ class QProgram:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 
-    class _AcquireLoopContext(_BlockContext):
-        def __init__(self, qprogram: "QProgram", iterations: int, bins: int):
+    class _ForLoopContext(_BlockContext):
+        def __init__(
+            self, qprogram: "QProgram", variable: Variable, start: int | float, stop: int | float, step: int | float
+        ):
             self.qprogram = qprogram
-            self.block: AcquireLoop = AcquireLoop(iterations=iterations, bins=bins)
+            self.block: ForLoop = ForLoop(variable=variable, start=start, stop=stop, step=step)
+
+        def __enter__(self) -> ForLoop:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
+
+    class _AcquireLoopContext(_BlockContext):
+        def __init__(self, qprogram: "QProgram", iterations: int):
+            self.qprogram = qprogram
+            self.block: AcquireLoop = AcquireLoop(iterations=iterations)
 
         def __enter__(self) -> AcquireLoop:
             self.qprogram._append_to_block_stack(block=self.block)

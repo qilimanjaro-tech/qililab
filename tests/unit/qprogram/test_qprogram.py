@@ -71,11 +71,10 @@ class TestQProgram:
     def test_acquire_loop_method(self):
         """Test acquire_loop method"""
         qp = QProgram()
-        with qp.acquire_loop(iterations=1000, bins=10) as loop:
+        with qp.acquire_loop(iterations=1000) as loop:
             # __enter__
             assert isinstance(loop, AcquireLoop)
             assert loop.iterations == 1000
-            assert loop.bins == 10
             assert qp._active_block is loop
         # __exit__
         assert len(qp._program.elements) == 1
