@@ -65,7 +65,6 @@ class FluxBus(BusInterface):
         Returns:
             value (Any): Parameter's value
         """
-        """
         return (
             instrument.get(param_name)
             if (instrument := getattr(self, instrument_name, None))
