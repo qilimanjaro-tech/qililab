@@ -112,9 +112,7 @@ def fixture_voltage_source() -> D5aDacChannel:
 @pytest.fixture(name="current_source")
 def fixture_current_source() -> S4gDacChannel:
     """Return S4gDacChannel instance."""
-    current_source = S4gDacChannel(parent=MagicMock(), name="test_s4g_dac_channel", dac=0)
-
-    return current_source
+    return S4gDacChannel(parent=MagicMock(), name="test_s4g_dac_channel", dac=0)
 
 
 class TestFluxBus:
