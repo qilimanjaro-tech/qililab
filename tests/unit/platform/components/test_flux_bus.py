@@ -130,7 +130,6 @@ class TestFluxBus:
     @classmethod
     def teardown_class(cls):
         """Tear down after all tests have been run"""
-
         S4gDacChannel.__bases__ = cls.old_sg4_bases
         D5aDacChannel.__bases__ = cls.old_d5a_bases
 
