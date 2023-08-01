@@ -181,8 +181,8 @@ class TestFluxBus:
         flux_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         flux_bus.set(instrument_name="source", param_name=current_source_param, value=current_source_param_value)
 
-        assert sequencer.get(sequencer_param) is True
-        assert current_source.get(current_source_param) == current_source_param_value
+        assert flux_bus.awg.get(sequencer_param) is True
+        assert flux_bus.source.get(current_source_param) == current_source_param_value
 
     def test_get_with_voltage_source(self, sequencer: SequencerQCM, voltage_source: D5aDacChannel):
         """Test get method with voltage source"""
