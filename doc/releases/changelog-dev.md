@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add ReadoutBus class.
+  [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
+
 - Fix: check whether cluster has submodules not present at init time.
   [#477](https://github.com/qilimanjaro-tech/qililab/pull/477)
 
