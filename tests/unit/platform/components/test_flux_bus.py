@@ -135,7 +135,6 @@ class TestFluxBus:
 
     def teardown_method(self):
         """Close all instruments after each test has been run"""
-
         Instrument.close_all()
 
     def test_init_voltage_source(self, sequencer: SequencerQCM, voltage_source: D5aDacChannel):
