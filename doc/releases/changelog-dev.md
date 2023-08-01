@@ -4,6 +4,16 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add ReadoutBus class.
+  [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
+
+- Add interfaces and drivers for Voltage and Current sources:
+  This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
+  [#438](https://github.com/qilimanjaro-tech/qililab/pull/438)
+
+- Fix: add acquisitions and weights to Sequencer QRM
+  [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
+
 - Add DriveBus and its interface for the new bus structure.
   [457](https://github.com/qilimanjaro-tech/qililab/pull/457)
 
