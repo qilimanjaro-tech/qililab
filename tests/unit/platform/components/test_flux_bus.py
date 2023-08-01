@@ -93,7 +93,6 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     """Return PulseBusSchedule instance."""
-
     return get_pulse_bus_schedule(start_time=0)
 
 
