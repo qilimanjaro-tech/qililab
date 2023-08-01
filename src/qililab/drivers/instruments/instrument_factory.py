@@ -13,7 +13,7 @@ class InstrumentDriverFactory:
 
     @classmethod
     def register(cls, handler_cls: type[Element]) -> type[Instrument]:
-        """Register handler in the factory with its __name__.
+        """Register handler in the factory given the class (through its __name__).
 
         Args:
             output_type (type): Class type to register.

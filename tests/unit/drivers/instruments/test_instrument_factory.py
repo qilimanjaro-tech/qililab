@@ -13,40 +13,44 @@ class TestInstrumentDriverFactoryWithParametrize:
     @staticmethod
     def test_handlers(driver: Instrument):
         """Test that the registered handlers are correct"""
-        handlers = InstrumentDriverFactory.handlers
-
-        assert handlers[driver.__name__] == driver
-        assert len(handlers) > 1
-        assert handlers is not None
-        assert isinstance(handlers, dict)
+        assert InstrumentDriverFactory.handlers[driver.__name__] == driver
 
     @staticmethod
     def test_get(driver: Instrument):
         """Test that the get method works properly"""
-        gotten_driver = InstrumentDriverFactory.get(name=driver.__name__)
-
-        assert gotten_driver is not None
-        assert gotten_driver == driver
+        assert InstrumentDriverFactory.get(name=driver.__name__) == driver
 
 
-class TestInstrumentDriverFactoryCreatingAnEmptySomeClass:
+class TestInstrumentDriverFactoryWithoutParametrize:
     """Unit test for the Factory of instrument drivers creating an SomeClass"""
+
+    @staticmethod
+    def test_handlers():
+        """Test that the registered handlers are correct"""
+        handlers = InstrumentDriverFactory.handlers
+
+        assert handlers is not None
+        assert isinstance(handlers, dict)
+        assert len(handlers) > 1
 
     @staticmethod
     def test_register():
         """Test that the register method works properly with handlers"""
+        handlers = InstrumentDriverFactory.handlers
 
         class SomeClass:
             """Empty class to register and pop"""
 
-        assert SomeClass.__name__ not in InstrumentDriverFactory.handlers
+        assert SomeClass.__name__ not in handlers
+
         InstrumentDriverFactory.register(SomeClass)
-        assert InstrumentDriverFactory.handlers[SomeClass.__name__] is SomeClass
-        InstrumentDriverFactory.handlers.pop(SomeClass.__name__)
-        assert SomeClass.__name__ not in InstrumentDriverFactory.handlers
+        assert handlers[SomeClass.__name__] is SomeClass
+
+        handlers.pop(SomeClass.__name__)
+        assert SomeClass.__name__ not in handlers
 
     @staticmethod
-    def test_get_instantiate_and_call_gotten_class_methods():
+    def test_get_instantiate_and_call_methods_of_gotten_class():
         """Test that the get method works properly and that you can use the obtained class"""
 
         @InstrumentDriverFactory.register
@@ -62,3 +66,5 @@ class TestInstrumentDriverFactoryCreatingAnEmptySomeClass:
         assert gotten_driver is not None
         assert isinstance(gotten_driver, SomeClass)
         assert gotten_driver.method_test() == "hello world"
+
+        InstrumentDriverFactory.handlers.pop(SomeClass.__name__)
