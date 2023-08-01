@@ -73,6 +73,7 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
         """
         return self.voltage
 
+
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
 
@@ -113,10 +114,12 @@ def fixture_current_source() -> S4gDacChannel:
     """Return S4gDacChannel instance."""
     return S4gDacChannel(parent=MagicMock(), name="test_s4g_dac_channel", dac=0)
 
+
 @pytest.fixture(name="flux_bus_current_source")
 def fixture_flux_bus_current_source(sequencer: SequencerQCM, current_source: S4gDacChannel) -> FluxBus:
     """Return FluxBus instance with current source."""
     return FluxBus(awg=sequencer, source=current_source)
+
 
 @pytest.fixture(name="flux_bus_voltage_source")
 def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5aDacChannel) -> FluxBus:
@@ -163,7 +166,9 @@ class TestFluxBus:
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        flux_bus_voltage_source.set(instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value)
+        flux_bus_voltage_source.set(
+            instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value
+        )
 
         assert flux_bus_voltage_source.awg.get(sequencer_param) is True
         assert flux_bus_voltage_source.source.get(voltage_source_param) == voltage_source_param_value
@@ -174,7 +179,9 @@ class TestFluxBus:
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        flux_bus_current_source.set(instrument_name="source", param_name=current_source_param, value=current_source_param_value)
+        flux_bus_current_source.set(
+            instrument_name="source", param_name=current_source_param, value=current_source_param_value
+        )
 
         assert flux_bus_current_source.awg.get(sequencer_param) is True
         assert flux_bus_current_source.source.get(current_source_param) == current_source_param_value
@@ -185,7 +192,9 @@ class TestFluxBus:
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        flux_bus_voltage_source.set(instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value)
+        flux_bus_voltage_source.set(
+            instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value
+        )
 
         assert flux_bus_voltage_source.get("awg", sequencer_param) is True
         assert flux_bus_voltage_source.get("source", voltage_source_param) == voltage_source_param_value
@@ -196,17 +205,16 @@ class TestFluxBus:
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        flux_bus_current_source.set(instrument_name="source", param_name=current_source_param, value=current_source_param_value)
+        flux_bus_current_source.set(
+            instrument_name="source", param_name=current_source_param, value=current_source_param_value
+        )
 
         assert flux_bus_current_source.get("awg", sequencer_param) is True
         assert flux_bus_current_source.get("source", current_source_param) == current_source_param_value
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(
-        self,
-        mock_execute: MagicMock,
-        pulse_bus_schedule: PulseBusSchedule,
-        flux_bus_current_source: FluxBus
+        self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, flux_bus_current_source: FluxBus
     ):
         """Test execute method"""
         nshots = 1
