@@ -23,6 +23,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
+QUBIT = 0
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -43,6 +44,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
 class MockQcmQrmRF(DummyInstrument):
     """Returns a mock instance of QcmQrmRF"""
+
     def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
         super().__init__(name=name, gates=["dac1"])
 
@@ -78,6 +80,7 @@ class MockQcmQrmRF(DummyInstrument):
                 get_parser=float,
                 vals=vals.Numbers(0, 20e9),
             )
+
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
@@ -115,6 +118,16 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
 
+@pytest.fixture(name="readout_bus")
+def fixture_readout_bus(
+    sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
+) -> ReadoutBus:
+    """Return ReadoutBus instance"""
+    return ReadoutBus(
+        qubit=QUBIT, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+    )
+
+
 class TestReadoutBus:
     """Unit tests checking the ReadoutBus attributes and methods. These tests mock the parent classes of the instruments,
     such that the code from `qcodes` is never executed."""
@@ -123,53 +136,36 @@ class TestReadoutBus:
         """Close all instruments after each test has been run"""
         Instrument.close_all()
 
-    def test_init(
-        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
-    ):
+    def test_init(self, readout_bus: ReadoutBus):
         """Test init method"""
-        qubit = 0
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
 
-        assert readout_bus.qubit == qubit
+        assert readout_bus.qubit == QUBIT
         assert isinstance(readout_bus.awg, SequencerQCM)
         assert isinstance(readout_bus.digitiser, SequencerQRM)
         assert isinstance(readout_bus.local_oscillator, QcmQrmRfLo)
         assert isinstance(readout_bus.attenuator, QcmQrmRfAtt)
 
-    def test_set(
-        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
-    ):
+    def test_set(self, readout_bus: ReadoutBus):
         """Test set method"""
-        qubit = 0
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
+
         readout_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         readout_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
         readout_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
         readout_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
 
-        assert sequencer.get(sequencer_param) is True
-        assert digitiser.get(sequencer_param) is True
-        assert local_oscillator.get(lo_frequency_param) == 2
-        assert attenuator.get(attenuation_param) == 2
+        assert readout_bus.awg.get(sequencer_param) is True
+        assert readout_bus.digitiser.get(sequencer_param) is True
+        assert readout_bus.local_oscillator.get(lo_frequency_param) == 2
+        assert readout_bus.attenuator.get(attenuation_param) == 2
 
-    def test_get(
-        self, sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
-    ):
+    def test_get(self, readout_bus: ReadoutBus):
         """Test get method"""
-        qubit = 0
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
         readout_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         readout_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
         readout_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
@@ -182,22 +178,12 @@ class TestReadoutBus:
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute_sequencer(
-        self,
-        mock_execute: MagicMock,
-        pulse_bus_schedule: PulseBusSchedule,
-        sequencer: SequencerQCM,
-        digitiser: SequencerQRM,
-        local_oscillator: QcmQrmRfLo,
-        attenuator: QcmQrmRfAtt,
+        self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, readout_bus: ReadoutBus
     ):
         """Test execute method"""
-        qubit = 0
         nshots = 1
         repetition_duration = 1000
         num_bins = 1
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
         readout_bus.execute(
             instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
@@ -215,22 +201,12 @@ class TestReadoutBus:
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM.execute")
     def test_execute_digitiser(
-        self,
-        mock_execute: MagicMock,
-        pulse_bus_schedule: PulseBusSchedule,
-        sequencer: SequencerQCM,
-        digitiser: SequencerQRM,
-        local_oscillator: QcmQrmRfLo,
-        attenuator: QcmQrmRfAtt,
+        self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, readout_bus: ReadoutBus
     ):
         """Test execute method"""
-        qubit = 0
         nshots = 1
         repetition_duration = 1000
         num_bins = 1
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
         readout_bus.execute(
             instrument_name="digitiser",
             pulse_bus_schedule=pulse_bus_schedule,
@@ -247,19 +223,8 @@ class TestReadoutBus:
         )
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM.get_results")
-    def test_acquire_results(
-        self,
-        mock_acquire: MagicMock,
-        sequencer: SequencerQCM,
-        digitiser: SequencerQRM,
-        local_oscillator: QcmQrmRfLo,
-        attenuator: QcmQrmRfAtt,
-    ):
+    def test_acquire_results(self, mock_acquire: MagicMock, readout_bus: ReadoutBus):
         """Test acquire_results method"""
-        qubit = 0
-        readout_bus = ReadoutBus(
-            qubit=qubit, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
-        )
         readout_bus.acquire_results()
 
         mock_acquire.assert_called_once()
