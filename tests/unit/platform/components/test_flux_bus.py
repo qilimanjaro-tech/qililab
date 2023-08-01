@@ -1,7 +1,7 @@
+"""Unittests for the FluxBus class"""
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qblox_instruments.native.spi_rack_modules.s4g_module import DummyS4gApi
 from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyChannel
@@ -28,7 +28,6 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
 
     def __init__(self, parent, name, dac, **kwargs):
         """Mock init method"""
-
         super().__init__(parent=parent, name=name, channel="", **kwargs)
         self.add_parameter(
             name="current",
@@ -54,38 +53,25 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
         """
         Gets the current set by the module.
 
-        Parameters
-        ----------
-        dac : int
-            the dac of which to get the current
+        Args:
+            dac (int): the dac of which to get the current
 
-        Returns
-        ----------
-        float
-            The output current reported by the hardware
+        Returns:
+            self.current (float): The output current reported by the hardware
         """
-        current = self.current
-
-        return current
+        return self.current
 
     def _get_voltage(self, dac: int) -> float:
         """
         Gets the voltage set by the module.
 
-        Parameters
-        ----------
-        dac : int
-            the dac of which to get the voltage
+        Args:
+            dac (int): the dac of which to get the current
 
-        Returns
-        ----------
-        float
-            The output voltage reported by the hardware
+        Returns:
+            self.voltage (float): The output voltage reported by the hardware
         """
-        voltage = self.voltage
-
-        return voltage
-
+        return self.voltage
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
@@ -183,7 +169,6 @@ class TestFluxBus:
         flux_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
         flux_bus.set(instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value)
 
-        print(voltage_source.get(voltage_source_param))
         assert sequencer.get(sequencer_param) is True
         assert voltage_source.get(voltage_source_param) == voltage_source_param_value
 
