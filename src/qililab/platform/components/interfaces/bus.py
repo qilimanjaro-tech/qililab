@@ -8,10 +8,6 @@ from qililab.pulse import PulseBusSchedule
 class BusInterface(ABC):
     """Interface of a Bus."""
 
-    def __init__(self):
-        """Initialise the bus."""
-        self.submodules: dict[str, ABC] = {}
-
     @abstractmethod
     def execute(
         self,
