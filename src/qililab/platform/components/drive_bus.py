@@ -22,7 +22,6 @@ class DriveBus(BusInterface):
             local_oscillator (LocalOscillator | None): Local oscillator
             attenuator (Attenuator | None): Attenuator
         """
-        super().__init__(**kwargs)
         self.qubit = qubit
         self.awg = awg
         if local_oscillator:
@@ -66,8 +65,7 @@ class DriveBus(BusInterface):
             param (str): Parameter's name.
             value (Any): Parameter's value
         """
-        instrument = getattr(self, instrument_name, None)
-        if instrument:
+        if instrument := getattr(self, instrument_name, None):
             instrument.set(param_name, value)
 
     def get(self, instrument_name: str, param_name: str) -> Any:
@@ -79,9 +77,4 @@ class DriveBus(BusInterface):
         Returns:
             value (Any): Parameter's value
         """
-        param_value = None
-        instrument = getattr(self, instrument_name, None)
-        if instrument:
-            param_value = instrument.get(param_name)
-
-        return param_value
+        return instrument.get(param_name) if (instrument := getattr(self, instrument_name, None)) else None
