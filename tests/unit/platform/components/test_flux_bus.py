@@ -106,9 +106,7 @@ def fixture_sequencer() -> SequencerQCM:
 @pytest.fixture(name="voltage_source")
 def fixture_voltage_source() -> D5aDacChannel:
     """Return D5aDacChannel instance."""
-    voltage_source = D5aDacChannel(parent=MagicMock(), name="test_d5a_dac_channel", dac=0)
-
-    return voltage_source
+    return D5aDacChannel(parent=MagicMock(), name="test_d5a_dac_channel", dac=0)
 
 
 @pytest.fixture(name="current_source")
