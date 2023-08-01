@@ -7,3 +7,4 @@ mypy==1.4.1
 nbqa==1.5.2
 mdformat==0.7.16
 bandit==1.7.4
+dummy-qblox@ git+https://github.com/qilimanjaro-tech/qililab-tools.git@0.3.2#subdirectory=services/dummy_qblox
