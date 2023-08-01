@@ -6,7 +6,7 @@ import numpy as np
 from qibo.models import Circuit
 from scipy.optimize import curve_fit
 
-from qililab.experiment.circuit_experiment import CircuitExperiment
+from qililab.experiment.experiment import Experiment
 from qililab.platform import Bus, Platform
 from qililab.typings import ExperimentOptions, Parameter
 from qililab.utils import Loop
@@ -14,7 +14,7 @@ from qililab.utils import Loop
 from .fitting_models import FittingModel
 
 
-class ExperimentAnalysis(CircuitExperiment, FittingModel):
+class ExperimentAnalysis(Experiment, FittingModel):
     """Class used to analyze the results of an experiment. The analysis of an experiment consist of the following steps:
 
     1. Acquire results: either by running an experiment or loading one.
