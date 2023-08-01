@@ -15,7 +15,6 @@ class FluxBus(BusInterface):
         Args:
             source (AWG | CurrentSource): Bus source instrument
         """
-        super().__init__(**kwargs)
         self.awg = awg
         self.source = source
 
