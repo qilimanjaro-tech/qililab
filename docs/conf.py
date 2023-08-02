@@ -39,6 +39,9 @@ pygments_style = "emacs"
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
+napoleon_preprocess_types = True
+
+autodoc_default_options = {"ignore-module-all": True}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

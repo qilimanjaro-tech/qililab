@@ -42,10 +42,10 @@ class Chip(DDBBElement):
         """Get adjacent nodes from given node.
 
         Args:
-            node (Node): Node object.
+            node (~chip.node.Node): Node object.
 
         Returns:
-            list[Node]: List containing all adjacent nodes.
+            list[~chip.node.Node]: List containing all adjacent nodes.
         """
         return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
 
@@ -102,7 +102,7 @@ class Chip(DDBBElement):
             port (Port): Port class.
 
         Returns:
-            list[Node]: List of nodes connected to the given port.
+            list[~chip.node.Node]: List of nodes connected to the given port.
         """
         port = self.get_node_from_id(node_id=port_id)
         return self._get_adjacent_nodes(node=port)  # type: ignore
@@ -117,7 +117,7 @@ class Chip(DDBBElement):
             ValueError: If no node is found.
 
         Returns:
-            Node: Node class.
+            ~chip.node.Node: Node class.
         """
         for node in self.nodes:
             if node.id_ == node_id:
@@ -132,7 +132,7 @@ class Chip(DDBBElement):
             ValueError: If no node is found.
 
         Returns:
-            Node: Node class.
+            ~chip.node.Node: Node class.
         """
         for node in self.nodes:
             if node.alias == alias:
@@ -143,7 +143,7 @@ class Chip(DDBBElement):
         """Get qubit id from given node.
 
         Args:
-            node (Node): Node class.
+            node (~chip.node.Node): Node class.
 
         Returns:
             int: Qubit id.

@@ -115,7 +115,7 @@ class QProgram:
             values (np.ndarray): The values to iterate over.
 
         Returns:
-            Loop: The loop block.
+            .Loop: The loop block.
         """
 
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)

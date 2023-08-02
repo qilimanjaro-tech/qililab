@@ -23,7 +23,7 @@ class LivePlot:
         connection (API): QiboConnection API object.
         num_schedules (int): Number of circuits/pulse schedules.
         title (str): Title of the plot.
-        loops (list[Loop]): List of loops.
+        loops (list[~utils.loop.Loop]): List of loops.
     """
 
     def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):
@@ -161,7 +161,7 @@ class LivePlot:
         """Return plot label from loop object.
 
         Args:
-            loop (Loop): Loop class.
+            loop (~utils.loop.Loop): Loop class.
 
         Returns:
             str: Plot label.

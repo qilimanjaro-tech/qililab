@@ -53,7 +53,7 @@ class InstrumentController(BusElement, ABC):
         settings (InstrumentControllerSettings): Settings of the instrument controller.
         device (Device): Driver instance of the instrument to operate the instrument controller.
         number_available_modules (int): Number of modules available in the Instrument Controller.
-        modules (Sequence[Instrument]): Actual Instruments classes that manages the Instrument Controller.
+        modules (Sequence[.Instrument]): Actual Instruments classes that manages the Instrument Controller.
         connected_modules_slot_ids (list[int]): List with the slot ids from the connected instruments
     """
 

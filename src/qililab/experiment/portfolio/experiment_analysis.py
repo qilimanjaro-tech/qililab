@@ -28,7 +28,7 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
         options (ExperimentOptions): options of the experiment
         control_bus (Bus, optional): control bus used in the experiment. Defaults to None.
         readout_bus (Bus, optional): readout bus used in the experiment. Defaults to None.
-        experiment_loop (Loop, optional): external loop used in the experiment. This argument can be used for
+        experiment_loop (.Loop, optional): external loop used in the experiment. This argument can be used for
             experiments that use a loop to define multiple circuits, such as the Flipping Sequence experiment.
             Defaults to None.
     """

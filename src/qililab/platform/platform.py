@@ -19,7 +19,7 @@ class Platform:
 
     Args:
         settings (PlatformSettings): Settings of the platform.
-        schema (Schema): Schema object.
+        schema (qililab.platform.components.schema.Schema): Schema object.
         buses (Buses): Container of Bus objects.
     """
 
