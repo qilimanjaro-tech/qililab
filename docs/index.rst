@@ -14,16 +14,9 @@ Qililab Documentation
 Get started
 -----------
 
-.. note::
-    This documentation is currently under construction.
+.. warning::
 
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   source/modules
+   This documentation is currently under construction.
 
 
 Explore

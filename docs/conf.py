@@ -25,13 +25,15 @@ release = qililab.__version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_design",
+    "sphinx_mdinclude",
     # "sphinxawesome_theme.docsearch",  # TODO: Uncomment this when access to DocSearch!
     "sphinxawesome_theme.highlighting",
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
+source_suffix = [".rst", ".md"]
+pygments_style = "emacs"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -46,7 +48,7 @@ html_theme_options = {
     "logo_dark": "_static/q_dark.jpeg",
     "show_prev_next": True,
     "awesome_external_links": True,
-    "main_nav_links": {"Docs": "index", "Changelog": "CHANGELOG.md"},
+    "main_nav_links": {"Docs": "index", "Changelog": "changelog"},
     "extra_header_link_icons": {
         "repository on GitHub": {
             "link": "https://github.com/qilimanjaro-tech/qililab",
