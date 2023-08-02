@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add the NEW_DRIVERS flag to choose between old and new instruments and bus drivers.
+  [#486](https://github.com/qilimanjaro-tech/qililab/pull/486)
+
 - Fix: add acquisitions and weights to Sequencer QRM
   [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
 
