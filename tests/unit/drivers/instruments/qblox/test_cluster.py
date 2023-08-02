@@ -8,14 +8,19 @@ from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers import parameters
-from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm, QcmQrmRfAtt, QcmQrmRfLo
+from qililab.drivers.instruments.qblox.cluster import (
+    Cluster,
+    QcmQrm,
+    QcmQrmRfAtt,
+    QcmQrmRfLo,
+)
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
 NUM_SLOTS = 20
-PRESENT_SUBMODULES = [1, 2]
+PRESENT_SUBMODULES = [2, 4, 6, 8, 10, 12, 16, 18, 20]
 NUM_SEQUENCERS = 6
 DUMMY_CFG = {1: ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
@@ -42,6 +47,17 @@ class MockQcmQrm(DummyChannel):
         self.is_qcm_type = True
         self.is_qrm_type = False
         self.is_rf_type = False
+
+        self.add_parameter(
+            name="present",
+            label="Present",
+            unit=None,
+            get_cmd=None,
+            set_cmd=None,
+            get_parser=bool,
+            vals=vals.Numbers(0, 20e9),
+        )
+        self.set("present", True if slot_idx % 2 == 0 else False)
 
     def arm_sequencer(self):
         """Mock arm_sequencer method"""
