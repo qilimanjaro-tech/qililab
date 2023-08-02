@@ -10,6 +10,7 @@ PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()
 NEW_DRIVERS = False
 
+
 def build_platform(name: str, connection: API | None = None, database: bool = False) -> Platform:
     """Build platform.
 
@@ -36,7 +37,8 @@ def save_platform(platform: Platform, database: bool = False):
         raise NotImplementedError
     return PLATFORM_MANAGER_YAML.dump(platform=platform)
 
-def set_new_drivers_flag(value:bool = False):
+
+def set_new_drivers_flag(value: bool = False):
     """Turns on/off the new drivers flag.
 
     Args:
@@ -44,6 +46,7 @@ def set_new_drivers_flag(value:bool = False):
     """
     global NEW_DRIVERS
     NEW_DRIVERS = value
+
 
 def get_new_drivers_flag():
     """Returns the value of the NEW_DRIVERS flag.

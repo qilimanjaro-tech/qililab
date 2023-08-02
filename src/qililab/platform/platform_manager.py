@@ -15,7 +15,7 @@ from qililab.utils import SingletonABC
 class PlatformManager(ABC, metaclass=SingletonABC):
     """Manager of platform objects."""
 
-    def build(self, platform_name: str, new_drivers:bool = False, connection: API | None = None) -> Platform:
+    def build(self, platform_name: str, new_drivers: bool = False, connection: API | None = None) -> Platform:
         """Build platform.
 
         Returns:
