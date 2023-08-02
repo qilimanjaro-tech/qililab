@@ -151,7 +151,7 @@ class QBloxCompiler:
     def _handle_for_loop(self, element: ForLoop):
         operation = QBloxCompiler._get_reference_operation_of_loop(element)
         if not operation:
-            return False
+            raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
         begin, end, step = QBloxCompiler._convert_for_loop_values(element, operation)
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)

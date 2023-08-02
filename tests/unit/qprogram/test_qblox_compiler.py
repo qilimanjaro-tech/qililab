@@ -2,12 +2,11 @@ import pytest
 import qpysequence as QPy
 
 from qililab.qprogram import QBloxCompiler, QProgram, Settings
-from qililab.waveforms import DragPulse, IQPair, Square
+from qililab.waveforms import DragPulse, Gaussian, IQPair, Square
 
 
 @pytest.fixture(name="no_loops_all_operations")
 def fixture_no_loops_all_operations() -> QProgram:
-    """Return a QProgram containing all operations and no loops."""
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -26,7 +25,6 @@ def fixture_no_loops_all_operations() -> QProgram:
 
 @pytest.fixture(name="acquire_loop")
 def fixture_acquire_loop() -> QProgram:
-    """Return a QProgram containing all operations and no loops."""
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -41,7 +39,6 @@ def fixture_acquire_loop() -> QProgram:
 
 @pytest.fixture(name="acquire_loop_with_for_loop")
 def fixture_acquire_loop_with_for_loop() -> QProgram:
-    """Return a QProgram containing all operations and no loops."""
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -58,7 +55,6 @@ def fixture_acquire_loop_with_for_loop() -> QProgram:
 
 @pytest.fixture(name="acquire_loop_with_nested_for_loops")
 def fixture_acquire_loop_with_nested_for_loops() -> QProgram:
-    """Return a QProgram containing all operations and no loops."""
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -76,15 +72,45 @@ def fixture_acquire_loop_with_nested_for_loops() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="loop_variable_with_different_targets")
-def fixture_loop_variable_with_different_targets() -> QProgram:
-    """Return a QProgram containing all operations and no loops."""
+@pytest.fixture(name="for_loop_variable_with_no_target")
+def fixture_for_loop_variable_with_no_target() -> QProgram:
+    qp = QProgram()
+    variable = qp.variable(float)
+    with qp.acquire_loop(iterations=1000):
+        with qp.for_loop(variable=variable, start=0, stop=100, step=4):
+            qp.set_frequency(bus="drive", frequency=100)
+            qp.set_phase(bus="drive", phase=90)
+    return qp
+
+
+@pytest.fixture(name="for_loop_variable_with_different_targets")
+def fixture_for_loop_variable_with_different_targets() -> QProgram:
     qp = QProgram()
     variable = qp.variable(float)
     with qp.acquire_loop(iterations=1000):
         with qp.for_loop(variable=variable, start=0, stop=100, step=4):
             qp.set_frequency(bus="drive", frequency=variable)
             qp.set_phase(bus="drive", phase=variable)
+    return qp
+
+
+@pytest.fixture(name="multiple_play_operations_with_same_waveform")
+def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
+    qp = QProgram()
+    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    qp.play(bus="drive", waveform=drag_pair)
+    qp.play(bus="drive", waveform=drag_pair)
+    qp.play(bus="drive", waveform=DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2))
+    return qp
+
+
+@pytest.fixture(name="multiple_play_operations_with_no_Q_waveform")
+def fixture_multiple_play_operations_with_no_Q_waveform() -> QProgram:
+    qp = QProgram()
+    gaussian = Gaussian(amplitude=1.0, duration=40, num_sigmas=4)
+    qp.play(bus="drive", waveform=gaussian)
+    qp.play(bus="drive", waveform=gaussian)
+    qp.play(bus="drive", waveform=Gaussian(amplitude=1.0, duration=40, num_sigmas=4))
     return qp
 
 
@@ -209,11 +235,56 @@ class TestQBloxCompiler:
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             0, R2\n        loop_0:\n            wait_sync        4\n            move             4, R3\n            loop_1:\n                wait_sync        4\n                wait_sync        4\n                wait             R3\n                play             0, 1, 4\n                acquire          0, R1, 1000\n                add              R1, 1, R1\n                add              R3, 4, R3\n                nop\n                jlt              R3, 100, @loop_1\n            add              R2, 3276, R2\n            nop\n            jlt              R2, 32767, @loop_0\n        loop             R0, @avg_0\n    \n"
         )
 
-    def test_loop_variable_with_different_targets_throws_exception(
-        self, loop_variable_with_different_targets: QProgram
+    def test_for_loop_variable_with_no_targets_throws_exception(self, for_loop_variable_with_no_target: QProgram):
+        with pytest.raises(
+            NotImplementedError, match="Variables referenced in loops should be used in at least one operation."
+        ):
+            compiler = QBloxCompiler(settings=Settings())
+            _ = compiler.compile(qprogram=for_loop_variable_with_no_target)
+
+    def test_for_loop_variable_with_different_targets_throws_exception(
+        self, for_loop_variable_with_different_targets: QProgram
     ):
         with pytest.raises(
             NotImplementedError, match="Variables referenced in a loop cannot be used in different types of operations."
         ):
             compiler = QBloxCompiler(settings=Settings())
-            _ = compiler.compile(qprogram=loop_variable_with_different_targets)
+            _ = compiler.compile(qprogram=for_loop_variable_with_different_targets)
+
+    def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
+
+        assert len(output) == 1
+        assert "drive" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["drive"]._waveforms._waveforms) == 2
+        assert len(output["drive"]._acquisitions._acquisitions) == 0
+        assert len(output["drive"]._weights._weights) == 0
+        assert output["drive"]._program._compiled
+        assert (
+            repr(output["drive"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 4\n    play             0, 1, 4\n    play             0, 1, 4\n    \n"
+        )
+
+    def test_multiple_play_operations_with_no_Q_waveform(self, multiple_play_operations_with_no_Q_waveform: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=multiple_play_operations_with_no_Q_waveform)
+
+        assert len(output) == 1
+        assert "drive" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["drive"]._waveforms._waveforms) == 2
+        assert len(output["drive"]._acquisitions._acquisitions) == 0
+        assert len(output["drive"]._weights._weights) == 0
+        assert output["drive"]._program._compiled
+        assert (
+            repr(output["drive"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 4\n    play             0, 1, 4\n    play             0, 1, 4\n    \n"
+        )
