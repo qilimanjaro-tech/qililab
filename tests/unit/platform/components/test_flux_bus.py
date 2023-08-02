@@ -132,7 +132,6 @@ class TestFluxBus:
     @classmethod
     def setup_class(cls):
         """Set up for all tests"""
-
         cls.old_sg4_bases = S4gDacChannel.__bases__
         cls.old_d5a_bases = D5aDacChannel.__bases__
         S4gDacChannel.__bases__ = (MockQcodesS4gD5aDacChannels,)
