@@ -1,11 +1,22 @@
 from abc import ABC, abstractmethod
-
 import calibration_utils.calibration_utils as cal_utils
-
 from qililab.automatic_calibration.calibration_utils.experiment_factory import ExperimentFactory
+from qililab.qprogram.qprogram import QProgram
 
+'''
+TODO: decide how fitting and plotting functions for each calibration node are determined. There are 2 options:
+ 1. Define custom plotting and fitting functions for each experiments and pass them as arguments to 
+    the constructor of the CalibrationNode.
+ 2. Define general fitting and plotting functions that receive model and labels respectively as arguments.
+    Then the CalibrationNode constructor will receive model and labels as arguments and pass them as arguments to the 
+    fitting and plotting functions.
+ ''' 
+ 
+'''
+TODO: add docstrings for latest changes.
+'''
 
-class Experiment(ABC):
+class CalibrationNode(ABC):
     """
     This class represents a node in the calibration graph.
     Each node represent a step of a lager calibration procedure. Each of these steps consists of:
@@ -23,7 +34,7 @@ class Experiment(ABC):
                                             gets the same outcome as during the last calibration that was run. Default value is 10.
     """
 
-    def __init__(self, parameters: dict, data_validation_threshold: float, number_of_random_datapoints: int = 10):
+    def __init__(self, node_id: str, qprogram: QProgram, fitting_model, plotting_labels: dict, qubit: int, parameters: dict, data_validation_threshold: float, number_of_random_datapoints: int = 10):
         self._parameters = parameters
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
@@ -79,33 +90,26 @@ class Experiment(ABC):
         # Add timestamp to the timestamps dictionary.
         self._timestamps[cal_utils.get_timestamp()] = "calibrate"
 
-    def run_experiment(
-        self, analyze: bool = True, sweep_interval: list(float) = None, manual_check: bool = False
-    ) -> None:
-        # sourcery skip: remove-empty-nested-block, remove-redundant-if
+    def run_experiment(self, analyze: bool = True, manual_check: bool = False) -> None:
         """
         Run the experiment
 
         Args:
             analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True.
-            sweep_interval (list(float)): The sweep interval where the experiment is run. Default value is default_sweep_interval.
             manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
-        """
-
-        if sweep_interval is None:
-            sweep_interval = self._parameters.default_sweep_interval
-
-        if analyze:
-            self.analyze()
-
-        if manual_check:
-            # Show fitting done by analysis function and ask user to approve or reject it.
-            pass
-
-        # Run experiment
-
-    @abstractmethod
-    def analyze(self) -> None:
-        # For each type of experiment this will have a specific implementation.
-        # Note for forgetful developer: an abstract method cannot have a body.
-        pass
+        """       
+        user_approves_plot = 'n'        
+        while(user_approves_plot == 'n'):
+            
+            # Compile and run the QProgram. TODO: add this once qprogram compiler is in main.
+        
+            if analyze:
+                # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model there, it will already be hardcoded).
+                self.analyze()
+                
+            # Plot the results. 
+            # Show the plot.
+            if manual_check:
+                user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
+            else: 
+                user_approves_plot = 'y'

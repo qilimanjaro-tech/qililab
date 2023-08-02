@@ -1,6 +1,6 @@
-from qililab.automatic_calibration.experiment import Experiment
+from qililab.automatic_calibration.calibration_node import CalibrationNode
 
 
-class QubitSpectroscopyExperiment(Experiment):
+class QubitSpectroscopyExperiment(CalibrationNode):
     def __init__(self) -> None:
         pass

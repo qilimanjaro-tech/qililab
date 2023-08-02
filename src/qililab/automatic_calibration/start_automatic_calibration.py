@@ -4,7 +4,7 @@ import networkx as nx
 import yaml
 from controller import Controller
 
-from qililab.automatic_calibration.experiment import Experiment
+from qililab.automatic_calibration.calibration_node import CalibrationNode
 
 
 def build_graph_from_yaml(file_path):
@@ -21,7 +21,7 @@ def build_graph_from_yaml(file_path):
     G = nx.DiGraph()
 
     for node_id, node_data in data.items():
-        node = Experiment(node_id, node_data["attribute1"], node_data["attribute2"])
+        node = CalibrationNode(node_id, node_data["attribute1"], node_data["attribute2"])
         G.add_node(node)
 
         for connection in node_data["connections"]:

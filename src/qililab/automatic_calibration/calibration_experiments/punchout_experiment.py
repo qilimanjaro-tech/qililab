@@ -1,6 +1,6 @@
-from qililab.automatic_calibration.experiment import Experiment
+from qililab.automatic_calibration.calibration_node import CalibrationNode
 
 
-class PunchOutExperiment(Experiment):
+class PunchOutExperiment(CalibrationNode):
     def __init__(self) -> None:
         pass

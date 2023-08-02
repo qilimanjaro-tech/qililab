@@ -2,7 +2,7 @@ from qililab.automatic_calibration.calibration_experiments.qubit_spectroscopy_ex
     QubitSpectroscopyExperiment,
 )
 from qililab.automatic_calibration.calibration_experiments.rabi_experiment import RabiExperiment
-from qililab.automatic_calibration.experiment import Experiment
+from qililab.automatic_calibration.calibration_node import CalibrationNode
 
 
 class ExperimentFactory:
@@ -13,7 +13,7 @@ class ExperimentFactory:
     def __init__(self) -> None:
         pass
 
-    def get_experiment(self, experiment_type: str) -> Experiment:
+    def get_experiment(self, experiment_type: str) -> CalibrationNode:
         if experiment_type == "rabi":
             return RabiExperiment()
         elif experiment_type == "qubit_spectroscopy":

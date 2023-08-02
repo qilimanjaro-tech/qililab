@@ -32,11 +32,11 @@ from scipy.signal import find_peaks
 import qililab as ql
 import qililab.automatic_calibration.calibration_utils.calibration_utils as calibration_utils
 import qililab.automatic_calibration.calibration_utils.yaml_editor as ye
-from qililab.automatic_calibration.experiment import Experiment
+from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.experiment.portfolio.fitting_models import Cos as CosModel
 
 
-class RabiExperiment(Experiment):
+class RabiExperiment(CalibrationNode):
     def __init__(self) -> None:
         pass
 
