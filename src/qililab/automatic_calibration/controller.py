@@ -1,9 +1,11 @@
 import networkx as nx
-from qililab.automatic_calibration.calibration_utils.experiment_factory import ExperimentFactory
+
 from qililab.automatic_calibration.calibration_node import CalibrationNode
+from qililab.automatic_calibration.calibration_utils.experiment_factory import ExperimentFactory
 from qililab.platform.platform import Platform
 
-#TODO: remove experiment_factory probably
+
+# TODO: remove experiment_factory probably
 class Controller:
     """Class that controls the automatic calibration sequence.
 

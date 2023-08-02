@@ -1,20 +1,23 @@
 from abc import ABC, abstractmethod
+
 import calibration_utils.calibration_utils as cal_utils
+
 from qililab.automatic_calibration.calibration_utils.experiment_factory import ExperimentFactory
 from qililab.qprogram.qprogram import QProgram
 
-'''
+"""
 TODO: decide how fitting and plotting functions for each calibration node are determined. There are 2 options:
- 1. Define custom plotting and fitting functions for each experiments and pass them as arguments to 
+ 1. Define custom plotting and fitting functions for each experiments and pass them as arguments to
     the constructor of the CalibrationNode.
  2. Define general fitting and plotting functions that receive model and labels respectively as arguments.
-    Then the CalibrationNode constructor will receive model and labels as arguments and pass them as arguments to the 
+    Then the CalibrationNode constructor will receive model and labels as arguments and pass them as arguments to the
     fitting and plotting functions.
- ''' 
- 
-'''
+ """
+
+"""
 TODO: add docstrings for latest changes.
-'''
+"""
+
 
 class CalibrationNode(ABC):
     """
@@ -34,7 +37,17 @@ class CalibrationNode(ABC):
                                             gets the same outcome as during the last calibration that was run. Default value is 10.
     """
 
-    def __init__(self, node_id: str, qprogram: QProgram, fitting_model, plotting_labels: dict, qubit: int, parameters: dict, data_validation_threshold: float, number_of_random_datapoints: int = 10):
+    def __init__(
+        self,
+        node_id: str,
+        qprogram: QProgram,
+        fitting_model,
+        plotting_labels: dict,
+        qubit: int,
+        parameters: dict,
+        data_validation_threshold: float,
+        number_of_random_datapoints: int = 10,
+    ):
         self._parameters = parameters
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
@@ -97,19 +110,18 @@ class CalibrationNode(ABC):
         Args:
             analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True.
             manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
-        """       
-        user_approves_plot = 'n'        
-        while(user_approves_plot == 'n'):
-            
+        """
+        user_approves_plot = "n"
+        while user_approves_plot == "n":
             # Compile and run the QProgram. TODO: add this once qprogram compiler is in main.
-        
+
             if analyze:
                 # Call the general analysis function with the appropriate model, or the custom one (no need to specify the model there, it will already be hardcoded).
                 self.analyze()
-                
-            # Plot the results. 
+
+            # Plot the results.
             # Show the plot.
             if manual_check:
                 user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
-            else: 
-                user_approves_plot = 'y'
+            else:
+                user_approves_plot = "y"
