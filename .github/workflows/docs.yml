@@ -34,5 +34,4 @@ jobs:
         - uses: ammaraskar/sphinx-action@master
           with:
             docs-folder: "docs/"
-            pre-build-command: "git config --global url.'https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com'.insteadOf 'https://github.com' & python -m pip install ."
-            build-command: "sphinx-build -W -b html . _build"
+            # build-command: "sphinx-build -W -b html . _build"
