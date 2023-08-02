@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.drivers.instruments.era_synth
    qililab.drivers.instruments.keithley
@@ -22,7 +23,6 @@ qililab.drivers.instruments.instrument\_factory module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

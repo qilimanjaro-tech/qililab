@@ -36,7 +36,6 @@ qililab.circuit.operations.pulse\_operations.square module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

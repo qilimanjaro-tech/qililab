@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.platform.components
 
@@ -42,7 +43,6 @@ qililab.platform.platform\_manager\_yaml module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

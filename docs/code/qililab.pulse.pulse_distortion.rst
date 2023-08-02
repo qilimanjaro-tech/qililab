@@ -36,7 +36,6 @@ qililab.pulse.pulse\_distortion.pulse\_distortion module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

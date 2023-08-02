@@ -36,7 +36,6 @@ qililab.circuit.operations.special\_operations.wait module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

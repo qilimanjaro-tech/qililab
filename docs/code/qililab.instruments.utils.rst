@@ -28,7 +28,6 @@ qililab.instruments.utils.loader module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

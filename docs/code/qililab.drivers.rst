@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.drivers.instruments
    qililab.drivers.interfaces
@@ -19,7 +20,6 @@ qililab.drivers.parameters module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

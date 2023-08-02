@@ -68,7 +68,6 @@ qililab.result.qblox\_results.scope\_data module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

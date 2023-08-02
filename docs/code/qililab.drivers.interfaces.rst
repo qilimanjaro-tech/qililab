@@ -52,7 +52,6 @@ qililab.drivers.interfaces.voltage\_source module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

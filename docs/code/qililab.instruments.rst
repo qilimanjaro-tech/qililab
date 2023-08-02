@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.instruments.agilent
    qililab.instruments.awg_settings
@@ -81,7 +82,6 @@ qililab.instruments.voltage\_source module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

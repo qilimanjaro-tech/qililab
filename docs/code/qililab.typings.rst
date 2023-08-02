@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.typings.instruments
 
@@ -50,7 +51,6 @@ qililab.typings.yaml\_type module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

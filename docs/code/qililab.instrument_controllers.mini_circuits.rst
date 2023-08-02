@@ -12,7 +12,6 @@ qililab.instrument\_controllers.mini\_circuits.mini\_circuits\_controller module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

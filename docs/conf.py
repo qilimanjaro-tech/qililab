@@ -25,7 +25,8 @@ release = qililab.__version__
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx_design",
-    "sphinx_mdinclude",
+    "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
+    "sphinx.ext.napoleon",  # converts Google docstrings into rst
     # "sphinxawesome_theme.docsearch",  # TODO: Uncomment this when access to DocSearch!
     "sphinxawesome_theme.highlighting",
 ]
@@ -34,6 +35,10 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
 source_suffix = [".rst", ".md"]
 pygments_style = "emacs"
+
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -44,7 +44,6 @@ qililab.chip.nodes.resonator module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

@@ -68,7 +68,6 @@ qililab.instruments.qblox.qblox\_s4g module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

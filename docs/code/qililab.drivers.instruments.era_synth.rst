@@ -12,7 +12,6 @@ qililab.drivers.instruments.era\_synth.era\_synth\_plus module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

@@ -84,7 +84,6 @@ qililab.qprogram.operations.wait module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

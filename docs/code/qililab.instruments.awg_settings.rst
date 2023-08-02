@@ -44,7 +44,6 @@ qililab.instruments.awg\_settings.typings module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

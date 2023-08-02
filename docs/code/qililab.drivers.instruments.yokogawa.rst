@@ -12,7 +12,6 @@ qililab.drivers.instruments.yokogawa.yokogawa\_gs200 module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

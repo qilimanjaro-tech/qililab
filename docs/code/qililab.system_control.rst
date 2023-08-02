@@ -28,7 +28,6 @@ qililab.system\_control.system\_control module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

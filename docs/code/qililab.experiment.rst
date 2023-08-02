@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.experiment.portfolio
 
@@ -26,7 +27,6 @@ qililab.experiment.experiment module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

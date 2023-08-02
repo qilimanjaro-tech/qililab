@@ -12,7 +12,6 @@ qililab.circuit.converters.qili\_qasm\_converter module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

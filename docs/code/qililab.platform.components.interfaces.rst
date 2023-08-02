@@ -12,7 +12,6 @@ qililab.platform.components.interfaces.bus module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

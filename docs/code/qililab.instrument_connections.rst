@@ -28,7 +28,6 @@ qililab.instrument\_connections.usb\_connection module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

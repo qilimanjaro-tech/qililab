@@ -12,7 +12,6 @@ qililab.instruments.keysight.e5080b\_vna module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

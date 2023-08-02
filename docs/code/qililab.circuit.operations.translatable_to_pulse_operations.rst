@@ -44,7 +44,6 @@ qililab.circuit.operations.translatable\_to\_pulse\_operations.translatable\_to\
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

@@ -12,7 +12,6 @@ qililab.instrument\_controllers.rohde\_schwarz.sgs100a\_controller module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

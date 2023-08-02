@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.instrument_controllers.keithley
    qililab.instrument_controllers.mini_circuits
@@ -47,7 +48,6 @@ qililab.instrument\_controllers.single\_instrument\_controller module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

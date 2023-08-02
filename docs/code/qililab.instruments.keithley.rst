@@ -12,7 +12,6 @@ qililab.instruments.keithley.keithley\_2600 module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

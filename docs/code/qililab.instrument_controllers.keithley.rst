@@ -12,7 +12,6 @@ qililab.instrument\_controllers.keithley.keithley\_2600\_controller module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

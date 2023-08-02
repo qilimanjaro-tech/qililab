@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.pulse.hardware_gates
    qililab.pulse.pulse_distortion
@@ -52,7 +53,6 @@ qililab.pulse.pulse\_schedule module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

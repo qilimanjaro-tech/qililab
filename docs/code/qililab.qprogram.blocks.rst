@@ -28,7 +28,6 @@ qililab.qprogram.blocks.loop module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

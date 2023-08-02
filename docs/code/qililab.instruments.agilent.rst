@@ -12,7 +12,6 @@ qililab.instruments.agilent.e5071b\_vna module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

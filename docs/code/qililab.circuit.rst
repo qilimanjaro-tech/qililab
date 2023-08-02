@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.circuit.converters
    qililab.circuit.nodes
@@ -36,7 +37,6 @@ qililab.circuit.operation\_factory module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

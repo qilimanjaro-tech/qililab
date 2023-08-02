@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.platform.components.interfaces
 
@@ -66,7 +67,6 @@ qililab.platform.components.schema module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

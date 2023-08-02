@@ -52,7 +52,6 @@ qililab.experiment.portfolio.t2echo module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

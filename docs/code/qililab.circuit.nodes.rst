@@ -28,7 +28,6 @@ qililab.circuit.nodes.operation\_node module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

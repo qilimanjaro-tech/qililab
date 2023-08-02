@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.circuit.operations.pulse_operations
    qililab.circuit.operations.special_operations
@@ -20,7 +21,6 @@ qililab.circuit.operations.operation module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

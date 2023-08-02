@@ -12,7 +12,6 @@ qililab.drivers.instruments.rohde\_schwarz.sgs100a module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

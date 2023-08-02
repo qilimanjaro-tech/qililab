@@ -12,7 +12,6 @@ qililab.instruments.mini\_circuits.attenuator module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

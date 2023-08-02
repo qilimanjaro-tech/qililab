@@ -12,7 +12,6 @@ qililab.exceptions.data\_unavailable module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.result.qblox_results
 
@@ -66,7 +67,6 @@ qililab.result.vna\_result module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    qililab.qprogram.blocks
    qililab.qprogram.operations
@@ -27,7 +28,6 @@ qililab.qprogram.variable module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

@@ -52,7 +52,6 @@ qililab.pulse.pulse\_shape.snz module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

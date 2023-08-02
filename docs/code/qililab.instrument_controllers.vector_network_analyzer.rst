@@ -28,7 +28,6 @@ qililab.instrument\_controllers.vector\_network\_analyzer.vector\_network\_analy
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

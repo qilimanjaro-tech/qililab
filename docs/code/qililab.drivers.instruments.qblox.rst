@@ -44,7 +44,6 @@ qililab.drivers.instruments.qblox.spi\_rack module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

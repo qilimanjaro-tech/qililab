@@ -36,7 +36,6 @@ qililab.instrument\_controllers.qblox.qblox\_spi\_rack\_controller module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

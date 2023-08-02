@@ -12,7 +12,6 @@ qililab.instrument\_controllers.utils.instrument\_controller\_factory module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

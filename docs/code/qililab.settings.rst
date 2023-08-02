@@ -20,7 +20,6 @@ qililab.settings.runcard\_schema module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 
