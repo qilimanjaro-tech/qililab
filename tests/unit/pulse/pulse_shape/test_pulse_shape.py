@@ -8,9 +8,9 @@ from qililab.typings.enums import PulseShapeSettingsName
 from qililab.utils import Factory
 
 
-@pytest.fixture(
-    name="pulse_shape",
-    params=[
+@pytest.mark.parametrize(
+    "pulse_shape",
+    [
         Rectangular(),
         Cosine(),
         Cosine(lambda_2=0.3),
@@ -19,11 +19,6 @@ from qililab.utils import Factory
         SNZ(b=0.1, t_phi=2),
     ],
 )
-def fixture_pulse_shape(request: pytest.FixtureRequest) -> PulseShape:
-    """Return Rectangular object."""
-    return request.param  # type: ignore
-
-
 class TestPulseShape:
     """Unit tests checking the PulseShape attributes and methods"""
 
