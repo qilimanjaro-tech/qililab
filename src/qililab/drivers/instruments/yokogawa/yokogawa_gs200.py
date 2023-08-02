@@ -4,9 +4,11 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200 as QCodesGS200
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS200Monitor
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 
+@InstrumentDriverFactory.register
 class GS200(QCodesGS200):
     """
     Qililab's driver for the Yokogawa GS200 acting as VoltageSource and CurrentSource
