@@ -1,22 +1,57 @@
-.. Qililab documentation master file, created by
-   sphinx-quickstart on Wed Aug  2 12:03:19 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Qililab Documentation
+=====================
 
-Welcome to Qililab's documentation!
-===================================
+.. rst-class:: lead grey-text ml-2
+
+    :Release: |release|
+
+.. rst-class:: lead center
+
+    Qililab is amazing!
+
+----
+
+Get started
+-----------
+
+.. note::
+    This documentation is currently under construction.
+
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   source/modules
 
 
+Explore
+-------
 
-Indices and tables
-==================
+.. tab-set::
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   .. tab-item:: How To
+
+      In the **How-to** section, you can learn more about using and customizing the theme.
+
+      .. toctree::
+         :caption: How To
+         :titlesonly:
+
+         how-to/install/index
+         how-to/add/index
+         how-to/configure/index
+         how-to/customize/index
+         how-to/build-your-own/index
+
+   .. tab-item:: Demo
+
+      The **Demo** section shows how various elements will look like.
+
+      .. toctree::
+         :caption: Demo
+         :glob:
+         :titlesonly:
+
+         demo/*
