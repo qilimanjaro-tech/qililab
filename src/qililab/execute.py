@@ -1,7 +1,7 @@
 from qibo.models import Circuit
 
 import qililab as ql
-from qililab.experiment.circuit_experiment import Experiment
+from qililab.experiment.experiment import Experiment
 
 
 def execute(circuit: Circuit, runcard_name: str, nshots=1):
