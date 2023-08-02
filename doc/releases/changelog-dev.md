@@ -7,6 +7,10 @@ This document contains the changes of the current release.
 - Add a new Factory for the InstrumentDrivers and registered the current ones
   [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
 
+- Add interfaces and drivers for Flux bus:
+  This PR brings the qililab implementation of the Flux bus driver and unittests.
+  [#469](https://github.com/qilimanjaro-tech/qililab/pull/469)
+
 - Add ReadoutBus class.
   [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
 
