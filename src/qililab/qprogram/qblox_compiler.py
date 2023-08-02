@@ -100,6 +100,7 @@ class QBloxCompiler:
 
         traverse(self._qprogram._program)
         for bus in self._buses:
+            self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
             self._buses[bus].qpy_sequence._program.compile()
 
         return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
