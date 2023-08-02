@@ -34,7 +34,7 @@ def fixture_connected_experiment(
     mock_pulsar: MagicMock,
     experiment_all_platforms: BaseExperiment,
 ):
-    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
+    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `BaseExperiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
     experiment_all_platforms.connect()
@@ -57,7 +57,7 @@ def fixture_connected_nested_experiment(
     mock_pulsar: MagicMock,
     nested_experiment: BaseExperiment,
 ):
-    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
+    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `BaseExperiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
     nested_experiment.connect()
@@ -82,7 +82,7 @@ def fixture_sauron_platform() -> Platform:
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
-    """Return Experiment object."""
+    """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -107,7 +107,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
-    """Return Experiment object."""
+    """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -128,7 +128,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
 def fixture_experiment_reset(request: pytest.FixtureRequest):
-    """Return Experiment object."""
+    """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -150,7 +150,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="exp", params=experiment_params)
 def fixture_exp(request: pytest.FixtureRequest):
-    """Return Experiment object."""
+    """Return BaseExperiment object."""
     runcard, _ = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -189,7 +189,7 @@ def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sa
 
 
 class TestAttributes:
-    """Unit tests checking the Experiment attributes and methods"""
+    """Unit tests checking the BaseExperiment attributes and methods"""
 
     def test_platform_attributes(self, exp: BaseExperiment):
         """Test platform attributes after initialization."""
@@ -203,7 +203,7 @@ class TestAttributes:
 
 
 class TestProperties:
-    """Test the properties of the Experiment class."""
+    """Test the properties of the BaseExperiment class."""
 
     def test_software_average_property(self, exp: BaseExperiment):
         """Test software_average property."""
@@ -219,22 +219,22 @@ class TestProperties:
 
 
 class TestMethods:
-    """Test the methods of the Experiment class."""
+    """Test the methods of the BaseExperiment class."""
 
     def test_connect(self, experiment_all_platforms: BaseExperiment):
-        """Test the ``connect`` method of the Experiment class."""
+        """Test the ``connect`` method of the BaseExperiment class."""
         with patch("qililab.platform.platform.Platform.connect") as mock_connect:
             experiment_all_platforms.connect()
             mock_connect.assert_called_once()
 
     def test_initial_setup(self, experiment_all_platforms: BaseExperiment):
-        """Test the ``initial_setup`` method of the Experiment class."""
+        """Test the ``initial_setup`` method of the BaseExperiment class."""
         with patch("qililab.platform.platform.Platform.initial_setup") as mock_initial_setup:
             experiment_all_platforms.initial_setup()
             mock_initial_setup.assert_called_once()
 
     def test_build_execution(self, exp: BaseExperiment):
-        """Test the ``build_execution`` method of the Experiment class."""
+        """Test the ``build_execution`` method of the BaseExperiment class."""
         # Check that attributes don't exist
         assert not hasattr(exp, "execution_manager")
         assert not hasattr(exp, "results")
@@ -250,7 +250,7 @@ class TestMethods:
         assert not hasattr(exp, "_remote_id")
 
     def test_run_without_data_path_raises_error(self, exp: BaseExperiment):
-        """Test that the ``build_execution`` method of the ``Experiment`` class raises an error when no DATA
+        """Test that the ``build_execution`` method of the ``BaseExperiment`` class raises an error when no DATA
         path is specified."""
         old_data = os.environ.get(DATA)
         del os.environ[DATA]
@@ -264,7 +264,7 @@ class TestMethods:
         """
         THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
 
-        Test the ``run`` method of the Experiment class, this is a temporary test until ``run``function of the vna is implemented.
+        Test the ``run`` method of the BaseExperiment class, this is a temporary test until ``run``function of the vna is implemented.
         """
         vna_experiment.build_execution()
         vna_experiment.platform.connection = MagicMock()  # mock connection
@@ -304,12 +304,12 @@ class TestMethods:
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             exp.run()
 
-    @patch("qililab.experiment.experiment.Experiment.remote_save_experiment", autospec=True)
+    @patch("qililab.experiment.experiment.BaseExperiment.remote_save_experiment", autospec=True)
     def test_run_with_vna_result_remote_save(self, mock_remote_save: MagicMock, vna_experiment: BaseExperiment):
         """
         THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
 
-        Test the ``run`` method with remote save of the Experiment class, this is a temporary test until ``run``function of the vna is implemented.
+        Test the ``run`` method with remote save of the BaseExperiment class, this is a temporary test until ``run``function of the vna is implemented.
         """
         vna_experiment.build_execution()
         vna_experiment.platform.connection = MagicMock()  # mock connection
@@ -346,7 +346,7 @@ class TestMethods:
         assert len(vna_experiment.results.results) > 0
 
     def test_turn_on_instruments(self, connected_experiment: BaseExperiment):
-        """Test the ``turn_on_instruments`` method of the Experiment class."""
+        """Test the ``turn_on_instruments`` method of the BaseExperiment class."""
         connected_experiment.build_execution()
         with patch("qililab.platform.platform.Platform.turn_on_instruments") as mock_turn_on:
             connected_experiment.turn_on_instruments()
@@ -358,7 +358,7 @@ class TestMethods:
             exp.turn_on_instruments()
 
     def test_turn_off_instruments(self, connected_experiment: BaseExperiment):
-        """Test the ``turn_off_instruments`` method of the Experiment class."""
+        """Test the ``turn_off_instruments`` method of the BaseExperiment class."""
         connected_experiment.build_execution()
         with patch("qililab.platform.platform.Platform.turn_off_instruments") as mock_turn_off:
             connected_experiment.turn_off_instruments()
@@ -370,7 +370,7 @@ class TestMethods:
             exp.turn_off_instruments()
 
     def test_disconnect(self, exp: BaseExperiment):
-        """Test the ``disconnect`` method of the Experiment class."""
+        """Test the ``disconnect`` method of the BaseExperiment class."""
         with patch("qililab.platform.platform.Platform.disconnect") as mock_disconnect:
             exp.disconnect()
             mock_disconnect.assert_called_once()
@@ -400,7 +400,7 @@ class TestMethods:
 
     def test_str_method(self, experiment_all_platforms: BaseExperiment):
         """Test __str__ method."""
-        expected = f"Experiment {experiment_all_platforms.options.name}:\n{str(experiment_all_platforms.platform)}\n{str(experiment_all_platforms.options)}"
+        expected = f"BaseExperiment {experiment_all_platforms.options.name}:\n{str(experiment_all_platforms.platform)}\n{str(experiment_all_platforms.options)}"
         test_str = str(experiment_all_platforms)
         assert expected == test_str
 

@@ -49,7 +49,7 @@ def fixture_simulated_platform(mock_evolution: MagicMock) -> Platform:
 
 @pytest.fixture(name="nested_experiment", params=experiment_params)
 def fixture_nested_experiment(request: pytest.FixtureRequest):
-    """Return a nested CircuitExperiment object."""
+    """Return a nested Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -76,7 +76,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="experiment", params=experiment_params)
 def fixture_experiment(request: pytest.FixtureRequest):
-    """Return CircuitExperiment object."""
+    """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -102,7 +102,7 @@ def fixture_platform() -> Platform:
 
 @pytest.fixture(name="experiment_all_platforms", params=experiment_params)
 def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
-    """Return CircuitExperiment object."""
+    """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
@@ -118,7 +118,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
-@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
+@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MinisDriver", autospec=True)
 def fixture_connected_experiment(
     mock_mini_circuits: MagicMock,
     mock_keithley: MagicMock,
@@ -126,7 +126,7 @@ def fixture_connected_experiment(
     mock_pulsar: MagicMock,
     experiment_all_platforms: Experiment,
 ):
-    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `CircuitExperiment`
+    """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
     experiment_all_platforms.connect()
@@ -139,7 +139,7 @@ def fixture_connected_experiment(
 
 @pytest.fixture(name="experiment_reset", params=experiment_params)
 def fixture_experiment_reset(request: pytest.FixtureRequest):
-    """Return CircuitExperiment object."""
+    """Return Experiment object."""
     runcard, circuits = request.param  # type: ignore
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
@@ -163,15 +163,15 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
-    """Return CircuitExperiment object."""
+    """Return Experiment object."""
     return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
 class TestMethods:
-    """Test the methods of the CircuitExperiment class."""
+    """Test the methods of the Experiment class."""
 
     def test_build_execution(self, experiment: Experiment):
-        """Test the ``build_execution`` method of the CircuitExperiment class."""
+        """Test the ``build_execution`` method of the Experiment class."""
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
         # Check that attributes don't exist
@@ -209,7 +209,7 @@ class TestMethods:
             )  # additional 4ns for the initial wait_sync
 
     def test_compile_raises_error(self, experiment: Experiment):
-        """Test that the ``compile`` method of the ``CircuitExperiment`` class raises an error when ``build_execution`` is
+        """Test that the ``compile`` method of the ``Experiment`` class raises an error when ``build_execution`` is
         not called."""
         with pytest.raises(ValueError, match="Please build the execution_manager before compilation"):
             experiment.compile()
@@ -287,14 +287,14 @@ class TestMethods:
         assert experiment.circuits[0].get_parameters()[0][0] == 123
 
     def test_from_dict_method_loop(self, nested_experiment: Experiment):
-        """Test from_dict method with a CircuitExperiment that contains a nested loop."""
+        """Test from_dict method with a Experiment that contains a nested loop."""
         dictionary = nested_experiment.to_dict()
         experiment_2 = Experiment.from_dict(dictionary)
         assert isinstance(experiment_2, Experiment)
 
 
 class TestAttributes:
-    """Unit tests checking the CircuitExperiment attributes and methods"""
+    """Unit tests checking the Experiment attributes and methods"""
 
     def test_platform_attributes(self, experiment: Experiment):
         """Test platform attributes after initialization."""
