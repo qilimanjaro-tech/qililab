@@ -1,3 +1,4 @@
+"""Unittest for DriveBus class"""
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,7 +27,6 @@ QUBIT = 0
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
-
     pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
     pulse = Pulse(
         amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
@@ -43,8 +43,8 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
 class MockQcmQrmRF(DummyInstrument):
     """Mocks the QcmQrmRF class."""
-
     def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
+        """Init function"""
         super().__init__(name=name, gates=["dac1"])
 
         channels = ["out0", "out1"]
@@ -96,7 +96,7 @@ def fixture_sequencer() -> SequencerQCM:
 def fixture_local_oscillator() -> QcmQrmRfLo:
     """Return QcmQrmRfLo instance"""
     channel = "out0"
-    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
+    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qrm")
 
     return QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
 
@@ -105,7 +105,7 @@ def fixture_local_oscillator() -> QcmQrmRfLo:
 def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
-    att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
+    att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qrm")
 
     return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
@@ -122,7 +122,6 @@ class TestDriveBus:
 
     def teardown_method(self):
         """Close all instruments after each test has been run"""
-
         Instrument.close_all()
 
     def test_init(self, drive_bus: DriveBus):

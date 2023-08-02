@@ -74,6 +74,7 @@ class DriveBus(BusInterface):
         Args:
             instrument_name (str): Name of the instrument to get parameter from
             param (str): Parameter's name.
+
         Returns:
             value (Any): Parameter's value
         """
