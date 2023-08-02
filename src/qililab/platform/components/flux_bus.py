@@ -9,7 +9,7 @@ from qililab.pulse import PulseBusSchedule
 class FluxBus(BusInterface):
     """Qililab's driver for Flux Bus"""
 
-    def __init__(self, awg: AWG, source: CurrentSource | VoltageSource, **kwargs):
+    def __init__(self, awg: AWG, source: CurrentSource | VoltageSource):
         """Initialise the bus.
 
         Args:
