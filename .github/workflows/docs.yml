@@ -46,4 +46,4 @@ jobs:
 
         - name: Build docs
           run: |
-            sphinx-build -W -b html docs docs/_build
+            sphinx-build -W -b html docs docs/_build --keep-going
