@@ -22,6 +22,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 
+
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
     """Returns a gaussian pulse bus schedule"""
 
@@ -41,6 +42,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 
 class MockQcodesS4gD5aDacChannels(DummyChannel):
     """Mock class for Qcodes S4gDacChannel and D5aDacChannel"""
+
     def __init__(self, parent, name, dac, **kwargs):
         """Mock init method"""
         super().__init__(parent=parent, name=name, channel="", **kwargs)
