@@ -33,6 +33,7 @@ jobs:
 
         - name: Install library
           run: |
+            git config --global url."https://${{secrets.CUSTOM_GITHUB_USER}}:${{secrets.CUSTOM_GITHUB_TOKEN}}@github.com".insteadOf "https://github.com"
             python -m pip install .
 
         - uses: ammaraskar/sphinx-action@master
