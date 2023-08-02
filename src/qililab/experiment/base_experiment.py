@@ -289,10 +289,10 @@ class BaseExperiment:
                 self.build_execution()
 
     def to_dict(self):
-        """Convert Experiment into a dictionary.
+        """Convert BaseExperiment into a dictionary.
 
         Returns:
-            dict: Dictionary representation of the Experiment class.
+            dict: Dictionary representation of the BaseExperiment class.
         """
         return {
             RUNCARD.PLATFORM: self.platform.to_dict(),
@@ -301,10 +301,10 @@ class BaseExperiment:
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load Experiment from dictionary.
+        """Load BaseExperiment from dictionary.
 
         Args:
-            dictionary (dict): Dictionary description of an Experiment.
+            dictionary (dict): Dictionary description of an BaseExperiment.
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
@@ -317,11 +317,11 @@ class BaseExperiment:
 
     def __str__(self):
         """String representation of an experiment."""
-        return f"Experiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
+        return f"BaseExperiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
 
     @property
     def software_average(self):
-        """Experiment 'software_average' property.
+        """BaseExperiment 'software_average' property.
         Returns:
             int: settings.software_average.
         """
@@ -329,7 +329,7 @@ class BaseExperiment:
 
     @property
     def hardware_average(self):
-        """Experiment 'hardware_average' property.
+        """BaseExperiment 'hardware_average' property.
         Returns:
             int: settings.hardware_average.
         """
@@ -337,7 +337,7 @@ class BaseExperiment:
 
     @property
     def num_bins(self):
-        """Experiment `num_bins` property.
+        """BaseExperiment `num_bins` property.
         Returns
             int: settings.num_bins.
         """
@@ -345,7 +345,7 @@ class BaseExperiment:
 
     @property
     def repetition_duration(self):
-        """Experiment 'repetition_duration' property.
+        """BaseExperiment 'repetition_duration' property.
         Returns:
             int: settings.repetition_duration.
         """

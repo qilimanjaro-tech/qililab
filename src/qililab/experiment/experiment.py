@@ -204,10 +204,10 @@ class Experiment(BaseExperiment):
         )
 
     def to_dict(self):
-        """Convert CircuitExperiment into a dictionary.
+        """Convert Experiment into a dictionary.
 
         Returns:
-            dict: Dictionary representation of the CircuitExperiment class.
+            dict: Dictionary representation of the Experiment class.
         """
         exp_dict = super().to_dict()
         exp_dict[EXPERIMENT.CIRCUITS] = [circuit.to_qasm() for circuit in self.circuits]
@@ -216,10 +216,10 @@ class Experiment(BaseExperiment):
 
     @classmethod
     def from_dict(cls, dictionary: dict):
-        """Load CircuitExperiment from dictionary.
+        """Load Experiment from dictionary.
 
         Args:
-            dictionary (dict): Dictionary description of a CircuitExperiment.
+            dictionary (dict): Dictionary description of a Experiment.
         """
 
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
@@ -267,7 +267,7 @@ class Experiment(BaseExperiment):
         super().set_parameter(parameter=parameter, value=value, alias=alias, element=element, channel_id=channel_id)
 
     def __str__(self):
-        """String representation of a CircuitExperiment."""
+        """String representation of a Experiment."""
         exp_str = super().__str__()
         exp_str = f"{exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
         return exp_str
