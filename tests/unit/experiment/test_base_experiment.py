@@ -272,9 +272,9 @@ class TestMethods:
         assert not hasattr(vna_experiment, "results")
 
         mocks = ExitStack()
-        mock_open = mocks.enter_context(patch("qililab.experiment.experiment.open"))
-        mock_makedirs = mocks.enter_context(patch("qililab.experiment.experiment.os.makedirs"))
-        mock_plot = mocks.enter_context(patch("qililab.experiment.experiment.LivePlot"))
+        mock_open = mocks.enter_context(patch("qililab.experiment.base_experiment.open"))
+        mock_makedirs = mocks.enter_context(patch("qililab.experiment.base_experiment.os.makedirs"))
+        mock_plot = mocks.enter_context(patch("qililab.experiment.base_experiment.LivePlot"))
         mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
         mock_run = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.run"))
 
@@ -304,7 +304,7 @@ class TestMethods:
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment"):
             exp.run()
 
-    @patch("qililab.experiment.experiment.BaseExperiment.remote_save_experiment", autospec=True)
+    @patch("qililab.experiment.base_experiment.BaseExperiment.remote_save_experiment", autospec=True)
     def test_run_with_vna_result_remote_save(self, mock_remote_save: MagicMock, vna_experiment: BaseExperiment):
         """
         THIS TEST DOES NOT PROPERLY TEST THE METHOD IMPROVED ON NEXT PR
@@ -317,9 +317,9 @@ class TestMethods:
         assert not hasattr(vna_experiment, "results")
 
         mocks = ExitStack()
-        mock_open = mocks.enter_context(patch("qililab.experiment.experiment.open"))
-        mock_makedirs = mocks.enter_context(patch("qililab.experiment.experiment.os.makedirs"))
-        mock_plot = mocks.enter_context(patch("qililab.experiment.experiment.LivePlot"))
+        mock_open = mocks.enter_context(patch("qililab.experiment.base_experiment.open"))
+        mock_makedirs = mocks.enter_context(patch("qililab.experiment.base_experiment.os.makedirs"))
+        mock_plot = mocks.enter_context(patch("qililab.experiment.base_experiment.LivePlot"))
         mock_acq_res = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.acquire_result"))
         mock_run = mocks.enter_context(patch("qililab.execution.execution_manager.BusExecution.run"))
 

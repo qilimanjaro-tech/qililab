@@ -118,7 +118,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
 @patch("qililab.instrument_controllers.qblox.qblox_pulsar_controller.Pulsar", autospec=True)
 @patch("qililab.instrument_controllers.rohde_schwarz.sgs100a_controller.RohdeSchwarzSGS100A", autospec=True)
 @patch("qililab.instrument_controllers.keithley.keithley_2600_controller.Keithley2600Driver", autospec=True)
-@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MinisDriver", autospec=True)
+@patch("qililab.instrument_controllers.mini_circuits.mini_circuits_controller.MiniCircuitsDriver", autospec=True)
 def fixture_connected_experiment(
     mock_mini_circuits: MagicMock,
     mock_keithley: MagicMock,
@@ -362,10 +362,10 @@ class TestReset:
         assert mock_reset.call_count == 10
 
 
-@patch("qililab.experiment.experiment.open")
-@patch("qililab.experiment.experiment.yaml.safe_dump")
+@patch("qililab.experiment.base_experiment.open")
+@patch("qililab.experiment.base_experiment.yaml.safe_dump")
 @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
-@patch("qililab.experiment.experiment.os.makedirs")
+@patch("qililab.experiment.base_experiment.os.makedirs")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
