@@ -13,8 +13,7 @@ from qililab.typings.enums import AcquireTriggerMode, Category, InstrumentName, 
 class DummyAWG(AWGAnalogDigitalConverter):
     """Dummy AWG class."""
 
-    # pylint disable=unused-argument
-    def compile(
+    def compile(  # pylint disable=unused-argument
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:
         return []
