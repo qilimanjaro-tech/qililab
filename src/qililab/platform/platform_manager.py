@@ -22,7 +22,7 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
-        
+
         platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
         return Platform(runcard_schema=platform_schema, connection=connection)
 
