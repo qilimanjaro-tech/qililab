@@ -1,9 +1,9 @@
-.. qililab documentation master file, created by
-   sphinx-quickstart on Wed Aug  2 10:25:48 2023.
+.. Qililab documentation master file, created by
+   sphinx-quickstart on Wed Aug  2 12:03:19 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to qililab's documentation!
+Welcome to Qililab's documentation!
 ===================================
 
 .. toctree::
