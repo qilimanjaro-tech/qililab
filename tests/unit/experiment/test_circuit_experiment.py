@@ -14,7 +14,7 @@ from qpysequence import Sequence
 from qililab import build_platform
 from qililab.constants import RUNCARD, SCHEMA
 from qililab.execution import ExecutionManager
-from qililab.experiment.circuit_experiment import CircuitExperiment
+from qililab.experiment.circuit_experiment import Experiment
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.typings import InstrumentName, Parameter
@@ -69,7 +69,7 @@ def fixture_nested_experiment(request: pytest.FixtureRequest):
         loop=loop2,
     )
     options = ExperimentOptions(loops=[loop])
-    return CircuitExperiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
@@ -89,7 +89,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
         values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    return CircuitExperiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
@@ -109,7 +109,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
             platform = build_platform(name="flux_qubit")
             mock_load.assert_called()
             mock_open.assert_called()
-    experiment = CircuitExperiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
+    experiment = Experiment(platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits])
     mock_load.assert_called()
     return experiment
 
@@ -124,7 +124,7 @@ def fixture_connected_experiment(
     mock_keithley: MagicMock,
     mock_rs: MagicMock,
     mock_pulsar: MagicMock,
-    experiment_all_platforms: CircuitExperiment,
+    experiment_all_platforms: Experiment,
 ):
     """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `CircuitExperiment`
     instance."""
@@ -154,7 +154,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
         values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
     options = ExperimentOptions(loops=[loop])
-    experiment = CircuitExperiment(
+    experiment = Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
     mock_load.assert_called()
@@ -164,13 +164,13 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
 @pytest.fixture(name="simulated_experiment")
 def fixture_simulated_experiment(simulated_platform: Platform):
     """Return CircuitExperiment object."""
-    return CircuitExperiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
+    return Experiment(platform=simulated_platform, circuits=[simulated_experiment_circuit])
 
 
 class TestMethods:
     """Test the methods of the CircuitExperiment class."""
 
-    def test_build_execution(self, experiment: CircuitExperiment):
+    def test_build_execution(self, experiment: Experiment):
         """Test the ``build_execution`` method of the CircuitExperiment class."""
         # Check that the ``pulse_schedules`` attribute is empty
         assert len(experiment.pulse_schedules) == 0
@@ -190,7 +190,7 @@ class TestMethods:
         assert not hasattr(experiment, "_plot")
         assert not hasattr(experiment, "_remote_id")
 
-    def test_compile(self, experiment: CircuitExperiment):
+    def test_compile(self, experiment: Experiment):
         """Test the compile method of the ``Execution`` class."""
         experiment.build_execution()
         pulse_schedules = experiment.compile()
@@ -208,13 +208,13 @@ class TestMethods:
                 bus_schedule[0]._program.duration == experiment.hardware_average * experiment.repetition_duration + 4
             )  # additional 4ns for the initial wait_sync
 
-    def test_compile_raises_error(self, experiment: CircuitExperiment):
+    def test_compile_raises_error(self, experiment: Experiment):
         """Test that the ``compile`` method of the ``CircuitExperiment`` class raises an error when ``build_execution`` is
         not called."""
         with pytest.raises(ValueError, match="Please build the execution_manager before compilation"):
             experiment.compile()
 
-    def test_draw_method(self, connected_experiment: CircuitExperiment):
+    def test_draw_method(self, connected_experiment: Experiment):
         """Test draw method."""
         connected_experiment.build_execution()
 
@@ -241,62 +241,62 @@ class TestMethods:
 
         plt.close()
 
-    def test_draw_raises_error(self, experiment: CircuitExperiment):
+    def test_draw_raises_error(self, experiment: Experiment):
         """Test that the ``draw`` method raises an error if ``build_execution`` has not been called."""
         with pytest.raises(ValueError, match="Please build the execution_manager before drawing the experiment"):
             experiment.draw()
 
-    def test_draw_method_with_one_bus(self, experiment: CircuitExperiment):
+    def test_draw_method_with_one_bus(self, experiment: Experiment):
         """Test draw method with only one measurement gate."""
         experiment.build_execution()
         experiment.draw()
 
-    def test_str_method(self, experiment: CircuitExperiment):
+    def test_str_method(self, experiment: Experiment):
         """Test __str__ method."""
         expected = f"Experiment {experiment.options.name}:\n{str(experiment.platform)}\n{str(experiment.options)}\n{str(experiment.circuits)}\n{str(experiment.pulse_schedules)}\n"
         test_str = str(experiment)
         assert expected == test_str
 
-    def test_process_loops_raises_without_idx(self, experiment: CircuitExperiment):
+    def test_process_loops_raises_without_idx(self, experiment: Experiment):
         """Test that the _process_loops method raises an exception when called without 'idx' parameter"""
         with pytest.raises(ValueError, match="Parameter 'idx' must be specified"):
             loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 10))]
             queue: Queue = Queue()
             experiment._process_loops(loops=loops, queue=queue, depth=0)
 
-    def test_execute_recursive_loops_raises_without_idx(self, experiment: CircuitExperiment):
+    def test_execute_recursive_loops_raises_without_idx(self, experiment: Experiment):
         """Test that the _execute_recursive_loops method raises an exception when called without 'idx' parameter"""
         with pytest.raises(ValueError, match="Parameter 'idx' must be specified"):
             loops = [Loop(alias="foo", parameter=Parameter.POWER, values=np.linspace(0, 10, 10))]
             queue: Queue = Queue()
             experiment._execute_recursive_loops(loops=loops, queue=queue)
 
-    def test_run_raises_without_execution_manager(self, experiment: CircuitExperiment):
+    def test_run_raises_without_execution_manager(self, experiment: Experiment):
         """Test the run method raises an exception if the execution manager was not previously built"""
         with pytest.raises(ValueError, match="Please build the execution_manager before running an experiment."):
             experiment.run()
 
-    def test_set_parameter_method_with_gate_value(self, experiment: CircuitExperiment):
+    def test_set_parameter_method_with_gate_value(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate."""
         experiment.set_parameter(alias="X(0)", parameter=Parameter.DURATION, value=123)
         assert experiment.platform.settings.get_gate(name="X", qubits=0).duration == 123
 
-    def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: CircuitExperiment):
+    def test_set_parameter_method_with_gate_parameter_in_circuit(self, experiment: Experiment):
         """Test the ``set_parameter`` method with a parameter of a gate in circuit."""
         experiment.set_parameter(alias="0", parameter=Parameter.GATE_PARAMETER, value=123)
         assert experiment.circuits[0].get_parameters()[0][0] == 123
 
-    def test_from_dict_method_loop(self, nested_experiment: CircuitExperiment):
+    def test_from_dict_method_loop(self, nested_experiment: Experiment):
         """Test from_dict method with a CircuitExperiment that contains a nested loop."""
         dictionary = nested_experiment.to_dict()
-        experiment_2 = CircuitExperiment.from_dict(dictionary)
-        assert isinstance(experiment_2, CircuitExperiment)
+        experiment_2 = Experiment.from_dict(dictionary)
+        assert isinstance(experiment_2, Experiment)
 
 
 class TestAttributes:
     """Unit tests checking the CircuitExperiment attributes and methods"""
 
-    def test_platform_attributes(self, experiment: CircuitExperiment):
+    def test_platform_attributes(self, experiment: Experiment):
         """Test platform attributes after initialization."""
         assert isinstance(experiment.platform, Platform)
         assert isinstance(experiment.circuits, list)
@@ -330,7 +330,7 @@ class TestReset:
         mock_keithley: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
-        experiment: CircuitExperiment,  # pylint: disable=unused-argument
+        experiment: Experiment,  # pylint: disable=unused-argument
     ):
         """Test set reset to false method."""
         # add dynamically created attributes
@@ -352,7 +352,7 @@ class TestReset:
         mock_keithley: MagicMock,
         mock_rs: MagicMock,
         mock_pulsar: MagicMock,
-        experiment_reset: CircuitExperiment,  # pylint: disable=unused-argument
+        experiment_reset: Experiment,  # pylint: disable=unused-argument
     ):
         """Test set reset to false method."""
         # add dynamically created attributes
@@ -375,7 +375,7 @@ class TestSimulatedExecution:
         mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
-        simulated_experiment: CircuitExperiment,
+        simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
 
@@ -397,7 +397,7 @@ class TestSimulatedExecution:
         mock_dump: MagicMock,
         mock_ssc_run: MagicMock,
         mock_makedirs: MagicMock,
-        simulated_experiment: CircuitExperiment,
+        simulated_experiment: Experiment,
     ):
         """Test execute method with simulated qubit"""
 

@@ -24,7 +24,7 @@ from qililab.utils.loop import Loop
 from qililab.utils.util_loops import compute_shapes_from_loops
 
 
-class Experiment:
+class BaseExperiment:
     """Experiment class"""
 
     # Specify the types of the attributes that are not defined during initialization
@@ -310,7 +310,7 @@ class Experiment:
         platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
 
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
-        return Experiment(
+        return BaseExperiment(
             platform=platform,
             options=experiment_options,
         )

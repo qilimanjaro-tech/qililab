@@ -10,7 +10,7 @@ from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment import Experiment
+from qililab.experiment import BaseExperiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -22,7 +22,7 @@ from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
 
 
-class CircuitExperiment(Experiment):
+class Experiment(BaseExperiment):
     """CircuitExperiment class"""
 
     def __init__(
@@ -234,7 +234,7 @@ class CircuitExperiment(Experiment):
             else []
         )
         experiment_options = ExperimentOptions.from_dict(dictionary[EXPERIMENT.OPTIONS])
-        return CircuitExperiment(
+        return Experiment(
             platform=platform,
             circuits=circuits,
             pulse_schedules=pulse_schedules,
