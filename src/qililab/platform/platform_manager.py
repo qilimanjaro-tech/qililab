@@ -22,11 +22,9 @@ class PlatformManager(ABC, metaclass=SingletonABC):
             Platform: Platform object describing the setup used.
         """
         logger.info("Building platform")
-        if new_drivers:
-            pass
-        else:
-            platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
-            return Platform(runcard_schema=platform_schema, connection=connection)
+        
+        platform_schema = RuncardSchema(**self._load_platform_settings(platform_name=platform_name))
+        return Platform(runcard_schema=platform_schema, connection=connection)
 
     def dump(self, platform: Platform):
         """Dump all platform information into a YAML file.
