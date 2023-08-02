@@ -10,13 +10,14 @@ import sys
 
 from sphinxawesome_theme.postprocess import Icons  # pylint: disable=import-error
 
-import qililab
-
 sys.path.insert(0, os.path.abspath(".."))
 
 project = "Qililab"
 copyright = "2023, Qilimanjaro"
 author = "Qilimanjaro"
+
+import qililab  # pylint: disable=wrong-import-position  # noqa: E402
+
 release = qililab.__version__
 
 # -- General configuration ---------------------------------------------------
