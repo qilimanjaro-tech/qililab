@@ -22,10 +22,25 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 
+def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
+    """Returns a gaussian pulse bus schedule"""
+
+    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
+    pulse = Pulse(
+        amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
+        phase=PULSE_PHASE,
+        duration=PULSE_DURATION,
+        frequency=PULSE_FREQUENCY,
+        pulse_shape=pulse_shape,
+    )
+    pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
+    timeline = [pulse_event for _ in range(number_pulses)]
+
+    return PulseBusSchedule(timeline=timeline, port=0)
+
 
 class MockQcodesS4gD5aDacChannels(DummyChannel):
     """Mock class for Qcodes S4gDacChannel and D5aDacChannel"""
-
     def __init__(self, parent, name, dac, **kwargs):
         """Mock init method"""
         super().__init__(parent=parent, name=name, channel="", **kwargs)
@@ -72,23 +87,6 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
             self.voltage (float): The output voltage reported by the hardware
         """
         return self.voltage
-
-
-def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
-    """Returns a gaussian pulse bus schedule"""
-
-    pulse_shape = Gaussian(num_sigmas=PULSE_SIGMAS)
-    pulse = Pulse(
-        amplitude=(-1 * PULSE_AMPLITUDE) if negative_amplitude else PULSE_AMPLITUDE,
-        phase=PULSE_PHASE,
-        duration=PULSE_DURATION,
-        frequency=PULSE_FREQUENCY,
-        pulse_shape=pulse_shape,
-    )
-    pulse_event = PulseEvent(pulse=pulse, start_time=start_time)
-    timeline = [pulse_event for _ in range(number_pulses)]
-
-    return PulseBusSchedule(timeline=timeline, port=0)
 
 
 @pytest.fixture(name="pulse_bus_schedule")
