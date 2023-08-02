@@ -3,13 +3,7 @@ from unittest.mock import MagicMock
 
 from qcodes import Instrument
 
-from qililab.drivers.instruments.qblox.spi_rack import (
-    D5aDacChannel,
-    D5aModule,
-    S4gDacChannel,
-    S4gModule,
-    SpiRack,
-)
+from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, D5aModule, S4gDacChannel, S4gModule, SpiRack
 
 from .mock_utils import (
     NUM_DACS_D5AMODULE,

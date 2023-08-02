@@ -8,12 +8,7 @@ from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyChannel, DummyInstrument
 
 from qililab.drivers import parameters
-from qililab.drivers.instruments.qblox.cluster import (
-    Cluster,
-    QcmQrm,
-    QcmQrmRfAtt,
-    QcmQrmRfLo,
-)
+from qililab.drivers.instruments.qblox.cluster import Cluster, QcmQrm, QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.sequencer_qrm import SequencerQRM
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
