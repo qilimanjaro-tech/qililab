@@ -3,7 +3,7 @@ bandit==1.7.4
 black==23.1.0
 commitizen==2.40.0
 coverage==6.5.0
-cryptography==39.0.1
+cryptography==41.0.3
 flake8==5.0.4
 interrogate[png]==1.5.0
 ipykernel==6.16.0
