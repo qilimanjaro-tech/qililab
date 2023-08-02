@@ -17,10 +17,10 @@ from tests.data import Galadriel
 class DummyQbloxModule(QbloxModule):
     """Dummy QbloxModule class for testing"""
 
-    def _generate_weights(self, sequencer: AWGQbloxSequencer):  # pylint disable=unused-argument
+    def _generate_weights(self, sequencer: AWGQbloxSequencer):  # pylint: disable=unused-argument
         return Weights()
 
-    def _append_acquire_instruction(  # pylint disable=unused-argument
+    def _append_acquire_instruction(  # pylint: disable=unused-argument
         self, loop: Loop, bin_index: Register, sequencer_id: int, weight_regs: tuple[Register, Register]
     ):
         """Append an acquire instruction to the loop."""
