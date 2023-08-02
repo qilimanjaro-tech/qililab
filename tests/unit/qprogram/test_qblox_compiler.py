@@ -1,7 +1,5 @@
 import pytest
 import qpysequence as QPy
-import qpysequence.program as QPyProgram
-import qpysequence.program.instructions as QPyInstructions
 
 from qililab.qprogram import QBloxCompiler, QProgram, Settings
 from qililab.waveforms import DragPulse, IQPair, Square
@@ -92,8 +90,8 @@ def fixture_loop_variable_with_different_targets() -> QProgram:
 
 class TestQBloxCompiler:
     def test_no_loops_all_operations(self, no_loops_all_operations: QProgram):
-        compiler = QBloxCompiler(qprogram=no_loops_all_operations, settings=Settings())
-        output = compiler.output
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=no_loops_all_operations)
 
         assert len(output) == 2
         assert "drive" in output
@@ -122,8 +120,8 @@ class TestQBloxCompiler:
         )
 
     def test_acquire_loop(self, acquire_loop: QProgram):
-        compiler = QBloxCompiler(qprogram=acquire_loop, settings=Settings())
-        output = compiler.output
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=acquire_loop)
 
         assert len(output) == 2
         assert "drive" in output
@@ -152,8 +150,8 @@ class TestQBloxCompiler:
         )
 
     def test_acquire_loop_with_for_loop(self, acquire_loop_with_for_loop: QProgram):
-        compiler = QBloxCompiler(qprogram=acquire_loop_with_for_loop, settings=Settings())
-        output = compiler.output
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=acquire_loop_with_for_loop)
 
         assert len(output) == 2
         assert "drive" in output
@@ -182,8 +180,8 @@ class TestQBloxCompiler:
         )
 
     def test_acquire_loop_with_nested_for_loops(self, acquire_loop_with_nested_for_loops: QProgram):
-        compiler = QBloxCompiler(qprogram=acquire_loop_with_nested_for_loops, settings=Settings())
-        output = compiler.output
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=acquire_loop_with_nested_for_loops)
 
         assert len(output) == 2
         assert "drive" in output
@@ -217,4 +215,5 @@ class TestQBloxCompiler:
         with pytest.raises(
             NotImplementedError, match="Variables referenced in a loop cannot be used in different types of operations."
         ):
-            _ = QBloxCompiler(qprogram=loop_variable_with_different_targets, settings=Settings())
+            compiler = QBloxCompiler(settings=Settings())
+            _ = compiler.compile(qprogram=loop_variable_with_different_targets)

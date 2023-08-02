@@ -43,7 +43,6 @@ class BusInfo:
 
         self.loop_counter = 0
         self.acq_loop_counter = 0
-        self.play_loop_counter = 0
 
 
 @dataclass
@@ -52,8 +51,9 @@ class Settings:
 
 
 class QBloxCompiler:
-    def __init__(self, qprogram: QProgram, settings: Settings):
-        self._qprogram = qprogram
+    """A class for compiling QProgram to QBlox hardware."""
+
+    def __init__(self, settings: Settings):
         self._settings = settings
         self._handlers: dict[type, Callable] = {
             AcquireLoop: self._handle_acquire_loop,
@@ -70,27 +70,16 @@ class QBloxCompiler:
             Play: self._handle_play,
         }
 
-        self._buses: dict[str, BusInfo] = self._populate_buses()
-        self._compile()
+    def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
+        """Compile QProgram to QPySequence
 
-    @property
-    def output(self):
-        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+        Args:
+            qprogram (QProgram): The QProgram to be compiled
 
-    def _populate_buses(self):
-        def collect_buses(block: Block):
-            for element in block.elements:
-                if isinstance(element, Block):
-                    yield from collect_buses(element)
-                if isinstance(element, Operation):
-                    bus = getattr(element, "bus", None)
-                    if bus:
-                        yield bus
+        Returns:
+            dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding QPySequence as values.
+        """
 
-        buses = set(collect_buses(self._qprogram._program))
-        return {bus: BusInfo() for bus in buses}
-
-    def _compile(self):
         def traverse(block: Block):
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.append(block)
@@ -106,9 +95,27 @@ class QBloxCompiler:
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
 
+        self._qprogram = qprogram
+        self._buses: dict[str, BusInfo] = self._populate_buses()
+
         traverse(self._qprogram._program)
         for bus in self._buses:
             self._buses[bus].qpy_sequence._program.compile()
+
+        return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
+
+    def _populate_buses(self):
+        def collect_buses(block: Block):
+            for element in block.elements:
+                if isinstance(element, Block):
+                    yield from collect_buses(element)
+                if isinstance(element, Operation):
+                    bus = getattr(element, "bus", None)
+                    if bus:
+                        yield bus
+
+        buses = set(collect_buses(self._qprogram._program))
+        return {bus: BusInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
