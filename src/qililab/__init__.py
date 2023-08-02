@@ -19,12 +19,7 @@ from .circuit import (
 from .config import __version__, logger
 from .execute import execute
 from .experiment import Experiment
-from .platform import (
-    build_platform,
-    get_new_drivers_flag,
-    save_platform,
-    set_new_drivers_flag,
-)
+from .platform import build_platform, get_new_drivers_flag, save_platform, set_new_drivers_flag
 from .qprogram import QProgram
 from .result.results import Results
 from .transpiler import Drag, Park, translate_circuit
