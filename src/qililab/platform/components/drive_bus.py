@@ -11,9 +11,7 @@ from qililab.pulse import PulseBusSchedule
 class DriveBus(BusInterface):
     """Qililab's driver for Drive Bus"""
 
-    def __init__(
-        self, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None, **kwargs
-    ):
+    def __init__(self, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None):
         """Initialise the bus.
 
         Args:
