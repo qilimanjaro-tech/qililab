@@ -97,7 +97,7 @@ def fixture_sequencer() -> SequencerQCM:
 def fixture_local_oscillator() -> QcmQrmRfLo:
     """Return QcmQrmRfLo instance"""
     channel = "out0"
-    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qrm")
+    lo_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
 
     return QcmQrmRfLo(name=f"test_lo_{channel}", parent=lo_parent, channel=channel)
 
@@ -106,7 +106,7 @@ def fixture_local_oscillator() -> QcmQrmRfLo:
 def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
-    att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qrm")
+    att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
 
     return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
 
