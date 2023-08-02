@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add interfaces and drivers for Flux bus:
+  This PR brings the qililab implementation of the Flux bus driver and unittests.
+  [#469](https://github.com/qilimanjaro-tech/qililab/pull/469)
+
 - Add ReadoutBus class.
   [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
 
