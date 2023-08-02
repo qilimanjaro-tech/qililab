@@ -16,7 +16,7 @@ from qililab.pulse.hardware_gates import CZ
 from qililab.pulse.hardware_gates import Drag as DragGate
 from qililab.pulse.hardware_gates import HardwareGate, HardwareGateFactory, I, M
 from qililab.pulse.hardware_gates import Park as ParkGate
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.transpiler import Drag, Park
 from qililab.typings import Parameter
 from qililab.utils import Wait
@@ -317,9 +317,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
     ]
-    settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    settings = Runcard.TranspilationSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
-    platform.settings = settings  # type: ignore
+    platform.transpilation_settings = settings  # type: ignore
     platform.chip = chip
     buses = Buses(
         elements=[Bus(settings=bus, platform_instruments=platform.instruments, chip=chip) for bus in bus_settings]
@@ -475,7 +475,7 @@ class TestInitialization:
         _ = CircuitToPulses(platform=platform)
 
         for gate in {I, M, ParkGate, DragGate, CZ}:
-            if gate.name not in platform.settings.gate_names:
+            if gate.name not in platform.transpilation_settings.gate_names:
                 # Some gates derive from others (such as RY from Y), thus they have no settings
                 assert not hasattr(gate, "settings")
                 continue
@@ -483,7 +483,7 @@ class TestInitialization:
             if gate.name == "CZ":
                 for qubits in ((2, 0), (1, 2)):
                     # TODO remove duplicate code
-                    settings = platform.settings.get_gate(name=gate.name, qubits=qubits)
+                    settings = platform.transpilation_settings.get_gate(name=gate.name, qubits=qubits)
                     assert isinstance(gate.settings[qubits], HardwareGate.HardwareGateSettings)
                     assert gate.settings[qubits].amplitude == settings.amplitude
                     assert gate.settings[qubits].duration == settings.duration
@@ -492,7 +492,7 @@ class TestInitialization:
                     assert gate.settings[qubits].shape == settings.shape
             else:
                 for qubit in range(platform.chip.num_qubits):
-                    settings = platform.settings.get_gate(name=gate.name, qubits=qubit)
+                    settings = platform.transpilation_settings.get_gate(name=gate.name, qubits=qubit)
                     assert isinstance(gate.settings[qubit], HardwareGate.HardwareGateSettings)
                     assert gate.settings[qubit].amplitude == settings.amplitude
                     assert gate.settings[qubit].duration == settings.duration
@@ -509,7 +509,7 @@ class TestInitialization:
 
         assert X.settings[0].amplitude == 0.8
 
-        platform.settings.set_parameter(alias="X(0)", parameter=Parameter.AMPLITUDE, value=123)
+        platform.transpilation_settings.set_parameter(alias="X(0)", parameter=Parameter.AMPLITUDE, value=123)
 
         _ = CircuitToPulses(platform=platform)
 
@@ -549,7 +549,7 @@ class TestTranslation:
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
         # test error raised when duration has decimal part
-        platform.settings.get_gate(name="Drag", qubits=0).duration = 2.3
+        platform.transpilation_settings.get_gate(name="Drag", qubits=0).duration = 2.3
         error_string = "The settings of the gate drag have a non-integer duration \(2.3ns\). The gate duration must be an integer or a float with 0 decimal part"
         translator = CircuitToPulses(platform=platform)
         with pytest.raises(ValueError, match=error_string):
@@ -582,7 +582,7 @@ class TestTranslation:
         circuit.add(cz)
 
         # delete parking gate for q3
-        del platform.settings.gates[park_qubit][3]
+        del platform.transpilation_settings.gates[park_qubit][3]
         translator = CircuitToPulses(platform=platform)
         caplog.set_level(logging.WARNING)
         translator.translate(circuits=[circuit])
@@ -596,8 +596,8 @@ class TestTranslation:
 
         # decrease park time for gate for q3, q4
         pad_time = (10 - 83) / 2
-        platform.settings.gates[3][3].duration = 10
-        platform.settings.gates[4][3].duration = 10
+        platform.transpilation_settings.gates[3][3].duration = 10
+        platform.transpilation_settings.gates[4][3].duration = 10
         translator = CircuitToPulses(platform=platform)
         error_string = re.escape(
             f"Negative value pad_time {pad_time} for park gate at 3 and CZ {cz.qubits}. Pad time is calculated as (ParkGate.duration - CZ pulse duration) / 2"
@@ -772,7 +772,7 @@ class TestIntegration:
     def test_native_circuit_to_pulse(
         self, circuit_gates: list[gates.Gate], platform: Platform, expected: dict[str, list]
     ):
-        platform.settings.gates.pop((2, 3))
+        platform.transpilation_settings.gates.pop((2, 3))
         c = Circuit(5)
         c.add(circuit_gates)
         translator = CircuitToPulses(platform=platform)

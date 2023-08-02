@@ -16,7 +16,7 @@ from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.transpiler import Park
 from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
@@ -130,8 +130,8 @@ class CircuitToPulses:
 
     def _get_park_pad_time(
         self,
-        park_settings: RuncardSchema.PlatformSettings.GateSettings,
-        cz_settings: RuncardSchema.PlatformSettings.GateSettings,
+        park_settings: Runcard.TranspilationSettings.GateSettings,
+        cz_settings: Runcard.TranspilationSettings.GateSettings,
     ):
         """Gets pad time for parking gate
 
@@ -202,7 +202,7 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.platform.settings.delay_between_pulses,
+            pulse_time=gate_settings.duration + self.platform.transpilation_settings.delay_between_pulses,
         )
 
         if isinstance(control_gate, CZ):
@@ -287,7 +287,9 @@ class CircuitToPulses:
         # get qubits to park
         for qubit in park_qubits:
             park_gate_settings = [
-                settings_gate for settings_gate in self.platform.settings.gates[qubit] if "Park" in settings_gate.name
+                settings_gate
+                for settings_gate in self.platform.transpilation_settings.gates[qubit]
+                if "Park" in settings_gate.name
             ]
             if not park_gate_settings:
                 logger.warning(
@@ -295,7 +297,9 @@ class CircuitToPulses:
                 )
                 continue
             cz_gate_settings = [
-                settings_gate for settings_gate in self.platform.settings.gates[cz.qubits] if "CZ" in settings_gate.name
+                settings_gate
+                for settings_gate in self.platform.transpilation_settings.gates[cz.qubits]
+                if "CZ" in settings_gate.name
             ][0]
 
             # get pad time
@@ -331,7 +335,7 @@ class CircuitToPulses:
         old_time = self._update_time(
             time=time,
             qubit_idx=qubit_idx,
-            pulse_time=gate_settings.duration + self.platform.settings.delay_before_readout,
+            pulse_time=gate_settings.duration + self.platform.transpilation_settings.delay_before_readout,
         )
         _, bus = self.platform.get_bus(port=port)
 
@@ -347,7 +351,7 @@ class CircuitToPulses:
                     frequency=node.frequency,
                     pulse_shape=pulse_shape,
                 ),
-                start_time=old_time + self.platform.settings.delay_before_readout,
+                start_time=old_time + self.platform.transpilation_settings.delay_before_readout,
                 pulse_distortions=bus.distortions,
                 qubit=qubit_idx,
             )
@@ -368,7 +372,9 @@ class CircuitToPulses:
         """
 
         cz_qubits = cz.qubits
-        two_qubit_gates = [qubit for qubit in self.platform.settings.gates.keys() if isinstance(qubit, tuple)]
+        two_qubit_gates = [
+            qubit for qubit in self.platform.transpilation_settings.gates.keys() if isinstance(qubit, tuple)
+        ]
         if cz_qubits in two_qubit_gates:
             return cz
         elif cz_qubits[::-1] in two_qubit_gates:
@@ -386,9 +392,9 @@ class CircuitToPulses:
         if qubit_idx not in time:
             time[qubit_idx] = 0
         old_time = time[qubit_idx]
-        residue = (pulse_time) % self.platform.settings.minimum_clock_time
+        residue = (pulse_time) % self.platform.transpilation_settings.minimum_clock_time
         if residue != 0:
-            pulse_time += self.platform.settings.minimum_clock_time - residue
+            pulse_time += self.platform.transpilation_settings.minimum_clock_time - residue
         time[qubit_idx] += pulse_time
         return old_time
 
@@ -405,13 +411,15 @@ class CircuitToPulses:
 
     def _instantiate_gates_from_settings(self):
         """Instantiate all gates defined in settings and add them to the factory."""
-        for qubits, gate_settings_list in list(self.platform.settings.gates.items()):
+        for qubits, gate_settings_list in list(self.platform.transpilation_settings.gates.items()):
             # parse string tupples for 2 qubit keys
             if isinstance(qubits, str):
                 qubit_str = qubits
                 qubits = ast.literal_eval(qubit_str)
                 # get tuple from string
-                self.platform.settings.gates[qubits] = self.platform.settings.gates.pop(qubit_str)
+                self.platform.transpilation_settings.gates[qubits] = self.platform.transpilation_settings.gates.pop(
+                    qubit_str
+                )
             for gate_settings in gate_settings_list:
                 settings_dict = asdict(gate_settings)
                 gate_class = HardwareGateFactory.get(name=settings_dict.pop(RUNCARD.NAME))

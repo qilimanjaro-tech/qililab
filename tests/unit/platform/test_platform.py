@@ -8,7 +8,7 @@ from qililab.chip import Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Bus, Buses, Platform
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
@@ -27,15 +27,15 @@ class TestPlatform:
 
     def test_id_property(self, platform: Platform):
         """Test id property."""
-        assert platform.id_ == platform.settings.id_
+        assert platform.id_ == platform.transpilation_settings.id_
 
     def test_name_property(self, platform: Platform):
         """Test name property."""
-        assert platform.name == platform.settings.name
+        assert platform.name == platform.transpilation_settings.name
 
     def test_category_property(self, platform: Platform):
         """Test category property."""
-        assert platform.category == platform.settings.category
+        assert platform.category == platform.transpilation_settings.category
 
     def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""
@@ -52,20 +52,20 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        for qubit, gate_settings_list in platform.settings.gates.items():
+        for qubit, gate_settings_list in platform.transpilation_settings.gates.items():
             for gate_settings in gate_settings_list:
                 alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
                 gate = platform.get_element(alias=alias)
-                assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
+                assert isinstance(gate, Runcard.TranspilationSettings.GateSettings)
                 assert gate.name == gate_settings.name
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
         str(platform)
 
-    def test_settings_instance(self, platform: Platform):
+    def test_transpilation_settings_instance(self, platform: Platform):
         """Test settings instance."""
-        assert isinstance(platform.settings, RuncardSchema.PlatformSettings)
+        assert isinstance(platform.transpilation_settings, Runcard.TranspilationSettings)
 
     def test_buses_instance(self, platform: Platform):
         """Test buses instance."""
@@ -123,6 +123,7 @@ class TestPlatform:
         if bus is not None:
             assert bus in platform.buses
 
+    # TODO: Modify this test of print statements and move them to where they correspond
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
         print(platform)

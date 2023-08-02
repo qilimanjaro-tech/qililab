@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from qililab import build_platform
-from qililab.constants import DATA, RUNCARD, SCHEMA
+from qililab.constants import DATA, RUNCARD
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment import Experiment
 from qililab.platform import Platform
@@ -133,7 +133,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
+            mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
@@ -465,7 +465,7 @@ class TestSetParameter:
     def test_set_parameter_method_with_platform_settings(self, exp: Experiment):
         """Test set_parameter method with platform settings."""
         exp.set_parameter(alias="M(0)", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert exp.platform.settings.get_gate(name="M", qubits=0).amplitude == 0.3
+        assert exp.platform.transpilation_settings.get_gate(name="M", qubits=0).amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, exp: Experiment):
         """Test set_parameter method with instrument controller reset."""

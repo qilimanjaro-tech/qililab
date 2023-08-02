@@ -20,7 +20,6 @@ from qililab.constants import (
     PULSESCHEDULES,
     PULSESHAPE,
     RUNCARD,
-    SCHEMA,
 )
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
@@ -546,16 +545,12 @@ class Galadriel:
         },
     ]
 
-    schema = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
     qubit_0: dict = {
@@ -677,11 +672,12 @@ class FluxQubitSimulator:
         ],
     }
 
-    schema = {
-        SCHEMA.INSTRUMENTS: [],
-        SCHEMA.INSTRUMENT_CONTROLLERS: [],
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: [
+    runcard = {
+        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: [],
+        RUNCARD.INSTRUMENT_CONTROLLERS: [],
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: [
             {
                 RUNCARD.ID: 0,
                 RUNCARD.CATEGORY: Category.BUS.value,
@@ -702,11 +698,6 @@ class FluxQubitSimulator:
                 NodeName.PORT.value: 0,
             }
         ],
-    }
-
-    runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
     }
 
 
@@ -876,7 +867,7 @@ experiment = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.SETTINGS: {
+        RUNCARD.TRANSPILATION_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -1040,16 +1031,12 @@ class SauronVNA:
         },
     ]
 
-    schema = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.TRANSPILATION_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
 

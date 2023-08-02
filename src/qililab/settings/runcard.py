@@ -1,4 +1,4 @@
-"""PlatformSchema class."""
+"""Runcard class."""
 import ast
 import re
 from dataclasses import dataclass
@@ -11,66 +11,66 @@ from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class RuncardSchema:
-    """PlatformSchema class. Casts the platform dictionary into a class.
+class Runcard:
+    """Runcard class. Casts the platform dictionary into a class.
     The input to the constructor should be a dictionary with the following structure:
 
-    - platform: settings dictionary.
-    - schema: schema dictionary:
-        - buses: buses dictionary:
-            - elements: list of bus dictionaries with the following structure:
-                - name: "readout" or "control"
-                - awg: settings dictionary.
-                - signal_generator: settings dictionary.
-                - qubit / resonator: settings dictionary.
+    - transpilation_settings: platform settings dictionary.
+    - instruments:
+    - instrument_controllers:
+    - chip:
+    - buses: buses dictionary:
+        - elements: list of bus dictionaries with the following structure:
+            - name: "readout" or "control"
+            - awg: settings dictionary.
+            - signal_generator: settings dictionary.
+            - qubit / resonator: settings dictionary.
     """
 
-    @nested_dataclass
-    class Schema:
-        """SchemaDict class."""
+    # TODO: Check the structure this dictionary has to have, and check that the DATA files for tests, etc has them
 
-        @dataclass
-        class BusSchema:
-            """Bus schema class."""
+    @dataclass
+    class BusSchema:
+        """Bus schema class."""
 
-            id_: int
-            category: str
-            system_control: dict
-            port: int
-            distortions: list[dict]
-            alias: str | None = None
-            delay: int = 0
+        id_: int
+        category: str
+        system_control: dict
+        port: int
+        distortions: list[dict]
+        alias: str | None = None
+        delay: int = 0
 
-        @dataclass
-        class ChipSchema:
-            """Chip schema class."""
+    @dataclass
+    class ChipSchema:
+        """Chip schema class."""
 
-            id_: int
-            category: str
-            nodes: list[dict]
-            alias: str | None = None
+        id_: int
+        category: str
+        nodes: list[dict]
+        alias: str | None = None
 
-        chip: ChipSchema | None
-        buses: list[BusSchema]
-        instruments: list[dict]
-        instrument_controllers: list[dict]
+    chip: ChipSchema
+    buses: list[BusSchema]
+    instruments: list[dict]
+    instrument_controllers: list[dict]
 
-        def __post_init__(self):
-            self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
-            if isinstance(self.chip, dict):
-                self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
+    def __post_init__(self):
+        self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
+        if isinstance(self.chip, dict):
+            self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
-    class PlatformSettings(DDBBElement):
-        """SettingsSchema class."""
+    class TranspilationSettings(DDBBElement):
+        """TranspilationSettings class."""
 
         @nested_dataclass
         class OperationSettings:
-            """OperationSchema class"""
+            """OperationSettings class"""
 
             @dataclass
             class PulseSettings:
-                """PulseSchema class"""
+                """PulseSettings class"""
 
                 name: str
                 amplitude: float
@@ -82,7 +82,7 @@ class RuncardSchema:
 
         @dataclass
         class GateSettings:
-            """GatesSchema class."""
+            """GatesSettings class."""
 
             name: str
             amplitude: float
@@ -134,7 +134,7 @@ class RuncardSchema:
             for operation in self.operations:
                 # TODO: Fix bug that parses settings as dict instead of defined classes
                 if isinstance(operation, dict):
-                    operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
+                    operation = Runcard.TranspilationSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
             raise ValueError(f"Operation {name} not found in platform settings.")
@@ -181,11 +181,10 @@ class RuncardSchema:
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is None:
                 raise ValueError(f"Alias {alias} has incorrect format")
-            name = regex_match.group("gate")
-            qubits_str = regex_match.group("qubits")
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
             gate_settings.set_parameter(parameter, value)
 
-    settings: PlatformSettings
-    schema: Schema
+    transpilation_settings: TranspilationSettings

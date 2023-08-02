@@ -14,7 +14,7 @@ from qililab.circuit.operations.operation import Operation
 from qililab.circuit.operations.pulse_operations.pulse_operation import PulseOperation
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.platform import Platform
-from qililab.settings.runcard_schema import RuncardSchema
+from qililab.settings.runcard import Runcard
 from qililab.typings.enums import OperationName, OperationTimingsCalculationMethod, Qubits
 from qililab.utils import classproperty
 from tests.data import Galadriel
@@ -53,8 +53,8 @@ class TestCircuitTranspiler:
     """Unit tests checking the CircuitTranspiler attributes and methods"""
 
     def test_properties_after_init(self, platform: Platform):
-        transpiler = CircuitTranspiler(settings=platform.settings)
-        assert isinstance(transpiler.settings, RuncardSchema.PlatformSettings)
+        transpiler = CircuitTranspiler(settings=platform.transpilation_settings)
+        assert isinstance(transpiler.settings, Runcard.TranspilationSettings)
 
     @pytest.mark.parametrize(
         "circuit_fixture",
@@ -73,7 +73,7 @@ class TestCircuitTranspiler:
     ):
         """Test calculate_timings method"""
         circuit = request.getfixturevalue(circuit_fixture)
-        settings = platform.settings
+        settings = platform.transpilation_settings
         settings.timings_calculation_method = timings_calculation_method
         transpiler = CircuitTranspiler(settings=settings)
         transpiled_circuit = transpiler.calculate_timings(circuit=circuit)
@@ -90,7 +90,7 @@ class TestCircuitTranspiler:
     ):
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
-        transpiler = CircuitTranspiler(settings=platform.settings)
+        transpiler = CircuitTranspiler(settings=platform.transpilation_settings)
         transpiled_circuit = transpiler.remove_special_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit.has_special_operations_removed is True
@@ -107,7 +107,7 @@ class TestCircuitTranspiler:
     ):
         """Test translate_to_pulses method"""
         circuit = request.getfixturevalue(circuit_fixture)
-        transpiler = CircuitTranspiler(settings=platform.settings)
+        transpiler = CircuitTranspiler(settings=platform.transpilation_settings)
         transpiled_circuit = transpiler.transpile_to_pulse_operations(circuit=circuit)
         assert isinstance(transpiled_circuit, Circuit)
         assert transpiled_circuit.has_transpiled_to_pulses is True
@@ -134,6 +134,6 @@ class TestCircuitTranspiler:
 
         circuit = Circuit(1)
         circuit.add(0, UnkownOperation())
-        transpiler = CircuitTranspiler(settings=platform.settings)
+        transpiler = CircuitTranspiler(settings=platform.transpilation_settings)
         with pytest.raises(ValueError):
             transpiler.calculate_timings(circuit=circuit)

@@ -139,7 +139,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.TRANSPILATION_SETTINGS)  # type: ignore
         self.settings = settings_class(**settings)
 
     @CheckDeviceInitialized

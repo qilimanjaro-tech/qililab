@@ -7,7 +7,7 @@ from qiboconnection.api import API
 
 from qililab.chip import Chip
 from qililab.config import logger
-from qililab.constants import GATE_ALIAS_REGEX, RUNCARD, SCHEMA
+from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.instrument_controllers import InstrumentController, InstrumentControllers
 from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
@@ -15,7 +15,7 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
 from qililab.platform.components import Bus, Buses
 from qililab.platform.components.bus_element import dict_factory
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
@@ -24,26 +24,29 @@ class Platform:
     """Platform object that describes setup used to control quantum devices.
 
     Args:
-        settings (PlatformSettings): Settings of the platform.
-        schema (Schema): Schema object.
+        transpilation_settings (TranspilationSettings): Settings of the platform.
+        instruments (Instruments):
+        instruments_controllers (InstrumentControllers):
+        chip (Chip):
         buses (Buses): Container of Bus objects.
     """
 
-    def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
-        """instantiate the platform"""
-        self.settings = runcard_schema.settings
+    # TODO: fill the above docstring
 
-        schema = asdict(runcard_schema.schema)  # type: ignore
-        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=schema["instruments"]))
-        self.chip = Chip(**schema["chip"])
+    def __init__(self, runcard: Runcard, connection: API | None = None):
+        """instantiate the platform"""
+        self.transpilation_settings = runcard.transpilation_settings
+
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
+        self.instrument_controllers = InstrumentControllers(
+            elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+        )
+        self.chip = Chip(**asdict(runcard.chip))
         self.buses = Buses(
             elements=[
-                Bus(settings=bus, platform_instruments=self.instruments, chip=self.chip) for bus in schema["buses"]
+                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
+                for bus in runcard.buses
             ]
-        )
-
-        self.instrument_controllers = InstrumentControllers(
-            elements=self._load_instrument_controllers(instrument_controllers_dict=schema["instrument_controllers"])
         )
 
         self.connection = connection
@@ -106,14 +109,14 @@ class Platform:
         """
         if alias is not None:
             if alias == Category.PLATFORM.value:
-                return self.settings
+                return self.transpilation_settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if name in self.gate_names:
-                    return self.settings.get_gate(name=name, qubits=qubits)
+                    return self.transpilation_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -181,7 +184,9 @@ class Platform:
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == Category.PLATFORM.value or regex_match is not None:
-            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.transpilation_settings.set_parameter(
+                alias=alias, parameter=parameter, value=value, channel_id=channel_id
+            )
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
@@ -223,7 +228,7 @@ class Platform:
         Returns:
             int: settings.id_.
         """
-        return self.settings.id_
+        return self.transpilation_settings.id_
 
     @property
     def name(self):
@@ -232,7 +237,7 @@ class Platform:
         Returns:
             str: settings.name.
         """
-        return self.settings.name
+        return self.transpilation_settings.name
 
     @property
     def category(self):
@@ -241,7 +246,7 @@ class Platform:
         Returns:
             str: settings.category.
         """
-        return self.settings.category
+        return self.transpilation_settings.category
 
     @property
     def num_qubits(self):
@@ -259,7 +264,7 @@ class Platform:
         Returns:
             list[str]: List of the names of all the defined gates.
         """
-        return self.settings.gate_names
+        return self.transpilation_settings.gate_names
 
     @property
     def device_id(self):
@@ -268,22 +273,21 @@ class Platform:
         Returns:
             int: id of the platform device
         """
-        return self.settings.device_id
+        return self.transpilation_settings.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {RUNCARD.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {
-            RUNCARD.SCHEMA: {
-                SCHEMA.CHIP: self.chip.to_dict() if self.chip is not None else None,
-                SCHEMA.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None,
-                SCHEMA.BUSES: self.buses.to_dict() if self.buses is not None else None,
-                SCHEMA.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
-                if self.instrument_controllers is not None
-                else None,
-            }
+        settings_dict = {RUNCARD.TRANSPILATION_SETTINGS: asdict(self.transpilation_settings, dict_factory=dict_factory)}
+        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
+        buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
+        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
+        instrument_controllers_dict = {
+            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
+            if self.instrument_controllers is not None
+            else None,
         }
-        return platform_dict | schema_dict
+
+        return settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform

@@ -7,11 +7,11 @@ from qibo.gates import I, M, X, Y
 from qililab.constants import RUNCARD
 from qililab.pulse.hardware_gates import HardwareGateFactory
 from qililab.pulse.hardware_gates.hardware_gate import HardwareGate
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 
 
 @pytest.fixture(name="platform_settings")
-def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
+def fixture_platform_settings() -> Runcard.TranspilationSettings:
     """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
     settings = {
         "id_": 0,
@@ -122,11 +122,11 @@ def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
             ],
         },
     }
-    return RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    return Runcard.TranspilationSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
 
 
 @pytest.fixture(autouse=True)
-def initialize_hardware_gates(platform_settings: RuncardSchema.PlatformSettings):
+def initialize_hardware_gates(platform_settings: Runcard.TranspilationSettings):
     for qubit, gate_settings_list in platform_settings.gates.items():
         for gate_settings in gate_settings_list:
             settings_dict = asdict(gate_settings)

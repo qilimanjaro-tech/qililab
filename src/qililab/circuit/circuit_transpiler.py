@@ -8,7 +8,7 @@ from qililab.circuit.operation_factory import OperationFactory
 from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
 from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
 from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings.enums import ResetMethod
 
 
@@ -16,7 +16,7 @@ from qililab.typings.enums import ResetMethod
 class CircuitTranspiler:
     """CircuitTranspiler class."""
 
-    settings: RuncardSchema.PlatformSettings
+    settings: Runcard.TranspilationSettings
 
     def calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
