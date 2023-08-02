@@ -131,10 +131,14 @@ class Circuit:
         """Get the layers of operation nodes. Each layer represents an advancement in time.
 
         Args:
-            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated. If set to `OperationTimingsCalcuationMethod.AS_LATE_AS_POSSIBLE, we rearrange the layers, moving operations to the largest layer index possible. Defaults to OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
+            method (OperationTimingsCalculationMethod, optional): The method that layers should be calculated.
+                If set to `OperationTimingsCalculationMethod.AS_LATE_AS_POSSIBLE`, we rearrange the layers, moving
+                operations to the largest layer index possible. Defaults to
+                OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE.
 
         Returns:
-            list[list[OperationNode]]: A list of layers each containing a list of operation nodes. Operation nodes are sorted based on their index. (order of insertion)
+            list[list[OperationNode]]: A list of layers each containing a list of operation nodes.
+                Operation nodes are sorted based on their index. (order of insertion)
         """
         layers = rx.layers(self.graph, [self.entry_node.index])[1:]  # pylint: disable=no-member
         for layer in layers:
