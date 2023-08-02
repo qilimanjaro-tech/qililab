@@ -9,7 +9,6 @@ Qililab Documentation
 
     Qililab is amazing!
 
-----
 
 Get started
 -----------
@@ -24,27 +23,33 @@ Explore
 
 .. tab-set::
 
-   .. tab-item:: How To
+   .. tab-item:: Using qililab
 
-      In the **How-to** section, you can learn more about using and customizing the theme.
-
-      .. toctree::
-         :caption: How To
-         :titlesonly:
-
-         how-to/install/index
-         how-to/add/index
-         how-to/configure/index
-         how-to/customize/index
-         how-to/build-your-own/index
-
-   .. tab-item:: Demo
-
-      The **Demo** section shows how various elements will look like.
+      This sections contains extended documentation on how to use `qililab`.
 
       .. toctree::
-         :caption: Demo
-         :glob:
-         :titlesonly:
+         :caption: Using qililab
+         :maxdepth: 1
 
-         demo/*
+         introduction/qililab
+
+   .. tab-item:: Development
+
+      The **Development** section contains information on how to contribute to `qililab`.
+
+      .. toctree::
+         :caption: Development
+         :maxdepth: 1
+
+
+         development/guide
+
+   .. tab-item:: API
+
+      The **API** section contains all the documentation about the `qililab` library.
+
+      .. toctree::
+         :caption: API
+         :maxdepth: 1
+
+         code/modules
