@@ -150,6 +150,14 @@ def fixture_for_loop_variable_with_different_targets() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="play_operation_with_waveforms_of_different_length")
+def fixture_play_operation_with_waveforms_of_different_length() -> QProgram:
+    qp = QProgram()
+    waveform_pair = IQPair(I=Square(amplitude=1.0, duration=40), Q=Square(amplitude=1.0, duration=80))
+    qp.play(bus="drive", waveform=waveform_pair)
+    return qp
+
+
 @pytest.fixture(name="multiple_play_operations_with_same_waveform")
 def fixture_multiple_play_operations_with_same_waveform() -> QProgram:
     qp = QProgram()
@@ -188,7 +196,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    set_freq         1200\n    set_ph           250000000\n    reset_ph\n    set_awg_gain     16383, 16383\n    set_awg_offs     16383, 16383\n    play             0, 1, 4\n    wait_sync        4\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    set_freq         1200\n    set_ph           250000000\n    reset_ph\n    set_awg_gain     16383, 16383\n    set_awg_offs     16383, 16383\n    play             0, 1, 40\n    wait_sync        4\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -198,7 +206,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    wait_sync        4\n    wait             100\n    play             0, 1, 4\n    acquire          0, 0, 1000\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    wait_sync        4\n    wait             100\n    play             0, 1, 1000\n    acquire          0, 0, 1000\n    stop\n    \n"
         )
 
     def test_acquire_loop(self, acquire_loop: QProgram):
@@ -218,7 +226,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        play             0, 1, 4\n        wait_sync        4\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        play             0, 1, 40\n        wait_sync        4\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -228,7 +236,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 4\n        acquire          0, 0, 1000\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 1000\n        acquire          0, 0, 1000\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_acquire_loop_with_weights(self, acquire_loop_with_weights: QProgram):
@@ -285,7 +293,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             4, R1\n        loop_0:\n            wait_sync        4\n            play             0, 1, 4\n            wait_sync        4\n            add              R1, 4, R1\n            nop\n            jlt              R1, 100, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             4, R1\n        loop_0:\n            wait_sync        4\n            play             0, 1, 40\n            wait_sync        4\n            add              R1, 4, R1\n            nop\n            jlt              R1, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -295,7 +303,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             4, R2\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R2\n            play             0, 1, 4\n            acquire          0, R1, 1000\n            add              R1, 1, R1\n            add              R2, 4, R2\n            nop\n            jlt              R2, 100, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             4, R2\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R2\n            play             0, 1, 1000\n            acquire          0, R1, 1000\n            add              R1, 1, R1\n            add              R2, 4, R2\n            nop\n            jlt              R2, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_acquire_loop_with_for_loop_with_weights(self, acquire_loop_with_for_loop_with_weights: QProgram):
@@ -345,7 +353,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             0, R1\n        loop_0:\n            wait_sync        4\n            set_awg_gain     R1, R1\n            move             4, R2\n            loop_1:\n                wait_sync        4\n                play             0, 1, 4\n                wait_sync        4\n                add              R2, 4, R2\n                nop\n                jlt              R2, 100, @loop_1\n            add              R1, 3276, R1\n            nop\n            jlt              R1, 32767, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             0, R1\n        loop_0:\n            wait_sync        4\n            set_awg_gain     R1, R1\n            move             4, R2\n            loop_1:\n                wait_sync        4\n                play             0, 1, 40\n                wait_sync        4\n                add              R2, 4, R2\n                nop\n                jlt              R2, 100, @loop_1\n            add              R1, 3276, R1\n            nop\n            jlt              R1, 32767, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -355,7 +363,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             0, R2\n        loop_0:\n            wait_sync        4\n            move             4, R3\n            loop_1:\n                wait_sync        4\n                wait_sync        4\n                wait             R3\n                play             0, 1, 4\n                acquire          0, R1, 1000\n                add              R1, 1, R1\n                add              R3, 4, R3\n                nop\n                jlt              R3, 100, @loop_1\n            add              R2, 3276, R2\n            nop\n            jlt              R2, 32767, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             0, R2\n        loop_0:\n            wait_sync        4\n            move             4, R3\n            loop_1:\n                wait_sync        4\n                wait_sync        4\n                wait             R3\n                play             0, 1, 1000\n                acquire          0, R1, 1000\n                add              R1, 1, R1\n                add              R3, 4, R3\n                nop\n                jlt              R3, 100, @loop_1\n            add              R2, 3276, R2\n            nop\n            jlt              R2, 32767, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_for_loop_variable_with_no_targets_throws_exception(self, for_loop_variable_with_no_target: QProgram):
@@ -374,6 +382,13 @@ class TestQBloxCompiler:
             compiler = QBloxCompiler(settings=Settings())
             _ = compiler.compile(qprogram=for_loop_variable_with_different_targets)
 
+    def test_play_operation_with_waveforms_of_different_length_throws_exception(
+        self, play_operation_with_waveforms_of_different_length: QProgram
+    ):
+        with pytest.raises(NotImplementedError, match="Waveforms should have equal lengths."):
+            compiler = QBloxCompiler(settings=Settings())
+            _ = compiler.compile(qprogram=play_operation_with_waveforms_of_different_length)
+
     def test_multiple_play_operations_with_same_waveform(self, multiple_play_operations_with_same_waveform: QProgram):
         compiler = QBloxCompiler(settings=Settings())
         output = compiler.compile(qprogram=multiple_play_operations_with_same_waveform)
@@ -390,7 +405,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 4\n    play             0, 1, 4\n    play             0, 1, 4\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 40\n    play             0, 1, 40\n    play             0, 1, 40\n    stop\n    \n"
         )
 
     def test_multiple_play_operations_with_no_Q_waveform(self, multiple_play_operations_with_no_Q_waveform: QProgram):
@@ -409,5 +424,5 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 4\n    play             0, 1, 4\n    play             0, 1, 4\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    play             0, 1, 40\n    play             0, 1, 40\n    play             0, 1, 40\n    stop\n    \n"
         )
