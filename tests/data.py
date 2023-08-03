@@ -77,120 +77,52 @@ class Galadriel:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "feedline_bus",
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            1: [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
-                },
-                {
-                    RUNCARD.NAME: "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    RUNCARD.NAME: "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        RUNCARD.NAME: "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            (0, 1): [
-                {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
                 }
             ],
-            (1, 0): [
+            "I(0)": [
                 {
-                    RUNCARD.NAME: "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {RUNCARD.NAME: "rectangular"},
+                    "bus": "drive_line_q0_bus",
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
                 }
             ],
         },

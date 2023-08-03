@@ -142,10 +142,7 @@ class Platform:
 
     def get_bus_by_alias(self, alias: str | None = None):
         """Get bus given an alias or id_ and category"""
-        bus = next((bus for bus in self.buses if bus.alias == alias), None)
-        if bus is not None:
-            return bus
-        raise NameError(f"Did not find bus for bus alias {alias}")
+        return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
         self,

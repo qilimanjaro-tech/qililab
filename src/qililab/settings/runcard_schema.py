@@ -107,7 +107,6 @@ class RuncardSchema:
                     gates[qubits].append(GateSettings(name=gate[: -len(qubit_str)], schedule=schedule))
 
             self.gates = gates
-            # TODO: do we want to keep GateScheduleSettings?
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name
