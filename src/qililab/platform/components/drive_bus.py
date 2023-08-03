@@ -1,5 +1,6 @@
 """Driver for the Drive Bus class."""
 from typing import Any
+
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
