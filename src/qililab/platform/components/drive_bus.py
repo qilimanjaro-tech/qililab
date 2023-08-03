@@ -26,13 +26,11 @@ class DriveBus(BusInterface):
         """
         self.qubit = qubit
         self._awg = awg
-        self.instruments: dict[str, AWG | LocalOscillator | Attenuator ] = {
-            'awg': self._awg
-        }
+        self.instruments: dict[str, AWG | LocalOscillator | Attenuator] = {"awg": self._awg}
         if local_oscillator:
-            self.instruments['local_oscillator'] = local_oscillator
+            self.instruments["local_oscillator"] = local_oscillator
         if attenuator:
-            self.instruments['attenuator'] = attenuator
+            self.instruments["attenuator"] = attenuator
         self.delay = 0
         self.distortions: list[PulseDistortion] = []
 
@@ -52,11 +50,11 @@ class DriveBus(BusInterface):
             num_bins (int): number of bins
         """
         self._awg.execute(
-                pulse_bus_schedule=pulse_bus_schedule,
-                nshots=nshots,
-                repetition_duration=repetition_duration,
-                num_bins=num_bins,
-            )
+            pulse_bus_schedule=pulse_bus_schedule,
+            nshots=nshots,
+            repetition_duration=repetition_duration,
+            num_bins=num_bins,
+        )
 
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
@@ -92,7 +90,9 @@ class DriveBus(BusInterface):
         Raises:
             Exception: if more than one instrument has the same parameter name.
         """
-        candidates: list[AWG | LocalOscillator | Attenuator] = [instrument for instrument in self.instruments.values() if param_name in instrument.params]
+        candidates: list[AWG | LocalOscillator | Attenuator] = [
+            instrument for instrument in self.instruments.values() if param_name in instrument.params
+        ]
 
         if len(candidates) == 1:
             return candidates[0].get(param_name)

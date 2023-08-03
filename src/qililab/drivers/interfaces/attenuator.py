@@ -5,6 +5,7 @@ from typing import Any
 
 class Attenuator(ABC):
     """Interface of an attenuator."""
+
     @property
     @abstractmethod
     def params(self):
