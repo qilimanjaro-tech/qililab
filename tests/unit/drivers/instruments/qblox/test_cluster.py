@@ -83,7 +83,7 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
 
     def _present_at_init(self, slot_idx: int):
         """Mock _present_at_init method"""
-        return True if slot_idx in PRESENT_SUBMODULES else False
+        return slot_idx in PRESENT_SUBMODULES
 
 
 class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
