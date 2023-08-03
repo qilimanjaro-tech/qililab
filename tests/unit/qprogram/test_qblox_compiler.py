@@ -256,7 +256,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        play             0, 1, 4\n        wait_sync        4\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        play             0, 1, 40\n        wait_sync        4\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -266,7 +266,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 4\n        acquire_weighed  0, 0, 0, 0, 1000\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 1000\n        acquire_weighed  0, 0, 0, 0, 1000\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_acquire_loop_with_weights_of_different_length_throws_exception(
@@ -323,7 +323,7 @@ class TestQBloxCompiler:
         assert output["drive"]._program._compiled
         assert (
             repr(output["drive"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             4, R1\n        loop_0:\n            wait_sync        4\n            play             0, 1, 4\n            wait_sync        4\n            add              R1, 4, R1\n            nop\n            jlt              R1, 100, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             4, R1\n        loop_0:\n            wait_sync        4\n            play             0, 1, 40\n            wait_sync        4\n            add              R1, 4, R1\n            nop\n            jlt              R1, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
         assert len(output["readout"]._waveforms._waveforms) == 2
@@ -333,7 +333,7 @@ class TestQBloxCompiler:
         assert output["readout"]._program._compiled
         assert (
             repr(output["readout"]._program)
-            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        move             0, R2\n        move             0, R3\n        wait_sync        4\n        move             4, R4\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R4\n            play             0, 1, 4\n            acquire_weighed  0, R3, R2, R1, 1000\n            add              R3, 1, R3\n            add              R4, 4, R4\n            nop\n            jlt              R4, 100, @loop_0\n        loop             R0, @avg_0\n    \n"
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        move             0, R2\n        move             0, R3\n        wait_sync        4\n        move             4, R4\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R4\n            play             0, 1, 1000\n            acquire_weighed  0, R3, R2, R1, 1000\n            add              R3, 1, R3\n            add              R4, 4, R4\n            nop\n            jlt              R4, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_acquire_loop_with_nested_for_loops(self, acquire_loop_with_nested_for_loops: QProgram):
