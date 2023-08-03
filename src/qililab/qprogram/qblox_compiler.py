@@ -132,7 +132,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].waveform_to_index[_hash]
                 length = next(
                     len(waveform.data)
-                    for waveform in self._buses[
+                    for waveform in self._buses[  # pylint: disable=protected-access
                         bus
                     ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
                     if waveform.index == index
@@ -152,21 +152,23 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
         def handle_waveform(waveform: Waveform):
-            hash = QBloxCompiler._hash(waveform)
+            _hash = QBloxCompiler._hash(waveform)
 
-            if hash in self._buses[bus].weight_to_index:
-                index = self._buses[bus].weight_to_index[hash]
+            if _hash in self._buses[bus].weight_to_index:
+                index = self._buses[bus].weight_to_index[_hash]
                 length = next(
                     len(weight.data)
-                    for weight in self._buses[bus].qpy_sequence._waveforms._waveforms
+                    for weight in self._buses[
+                        bus
+                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
                     if weight.index == index
                 )
                 return index, length
 
             envelope = waveform.envelope()
             length = len(envelope)
-            index = self._buses[bus].qpy_sequence._weights.add(envelope)
-            self._buses[bus].weight_to_index[hash] = index
+            index = self._buses[bus].qpy_sequence._weights.add(envelope)  # pylint: disable=protected-access
+            self._buses[bus].weight_to_index[_hash] = index
             return index, length
 
         index_I, length_I = handle_waveform(weights.I)
