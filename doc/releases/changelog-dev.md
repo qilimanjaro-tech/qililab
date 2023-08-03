@@ -7,6 +7,13 @@ This document contains the changes of the current release.
 - Rename Experiment and CircuitExperiment classes and dependencies:
   This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
   [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
+  
+- Add a new Factory for the InstrumentDrivers and registered the current ones
+  [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
+
+- Add interfaces and drivers for Flux bus:
+  This PR brings the qililab implementation of the Flux bus driver and unittests.
+  [#469](https://github.com/qilimanjaro-tech/qililab/pull/469)
 
 - Add ReadoutBus class.
   [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
@@ -17,6 +24,9 @@ This document contains the changes of the current release.
 
 - Fix: add acquisitions and weights to Sequencer QRM
   [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
+
+- Add DriveBus and its interface for the new bus structure.
+  [457](https://github.com/qilimanjaro-tech/qililab/pull/457)
 
 - Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
   [452](https://github.com/qilimanjaro-tech/qililab/pull/452)

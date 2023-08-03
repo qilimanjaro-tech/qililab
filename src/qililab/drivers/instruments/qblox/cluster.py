@@ -5,12 +5,14 @@ from qcodes.instrument import DelegateParameter
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
 from qililab.drivers import parameters
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
 from qililab.drivers.interfaces import Attenuator, LocalOscillator
 
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
 
+@InstrumentDriverFactory.register
 class Cluster(QcodesCluster):
     """Qililab's driver for QBlox-instruments Cluster"""
 

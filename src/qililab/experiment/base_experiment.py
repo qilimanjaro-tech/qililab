@@ -316,7 +316,7 @@ class BaseExperiment:
         )
 
     def __str__(self):
-        """String representation of an experiment."""
+        """String representation of a base experiment."""
         return f"Experiment {self.options.name}:\n" + f"{str(self.platform)}\n" + f"{str(self.options)}"
 
     @property

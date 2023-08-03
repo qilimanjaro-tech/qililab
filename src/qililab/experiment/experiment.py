@@ -267,7 +267,7 @@ class Experiment(BaseExperiment):
         super().set_parameter(parameter=parameter, value=value, alias=alias, element=element, channel_id=channel_id)
 
     def __str__(self):
-        """String representation of a CircuitExperiment."""
+        """String representation of a Experiment."""
         exp_str = super().__str__()
         exp_str = f"{exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
         return exp_str

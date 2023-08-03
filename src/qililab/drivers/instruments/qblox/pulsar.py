@@ -2,10 +2,13 @@
 from qblox_instruments.qcodes_drivers import Pulsar as QcodesPulsar
 from qcodes.instrument.channel import ChannelTuple, InstrumentModule
 
+from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
+
 from .sequencer_qcm import SequencerQCM
 from .sequencer_qrm import SequencerQRM
 
 
+@InstrumentDriverFactory.register
 class Pulsar(QcodesPulsar):
     """Qililab's driver for QBlox-instruments Pulsar"""
 

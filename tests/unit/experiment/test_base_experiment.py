@@ -1,4 +1,4 @@
-"""Tests for the Experiment class."""
+"""Tests for the BaseExperiment class."""
 import copy
 import os
 from contextlib import ExitStack

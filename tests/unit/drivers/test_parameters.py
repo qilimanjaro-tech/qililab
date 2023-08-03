@@ -1,5 +1,4 @@
 """Unit test for drivers parameters"""
-
 import inspect
 import sys
 
