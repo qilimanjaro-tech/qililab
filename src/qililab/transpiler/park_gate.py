@@ -1,3 +1,4 @@
+"""This file contains our native Park gate."""
 from qibo.gates import Gate
 
 

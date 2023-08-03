@@ -1,12 +1,13 @@
 """ExecutionBuilder class"""
 from warnings import warn
 
-from qililab.execution import BusExecution
-from qililab.execution.execution_manager import ExecutionManager
 from qililab.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.pulse_bus_schedule import PulseBusSchedule
 from qililab.utils import Loop, Singleton
+
+from .bus_execution import BusExecution
+from .execution_manager import ExecutionManager
 
 
 class ExecutionBuilder(metaclass=Singleton):
@@ -50,7 +51,7 @@ class ExecutionBuilder(metaclass=Singleton):
                     raise ValueError(
                         f"There is no bus with alias '{alias}'\n|INFO| Make sure the loop alias matches the bus alias specified in the runcard"
                     )
-                elif alias in buses:
+                if alias in buses:
                     warn(
                         f"|WARNING| Loop alias is repeated\nBus execution for bus with alias '{alias}' already created, skipping iteration"
                     )

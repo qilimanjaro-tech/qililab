@@ -10,7 +10,7 @@ from qililab.result.qblox_results.qblox_bins_acquisition import QbloxBinAcquisit
 
 
 @dataclass
-class QbloxBinsAcquisitions(Acquisitions):
+class QbloxBinsAcquisitions(Acquisitions):  # pylint: disable=abstract-method
     """Qblox Bins Acquisitions Results
     Args:
         bins (list[BinsData]): List containing a BinsData for each sequencer.

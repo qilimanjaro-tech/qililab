@@ -11,10 +11,10 @@ NUM_DACS_D5AMODULE = 16
 NUM_DACS_S4GMODULE = 4
 
 
-class MockSpiRack(DummyInstrument):
+class MockSpiRack(DummyInstrument):  # pylint: disable=abstract-method
     """Mocking classes for SpiRack"""
 
-    def __init__(self, name, address, **kwargs):
+    def __init__(self, name, address, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock SpiRack module"""
         self.api = MagicMock()
         super().__init__(name, **kwargs)
@@ -26,10 +26,10 @@ class MockSpiRack(DummyInstrument):
         }
 
 
-class MockD5aModule(DummyInstrument):
+class MockD5aModule(DummyInstrument):  # pylint: disable=abstract-method
     """Mocking classes for D5a module"""
 
-    def __init__(self, parent, name, address, **kwargs):
+    def __init__(self, parent, name, address, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock D5a module"""
         self.api = MagicMock()
         super().__init__(name, **kwargs)
@@ -41,10 +41,10 @@ class MockD5aModule(DummyInstrument):
             self._channels.append(channel)
 
 
-class MockS4gModule(DummyInstrument):
+class MockS4gModule(DummyInstrument):  # pylint: disable=abstract-method
     """Mocking classes for S4g module"""
 
-    def __init__(self, parent, name, address, **kwargs):
+    def __init__(self, parent, name, address, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock S4g module"""
         self.api = MagicMock()
         super().__init__(name, **kwargs)
@@ -59,7 +59,7 @@ class MockS4gModule(DummyInstrument):
 class MockD5aDacChannel(DummyChannel):
     """Mocking classes for D5aDacChannel"""
 
-    def __init__(self, parent, name, dac, **kwargs):
+    def __init__(self, parent, name, dac, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock D5aDacChannel"""
         super().__init__(parent, name, "test_channel", **kwargs)
 
@@ -78,7 +78,7 @@ class MockD5aDacChannel(DummyChannel):
 class MockS4gDacChannel(DummyChannel):
     """Mocking classes for S4gDacChannel"""
 
-    def __init__(self, parent, name, dac, **kwargs):
+    def __init__(self, parent, name, dac, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock S4gDacChannel"""
         super().__init__(parent, name, "test_channel", **kwargs)
 

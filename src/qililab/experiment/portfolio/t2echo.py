@@ -1,14 +1,15 @@
 """This file contains a pre-defined version of the flux spectroscopy experiment."""
 import numpy as np
-from lmfit.models import Model
 from qibo.gates import M
 from qibo.models import Circuit
 
-import qililab as ql
-from qililab.experiment.portfolio import Exp, ExperimentAnalysis
+import qililab as ql  # pylint: disable=cyclic-import
 from qililab.platform import Platform
 from qililab.typings import ExperimentOptions, ExperimentSettings, Parameter
 from qililab.utils import Loop, Wait
+
+from .experiment_analysis import ExperimentAnalysis
+from .fitting_models import Exp
 
 
 class T2Echo(ExperimentAnalysis, Exp):

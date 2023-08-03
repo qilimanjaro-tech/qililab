@@ -1,8 +1,9 @@
+"""File containing the supported native gates."""
 from qibo.gates.gates import _Un_
 
 
 class Drag(_Un_):
-    """Native drag pulse dummy class
+    r"""Native drag pulse dummy class
     Inherits from qibo unitary gates class
 
     The native gate is a drag pulse

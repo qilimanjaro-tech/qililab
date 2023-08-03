@@ -3,7 +3,7 @@ import numpy as np
 from .waveform import Waveform
 
 
-class Square(Waveform):
+class Square(Waveform):  # pylint: disable=too-few-public-methods
     """Square (rectangular) waveform"""
 
     def __init__(self, amplitude: float, duration: int):

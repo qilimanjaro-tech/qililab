@@ -10,12 +10,13 @@ from qililab.typings import Category
 class DummyAWG(AWG):
     """Dummy AWG class."""
 
+    # pylint: disable=unused-argument
     def compile(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
     ) -> list:
         return []
 
-    def run(self):
+    def run(self):  # pylint: disable=arguments-differ
         pass
 
     def upload(self, port: int):

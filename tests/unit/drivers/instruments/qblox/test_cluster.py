@@ -53,7 +53,7 @@ class MockQcmQrm(DummyChannel):
         return None
 
 
-class MockCluster(DummyInstrument):
+class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
     """Mock class for Cluster"""
 
     is_rf_type = True
@@ -69,10 +69,10 @@ class MockCluster(DummyInstrument):
         self._present_at_init = MagicMock()
 
 
-class MockQcmQrmRF(DummyInstrument):
+class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
     is_rf_type = True
 
-    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):  # pylint: disable=unused-argument
         super().__init__(name=name, gates=["dac1"])
 
         # local oscillator parameters
@@ -254,7 +254,7 @@ class TestQcmQrm:
         qcm_qrm_rf = "qcm_qrm_rf"
         qcm_qrm_rf = QcmQrm(parent=parent, name=qcm_qrm_rf, slot_idx=0)
 
-        assert all((channel in qcm_qrm_rf.parameters.keys() for channel in channels))
+        assert all((channel in qcm_qrm_rf.parameters for channel in channels))
 
 
 class TestQcmQrmRFModules:
