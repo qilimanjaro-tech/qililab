@@ -37,7 +37,7 @@ class SequencerQCM(Sequencer, AWG):
         self.add_parameter(name="swap_paths", set_cmd=None, vals=vals.Bool(), initial_value=False)
 
     @property
-    def parameters(self):
+    def params(self):
         """return the parameters of the instrument"""
         return self.parameters
 

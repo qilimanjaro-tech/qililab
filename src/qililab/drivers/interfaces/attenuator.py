@@ -7,7 +7,7 @@ class Attenuator(ABC):
     """Interface of an attenuator."""
     @property
     @abstractmethod
-    def parameters(self):
+    def params(self):
         """parameters property."""
 
     @abstractmethod

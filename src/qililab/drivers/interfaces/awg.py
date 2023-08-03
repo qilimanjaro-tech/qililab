@@ -10,7 +10,7 @@ class AWG(ABC):
     """
     @property
     @abstractmethod
-    def parameters(self):
+    def params(self):
         """parameters property."""
 
     @abstractmethod

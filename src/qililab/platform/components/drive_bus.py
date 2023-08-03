@@ -1,7 +1,5 @@
 """Driver for the Drive Bus class."""
-from abc import ABC, abstractmethod
 from typing import Any
-from qcodes.instrument import InstrumentBase
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
@@ -26,9 +24,9 @@ class DriveBus(BusInterface):
             delay (int): Bus delay
         """
         self.qubit = qubit
-        self.awg = awg
+        self._awg = awg
         self.instruments: dict[str, AWG | LocalOscillator | Attenuator ] = {
-            'awg': self.awg
+            'awg': self._awg
         }
         if local_oscillator:
             self.instruments['local_oscillator'] = local_oscillator
@@ -52,13 +50,12 @@ class DriveBus(BusInterface):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self.awg.execute(
+        self._awg.execute(
                 pulse_bus_schedule=pulse_bus_schedule,
                 nshots=nshots,
                 repetition_duration=repetition_duration,
                 num_bins=num_bins,
             )
-
 
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
@@ -72,7 +69,7 @@ class DriveBus(BusInterface):
         """
         candidates: list[AWG | LocalOscillator | Attenuator] = []
         for instrument in self.instruments.values():
-            if param_name in instrument.parameters:
+            if param_name in instrument.params:
                 candidates.append(instrument)
 
         if len(candidates) == 1:
@@ -94,7 +91,7 @@ class DriveBus(BusInterface):
         Raises:
             Exception: if more than one instrument has the same parameter name.
         """
-        candidates: list[AWG | LocalOscillator | Attenuator] = [instrument for instrument in self.instruments.values() if param_name in instrument.parameters]
+        candidates: list[AWG | LocalOscillator | Attenuator] = [instrument for instrument in self.instruments.values() if param_name in instrument.params]
 
         if len(candidates) == 1:
             return candidates[0].get(param_name)

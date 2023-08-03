@@ -104,7 +104,7 @@ class QcmQrmRfLo(InstrumentModule, LocalOscillator):
         )
 
     @property
-    def parameters(self):
+    def params(self):
         """return the parameters of the instrument"""
         return self.parameters
 
@@ -132,8 +132,8 @@ class QcmQrmRfAtt(InstrumentModule, Attenuator):
             source=parent.parameters[f"{channel}_att"],
             parameter_class=DelegateParameter,
         )
-    
+
     @property
-    def parameters(self):
+    def params(self):
         """return the parameters of the instrument"""
         return self.parameters

@@ -6,7 +6,7 @@ class LocalOscillator(ABC):
     """Interface of a local oscillator."""
     @property
     @abstractmethod
-    def parameters(self):
+    def params(self):
         """parameters property."""
 
     @abstractmethod

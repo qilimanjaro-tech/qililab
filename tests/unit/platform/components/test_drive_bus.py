@@ -128,35 +128,52 @@ class TestDriveBus:
     def test_init(self, drive_bus: DriveBus):
         """Test init method"""
         assert drive_bus.qubit == QUBIT
-        assert isinstance(drive_bus.awg, SequencerQCM)
-        assert isinstance(drive_bus.local_oscillator, QcmQrmRfLo)
-        assert isinstance(drive_bus.attenuator, QcmQrmRfAtt)
+        assert isinstance(drive_bus.instruments['awg'], SequencerQCM)
+        assert isinstance(drive_bus.instruments['local_oscillator'], QcmQrmRfLo)
+        assert isinstance(drive_bus.instruments['attenuator'], QcmQrmRfAtt)
 
     def test_set(self, drive_bus: DriveBus):
         """Test set method"""
+        # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        drive_bus.set(param_name=sequencer_param, value=True)
+        drive_bus.set(param_name=lo_frequency_param, value=2)
+        drive_bus.set(param_name=attenuation_param, value=2)
 
-        assert drive_bus.awg.get(sequencer_param) is True
-        assert drive_bus.local_oscillator.get(lo_frequency_param) == 2
-        assert drive_bus.attenuator.get(attenuation_param) == 2
+        assert drive_bus.instruments['awg'].get(sequencer_param) is True
+        assert drive_bus.instruments['local_oscillator'].get(lo_frequency_param) == 2
+        assert drive_bus.instruments['attenuator'].get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            Exception, match="No instrument found in the bus for the parameter name."
+        ):
+            drive_bus.set(param_name=random_param, value=True)
+
 
     def test_get(self, drive_bus: DriveBus):
         """Test get method"""
+        # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        drive_bus.set(param_name=sequencer_param, value=True)
+        drive_bus.set(param_name=lo_frequency_param, value=2)
+        drive_bus.set(param_name=attenuation_param, value=2)
 
-        assert drive_bus.get("awg", sequencer_param) is True
-        assert drive_bus.get("local_oscillator", lo_frequency_param) == 2
-        assert drive_bus.get("attenuator", attenuation_param) == 2
+        assert drive_bus.get(sequencer_param) is True
+        assert drive_bus.get(lo_frequency_param) == 2
+        assert drive_bus.get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            Exception, match="No instrument found in the bus for the parameter name."
+        ):
+            drive_bus.get(param_name=random_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, drive_bus: DriveBus):
@@ -165,7 +182,6 @@ class TestDriveBus:
         repetition_duration = 1000
         num_bins = 1
         drive_bus.execute(
-            instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
