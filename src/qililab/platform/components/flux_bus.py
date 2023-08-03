@@ -2,10 +2,12 @@
 from typing import Any
 
 from qililab.drivers.interfaces import AWG, CurrentSource, VoltageSource
+from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
 
+@BusFactory.register
 class FluxBus(BusInterface):
     """Qililab's driver for Flux Bus"""
 

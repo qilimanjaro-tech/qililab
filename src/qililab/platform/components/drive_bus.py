@@ -4,10 +4,12 @@ from typing import Any
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
+from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
 
+@BusFactory.register
 class DriveBus(BusInterface):
     """Qililab's driver for Drive Bus"""
 
