@@ -131,7 +131,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].waveform_to_index[_hash]
                 length = next(
                     len(waveform.data)
-                    for waveform in self._buses[
+                    for waveform in self._buses[  # pylint: disable=protected-access
                         bus
                     ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
                     if waveform.index == index
