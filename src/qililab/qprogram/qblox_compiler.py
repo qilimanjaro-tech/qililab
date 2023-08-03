@@ -120,23 +120,27 @@ class QBloxCompiler:
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
-            if waveform:
-                hash = QBloxCompiler._hash(waveform)
-                envelope = waveform.envelope()
-            else:
-                hash = f"zeros {default_length}"
-                envelope = np.zeros(default_length)
+            hash = QBloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
 
             if hash in self._buses[bus].waveform_to_index:
-                return self._buses[bus].waveform_to_index[hash]
+                index = self._buses[bus].waveform_to_index[hash]
+                length = next(
+                    len(waveform.data)
+                    for waveform in self._buses[bus].qpy_sequence._waveforms._waveforms
+                    if waveform.index == index
+                )
+                return index, length
 
+            envelope = waveform.envelope() if waveform else np.zeros(default_length)
             index = self._buses[bus].qpy_sequence._waveforms.add(envelope)
             self._buses[bus].waveform_to_index[hash] = index
-            return index
+            return index, len(envelope)
 
-        index_I = handle_waveform(waveform_I, 0)
-        index_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
-        return index_I, index_Q
+        index_I, length_I = handle_waveform(waveform_I, 0)
+        index_Q, length_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
+        if length_I != length_Q:
+            raise NotImplementedError("Waveforms should have equal lengths.")
+        return index_I, index_Q, length_I
 
     def _handle_acquire_loop(self, element: AcquireLoop):
         for bus in self._buses:
@@ -275,11 +279,11 @@ class QBloxCompiler:
         waveform_I, waveform_Q = element.get_waveforms()
         variables = element.get_variables()
         if not variables:
-            index_I, index_Q = self._append_to_waveforms_of_bus(
+            index_I, index_Q, length = self._append_to_waveforms_of_bus(
                 bus=element.bus, waveform_I=waveform_I, waveform_Q=waveform_Q
             )
             self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Play(index_I, index_Q)
+                component=QPyInstructions.Play(index_I, index_Q, wait_time=length)
             )
 
     @staticmethod
