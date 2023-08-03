@@ -1,3 +1,4 @@
+# pylint: disable=protected-access
 import math
 from collections import deque
 from dataclasses import dataclass
@@ -104,10 +105,10 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         self._qprogram = qprogram  # pylint: disable=attribute-defined-outside-init
         self._buses: dict[str, BusInfo] = self._populate_buses()  # pylint: disable=attribute-defined-outside-init
 
-        traverse(self._qprogram._program)  # pylint: disable=protected-access
+        traverse(self._qprogram._program)
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
-            self._buses[bus].qpy_sequence._program.compile()  # pylint: disable=protected-access
+            self._buses[bus].qpy_sequence._program.compile()
 
         return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
 
@@ -121,7 +122,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                     if bus:
                         yield bus
 
-        buses = set(collect_buses(self._qprogram._program))  # pylint: disable=protected-access
+        buses = set(collect_buses(self._qprogram._program))
         return {bus: BusInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
@@ -132,15 +133,13 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].waveform_to_index[_hash]
                 length = next(
                     len(waveform.data)
-                    for waveform in self._buses[  # pylint: disable=protected-access
-                        bus
-                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
+                    for waveform in self._buses[bus].qpy_sequence._waveforms._waveforms
                     if waveform.index == index
                 )
                 return index, length
 
             envelope = waveform.envelope() if waveform else np.zeros(default_length)
-            index = self._buses[bus].qpy_sequence._waveforms.add(envelope)  # pylint: disable=protected-access
+            index = self._buses[bus].qpy_sequence._waveforms.add(envelope)
             self._buses[bus].waveform_to_index[_hash] = index
             return index, len(envelope)
 
@@ -283,8 +282,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.Loop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1]._iterations for loop in loops)  # pylint: disable=protected-access
-        acquisition_index = self._buses[element.bus].qpy_sequence._acquisitions.add(  # pylint: disable=protected-access
+        num_bins = math.prod(loop[1]._iterations for loop in loops)
+        acquisition_index = self._buses[element.bus].qpy_sequence._acquisitions.add(
             name="acquisition", num_bins=num_bins
         )
 
