@@ -5,6 +5,10 @@ from typing import Any
 
 class CurrentSource(ABC):
     """Current source interface with set, get, on & off abstract methods"""
+    @property
+    @abstractmethod
+    def params(self):
+        """parameters property."""
 
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:

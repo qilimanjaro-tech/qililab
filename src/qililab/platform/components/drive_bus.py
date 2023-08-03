@@ -66,16 +66,18 @@ class DriveBus(BusInterface):
         Raises:
             Exception: if more than one instrument has the same parameter name.
         """
-        candidates: list[AWG | LocalOscillator | Attenuator] = []
-        for instrument in self.instruments.values():
-            if param_name in instrument.params:
-                candidates.append(instrument)
-
-        if len(candidates) == 1:
-            return candidates[0].set(param_name, value)
-        elif len(candidates) > 1:
-            raise Exception("More than one instrument with the same parameter name found in the bus.")
-        elif len(candidates) == 0:
+        if param_name == "delay":
+            self.delay = value
+        elif param_name == "distortions":
+            self.distortions = value
+        else:
+            candidates: list[AWG | LocalOscillator | Attenuator] = [
+                instrument for instrument in self.instruments.values() if param_name in instrument.params
+            ]
+            if len(candidates) == 1:
+                candidates[0].set(param_name, value)
+            if len(candidates) > 1:
+                raise Exception("More than one instrument with the same parameter name found in the bus.")
             raise Exception("No instrument found in the bus for the parameter name.")
 
     def get(self, param_name: str) -> Any:
@@ -90,13 +92,15 @@ class DriveBus(BusInterface):
         Raises:
             Exception: if more than one instrument has the same parameter name.
         """
+        if param_name == "delay":
+            return self.delay
+        if param_name == "distortions":
+            return self.distortions
         candidates: list[AWG | LocalOscillator | Attenuator] = [
             instrument for instrument in self.instruments.values() if param_name in instrument.params
         ]
-
         if len(candidates) == 1:
             return candidates[0].get(param_name)
-        elif len(candidates) > 1:
+        if len(candidates) > 1:
             raise Exception("More than one instrument with the same parameter name found in the bus.")
-        elif len(candidates) == 0:
-            raise Exception("No instrument found in the bus for the parameter name.")
+        raise Exception("No instrument found in the bus for the parameter name.")
