@@ -4,6 +4,10 @@ from typing import Any
 
 class LocalOscillator(ABC):
     """Interface of a local oscillator."""
+    @property
+    @abstractmethod
+    def parameters(self):
+        """parameters property."""
 
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:

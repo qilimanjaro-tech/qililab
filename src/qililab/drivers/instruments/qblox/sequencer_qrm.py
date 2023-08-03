@@ -35,6 +35,11 @@ class SequencerQRM(SequencerQCM, Digitiser):
         self.add_parameter(name="weights_q", vals=vals.Lists(), set_cmd=None, initial_value=[])
         self.add_parameter(name="weighed_acq_enabled", vals=vals.Bool(), set_cmd=None, initial_value=False)
 
+    @property
+    def parameters(self):
+        """return the parameters of the instrument"""
+        return self.parameters
+
     def get_results(self) -> QbloxResult:
         """Wait for sequencer to finish sequence, wait for acquisition to finish and get the acquisition results.
         If any of the timeouts is reached, a TimeoutError is raised.

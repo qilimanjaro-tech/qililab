@@ -26,3 +26,8 @@ class RhodeSchwarzSGS100A(QcodesSGS100A, LocalOscillator):
             source=self.parameters["frequency"],
             parameter_class=DelegateParameter,
         )
+        
+    @property
+    def parameters(self):
+        """return the parameters of the instrument"""
+        return self.parameters

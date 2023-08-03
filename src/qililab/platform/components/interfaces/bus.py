@@ -11,7 +11,6 @@ class BusInterface(ABC):
     @abstractmethod
     def execute(
         self,
-        instrument_name: str,
         pulse_bus_schedule: PulseBusSchedule,
         nshots: int,
         repetition_duration: int,
@@ -27,21 +26,19 @@ class BusInterface(ABC):
         """
 
     @abstractmethod
-    def set(self, instrument_name: str, param_name: str, value: Any) -> None:
+    def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
 
         Args:
-            instrument_name (str): Name of the instrument to set parameter
             param (str): Parameter's name.
             value (float): Parameter's value
         """
 
     @abstractmethod
-    def get(self, instrument_name: str, param_name: str) -> Any:
+    def get(self, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.
 
         Args:
-            instrument_name (str): Name of the instrument to get parameter
             param (str): Parameter's name.
 
         Returns:
