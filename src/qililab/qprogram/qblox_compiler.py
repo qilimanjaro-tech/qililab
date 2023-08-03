@@ -23,7 +23,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import Waveform
+from qililab.waveforms import IQPair, Waveform
 
 
 class BusInfo:
@@ -34,6 +34,7 @@ class BusInfo:
 
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
+        self.weight_to_index: dict[str, int] = {}
         self.parameterized_waveform_to_index: dict[str, int] = {}
 
         main_block = QPyProgram.Block(name="main")
@@ -136,6 +137,25 @@ class QBloxCompiler:
         index_I = handle_waveform(waveform_I, 0)
         index_Q = handle_waveform(waveform_Q, len(waveform_I.envelope()))
         return index_I, index_Q
+
+    def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
+        def handle_waveform(waveform: Waveform):
+            hash = QBloxCompiler._hash(waveform)
+
+            if hash in self._buses[bus].weight_to_index:
+                return self._buses[bus].weight_to_index[hash]
+
+            envelope = waveform.envelope()
+            length = len(envelope)
+            index = self._buses[bus].qpy_sequence._weights.add(envelope)
+            self._buses[bus].waveform_to_index[hash] = index
+            return index, length
+
+        index_I, length_I = handle_waveform(weights.I)
+        index_Q, length_Q = handle_waveform(weights.Q)
+        if length_I != length_Q:
+            raise NotImplementedError("Weights should have equal lengths.")
+        return index_I, index_Q, length_I
 
     def _handle_acquire_loop(self, element: AcquireLoop):
         for bus in self._buses:
@@ -247,6 +267,10 @@ class QBloxCompiler:
         acquisition_index = self._buses[element.bus].qpy_sequence._acquisitions.add(
             name="acquisition", num_bins=num_bins
         )
+
+        if element.weights:
+            index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+
         if num_bins > 1:
             bin_register = QPyProgram.Register()
             block_index_for_move_instruction = loops[0][0] - 1 if len(loops) > 0 else -2
@@ -255,20 +279,55 @@ class QBloxCompiler:
                 component=QPyInstructions.Move(var=0, register=bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
-                    acq_index=acquisition_index, bin_index=bin_register, wait_time=self._settings.integration_length
+            if element.weights:
+                register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_I, register=register_I),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
                 )
-            )
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_Q, register=register_Q),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.AcquireWeighed(
+                        acq_index=acquisition_index,
+                        bin_index=bin_register,
+                        weight_index_0=register_I,
+                        weight_index_1=register_Q,
+                        wait_time=integration_length,
+                    )
+                )
+            else:
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Acquire(
+                        acq_index=acquisition_index, bin_index=bin_register, wait_time=self._settings.integration_length
+                    )
+                )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
             )
         else:
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
-                    acq_index=acquisition_index, bin_index=0, wait_time=self._settings.integration_length
+            if element.weights:
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.AcquireWeighed(
+                        acq_index=acquisition_index,
+                        bin_index=0,
+                        weight_index_0=index_I,
+                        weight_index_1=index_Q,
+                        wait_time=integration_length,
+                    )
                 )
-            )
+            else:
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Acquire(
+                        acq_index=acquisition_index, bin_index=0, wait_time=self._settings.integration_length
+                    )
+                )
 
     def _handle_play(self, element: Play):
         waveform_I, waveform_Q = element.get_waveforms()
