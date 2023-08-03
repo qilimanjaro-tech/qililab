@@ -26,7 +26,9 @@ from qililab.qprogram.variable import Variable
 from qililab.waveforms import IQPair, Waveform
 
 
-class BusInfo:
+class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+    """Class representing the information stored by QBloxCompiler for a bus."""
+
     def __init__(self):
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
@@ -48,10 +50,12 @@ class BusInfo:
 
 @dataclass
 class Settings:
+    """External settings used by QBloxCompiler."""
+
     integration_length: int = 1000
 
 
-class QBloxCompiler:
+class QBloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
     def __init__(self, settings: Settings):
@@ -92,17 +96,18 @@ class QBloxCompiler:
                 if isinstance(element, Block):
                     traverse(element)
                     if appended:
-                        self._buses[bus].qpy_block_stack.pop()
+                        for bus in self._buses:
+                            self._buses[bus].qpy_block_stack.pop()
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        self._qprogram = qprogram
-        self._buses: dict[str, BusInfo] = self._populate_buses()
+        self._qprogram = qprogram  # pylint: disable=attribute-defined-outside-init
+        self._buses: dict[str, BusInfo] = self._populate_buses()  # pylint: disable=attribute-defined-outside-init
 
-        traverse(self._qprogram._program)
+        traverse(self._qprogram._program)  # pylint: disable=protected-access
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
-            self._buses[bus].qpy_sequence._program.compile()
+            self._buses[bus].qpy_sequence._program.compile()  # pylint: disable=protected-access
 
         return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
 
@@ -116,25 +121,27 @@ class QBloxCompiler:
                     if bus:
                         yield bus
 
-        buses = set(collect_buses(self._qprogram._program))
+        buses = set(collect_buses(self._qprogram._program))  # pylint: disable=protected-access
         return {bus: BusInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
-            hash = QBloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
+            _hash = QBloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
 
-            if hash in self._buses[bus].waveform_to_index:
-                index = self._buses[bus].waveform_to_index[hash]
+            if _hash in self._buses[bus].waveform_to_index:
+                index = self._buses[bus].waveform_to_index[_hash]
                 length = next(
                     len(waveform.data)
-                    for waveform in self._buses[bus].qpy_sequence._waveforms._waveforms
+                    for waveform in self._buses[
+                        bus
+                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
                     if waveform.index == index
                 )
                 return index, length
 
             envelope = waveform.envelope() if waveform else np.zeros(default_length)
-            index = self._buses[bus].qpy_sequence._waveforms.add(envelope)
-            self._buses[bus].waveform_to_index[hash] = index
+            index = self._buses[bus].qpy_sequence._waveforms.add(envelope)  # pylint: disable=protected-access
+            self._buses[bus].waveform_to_index[_hash] = index
             return index, len(envelope)
 
         index_I, length_I = handle_waveform(waveform_I, 0)
@@ -274,8 +281,8 @@ class QBloxCompiler:
             for i, loop in enumerate(self._buses[element.bus].qpy_block_stack)
             if isinstance(loop, QPyProgram.Loop) and not loop.name.startswith("avg")
         ]
-        num_bins = math.prod(loop[1]._iterations for loop in loops)
-        acquisition_index = self._buses[element.bus].qpy_sequence._acquisitions.add(
+        num_bins = math.prod(loop[1]._iterations for loop in loops)  # pylint: disable=protected-access
+        acquisition_index = self._buses[element.bus].qpy_sequence._acquisitions.add(  # pylint: disable=protected-access
             name="acquisition", num_bins=num_bins
         )
 

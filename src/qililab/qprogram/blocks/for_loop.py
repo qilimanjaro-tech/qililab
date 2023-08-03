@@ -5,7 +5,7 @@ from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)
-class ForLoop(Block):
+class ForLoop(Block):  # pylint: disable=missing-class-docstring
     variable: Variable
     start: int | float
     stop: int | float
