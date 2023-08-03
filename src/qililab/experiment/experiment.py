@@ -53,13 +53,14 @@ class Experiment:
 
     def run(self, save_experiment=True, save_results=True) -> Results:
         """This method is responsible for:
-        * Creating the live plotting (if connection is provided).
-        * Preparing the `Results` class and the `results.yml` file.
-        * Looping over all given loops and/or software averages. And for each loop:
-            * Saving the results to the ``results.yml`` file.
-            * Sending the data to the live plotting (if asked to).
-            * Save the results to the ``results`` attribute.
-            * Save the results to the remote database (if asked to).
+
+        - Creating the live plotting (if connection is provided).
+        - Preparing the `Results` class and the `results.yml` file.
+        - Looping over all given loops and/or software averages. And for each loop:
+            - Saving the results to the ``results.yml`` file.
+            - Sending the data to the live plotting (if asked to).
+            - Save the results to the ``results`` attribute.
+            - Save the results to the remote database (if asked to).
         """
         # Generate live plotting
         if self.platform.connection is None:
@@ -337,9 +338,10 @@ class Experiment:
 
     @property
     def num_bins(self):
-        """Experiment `num_bins` property.
+        """Returns the number of bins used in the experiment.
+
         Returns
-            int: settings.num_bins.
+            int: Number of bins used in the experiment.
         """
         return self.options.settings.num_bins
 

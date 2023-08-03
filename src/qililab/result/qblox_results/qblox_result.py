@@ -29,6 +29,7 @@ class QbloxResult(Result):
     - threshold: threshold result bin list.
     - valid: list of valid indications per bin.
     - avg_cnt: list of number of averages per bin.
+
     Args:
         pulse_length (int): Duration (in ns) of the pulse.
     """

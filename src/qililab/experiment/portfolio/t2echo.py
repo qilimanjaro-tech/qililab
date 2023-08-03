@@ -26,8 +26,8 @@ class T2Echo(ExperimentAnalysis, Exp):
         qubit (int): qubit index used in the experiment.
         wait_loop_values (ndarray): array of time values to wait for the `Wait` gates, the same value is used on both gates.
         repetition_duration (int, optional): duration of a single repetition in nanoseconds. Default to 10000.
-        measurement_buffer(int, optional): time to wait before taking the measurment. Default to 100.
-        hardware_average (int, optional): number of repetitions used to average the result.`. Default to 10000.
+        measurement_buffer (int, optional): time to wait before taking the measurement. Default to 100.
+        hardware_average (int, optional): number of repetitions used to average the result. Default to 10000.
     """
 
     def __init__(

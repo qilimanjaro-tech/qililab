@@ -76,14 +76,14 @@ class ExperimentAnalysis(CircuitExperiment, FittingModel):
     def fit(self, p0: tuple | None = None):
         """Method used to fit the results of an experiment.
 
-        This method uses the scipy function ``curve_fit`` to fit the function ``self.func`` to the post-processed data.
+        This method uses the scipy function `curve_fit` to fit the function `self.func` to the post-processed data.
 
         Args:
             p0 (tuple, optional): Initial guess for the parameters. Defaults to None.
 
         Returns:
-            float: optimal values for the parameters so that the sum of the squared residuals of
-                ``f(xdata, *popt) - ydata is minimized.
+            float: Optimal values for the parameters so that the sum of the squared residuals of
+                `f(xdata, *popt) - ydata` is minimized.
         """
         if not hasattr(self, "post_processed_results"):
             raise AttributeError(

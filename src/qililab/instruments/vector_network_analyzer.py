@@ -369,14 +369,14 @@ class VectorNetworkAnalyzer(Instrument, ABC):
         return self.send_command(command=":OUTP", arg="OFF")
 
     def send_command(self, command: str, arg: str = "?") -> str:
-        """
-        Send a command directly to the device.
+        """Send a command directly to the device.
 
-        Input:
+        Args:
             command(str): Command to send the device
             arg(str): Argument to send the command with. Default empty string
+
         Example:
-            send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
+            >>> send_command(command=":OUTP",arg="ON") -> ":OUTP ON"
         """
         return self.device.send_command(command=command, arg=arg)
 

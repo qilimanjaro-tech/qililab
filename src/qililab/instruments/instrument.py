@@ -180,10 +180,10 @@ class Instrument(BusElement, ABC):
 
     @property
     def id_(self):
-        """Instrument 'id' property.
+        """ID of the instrument.
 
         Returns:
-            int: settings.id_.
+            int: ID of the instrument.
         """
         return self.settings.id_
 

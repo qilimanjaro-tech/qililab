@@ -141,7 +141,7 @@ class Platform:
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias or id_ and category"""
+        """Get bus given an alias or id and category"""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -155,7 +155,7 @@ class Platform:
 
         Args:
             category (str): Category of the element.
-            id_ (int): ID of the element.
+            id (int): ID of the element.
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
@@ -168,10 +168,10 @@ class Platform:
 
     @property
     def id_(self):
-        """Platform 'id_' property.
+        """ID of the Platform.
 
         Returns:
-            int: settings.id_.
+            int: ID of the Platform.
         """
         return self.settings.id_
 
