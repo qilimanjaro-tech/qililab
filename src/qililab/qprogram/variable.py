@@ -1,6 +1,5 @@
 """This file contains all the variables used inside a QProgram."""
 import math
-from typing import Any
 from uuid import UUID, uuid4
 
 

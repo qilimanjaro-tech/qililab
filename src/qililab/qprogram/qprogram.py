@@ -79,7 +79,7 @@ class QProgram:
         """
         return QProgram._BlockContext(qprogram=self)
 
-    def acquire_loop(self, iterations: int, bins: int = 1):
+    def acquire_loop(self, iterations: int):
         """Define an acquire loop block with averaging in real time.
 
         Blocks need to open a scope.
@@ -284,8 +284,8 @@ class QProgram:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 
-    class _ForLoopContext(_BlockContext):
-        def __init__(
+    class _ForLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(  # pylint: disable=super-init-not-called
             self, qprogram: "QProgram", variable: Variable, start: int | float, stop: int | float, step: int | float
         ):
             self.qprogram = qprogram
