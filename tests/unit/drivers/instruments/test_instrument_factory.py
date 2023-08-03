@@ -22,7 +22,7 @@ class TestInstrumentDriverFactoryWithParametrize:
 
 
 class TestInstrumentDriverFactoryWithoutParametrize:
-    """Unit test for the Factory of instrument drivers creating an SomeClass"""
+    """Unit test for the Factory of instrument drivers creating SomeClass"""
 
     @staticmethod
     def test_handlers():

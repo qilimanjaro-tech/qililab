@@ -21,7 +21,7 @@ class BusFactoryWithParametrize:
 
 
 class TestBusFactoryWithoutParametrize:
-    """Unit test for the Factory of Buses creating an SomeClass"""
+    """Unit test for the Factory of Buses creating SomeClass"""
 
     @staticmethod
     def test_handlers():
