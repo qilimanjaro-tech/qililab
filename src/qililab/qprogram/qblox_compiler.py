@@ -143,12 +143,18 @@ class QBloxCompiler:
             hash = QBloxCompiler._hash(waveform)
 
             if hash in self._buses[bus].weight_to_index:
-                return self._buses[bus].weight_to_index[hash]
+                index = self._buses[bus].weight_to_index[hash]
+                length = next(
+                    len(weight.data)
+                    for weight in self._buses[bus].qpy_sequence._waveforms._waveforms
+                    if weight.index == index
+                )
+                return index, length
 
             envelope = waveform.envelope()
             length = len(envelope)
             index = self._buses[bus].qpy_sequence._weights.add(envelope)
-            self._buses[bus].waveform_to_index[hash] = index
+            self._buses[bus].weight_to_index[hash] = index
             return index, length
 
         index_I, length_I = handle_waveform(weights.I)
