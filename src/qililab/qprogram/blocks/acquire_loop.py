@@ -4,5 +4,5 @@ from qililab.qprogram.blocks.block import Block
 
 
 @dataclass(frozen=True)
-class AcquireLoop(Block):
+class AcquireLoop(Block):  # pylint: disable=missing-class-docstring
     iterations: int

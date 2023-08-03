@@ -6,8 +6,8 @@ from qililab.drivers.instruments import ERASynthPlus
 from qililab.drivers.interfaces import LocalOscillator
 
 
-class MockInstrument(DummyInstrument):
-    def __init__(self, name, address="test", **kwargs):
+class MockInstrument(DummyInstrument):  # pylint: disable=abstract-method
+    def __init__(self, name, address="test", **kwargs):  # pylint: disable=unused-argument
         super().__init__(name, **kwargs)
 
         self.add_parameter(

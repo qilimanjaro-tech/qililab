@@ -39,5 +39,4 @@ class OperationFactory:
         """
         if name in cls._operations:
             return cls._operations[name]
-        else:
-            raise ValueError(f"Operation '{name}' is not registered.")
+        raise ValueError(f"Operation '{name}' is not registered.")

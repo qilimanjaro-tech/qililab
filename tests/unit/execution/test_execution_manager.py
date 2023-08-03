@@ -1,5 +1,4 @@
 """Tests for the ExecutionManager class."""
-import itertools
 from queue import Queue
 from unittest.mock import MagicMock, patch
 

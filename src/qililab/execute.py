@@ -1,7 +1,10 @@
+"""Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
 
-import qililab as ql
-from qililab.experiment.circuit_experiment import CircuitExperiment
+from .experiment.circuit_experiment import CircuitExperiment
+from .platform import build_platform
+from .transpiler import translate_circuit
+from .typings import ExperimentOptions, ExperimentSettings
 
 
 def execute(circuit: Circuit, runcard_name: str, nshots=1):
@@ -39,15 +42,13 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
 
     """
     # transpile and optimize circuit
-    circuit = ql.translate_circuit(circuit, optimize=True)
+    circuit = translate_circuit(circuit, optimize=True)
 
     # create platform
-    platform = ql.build_platform(name=runcard_name)
+    platform = build_platform(name=runcard_name)
 
-    settings = ql.ExperimentSettings(
-        hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots
-    )
-    options = ql.ExperimentOptions(settings=settings)
+    settings = ExperimentSettings(hardware_average=1, repetition_duration=200000, software_average=1, num_bins=nshots)
+    options = ExperimentOptions(settings=settings)
 
     # create experiment with options
     sample_experiment = CircuitExperiment(platform=platform, circuits=[circuit], options=options)

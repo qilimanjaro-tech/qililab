@@ -105,7 +105,6 @@ class E5080B(VectorNetworkAnalyzer):
         self.settings.sweep_mode = VNASweepModes(value)
         mode = self.settings.sweep_mode.name
         self.send_command(f"SENS{channel}:SWE:MODE", mode)
-        return
 
     @property
     def device_timeout(self):
@@ -186,7 +185,7 @@ class E5080B(VectorNetworkAnalyzer):
         """
         try:  # the VNA sometimes throws an error here, we just ignore it
             return self._get_sweep_mode() == "HOLD"
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             return False
 
     def release(self, channel=1):

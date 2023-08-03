@@ -9,7 +9,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Pulsar(QcodesPulsar):
+class Pulsar(QcodesPulsar):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Pulsar"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):

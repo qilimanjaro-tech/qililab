@@ -12,10 +12,10 @@ from qililab.drivers.instruments.keithley.keithley_2600 import Keithley2600Chann
 NUM_SUBMODULES = 2
 
 
-class MockKeithley2600(DummyInstrument):
+class MockKeithley2600(DummyInstrument):  # pylint: disable=abstract-method
     """Mocking classes for Keithley2600"""
 
-    def __init__(self, name: str, address: str, **kwargs):
+    def __init__(self, name: str, address: str, **kwargs):  # pylint: disable=unused-argument
         """Init method for the mock Keithley2600"""
         super().__init__(name, **kwargs)
         self.model = "test_model"
@@ -58,8 +58,7 @@ class MockKeithley2600Channel(DummyChannel):
     def ask(self, cmd: str) -> str:
         if "output" in cmd:
             return self.output
-        else:
-            return ""
+        return ""
 
 
 class TestKeithley2600:

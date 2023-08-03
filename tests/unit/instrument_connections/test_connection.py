@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from qililab.instrument_connections import Connection
+from qililab.instrument_connections.connection import Connection
 
 
 class TestConnection:

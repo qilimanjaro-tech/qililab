@@ -41,10 +41,10 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
     return PulseBusSchedule(timeline=timeline, port=0)
 
 
-class MockQcmQrmRF(DummyInstrument):
+class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
     """Mocks the QcmQrmRF class."""
 
-    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):
+    def __init__(self, name, qcm_qrm, parent=None, slot_idx=0):  # pylint: disable=unused-argument
         """Init function"""
         super().__init__(name=name, gates=["dac1"])
 

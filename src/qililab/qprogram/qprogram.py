@@ -5,7 +5,6 @@ import numpy as np
 from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
 from qililab.qprogram.operations import (
     Acquire,
-    Operation,
     Play,
     ResetPhase,
     SetFrequency,
@@ -232,7 +231,7 @@ class QProgram:
         operation = SetOffset(bus=bus, offset_path0=offset_path0, offset_path1=offset_path1)
         self._active_block.append(operation)
 
-    def variable(self, type: type[int | float]):
+    def variable(self, type: type[int | float]):  # pylint: disable=redefined-builtin
         """Declare a variable.
 
         Args:
@@ -257,10 +256,9 @@ class QProgram:
 
         if type == int:
             return _int_variable()
-        elif type == float:
+        if type == float:
             return _float_variable()
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     class _BlockContext:
         def __init__(self, qprogram: "QProgram"):
@@ -275,8 +273,10 @@ class QProgram:
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._active_block.append(block)
 
-    class _LoopContext(_BlockContext):
-        def __init__(self, qprogram: "QProgram", variable: Variable, values: np.ndarray):
+    class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(  # pylint: disable=super-init-not-called
+            self, qprogram: "QProgram", variable: Variable, values: np.ndarray
+        ):
             self.qprogram = qprogram
             self.block: Loop = Loop(variable=variable, values=values)
 
@@ -295,8 +295,8 @@ class QProgram:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 
-    class _AcquireLoopContext(_BlockContext):
-        def __init__(self, qprogram: "QProgram", iterations: int):
+    class _AcquireLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram", iterations: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
             self.block: AcquireLoop = AcquireLoop(iterations=iterations)
 
