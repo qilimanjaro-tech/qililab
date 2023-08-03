@@ -52,7 +52,7 @@ class MockQcmQrm(DummyChannel):
             get_parser=bool,
             vals=vals.Numbers(0, 20e9),
         )
-        self.set("present", True if slot_idx % 2 == 0 else False)
+        self.set("present", slot_idx % 2 == 0)
 
     def arm_sequencer(self):
         """Mock arm_sequencer method"""
