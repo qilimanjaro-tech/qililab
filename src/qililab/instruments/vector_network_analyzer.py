@@ -9,11 +9,11 @@ from qililab.typings.instruments.vector_network_analyzer import VectorNetworkAna
 DEFAULT_NUMBER_POINTS = 1000
 
 
-class VectorNetworkAnalyzer(Instrument, ABC):
+class VectorNetworkAnalyzer(Instrument, ABC):  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Abstract base class defining all vector network analyzers"""
 
     @dataclass
-    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):
+    class VectorNetworkAnalyzerSettings(Instrument.InstrumentSettings):  # pylint: disable=too-many-instance-attributes
         """Contains the settings of a specific signal generator.
 
         Args:
@@ -99,7 +99,9 @@ class VectorNetworkAnalyzer(Instrument, ABC):
 
         raise ParameterNotFound(f"Invalid Parameter: {parameter}")
 
-    def _set_parameter_float(self, parameter: Parameter, value: float):
+    def _set_parameter_float(  # pylint: disable=too-many-branches, too-many-return-statements
+        self, parameter: Parameter, value: float
+    ):
         """Set instrument settings parameter to the corresponding value
 
         Args:

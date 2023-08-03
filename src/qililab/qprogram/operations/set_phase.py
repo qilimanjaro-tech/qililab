@@ -4,6 +4,6 @@ from qililab.qprogram.operations.operation import Operation
 
 
 @dataclass(frozen=True)
-class SetPhase(Operation):
+class SetPhase(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     phase: float

@@ -92,9 +92,9 @@ class TestPulse:
         dictionary2 = pulse2.to_dict()
         pulse3 = Pulse.from_dict(dictionary2)
 
-        for pulse in [pulse2, pulse3]:
-            assert pulse is not None
-            assert isinstance(pulse, Pulse)
+        for p in [pulse2, pulse3]:
+            assert p is not None
+            assert isinstance(p, Pulse)
 
         assert pulse == pulse2 == pulse3
 

@@ -4,7 +4,7 @@ from .gaussian import Gaussian
 from .waveform import Waveform
 
 
-class DragCorrection(Waveform):
+class DragCorrection(Waveform):  # pylint: disable=too-few-public-methods
     """Calculates the first order drag correction of the imaginary (Ey) channel of a drive pulse. See https://arxiv.org/abs/0901.0534 (10).
     So far only implemented for Gaussian pulses
     """
@@ -34,5 +34,4 @@ class DragCorrection(Waveform):
             x = np.arange(self.waveform.duration / resolution) * resolution
 
             return (-1 * self.drag_coefficient * (x - mu) / sigma**2) * self.waveform.envelope()
-        else:
-            raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")
+        raise NotImplementedError(f"Cannot apply drag correction on a {self.waveform.__class__.__name__} waveform.")

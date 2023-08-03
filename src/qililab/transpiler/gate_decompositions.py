@@ -1,3 +1,4 @@
+"""This file contains the needed classes/methods to decompose gates into native gates."""
 from collections.abc import Callable
 
 import numpy as np
@@ -36,13 +37,14 @@ class GateDecompositions:
         # check that a decomposition exists
         if type(gate) not in self.decompositions:
             raise NotImplementedError(
-                f"Gate of type {gate.__class__} is not supported for transpilation. Supported gates are {self.decompositions.keys()}"
+                f"Gate of type {gate.__class__} is not supported for transpilation. "
+                "Supported gates are {self.decompositions.keys()}"
             )
 
         decomposition = self.decompositions[gate.__class__]
         if callable(decomposition):
             decomposition = decomposition(gate)
-        return [g.on_qubits({i: q for i, q in enumerate(gate.qubits)}) for g in decomposition]
+        return [g.on_qubits(dict(enumerate(gate.qubits))) for g in decomposition]
 
 
 def translate_gates(ngates: list[gates.Gate]) -> list[gates.Gate]:

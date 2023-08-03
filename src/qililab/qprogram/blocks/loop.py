@@ -7,6 +7,6 @@ from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)
-class Loop(Block):
+class Loop(Block):  # pylint: disable=missing-class-docstring
     variable: Variable
     values: np.ndarray

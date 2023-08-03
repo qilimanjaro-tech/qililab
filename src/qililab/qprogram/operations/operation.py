@@ -6,6 +6,6 @@ from qililab.qprogram.variable import Variable
 
 
 @dataclass(frozen=True)
-class Operation(Element):
+class Operation(Element):  # pylint: disable=missing-class-docstring
     def get_variables(self) -> set[Variable]:
         return set([attribute for attribute in self.__dict__.values() if isinstance(attribute, Variable)])

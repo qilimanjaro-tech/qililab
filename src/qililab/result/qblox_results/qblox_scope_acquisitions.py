@@ -16,7 +16,7 @@ from qililab.utils.signal_processing import demodulate
 
 
 @dataclass
-class QbloxScopeAcquisitions(Acquisitions):
+class QbloxScopeAcquisitions(Acquisitions):  # pylint: disable=abstract-method
     """Qblox Scope Acquisitions Result
     Args:
         scope: ScopeData

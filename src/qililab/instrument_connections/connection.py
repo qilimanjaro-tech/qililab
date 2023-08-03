@@ -6,9 +6,7 @@ from typing import Callable
 
 from qililab.config import logger
 from qililab.constants import RUNCARD
-from qililab.typings import FactoryElement
-from qililab.typings.enums import ConnectionName
-from qililab.typings.instruments.device import Device
+from qililab.typings import ConnectionName, Device, FactoryElement
 
 
 class Connection(ABC, FactoryElement):

@@ -1,7 +1,6 @@
 """Tests for the SequencerQRM class."""
 # pylint: disable=protected-access
 import re
-from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
 import pytest
