@@ -21,8 +21,6 @@ class DriveBus(BusInterface):
             awg (AWG): Sequencer
             local_oscillator (LocalOscillator | None): Local oscillator
             attenuator (Attenuator | None): Attenuator
-            distortions (list[PulseDistortion]): List of the distortions to apply to the Bus.
-            delay (int): Bus delay
         """
         self.qubit = qubit
         self._awg = awg
@@ -41,7 +39,7 @@ class DriveBus(BusInterface):
         repetition_duration: int,
         num_bins: int,
     ) -> None:
-        """Execute a pulse bus schedule through an AWGs Instrument belonging to the bus.
+        """Execute a pulse bus schedule through the AWG Instrument.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.

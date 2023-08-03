@@ -30,7 +30,7 @@ class FluxBus(BusInterface):
         repetition_duration: int,
         num_bins: int,
     ) -> None:
-        """Execute a pulse bus schedule through an AWG or CurrentSource Instrument belonging to the bus.
+        """Execute a pulse bus schedule through the AWG Instrument.
 
         Args:
             pulse_bus_schedule (PulseBusSchedule): Pulse Bus Schedule to generate QASM program.

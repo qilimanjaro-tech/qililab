@@ -6,6 +6,11 @@ from typing import Any
 class Digitiser(ABC):
     """Digitiser interface."""
 
+    @property
+    @abstractmethod
+    def params(self):
+        """parameters property."""
+
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
         """Set given `param_name` to the given `value`.
