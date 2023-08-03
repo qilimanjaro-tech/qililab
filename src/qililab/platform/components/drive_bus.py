@@ -1,24 +1,33 @@
 """Driver for the Drive Bus class."""
 from typing import Any
 
-from qililab.drivers.interfaces import AWG, CurrentSource, VoltageSource
+from qililab.drivers.interfaces.attenuator import Attenuator
+from qililab.drivers.interfaces.awg import AWG
+from qililab.drivers.interfaces.local_oscillator import LocalOscillator
 from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 
 
 @BusFactory.register
-class FluxBus(BusInterface):
-    """Qililab's driver for Flux Bus"""
+class DriveBus(BusInterface):
+    """Qililab's driver for Drive Bus"""
 
-    def __init__(self, awg: AWG, source: CurrentSource | VoltageSource):
+    def __init__(self, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None):
         """Initialise the bus.
 
         Args:
-            source (AWG | CurrentSource): Bus source instrument
+            qubit (int): Qubit
+            awg (AWG): Sequencer
+            local_oscillator (LocalOscillator | None): Local oscillator
+            attenuator (Attenuator | None): Attenuator
         """
+        self.qubit = qubit
         self.awg = awg
-        self.source = source
+        if local_oscillator:
+            self.local_oscillator = local_oscillator
+        if attenuator:
+            self.attenuator = attenuator
 
     def execute(
         self,
@@ -28,7 +37,9 @@ class FluxBus(BusInterface):
         repetition_duration: int,
         num_bins: int,
     ) -> None:
-        """Execute a pulse bus schedule through an AWG or CurrentSource Instrument belonging to the bus.
+        """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
+           Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
+           defining the abstrac method for execution of Qprograms.
 
         Args:
             instrument_name (str): Name of the instrument

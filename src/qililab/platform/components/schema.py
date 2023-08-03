@@ -8,7 +8,9 @@ from qililab.instrument_controllers.utils import InstrumentControllerFactory
 from qililab.instruments.instrument import Instrument
 from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils import InstrumentFactory
-from qililab.platform.components import Bus, Buses
+
+from .bus import Bus
+from .buses import Buses
 
 
 class Schema:

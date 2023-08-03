@@ -175,7 +175,9 @@ def fixture_exp(request: pytest.FixtureRequest):
     "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.VectorNetworkAnalyzerDriver",
     autospec=True,
 )
-def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform):
+def fixture_vna_experiment(  # pylint: disable=unused-argument
+    mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform
+):
     """Return a connected experiment with the VNA instrument"""
     loop = Loop(
         alias=SauronVNA.buses[0][RUNCARD.ALIAS],

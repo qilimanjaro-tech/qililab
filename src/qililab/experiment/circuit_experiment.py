@@ -10,7 +10,6 @@ from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment import Experiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -20,6 +19,8 @@ from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
 from qililab.utils.loop import Loop
+
+from .experiment import Experiment
 
 
 class CircuitExperiment(Experiment):
@@ -165,7 +166,7 @@ class CircuitExperiment(Experiment):
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 
-    def draw(
+    def draw(  # pylint: disable=too-many-arguments
         self,
         real: bool = True,
         imag: bool = True,
@@ -241,7 +242,7 @@ class CircuitExperiment(Experiment):
             options=experiment_options,
         )
 
-    def set_parameter(
+    def set_parameter(  # pylint: disable=too-many-arguments
         self,
         parameter: Parameter,
         value: float | str | bool,
