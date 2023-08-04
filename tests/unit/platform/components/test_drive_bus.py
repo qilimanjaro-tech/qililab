@@ -1,9 +1,10 @@
 """Unittest for DriveBus class"""
 from unittest.mock import MagicMock, patch
+
 import pytest
-from qcodes.instrument import DelegateParameter
 import qcodes.validators as vals
 from qcodes import Instrument
+from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers import parameters
