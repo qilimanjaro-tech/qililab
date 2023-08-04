@@ -92,7 +92,7 @@ class Platform:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
-                if name in self.gate_names:
+                if f"{name}({qubits_str})" in self.gate_names:
                     return self.settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)

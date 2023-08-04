@@ -11,6 +11,7 @@ from qibo.models.circuit import Circuit
 from qililab.chip.nodes import Coupler, Qubit, Resonator
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
+from qililab.pulse import PulseShape
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_event import PulseEvent
 from qililab.pulse.pulse_schedule import PulseSchedule
@@ -86,7 +87,7 @@ class CircuitToPulses:
             # find bus
             bus = self.platform.get_bus_by_alias(gate_event.bus)
             # update time
-            start_time = self._update_time(time=time, qubit=m_gate.qubits[0], gate_time=gate_event.duration)
+            start_time = self._update_time(time=time, qubit=m_gate.qubits[0], gate_time=gate_event.pulse.duration)
 
             # add pulse event
             pulse_event = self._gate_element_to_pulse_event(
@@ -127,18 +128,7 @@ class CircuitToPulses:
             list[GateEventSettings]: schedule list with each of the pulses settings
         """
 
-        qubits = gate.qubits[0] if len(gate.qubits) == 1 else gate.qubits
-
-        try:
-            gate_schedule = next(
-                runcard_gate
-                for runcard_gate in self.runcard_gate_settings[qubits]
-                if gate.__class__.__name__ == runcard_gate.name
-            ).schedule
-        except StopIteration as e:
-            raise NameError(
-                f"Did not find runcard definition for circuit gate {gate.__class__.__name__} at qubits {qubits}"
-            ) from e
+        gate_schedule = self.platform.settings.get_gate(name=gate.__class__.__name__, qubits=gate.qubits).schedule
 
         if not isinstance(gate, Drag):
             return gate_schedule
@@ -148,12 +138,14 @@ class CircuitToPulses:
             raise ValueError(
                 f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
             )
-        drag_schedule = copy(gate_schedule[0])  # copy so it's not overwritten
+        drag_schedule = GateEventSettings(
+            **asdict(gate_schedule[0])
+        )  # make new object so that gate_schedule is not overwritten
         theta = self.normalize_angle(angle=gate.parameters[0])
-        amplitude = drag_schedule.amplitude * theta / np.pi
+        amplitude = drag_schedule.pulse.amplitude * theta / np.pi
         phase = self.normalize_angle(angle=gate.parameters[1])
-        drag_schedule.amplitude = amplitude
-        drag_schedule.phase = phase
+        drag_schedule.pulse.amplitude = amplitude
+        drag_schedule.pulse.phase = phase
         return [drag_schedule]
 
     def normalize_angle(self, angle: float):
@@ -179,7 +171,7 @@ class CircuitToPulses:
         """
         time = 0
         for schedule_element in schedule:
-            time = max(time, schedule_element.duration + schedule_element.wait_time)
+            time = max(time, schedule_element.pulse.duration + schedule_element.wait_time)
         return time
 
     def _get_gate_qubits(self, gate: Gate, schedule: list[GateEventSettings] | None = None) -> list[int]:
@@ -221,23 +213,25 @@ class CircuitToPulses:
             tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
         """
 
-        shape_settings = gate_event.shape.copy()
-        pulse_shape = Factory.get(shape_settings.pop(RUNCARD.NAME))(**shape_settings)
+        # copy to avoid modifying runcard settings
+        pulse = gate_event.pulse
+        pulse_shape_copy = pulse.shape.copy()
+        pulse_shape = Factory.get(pulse_shape_copy.pop(RUNCARD.NAME))(**pulse_shape_copy)
 
         # handle measurement gates and target qubits for control gates which might have multi-qubit schedules
         if all(isinstance(target, Resonator) for target in bus.targets):  # measurement gate
             qubit = gate.qubits[0]
         elif isinstance(bus.targets[0], Coupler):
             qubit = None
-        else:  # qubit will be none if no qubits found (i.e. for couplers)
+        else:
             qubit = next(target.qubit_index for target in bus.targets if isinstance(target, Qubit))
 
         return PulseEvent(
             pulse=Pulse(
-                amplitude=gate_event.amplitude,
-                phase=gate_event.phase,
-                duration=gate_event.duration,
-                frequency=gate_event.frequency,
+                amplitude=pulse.amplitude,
+                phase=pulse.phase,
+                duration=pulse.duration,
+                frequency=pulse.frequency,
                 pulse_shape=pulse_shape,
             ),
             start_time=time + gate_event.wait_time + self.platform.settings.delay_before_readout,
@@ -246,8 +240,9 @@ class CircuitToPulses:
         )
 
     def _parse_check_cz(self, cz: CZ):
-        """Checks that given CZ qubits are supported by the hardware (defined in the runcard).
-        Switches CZ(q1,q2) to CZ(q2,q1) if the former is not supported but the later is (note that CZ is symmetric)
+        """Checks if CZ is defined in the runcard, otherwise returns its symmetric gate (with flipped qubits)
+        If none of those are defined in the runcard, a KeyError will be raised by platform.settings on trying
+        to find the gate with qubits flipped
 
         Args:
             cz (CZ): qibo CZ gate
@@ -256,12 +251,11 @@ class CircuitToPulses:
             CZ: qibo CZ gate
         """
         cz_qubits = cz.qubits
-        two_qubit_gates = [qubit for qubit in self.platform.settings.gates.keys() if isinstance(qubit, tuple)]
-        if cz_qubits in two_qubit_gates:
+        try:
+            self.platform.settings.get_gate(name=cz.__class__.__name__, qubits=cz_qubits)
             return cz
-        elif cz_qubits[::-1] in two_qubit_gates:
+        except KeyError:
             return CZ(cz_qubits[1], cz_qubits[0])
-        raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
     def _update_time(self, time: dict[int, int], qubit: int, gate_time: int):
         """Create new timeline if not already created and update time.

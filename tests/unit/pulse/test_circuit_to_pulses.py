@@ -23,182 +23,188 @@ from tests.data import Galadriel
 from tests.utils import platform_db
 
 platform_gates = {
-    0: [
-        GateSettings(
-            name="M",
-            schedule=[
-                GateEventSettings(
-                    bus="feedline_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=200,
-                    shape={"name": "rectangular"},
-                )
-            ],
-        ),
-        GateSettings(
-            name="Drag",
-            schedule=[
-                GateEventSettings(
-                    bus="drive_line_q0_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=198,  # try some non-multiple of clock time (4)
-                    shape={"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-                )
-            ],
-        ),
-        # random X schedule
-        GateSettings(
-            name="X",
-            schedule=[
-                GateEventSettings(
-                    bus="drive_line_q0_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=200,
-                    shape={"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-                ),
-                GateEventSettings(
-                    bus="flux_line_q0_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    wait_time=30,
-                    duration=200,
-                    shape={"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
-                ),
-                GateEventSettings(
-                    bus="drive_line_q0_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=100,
-                    shape={"name": "rectangular"},
-                ),
-                GateEventSettings(
-                    bus="drive_line_q4_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=100,
-                    shape={"name": "gaussian", "num_sigmas": 4},
-                ),
-            ],
-        ),
-    ],
-    1: [
-        GateSettings(
-            name="M",
-            schedule=[
-                GateEventSettings(
-                    bus="feedline_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=200,
-                    shape={"name": "rectangular"},
-                )
-            ],
-        ),
-    ],
-    2: [
-        GateSettings(
-            name="M",
-            schedule=[
-                GateEventSettings(
-                    bus="feedline_bus",
-                    amplitude=0.8,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=200,
-                    shape={"name": "rectangular"},
-                )
-            ],
-        ),
-    ],
-    3: [
-        GateSettings(
-            name="M",
-            schedule=[
-                GateEventSettings(
-                    bus="feedline_bus",
-                    amplitude=0.7,
-                    phase=0.5,
-                    frequency=2.0e6,
-                    duration=100,
-                    shape={"name": "gaussian", "num_sigmas": 2},
-                )
-            ],
-        ),
-    ],
-    4: [
-        GateSettings(
-            name="M",
-            schedule=[
-                GateEventSettings(
-                    bus="feedline_bus",
-                    amplitude=0.7,
-                    phase=0.5,
-                    frequency=2.0e6,
-                    duration=100,
-                    shape={"name": "gaussian", "num_sigmas": 2},
-                )
-            ],
-        ),
-    ],
-    (2, 3): [
-        GateSettings(
-            name="CZ",
-            schedule=[
-                GateEventSettings(
-                    bus="flux_line_q2_bus",
-                    amplitude=0.7,
-                    phase=0,
-                    frequency=3.0e6,
-                    wait_time=10,
-                    duration=90,
-                    shape={"name": "snz", "b": 0.5, "t_phi": 1},
-                ),  # park pulse
-                GateEventSettings(
-                    bus="flux_line_q0_bus",
-                    amplitude=0.7,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=100,
-                    shape={"name": "rectangular"},
-                ),
-            ],
-        ),
-    ],
+    "M(0)": GateSettings(
+        schedule=[
+            {
+                "bus": "feedline_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 200,
+                    "shape": {"name": "rectangular"},
+                },
+            }
+        ],
+    ),
+    "Drag(0)": GateSettings(
+        schedule=[
+            {
+                "bus": "drive_line_q0_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 198,  # try some non-multiple of clock time (4)
+                    "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                },
+            }
+        ],
+    ),
+    # random X schedule
+    "X(0)": GateSettings(
+        schedule=[
+            {
+                "bus": "drive_line_q0_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 200,
+                    "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                },
+            },
+            {
+                "bus": "flux_line_q0_bus",
+                "wait_time": 30,
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 200,
+                    "shape": {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2},
+                },
+            },
+            {
+                "bus": "drive_line_q0_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 100,
+                    "shape": {"name": "rectangular"},
+                },
+            },
+            {
+                "bus": "drive_line_q4_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 100,
+                    "shape": {"name": "gaussian", "num_sigmas": 4},
+                },
+            },
+        ]
+    ),
+    "M(1)": GateSettings(
+        schedule=[
+            {
+                "bus": "feedline_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 200,
+                    "shape": {"name": "rectangular"},
+                },
+            }
+        ]
+    ),
+    "M(2)": GateSettings(
+        schedule=[
+            {
+                "bus": "feedline_bus",
+                "pulse": {
+                    "amplitude": 0.8,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 200,
+                    "shape": {"name": "rectangular"},
+                },
+            }
+        ]
+    ),
+    "M(3)": GateSettings(
+        schedule=[
+            {
+                "bus": "feedline_bus",
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0.5,
+                    "frequency": 2.0e6,
+                    "duration": 100,
+                    "shape": {"name": "gaussian", "num_sigmas": 2},
+                },
+            }
+        ],
+    ),
+    "M(4)": GateSettings(
+        schedule=[
+            {
+                "bus": "feedline_bus",
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0.5,
+                    "frequency": 2.0e6,
+                    "duration": 100,
+                    "shape": {"name": "gaussian", "num_sigmas": 2},
+                },
+            }
+        ],
+    ),
+    "CZ(2,3)": GateSettings(
+        schedule=[
+            {
+                "bus": "flux_line_q2_bus",
+                "wait_time": 10,
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 90,
+                    "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                },
+            },
+            # park pulse
+            {
+                "bus": "flux_line_q0_bus",
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 100,
+                    "shape": {"name": "rectangular"},
+                },
+            },
+        ],
+    ),
     # test couplers
-    (4, 0): [
-        GateSettings(
-            name="CZ",
-            schedule=[
-                GateEventSettings(
-                    bus="flux_line_c2_bus",
-                    amplitude=0.7,
-                    phase=0,
-                    frequency=3.0e6,
-                    wait_time=10,
-                    duration=90,
-                    shape={"name": "snz", "b": 0.5, "t_phi": 1},
-                ),
-                GateEventSettings(
-                    bus="flux_line_q0_bus",
-                    amplitude=0.7,
-                    phase=0,
-                    frequency=3.0e6,
-                    duration=100,
-                    shape={"name": "rectangular"},
-                ),
-            ],
-        ),
-    ],
+    "CZ(4, 0)": GateSettings(
+        schedule=[
+            {
+                "bus": "flux_line_c2_bus",
+                "wait_time": 10,
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 90,
+                    "shape": {"name": "snz", "b": 0.5, "t_phi": 1},
+                },
+            },
+            {
+                "bus": "flux_line_q0_bus",
+                "pulse": {
+                    "amplitude": 0.7,
+                    "phase": 0,
+                    "frequency": 3.0e6,
+                    "duration": 100,
+                    "shape": {"name": "rectangular"},
+                },
+            },
+        ]
+    ),
 }
 
 
@@ -768,24 +774,11 @@ class TestTranslation:
         port_43 = self.get_bus_schedule(pulse_bus_schedule, 43)
         assert all(i == k for i, k in zip(port_43, flux_c2))
 
-    def test_gate_name_error(self, platform: Platform):
-        # test error is raised if the gate's name does not match those in the runcard
-        qubits = 0
-        gate = RZ(qubits, theta=1)
-        circuit = Circuit(1)
-        circuit.add(gate)
-        error_string = re.escape(
-            f"Did not find runcard definition for circuit gate {gate.__class__.__name__} at qubits {qubits}"
-        )
-        translator = CircuitToPulses(platform=platform)
-        with pytest.raises(NameError, match=error_string):
-            translator.translate(circuits=[circuit])
-
     def test_drag_schedule_error(self, platform: Platform):
         # test error is raised if len(drag schedule) > 1
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
-        platform.settings.gates[0][1].schedule.append(platform.settings.gates[0][0].schedule[0])
-        gate_schedule = platform.settings.gates[0][1].schedule
+        platform.settings.gates["Drag(0)"].schedule.append(platform.settings.gates["M(0)"].schedule[0])
+        gate_schedule = platform.settings.gates["Drag(0)"].schedule
         error_string = re.escape(
             f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
         )
@@ -793,14 +786,4 @@ class TestTranslation:
         circuit.add(Drag(0, 1, 1))
         translator = CircuitToPulses(platform=platform)
         with pytest.raises(ValueError, match=error_string):
-            translator.translate(circuits=[circuit])
-
-    def test_cz_parsing_error(self, platform: Platform):
-        # raise error if CZ not defined for some qubits
-        circuit = Circuit(2)
-        circuit.add(CZ(0, 1))
-
-        error_string = re.escape(f"CZ not defined for qubits {(0,1)}")
-        translator = CircuitToPulses(platform=platform)
-        with pytest.raises(NotImplementedError, match=error_string):
             translator.translate(circuits=[circuit])

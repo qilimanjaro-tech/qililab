@@ -92,21 +92,11 @@ class RuncardSchema:
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
         operations: list[OperationSettings]
-        gates: dict[int | tuple[int, int], list[GateSettings]]
+        gates: dict[str, GateSettings]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            gates = {}
-            for gate, schedule in self.gates.items():
-                qubit_str = re.findall(r"\(.*?\)", gate)[0]
-                qubits = ast.literal_eval(qubit_str)
-                schedule = [GateEventSettings(bus=gate_event["bus"], **gate_event["pulse"]) for gate_event in schedule]
-                if qubits not in gates:
-                    gates[qubits] = [GateSettings(name=gate[: -len(qubit_str)], schedule=schedule)]
-                else:
-                    gates[qubits].append(GateSettings(name=gate[: -len(qubit_str)], schedule=schedule))
-
-            self.gates = gates
+            self.gates = {gate: GateSettings(schedule["schedule"]) for gate, schedule in self.gates.items()}
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name
@@ -128,7 +118,7 @@ class RuncardSchema:
                     return operation
             raise ValueError(f"Operation {name} not found in platform settings.")
 
-        def get_gate(self, name: str, qubits: int | tuple[int, int]):
+        def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
             """Get gate with the given name for the given qubit(s).
 
             Args:
@@ -141,11 +131,19 @@ class RuncardSchema:
             Returns:
                 GateSettings: GateSettings class.
             """
-            if qubits in self.gates:
-                for gate in self.gates[qubits]:
-                    if gate.name == name:
-                        return gate
-            raise ValueError(f"Gate {name} for qubits {qubits} not found in settings.")
+
+            gate_qubits = (
+                (qubits,) if isinstance(qubits, int) else qubits
+            )  # tuplify so that the join method below is general
+            gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
+
+            # parse spaces in tuple if needed, check first case with spaces since it is more common
+            if gate_name.replace(" ", "") in self.gates.keys():
+                return self.gates[gate_name.replace(" ", "")]
+            elif gate_name in self.gates.keys():
+                return self.gates[gate_name]
+
+            raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
         def gate_names(self) -> list[str]:
@@ -154,7 +152,7 @@ class RuncardSchema:
             Returns:
                 list[str]: List of the names of all the defined gates.
             """
-            return list({gate.name for gates in self.gates.values() for gate in gates})
+            return list(self.gates.keys())
 
         def set_parameter(
             self,
@@ -170,11 +168,12 @@ class RuncardSchema:
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is None:
                 raise ValueError(f"Alias {alias} has incorrect format")
-            name = regex_match.group("gate")
-            qubits_str = regex_match.group("qubits")
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
-            gate_settings.set_parameter(parameter, value)
+            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
+            gate_settings.set_parameter(parameter, value, schedule_element)
 
     settings: PlatformSettings
     schema: Schema

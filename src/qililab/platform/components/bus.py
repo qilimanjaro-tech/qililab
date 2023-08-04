@@ -151,6 +151,7 @@ class Bus:
         return {
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.category.value,
+            RUNCARD.ALIAS: self.alias,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],

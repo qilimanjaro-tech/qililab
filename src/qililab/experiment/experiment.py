@@ -282,7 +282,8 @@ class Experiment:
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
         elif isinstance(element, GateSettings):
-            element.schedule[int(alias.split("_")[1])].set_parameter(parameter=parameter, value=value)
+            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
+            element.set_parameter(parameter=parameter, value=value, schedule_element=schedule_element)
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore

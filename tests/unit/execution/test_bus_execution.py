@@ -118,7 +118,7 @@ class TestBusExecution:
     def test_acquire_results_raises_error(self, bus_execution: BusExecution):
         """Test that the ``acquire_results`` raises an error when no readout system control is present."""
         with pytest.raises(
-            ValueError, match="The bus drive_line_bus needs a readout system control to acquire the results"
+            ValueError, match="The bus drive_line_q0_bus needs a readout system control to acquire the results"
         ):
             bus_execution.acquire_result()
 
