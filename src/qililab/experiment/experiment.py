@@ -188,7 +188,9 @@ class Experiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0, **kwargs):
+    def _execute_recursive_loops(  # pylint: disable=unused-argument
+        self, loops: list[Loop] | None, queue: Queue, depth=0, **kwargs
+    ):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
@@ -204,7 +206,7 @@ class Experiment:
 
         self._process_loops(loops=loops, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):
+    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):  # pylint: disable=unused-argument
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
@@ -260,7 +262,7 @@ class Experiment:
                 element=element, alias=loop.alias, parameter=loop.parameter, value=value, channel_id=loop.channel_id
             )
 
-    def set_parameter(
+    def set_parameter(  # pylint: disable=too-many-arguments
         self,
         parameter: Parameter,
         value: float | str | bool,

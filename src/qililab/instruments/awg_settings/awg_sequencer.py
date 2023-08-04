@@ -6,7 +6,7 @@ from qililab.utils.asdict_factory import dict_factory
 
 
 @dataclass
-class AWGSequencer:
+class AWGSequencer:  # pylint: disable=too-many-instance-attributes
     """AWG Sequencer
 
     Args:

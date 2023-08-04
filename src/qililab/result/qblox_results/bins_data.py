@@ -7,7 +7,7 @@ from qililab.utils.nested_data_class import nested_dataclass
 
 
 @nested_dataclass
-class BinsData:
+class BinsData:  # pylint: disable=too-few-public-methods
     """Holds the integrated and thresholded values of all bins in a sequencer."""
 
     @dataclass

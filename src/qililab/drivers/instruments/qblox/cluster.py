@@ -13,7 +13,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(QcodesCluster):
+class Cluster(QcodesCluster):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Cluster"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):

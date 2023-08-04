@@ -1,3 +1,4 @@
+"""File containing the supported native gates."""
 from qibo.gates.gates import _Un_
 
 

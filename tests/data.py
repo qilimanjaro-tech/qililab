@@ -1,6 +1,6 @@
 """ Data to use alongside the test suite. """
+# pylint: disable=too-many-lines
 import copy
-from multiprocessing.pool import RUN
 
 import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
@@ -18,7 +18,6 @@ from qililab.constants import (
     PULSEBUSSCHEDULE,
     PULSEEVENT,
     PULSESCHEDULES,
-    PULSESHAPE,
     RUNCARD,
     SCHEMA,
 )

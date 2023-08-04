@@ -116,7 +116,7 @@ class SequencerQCM(Sequencer, AWG):
         """
         return Weights()
 
-    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:
+    def _generate_acquisitions(self, num_bins: int) -> Acquisitions:  # pylint: disable=unused-argument
         """Generate Acquisitions object.
 
         Args:
@@ -164,7 +164,7 @@ class SequencerQCM(Sequencer, AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def _generate_program(
+    def _generate_program(  # pylint: disable=too-many-locals
         self,
         pulse_bus_schedule: PulseBusSchedule,
         waveforms: Waveforms,

@@ -85,7 +85,7 @@ class Chip(DDBBElement):
         Returns:
             int: The port index
         """
-        readout = True if line in [Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT] else False
+        readout = line in [Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT]
         node = self.get_node_from_qubit_idx(idx=idx, readout=readout)
         adjacent_nodes = self._get_adjacent_nodes(node=node)
 

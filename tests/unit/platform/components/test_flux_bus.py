@@ -43,7 +43,7 @@ def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, nu
 class MockQcodesS4gD5aDacChannels(DummyChannel):
     """Mock class for Qcodes S4gDacChannel and D5aDacChannel"""
 
-    def __init__(self, parent, name, dac, **kwargs):
+    def __init__(self, parent, name, dac, **kwargs):  # pylint: disable=unused-argument
         """Mock init method"""
         super().__init__(parent=parent, name=name, channel="", **kwargs)
         self.add_parameter(
@@ -66,7 +66,7 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
             vals=vals.Numbers(0, 20e9),
         )
 
-    def _get_current(self, dac: int) -> float:
+    def _get_current(self, dac: int) -> float:  # pylint: disable=unused-argument
         """
         Gets the current set by the module.
 
@@ -78,7 +78,7 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
         """
         return self.current
 
-    def _get_voltage(self, dac: int) -> float:
+    def _get_voltage(self, dac: int) -> float:  # pylint: disable=unused-argument
         """
         Gets the voltage set by the module.
 
