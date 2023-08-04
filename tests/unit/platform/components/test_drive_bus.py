@@ -1,7 +1,7 @@
 """Unittest for DriveBus class"""
 from unittest.mock import MagicMock, patch
-
 import pytest
+from qcodes.instrument import DelegateParameter
 import qcodes.validators as vals
 from qcodes import Instrument
 from qcodes.tests.instrument_mocks import DummyInstrument
@@ -107,8 +107,15 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
     att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-
-    return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    # duplicated parameter for testing purposes
+    attenuator.add_parameter(
+            "status",
+            label="Delegated parameter device status",
+            source=att_parent.parameters[f"{channel}_lo_en"],
+            parameter_class=DelegateParameter,
+        )
+    return attenuator
 
 
 @pytest.fixture(name="drive_bus")
@@ -148,8 +155,13 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(Exception, match="No instrument found in the bus for the parameter name."):
+        with pytest.raises(AttributeError, match="No instrument found in the bus for the parameter name."):
             drive_bus.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(AttributeError, match="More than one instrument with the same parameter name found in the bus."):
+            drive_bus.set(param_name=duplicated_param, value=True)
 
     def test_get(self, drive_bus: DriveBus):
         """Test get method"""
@@ -167,8 +179,13 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(Exception, match="No instrument found in the bus for the parameter name."):
+        with pytest.raises(AttributeError, match="No instrument found in the bus for the parameter name."):
             drive_bus.get(param_name=random_param)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(AttributeError, match="More than one instrument with the same parameter name found in the bus."):
+            drive_bus.get(param_name=duplicated_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, drive_bus: DriveBus):
