@@ -24,3 +24,11 @@ class DriveBus(BusInterface):
             self.instruments["local_oscillator"] = local_oscillator
         if attenuator:
             self.instruments["attenuator"] = attenuator
+
+    def __str__(self):
+        """String representation of a DriveBus."""
+        return "DriveBus"
+
+    def __eq__(self, other: object) -> bool:
+        """compare two DriveBus objects"""
+        return str(self) == str(other) if isinstance(other, DriveBus) else False

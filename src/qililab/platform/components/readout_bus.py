@@ -34,6 +34,14 @@ class ReadoutBus(BusInterface):
         if attenuator:
             self.instruments["attenuator"] = attenuator
 
+    def __str__(self):
+        """String representation of a ReadoutBus."""
+        return "ReadoutBus"
+
+    def __eq__(self, other: object) -> bool:
+        """compare two ReadoutBus objects"""
+        return str(self) == str(other) if isinstance(other, ReadoutBus) else False
+
     def acquire_results(self) -> QbloxResult:
         """Acquires results through the Digitiser Instrument.
 

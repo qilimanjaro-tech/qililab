@@ -17,3 +17,11 @@ class FluxBus(BusInterface):
         """
         super().__init__(qubit=qubit, awg=awg)
         self.instruments["source"] = source
+
+    def __str__(self):
+        """String representation of a FluxBus."""
+        return "FluxBus"
+
+    def __eq__(self, other: object) -> bool:
+        """compare two FluxBus objects"""
+        return str(self) == str(other) if isinstance(other, FluxBus) else False
