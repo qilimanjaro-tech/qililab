@@ -9,6 +9,7 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 class BusInterface(ABC):
     """Interface of a Bus."""
+
     def __init__(self, qubit: int, awg: AWG):
         """Initialise the bus.
 
@@ -68,7 +69,8 @@ class BusInterface(ABC):
                 candidates[0].set(param_name, value)
             elif len(candidates) > 1:
                 raise AttributeError("More than one instrument with the same parameter name found in the bus.")
-            else: raise AttributeError("No instrument found in the bus for the parameter name.")
+            else:
+                raise AttributeError("No instrument found in the bus for the parameter name.")
 
     def get(self, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.

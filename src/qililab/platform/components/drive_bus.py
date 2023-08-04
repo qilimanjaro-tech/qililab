@@ -23,4 +23,4 @@ class DriveBus(BusInterface):
         if local_oscillator:
             self.instruments["local_oscillator"] = local_oscillator
         if attenuator:
-            self.instruments["attenuator"] = attenuator  
+            self.instruments["attenuator"] = attenuator

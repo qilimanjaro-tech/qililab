@@ -32,7 +32,10 @@ class ReadoutBus(BusInterface):
         self.qubit = qubit
         self._awg = awg
         self._digitiser = digitiser
-        self.instruments: dict[str, AWG | Digitiser | LocalOscillator | Attenuator] = {"awg": self._awg, "digitiser": self._digitiser}
+        self.instruments: dict[str, AWG | Digitiser | LocalOscillator | Attenuator] = {
+            "awg": self._awg,
+            "digitiser": self._digitiser,
+        }
         if local_oscillator:
             self.instruments["local_oscillator"] = local_oscillator
         if attenuator:

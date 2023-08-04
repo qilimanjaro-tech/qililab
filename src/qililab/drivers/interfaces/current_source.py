@@ -6,6 +6,7 @@ from .base_instrument import BaseInstrument
 
 class CurrentSource(BaseInstrument):
     """Current source interface with set, get, on & off abstract methods"""
+
     @abstractmethod
     def on(self) -> None:
         """Start CurrentSource output"""

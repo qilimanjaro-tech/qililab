@@ -111,11 +111,11 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
     # duplicated parameter for testing purposes
     attenuator.add_parameter(
-            "status",
-            label="Delegated parameter device status",
-            source=att_parent.parameters[f"{channel}_lo_en"],
-            parameter_class=DelegateParameter,
-        )
+        "status",
+        label="Delegated parameter device status",
+        source=att_parent.parameters[f"{channel}_lo_en"],
+        parameter_class=DelegateParameter,
+    )
     return attenuator
 
 
@@ -161,7 +161,9 @@ class TestDriveBus:
 
         # Testing with parameter that exists in more than one instrument
         duplicated_param = "status"
-        with pytest.raises(AttributeError, match="More than one instrument with the same parameter name found in the bus."):
+        with pytest.raises(
+            AttributeError, match="More than one instrument with the same parameter name found in the bus."
+        ):
             drive_bus.set(param_name=duplicated_param, value=True)
 
     def test_get(self, drive_bus: DriveBus):
@@ -185,7 +187,9 @@ class TestDriveBus:
 
         # Testing with parameter that exists in more than one instrument
         duplicated_param = "status"
-        with pytest.raises(AttributeError, match="More than one instrument with the same parameter name found in the bus."):
+        with pytest.raises(
+            AttributeError, match="More than one instrument with the same parameter name found in the bus."
+        ):
             drive_bus.get(param_name=duplicated_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")

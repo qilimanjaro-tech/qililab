@@ -9,6 +9,7 @@ class AWG(BaseInstrument):
     """
     Interface for AWG sequencer instrument types.
     """
+
     @abstractmethod
     def execute(
         self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
