@@ -53,7 +53,7 @@ def fixture_experiment_analysis():
     )
     options = ExperimentOptions(loops=[loop])
     analysis = DummyExperimentAnalysis(platform=platform, circuits=[circuit], options=options)
-    analysis.results = MagicMock()
+    analysis.results = MagicMock()  # pylint: disable=attribute-defined-outside-init
     analysis.results.acquisitions.return_value = {
         "i": i,
         "q": q,

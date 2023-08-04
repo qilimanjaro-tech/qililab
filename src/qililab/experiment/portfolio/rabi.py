@@ -23,7 +23,7 @@ class Rabi(ExperimentAnalysis, Cos):
         hardware_average (int, optional): number of repetitions used to average the result. Defaults to 10000.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         platform: Platform,
         qubit: int,

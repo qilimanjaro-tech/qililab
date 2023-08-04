@@ -11,7 +11,7 @@ from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
 from qililab.settings.gate_settings import GateSettings
 from qililab.system_control import ReadoutSystemControl
-from qililab.typings.enums import InstrumentName, Parameter
+from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
 from tests.utils import platform_db, platform_yaml
 

@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 from qilisimulator.evolution import Evolution
 
-from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.result.simulator_result import SimulatorResult
 from qililab.system_control import SimulatedSystemControl

@@ -2,14 +2,13 @@
 from copy import deepcopy
 from dataclasses import dataclass
 
-from qililab.circuit import Circuit
-from qililab.circuit.nodes.operation_node import OperationTiming
-from qililab.circuit.operation_factory import OperationFactory
-from qililab.circuit.operations import Barrier, PulseOperation, Reset, TranslatableToPulseOperation, Wait
-from qililab.circuit.operations.special_operations.special_operation import SpecialOperation
-from qililab.circuit.operations.translatable_to_pulse_operations.measure import Measure
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import ResetMethod
+
+from .circuit import Circuit
+from .nodes.operation_node import OperationTiming
+from .operation_factory import OperationFactory
+from .operations import Barrier, Measure, PulseOperation, Reset, SpecialOperation, TranslatableToPulseOperation, Wait
 
 
 @dataclass
@@ -36,7 +35,7 @@ class CircuitTranspiler:
         for index, layer in enumerate(layers):
             # Calculate maximum end time of previous layer
             max_end_time_of_previous_layer = (
-                max([op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None])
+                max(op_node.timing.end for op_node in layers[index - 1] if op_node.timing is not None)
                 if index >= 1
                 else 0
             )
@@ -89,7 +88,7 @@ class CircuitTranspiler:
         if not circuit.has_timings_calculated:
             circuit = self.calculate_timings(circuit)
         layers = circuit.get_operation_layers(method=self.settings.timings_calculation_method)
-        for layer in layers:
+        for layer in layers:  # pylint: disable=too-many-nested-blocks
             for operation_node in layer:
                 if isinstance(operation_node.operation, SpecialOperation):
                     predecessors = circuit.graph.predecessors(operation_node.index)

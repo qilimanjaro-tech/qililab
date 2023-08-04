@@ -7,7 +7,6 @@ from qibo.gates import CZ, RZ, M, X
 from qibo.models import Circuit
 
 from qililab.chip import Chip
-from qililab.config import logger
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import PulseBusSchedule, PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -210,7 +209,7 @@ platform_gates = {
 
 @pytest.fixture(name="chip")
 def fixture_chip():
-    """Fixture that returns an instance of a ``Chip`` class.
+    r"""Fixture that returns an instance of a ``Chip`` class.
 
 
     Chip schema (qubit_id, GHz, id)

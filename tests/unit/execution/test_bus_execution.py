@@ -14,7 +14,6 @@ from qililab.typings import Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils import Loop
 from tests.data import experiment_params
-from tests.utils import mock_instruments
 
 
 @pytest.fixture(name="pulse_event")

@@ -20,7 +20,7 @@ from qililab.transpiler import Drag
 from qililab.utils import Factory, qibo_gates
 
 
-class CircuitToPulses:
+class CircuitToPulses:  # pylint: disable=too-few-public-methods
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     def __init__(self, platform: Platform):
@@ -28,7 +28,9 @@ class CircuitToPulses:
         self.runcard_gate_settings = self.platform.settings.gates
         self.chip = self.platform.chip
 
-    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+    def translate(  # pylint: disable=too-many-locals, too-many-branches
+        self, circuits: list[Circuit]
+    ) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 

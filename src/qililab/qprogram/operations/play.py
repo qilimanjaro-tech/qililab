@@ -5,6 +5,6 @@ from qililab.waveforms import IQPair, Waveform
 
 
 @dataclass
-class Play(Operation):
+class Play(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     waveform: Waveform | IQPair

@@ -22,20 +22,15 @@ SHAPE = [
 ]
 
 
-@pytest.fixture(
-    name="pulse",
-    params=[
+@pytest.mark.parametrize(
+    "pulse",
+    [
         Pulse(amplitude=amplitude, phase=phase, duration=duration, frequency=frequency, pulse_shape=shape)
         for amplitude, phase, duration, frequency, shape in itertools.product(
             AMPLITUDE, PHASE, DURATION, FREQUENCY, SHAPE
         )
     ],
 )
-def fixture_pulse(request: pytest.FixtureRequest) -> Pulse:
-    """Fixture for the pulse distortion class."""
-    return request.param
-
-
 class TestPulse:
     """Unit tests checking the Pulse attributes and methods"""
 
@@ -97,9 +92,9 @@ class TestPulse:
         dictionary2 = pulse2.to_dict()
         pulse3 = Pulse.from_dict(dictionary2)
 
-        for pulse in [pulse2, pulse3]:
-            assert pulse is not None
-            assert isinstance(pulse, Pulse)
+        for p in [pulse2, pulse3]:
+            assert p is not None
+            assert isinstance(p, Pulse)
 
         assert pulse == pulse2 == pulse3
 
