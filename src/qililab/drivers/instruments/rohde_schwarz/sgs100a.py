@@ -28,6 +28,6 @@ class RhodeSchwarzSGS100A(QcodesSGS100A, LocalOscillator):
         )
 
     @property
-    def parameters(self):
+    def params(self):
         """return the parameters of the instrument"""
         return self.parameters

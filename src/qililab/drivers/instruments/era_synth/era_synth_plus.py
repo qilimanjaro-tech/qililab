@@ -39,6 +39,6 @@ class ERASynthPlus(QcdERASynthPlus, LocalOscillator):
         )
 
     @property
-    def parameters(self):
+    def params(self):
         """return the parameters of the instrument"""
         return self.parameters

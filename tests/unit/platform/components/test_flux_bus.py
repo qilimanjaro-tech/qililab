@@ -21,6 +21,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
+QUBIT = 0
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -118,13 +119,13 @@ def fixture_current_source() -> S4gDacChannel:
 @pytest.fixture(name="flux_bus_current_source")
 def fixture_flux_bus_current_source(sequencer: SequencerQCM, current_source: S4gDacChannel) -> FluxBus:
     """Return FluxBus instance with current source."""
-    return FluxBus(awg=sequencer, source=current_source)
+    return FluxBus(qubit=QUBIT, awg=sequencer, source=current_source)
 
 
 @pytest.fixture(name="flux_bus_voltage_source")
 def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5aDacChannel) -> FluxBus:
     """Return FluxBus instance with voltage source."""
-    return FluxBus(awg=sequencer, source=voltage_source)
+    return FluxBus(qubit=QUBIT, awg=sequencer, source=voltage_source)
 
 
 class TestFluxBus:
@@ -151,65 +152,65 @@ class TestFluxBus:
 
     def test_init_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test init method with voltage source"""
-        assert isinstance(flux_bus_voltage_source.awg, SequencerQCM)
-        assert isinstance(flux_bus_voltage_source.source, D5aDacChannel)
+        assert isinstance(flux_bus_voltage_source.instruments["awg"], SequencerQCM)
+        assert isinstance(flux_bus_voltage_source.instruments["source"], D5aDacChannel)
 
     def test_init_current_source(self, flux_bus_current_source: FluxBus):
         """Test init method with current source"""
-        assert isinstance(flux_bus_current_source.awg, SequencerQCM)
-        assert isinstance(flux_bus_current_source.source, S4gDacChannel)
+        assert isinstance(flux_bus_current_source.instruments["awg"], SequencerQCM)
+        assert isinstance(flux_bus_current_source.instruments["source"], S4gDacChannel)
 
     def test_set_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test set method with voltage source"""
         sequencer_param = "channel_map_path0_out0_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
-        flux_bus_voltage_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
+        flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
         flux_bus_voltage_source.set(
-            instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value
+            param_name=voltage_source_param, value=voltage_source_param_value
         )
 
-        assert flux_bus_voltage_source.awg.get(sequencer_param) is True
-        assert flux_bus_voltage_source.source.get(voltage_source_param) == voltage_source_param_value
+        assert flux_bus_voltage_source.instruments["awg"].get(sequencer_param) is True
+        assert flux_bus_voltage_source.instruments["source"].get(voltage_source_param) == voltage_source_param_value
 
     def test_set_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test set method with current source"""
         sequencer_param = "channel_map_path0_out0_en"
         current_source_param = "current"
         current_source_param_value = 0.03
-        flux_bus_current_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
+        flux_bus_current_source.set(param_name=sequencer_param, value=True)
         flux_bus_current_source.set(
-            instrument_name="source", param_name=current_source_param, value=current_source_param_value
+            param_name=current_source_param, value=current_source_param_value
         )
 
-        assert flux_bus_current_source.awg.get(sequencer_param) is True
-        assert flux_bus_current_source.source.get(current_source_param) == current_source_param_value
+        assert flux_bus_current_source.instruments["awg"].get(sequencer_param) is True
+        assert flux_bus_current_source.instruments["source"].get(current_source_param) == current_source_param_value
 
     def test_get_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test get method with voltage source"""
         sequencer_param = "channel_map_path0_out0_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
-        flux_bus_voltage_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
+        flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
         flux_bus_voltage_source.set(
-            instrument_name="source", param_name=voltage_source_param, value=voltage_source_param_value
+            param_name=voltage_source_param, value=voltage_source_param_value
         )
 
-        assert flux_bus_voltage_source.get("awg", sequencer_param) is True
-        assert flux_bus_voltage_source.get("source", voltage_source_param) == voltage_source_param_value
+        assert flux_bus_voltage_source.get(sequencer_param) is True
+        assert flux_bus_voltage_source.get(voltage_source_param) == voltage_source_param_value
 
     def test_get_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test get method with voltage source"""
         sequencer_param = "channel_map_path0_out0_en"
         current_source_param = "current"
         current_source_param_value = 0.03
-        flux_bus_current_source.set(instrument_name="awg", param_name=sequencer_param, value=True)
+        flux_bus_current_source.set(param_name=sequencer_param, value=True)
         flux_bus_current_source.set(
-            instrument_name="source", param_name=current_source_param, value=current_source_param_value
+            param_name=current_source_param, value=current_source_param_value
         )
 
-        assert flux_bus_current_source.get("awg", sequencer_param) is True
-        assert flux_bus_current_source.get("source", current_source_param) == current_source_param_value
+        assert flux_bus_current_source.get(sequencer_param) is True
+        assert flux_bus_current_source.get(current_source_param) == current_source_param_value
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(
@@ -220,7 +221,6 @@ class TestFluxBus:
         repetition_duration = 1000
         num_bins = 1
         flux_bus_current_source.execute(
-            instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,

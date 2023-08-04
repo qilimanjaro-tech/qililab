@@ -106,6 +106,10 @@ class D5aDacChannel(QcodesD5aDacChannel, VoltageSource):
         name (str): Name for the instrument channel
         dac (int): Number of the dac that this channel corresponds to
     """
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
 
     def on(self) -> None:
         """Start D5aDacChannel"""
@@ -126,6 +130,10 @@ class S4gDacChannel(QcodesS4gDacChannel, CurrentSource):
         name (str): Name for the instrument channel
         dac (int): Number of the dac that this channel corresponds to
     """
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
 
     def on(self) -> None:
         """Start S4gDacChannel"""
