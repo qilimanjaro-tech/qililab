@@ -38,7 +38,7 @@ def save_platform(platform: Platform, database: bool = False):
     return PLATFORM_MANAGER_YAML.dump(platform=platform)
 
 
-def set_new_drivers_flag(value: bool = False):
+def set_new_drivers_flag(value: bool):
     """Turns on/off the new drivers flag.
 
     Args:
