@@ -2,11 +2,13 @@
 from typing import Any
 
 from qililab.drivers.interfaces import AWG, Attenuator, Digitiser, LocalOscillator
+from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components.interfaces import BusInterface
 from qililab.pulse import PulseBusSchedule
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
+@BusFactory.register
 class ReadoutBus(BusInterface):
     """Qililab's driver for Readout Bus"""
 

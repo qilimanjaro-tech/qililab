@@ -3,8 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from qibo.gates import M, X
-from sympy import Q
+from qibo.gates import M
 
 from qililab import build_platform
 from qililab.experiment import T1
@@ -18,8 +17,8 @@ I_AMPLITUDE, I_RATE, I_OFFSET = (5, -2, 0)
 Q_AMPLITUDE, Q_RATE, Q_OFFSET = (9, -2, 0)
 
 x = np.linspace(START, STOP, NUM)
-i = I_AMPLITUDE * np.exp(I_RATE * x)
-q = Q_AMPLITUDE * np.exp(Q_RATE * x)
+i_data = I_AMPLITUDE * np.exp(I_RATE * x)
+q_data = Q_AMPLITUDE * np.exp(Q_RATE * x)
 
 
 @pytest.fixture(name="t1")
@@ -33,8 +32,8 @@ def fixture_t1():
     analysis = T1(platform=platform, qubit=0, wait_loop_values=np.linspace(start=START, stop=STOP, num=NUM))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
-        "i": i,
-        "q": q,
+        "i": i_data,
+        "q": q_data,
     }
     return analysis
 
@@ -62,5 +61,5 @@ class TestT1:
         """Test the ``func`` method."""
         assert np.allclose(
             t1.func(xdata=x, amplitude=I_AMPLITUDE, rate=I_RATE, offset=I_OFFSET),
-            i,
+            i_data,
         )

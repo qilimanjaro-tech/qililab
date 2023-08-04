@@ -14,8 +14,8 @@ START = 1
 STOP = 1000
 STEP = 2
 x = np.arange(START, STOP, step=STEP)
-i = 5 * np.sin(0.01 * x)
-q = 9 * np.sin(0.01 * x)
+i_data = 5 * np.sin(0.01 * x)
+q_data = 9 * np.sin(0.01 * x)
 
 
 @pytest.fixture(name="flipping_sequence")
@@ -29,8 +29,8 @@ def fixture_flipping_sequence():
     analysis = FlippingSequence(platform=platform, qubit=0, loop_values=np.arange(start=START, stop=STOP, step=STEP))
     analysis.results = MagicMock()
     analysis.results.acquisitions.return_value = {
-        "i": i,
-        "q": q,
+        "i": i_data,
+        "q": q_data,
     }
     return analysis
 
@@ -62,23 +62,23 @@ class TestFlippingSequence:
         """Test the ``func`` method."""
         assert np.allclose(
             flipping_sequence.func(xdata=x, amplitude=5, frequency=0.01 / (2 * np.pi), phase=-np.pi / 2, offset=0),
-            i,
+            i_data,
         )
 
     def test_fit(self, flipping_sequence: FlippingSequence):
         """Test fit method."""
-        flipping_sequence.post_processed_results = q
+        flipping_sequence.post_processed_results = q_data
         popt = flipping_sequence.fit(p0=(-8, 0.005 / (2 * np.pi), 3 * np.pi / 2, 0))  # p0 is an initial guess
         assert np.allclose(popt, (-9, 0.01 / (2 * np.pi), np.pi / 2, 0), atol=1e-5)
 
     def test_plot(self, flipping_sequence: FlippingSequence):
         """Test plot method."""
-        flipping_sequence.post_processed_results = q
+        flipping_sequence.post_processed_results = q_data
         popt = flipping_sequence.fit()
         fig = flipping_sequence.plot()
         scatter_data = fig.findobj(match=lambda x: hasattr(x, "get_offsets"))[0].get_offsets()
         assert np.allclose(scatter_data[:, 0], x)
-        assert np.allclose(scatter_data[:, 1], q)
+        assert np.allclose(scatter_data[:, 1], q_data)
         ax = fig.axes[0]
         line = ax.lines[0]
         assert np.allclose(line.get_xdata(), x)

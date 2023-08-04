@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 import qibo
 from qibo import gates
 from qibo.backends import NumpyBackend
@@ -40,9 +39,9 @@ def random_circuit(
     # if exhaustive = True then add all the gates available
     else:
         if ngates < len(gates_list):
-            raise Exception("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
+            raise ValueError("If exhaustive is set to True then ngates must be bigger than len(gates_list)!")
         list_gates = []
-        for k in range(ngates // len(gates_list)):
+        for _ in range(ngates // len(gates_list)):
             list_gates.extend(gates_list)
         list_gates.extend(rng.choice(gates_list, ngates % len(gates_list), replace=False))
         rng.shuffle(list_gates)
@@ -50,10 +49,10 @@ def random_circuit(
     # add gates iteratively
     for gate in list_gates:
         # apply gate to random qubits
-        new_qubits = rng.choice([i for i in range(0, nqubits)], len(gate.qubits), replace=False)
-        gate = gate.on_qubits({i: q for i, q in enumerate(new_qubits)})
+        new_qubits = rng.choice(list(range(nqubits)), len(gate.qubits), replace=False)
+        gate = gate.on_qubits(dict(enumerate(new_qubits)))
         if (len(gate.parameters) != 0) and gate.name != "id":
-            new_params = tuple([1 for param in range(len(gate.parameters))])
+            new_params = tuple(1 for _ in range(len(gate.parameters)))
             gate.parameters = new_params
         c.add(gate)
 
@@ -97,7 +96,7 @@ def apply_circuit(circuit: Circuit) -> np.ndarray:
     return state
 
 
-def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> float:
+def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> float:  # pylint: disable=unused-argument
     """Runs same circuit using transpiled gates and qibo gates,
     and calculates the scalar product of the 2 resulting states
 
@@ -119,8 +118,10 @@ def compare_circuits(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> fl
     return np.abs(np.dot(np.conjugate(state_t), state_q))
 
 
-def compare_exp_z(circuit_q: Circuit, circuit_t: Circuit, nqubits: int) -> list[np.ndarray]:
-    """Runs same circuit using transpiled gates and qibo gates, applies Z operator to all qubits
+def compare_exp_z(  # pylint: disable=unused-argument
+    circuit_q: Circuit, circuit_t: Circuit, nqubits: int
+) -> list[np.ndarray]:
+    r"""Runs same circuit using transpiled gates and qibo gates, applies Z operator to all qubits
     and then calculates the modulo of each coefficient of the state vector. This last operation
     removes the phase difference in Z so that if the state vectors have the same Z observables
     then the state vector coefficients will be the same.
@@ -167,7 +168,7 @@ def test_translate_gates():
     rng = np.random.default_rng(seed=42)  # init random number generator
 
     # circuits are the same
-    for i in range(0, 500):
+    for _ in range(0, 500):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
@@ -219,7 +220,7 @@ def test_transpiler():
     rng = np.random.default_rng(seed=42)  # init random number generator
 
     # circuits are the same
-    for i in range(0, 500):
+    for _ in range(0, 500):
         nqubits = np.random.randint(4, 10)
         c1 = random_circuit(
             nqubits=nqubits,
