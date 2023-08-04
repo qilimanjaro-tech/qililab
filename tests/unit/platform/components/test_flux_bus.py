@@ -166,9 +166,7 @@ class TestFluxBus:
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
-        flux_bus_voltage_source.set(
-            param_name=voltage_source_param, value=voltage_source_param_value
-        )
+        flux_bus_voltage_source.set(param_name=voltage_source_param, value=voltage_source_param_value)
 
         assert flux_bus_voltage_source.instruments["awg"].get(sequencer_param) is True
         assert flux_bus_voltage_source.instruments["source"].get(voltage_source_param) == voltage_source_param_value
@@ -179,9 +177,7 @@ class TestFluxBus:
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(param_name=sequencer_param, value=True)
-        flux_bus_current_source.set(
-            param_name=current_source_param, value=current_source_param_value
-        )
+        flux_bus_current_source.set(param_name=current_source_param, value=current_source_param_value)
 
         assert flux_bus_current_source.instruments["awg"].get(sequencer_param) is True
         assert flux_bus_current_source.instruments["source"].get(current_source_param) == current_source_param_value
@@ -192,9 +188,7 @@ class TestFluxBus:
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
         flux_bus_voltage_source.set(param_name=sequencer_param, value=True)
-        flux_bus_voltage_source.set(
-            param_name=voltage_source_param, value=voltage_source_param_value
-        )
+        flux_bus_voltage_source.set(param_name=voltage_source_param, value=voltage_source_param_value)
 
         assert flux_bus_voltage_source.get(sequencer_param) is True
         assert flux_bus_voltage_source.get(voltage_source_param) == voltage_source_param_value
@@ -205,9 +199,7 @@ class TestFluxBus:
         current_source_param = "current"
         current_source_param_value = 0.03
         flux_bus_current_source.set(param_name=sequencer_param, value=True)
-        flux_bus_current_source.set(
-            param_name=current_source_param, value=current_source_param_value
-        )
+        flux_bus_current_source.set(param_name=current_source_param, value=current_source_param_value)
 
         assert flux_bus_current_source.get(sequencer_param) is True
         assert flux_bus_current_source.get(current_source_param) == current_source_param_value

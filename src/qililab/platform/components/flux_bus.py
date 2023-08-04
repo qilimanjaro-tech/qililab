@@ -8,7 +8,7 @@ from qililab.platform.components.interfaces import BusInterface
 class FluxBus(BusInterface):
     """Qililab's driver for Flux Bus"""
 
-    def __init__(self, qubit:int, awg: AWG, source: CurrentSource | VoltageSource):
+    def __init__(self, qubit: int, awg: AWG, source: CurrentSource | VoltageSource):
         """Initialise the bus.
 
         Args:
