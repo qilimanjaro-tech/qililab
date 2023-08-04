@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 from qililab.pulse import PulseBusSchedule
+
 from .base_instrument import BaseInstrument
 
 

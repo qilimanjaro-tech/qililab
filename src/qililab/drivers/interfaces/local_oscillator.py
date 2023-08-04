@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 from .base_instrument import BaseInstrument
 
+
 class LocalOscillator(BaseInstrument):
     """Interface of a local oscillator."""
     @abstractmethod

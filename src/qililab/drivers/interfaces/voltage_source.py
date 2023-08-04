@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 from .base_instrument import BaseInstrument
 
+
 class VoltageSource(BaseInstrument):
     """Voltage source interface with set, get, on & off abstract methods"""
     @abstractmethod
