@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-
+import json 
 import qililab as ql
 from qililab import qprogram
 from qililab.automatic_calibration.calibration_node import CalibrationNode
@@ -172,8 +172,47 @@ def flipping(drive_bus: str, readout_bus: str):
     return qp
 
 # AllXY experiment node (for final validation)
-def all_xy(drive_bus: str, readout_bus: str):
-    pass
+def all_xy(drive_bus: str, readout_bus: str, circuit_settings_path):
+    qp = ql.QProgram()
+
+    drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    zero_amplitude_drag_pair = DragPulse(amplitude=0.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
+    ones_wf = Square(amplitude=1.0, duration=1000)
+    zeros_wf = Square(amplitude=0.0, duration=1000)
+
+    # TODO: check if this json file is a universal way to store circuit settings or just a HW gimmick. 
+    # If it's universal, handle the fact that this function takes the path of this json as argument.
+    with open(circuit_settings_path, encoding="utf8") as f:
+        circuits_settings = json.load(f)
+    
+    # TODO: check with vyron if this is the right way to render the loop over gates and gate parameters,
+    # by adding a acquire_loop block at each iteration.
+    for circuit_setting in circuits_settings:
+        gates = circuit_setting["gates"]
+        gate_parameters = circuit_setting["params"]
+        for gate, gate_parameter in zip(gates, gate_parameters):    
+            with qp.acquire_loop(iterations=1000):
+                if gate=="RX":
+                    rx_gain = gate_parameter
+                    rx_phase = 0
+                    qp.set_gain(bus = drive_bus, gain_path0= rx_gain, gain_path1 = rx_gain)
+                    qp.set_phase(bus = drive_bus, phase = rx_phase)
+                    qp.play(bus=drive_bus, waveform=drag_pair)
+                elif gate=="RY":
+                    ry_gain = gate_parameter
+                    ry_phase = np.pi/2
+                    qp.set_gain(bus = drive_bus, gain_path0=ry_gain, gain_path1=ry_gain)
+                    qp.set_phase(bus = drive_bus, phase=ry_phase)
+                    qp.play(bus=drive_bus, waveform=drag_pair)
+                elif gate=="I":
+                    qp.set_phase(bus = drive_bus, phase=0)
+                    qp.play(bus=drive_bus, waveform=zero_amplitude_drag_pair)
+                
+                qp.sync()
+                qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
+                qp.acquire(bus=readout_bus)
+
+    return qp
 
 ######################################################################################################
 """
