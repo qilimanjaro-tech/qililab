@@ -37,17 +37,8 @@ class MockGS200Monitor(DummyChannelInstrument):  # pylint: disable=abstract-meth
     def write(self, cmd: str) -> None:
         return None
 
-    def off(self) -> None:
-        """Turn measurement off"""
-        self._enabled = False
-
-    def on(self) -> None:
-        """Turn measurement on"""
-        self._enabled = True
-
-    def state(self) -> int:
-        """Check measurement state"""
-        return self._enabled
+    def ask(self, cmd: str) -> str:
+        return "1" if self._enabled else "0"
 
 
 class TestGS200:
