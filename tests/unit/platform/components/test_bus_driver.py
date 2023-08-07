@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from qcodes import Instrument
+
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.platform.components.bus_driver import BusDriver
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
