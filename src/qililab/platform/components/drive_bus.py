@@ -27,8 +27,4 @@ class DriveBus(Bus):
 
     def __str__(self):
         """String representation of a DriveBus."""
-        return "DriveBus"
-
-    def __eq__(self, other: object) -> bool:
-        """compare two DriveBus objects"""
-        return str(self) == str(other) if isinstance(other, DriveBus) else False
+        return f"DriveBus {self.qubit} + ".join(f"--|{instrument}|----" for instrument in self.instruments.values())

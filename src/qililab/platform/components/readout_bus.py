@@ -36,11 +36,7 @@ class ReadoutBus(Bus):
 
     def __str__(self):
         """String representation of a ReadoutBus."""
-        return "ReadoutBus"
-
-    def __eq__(self, other: object) -> bool:
-        """compare two ReadoutBus objects"""
-        return str(self) == str(other) if isinstance(other, ReadoutBus) else False
+        return f"ReadoutBus {self.qubit} + ".join(f"--|{instrument}|----" for instrument in self.instruments.values())
 
     def acquire_results(self) -> QbloxResult:
         """Acquires results through the Digitiser Instrument.
