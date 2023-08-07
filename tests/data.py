@@ -1,8 +1,9 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-import numpy as np
 from typing import Any
+
+import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models.circuit import Circuit
 
