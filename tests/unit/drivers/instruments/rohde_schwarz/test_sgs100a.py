@@ -51,3 +51,8 @@ class TestRhodeSchwarzSGS100A:
         rs.set("frequency", 2)
         assert rs.get("lo_frequency") == 2
         assert rs.lo_frequency.label == "Delegated parameter for local oscillator frequency"
+        
+    def test_params(self):
+        """Unittest to test the params property."""
+        rs = RhodeSchwarzSGS100A(name="dummy_SGS100A", address="none")
+        assert rs.params == rs.parameters

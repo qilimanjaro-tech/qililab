@@ -132,5 +132,5 @@ class TestBusDriver:
         )
 
     def test_eq(self, bus: BusDriver):
-        """Unittest for __eq__ method.""" 
+        """Unittest for __eq__ method."""
         assert "random str" != bus
