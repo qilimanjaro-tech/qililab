@@ -238,3 +238,10 @@ class TestReadoutBus:
         readout_bus.acquire_results()
 
         mock_acquire.assert_called_once()
+
+    def test_str(self, readout_bus: ReadoutBus):
+        """Unittest for __str__ method."""
+        expected_str = f"ReadoutBus {ALIAS}: " + "".join(
+            f"--|{instrument}|----" for instrument in readout_bus.instruments.values()
+        )
+        assert str(readout_bus) == expected_str

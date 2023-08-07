@@ -220,3 +220,10 @@ class TestDriveBus:
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
+
+    def test_str(self, drive_bus: DriveBus):
+        """Unittest for __str__ method."""
+        expected_str = f"DriveBus {ALIAS}: " + "".join(
+            f"--|{instrument}|----" for instrument in drive_bus.instruments.values()
+        )
+        assert str(drive_bus) == expected_str

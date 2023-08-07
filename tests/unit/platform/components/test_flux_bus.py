@@ -307,3 +307,10 @@ class TestFluxBus:
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
+
+    def test_str(self, flux_bus_current_source: FluxBus):
+        """Unittest for __str__ method."""
+        expected_str = f"FluxBus {ALIAS}: " + "".join(
+            f"--|{instrument}|----" for instrument in flux_bus_current_source.instruments.values()
+        )
+        assert str(flux_bus_current_source) == expected_str
