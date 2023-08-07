@@ -66,7 +66,7 @@ class BusDriver(ABC):
         elif param_name == "distortions":
             raise NotImplementedError("this feature is not yet implemented")
         else:
-            candidates: list[BaseInstrument| None] = [
+            candidates: list[BaseInstrument | None] = [
                 instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
             ]
             if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
@@ -95,9 +95,9 @@ class BusDriver(ABC):
             return self.delay
         if param_name == "distortions":
             raise NotImplementedError("this feature is not yet implemented")
-        candidates: list[BaseInstrument| None] = [
-                instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
-            ]
+        candidates: list[BaseInstrument | None] = [
+            instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
+        ]
         if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
             return candidates[0].get(param_name)
         if len(candidates) > 1:
