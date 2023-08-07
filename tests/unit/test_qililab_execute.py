@@ -18,5 +18,5 @@ class TestExecute:
         circuit.add([X(1), H(2), RY(0, 2), CNOT(4, 1), X(4), H(3), M(*range(5))])
         runcard = "galadriel"
         ql.execute(circuit, runcard)
-        mock_build.assert_called_with(platform_name=runcard, connection=None)
+        mock_build.assert_called_with(platform_name=runcard, connection=None, new_drivers=False)
         mock_execute.assert_called_once_with(save_experiment=False, save_results=False)
