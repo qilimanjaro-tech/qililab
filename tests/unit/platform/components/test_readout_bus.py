@@ -121,9 +121,7 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 
 
 @pytest.fixture(name="readout_bus")
-def fixture_readout_bus(
-    digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
-) -> ReadoutBus:
+def fixture_readout_bus(digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> ReadoutBus:
     """Return ReadoutBus instance"""
     return ReadoutBus(
         alias=ALIAS,
