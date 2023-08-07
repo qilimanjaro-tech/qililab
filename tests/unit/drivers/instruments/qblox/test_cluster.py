@@ -15,8 +15,9 @@ from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
 
 NUM_SLOTS = 20
+PRESENT_SUBMODULES = [2, 4, 6, 8, 10, 12, 16, 18, 20]
 NUM_SEQUENCERS = 6
-DUMMY_CFG = {"1": ClusterType.CLUSTER_QCM_RF}
+DUMMY_CFG = {1: ClusterType.CLUSTER_QCM_RF}
 PULSE_SIGMAS = 4
 PULSE_AMPLITUDE = 1
 PULSE_PHASE = 0
@@ -42,6 +43,17 @@ class MockQcmQrm(DummyChannel):
         self.is_qrm_type = False
         self.is_rf_type = False
 
+        self.add_parameter(
+            name="present",
+            label="Present",
+            unit=None,
+            get_cmd=None,
+            set_cmd=None,
+            get_parser=bool,
+            vals=vals.Numbers(0, 20e9),
+        )
+        self.set("present", slot_idx % 2 == 0)
+
     def arm_sequencer(self):
         """Mock arm_sequencer method"""
 
@@ -65,8 +77,13 @@ class MockCluster(DummyInstrument):  # pylint: disable=abstract-method
         self.is_rf_type = True
         self.address = identifier
         self._num_slots = 20
-        self.submodules = {"test_submodule": MagicMock()}
-        self._present_at_init = MagicMock()
+        self.submodules = {}
+        for idx in range(1, NUM_SLOTS + 1):
+            self.submodules[f"module{idx}"] = MockQcmQrm(parent=self, name=f"module{idx}", slot_idx=idx)
+
+    def _present_at_init(self, slot_idx: int):
+        """Mock _present_at_init method"""
+        return slot_idx in PRESENT_SUBMODULES
 
 
 class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
@@ -159,9 +176,15 @@ class TestCluster:
         qcm_qrm_idxs = list(cluster_submodules.keys())
         cluster_submodules_expected_names = [f"{cluster_name}_module{idx}" for idx in range(1, NUM_SLOTS + 1)]
         cluster_registered_names = [cluster_submodules[idx].name for idx in qcm_qrm_idxs]
+        present_idxs = [slot_idx - 1 for slot_idx in range(1, 20) if cluster._present_at_init(slot_idx)]
+        present_names = [qcm_qrm_idxs[idx] for idx in present_idxs]
 
         assert len(cluster_submodules) == NUM_SLOTS
-        assert all(isinstance(cluster_submodules[qcm_qrm_idx], QcmQrm) for qcm_qrm_idx in qcm_qrm_idxs)
+        assert all(isinstance(cluster_submodules[idx], QcmQrm) for idx in present_names)
+        non_present_modules = [
+            cluster_submodules[f"module{idx}"] for idx in range(1, NUM_SLOTS + 1) if idx not in PRESENT_SUBMODULES
+        ]
+        assert all(isinstance(module, MockQcmQrm) for module in non_present_modules)
         assert cluster_submodules_expected_names == cluster_registered_names
 
 
