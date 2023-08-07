@@ -118,7 +118,7 @@ class TestBusDriver:
 
     def test_eq(self, bus: BusDriver):
         """Test comparing two Bus objects"""
-        assert bus.__eq__(bus) == True
+        assert bus.__eq__(bus) is True
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, bus: BusDriver):
