@@ -5,9 +5,10 @@ import pytest
 from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyChannel
-from qililab.drivers.interfaces import CurrentSource, VoltageSource
+
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
+from qililab.drivers.interfaces import CurrentSource, VoltageSource
 from qililab.platform.components import FluxBus
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
 from qililab.pulse.pulse_event import PulseEvent
