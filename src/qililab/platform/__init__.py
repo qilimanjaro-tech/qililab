@@ -8,10 +8,9 @@ from .platform_manager_yaml import PlatformManagerYAML
 
 PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()
-NEW_DRIVERS = False
 
 
-def build_platform(name: str, connection: API | None = None, database: bool = False) -> Platform:
+def build_platform(name: str, connection: API | None = None, database: bool = False, new_drivers: bool = False) -> Platform:
     """Build platform.
 
     Args:
@@ -23,7 +22,7 @@ def build_platform(name: str, connection: API | None = None, database: bool = Fa
     """
     if database:
         raise NotImplementedError
-    return PLATFORM_MANAGER_YAML.build(platform_name=name, connection=connection, new_drivers=NEW_DRIVERS)
+    return PLATFORM_MANAGER_YAML.build(platform_name=name, connection=connection, new_drivers=new_drivers)
 
 
 def save_platform(platform: Platform, database: bool = False):
@@ -36,22 +35,3 @@ def save_platform(platform: Platform, database: bool = False):
     if database:
         raise NotImplementedError
     return PLATFORM_MANAGER_YAML.dump(platform=platform)
-
-
-def set_new_drivers_flag(value: bool):
-    """Turns on/off the new drivers flag.
-
-    Args:
-        value (bool): If True, turns on the new drivers flag. Defaults to False.
-    """
-    global NEW_DRIVERS  # pylint: disable=C0103
-    NEW_DRIVERS = value
-
-
-def get_new_drivers_flag():
-    """Returns the value of the NEW_DRIVERS flag.
-
-    Returns:
-        NEW_DRIVERS (bool): If True, the new drivers will be used to build the platform.
-    """
-    return NEW_DRIVERS
