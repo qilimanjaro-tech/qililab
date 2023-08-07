@@ -152,7 +152,7 @@ class Experiment(BaseExperiment):
 
     def compile(self) -> list[dict]:
         """Returns a dictionary containing the compiled programs of each bus for each circuit / pulse schedule of the
-        circuit experiment.
+        experiment.
 
         Returns:
             list[dict]: List of dictionaries, where each dictionary has a bus alias as keys and a list of
