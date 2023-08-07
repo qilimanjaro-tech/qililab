@@ -8,16 +8,19 @@ from qililab.platform.components.interfaces import Bus
 class FluxBus(Bus):
     """Qililab's driver for Flux Bus"""
 
-    def __init__(self, qubit: int, awg: AWG, source: CurrentSource | VoltageSource):
+    def __init__(self, alias:str, qubit: int, awg: AWG, source: CurrentSource | VoltageSource):
         """Initialise the bus.
 
         Args:
+            alias: Bus alias
             awg (AWG): Bus awg instrument
             source (CurrentSource | VoltageSource): Bus source instrument
         """
-        super().__init__(qubit=qubit, awg=awg)
+        super().__init__(alias=alias, qubit=qubit, awg=awg)
         self.instruments["source"] = source
 
     def __str__(self):
-        """String representation of a FluxBus."""
-        return f"FluxBus {self.qubit} + ".join(f"--|{instrument}|----" for instrument in self.instruments.values())
+        """String representation of a FluxBus. Prints a drawing of the bus elements."""
+        return f"FluxBus {self.qubit}: " + "".join(
+            f"--|{instrument}|----" for instrument in self.instruments.values()
+        )

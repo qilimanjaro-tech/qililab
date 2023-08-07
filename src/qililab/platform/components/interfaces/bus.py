@@ -10,15 +10,17 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 class Bus(ABC):
     """Bus Class."""
 
-    def __init__(self, qubit: int, awg: AWG):
+    def __init__(self, alias: str, qubit: int, awg: AWG):
         """Initialise the bus.
 
         Args:
+            alis (str): Bus alias
             qubit (int): Qubit
             awg (AWG): Sequencer
             local_oscillator (LocalOscillator | None): Local oscillator
             attenuator (Attenuator | None): Attenuator
         """
+        self.alias = alias
         self.qubit = qubit
         self._awg = awg
         self.instruments: dict[str, BaseInstrument] = {"awg": self._awg}
@@ -69,9 +71,9 @@ class Bus(ABC):
             if len(candidates) == 1:
                 candidates[0].set(param_name, value)
             elif len(candidates) > 1:
-                raise AttributeError("More than one instrument with the same parameter name found in the bus.")
+                raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
             else:
-                raise AttributeError("No instrument found in the bus for the parameter name.")
+                raise AttributeError(f"Bus {self.alias} doesn't contain any instrument with the parameter {param_name}.")
 
     def get(self, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.

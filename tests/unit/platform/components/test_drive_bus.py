@@ -24,6 +24,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 QUBIT = 0
+ALIAS = "drivebus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -81,6 +82,9 @@ class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
                 vals=vals.Numbers(0, 20e9),
             )
 
+    def __str__(self):
+        return "MockQcmQrmRF"
+
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
@@ -122,7 +126,7 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 @pytest.fixture(name="drive_bus")
 def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> DriveBus:
     """Return DriveBus instance"""
-    return DriveBus(qubit=QUBIT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
+    return DriveBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
 
 
 class TestDriveBus:
@@ -135,6 +139,7 @@ class TestDriveBus:
 
     def test_init(self, drive_bus: DriveBus):
         """Test init method"""
+        assert drive_bus.alias == ALIAS
         assert drive_bus.qubit == QUBIT
         assert isinstance(drive_bus.instruments["awg"], SequencerQCM)
         assert isinstance(drive_bus.instruments["local_oscillator"], QcmQrmRfLo)
@@ -156,13 +161,13 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match="No instrument found in the bus for the parameter name."):
+        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
             drive_bus.set(param_name=random_param, value=True)
 
         # Testing with parameter that exists in more than one instrument
         duplicated_param = "status"
         with pytest.raises(
-            AttributeError, match="More than one instrument with the same parameter name found in the bus."
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
         ):
             drive_bus.set(param_name=duplicated_param, value=True)
 
@@ -182,13 +187,13 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match="No instrument found in the bus for the parameter name."):
+        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
             drive_bus.get(param_name=random_param)
 
         # Testing with parameter that exists in more than one instrument
         duplicated_param = "status"
         with pytest.raises(
-            AttributeError, match="More than one instrument with the same parameter name found in the bus."
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
         ):
             drive_bus.get(param_name=duplicated_param)
 

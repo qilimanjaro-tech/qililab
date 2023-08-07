@@ -11,6 +11,7 @@ class ReadoutBus(Bus):
 
     def __init__(
         self,
+        alias: str,
         qubit: int,
         awg: AWG,
         digitiser: Digitiser,
@@ -20,13 +21,14 @@ class ReadoutBus(Bus):
         """Initialise the bus.
 
         Args:
+            alias (str): Bus alias
             qubit (int): Qubit
             awg (AWG): Arbitrary Wave Generator instance
             digitiser (Digitiser): Arbitrary Wave Generator instance to acquire results
             local_oscillator (LocalOscillator): Local Oscillator
             attenuator (Attenuator): Attenuator
         """
-        super().__init__(qubit=qubit, awg=awg)
+        super().__init__(alias=alias, qubit=qubit, awg=awg)
         self._digitiser = digitiser
         self.instruments["digitiser"] = self._digitiser
         if local_oscillator:
@@ -35,8 +37,10 @@ class ReadoutBus(Bus):
             self.instruments["attenuator"] = attenuator
 
     def __str__(self):
-        """String representation of a ReadoutBus."""
-        return f"ReadoutBus {self.qubit} + ".join(f"--|{instrument}|----" for instrument in self.instruments.values())
+        """String representation of a ReadoutBus. Prints a drawing of the bus elements."""
+        return f"ReadoutBus {self.qubit}: " + "".join(
+            f"--|{instrument}|----" for instrument in self.instruments.values()
+        )
 
     def acquire_results(self) -> QbloxResult:
         """Acquires results through the Digitiser Instrument.
