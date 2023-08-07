@@ -268,6 +268,5 @@ class Experiment(BaseExperiment):
 
     def __str__(self):
         """String representation of a Experiment."""
-        exp_str = super().__str__()
-        exp_str = f"{exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
-        return exp_str
+        base_exp_str = super().__str__()
+        return f"{base_exp_str}\n{str(self.circuits)}\n{str(self.pulse_schedules)}\n"
