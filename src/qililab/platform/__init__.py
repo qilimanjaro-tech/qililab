@@ -44,7 +44,7 @@ def set_new_drivers_flag(value: bool):
     Args:
         value (bool): If True, turns on the new drivers flag. Defaults to False.
     """
-    global NEW_DRIVERS # pylint: disable=C0103
+    global NEW_DRIVERS  # pylint: disable=C0103
     NEW_DRIVERS = value
 
 
