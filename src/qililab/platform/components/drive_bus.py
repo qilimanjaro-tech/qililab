@@ -10,7 +10,9 @@ from qililab.platform.components.interfaces import Bus
 class DriveBus(Bus):
     """Qililab's driver for Drive Bus"""
 
-    def __init__(self, alias:str, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None):
+    def __init__(
+        self, alias: str, qubit: int, awg: AWG, local_oscillator: LocalOscillator | None, attenuator: Attenuator | None
+    ):
         """Initialise the bus.
 
         Args:
@@ -28,6 +30,4 @@ class DriveBus(Bus):
 
     def __str__(self):
         """String representation of a DriveBus. Prints a drawing of the bus elements."""
-        return f"DriveBus {self.alias}: " + "".join(
-            f"--|{instrument}|----" for instrument in self.instruments.values()
-        )
+        return f"DriveBus {self.alias}: " + "".join(f"--|{instrument}|----" for instrument in self.instruments.values())

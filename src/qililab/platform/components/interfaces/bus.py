@@ -73,7 +73,9 @@ class Bus(ABC):
             elif len(candidates) > 1:
                 raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
             else:
-                raise AttributeError(f"Bus {self.alias} doesn't contain any instrument with the parameter {param_name}.")
+                raise AttributeError(
+                    f"Bus {self.alias} doesn't contain any instrument with the parameter {param_name}."
+                )
 
     def get(self, param_name: str) -> Any:
         """Return value associated to a parameter on the bus' instrument.

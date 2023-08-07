@@ -161,7 +161,9 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
             drive_bus.set(param_name=random_param, value=True)
 
         # Testing with parameter that exists in more than one instrument
@@ -187,7 +189,9 @@ class TestDriveBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
             drive_bus.get(param_name=random_param)
 
         # Testing with parameter that exists in more than one instrument

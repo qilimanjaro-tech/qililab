@@ -132,7 +132,12 @@ def fixture_readout_bus(
 ) -> ReadoutBus:
     """Return ReadoutBus instance"""
     return ReadoutBus(
-        alias=ALIAS, qubit=QUBIT, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        alias=ALIAS,
+        qubit=QUBIT,
+        awg=sequencer,
+        digitiser=digitiser,
+        local_oscillator=local_oscillator,
+        attenuator=attenuator,
     )
 
 
@@ -172,7 +177,9 @@ class TestReadoutBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
             readout_bus.set(param_name=random_param, value=True)
 
         # Testing with parameter that exists in more than one instrument
@@ -200,7 +207,9 @@ class TestReadoutBus:
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
-        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
             readout_bus.get(param_name=random_param)
 
         # Testing with parameter that exists in more than one instrument
