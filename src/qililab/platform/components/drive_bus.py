@@ -3,11 +3,11 @@ from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
 from qililab.platform.components.bus_factory import BusFactory
-from qililab.platform.components.interfaces import Bus
+from qililab.platform.components import BusDriver
 
 
 @BusFactory.register
-class DriveBus(Bus):
+class DriveBus(BusDriver):
     """Qililab's driver for Drive Bus"""
 
     def __init__(

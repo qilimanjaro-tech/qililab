@@ -7,7 +7,7 @@ from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
-class Bus(ABC):
+class BusDriver(ABC):
     """Bus Class."""
 
     def __init__(self, alias: str, qubit: int, awg: AWG):
@@ -105,4 +105,4 @@ class Bus(ABC):
 
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
-        return str(self) == str(other) if isinstance(other, Bus) else False
+        return str(self) == str(other) if isinstance(other, BusDriver) else False

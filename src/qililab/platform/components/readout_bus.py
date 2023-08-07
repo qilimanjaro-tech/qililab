@@ -1,12 +1,12 @@
 """Driver for the Drive Bus class."""
 from qililab.drivers.interfaces import AWG, Attenuator, Digitiser, LocalOscillator
 from qililab.platform.components.bus_factory import BusFactory
-from qililab.platform.components.interfaces import Bus
+from qililab.platform.components import BusDriver
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
 @BusFactory.register
-class ReadoutBus(Bus):
+class ReadoutBus(BusDriver):
     """Qililab's driver for Readout Bus"""
 
     def __init__(
