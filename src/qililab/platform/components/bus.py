@@ -153,6 +153,7 @@ class Bus:
             RUNCARD.CATEGORY: self.category.value,
             RUNCARD.ALIAS: self.alias,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
+            RUNCARD.ALIAS: self.alias,
             BUS.PORT: self.port,
             RUNCARD.DISTORTIONS: [distortion.to_dict() for distortion in self.distortions],
             RUNCARD.DELAY: self.delay,
