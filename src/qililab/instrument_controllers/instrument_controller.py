@@ -12,14 +12,14 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
-from qililab.settings import DDBBElement
+from qililab.settings import AliasElement
 from qililab.typings.enums import InstrumentControllerName, InstrumentControllerSubCategory, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
 
 @dataclass(kw_only=True)
-class InstrumentControllerSettings(DDBBElement):
+class InstrumentControllerSettings(AliasElement):
     """Contains the settings of a specific Instrument Controller.
     Args:
         subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.

@@ -5,7 +5,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
-from qililab.settings import DDBBElement
+from qililab.settings import AliasElement
 from qililab.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
@@ -23,7 +23,7 @@ class Bus:
     targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
-    class BusSettings(DDBBElement):
+    class BusSettings(AliasElement):
         """Bus settings.
 
         Args:
@@ -58,14 +58,6 @@ class Bus:
     def __init__(self, settings: dict, platform_instruments: Instruments, chip: Chip):
         self.settings = self.BusSettings(**settings, platform_instruments=platform_instruments)  # type: ignore
         self.targets = chip.get_port_nodes(port_id=self.port)
-
-    @property
-    def id_(self):
-        """Bus 'id_' property.
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
 
     @property
     def alias(self):
@@ -112,18 +104,9 @@ class Bus:
         """
         return self.settings.delay
 
-    @property
-    def category(self):
-        """Bus 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
-
     def __str__(self):
         """String representation of a bus. Prints a drawing of the bus elements."""
-        return f"Bus {self.id_}:  ----{self.system_control}---" + "".join(
+        return f"Bus {self.alias}:  ----{self.system_control}---" + "".join(
             f"--|{target}|----" for target in self.targets
         )
 
@@ -149,8 +132,6 @@ class Bus:
     def to_dict(self):
         """Return a dict representation of the SchemaSettings class."""
         return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.CATEGORY: self.category.value,
             RUNCARD.SYSTEM_CONTROL: self.system_control.to_dict(),
             RUNCARD.ALIAS: self.alias,
             BUS.PORT: self.port,

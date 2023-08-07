@@ -8,7 +8,7 @@ from qililab.config import logger
 from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
 from qililab.result import Result
-from qililab.settings import DDBBElement
+from qililab.settings import AliasElement
 from qililab.typings.enums import InstrumentName, Parameter
 from qililab.typings.instruments.device import Device
 
@@ -24,7 +24,7 @@ class Instrument(BusElement, ABC):
     name: InstrumentName
 
     @dataclass
-    class InstrumentSettings(DDBBElement):
+    class InstrumentSettings(AliasElement):
         """Contains the settings of an instrument.
 
         Args:

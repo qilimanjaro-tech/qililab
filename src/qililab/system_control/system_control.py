@@ -10,7 +10,7 @@ from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
-from qililab.settings import DDBBElement
+from qililab.settings import AliasElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
 
@@ -22,7 +22,7 @@ class SystemControl(BusElement, ABC):
     name = SystemControlName.SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
-    class SystemControlSettings(DDBBElement):
+    class SystemControlSettings(AliasElement):
         """SystemControlSettings class."""
 
         instruments: list[Instrument]

@@ -10,7 +10,7 @@ from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
 from qililab.settings import RuncardSchema
-from qililab.typings.enums import Category, Line, Parameter
+from qililab.typings.enums import Line, Parameter
 from qililab.typings.yaml_type import yaml
 
 
@@ -85,7 +85,7 @@ class Platform:  # pylint: disable=too-many-public-methods
             tuple[object, list | None]: Element class together with the index of the bus where the element is located.
         """
         if alias is not None:
-            if alias == Category.PLATFORM.value:
+            if alias == "platform":
                 return self.settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is not None:
@@ -160,7 +160,7 @@ class Platform:  # pylint: disable=too-many-public-methods
             value (float): New value.
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
-        if alias == Category.PLATFORM.value or regex_match is not None:
+        if alias == "platform" or regex_match is not None:
             self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)

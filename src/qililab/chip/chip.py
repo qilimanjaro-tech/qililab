@@ -4,14 +4,13 @@ from dataclasses import asdict, dataclass
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
-from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings import Category
+from qililab.settings.alias_element import AliasElement
 from qililab.typings.enums import Line
 from qililab.utils import Factory, dict_factory
 
 
 @dataclass
-class Chip(DDBBElement):
+class Chip(AliasElement):
     """Chip representation as a graph."""
 
     nodes: list[Node]
@@ -19,7 +18,6 @@ class Chip(DDBBElement):
     def __post_init__(self):
         """Cast nodes and category to their corresponding classes."""
         self.nodes = [Factory.get(name=node.pop(RUNCARD.NAME))(**node) for node in self.nodes]
-        self.category = Category(self.category)
 
     def _get_qubit(self, idx: int) -> Qubit:
         """Find qubit from given idx value.
@@ -154,14 +152,12 @@ class Chip(DDBBElement):
                 return adj_node.qubit_index
             if isinstance(adj_node, Resonator):
                 return self.get_qubit_idx_from_node(node=adj_node)
-        raise ValueError(f"Could not find qubit connected to node with id {node.id_}")
+        raise ValueError(f"Could not find qubit connected to node with alias {node.alias}")
 
     def to_dict(self):
         """Return a dict representation of the Chip class."""
         return {
-            "id_": self.id_,
-            "category": self.category.value,
-            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node, dict_factory=dict_factory) for node in self.nodes],
+            "nodes": [{RUNCARD.NAME: node.name.value} | asdict(node, dict_factory=dict_factory) for node in self.nodes]
         }
 
     @property

@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings.ddbb_element import DDBBElement
-from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
+from qililab.settings.alias_element import AliasElement
+from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
 # pylint: disable=too-few-public-methods
@@ -63,7 +63,7 @@ class RuncardSchema:
                 self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
-    class PlatformSettings(DDBBElement):
+    class PlatformSettings(AliasElement):
         """SettingsSchema class."""
 
         @nested_dataclass
@@ -177,7 +177,7 @@ class RuncardSchema:
             alias: str | None = None,
         ):
             """Cast the new value to its corresponding type and set the new attribute."""
-            if alias is None or alias == Category.PLATFORM.value:
+            if alias is None or alias == "platform":
                 super().set_parameter(parameter=parameter, value=value, channel_id=channel_id)
                 return
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
