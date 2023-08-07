@@ -130,3 +130,7 @@ class TestBusDriver:
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
+
+    def test_eq(self, bus: BusDriver):
+        """Unittest for __eq__ method.""" 
+        assert "random str" != bus
