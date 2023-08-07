@@ -8,21 +8,19 @@ from typing import get_type_hints
 from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
-from qililab.platform.components.bus_element import BusElement
 from qililab.pulse import PulseBusSchedule
-from qililab.settings import AliasElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
-class SystemControl(BusElement, ABC):
+class SystemControl(ABC):  # type: ignore
     """SystemControl class."""
 
     name = SystemControlName.SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
-    class SystemControlSettings(AliasElement):
+    class SystemControlSettings:
         """SystemControlSettings class."""
 
         instruments: list[Instrument]
@@ -31,7 +29,6 @@ class SystemControl(BusElement, ABC):
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             # ``self.instruments`` contains a list of instrument aliases
             self.instruments = [platform_instruments.get_instrument(alias=i) for i in self.instruments]  # type: ignore
-            super().__post_init__()
 
     settings: SystemControlSettings
 

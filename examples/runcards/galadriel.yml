@@ -137,118 +137,96 @@ schema:
     nodes:
       - name: qubit
         alias: qubit_0
-        id_: 0
         qubit_index: 0
         frequency: 4.92e+09
-        nodes: [2, 10, 20, 30]
+        nodes: [qubit_2, resonator_q0, drive_line_q0, flux_line_q0]
       - name: qubit
         alias: qubit_1
-        id_: 1
         qubit_index: 1
         frequency: 5.0e+09
-        nodes: [2, 11, 21, 31]
+        nodes: [qubit_2, resonator_q1, drive_line_q1, flux_line_q1]
       - name: qubit
         alias: qubit_2
-        id_: 2
         qubit_index: 2
         frequency: 5.6e+09
-        nodes: [0, 1, 3, 4, 12, 22, 32]
+        nodes: [qubit_0, qubit_1, qubit_3, qubit_4, resonator_q2, drive_line_q2, flux_line_q2]
       - name: qubit
         alias: qubit_3
-        id_: 3
         qubit_index: 3
         frequency: 6.7e+09
-        nodes: [2, 13, 23, 33]
+        nodes: [qubit_2, resonator_q3, drive_line_q3, flux_line_q3]
       - name: qubit
         alias: qubit_4
-        id_: 4
         qubit_index: 4
         frequency: 6.5e+09
-        nodes: [2, 14, 24, 34]
+        nodes: [qubit_2, resonator_q4, drive_line_q4, flux_line_q4]
       - name: resonator
         alias: resonator_q0
-        id_: 10
         frequency: 7.1e+09
-        nodes: [0, 100, 101]
+        nodes: [qubit_0, feedline_input, feedline_output]
       - name: resonator
         alias: resonator_q1
-        id_: 11
         frequency: 7.2e+09
-        nodes: [1, 100, 101]
+        nodes: [qubit_1, feedline_input, feedline_output]
       - name: resonator
         alias: resonator_q2
-        id_: 12
         frequency: 7.3e+09
-        nodes: [2, 100, 101]
+        nodes: [qubit_2, feedline_input, feedline_output]
       - name: resonator
         alias: resonator_q3
-        id_: 13
         frequency: 7.4e+09
-        nodes: [3, 100, 101]
+        nodes: [qubit_3, feedline_input, feedline_output]
       - name: resonator
         alias: resonator_q4
-        id_: 14
         frequency: 7.5e+09
-        nodes: [4, 100, 101]
+        nodes: [qubit_4, feedline_input, feedline_output]
       - name: port
-        id_: 20
         alias: drive_line_q0
-        nodes: [0]
+        nodes: [qubit_0]
         line: drive
       - name: port
-        id_: 21
         alias: drive_line_q1
-        nodes: [1]
+        nodes: [qubit_1]
         line: drive
       - name: port
-        id_: 22
         alias: drive_line_q2
-        nodes: [2]
+        nodes: [qubit_2]
         line: drive
       - name: port
-        id_: 23
         alias: drive_line_q3
-        nodes: [3]
+        nodes: [qubit_3]
         line: drive
       - name: port
-        id_: 24
         alias: drive_line_q4
-        nodes: [4]
+        nodes: [qubit_4]
         line: drive
       - name: port
-        id_: 30
         alias: flux_line_q0
-        nodes: [0]
+        nodes: [qubit_0]
         line: flux
       - name: port
-        id_: 31
         alias: flux_line_q1
-        nodes: [1]
+        nodes: [qubit_1]
         line: flux
       - name: port
-        id_: 32
         alias: flux_line_q2
-        nodes: [2]
+        nodes: [qubit_2]
         line: flux
       - name: port
-        id_: 33
         alias: flux_line_q3
-        nodes: [3]
+        nodes: [qubit_3]
         line: flux
       - name: port
-        id_: 34
         alias: flux_line_q4
-        nodes: [4]
+        nodes: [qubit_4]
         line: flux
       - name: port
-        id_: 100
         alias: feedline_input
-        nodes: [10, 11, 12, 13, 14]
+        nodes: [resonator_q0, resonator_q1, resonator_q2, resonator_q3, resonator_q4]
         line: feedline_input
       - name: port
-        id_: 101
         alias: feedline_output
-        nodes: [10, 11, 12, 13, 14]
+        nodes: [resonator_q0, resonator_q1, resonator_q2, resonator_q3, resonator_q4]
         line: feedline_output
 
   instruments:

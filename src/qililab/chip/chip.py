@@ -44,7 +44,7 @@ class Chip:
         Returns:
             list[Node]: List containing all adjacent nodes.
         """
-        return [self.get_node_from_id(node_id=node_id) for node_id in node.nodes]
+        return [self.get_node_from_alias(alias=alias) for alias in node.nodes]
 
     def get_node_from_qubit_idx(self, idx: int, readout: bool) -> Qubit | Resonator:
         """Get node class from qubit index.
@@ -69,7 +69,7 @@ class Chip:
                 return node
         raise ValueError(f"Qubit with index {idx} doesn't have a readout line.")
 
-    def get_port_from_qubit_idx(self, idx: int, line: Line) -> int:
+    def get_port_from_qubit_idx(self, idx: int, line: Line) -> str:
         """Find Qubit's port for specific line type
 
         Args:
@@ -80,7 +80,7 @@ class Chip:
             ValueError: If qubit isn't connected to this type of line
 
         Returns:
-            int: The port index
+            str: The alias of the port
         """
         readout = line in [Line.FEEDLINE_INPUT, Line.FEEDLINE_OUTPUT]
         node = self.get_node_from_qubit_idx(idx=idx, readout=readout)
@@ -88,23 +88,23 @@ class Chip:
 
         for adjacent_node in adjacent_nodes:
             if isinstance(adjacent_node, Port) and adjacent_node.line == line:
-                return adjacent_node.id_
+                return adjacent_node.alias
 
         raise ValueError(f"Qubit with index {idx} doesn't have a {line} line.")
 
-    def get_port_nodes(self, port_id: int) -> list[Qubit | Resonator | Coupler | Coil]:
+    def get_port_nodes(self, alias: str) -> list[Qubit | Resonator | Coupler | Coil]:
         """Get nodes connected to a given port.
 
         Args:
-            port (Port): Port class.
+            alias (str): Alias of the port.
 
         Returns:
             list[Node]: List of nodes connected to the given port.
         """
-        port = self.get_node_from_id(node_id=port_id)
+        port = self.get_node_from_alias(alias=alias)
         return self._get_adjacent_nodes(node=port)  # type: ignore
 
-    def get_node_from_id(self, node_id: int) -> Node:
+    def get_node_from_alias(self, alias: str) -> Node:
         """Get node from given id.
 
         Args:
@@ -117,24 +117,9 @@ class Chip:
             Node: Node class.
         """
         for node in self.nodes:
-            if node.id_ == node_id:
-                return node
-        raise ValueError(f"Could not find node with id {node_id}.")
-
-    def get_node_from_alias(self, alias: str):
-        """Get node from given alias.
-
-        Args:-
-
-            ValueError: If no node is found.
-
-        Returns:
-            Node: Node class.
-        """
-        for node in self.nodes:
             if node.alias == alias:
                 return node
-        return None
+        raise ValueError(f"Could not find node with id {alias}.")
 
     def get_qubit_idx_from_node(self, node: Node) -> int:
         """Get qubit id from given node.
@@ -192,7 +177,7 @@ class Chip:
         for node in self.nodes:
             if isinstance(node, Port):
                 adj_nodes = self._get_adjacent_nodes(node=node)
-                string += f" * Port {node.id_} ({node.line.value}): ----"
+                string += f" * Port {node.alias} ({node.line.value}): ----"
                 for adj_node in adj_nodes:
                     string += f"|{adj_node}|--"
                 string += "--\n"
