@@ -97,7 +97,7 @@ class Bus(ABC):
             return candidates[0].get(param_name)
         if len(candidates) > 1:
             raise AttributeError("More than one instrument with the same parameter name found in the bus.")
-        raise AttributeError("No instrument found in the bus for the parameter name.")
+        raise AttributeError(f"Bus {self.alias} doesn't contain any instrument with the parameter {param_name}.")
 
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
