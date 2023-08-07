@@ -237,7 +237,7 @@ class BaseExperiment:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
+    def _filter_loops_values_with_external_parameters(self, values: tuple[float, ...], loops: list[Loop]):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
