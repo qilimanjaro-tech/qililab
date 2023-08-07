@@ -1,5 +1,4 @@
 """Result class."""
-from collections import Counter
 from dataclasses import asdict, dataclass, field
 
 import pandas as pd

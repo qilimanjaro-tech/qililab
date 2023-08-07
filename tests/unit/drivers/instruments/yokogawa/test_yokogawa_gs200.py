@@ -13,10 +13,10 @@ MONITOR_NAME = "measure"
 PROGRAM_NAME = "program"
 
 
-class MockGS200Monitor(DummyChannelInstrument):
+class MockGS200Monitor(DummyChannelInstrument):  # pylint: disable=abstract-method
     """Mocking classes for Yokowaga GS200Monitor"""
 
-    def __init__(self, parent: Instrument, name: str, present: bool = False):
+    def __init__(self, parent: Instrument, name: str, present: bool = False):  # pylint: disable=unused-argument
         """Init method for the mock Yokowaga GS200Monitor"""
         super().__init__(name)
         self.present = present

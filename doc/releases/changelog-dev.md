@@ -4,6 +4,9 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add a new Factory for the Buses and registered the current ones
+  [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
+
 - Add the NEW_DRIVERS flag to choose between old and new instruments and bus drivers.
   [#486](https://github.com/qilimanjaro-tech/qililab/pull/486)
 

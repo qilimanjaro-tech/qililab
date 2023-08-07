@@ -1,5 +1,3 @@
-import numpy as np
-
 from qililab.transpiler.park_gate import Park
 
 

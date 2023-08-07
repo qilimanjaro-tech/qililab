@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from qililab.config import logger
-from qililab.execution import BusExecution
 from qililab.platform import Platform
 from qililab.result import Result
 from qililab.system_control import ReadoutSystemControl
 from qililab.utils import Waveforms
+
+from .bus_execution import BusExecution
 
 
 @dataclass
@@ -97,7 +98,7 @@ class ExecutionManager:
         """
         return {bus.id_: bus.waveforms(modulation=modulation, resolution=resolution, idx=idx) for bus in self.buses}
 
-    def draw(
+    def draw(  # pylint: disable=too-many-locals
         self,
         real: bool = True,
         imag: bool = True,

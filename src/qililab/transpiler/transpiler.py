@@ -1,5 +1,5 @@
+"""This file contains the functions used to decompose a circuit into native gates and to compute virtual-Z gates."""
 from qibo import gates
-from qibo.config import log
 from qibo.models import Circuit
 
 from qililab.transpiler.gate_decompositions import translate_gates

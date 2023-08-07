@@ -22,14 +22,16 @@ from qililab.typings.enums import Line
 from qililab.utils import Factory, qibo_gates
 
 
-class CircuitToPulses:
+class CircuitToPulses:  # pylint: disable=too-few-public-methods
     """Class that translates a Qibo Circuit into a PulseSequence"""
 
     def __init__(self, platform: Platform):
         self.platform = platform
         self._instantiate_gates_from_settings()
 
-    def translate(self, circuits: list[Circuit]) -> list[PulseSchedule]:
+    def translate(  # pylint: disable=too-many-locals, too-many-branches
+        self, circuits: list[Circuit]
+    ) -> list[PulseSchedule]:
         """Translate each circuit to a PulseSequences class, which is a list of PulseSequence classes for
         each different port and pulse name (control/readout).
 
@@ -49,7 +51,7 @@ class CircuitToPulses:
                 if isinstance(gate, qibo_gates.Wait):
                     self._update_time(time, gate.target_qubits[0], gate.parameters[0])
                     continue
-                elif isinstance(gate, M):
+                if isinstance(gate, M):
                     # handle measurement gates
                     for qubit_idx in gate.target_qubits:
                         m_gate = M(qubit_idx)
@@ -69,7 +71,7 @@ class CircuitToPulses:
                                     pulse_schedule.create_schedule(port=flux_port)
                     continue
 
-                elif isinstance(gate, CZ):
+                if isinstance(gate, CZ):
                     # CZ sends a SNZ pulse to target in CZ(control, target)
                     # handle parking and padding for CZ gates
                     gate = self._parse_check_cz(gate)
@@ -249,8 +251,7 @@ class CircuitToPulses:
                     f"The settings of the gate {gate.name} have a non-integer duration ({gate_duration}ns). "
                     "The gate duration must be an integer or a float with 0 decimal part"
                 )
-            else:
-                gate_duration = int(gate_duration)
+            gate_duration = int(gate_duration)
 
         return gate_settings
 
@@ -273,7 +274,7 @@ class CircuitToPulses:
         target = cz.target_qubits[0]
         node = chip.get_node_from_qubit_idx(idx=target, readout=False)
         # get adjacent nodes
-        adj_nodes = chip._get_adjacent_nodes(node)
+        adj_nodes = chip._get_adjacent_nodes(node)  # pylint: disable=protected-access
         # return adjacent qubits with lower frequency than target not in CZ gate
         park_qubits = [
             adj_node.qubit_index
@@ -290,7 +291,7 @@ class CircuitToPulses:
                 settings_gate for settings_gate in self.platform.settings.gates[qubit] if "Park" in settings_gate.name
             ]
             if not park_gate_settings:
-                logger.warning(
+                logger.warning(  # pylint: disable=logging-fstring-interpolation
                     f"Found parking candidate qubit {qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {qubit}"
                 )
                 continue
@@ -371,7 +372,7 @@ class CircuitToPulses:
         two_qubit_gates = [qubit for qubit in self.platform.settings.gates.keys() if isinstance(qubit, tuple)]
         if cz_qubits in two_qubit_gates:
             return cz
-        elif cz_qubits[::-1] in two_qubit_gates:
+        if cz_qubits[::-1] in two_qubit_gates:
             return CZ(cz_qubits[1], cz_qubits[0])
         raise NotImplementedError(f"CZ not defined for qubits {cz_qubits}")
 
