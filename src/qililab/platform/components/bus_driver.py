@@ -10,7 +10,7 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 class BusDriver(ABC):
     """Bus Class."""
 
-    def __init__(self, alias: str, qubit: int, awg: AWG):
+    def __init__(self, alias: str, qubit: int, awg: AWG | None):
         """Initialise the bus.
 
         Args:
@@ -23,7 +23,7 @@ class BusDriver(ABC):
         self.alias = alias
         self.qubit = qubit
         self._awg = awg
-        self.instruments: dict[str, BaseInstrument] = {"awg": self._awg}
+        self.instruments: dict[str, BaseInstrument | None] = {"awg": self._awg}
         self.delay = 0
         self.distortions: list[PulseDistortion] = []
 
@@ -42,12 +42,13 @@ class BusDriver(ABC):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        self._awg.execute(
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
+        if self._awg:
+            self._awg.execute(
+                pulse_bus_schedule=pulse_bus_schedule,
+                nshots=nshots,
+                repetition_duration=repetition_duration,
+                num_bins=num_bins,
+            )
 
     def set(self, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.
@@ -65,10 +66,10 @@ class BusDriver(ABC):
         elif param_name == "distortions":
             raise NotImplementedError("this feature is not yet implemented")
         else:
-            candidates: list[BaseInstrument] = [
-                instrument for instrument in self.instruments.values() if param_name in instrument.params
+            candidates: list[BaseInstrument| None] = [
+                instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
             ]
-            if len(candidates) == 1:
+            if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
                 candidates[0].set(param_name, value)
             elif len(candidates) > 1:
                 raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
@@ -94,10 +95,10 @@ class BusDriver(ABC):
             return self.delay
         if param_name == "distortions":
             raise NotImplementedError("this feature is not yet implemented")
-        candidates: list[BaseInstrument] = [
-            instrument for instrument in self.instruments.values() if param_name in instrument.params
-        ]
-        if len(candidates) == 1:
+        candidates: list[BaseInstrument| None] = [
+                instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
+            ]
+        if len(candidates) == 1 and isinstance(candidates[0], BaseInstrument):
             return candidates[0].get(param_name)
         if len(candidates) > 1:
             raise AttributeError(f"Bus {self.alias} contains multiple instruments with the parameter {param_name}.")
