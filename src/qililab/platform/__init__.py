@@ -10,7 +10,9 @@ PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()
 
 
-def build_platform(name: str, connection: API | None = None, database: bool = False, new_drivers: bool = False) -> Platform:
+def build_platform(
+    name: str, connection: API | None = None, database: bool = False, new_drivers: bool = False
+) -> Platform:
     """Build platform.
 
     Args:
