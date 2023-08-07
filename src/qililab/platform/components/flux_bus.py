@@ -1,11 +1,11 @@
 """Driver for the Drive Bus class."""
 from qililab.drivers.interfaces import AWG, CurrentSource, VoltageSource
 from qililab.platform.components.bus_factory import BusFactory
-from qililab.platform.components.interfaces import BusInterface
+from qililab.platform.components.interfaces import Bus
 
 
 @BusFactory.register
-class FluxBus(BusInterface):
+class FluxBus(Bus):
     """Qililab's driver for Flux Bus"""
 
     def __init__(self, qubit: int, awg: AWG, source: CurrentSource | VoltageSource):

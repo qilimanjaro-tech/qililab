@@ -3,12 +3,12 @@ from abc import ABC
 from typing import Any
 
 from qililab.drivers.interfaces.awg import AWG
-from qililab.drivers.interfaces.base_instrument import BaseInstrument
+from qililab.drivers.interfaces import BaseInstrument
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
-class BusInterface(ABC):
-    """Interface of a Bus."""
+class Bus(ABC):
+    """Bus Class."""
 
     def __init__(self, qubit: int, awg: AWG):
         """Initialise the bus.
@@ -55,7 +55,8 @@ class BusInterface(ABC):
             value (Any): Parameter's value
 
         Raises:
-            Exception: if more than one instrument has the same parameter name.
+            AttributeError: if more than one instrument has the same parameter name.
+            AttributeError: if no instrument is found for the parameter name.
         """
         if param_name == "delay":
             self.delay = value
@@ -82,7 +83,8 @@ class BusInterface(ABC):
             value (Any): Parameter's value
 
         Raises:
-            Exception: if more than one instrument has the same parameter name.
+            AttributeError: if more than one instrument has the same parameter name.
+            AttributeError: if no instrument is found for the parameter name.
         """
         if param_name == "delay":
             return self.delay
