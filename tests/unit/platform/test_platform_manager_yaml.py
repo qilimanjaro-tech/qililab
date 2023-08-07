@@ -23,11 +23,3 @@ class TestPlatformManagerYAML:
         mock_open.assert_called_once()
         with pytest.raises(NotImplementedError):
             build_platform(name="sauron", database=True)
-
-    def test_new_drivers_flag_activation(self):
-        """Test new drivers flag activation method."""
-        value: bool = True
-        set_new_drivers_flag(value=value)
-        flag_value = get_new_drivers_flag()
-
-        assert flag_value == value
