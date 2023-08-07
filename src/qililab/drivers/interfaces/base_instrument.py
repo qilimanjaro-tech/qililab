@@ -22,7 +22,7 @@ class BaseInstrument(ABC):
 
     @abstractmethod
     def get(self, param_name: str) -> Any:
-        """Get parameter from attenuator name
+        """Get instrument parameter.
 
         Args:
             param_name (str): The name of a parameter of this instrument.
