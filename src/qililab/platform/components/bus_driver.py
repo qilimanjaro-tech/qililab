@@ -14,7 +14,7 @@ class BusDriver(ABC):
         """Initialise the bus.
 
         Args:
-            alis (str): Bus alias
+            alias (str): Bus alias
             qubit (int): Qubit
             awg (AWG): Sequencer
             local_oscillator (LocalOscillator | None): Local oscillator
@@ -64,7 +64,7 @@ class BusDriver(ABC):
         if param_name == "delay":
             self.delay = value
         elif param_name == "distortions":
-            raise NotImplementedError("this feature is not yet implemented")
+            raise NotImplementedError("This feature is not yet implemented.")
         else:
             candidates: list[BaseInstrument | None] = [
                 instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
@@ -96,7 +96,7 @@ class BusDriver(ABC):
         if param_name == "delay":
             return self.delay
         if param_name == "distortions":
-            raise NotImplementedError("this feature is not yet implemented")
+            raise NotImplementedError("This feature is not yet implemented.")
         candidates: list[BaseInstrument | None] = [
             instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
         ]
