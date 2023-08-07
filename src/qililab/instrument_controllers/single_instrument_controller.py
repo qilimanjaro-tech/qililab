@@ -1,8 +1,5 @@
 """Single Instrument Controller class"""
-from dataclasses import dataclass
-
-from qililab.instrument_controllers.instrument_controller import InstrumentController, InstrumentControllerSettings
-from qililab.typings.enums import InstrumentControllerSubCategory
+from qililab.instrument_controllers.instrument_controller import InstrumentController
 
 
 class SingleInstrumentController(InstrumentController):
@@ -15,19 +12,6 @@ class SingleInstrumentController(InstrumentController):
     """
 
     number_available_modules: int = 1
-
-    @dataclass
-    class SingleInstrumentControllerSettings(InstrumentControllerSettings):
-        """Contains the settings of a specific Single Instrument Controller.
-
-        Args:
-            subcategory (InstrumentControllerSubCategory): Subcategory type of the Instrument Controller.
-                                                            In this case 'SINGLE'.
-        """
-
-        subcategory = InstrumentControllerSubCategory.SINGLE
-
-    settings: SingleInstrumentControllerSettings
 
     def _set_device_to_all_modules(self):
         """Sets the initialized device to the attached module.

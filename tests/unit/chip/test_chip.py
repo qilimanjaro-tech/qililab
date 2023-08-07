@@ -8,8 +8,6 @@ from qililab.typings.enums import Line
 def fixture_chip():
     """Fixture that returns an instance of a ``Chip`` class."""
     settings = {
-        "id_": 0,
-        "category": "chip",
         "nodes": [
             {"name": "port", "id_": 0, "line": Line.FLUX.value, "nodes": [11]},
             {"name": "port", "id_": 1, "line": Line.DRIVE.value, "nodes": [11]},

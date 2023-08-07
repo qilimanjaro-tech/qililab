@@ -10,7 +10,6 @@ from qililab.constants import (
     CONNECTION,
     EXPERIMENT,
     INSTRUMENTCONTROLLER,
-    INSTRUMENTREFERENCE,
     LOOP,
     NODE,
     PLATFORM,
@@ -24,10 +23,8 @@ from qililab.constants import (
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
     AcquireTriggerMode,
-    Category,
     ConnectionName,
     InstrumentControllerName,
-    InstrumentControllerSubCategory,
     InstrumentName,
     IntegrationMode,
     Line,
@@ -46,11 +43,8 @@ class Galadriel:
     name = "galadriel"
 
     platform = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: "galadriel",
         PLATFORM.DEVICE_ID: 9,
-        RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 0,
@@ -196,11 +190,8 @@ class Galadriel:
     }
 
     pulsar_controller_qcm_0 = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qcm_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -208,17 +199,15 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.AWG.value: InstrumentName.QBLOX_QCM.value,
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": InstrumentName.QBLOX_QCM.value,
+                "slot_id": 0,
             }
         ],
     }
 
     qblox_qcm_0 = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.QBLOX_QCM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
-        RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 2,
         AWGTypes.OUT_OFFSETS.value: [0, 0.5, 0.7, 0.8],
@@ -257,11 +246,8 @@ class Galadriel:
     }
 
     pulsar_controller_qrm_0 = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentControllerName.QBLOX_PULSAR,
         RUNCARD.ALIAS: "pulsar_controller_qrm_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -269,17 +255,15 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.AWG.value: InstrumentName.QBLOX_QRM.value,
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": InstrumentName.QBLOX_QRM.value,
+                "slot_id": 0,
             }
         ],
     }
 
     qblox_qrm_0 = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.QBLOX_QRM,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QRM.value,
-        RUNCARD.CATEGORY: Category.AWG.value,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 2,
         Parameter.ACQUISITION_DELAY_TIME.value: 100,
@@ -349,11 +333,8 @@ class Galadriel:
     }
 
     rohde_schwarz_controller_0 = {
-        RUNCARD.ID: 2,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -361,17 +342,15 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_0",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_0",
+                "slot_id": 0,
             }
         ],
     }
 
     rohde_schwarz_0 = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_0",
-        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 7.24730e09,
@@ -379,11 +358,8 @@ class Galadriel:
     }
 
     rohde_schwarz_controller_1 = {
-        RUNCARD.ID: 3,
         RUNCARD.NAME: InstrumentControllerName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rohde_schwarz_controller_1",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.REFERENCE_CLOCK.value: "EXT",
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -391,17 +367,15 @@ class Galadriel:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.SIGNAL_GENERATOR.value: "rs_1",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "rs_1",
+                "slot_id": 0,
             }
         ],
     }
 
     rohde_schwarz_1 = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.ROHDE_SCHWARZ,
         RUNCARD.ALIAS: "rs_1",
-        RUNCARD.CATEGORY: Category.SIGNAL_GENERATOR.value,
         RUNCARD.FIRMWARE: "4.30.046.295",
         Parameter.POWER.value: 15,
         Parameter.LO_FREQUENCY.value: 3.351e09,
@@ -409,55 +383,45 @@ class Galadriel:
     }
 
     attenuator_controller_0 = {
-        RUNCARD.ID: 4,
         RUNCARD.NAME: InstrumentControllerName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.222",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.ATTENUATOR.value: "attenuator",
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": "attenuator",
+                "slot_id": 0,
             }
         ],
     }
 
     attenuator = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.MINI_CIRCUITS,
         RUNCARD.ALIAS: "attenuator",
-        RUNCARD.CATEGORY: Category.ATTENUATOR.value,
         Parameter.ATTENUATION.value: 30,
         RUNCARD.FIRMWARE: None,
     }
 
     keithley_2600_controller_0 = {
-        RUNCARD.ID: 5,
         RUNCARD.NAME: InstrumentControllerName.KEITHLEY2600,
         RUNCARD.ALIAS: "keithley_2600_controller_0",
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
             CONNECTION.ADDRESS: "192.168.0.112",
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.DC_SOURCE.value: InstrumentName.KEITHLEY2600.value,
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": InstrumentName.KEITHLEY2600.value,
+                "slot_id": 0,
             }
         ],
     }
 
     keithley_2600 = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentName.KEITHLEY2600,
         RUNCARD.ALIAS: InstrumentControllerName.KEITHLEY2600.value,
-        RUNCARD.CATEGORY: Category.DC_SOURCE.value,
         RUNCARD.FIRMWARE: None,
         Parameter.MAX_CURRENT.value: 0.1,
         Parameter.MAX_VOLTAGE.value: 20.0,
@@ -474,24 +438,21 @@ class Galadriel:
     ]
 
     chip = {
-        RUNCARD.ID: 0,
-        RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: Category.CHIP.value,
         NODE.NODES: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 10, NODE.LINE: Line.FLUX.value, NODE.NODES: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 11, NODE.LINE: Line.FEEDLINE_OUTPUT.value, NODE.NODES: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 10, NODE.LINE: Line.FLUX.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 11, NODE.LINE: Line.FEEDLINE_OUTPUT.value, NODE.NODES: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
-                RUNCARD.ID: 2,
+                "id_": 2,
                 RUNCARD.ALIAS: NodeName.RESONATOR.value,
                 NODE.FREQUENCY: 7.34730e09,
                 NODE.NODES: [1, 11, 3],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
-                RUNCARD.ID: 3,
+                "id_": 3,
                 RUNCARD.ALIAS: NodeName.QUBIT.value,
                 NODE.QUBIT_INDEX: 0,
                 NODE.FREQUENCY: 3.451e09,
@@ -502,13 +463,9 @@ class Galadriel:
 
     buses = [
         {
-            RUNCARD.ID: 0,
-            RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.ALIAS: "drive_line_bus",
-            Category.SYSTEM_CONTROL.value: {
-                RUNCARD.ID: 0,
+            "system_control": {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 0,
@@ -516,13 +473,9 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
-            RUNCARD.ID: 1,
-            RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.ALIAS: "feedline_input_output_bus",
-            Category.SYSTEM_CONTROL.value: {
-                RUNCARD.ID: 1,
+            "system_control": {
                 RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QRM.value, "rs_1"],
             },
             NodeName.PORT.value: 1,
@@ -530,13 +483,9 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
-            RUNCARD.ID: 2,
-            RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.ALIAS: "flux_line_bus",
-            Category.SYSTEM_CONTROL.value: {
-                RUNCARD.ID: 0,
+            "system_control": {
                 RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
-                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             NodeName.PORT.value: 10,
@@ -558,9 +507,7 @@ class Galadriel:
     }
 
     qubit_0: dict = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: NodeName.QUBIT,
-        RUNCARD.CATEGORY: NodeName.QUBIT.value,
         RUNCARD.ALIAS: NodeName.QUBIT.value,
         "pi_pulse_amplitude": 1,
         "pi_pulse_duration": 100,
@@ -571,13 +518,9 @@ class Galadriel:
     }
 
     resonator_0 = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: NodeName.RESONATOR,
-        RUNCARD.CATEGORY: NodeName.RESONATOR.value,
         "qubits": [
             {
-                RUNCARD.ID: 0,
-                RUNCARD.CATEGORY: NodeName.QUBIT.value,
                 "pi_pulse_amplitude": 1,
                 "pi_pulse_duration": 100,
                 "pi_pulse_frequency": 100000000.0,
@@ -595,10 +538,8 @@ class FluxQubitSimulator:
     name = "flux_qubit"
 
     platform = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: "flux_qubit",
         PLATFORM.DEVICE_ID: 9,
-        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
@@ -662,13 +603,11 @@ class FluxQubitSimulator:
     }
 
     chip = {
-        RUNCARD.ID: 0,
-        RUNCARD.CATEGORY: Category.CHIP.value,
         NODE.NODES: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [1]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [1]},
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
-                RUNCARD.ID: 1,
+                "id_": 1,
                 NODE.QUBIT_INDEX: 0,
                 NODE.FREQUENCY: 3.451e09,
                 NODE.NODES: [0],
@@ -682,13 +621,9 @@ class FluxQubitSimulator:
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: [
             {
-                RUNCARD.ID: 0,
-                RUNCARD.CATEGORY: Category.BUS.value,
                 RUNCARD.ALIAS: "simulated_bus",
-                Category.SYSTEM_CONTROL.value: {
-                    RUNCARD.ID: 0,
+                "system_control": {
                     RUNCARD.NAME: SystemControlName.SIMULATED_SYSTEM_CONTROL,
-                    RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                     RUNCARD.ALIAS: "simulated_system_control",
                     NodeName.QUBIT.value: "csfq4jj",
                     "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
@@ -911,11 +846,8 @@ class SauronVNA:
     name = "sauron_vna"
 
     platform = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: "sauron_vna",
         PLATFORM.DEVICE_ID: 9,
-        RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: RUNCARD.PLATFORM,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BEFORE_READOUT: 40,
@@ -927,11 +859,8 @@ class SauronVNA:
     }
 
     keysight_e5080b_controller = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentControllerName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: InstrumentControllerName.KEYSIGHT_E5080B.value,
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.TIMEOUT.value: 10000,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -939,27 +868,22 @@ class SauronVNA:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.VNA.value: InstrumentName.KEYSIGHT_E5080B.value,
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": InstrumentName.KEYSIGHT_E5080B.value,
+                "slot_id": 0,
             }
         ],
     }
 
     keysight_e5080b = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.KEYSIGHT_E5080B,
         RUNCARD.ALIAS: InstrumentName.KEYSIGHT_E5080B.value,
-        RUNCARD.CATEGORY: Category.VNA.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
     agilent_e5071b_controller = {
-        RUNCARD.ID: 1,
         RUNCARD.NAME: InstrumentControllerName.AGILENT_E5071B,
         RUNCARD.ALIAS: InstrumentControllerName.AGILENT_E5071B.value,
-        RUNCARD.CATEGORY: Category.INSTRUMENT_CONTROLLER.value,
-        RUNCARD.SUBCATEGORY: InstrumentControllerSubCategory.SINGLE.value,
         Parameter.TIMEOUT.value: 10000,
         INSTRUMENTCONTROLLER.CONNECTION: {
             RUNCARD.NAME: ConnectionName.TCP_IP.value,
@@ -967,17 +891,15 @@ class SauronVNA:
         },
         INSTRUMENTCONTROLLER.MODULES: [
             {
-                Category.VNA.value: InstrumentName.AGILENT_E5071B.value,
-                INSTRUMENTREFERENCE.SLOT_ID: 0,
+                "alias": InstrumentName.AGILENT_E5071B.value,
+                "slot_id": 0,
             }
         ],
     }
 
     agilent_e5071b = {
-        RUNCARD.ID: 0,
         RUNCARD.NAME: InstrumentName.AGILENT_E5071B,
         RUNCARD.ALIAS: InstrumentName.AGILENT_E5071B.value,
-        RUNCARD.CATEGORY: Category.VNA.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
@@ -986,22 +908,20 @@ class SauronVNA:
     instrument_controllers = [keysight_e5080b_controller, agilent_e5071b_controller]
 
     chip = {
-        RUNCARD.ID: 0,
         RUNCARD.ALIAS: None,
-        RUNCARD.CATEGORY: Category.CHIP.value,
         NODE.NODES: [
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
-            {RUNCARD.NAME: NodeName.PORT.value, RUNCARD.ID: 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 0, NODE.LINE: Line.DRIVE.value, NODE.NODES: [3]},
+            {RUNCARD.NAME: NodeName.PORT.value, "id_": 1, NODE.LINE: Line.FEEDLINE_INPUT.value, NODE.NODES: [2]},
             {
                 RUNCARD.NAME: NodeName.RESONATOR.value,
-                RUNCARD.ID: 2,
+                "id_": 2,
                 RUNCARD.ALIAS: NodeName.RESONATOR.value,
                 NODE.FREQUENCY: 8.0726e09,
                 NODE.NODES: [1, 3],
             },
             {
                 RUNCARD.NAME: NodeName.QUBIT.value,
-                RUNCARD.ID: 3,
+                "id_": 3,
                 RUNCARD.ALIAS: NodeName.QUBIT.value,
                 NODE.QUBIT_INDEX: 0,
                 NODE.FREQUENCY: 6.5328e09,
@@ -1012,26 +932,18 @@ class SauronVNA:
 
     buses = [
         {
-            RUNCARD.ID: 0,
-            RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.ALIAS: "keysight_e5080b_readout_bus",
-            Category.SYSTEM_CONTROL.value: {
-                RUNCARD.ID: 0,
+            "system_control": {
                 RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.INSTRUMENTS: [InstrumentName.KEYSIGHT_E5080B.value],
             },
             NodeName.PORT.value: 1,
             RUNCARD.DISTORTIONS: [],
         },
         {
-            RUNCARD.ID: 1,
-            RUNCARD.CATEGORY: Category.BUS.value,
             RUNCARD.ALIAS: "agilent_e5071b_readout_bus",
-            Category.SYSTEM_CONTROL.value: {
-                RUNCARD.ID: 1,
+            "system_control": {
                 RUNCARD.NAME: SystemControlName.READOUT_SYSTEM_CONTROL,
-                RUNCARD.CATEGORY: Category.SYSTEM_CONTROL.value,
                 RUNCARD.INSTRUMENTS: [InstrumentName.AGILENT_E5071B.value],
             },
             NodeName.PORT.value: 0,

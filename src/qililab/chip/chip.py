@@ -4,19 +4,18 @@ from dataclasses import asdict, dataclass
 from qililab.chip.node import Node
 from qililab.chip.nodes import Coil, Coupler, Port, Qubit, Resonator
 from qililab.constants import RUNCARD
-from qililab.settings.alias_element import AliasElement
 from qililab.typings.enums import Line
 from qililab.utils import Factory, dict_factory
 
 
 @dataclass
-class Chip(AliasElement):
+class Chip:
     """Chip representation as a graph."""
 
     nodes: list[Node]
 
     def __post_init__(self):
-        """Cast nodes and category to their corresponding classes."""
+        """Cast nodes to their corresponding classes."""
         self.nodes = [Factory.get(name=node.pop(RUNCARD.NAME))(**node) for node in self.nodes]
 
     def _get_qubit(self, idx: int) -> Qubit:
@@ -189,7 +188,7 @@ class Chip(AliasElement):
 
     def __str__(self):
         """String representation of the Chip class."""
-        string = f"Chip {self.alias} with {self.num_qubits} qubits and {self.num_ports} ports: \n\n"
+        string = f"Chip with {self.num_qubits} qubits and {self.num_ports} ports: \n\n"
         for node in self.nodes:
             if isinstance(node, Port):
                 adj_nodes = self._get_adjacent_nodes(node=node)

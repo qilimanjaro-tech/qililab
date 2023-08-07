@@ -18,8 +18,4 @@ class BusElement(FactoryElement):
 
     def short_dict(self):
         """Return a dict representation of the BusElement class discarding all static elements."""
-        return {
-            key: value
-            for key, value in self.to_dict().items()
-            if key not in [RUNCARD.NAME, RUNCARD.ID, RUNCARD.CATEGORY, RUNCARD.FIRMWARE]
-        }
+        return {key: value for key, value in self.to_dict().items() if key not in [RUNCARD.NAME, RUNCARD.FIRMWARE]}

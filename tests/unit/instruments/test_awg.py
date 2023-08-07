@@ -4,7 +4,6 @@ import pytest
 from qililab.instruments import AWG
 from qililab.instruments.awg_settings import AWGSequencer
 from qililab.pulse import PulseBusSchedule
-from qililab.typings import Category
 
 
 class DummyAWG(AWG):
@@ -28,8 +27,6 @@ def fixture_awg():
     """Fixture that returns an instance of a dummy AWG."""
     settings = {
         "alias": "QRM",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.7.0",
         "num_sequencers": 2,
         "awg_sequencers": [
@@ -73,9 +70,6 @@ class TestInitialization:
         """Test the initialization of the AWG class."""
         assert isinstance(awg.settings, AWG.AWGSettings)
         assert awg.settings.alias == "QRM"
-        assert awg.settings.id_ == 0
-        assert isinstance(awg.settings.category, Category)
-        assert awg.settings.category == Category.AWG
         assert awg.settings.firmware == "0.7.0"
         assert awg.settings.num_sequencers == 2
         for idx, sequencer in enumerate(awg.settings.awg_sequencers):

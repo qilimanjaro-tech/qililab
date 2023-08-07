@@ -25,17 +25,9 @@ def fixture_platform() -> Platform:
 class TestPlatform:
     """Unit tests checking the Platform attributes and methods."""
 
-    def test_id_property(self, platform: Platform):
-        """Test id property."""
-        assert platform.id_ == platform.settings.id_
-
     def test_name_property(self, platform: Platform):
         """Test name property."""
         assert platform.name == platform.settings.name
-
-    def test_category_property(self, platform: Platform):
-        """Test category property."""
-        assert platform.category == platform.settings.category
 
     def test_num_qubits_property(self, platform: Platform):
         """Test num_qubits property."""

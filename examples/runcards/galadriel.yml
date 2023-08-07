@@ -1,6 +1,4 @@
 settings:
-  id_: 0
-  category: platform
   name: galadriel_soprano_master
   device_id: 9
   delay_between_pulses: 0
@@ -136,8 +134,6 @@ settings:
           t_phi: 1
 schema:
   chip:
-    id_: 0
-    category: chip
     nodes:
       - name: qubit
         alias: qubit_0
@@ -258,8 +254,6 @@ schema:
   instruments:
     - name: QRM
       alias: QRM1
-      id_: 0
-      category: awg
       firmware: 0.7.0
       num_sequencers: 5
       acquisition_delay_time: 100
@@ -407,8 +401,6 @@ schema:
           scope_store_enabled: false
     - name: QCM-RF
       alias: QCM-RF1
-      id_: 1
-      category: awg
       firmware: 0.7.0
       num_sequencers: 2
       out0_lo_freq: 6.5e+09
@@ -450,8 +442,6 @@ schema:
           hardware_modulation: true
     - name: QCM-RF
       alias: QCM-RF2
-      id_: 3
-      category: awg
       firmware: 0.7.0
       num_sequencers: 1
       out0_lo_freq: 6.5e+09
@@ -480,8 +470,6 @@ schema:
           hardware_modulation: true
     - name: QCM-RF
       alias: QCM-RF3
-      id_: 2
-      category: awg
       firmware: 0.7.0
       num_sequencers: 2
       out0_lo_freq: 5.e+09
@@ -523,8 +511,6 @@ schema:
           hardware_modulation: true
     - name: QCM
       alias: QCM1
-      id_: 4
-      category: awg
       firmware: 0.7.0
       num_sequencers: 4
       out_offsets: [0.0, 0.0, 0.0, 0.0]
@@ -583,8 +569,6 @@ schema:
           hardware_modulation: true
     - name: QCM
       alias: QCM2
-      id_: 5
-      category: awg
       firmware: 0.7.0
       num_sequencers: 1
       out_offsets: [0.0, 0.0, 0.0, 0.0]
@@ -604,66 +588,42 @@ schema:
           hardware_modulation: true
     - name: rohde_schwarz
       alias: rs_1
-      id_: 0
-      category: signal_generator
       firmware: 4.2.76.0-4.30.046.295
       power: 16
       frequency: 8.0726e+09
       rf_on: true
     - name: mini_circuits
       alias: attenuator
-      id_: 1
-      category: attenuator
       firmware: None
       attenuation: 32
   buses:
-    - id_: 0
-      category: bus
-      alias: feedline_bus
+    - alias: feedline_bus
       system_control:
-        id_: 0
         name: readout_system_control
-        category: system_control
         instruments: [QRM1, rs_1]
       port: 100
       distortions: []
-    - id_: 20
-      category: bus
-      alias: drive_line_q0_bus
+    - alias: drive_line_q0_bus
       system_control:
-        id_: 20
         name: system_control
-        category: system_control
         instruments: [QCM-RF1]
       port: 20
       distortions: []
-    - id_: 30
-      category: bus
-      alias: flux_line_q0_bus
+    - alias: flux_line_q0_bus
       system_control:
-        id_: 30
         name: system_control
-        category: system_control
         instruments: [QCM1]
       port: 30
       distortions: []
-    - id_: 21
-      category: bus
-      alias: drive_line_q1_bus
+    - alias: drive_line_q1_bus
       system_control:
-        id_: 21
         name: system_control
-        category: system_control
         instruments: [QCM-RF1]
       port: 21
       distortions: []
-    - id_: 31
-      category: bus
-      alias: flux_line_q1_bus
+    - alias: flux_line_q1_bus
       system_control:
-        id_: 31
         name: system_control
-        category: system_control
         instruments: [QCM1]
       port: 31
       distortions:
@@ -725,72 +685,45 @@ schema:
             ]
           b: [1.]
           norm_factor: 1.
-    - id_: 22
-      category: bus
-      alias: drive_line_q2_bus
+    - alias: drive_line_q2_bus
       system_control:
-        id_: 22
         name: system_control
-        category: system_control
         instruments: [QCM-RF2]
       port: 22
       distortions: []
-    - id_: 32
-      category: bus
-      alias: flux_line_q2_bus
+    - alias: flux_line_q2_bus
       system_control:
-        id_: 32
         name: system_control
-        category: system_control
         instruments: [QCM2]
       port: 32
       distortions: []
-    - id_: 23
-      category: bus
-      alias: drive_line_q3_bus
+    - alias: drive_line_q3_bus
       system_control:
-        id_: 23
         name: system_control
-        category: system_control
         instruments: [QCM-RF3]
       port: 23
       distortions: []
-    - id_: 33
-      category: bus
-      alias: flux_line_q3_bus
+    - alias: flux_line_q3_bus
       system_control:
-        id_: 33
         name: system_control
-        category: system_control
         instruments: [QCM1]
       port: 33
       distortions: []
-    - id_: 24
-      category: bus
-      alias: drive_line_q4_bus
+    - alias: drive_line_q4_bus
       system_control:
-        id_: 24
         name: system_control
-        category: system_control
         instruments: [QCM-RF3]
       port: 24
       distortions: []
-    - id_: 34
-      category: bus
-      alias: flux_line_q4_bus
+    - alias: flux_line_q4_bus
       system_control:
-        id_: 34
         name: system_control
-        category: system_control
         instruments: [QCM1]
       port: 34
       distortions: []
   instrument_controllers:
     - name: qblox_cluster
-      id_: 1
       alias: cluster_controller_0
-      category: instrument_controller
-      subcategory: multiple_instruments
       reference_clock: internal
       connection:
         name: tcp_ip
@@ -809,10 +742,7 @@ schema:
         - awg: QCM2
           slot_id: 14
     - name: rohde_schwarz
-      id_: 2
       alias: rohde_schwarz_controller_0
-      category: instrument_controller
-      subcategory: single_instrument
       reference_clock: internal
       connection:
         name: tcp_ip
@@ -821,10 +751,7 @@ schema:
         - signal_generator: rs_1
           slot_id: 0
     - name: mini_circuits
-      id_: 5
       alias: attenuator_controller_0
-      category: instrument_controller
-      subcategory: single_instrument
       connection:
         name: tcp_ip
         address: 192.168.1.69

@@ -95,30 +95,7 @@ class SystemControl(BusElement, ABC):
 
     def to_dict(self):
         """Return a dict representation of a SystemControl class."""
-        return {
-            RUNCARD.ID: self.id_,
-            RUNCARD.NAME: self.name.value,
-            RUNCARD.CATEGORY: self.settings.category.value,
-            RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments],
-        }
-
-    @property
-    def id_(self):
-        """SystemControl 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
-    def category(self):
-        """SystemControl 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.settings.category
+        return {RUNCARD.NAME: self.name.value, RUNCARD.INSTRUMENTS: [inst.alias for inst in self.instruments]}
 
     @property
     def instruments(self) -> list[Instrument]:

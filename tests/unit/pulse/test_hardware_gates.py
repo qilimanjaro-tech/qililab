@@ -13,8 +13,6 @@ from qililab.settings import RuncardSchema
 def fixture_platform_settings() -> RuncardSchema.PlatformSettings:
     """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
     settings = {
-        "id_": 0,
-        "category": "platform",
         "name": "dummy",
         "device_id": 9,
         "minimum_clock_time": 4,

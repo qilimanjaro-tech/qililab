@@ -27,8 +27,6 @@ from tests.utils import platform_db
 def fixture_platform(chip: Chip) -> Platform:
     """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
     settings = {
-        "id_": 0,
-        "category": "platform",
         "name": "dummy",
         "device_id": 9,
         "minimum_clock_time": 5,
@@ -162,13 +160,9 @@ def fixture_platform(chip: Chip) -> Platform:
     }
     bus_settings = [
         {
-            "id_": 0,
-            "category": "bus",
             "alias": "feedline_bus",
             "system_control": {
-                "id_": 0,
                 "name": "readout_system_control",
-                "category": "system_control",
                 "instruments": ["QRM1", "rs_1"],
             },
             "port": 0,
@@ -176,13 +170,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 20,
-            "category": "bus",
             "alias": "drive_line_q0_bus",
             "system_control": {
-                "id_": 20,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF1"],
             },
             "port": 8,
@@ -190,13 +180,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 30,
-            "category": "bus",
             "alias": "flux_line_q0_bus",
             "system_control": {
-                "id_": 30,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
             "port": 13,
@@ -204,13 +190,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 21,
-            "category": "bus",
             "alias": "drive_line_q1_bus",
             "system_control": {
-                "id_": 21,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF1"],
             },
             "port": 9,
@@ -218,13 +200,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 31,
-            "category": "bus",
             "alias": "flux_line_q1_bus",
             "system_control": {
-                "id_": 31,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
             "port": 14,
@@ -232,13 +210,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 22,
-            "category": "bus",
             "alias": "drive_line_q2_bus",
             "system_control": {
-                "id_": 22,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF2"],
             },
             "port": 10,
@@ -246,13 +220,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 32,
-            "category": "bus",
             "alias": "flux_line_q2_bus",
             "system_control": {
-                "id_": 32,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM2"],
             },
             "port": 15,
@@ -260,13 +230,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 23,
-            "category": "bus",
             "alias": "drive_line_q3_bus",
             "system_control": {
-                "id_": 23,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF3"],
             },
             "port": 11,
@@ -274,13 +240,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 33,
-            "category": "bus",
             "alias": "flux_line_q3_bus",
             "system_control": {
-                "id_": 33,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
             "port": 16,
@@ -288,13 +250,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 24,
-            "category": "bus",
             "alias": "drive_line_q4_bus",
             "system_control": {
-                "id_": 24,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM-RF3"],
             },
             "port": 12,
@@ -302,13 +260,9 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
         {
-            "id_": 34,
-            "category": "bus",
             "alias": "flux_line_q4_bus",
             "system_control": {
-                "id_": 34,
                 "name": "system_control",
-                "category": "system_control",
                 "instruments": ["QCM1"],
             },
             "port": 17,
@@ -343,8 +297,6 @@ def fixture_chip():
    0,6,3 1,3,6
     """
     settings = {
-        "id_": 0,
-        "category": "chip",
         "nodes": [
             {"name": "port", "line": "feedline_input", "id_": 0, "nodes": [3]},
             {

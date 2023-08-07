@@ -55,8 +55,6 @@ def fixture_settings_6_sequencers():
     ]
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.4.0",
         "num_sequencers": 6,
         "out_offsets": [0.123, 1.23],
@@ -102,8 +100,6 @@ def fixture_settings_even_sequencers():
     ]
     return {
         "alias": "test",
-        "id_": 0,
-        "category": "awg",
         "firmware": "0.4.0",
         "num_sequencers": 3,
         "out_offsets": [0.123, 1.23],
@@ -454,17 +450,9 @@ class TestQbloxQRM:
         qrm.device.get_acquisition_state.assert_not_called()
         qrm.device.get_acquisitions.assert_not_called()
 
-    def test_id_property(self, qrm_no_device: QbloxQRM):
-        """Test id property."""
-        assert qrm_no_device.id_ == qrm_no_device.settings.id_
-
     def test_name_property(self, qrm_no_device: QbloxQRM):
         """Test name property."""
         assert qrm_no_device.name == InstrumentName.QBLOX_QRM
-
-    def test_category_property(self, qrm_no_device: QbloxQRM):
-        """Test category property."""
-        assert qrm_no_device.category == qrm_no_device.settings.category
 
     def test_integration_length_property(self, qrm_no_device: QbloxQRM):
         """Test integration_length property."""

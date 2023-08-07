@@ -13,7 +13,7 @@ class InstrumentControllers:
     elements: list[InstrumentController]
 
     def get_instrument_controller(self, alias: str | None = None):
-        """Get instrument controller given an id_ and category"""
+        """Get instrument controller given an alias."""
         for instrument in self.elements:
             if instrument.alias == alias:
                 return instrument

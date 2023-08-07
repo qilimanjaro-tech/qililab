@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
+from qililab.instrument_controllers.instrument_controller import InstrumentControllerSettings
 from qililab.instrument_controllers.single_instrument_controller import SingleInstrumentController
 from qililab.instrument_controllers.utils.instrument_controller_factory import InstrumentControllerFactory
 from qililab.instruments.rohde_schwarz.sgs100a import SGS100A
@@ -24,7 +25,7 @@ class SGS100AController(SingleInstrumentController):
     modules: Sequence[SGS100A]
 
     @dataclass
-    class SGS100AControllerSettings(SingleInstrumentController.SingleInstrumentControllerSettings):
+    class SGS100AControllerSettings(InstrumentControllerSettings):
         """Contains the settings of a specific SGS100A Controller."""
 
         reference_clock: str
@@ -43,7 +44,7 @@ class SGS100AController(SingleInstrumentController):
 
     def _initialize_device(self):
         """Initialize device attribute to the corresponding device class."""
-        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.id_}", f"TCPIP0::{self.address}::inst0::INSTR")
+        self.device = RohdeSchwarzSGS100A(f"{self.name.value}_{self.alias}", f"TCPIP0::{self.address}::inst0::INSTR")
 
     def _check_supported_modules(self):
         """check if all instrument modules loaded are supported modules for the controller."""

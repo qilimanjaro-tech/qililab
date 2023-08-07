@@ -1,7 +1,7 @@
 """PlatformSchema class."""
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
@@ -35,8 +35,6 @@ class RuncardSchema:
         class BusSchema:
             """Bus schema class."""
 
-            id_: int
-            category: str
             system_control: dict
             port: int
             distortions: list[dict]
@@ -47,10 +45,7 @@ class RuncardSchema:
         class ChipSchema:
             """Chip schema class."""
 
-            id_: int
-            category: str
             nodes: list[dict]
-            alias: str | None = None
 
         chip: ChipSchema | None
         buses: list[BusSchema]
@@ -100,6 +95,7 @@ class RuncardSchema:
                 else:
                     setattr(self, param, value)
 
+        alias: str = field(default="", init=False, repr=False)
         name: str
         device_id: int
         minimum_clock_time: int

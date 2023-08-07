@@ -114,15 +114,6 @@ class BusExecution:
         return self.bus.system_control
 
     @property
-    def id_(self):
-        """BusExecution 'id_' property.
-
-        Returns:
-            int: bus.id_
-        """
-        return self.bus.id_
-
-    @property
     def alias(self):
         """BusExecution 'alias' property.
 

@@ -7,7 +7,7 @@ from qililab.constants import RUNCARD
 from qililab.instruments import AWG, AWGAnalogDigitalConverter
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.pulse import PulseBusSchedule
-from qililab.typings.enums import AcquireTriggerMode, Category, InstrumentName, Parameter
+from qililab.typings.enums import AcquireTriggerMode, InstrumentName, Parameter
 
 
 class DummyAWG(AWGAnalogDigitalConverter):
@@ -50,9 +50,7 @@ class DummyAWG(AWGAnalogDigitalConverter):
 def fixture_awg():
     """Fixture that returns an instance of a dummy AWG."""
     settings = {
-        RUNCARD.ID: 0,
         RUNCARD.ALIAS: InstrumentName.QBLOX_QCM.value,
-        RUNCARD.CATEGORY: Category.AWG.value,
         "acquisition_delay_time": 100,
         RUNCARD.FIRMWARE: "0.7.0",
         Parameter.NUM_SEQUENCERS.value: 1,

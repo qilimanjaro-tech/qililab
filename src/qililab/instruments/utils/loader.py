@@ -28,7 +28,7 @@ class Loader:
         Args:
             instruments (Instruments): Instruments loaded into the platform.
             instrument_references (list[InstrumentReference]): List of references to the instruments
-            with its category and alias to be retrieved from the Instrument Factory.
+            with its alias to be retrieved from the Instrument Factory.
 
         Returns:
             list[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.

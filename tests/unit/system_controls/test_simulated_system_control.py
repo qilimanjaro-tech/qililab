@@ -23,8 +23,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="simulated_system_control")
 def fixture_simulated_system_control():
     settings = {
-        "id_": 0,
-        "category": "system_control",
         "qubit": "csfq4jj",
         "qubit_params": {"n_cut": 10, "phi_x": 6.28318530718, "phi_z": -0.25132741228},
         "drive": "zport",

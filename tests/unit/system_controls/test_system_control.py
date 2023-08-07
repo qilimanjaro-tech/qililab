@@ -8,7 +8,6 @@ from qililab.instruments import AWG, Instrument
 from qililab.platform import Platform
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.system_control import SystemControl
-from qililab.typings.enums import Category
 from tests.data import Galadriel
 from tests.utils import platform_db
 
@@ -31,23 +30,14 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="system_control")
 def fixture_system_control(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {
-        "id_": 1,
-        "category": "system_control",
-        "instruments": ["QCM", "rs_1"],
-    }
+    settings = {"instruments": ["QCM", "rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
 
 @pytest.fixture(name="system_control_without_awg")
 def fixture_system_control_without_awg(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {
-        "id_": 1,
-        "alias": "test_alias",
-        "category": "system_control",
-        "instruments": ["rs_1"],
-    }
+    settings = {"alias": "test_alias", "instruments": ["rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
 
@@ -57,11 +47,8 @@ class TestInitialization:
     def test_init(self, system_control: SystemControl):
         """Test initialization."""
         assert isinstance(system_control.settings, SystemControl.SystemControlSettings)
-        assert system_control.settings.id_ == 1
         assert system_control.settings.alias is None
         assert system_control.name.value == "system_control"
-        assert isinstance(system_control.settings.category, Category)
-        assert system_control.settings.category == Category.SYSTEM_CONTROL
         for instrument in system_control.settings.instruments:
             assert isinstance(instrument, Instrument)
         assert not hasattr(system_control.settings, "platform_instruments")
@@ -134,14 +121,6 @@ class TestMethods:
 
 class TestProperties:
     """Unit tests checking the SystemControl attributes and methods"""
-
-    def test_category_property(self, system_control: SystemControl):
-        """Test category property."""
-        assert system_control.category == system_control.settings.category
-
-    def test_id_property(self, system_control: SystemControl):
-        """Test id property."""
-        assert system_control.id_ == system_control.settings.id_
 
     def test_instruments_property(self, system_control: SystemControl):
         """Test instruments property."""

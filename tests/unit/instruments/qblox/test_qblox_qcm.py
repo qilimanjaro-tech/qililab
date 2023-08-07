@@ -220,17 +220,9 @@ class TestQbloxQCM:
         qcm.device.sequencer0.sequence.assert_called_once()
         qcm.device.sequencer0.sync_en.assert_called_once_with(True)
 
-    def test_id_property(self, qcm_no_device: QbloxQCM):
-        """Test id property."""
-        assert qcm_no_device.id_ == qcm_no_device.settings.id_
-
     def test_name_property(self, qcm_no_device: QbloxQCM):
         """Test name property."""
         assert qcm_no_device.name == InstrumentName.QBLOX_QCM
-
-    def test_category_property(self, qcm_no_device: QbloxQCM):
-        """Test category property."""
-        assert qcm_no_device.category == qcm_no_device.settings.category
 
     def test_firmware_property(self, qcm_no_device: QbloxQCM):
         """Test firmware property."""

@@ -13,7 +13,7 @@ class Instruments:
     elements: list[Instrument]
 
     def get_instrument(self, alias: str | None = None):
-        """Get element given an id_ and category"""
+        """Get element given an alias."""
         for element in self.elements:
             if element.alias == alias:
                 return element

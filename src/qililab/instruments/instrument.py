@@ -179,15 +179,6 @@ class Instrument(BusElement, ABC):
         """Turn off an instrument."""
 
     @property
-    def id_(self):
-        """Instrument 'id' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.settings.id_
-
-    @property
     def alias(self):
         """Instrument 'alias' property.
 
@@ -195,15 +186,6 @@ class Instrument(BusElement, ABC):
             str: settings.alias.
         """
         return self.settings.alias
-
-    @property
-    def category(self):
-        """Instrument 'category' property.
-
-        Returns:
-            Category: settings.category.
-        """
-        return self.settings.category
 
     @property
     def firmware(self):
@@ -216,7 +198,7 @@ class Instrument(BusElement, ABC):
 
     def __str__(self):
         """String representation of an instrument."""
-        return f"{self.alias}" if self.alias is not None else f"{self.category}_{self.id_}"
+        return f"{self.alias}"
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool, channel_id: int | None = None):
         """Sets the parameter of a specific instrument.
