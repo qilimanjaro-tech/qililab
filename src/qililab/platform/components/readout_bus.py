@@ -38,7 +38,7 @@ class ReadoutBus(Bus):
 
     def __str__(self):
         """String representation of a ReadoutBus. Prints a drawing of the bus elements."""
-        return f"ReadoutBus {self.qubit}: " + "".join(
+        return f"ReadoutBus {self.alias}: " + "".join(
             f"--|{instrument}|----" for instrument in self.instruments.values()
         )
 
