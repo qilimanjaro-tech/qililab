@@ -90,12 +90,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0)
 
 
-@pytest.fixture(name="sequencer")
-def fixture_sequencer() -> SequencerQCM:
-    """Return SequencerQCM instance."""
-    return SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
-
-
 @pytest.fixture(name="digitiser")
 def fixture_digitiser() -> SequencerQRM:
     """Return SequencerQRM instance."""
@@ -128,13 +122,13 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 
 @pytest.fixture(name="readout_bus")
 def fixture_readout_bus(
-    sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
+    digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
 ) -> ReadoutBus:
     """Return ReadoutBus instance"""
     return ReadoutBus(
         alias=ALIAS,
         qubit=QUBIT,
-        awg=sequencer,
+        awg=digitiser,
         digitiser=digitiser,
         local_oscillator=local_oscillator,
         attenuator=attenuator,
@@ -165,7 +159,6 @@ class TestReadoutBus:
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
 
-        readout_bus.set(param_name=sequencer_param, value=True)
         readout_bus.set(param_name=sequencer_param, value=True)
         readout_bus.set(param_name=lo_frequency_param, value=2)
         readout_bus.set(param_name=attenuation_param, value=2)
