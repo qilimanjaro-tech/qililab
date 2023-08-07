@@ -2,8 +2,8 @@
 from abc import ABC
 from typing import Any
 
-from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces import BaseInstrument
+from qililab.drivers.interfaces.awg import AWG
 from qililab.pulse import PulseBusSchedule, PulseDistortion
 
 
