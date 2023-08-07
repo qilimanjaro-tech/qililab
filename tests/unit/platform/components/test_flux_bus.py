@@ -67,6 +67,16 @@ class MockQcodesS4gD5aDacChannels(DummyChannel):
             get_parser=float,
             vals=vals.Numbers(0, 20e9),
         )
+        # fake parameter for testing purposes
+        self.add_parameter(
+            name="status",
+            label="status",
+            unit="S",
+            get_cmd=None,
+            set_cmd=None,
+            get_parser=float,
+            vals=vals.Numbers(0, 20e9),
+        )
 
     def _get_current(self, dac: int) -> float:  # pylint: disable=unused-argument
         """
@@ -102,7 +112,17 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
 @pytest.fixture(name="sequencer")
 def fixture_sequencer() -> SequencerQCM:
     """Return SequencerQCM instance."""
-    return SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
+    sequencer = SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
+    sequencer.add_parameter(
+        name="status",
+        label="status",
+        unit="S",
+        get_cmd=None,
+        set_cmd=None,
+        get_parser=float,
+        vals=vals.Numbers(0, 20e9),
+    )
+    return sequencer
 
 
 @pytest.fixture(name="voltage_source")
@@ -163,6 +183,7 @@ class TestFluxBus:
 
     def test_set_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test set method with voltage source"""
+        # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
@@ -171,6 +192,20 @@ class TestFluxBus:
 
         assert flux_bus_voltage_source.instruments["awg"].get(sequencer_param) is True
         assert flux_bus_voltage_source.instruments["source"].get(voltage_source_param) == voltage_source_param_value
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            flux_bus_voltage_source.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            flux_bus_voltage_source.set(param_name=duplicated_param, value=True)
 
     def test_set_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test set method with current source"""
@@ -184,8 +219,23 @@ class TestFluxBus:
         assert flux_bus_current_source.instruments["awg"].get(sequencer_param) is True
         assert flux_bus_current_source.instruments["source"].get(current_source_param) == current_source_param_value
 
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            flux_bus_current_source.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            flux_bus_current_source.set(param_name=duplicated_param, value=True)
+
     def test_get_with_voltage_source(self, flux_bus_voltage_source: FluxBus):
         """Test get method with voltage source"""
+        # testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         voltage_source_param = "voltage"
         voltage_source_param_value = 0.03
@@ -195,8 +245,23 @@ class TestFluxBus:
         assert flux_bus_voltage_source.get(sequencer_param) is True
         assert flux_bus_voltage_source.get(voltage_source_param) == voltage_source_param_value
 
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            flux_bus_voltage_source.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            flux_bus_voltage_source.set(param_name=duplicated_param, value=True)
+
     def test_get_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test get method with voltage source"""
+        # testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         current_source_param = "current"
         current_source_param_value = 0.03
@@ -205,6 +270,20 @@ class TestFluxBus:
 
         assert flux_bus_current_source.get(sequencer_param) is True
         assert flux_bus_current_source.get(current_source_param) == current_source_param_value
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            flux_bus_current_source.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            flux_bus_current_source.set(param_name=duplicated_param, value=True)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(
