@@ -21,4 +21,4 @@ class FluxBus(Bus):
 
     def __str__(self):
         """String representation of a FluxBus. Prints a drawing of the bus elements."""
-        return f"FluxBus {self.qubit}: " + "".join(f"--|{instrument}|----" for instrument in self.instruments.values())
+        return f"FluxBus {self.alias}: " + "".join(f"--|{instrument}|----" for instrument in self.instruments.values())
