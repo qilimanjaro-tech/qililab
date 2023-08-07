@@ -24,7 +24,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 QUBIT = 0
-ALIAS = "bus"
+ALIAS = "bus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -79,7 +79,7 @@ class TestBusDriver:
         """Test set method"""
         # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
-        bus.set(param_name="sequencer_param", value=True)
+        bus.set(param_name=sequencer_param, value=True)
         assert bus.instruments["awg"].get(sequencer_param) is True
 
         # Testing with parameter that does not exist
