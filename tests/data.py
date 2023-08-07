@@ -1,8 +1,8 @@
 """ Data to use alongside the test suite. """
 import copy
 from multiprocessing.pool import RUN
-
 import numpy as np
+from typing import Any
 from qibo.gates import RX, RY, I, M, X, Y
 from qibo.models.circuit import Circuit
 
@@ -501,7 +501,7 @@ class Galadriel:
         ],
     }
 
-    buses = [
+    buses: list[dict[str, Any]] = [
         {
             RUNCARD.ID: 0,
             RUNCARD.CATEGORY: Category.BUS.value,
