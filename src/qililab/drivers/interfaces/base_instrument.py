@@ -13,7 +13,7 @@ class BaseInstrument(ABC):
 
     @abstractmethod
     def set(self, param_name: str, value: Any) -> None:
-        """Set parameter from attenuator name
+        """Set instrument parameter.
 
         Args:
             param_name (str): The name of a parameter of this instrument.
