@@ -2,8 +2,8 @@
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
-from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components import BusDriver
+from qililab.platform.components.bus_factory import BusFactory
 
 
 @BusFactory.register

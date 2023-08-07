@@ -1,7 +1,7 @@
 """Driver for the Drive Bus class."""
 from qililab.drivers.interfaces import AWG, Attenuator, Digitiser, LocalOscillator
-from qililab.platform.components.bus_factory import BusFactory
 from qililab.platform.components import BusDriver
+from qililab.platform.components.bus_factory import BusFactory
 from qililab.result.qblox_results.qblox_result import QbloxResult
 
 
