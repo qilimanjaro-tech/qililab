@@ -1,6 +1,6 @@
 """Driver for the Drive Bus class."""
 from qililab.drivers.interfaces import AWG, CurrentSource, VoltageSource
-from qililab.platform.components import BusDriver
+from qililab.platform.components.bus_driver import BusDriver
 from qililab.platform.components.bus_factory import BusFactory
 
 
