@@ -132,3 +132,10 @@ class TestKeithley2600Channel:
         channel_smub.off()
         assert channel_smua.get("output") is False
         assert channel_smub.get("output") is False
+        
+    def test_params(self):
+        """Unittest to test the params property."""
+        channel_smua = Keithley2600Channel(parent=MagicMock(), name="test_channel_smua", channel="smua")
+        channel_smub = Keithley2600Channel(parent=MagicMock(), name="test_channel_smub", channel="smub")
+        assert channel_smua.params == channel_smua.parameters
+        assert channel_smub.params == channel_smub.parameters

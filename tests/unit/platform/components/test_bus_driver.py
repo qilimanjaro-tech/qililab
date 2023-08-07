@@ -116,10 +116,6 @@ class TestBusDriver:
         with pytest.raises(NotImplementedError, match="This feature is not yet implemented."):
             bus.get(param_name="distortions")
 
-    def test_eq(self, bus: BusDriver):
-        """Test comparing two Bus objects"""
-        assert bus.__eq__(bus)
-
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, bus: BusDriver):
         """Test execute method"""

@@ -77,6 +77,11 @@ class TestGS200:
         assert yokogawa_monitor.present is True
         assert yokogawa_gs_200._channel_lists == {}
 
+    def test_params(self):
+        """Unittest to test the params property."""
+        yokogawa_gs_200 = GS200(name="test_params", address="")
+        assert yokogawa_gs_200.params == yokogawa_gs_200.parameters
+
 
 class TestGS200Monitor:
     """Unit tests checking the qililab Yokogawa GS200 attributes and methods"""
