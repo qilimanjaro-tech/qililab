@@ -22,6 +22,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 QUBIT = 0
+ALIAS = "flux_bus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -119,13 +120,13 @@ def fixture_current_source() -> S4gDacChannel:
 @pytest.fixture(name="flux_bus_current_source")
 def fixture_flux_bus_current_source(sequencer: SequencerQCM, current_source: S4gDacChannel) -> FluxBus:
     """Return FluxBus instance with current source."""
-    return FluxBus(qubit=QUBIT, awg=sequencer, source=current_source)
+    return FluxBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, source=current_source)
 
 
 @pytest.fixture(name="flux_bus_voltage_source")
 def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5aDacChannel) -> FluxBus:
     """Return FluxBus instance with voltage source."""
-    return FluxBus(qubit=QUBIT, awg=sequencer, source=voltage_source)
+    return FluxBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, source=voltage_source)
 
 
 class TestFluxBus:
@@ -173,6 +174,7 @@ class TestFluxBus:
 
     def test_set_with_current_source(self, flux_bus_current_source: FluxBus):
         """Test set method with current source"""
+        # Testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         current_source_param = "current"
         current_source_param_value = 0.03

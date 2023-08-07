@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import qcodes.validators as vals
 from qcodes import Instrument
+from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers import parameters
@@ -24,6 +25,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 QUBIT = 0
+ALIAS = "readout_bus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -114,8 +116,14 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
     att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-
-    return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator.add_parameter(
+        "status",
+        label="Delegated parameter device status",
+        source=att_parent.parameters[f"{channel}_lo_en"],
+        parameter_class=DelegateParameter,
+    )
+    return attenuator
 
 
 @pytest.fixture(name="readout_bus")
@@ -124,7 +132,7 @@ def fixture_readout_bus(
 ) -> ReadoutBus:
     """Return ReadoutBus instance"""
     return ReadoutBus(
-        qubit=QUBIT, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        alias=ALIAS, qubit=QUBIT, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
     )
 
 
@@ -138,7 +146,7 @@ class TestReadoutBus:
 
     def test_init(self, readout_bus: ReadoutBus):
         """Test init method"""
-
+        assert readout_bus.alias == ALIAS
         assert readout_bus.qubit == QUBIT
         assert isinstance(readout_bus.instruments["awg"], SequencerQCM)
         assert isinstance(readout_bus.instruments["digitiser"], SequencerQRM)
@@ -147,6 +155,7 @@ class TestReadoutBus:
 
     def test_set(self, readout_bus: ReadoutBus):
         """Test set method"""
+        # Testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
@@ -161,8 +170,21 @@ class TestReadoutBus:
         assert readout_bus.instruments["local_oscillator"].get(lo_frequency_param) == 2
         assert readout_bus.instruments["attenuator"].get(attenuation_param) == 2
 
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+            readout_bus.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            readout_bus.set(param_name=duplicated_param, value=True)
+
     def test_get(self, readout_bus: ReadoutBus):
         """Test get method"""
+        # Testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
@@ -175,6 +197,18 @@ class TestReadoutBus:
         assert readout_bus.get(sequencer_param) is True
         assert readout_bus.get(lo_frequency_param) == 2
         assert readout_bus.get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."):
+            readout_bus.get(param_name=random_param)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            readout_bus.get(param_name=duplicated_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute_sequencer(
