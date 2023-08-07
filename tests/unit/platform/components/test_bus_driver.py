@@ -2,13 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-import qcodes.validators as vals
 from qcodes import Instrument
-from qcodes.instrument import DelegateParameter
-from qcodes.tests.instrument_mocks import DummyInstrument
-
-from qililab.drivers import parameters
-from qililab.drivers.instruments.qblox.cluster import QcmQrmRfAtt, QcmQrmRfLo
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.platform.components.bus_driver import BusDriver
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule
@@ -89,20 +83,20 @@ class TestBusDriver:
         ):
             bus.set(param_name=random_param, value=True)
 
-    def test_get(self, drive_bus: BusDriver):
+    def test_get(self, bus: BusDriver):
         """Test get method"""
         # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
-        drive_bus.set(param_name=sequencer_param, value=True)
+        bus.set(param_name=sequencer_param, value=True)
 
-        assert drive_bus.get(sequencer_param) is True
+        assert bus.get(sequencer_param) is True
 
         # Testing with parameter that does not exist
         random_param = "some_random_param"
         with pytest.raises(
             AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
         ):
-            drive_bus.get(param_name=random_param)
+            bus.get(param_name=random_param)
 
     def test_set_get_delay(self, bus: BusDriver):
         """Test set and get method for delay parameter"""
