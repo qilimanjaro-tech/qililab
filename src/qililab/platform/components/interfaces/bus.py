@@ -63,7 +63,7 @@ class Bus(ABC):
         if param_name == "delay":
             self.delay = value
         elif param_name == "distortions":
-            self.distortions = value
+            raise NotImplementedError("this feature is not yet implemented")
         else:
             candidates: list[BaseInstrument] = [
                 instrument for instrument in self.instruments.values() if param_name in instrument.params
@@ -93,7 +93,7 @@ class Bus(ABC):
         if param_name == "delay":
             return self.delay
         if param_name == "distortions":
-            return self.distortions
+            raise NotImplementedError("this feature is not yet implemented")
         candidates: list[BaseInstrument] = [
             instrument for instrument in self.instruments.values() if param_name in instrument.params
         ]
