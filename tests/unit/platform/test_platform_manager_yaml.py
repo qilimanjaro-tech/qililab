@@ -3,8 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import qililab as ql
-from qililab import build_platform, get_new_drivers_flag, set_new_drivers_flag
+from qililab import build_platform
 from qililab.platform import Platform
 
 from ...data import Galadriel
