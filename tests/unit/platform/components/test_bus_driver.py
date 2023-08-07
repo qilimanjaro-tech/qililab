@@ -24,7 +24,7 @@ NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
 QUBIT = 0
-ALIAS = "drivebus_0"
+ALIAS = "bus"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
