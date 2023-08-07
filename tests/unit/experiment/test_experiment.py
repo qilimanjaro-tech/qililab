@@ -467,7 +467,7 @@ class TestSetParameter:
     def test_set_parameter_method_with_platform_settings(self, exp: Experiment):
         """Test set_parameter method with platform settings."""
         exp.set_parameter(alias="M(0)_0", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert exp.platform.settings.get_gate(name="M", qubits=0).schedule[0].pulse.amplitude == 0.3
+        assert exp.platform.settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, exp: Experiment):
         """Test set_parameter method with instrument controller reset."""

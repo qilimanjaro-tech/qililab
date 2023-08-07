@@ -7,7 +7,7 @@ import pytest
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings import RuncardSchema
-from qililab.settings.gate_settings import GateSettings
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings import Parameter
 from tests.data import Galadriel
 
@@ -59,7 +59,9 @@ class TestPlatformSettings:
         assert isinstance(settings.delay_before_readout, int)
         assert isinstance(settings.gates, dict)
         assert all(
-            (isinstance(key, str), isinstance(settings, GateSettings)) for key, settings in settings.gates.items()
+            (isinstance(key, str), isinstance(event, GateEventSettings))
+            for key, settings in settings.gates.items()
+            for event in settings
         )
         assert isinstance(settings.reset_method, str)
         assert isinstance(settings.passive_reset_duration, int)
@@ -94,8 +96,9 @@ class TestPlatformSettings:
             for alias in settings.gates.keys()
         ]
         assert all(
-            isinstance(settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits)), GateSettings)
+            isinstance(gate_event, GateEventSettings)
             for gate_name, gate_qubits in gates_qubits
+            for gate_event in settings.get_gate(name=gate_name, qubits=ast.literal_eval(gate_qubits))
         )
 
     def test_get_gate_raises_error(self):
@@ -106,7 +109,9 @@ class TestPlatformSettings:
         name = "test"
         qubits = 0
 
-        error_string = re.escape(f"Gate {name} for qubits {(qubits,)} not found in settings")
+        error_string = re.escape(f"Gate {name} for qubits {qubits} not found in settings").replace(
+            "\\", ""
+        )  # fixes re.escape bug
         with pytest.raises(KeyError, match=error_string):
             settings.get_gate(name, qubits=qubits)
 
@@ -143,20 +148,14 @@ class TestPlatformSettings:
         qubits_str = regex_match["qubits"]
         qubits = ast.literal_eval(qubits_str)
 
-        settings.get_gate(name=name, qubits=qubits).set_parameter(
-            parameter=Parameter.DURATION, value=1234, schedule_element=0
-        )
-        assert settings.get_gate(name=name, qubits=qubits).schedule[0].pulse.duration == 1234
+        settings.set_parameter(alias=alias, parameter=Parameter.DURATION, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits)[0].pulse.duration == 1234
 
-        settings.get_gate(name=name, qubits=qubits).set_parameter(
-            parameter=Parameter.PHASE, value=1234, schedule_element=0
-        )
-        assert settings.get_gate(name=name, qubits=qubits).schedule[0].pulse.phase == 1234
+        settings.set_parameter(alias=alias, parameter=Parameter.PHASE, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits)[0].pulse.phase == 1234
 
-        settings.get_gate(name=name, qubits=qubits).set_parameter(
-            parameter=Parameter.AMPLITUDE, value=1234, schedule_element=0
-        )
-        assert settings.get_gate(name=name, qubits=qubits).schedule[0].pulse.amplitude == 1234
+        settings.set_parameter(alias=alias, parameter=Parameter.AMPLITUDE, value=1234)
+        assert settings.get_gate(name=name, qubits=qubits)[0].pulse.amplitude == 1234
 
     @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str):

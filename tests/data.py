@@ -76,96 +76,84 @@ class Galadriel:
             },
         ],
         "gates": {
-            "M(0)": {
-                "schedule": [
-                    {
-                        "bus": "feedline_input_output_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 2000,
-                            "frequency": 0,
-                            "shape": {"name": "rectangular"},
-                        },
-                    }
-                ]
-            },
-            "I(0)": {
-                "schedule": [
-                    {
-                        "bus": "drive_line_q0_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 100,
-                            "frequency": 0,
-                            "shape": {"name": "rectangular"},
-                        },
-                    }
-                ]
-            },
-            "X(0)": {
-                "schedule": [
-                    {
-                        "bus": "drive_line_q0_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 50,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "Y(0)": {
-                "schedule": [
-                    {
-                        "bus": "drive_line_q0_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "RY(0)": {
-                "schedule": [
-                    {
-                        "bus": "drive_line_q0_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "RX(0)": {
-                "schedule": [
-                    {
-                        "bus": "drive_line_q0_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
+            "M(0)": [
+                {
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "I(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
         },
     }
 
@@ -594,96 +582,84 @@ class FluxQubitSimulator:
             },
         ],
         "gates": {
-            "M(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 2000,
-                            "frequency": 0,
-                            "shape": {"name": "rectangular"},
-                        },
-                    }
-                ]
-            },
-            "I(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 100,
-                            "frequency": 0,
-                            "shape": {"name": "rectangular"},
-                        },
-                    }
-                ]
-            },
-            "X(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 0,
-                            "duration": 50,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "Y(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "RY(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
-            "RX(0)": {
-                "schedule": [
-                    {
-                        "bus": "simulated_bus",
-                        "wait_time": 0,
-                        "pulse": {
-                            "amplitude": 1.0,
-                            "phase": 1.5707963267948966,
-                            "duration": 20,
-                            "frequency": 0,
-                            "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
-                        },
-                    }
-                ]
-            },
+            "M(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "I(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
         },
     }
 

@@ -16,7 +16,7 @@ from qililab.execution import EXECUTION_BUILDER, ExecutionManager
 from qililab.platform.platform import Platform
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
-from qililab.settings.gate_settings import GateSettings
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.typings.yaml_type import yaml
@@ -283,9 +283,8 @@ class Experiment:
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
-        elif isinstance(element, GateSettings):
-            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
-            element.set_parameter(parameter=parameter, value=value, schedule_element=schedule_element)
+        elif all(isinstance(element_event, GateEventSettings) for element_event in element):
+            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value)
             self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore

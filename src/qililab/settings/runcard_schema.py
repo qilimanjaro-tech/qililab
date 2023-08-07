@@ -6,7 +6,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.settings.gate_settings import GateEventSettings, GateSettings
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -94,11 +94,14 @@ class RuncardSchema:
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
         operations: list[OperationSettings]
-        gates: dict[str, GateSettings]
+        gates: dict[str, list[GateEventSettings]]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = {gate: GateSettings(schedule["schedule"]) for gate, schedule in self.gates.items()}
+
+            self.gates = {
+                gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
+            }
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name
@@ -121,17 +124,17 @@ class RuncardSchema:
             raise ValueError(f"Operation {name} not found in platform settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
-            """Get gate with the given name for the given qubit(s).
+            """Get gate settings from runcard for a given gate name and qubits.
 
             Args:
                 name (str): Name of the gate.
-                qubits (int |  tuple[int, int]): The qubits the gate is acting on.
+                qubits (int |  tuple[int, int] | tuple[int]): The qubits the gate is acting on.
 
             Raises:
                 ValueError: If no gate is found.
 
             Returns:
-                GateSettings: GateSettings class.
+                GateSettings: gate settings.
             """
 
             gate_qubits = (
@@ -175,7 +178,7 @@ class RuncardSchema:
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
             schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
-            gate_settings.set_parameter(parameter, value, schedule_element)
+            gate_settings[schedule_element].set_parameter(parameter, value)
 
     settings: PlatformSettings
     schema: Schema

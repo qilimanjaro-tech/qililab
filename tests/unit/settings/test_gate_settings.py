@@ -3,8 +3,6 @@ from dataclasses import asdict
 
 import numpy as np
 import pytest
-from qibo.gates import CZ, RZ, M, X
-from qibo.models import Circuit
 
 from qililab.chip import Chip
 from qililab.config import logger
@@ -14,7 +12,7 @@ from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_shape import SNZ
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
-from qililab.settings.gate_settings import GateEventSettings, GateSettings
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings.enums import Parameter
 
 
@@ -55,21 +53,6 @@ def fixture_schedule() -> list[dict]:
             },
         },
     ]
-
-
-class TestGateSettings:
-    def test_init(self, schedule):
-        gate_settings = GateSettings([schedule[0]])
-        assert isinstance(gate_settings.schedule, list)
-        assert isinstance(gate_settings.schedule[0], GateEventSettings)
-        # add wait time
-        schedule[0]["wait_time"] = 0
-        assert asdict(gate_settings) == {"schedule": [schedule[0]]}
-
-    def test_set_parameter(self, schedule):
-        gate_settings = GateSettings(schedule)
-        gate_settings.set_parameter(parameter=Parameter.AMPLITUDE, value=0.12, schedule_element=2)
-        assert gate_settings.schedule[2].pulse.amplitude == 0.12
 
 
 class TestGateEventSettings:
