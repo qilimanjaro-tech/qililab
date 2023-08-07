@@ -5,7 +5,7 @@ import pytest
 from qcodes import Instrument
 from qcodes import validators as vals
 from qcodes.tests.instrument_mocks import DummyChannel
-
+from qililab.drivers.interfaces import CurrentSource, VoltageSource
 from qililab.drivers.instruments.qblox.sequencer_qcm import SequencerQCM
 from qililab.drivers.instruments.qblox.spi_rack import D5aDacChannel, S4gDacChannel
 from qililab.platform.components import FluxBus
@@ -158,8 +158,8 @@ class TestFluxBus:
         """Set up for all tests"""
         cls.old_sg4_bases = S4gDacChannel.__bases__
         cls.old_d5a_bases = D5aDacChannel.__bases__
-        S4gDacChannel.__bases__ = (MockQcodesS4gD5aDacChannels,)
-        D5aDacChannel.__bases__ = (MockQcodesS4gD5aDacChannels,)
+        S4gDacChannel.__bases__ = (MockQcodesS4gD5aDacChannels, CurrentSource)
+        D5aDacChannel.__bases__ = (MockQcodesS4gD5aDacChannels, VoltageSource)
 
     @classmethod
     def teardown_class(cls):
