@@ -38,16 +38,31 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r dev-requirements.txt
 
-      - name: Code Quality
+      - name: Isort
+        run: isort . -l 120 --check
+
+      - name: Black
+        run: black . -l 120 --check
+
+      - name: Flake8
+        run: flake8
+
+      - name: Pylint
         run: |
-          isort . -l 120 --check
-          black . -l 120 --check
-          flake8
           pylint src --rcfile .pylintrc
           pylint tests --rcfile tests/.pylintrc
-          mypy src
-          bandit -r src -c .bandit
-          mdformat .
+
+      - name: Mypy
+        run: mypy src
+
+      - name: Bandit
+        run: bandit -r src -c .bandit
+
+      - name: Mdformat
+        run: mdformat .
+
+      - name: nbqa
+        run: |
           nbqa black .
           nbqa isort .
           nbqa flake8 .
