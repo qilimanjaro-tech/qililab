@@ -22,7 +22,7 @@ class TestPlatformManagerYAML:
         mock_open.assert_called_once()
         with pytest.raises(NotImplementedError):
             build_platform(name="sauron", database=True)
-            
+
     @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard)
     @patch("qililab.platform.platform_manager_yaml.open")
     def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
