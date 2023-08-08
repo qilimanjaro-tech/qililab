@@ -1,7 +1,7 @@
 """PlatformSchema class."""
 import ast
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
