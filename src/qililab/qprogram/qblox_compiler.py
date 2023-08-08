@@ -191,12 +191,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
             raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
         for bus in self._buses:
-            block = QPyProgram.Block(name=f"loop_{self._buses[bus].loop_counter}")
             iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
-            iteration_register = QPyProgram.Register()
-            self._buses[bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Move(var=iterations, register=iteration_register)
-            )
+            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
             for loop in element.loops:
                 operation = QBloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
                 if not operation:
@@ -206,16 +202,16 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 self._buses[bus].qpy_block_stack[-1].append_component(
                     component=QPyInstructions.Move(var=begin, register=loop_register)
                 )
-                block.builtin_components.append(
+                qpy_loop.builtin_components.insert(
+                    0,
                     QPyInstructions.Add(loop_register, step, loop_register)
                     if step > 0
-                    else QPyInstructions.Sub(loop_register, step, loop_register)
+                    else QPyInstructions.Sub(loop_register, step, loop_register),
                 )
                 self._buses[bus].variable_to_register[loop.variable] = loop_register
-            block.append_component(QPyInstructions.WaitSync(4))
-            block.builtin_components.append(QPyInstructions.Loop(iteration_register, f"@{block.name}"))
-            self._buses[bus].qpy_block_stack[-1].append_component(block)
-            self._buses[bus].qpy_block_stack.append(block)
+            qpy_loop.append_component(QPyInstructions.WaitSync(4))
+            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
+            self._buses[bus].qpy_block_stack.append(qpy_loop)
             self._buses[bus].loop_counter += 1
         return True
 
