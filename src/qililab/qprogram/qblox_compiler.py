@@ -9,7 +9,7 @@ import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -61,7 +61,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
     def __init__(self, settings: Settings):
         self._settings = settings
         self._handlers: dict[type, Callable] = {
-            AcquireLoop: self._handle_acquire_loop,
+            Average: self._handle_acquire_loop,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
@@ -151,9 +151,9 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             raise NotImplementedError("Waveforms should have equal lengths.")
         return index_I, index_Q, length_I
 
-    def _handle_acquire_loop(self, element: AcquireLoop):
+    def _handle_acquire_loop(self, element: Average):
         for bus in self._buses:
-            qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].acq_loop_counter}", begin=element.iterations)
+            qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].acq_loop_counter}", begin=element.shots)
             qpy_loop.append_component(
                 component=QPyInstructions.WaitSync(wait_time=4), bot_position=len(qpy_loop.components)
             )

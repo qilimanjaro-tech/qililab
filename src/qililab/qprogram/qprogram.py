@@ -2,7 +2,7 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
 from qililab.qprogram.operations import (
     Acquire,
     Play,
@@ -79,7 +79,7 @@ class QProgram:
         """
         return QProgram._BlockContext(qprogram=self)
 
-    def acquire_loop(self, iterations: int):
+    def average(self, shots: int):
         """Define an acquire loop block with averaging in real time.
 
         Blocks need to open a scope.
@@ -95,7 +95,7 @@ class QProgram:
         Returns:
             AcquireLoop: The acquire_loop block.
         """
-        return QProgram._AcquireLoopContext(qprogram=self, iterations=iterations)
+        return QProgram._AverageContext(qprogram=self, iterations=shots)
 
     def loop(self, variable: Variable, values: np.ndarray):
         """Define a loop block to iterate values over a variable.
@@ -295,11 +295,11 @@ class QProgram:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block
 
-    class _AcquireLoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
+    class _AverageContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(self, qprogram: "QProgram", iterations: int):  # pylint: disable=super-init-not-called
             self.qprogram = qprogram
-            self.block: AcquireLoop = AcquireLoop(iterations=iterations)
+            self.block: Average = Average(shots=iterations)
 
-        def __enter__(self) -> AcquireLoop:
+        def __enter__(self) -> Average:
             self.qprogram._append_to_block_stack(block=self.block)
             return self.block

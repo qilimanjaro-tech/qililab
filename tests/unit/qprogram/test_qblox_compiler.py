@@ -28,7 +28,7 @@ def fixture_acquire_loop() -> QProgram:
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(shots=1000):
         qp.play(bus="drive", waveform=drag_pair)
         qp.sync()
         qp.wait(bus="readout", time=100)
@@ -43,7 +43,7 @@ def fixture_acquire_loop_with_for_loop() -> QProgram:
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
     wait_time = qp.variable(int)
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(shots=1000):
         with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
             qp.play(bus="drive", waveform=drag_pair)
             qp.sync()
@@ -60,7 +60,7 @@ def fixture_acquire_loop_with_nested_for_loops() -> QProgram:
     qp = QProgram()
     wait_time = qp.variable(int)
     gain = qp.variable(float)
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(shots=1000):
         with qp.for_loop(variable=gain, start=0, stop=1, step=0.1):
             qp.set_gain(bus="drive", gain_path0=gain, gain_path1=gain)
             with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
@@ -76,7 +76,7 @@ def fixture_acquire_loop_with_nested_for_loops() -> QProgram:
 def fixture_for_loop_variable_with_no_target() -> QProgram:
     qp = QProgram()
     variable = qp.variable(float)
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(shots=1000):
         with qp.for_loop(variable=variable, start=0, stop=100, step=4):
             qp.set_frequency(bus="drive", frequency=100)
             qp.set_phase(bus="drive", phase=90)
@@ -87,7 +87,7 @@ def fixture_for_loop_variable_with_no_target() -> QProgram:
 def fixture_for_loop_variable_with_different_targets() -> QProgram:
     qp = QProgram()
     variable = qp.variable(float)
-    with qp.acquire_loop(iterations=1000):
+    with qp.average(shots=1000):
         with qp.for_loop(variable=variable, start=0, stop=100, step=4):
             qp.set_frequency(bus="drive", frequency=variable)
             qp.set_phase(bus="drive", phase=variable)
