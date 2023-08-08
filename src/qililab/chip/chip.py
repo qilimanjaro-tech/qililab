@@ -35,7 +35,7 @@ class Chip:
                 return node
         raise ValueError(f"Could not find qubit with idx {idx}.")
 
-    def _get_adjacent_nodes(self, node: Node) -> list[Node]:
+    def _get_adjacent_nodes(self, node: Node) -> list[Node | None]:
         """Get adjacent nodes from given node.
 
         Args:
