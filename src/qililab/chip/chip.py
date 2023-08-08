@@ -104,7 +104,7 @@ class Chip:
         port = self.get_node_from_alias(alias=alias)
         return self._get_adjacent_nodes(node=port)  # type: ignore
 
-    def get_node_from_alias(self, alias: str) -> Node:
+    def get_node_from_alias(self, alias: str) -> Node | None:
         """Get node from given id.
 
         Args:
