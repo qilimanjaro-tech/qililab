@@ -1,6 +1,7 @@
 """ Data to use alongside the test suite. """
 # pylint: disable=too-many-lines
 import copy
+from typing import Any
 
 import numpy as np
 from qibo.gates import RX, RY, I, M, X, Y
@@ -39,8 +40,8 @@ class Galadriel:
 
     name = "galadriel"
 
-    platform = {
-        "name": "galadriel",
+    platform: dict[str, Any] = {
+        RUNCARD.NAME: "galadriel",
         PLATFORM.DEVICE_ID: 9,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -186,7 +187,7 @@ class Galadriel:
         },
     }
 
-    pulsar_controller_qcm_0 = {
+    pulsar_controller_qcm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qcm_0",
         Parameter.REFERENCE_CLOCK.value: ReferenceClock.INTERNAL.value,
@@ -202,7 +203,7 @@ class Galadriel:
         ],
     }
 
-    qblox_qcm_0 = {
+    qblox_qcm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QCM,
         "alias": InstrumentName.QBLOX_QCM.value,
         RUNCARD.FIRMWARE: "0.7.0",
@@ -242,7 +243,7 @@ class Galadriel:
         ],
     }
 
-    pulsar_controller_qrm_0 = {
+    pulsar_controller_qrm_0: dict[str, Any] = {
         "name": InstrumentControllerName.QBLOX_PULSAR,
         "alias": "pulsar_controller_qrm_0",
         Parameter.REFERENCE_CLOCK.value: ReferenceClock.EXTERNAL.value,
@@ -258,7 +259,7 @@ class Galadriel:
         ],
     }
 
-    qblox_qrm_0 = {
+    qblox_qrm_0: dict[str, Any] = {
         "name": InstrumentName.QBLOX_QRM,
         "alias": InstrumentName.QBLOX_QRM.value,
         RUNCARD.FIRMWARE: "0.7.0",
@@ -329,7 +330,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_controller_0 = {
+    rohde_schwarz_controller_0: dict[str, Any] = {
         "name": InstrumentControllerName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz_controller_0",
         Parameter.REFERENCE_CLOCK.value: "EXT",
@@ -345,7 +346,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_0 = {
+    rohde_schwarz_0: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_0",
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -354,7 +355,7 @@ class Galadriel:
         Parameter.RF_ON.value: True,
     }
 
-    rohde_schwarz_controller_1 = {
+    rohde_schwarz_controller_1: dict[str, Any] = {
         "name": InstrumentControllerName.ROHDE_SCHWARZ,
         "alias": "rohde_schwarz_controller_1",
         Parameter.REFERENCE_CLOCK.value: "EXT",
@@ -370,7 +371,7 @@ class Galadriel:
         ],
     }
 
-    rohde_schwarz_1 = {
+    rohde_schwarz_1: dict[str, Any] = {
         "name": InstrumentName.ROHDE_SCHWARZ,
         "alias": "rs_1",
         RUNCARD.FIRMWARE: "4.30.046.295",
@@ -379,7 +380,7 @@ class Galadriel:
         Parameter.RF_ON.value: True,
     }
 
-    attenuator_controller_0 = {
+    attenuator_controller_0: dict[str, Any] = {
         "name": InstrumentControllerName.MINI_CIRCUITS,
         "alias": "attenuator_controller_0",
         INSTRUMENTCONTROLLER.CONNECTION: {
@@ -394,14 +395,14 @@ class Galadriel:
         ],
     }
 
-    attenuator = {
+    attenuator: dict[str, Any] = {
         "name": InstrumentName.MINI_CIRCUITS,
         "alias": "attenuator",
         Parameter.ATTENUATION.value: 30,
         RUNCARD.FIRMWARE: None,
     }
 
-    keithley_2600_controller_0 = {
+    keithley_2600_controller_0: dict[str, Any] = {
         "name": InstrumentControllerName.KEITHLEY2600,
         "alias": "keithley_2600_controller_0",
         INSTRUMENTCONTROLLER.CONNECTION: {
@@ -416,7 +417,7 @@ class Galadriel:
         ],
     }
 
-    keithley_2600 = {
+    keithley_2600: dict[str, Any] = {
         "name": InstrumentName.KEITHLEY2600,
         "alias": InstrumentControllerName.KEITHLEY2600.value,
         RUNCARD.FIRMWARE: None,
@@ -424,8 +425,8 @@ class Galadriel:
         Parameter.MAX_VOLTAGE.value: 20.0,
     }
 
-    instruments = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
-    instrument_controllers = [
+    instruments: list[dict] = [qblox_qcm_0, qblox_qrm_0, rohde_schwarz_0, rohde_schwarz_1, attenuator, keithley_2600]
+    instrument_controllers: list[dict] = [
         pulsar_controller_qcm_0,
         pulsar_controller_qrm_0,
         rohde_schwarz_controller_0,
@@ -434,7 +435,7 @@ class Galadriel:
         keithley_2600_controller_0,
     ]
 
-    chip = {
+    chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "flux_q0", "line": "flux", "nodes": ["q0"]},
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
@@ -456,7 +457,7 @@ class Galadriel:
         ],
     }
 
-    buses = [
+    buses: list[dict[str, Any]] = [
         {
             "alias": "drive_line_bus",
             "system_control": {
@@ -489,19 +490,19 @@ class Galadriel:
         },
     ]
 
-    schema = {
+    schema: dict[str, Any] = {
         SCHEMA.INSTRUMENTS: instruments,
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: buses,
         SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
-    runcard = {
+    runcard: dict[str, Any] = {
         RUNCARD.SETTINGS: platform,
         RUNCARD.SCHEMA: schema,
     }
 
-    qubit_0: dict = {
+    qubit_0: dict[str, Any] = {
         "name": "qubit",
         "alias": "qubit",
         "pi_pulse_amplitude": 1,
@@ -512,7 +513,7 @@ class Galadriel:
         "max_voltage": 1775,
     }
 
-    resonator_0 = {
+    resonator_0: dict[str, Any] = {
         "name": "resonator",
         "qubits": [
             {
@@ -532,7 +533,7 @@ class FluxQubitSimulator:
 
     name = "flux_qubit"
 
-    platform = {
+    platform: dict[str, Any] = {
         "name": "flux_qubit",
         PLATFORM.DEVICE_ID: 9,
         PLATFORM.MINIMUM_CLOCK_TIME: 4,
@@ -597,14 +598,14 @@ class FluxQubitSimulator:
         },
     }
 
-    chip = {
+    chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
             {"name": "qubit", "alias": "q0", "qubit_index": 0, "frequency": 3.451e09, "nodes": ["drive_q0"]},
         ],
     }
 
-    schema = {
+    schema: dict[str, Any] = {
         SCHEMA.INSTRUMENTS: [],
         SCHEMA.INSTRUMENT_CONTROLLERS: [],
         SCHEMA.CHIP: chip,
@@ -626,7 +627,7 @@ class FluxQubitSimulator:
         ],
     }
 
-    runcard = {
+    runcard: dict[str, Any] = {
         RUNCARD.SETTINGS: platform,
         RUNCARD.SCHEMA: schema,
     }
@@ -652,7 +653,7 @@ simulated_experiment_circuit.add(Y(0))
 simulated_experiment_circuit.add(RX(0, 23))
 simulated_experiment_circuit.add(RY(0, 15))
 
-results_two_loops = {
+results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [75, 100],
@@ -709,7 +710,7 @@ results_two_loops = {
     ],
 }
 
-results_one_loops = {
+results_one_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [100],
@@ -760,7 +761,7 @@ results_one_loops = {
     ],
 }
 
-results_one_loops_empty = {
+results_one_loops_empty: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
     EXPERIMENT.NUM_SCHEDULES: 1,
     EXPERIMENT.SHAPE: [100],
@@ -775,7 +776,7 @@ results_one_loops_empty = {
     EXPERIMENT.RESULTS: [],
 }
 
-experiment = {
+experiment: dict[str, Any] = {
     RUNCARD.PLATFORM: Galadriel.runcard,
     EXPERIMENT.OPTIONS: {
         EXPERIMENT.LOOPS: [
@@ -833,7 +834,7 @@ class SauronVNA:
 
     name = "sauron_vna"
 
-    platform = {
+    platform: dict[str, Any] = {
         "name": "sauron_vna",
         PLATFORM.DEVICE_ID: 9,
         PLATFORM.DELAY_BETWEEN_PULSES: 0,
@@ -846,7 +847,7 @@ class SauronVNA:
         "operations": [],
     }
 
-    keysight_e5080b_controller = {
+    keysight_e5080b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.KEYSIGHT_E5080B,
         "alias": InstrumentControllerName.KEYSIGHT_E5080B.value,
         Parameter.TIMEOUT.value: 10000,
@@ -862,14 +863,14 @@ class SauronVNA:
         ],
     }
 
-    keysight_e5080b = {
+    keysight_e5080b: dict[str, Any] = {
         "name": InstrumentName.KEYSIGHT_E5080B,
         "alias": InstrumentName.KEYSIGHT_E5080B.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
-    agilent_e5071b_controller = {
+    agilent_e5071b_controller: dict[str, Any] = {
         "name": InstrumentControllerName.AGILENT_E5071B,
         "alias": InstrumentControllerName.AGILENT_E5071B.value,
         Parameter.TIMEOUT.value: 10000,
@@ -885,17 +886,17 @@ class SauronVNA:
         ],
     }
 
-    agilent_e5071b = {
+    agilent_e5071b: dict[str, Any] = {
         "name": InstrumentName.AGILENT_E5071B,
         "alias": InstrumentName.AGILENT_E5071B.value,
         RUNCARD.FIRMWARE: "A.15.10.06",
         Parameter.POWER.value: -60.0,
     }
 
-    instruments = [keysight_e5080b, agilent_e5071b]
-    instrument_controllers = [keysight_e5080b_controller, agilent_e5071b_controller]
+    instruments: list[dict] = [keysight_e5080b, agilent_e5071b]
+    instrument_controllers: list[dict] = [keysight_e5080b_controller, agilent_e5071b_controller]
 
-    chip = {
+    chip: dict[str, Any] = {
         "nodes": [
             {"name": "port", "alias": "drive_q0", "line": "drive", "nodes": ["q0"]},
             {"name": "port", "alias": "feedline_input", "line": "feedline_input", "nodes": ["resonator_q0"]},
@@ -910,7 +911,7 @@ class SauronVNA:
         ],
     }
 
-    buses = [
+    buses: list[dict[str, Any]] = [
         {
             "alias": "keysight_e5080b_readout_bus",
             "system_control": {
@@ -931,14 +932,14 @@ class SauronVNA:
         },
     ]
 
-    schema = {
+    schema: dict[str, Any] = {
         SCHEMA.INSTRUMENTS: instruments,
         SCHEMA.CHIP: chip,
         SCHEMA.BUSES: buses,
         SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
-    runcard = {
+    runcard: dict[str, Any] = {
         RUNCARD.SETTINGS: platform,
         RUNCARD.SCHEMA: schema,
     }
