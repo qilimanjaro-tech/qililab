@@ -105,10 +105,10 @@ class Chip:
         return self._get_adjacent_nodes(node=port)  # type: ignore
 
     def get_node_from_alias(self, alias: str) -> Node | None:
-        """Get node from given id.
+        """Get node from given alias.
 
         Args:
-            node_id (int): Id of the node.
+            alias (str): Alias of the node.
 
         Raises:
             ValueError: If no node is found.
@@ -122,13 +122,13 @@ class Chip:
         return None
 
     def get_qubit_idx_from_node(self, node: Node) -> int:
-        """Get qubit id from given node.
+        """Get qubit index from given node.
 
         Args:
             node (Node): Node class.
 
         Returns:
-            int: Qubit id.
+            int: Qubit index.
         """
         adj_nodes = self._get_adjacent_nodes(node=node)
         for adj_node in adj_nodes:
