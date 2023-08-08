@@ -138,7 +138,7 @@ class TestPlatformSettings:
     @pytest.mark.parametrize("alias", ["X(0)", "M(0)"])
     def test_set_gate_parameters(self, alias: str):
         """Test that with ``set_parameter`` we can change all settings of the platform's gates."""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
         settings = runcard.settings
 
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
@@ -160,7 +160,7 @@ class TestPlatformSettings:
     @pytest.mark.parametrize("alias", ["X(0,)", "X()", "X", ""])
     def test_set_gate_parameters_raises_error_when_alias_has_incorrect_format(self, alias: str):
         """Test that with ``set_parameter`` will raise error when alias has incorrect format"""
-        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)
+        runcard = RuncardSchema(settings=Galadriel.platform, schema=Galadriel.schema)  # type: ignore
         settings = runcard.settings
 
         with pytest.raises(ValueError, match=re.escape(f"Alias {alias} has incorrect format")):

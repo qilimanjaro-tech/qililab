@@ -37,12 +37,12 @@ class GateEventSettings:
         shape: dict
 
     bus: str
-    pulse: GatePulseSettings | dict
+    pulse: GatePulseSettings
     wait_time: int = 0
 
     def __post_init__(self):
         """post init method to initialize pulse settings from runcard yaml file"""
-        self.pulse = self.GatePulseSettings(**self.pulse)
+        self.pulse = self.GatePulseSettings(**self.pulse)  # pylint: disable=E1134
 
     def set_parameter(self, parameter: Parameter, value: float | str | bool):
         """Change a given parameter from settings. Will look up into subclasses.

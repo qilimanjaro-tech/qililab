@@ -240,7 +240,9 @@ class Experiment:
         pbar.set_description(" | ".join(description))
         pbar.update()
 
-    def _filter_loops_values_with_external_parameters(self, values: tuple[float], loops: list[Loop]):
+    def _filter_loops_values_with_external_parameters(
+        self, values: tuple[float] | tuple[float, float], loops: list[Loop]
+    ):
         """filter loops and values removing those with external parameters"""
         if len(values) != len(loops):
             raise ValueError(f"Values list length: {len(values)} differ from loops list length: {len(loops)}.")
@@ -283,7 +285,7 @@ class Experiment:
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
-        elif all(isinstance(element_event, GateEventSettings) for element_event in element):
+        elif all(isinstance(element_event, GateEventSettings) for element_event in element):  # type: ignore
             self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value)
             self.build_execution()
         else:

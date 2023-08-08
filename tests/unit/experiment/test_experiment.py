@@ -116,7 +116,7 @@ def fixture_experiment_all_platforms(request: pytest.FixtureRequest):
             mock_open.assert_called()
     # Build loop from an existing alias on the testing platform Galadriel
     loop = Loop(
-        alias=Galadriel.buses[0][RUNCARD.ALIAS],
+        alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.LO_FREQUENCY,
         values=np.linspace(start=3544000000, stop=3744000000, num=2),
     )
@@ -158,7 +158,7 @@ def fixture_exp(request: pytest.FixtureRequest):
             mock_load.assert_called()
             mock_open.assert_called()
     loop = Loop(
-        alias=Galadriel.buses[0][RUNCARD.ALIAS],
+        alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.DURATION,
         values=np.arange(start=4, stop=1000, step=40),
     )
@@ -180,7 +180,7 @@ def fixture_vna_experiment(  # pylint: disable=unused-argument
 ):
     """Return a connected experiment with the VNA instrument"""
     loop = Loop(
-        alias=SauronVNA.buses[0][RUNCARD.ALIAS],
+        alias=SauronVNA.buses[0][RUNCARD.ALIAS],  # type: ignore
         parameter=Parameter.POWER,
         values=np.linspace(0, 10, 10),
     )
@@ -420,7 +420,7 @@ class TestMethods:
         test_value = (1.5,)
         test_loop = [
             Loop(
-                alias=Galadriel.buses[0][RUNCARD.ALIAS],
+                alias=Galadriel.buses[0][RUNCARD.ALIAS],  # type: ignore
                 parameter=Parameter.EXTERNAL,
                 values=np.linspace(start=0, stop=10, num=1),
             )
@@ -482,11 +482,11 @@ class TestSetParameter:
     def test_set_parameter_method_with_delay(self, exp: Experiment):
         """Test set_parameter method with delay parameter."""
         bus_delay = 0
-        exp.build_execution = MagicMock()
+        exp.build_execution = MagicMock()  # type: ignore
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
-        element = exp.platform.get_element(alias)
-        exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)
-        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay
+        element = exp.platform.get_element(alias)  # type: ignore
+        exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)  # type: ignore
+        assert exp.platform.get_bus_by_alias(alias).delay == bus_delay  # type: ignore
         exp.build_execution.assert_called_once_with()
 
 

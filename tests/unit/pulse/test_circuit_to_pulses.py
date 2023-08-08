@@ -522,6 +522,7 @@ def fixture_platform(chip: Chip) -> Platform:
             "delay": 0,
         },
     ]
+
     settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
     platform.settings = settings  # type: ignore
@@ -534,7 +535,7 @@ def fixture_platform(chip: Chip) -> Platform:
     platform.schema.buses = buses
 
     platform.settings.gates = {
-        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items() # type: ignore
+        gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
     }
     return platform
 
