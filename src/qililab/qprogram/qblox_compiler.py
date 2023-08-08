@@ -65,7 +65,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
     def __init__(self, settings: Settings):
         self._settings = settings
         self._handlers: dict[type, Callable] = {
-            Average: self._handle_acquire_loop,
+            Average: self._handle_average,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
             SetFrequency: self._handle_set_frequency,
@@ -182,7 +182,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             raise NotImplementedError("Weights should have equal lengths.")
         return index_I, index_Q, length_I
 
-    def _handle_acquire_loop(self, element: Average):
+    def _handle_average(self, element: Average):
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
             qpy_loop.append_component(
