@@ -23,8 +23,8 @@ def fixture_no_loops_all_operations() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="acquire_loop")
-def fixture_acquire_loop() -> QProgram:
+@pytest.fixture(name="average")
+def fixture_average() -> QProgram:
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -37,8 +37,8 @@ def fixture_acquire_loop() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="acquire_loop_with_for_loop")
-def fixture_acquire_loop_with_for_loop() -> QProgram:
+@pytest.fixture(name="average_with_for_loop")
+def fixture_average_with_for_loop() -> QProgram:
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -53,8 +53,27 @@ def fixture_acquire_loop_with_for_loop() -> QProgram:
     return qp
 
 
-@pytest.fixture(name="acquire_loop_with_nested_for_loops")
-def fixture_acquire_loop_with_nested_for_loops() -> QProgram:
+@pytest.fixture(name="average_with_multiple_for_loops_and_acquires")
+def fixture_average_with_multiple_for_loops_and_acquires() -> QProgram:
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    frequency = qp.variable(float)
+    gain = qp.variable(float)
+    with qp.average(shots=1000):
+        with qp.for_loop(variable=frequency, start=0, stop=500, step=10):
+            qp.set_frequency(bus="readout", frequency=frequency)
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.acquire(bus="readout")
+        qp.acquire(bus="readout")
+        with qp.for_loop(variable=gain, start=0.0, stop=1.0, step=0.1):
+            qp.set_gain(bus="readout", gain_path0=gain, gain_path1=gain)
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.acquire(bus="readout")
+    return qp
+
+
+@pytest.fixture(name="average_with_nested_for_loops")
+def fixture_average_with_nested_for_loops() -> QProgram:
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
     readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
     qp = QProgram()
@@ -153,9 +172,9 @@ class TestQBloxCompiler:
             == "setup:\n    wait_sync        4\n    \nmain:\n    wait_sync        4\n    wait             100\n    play             0, 1, 1000\n    acquire          0, 0, 1000\n    stop\n    \n"
         )
 
-    def test_acquire_loop(self, acquire_loop: QProgram):
+    def test_average(self, average: QProgram):
         compiler = QBloxCompiler(settings=Settings())
-        output = compiler.compile(qprogram=acquire_loop)
+        output = compiler.compile(qprogram=average)
 
         assert len(output) == 2
         assert "drive" in output
@@ -183,9 +202,9 @@ class TestQBloxCompiler:
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 1000\n        acquire          0, 0, 1000\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
-    def test_acquire_loop_with_for_loop(self, acquire_loop_with_for_loop: QProgram):
+    def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QBloxCompiler(settings=Settings())
-        output = compiler.compile(qprogram=acquire_loop_with_for_loop)
+        output = compiler.compile(qprogram=average_with_for_loop)
 
         assert len(output) == 2
         assert "drive" in output
@@ -213,9 +232,31 @@ class TestQBloxCompiler:
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             4, R2\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R2\n            play             0, 1, 1000\n            acquire          0, R1, 1000\n            add              R1, 1, R1\n            add              R2, 4, R2\n            nop\n            jlt              R2, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
-    def test_acquire_loop_with_nested_for_loops(self, acquire_loop_with_nested_for_loops: QProgram):
+    def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
         compiler = QBloxCompiler(settings=Settings())
-        output = compiler.compile(qprogram=acquire_loop_with_nested_for_loops)
+        output = compiler.compile(qprogram=average_with_multiple_for_loops_and_acquires)
+
+        assert len(output) == 1
+        assert "readout" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["readout"]._waveforms._waveforms) == 2
+        assert len(output["readout"]._acquisitions._acquisitions) == 3
+        assert output["readout"]._acquisitions._acquisitions[0].num_bins == 50
+        assert output["readout"]._acquisitions._acquisitions[1].num_bins == 1
+        assert output["readout"]._acquisitions._acquisitions[2].num_bins == 10
+        assert len(output["readout"]._weights._weights) == 0
+        assert output["readout"]._program._compiled
+        assert (
+            repr(output["readout"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             51, R1\n        move             0, R2\n        wait_sync        4\n        move             0, R3\n        loop_0:\n            wait_sync        4\n            set_freq         R3\n            play             0, 1, 1000\n            acquire          0, R2, 1000\n            add              R2, 1, R2\n            add              R3, 40, R3\n            nop\n            jlt              R3, 2000, @loop_0\n        acquire          1, 50, 1000\n        move             0, R4\n        loop_1:\n            wait_sync        4\n            set_awg_gain     R4, R4\n            play             0, 1, 1000\n            acquire          2, R1, 1000\n            add              R1, 1, R1\n            add              R4, 3276, R4\n            nop\n            jlt              R4, 32767, @loop_1\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+    def test_average_with_nested_for_loops(self, average_with_nested_for_loops: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=average_with_nested_for_loops)
 
         assert len(output) == 2
         assert "drive" in output
