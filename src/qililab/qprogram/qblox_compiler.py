@@ -75,6 +75,9 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             Play: self._handle_play,
         }
 
+        self._qprogram: QProgram
+        self._buses: dict[str, BusInfo]
+
     def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
         """Compile QProgram to QPySequence
 
@@ -101,8 +104,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             for bus in self._buses:
                 self._buses[bus].qprogram_block_stack.pop()
 
-        self._qprogram = qprogram  # pylint: disable=attribute-defined-outside-init
-        self._buses: dict[str, BusInfo] = self._populate_buses()  # pylint: disable=attribute-defined-outside-init
+        self._qprogram = qprogram
+        self._buses = self._populate_buses()
 
         traverse(self._qprogram._program)
         for bus in self._buses:
