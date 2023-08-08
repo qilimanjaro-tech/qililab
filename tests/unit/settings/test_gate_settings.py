@@ -1,5 +1,6 @@
 import pytest
 
+from qililab import Parameter
 from qililab.settings.gate_settings import GateEventSettings
 
 
@@ -44,6 +45,7 @@ def fixture_schedule() -> list[dict]:
 
 class TestGateEventSettings:
     def test_init(self, schedule):
+        """ "Test init method"""
         gate_event = GateEventSettings(**schedule[1])
         assert gate_event.bus == "flux_line_q0_bus"
         assert gate_event.wait_time == 30
@@ -55,3 +57,13 @@ class TestGateEventSettings:
         assert pulse.frequency == 3.0e6
         assert pulse.duration == 200
         assert pulse.shape == {"name": "drag", "drag_coefficient": 0.8, "num_sigmas": 2}
+
+    def test_set_parameter(self, schedule):
+        """Test the set parameter method"""
+        gate_event = GateEventSettings(**schedule[1])
+        gate_event.set_parameter(parameter=Parameter.WAIT_TIME, value=10)
+        assert gate_event.wait_time == 10
+        gate_event.set_parameter(parameter=Parameter.AMPLITUDE, value=10)
+        assert gate_event.pulse.amplitude == 10
+        gate_event.set_parameter(parameter=Parameter.DRAG_COEFFICIENT, value=10)
+        assert gate_event.pulse.shape["drag_coefficient"] == 10

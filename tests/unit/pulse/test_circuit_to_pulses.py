@@ -771,6 +771,14 @@ class TestTranslation:
         port_43 = self.get_bus_schedule(pulse_bus_schedule, 43)
         assert all(i == k for i, k in zip(port_43, flux_c2))
 
+    def test_normalize_angle(self, platform):
+        """Test that the angle is normalized properly for drag pulses"""
+        c = Circuit(1)
+        c.add(Drag(0, 2 * np.pi + 0.1, 0))
+        translator = CircuitToPulses(platform=platform)
+        pulse_schedules = translator.translate(circuits=[c])
+        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
+
     def test_drag_schedule_error(self, platform: Platform):
         """Test error is raised if len(drag schedule) > 1"""
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
