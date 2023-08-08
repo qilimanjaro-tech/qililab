@@ -3,7 +3,7 @@
 import copy
 
 import numpy as np
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
 from qililab.constants import (

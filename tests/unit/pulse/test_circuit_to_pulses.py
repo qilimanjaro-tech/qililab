@@ -3,12 +3,12 @@ from dataclasses import asdict
 
 import numpy as np
 import pytest
-from qibo.gates import CZ, RZ, M, X
+from qibo.gates import CZ, M, X
 from qibo.models import Circuit
 
 from qililab.chip import Chip
 from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import PulseBusSchedule, PulseEvent, PulseSchedule
+from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_shape import SNZ
@@ -534,14 +534,17 @@ def fixture_platform(chip: Chip) -> Platform:
     )
     platform.schema.buses = buses
 
-    platform.settings.gates = {
+    platform.settings.gates = {  # type: ignore
         gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
     }
     return platform
 
 
-class TestCircuitToPulses:
+class TestCircuitToPulses:  # pylint: disable=R0903 # disable too few public methods warning
+    """Test class for circuit_to_pulses"""
+
     def test_init(self, platform):
+        """Test init method."""
         circuit_to_pulses = CircuitToPulses(platform)
         assert list(platform_gates.keys()) == circuit_to_pulses.platform.settings.gate_names
 
@@ -550,6 +553,7 @@ class TestTranslation:
     """Unit tests for the ``translate`` method of the ``CircuitToPulses`` class."""
 
     def get_pulse0(self, time: int, qubit: int) -> PulseEvent:
+        """Helper function for pulse test data"""
         return PulseEvent(
             pulse=Pulse(
                 amplitude=0.8,
@@ -564,12 +568,15 @@ class TestTranslation:
         )
 
     def get_bus_schedule(self, pulse_bus_schedule: dict, port: int) -> list[dict]:
+        """Helper function for bus schedule data"""
+
         return [
             {**asdict(schedule)["pulse"], "start_time": schedule.start_time, "qubit": schedule.qubit}
             for schedule in pulse_bus_schedule[port]
         ]
 
-    def test_translate(self, platform):
+    def test_translate(self, platform):  # pylint: disable=R0914 # disable pyling too many variables
+        """Test translate method"""
         translator = CircuitToPulses(platform=platform)
         # test circuit
         circuit = Circuit(5)
@@ -765,7 +772,7 @@ class TestTranslation:
         assert all(i == k for i, k in zip(port_43, flux_c2))
 
     def test_drag_schedule_error(self, platform: Platform):
-        # test error is raised if len(drag schedule) > 1
+        """Test error is raised if len(drag schedule) > 1"""
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
         platform.settings.gates["Drag(0)"].append(platform.settings.gates["M(0)"][0])
         gate_schedule = platform.settings.gates["Drag(0)"]

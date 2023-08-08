@@ -1,19 +1,6 @@
-import re
-from dataclasses import asdict
-
-import numpy as np
 import pytest
 
-from qililab.chip import Chip
-from qililab.config import logger
-from qililab.platform import Bus, Buses, Platform
-from qililab.pulse import PulseBusSchedule, PulseEvent, PulseSchedule
-from qililab.pulse.circuit_to_pulses import CircuitToPulses
-from qililab.pulse.pulse import Pulse
-from qililab.pulse.pulse_shape import SNZ
-from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.settings.gate_settings import GateEventSettings
-from qililab.typings.enums import Parameter
 
 
 @pytest.fixture(name="schedule")
