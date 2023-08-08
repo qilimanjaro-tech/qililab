@@ -10,6 +10,7 @@ import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
 from qililab.qprogram.blocks import AcquireLoop, Block, ForLoop, Loop
+from qililab.qprogram.blocks.parallel import Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -62,6 +63,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
     def __init__(self, settings: Settings):
         self._settings = settings
         self._handlers: dict[type, Callable] = {
+            Parallel: self._handle_parallel,
             AcquireLoop: self._handle_acquire_loop,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
@@ -175,6 +177,42 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         if length_I != length_Q:
             raise NotImplementedError("Weights should have equal lengths.")
         return index_I, index_Q, length_I
+
+    def _handle_parallel(self, element: Parallel):
+        if not element.loops:
+            raise NotImplementedError("")
+        if any(isinstance(loop, Loop) for loop in element.loops):
+            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
+        if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
+            raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
+        for bus in self._buses:
+            block = QPyProgram.Block(name=f"loop_{self._buses[bus].loop_counter}")
+            iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
+            iteration_register = QPyProgram.Register()
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.Move(var=iterations, register=iteration_register)
+            )
+            for loop in element.loops:
+                operation = QBloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+                if not operation:
+                    raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
+                begin, _, step = QBloxCompiler._convert_for_loop_values(loop, operation)
+                loop_register = QPyProgram.Register()
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Move(var=begin, register=loop_register)
+                )
+                block.builtin_components.append(
+                    QPyInstructions.Add(loop_register, step, loop_register)
+                    if step > 0
+                    else QPyInstructions.Sub(loop_register, step, loop_register)
+                )
+                self._buses[bus].variable_to_register[loop.variable] = loop_register
+            block.append_component(QPyInstructions.WaitSync(4))
+            block.builtin_components.append(QPyInstructions.Loop(iteration_register, f"@{block.name}"))
+            self._buses[bus].qpy_block_stack[-1].append_component(block)
+            self._buses[bus].qpy_block_stack.append(block)
+            self._buses[bus].loop_counter += 1
+        return True
 
     def _handle_acquire_loop(self, element: AcquireLoop):
         for bus in self._buses:
@@ -360,7 +398,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             )
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: ForLoop):
+    def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -369,7 +407,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                     if any(variable is loop.variable for variable in element.get_variables()):
                         yield element
 
-        operations = list(collect_operations(loop))
+        starting_block = starting_block or loop
+        operations = list(collect_operations(starting_block))
 
         if not operations:
             return None
