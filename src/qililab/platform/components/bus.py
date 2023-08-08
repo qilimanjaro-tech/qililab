@@ -5,7 +5,7 @@ from qililab.chip import Chip, Coil, Coupler, Qubit, Resonator
 from qililab.constants import BUS, NODE, RUNCARD
 from qililab.instruments import Instruments, ParameterNotFound
 from qililab.pulse import PulseDistortion
-from qililab.settings import AliasElement
+from qililab.settings import Settings
 from qililab.system_control import SystemControl
 from qililab.typings import Parameter
 from qililab.utils import Factory
@@ -23,7 +23,7 @@ class Bus:
     targets: list[Qubit | Resonator | Coupler | Coil]  # port target (or targets in case of multiple resonators)
 
     @dataclass
-    class BusSettings(AliasElement):
+    class BusSettings(Settings):
         """Bus settings.
 
         Args:
@@ -33,8 +33,9 @@ class Bus:
             delay (int): Bus delay
         """
 
+        alias: str
         system_control: SystemControl
-        port: int
+        port: str
         platform_instruments: InitVar[Instruments]
         distortions: list[PulseDistortion]
         delay: int

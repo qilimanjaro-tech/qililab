@@ -21,7 +21,7 @@ class DummyAWG(AWGAnalogDigitalConverter):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         pass
 
     def acquire_result(self):

@@ -161,7 +161,7 @@ class QbloxModule(AWG):
         self.sequences[sequencer.identifier] = (sequence, False)
         return sequence
 
-    def run(self, port: int):
+    def run(self, port: str):
         """Run the uploaded program"""
         self.start_sequencer(port=port)
 
@@ -269,7 +269,7 @@ class QbloxModule(AWG):
     ):
         """Append an acquire instruction to the loop."""
 
-    def start_sequencer(self, port: int):
+    def start_sequencer(self, port: str):
         """Start sequencer and execute the uploaded instructions."""
         sequencers = self.get_sequencers_from_chip_port_id(chip_port_id=port)
         for sequencer in sequencers:
@@ -498,7 +498,7 @@ class QbloxModule(AWG):
         self.clear_cache()
         self.device.reset()
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Upload all the previously compiled programs to its corresponding sequencers.
 
         This method must be called after the method ``compile``."""

@@ -9,18 +9,20 @@ from qililab.constants import RUNCARD
 from qililab.instruments import AWG, Instrument, Instruments
 from qililab.instruments.instrument import ParameterNotFound
 from qililab.pulse import PulseBusSchedule
+from qililab.settings import Settings
+from qililab.typings import FactoryElement
 from qililab.typings.enums import Parameter, SystemControlName
 from qililab.utils import Factory
 
 
 @Factory.register
-class SystemControl(ABC):  # type: ignore
+class SystemControl(FactoryElement, ABC):
     """SystemControl class."""
 
     name = SystemControlName.SYSTEM_CONTROL
 
     @dataclass(kw_only=True)
-    class SystemControlSettings:
+    class SystemControlSettings(Settings):
         """SystemControlSettings class."""
 
         instruments: list[Instrument]
@@ -29,6 +31,7 @@ class SystemControl(ABC):  # type: ignore
         def __post_init__(self, platform_instruments: Instruments):  # type: ignore # pylint: disable=arguments-differ
             # ``self.instruments`` contains a list of instrument aliases
             self.instruments = [platform_instruments.get_instrument(alias=i) for i in self.instruments]  # type: ignore
+            super().__post_init__()
 
     settings: SystemControlSettings
 
@@ -55,32 +58,25 @@ class SystemControl(ABC):  # type: ignore
                     repetition_duration=repetition_duration,
                     num_bins=num_bins,
                 )
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to compile the given pulse "
-            "sequence."
-        )
+        raise AttributeError("The system control doesn't have any AWG to compile the given pulse sequence.")
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         """Uploads any previously compiled program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 instrument.upload(port=port)
                 return
 
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to upload a program."
-        )
+        raise AttributeError("The system control doesn't have any AWG to upload a program.")
 
-    def run(self, port: int) -> None:
+    def run(self, port: str) -> None:
         """Runs any previously uploaded program into the instrument."""
         for instrument in self.instruments:
             if isinstance(instrument, AWG):
                 instrument.run(port=port)
                 return
 
-        raise AttributeError(
-            f"The system control with alias {self.settings.alias} doesn't have any AWG to run a program."
-        )
+        raise AttributeError("The system control doesn't have any AWG to run a program.")
 
     def __str__(self):
         """String representation of a SystemControl class."""

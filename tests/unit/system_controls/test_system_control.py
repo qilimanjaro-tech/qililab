@@ -24,7 +24,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=0)
+    return PulseBusSchedule(timeline=[pulse_event], port="drive_q0")
 
 
 @pytest.fixture(name="system_control")
@@ -37,7 +37,7 @@ def fixture_system_control(platform: Platform):
 @pytest.fixture(name="system_control_without_awg")
 def fixture_system_control_without_awg(platform: Platform):
     """Fixture that returns an instance of a SystemControl class."""
-    settings = {"alias": "test_alias", "instruments": ["rs_1"]}
+    settings = {"instruments": ["rs_1"]}
     return SystemControl(settings=settings, platform_instruments=platform.instruments)
 
 
@@ -47,7 +47,6 @@ class TestInitialization:
     def test_init(self, system_control: SystemControl):
         """Test initialization."""
         assert isinstance(system_control.settings, SystemControl.SystemControlSettings)
-        assert system_control.settings.alias is None
         assert system_control.name.value == "system_control"
         for instrument in system_control.settings.instruments:
             assert isinstance(instrument, Instrument)
@@ -76,10 +75,10 @@ class TestMethods:
         """Test that the ``compile`` method raises an error when the system control doesn't have an AWG."""
         with pytest.raises(
             AttributeError,
-            match="The system control with alias test_alias doesn't have any AWG to compile the given pulse sequence",
+            match="The system control doesn't have any AWG to compile the given pulse sequence",
         ):
             system_control_without_awg.compile(
-                PulseBusSchedule(port=0), nshots=1000, repetition_duration=1000, num_bins=1
+                PulseBusSchedule(port="drive_q0"), nshots=1000, repetition_duration=1000, num_bins=1
             )
 
     def test_compile(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
@@ -96,9 +95,9 @@ class TestMethods:
         """Test that the ``upload`` method raises an error when the system control doesn't have an AWG."""
         with pytest.raises(
             AttributeError,
-            match="The system control with alias test_alias doesn't have any AWG to upload a program",
+            match="The system control doesn't have any AWG to upload a program",
         ):
-            system_control_without_awg.upload(port=0)
+            system_control_without_awg.upload(port="drive_q0")
 
     def test_upload(self, system_control: SystemControl, pulse_bus_schedule: PulseBusSchedule):
         """Test upload method."""
@@ -114,9 +113,9 @@ class TestMethods:
         """Test that the ``run`` method raises an error when the system control doesn't have an AWG."""
         with pytest.raises(
             AttributeError,
-            match="The system control with alias test_alias doesn't have any AWG to run a program",
+            match="The system control doesn't have any AWG to run a program",
         ):
-            system_control_without_awg.run(port=0)
+            system_control_without_awg.run(port="drive_q0")
 
 
 class TestProperties:

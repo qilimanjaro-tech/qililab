@@ -104,11 +104,11 @@ class Platform:  # pylint: disable=too-many-public-methods
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int) -> tuple[int, Bus] | tuple[list, None]:
+    def get_bus(self, port: str) -> tuple[int, Bus] | tuple[list, None]:
         """Find bus associated with the specified port.
 
         Args:
-            port (int): port index of the chip
+            port (str): port index of the chip
 
         Returns:
             Bus | None: Returns a Bus object or None if none is found.

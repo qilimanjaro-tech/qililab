@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings.alias_element import AliasElement
+from qililab.settings.settings import Settings
 from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -36,7 +36,7 @@ class RuncardSchema:
             """Bus schema class."""
 
             system_control: dict
-            port: int
+            port: str
             distortions: list[dict]
             alias: str | None = None
             delay: int = 0
@@ -58,7 +58,7 @@ class RuncardSchema:
                 self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
-    class PlatformSettings(AliasElement):
+    class PlatformSettings(Settings):
         """SettingsSchema class."""
 
         @nested_dataclass
@@ -95,7 +95,6 @@ class RuncardSchema:
                 else:
                     setattr(self, param, value)
 
-        alias: str = field(default="", init=False, repr=False)
         name: str
         device_id: int
         minimum_clock_time: int

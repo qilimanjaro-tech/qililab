@@ -37,5 +37,5 @@ class Loader:
             self._get_instrument_or_raise_error_when_not_found_or_not_supported_type(
                 instruments=instruments, alias=alias[1]
             )
-            for _, alias, _ in instrument_references
+            for alias, _ in instrument_references
         ]

@@ -11,7 +11,15 @@ from qililab.typings.enums import Parameter
 def fixture_pulsar_controller_qcm():
     """Fixture that returns an instance of a dummy QbloxD5a."""
     return QbloxS4g(
-        {"current": [], "span": [], "ramping_enabled": [], "ramp_rate": [], "firmware": "0.7.0", "dacs": []}
+        {
+            "alias": "s4g",
+            "current": [],
+            "span": [],
+            "ramping_enabled": [],
+            "ramp_rate": [],
+            "firmware": "0.7.0",
+            "dacs": [],
+        }
     )  # pylint: disable=abstract-class-instantiated
 
 

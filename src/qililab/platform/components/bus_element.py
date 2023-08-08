@@ -2,7 +2,7 @@
 from dataclasses import asdict
 
 from qililab.constants import RUNCARD
-from qililab.settings import AliasElement
+from qililab.settings import Settings
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import dict_factory
 
@@ -10,7 +10,7 @@ from qililab.utils import dict_factory
 class BusElement(FactoryElement):
     """Class BusElement. All bus element classes must inherit from this class."""
 
-    settings: AliasElement
+    settings: Settings
 
     def to_dict(self):
         """Return a dict representation of the BusElement class."""

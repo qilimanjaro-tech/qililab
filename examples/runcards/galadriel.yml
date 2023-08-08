@@ -238,7 +238,7 @@ schema:
       out_offsets: [0, 0]
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 100
+          chip_port_id: feedline_input
           qubit: 0
           output_i: 0
           output_q: 1
@@ -266,7 +266,7 @@ schema:
           hardware_demodulation: true
           scope_store_enabled: false
         - identifier: 1
-          chip_port_id: 100
+          chip_port_id: feedline_input
           qubit: 1
           output_i: 0
           output_q: 1
@@ -294,7 +294,7 @@ schema:
           hardware_demodulation: true
           scope_store_enabled: false
         - identifier: 2
-          chip_port_id: 100
+          chip_port_id: feedline_input
           qubit: 2
           output_i: 0
           output_q: 1
@@ -322,7 +322,7 @@ schema:
           hardware_demodulation: true
           scope_store_enabled: false
         - identifier: 3
-          chip_port_id: 100
+          chip_port_id: feedline_input
           qubit: 3
           output_i: 0
           output_q: 1
@@ -350,7 +350,7 @@ schema:
           hardware_demodulation: true
           scope_store_enabled: false
         - identifier: 4
-          chip_port_id: 100
+          chip_port_id: feedline_input
           qubit: 4
           output_i: 0
           output_q: 1
@@ -393,7 +393,7 @@ schema:
       out1_offset_path1: 0.
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 20 #q0 drive
+          chip_port_id: drive_line_q0
           output_i: 0
           output_q: 1
           gain_i: 0.1
@@ -406,7 +406,7 @@ schema:
           phase_imbalance: 14.482
           hardware_modulation: true
         - identifier: 1
-          chip_port_id: 21 #q1 drive
+          chip_port_id: drive_line_q1
           output_i: 2
           output_q: 3
           gain_i: 1
@@ -434,7 +434,7 @@ schema:
       out1_offset_path1: 0.
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 22 #q2 drive
+          chip_port_id: drive_line_q2
           output_i: 0
           output_q: 1
           gain_i: 0.1
@@ -462,7 +462,7 @@ schema:
       out1_offset_path1: 0.
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 23 #q3 drive
+          chip_port_id: drive_line_q3
           output_i: 0
           output_q: 1
           gain_i: 0.1
@@ -475,7 +475,7 @@ schema:
           phase_imbalance: 0.
           hardware_modulation: true
         - identifier: 1
-          chip_port_id: 24 #q4 drive
+          chip_port_id: drive_line_q4
           output_i: 2
           output_q: 3
           gain_i: 1
@@ -494,7 +494,7 @@ schema:
       out_offsets: [0.0, 0.0, 0.0, 0.0]
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 30 #q0 flux
+          chip_port_id: flux_line_q0
           output_i: 0
           output_q: 1
           gain_i: 0.1
@@ -507,7 +507,7 @@ schema:
           phase_imbalance: 0.
           hardware_modulation: true
         - identifier: 1
-          chip_port_id: 31 #q1 flux
+          chip_port_id: flux_line_q1
           output_i: 1
           output_q: 0
           gain_i: 1
@@ -520,7 +520,7 @@ schema:
           phase_imbalance: 0
           hardware_modulation: true
         - identifier: 2
-          chip_port_id: 33 #q3 flux
+          chip_port_id: flux_line_q3
           output_i: 2
           output_q: 3
           gain_i: 1
@@ -533,7 +533,7 @@ schema:
           phase_imbalance: 0
           hardware_modulation: true
         - identifier: 3
-          chip_port_id: 34 #q4 flux
+          chip_port_id: flux_line_q4
           output_i: 3
           output_q: 2
           gain_i: 1
@@ -552,7 +552,7 @@ schema:
       out_offsets: [0.0, 0.0, 0.0, 0.0]
       awg_sequencers:
         - identifier: 0
-          chip_port_id: 32 #q2 flux
+          chip_port_id: flux_line_q2
           output_i: 0
           output_q: 1
           gain_i: 1.

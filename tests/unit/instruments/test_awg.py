@@ -18,7 +18,7 @@ class DummyAWG(AWG):
     def run(self):  # pylint: disable=arguments-differ
         pass
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         pass
 
 
@@ -32,7 +32,7 @@ def fixture_awg():
         "awg_sequencers": [
             {
                 "identifier": 0,
-                "chip_port_id": 100,
+                "chip_port_id": "feedline_input",
                 "output_i": 0,
                 "output_q": 1,
                 "intermediate_frequency": 20000000,
@@ -46,7 +46,7 @@ def fixture_awg():
             },
             {
                 "identifier": 1,
-                "chip_port_id": 101,
+                "chip_port_id": "feedline_output",
                 "output_i": 2,
                 "output_q": 3,
                 "intermediate_frequency": 20000000,
@@ -75,7 +75,7 @@ class TestInitialization:
         for idx, sequencer in enumerate(awg.settings.awg_sequencers):
             assert isinstance(sequencer, AWGSequencer)
             assert sequencer.identifier == idx
-            assert sequencer.chip_port_id == 100 + idx
+            assert sequencer.chip_port_id in {"feedline_input", "feedline_output"}
             assert sequencer.output_i == 0 + 2 * idx
             assert sequencer.output_q == 1 + 2 * idx
             assert sequencer.intermediate_frequency == 20000000

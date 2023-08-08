@@ -23,7 +23,7 @@ def fixture_settings_6_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "chip_port_id": 1,
+            "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
@@ -68,7 +68,7 @@ def fixture_settings_even_sequencers():
     sequencers = [
         {
             "identifier": seq_idx,
-            "chip_port_id": 1,
+            "chip_port_id": "feedline_input",
             "qubit": 5 - seq_idx,
             "output_i": 1,
             "output_q": 0,
@@ -119,7 +119,7 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     pulse_shape = Gaussian(num_sigmas=4)
     pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=pulse_shape)
     pulse_event = PulseEvent(pulse=pulse, start_time=0, qubit=0)
-    return PulseBusSchedule(timeline=[pulse_event], port=1)
+    return PulseBusSchedule(timeline=[pulse_event], port="feedline_input")
 
 
 @pytest.fixture(name="pulse_bus_schedule_odd_qubits")
@@ -127,7 +127,7 @@ def fixture_pulse_bus_schedule_odd_qubits() -> PulseBusSchedule:
     """Returns a PulseBusSchedule with readout pulses for qubits 1, 3 and 5."""
     pulse = Pulse(amplitude=1.0, phase=0, duration=1000, frequency=7.0e9, pulse_shape=Rectangular())
     timeline = [PulseEvent(pulse=pulse, start_time=0, qubit=qubit) for qubit in [3, 1, 5]]
-    return PulseBusSchedule(timeline=timeline, port=1)
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 @pytest.fixture(name="pulsar_controller_qrm")
@@ -230,7 +230,7 @@ def fixture_big_pulse_bus_schedule() -> PulseBusSchedule:
         )
         for n in range(2)
     ]
-    return PulseBusSchedule(timeline=timeline, port=1)
+    return PulseBusSchedule(timeline=timeline, port="feedline_input")
 
 
 class TestQbloxQRM:
@@ -267,7 +267,7 @@ class TestQbloxQRM:
 
     def test_start_sequencer_method(self, qrm: QbloxQRM):
         """Test start_sequencer method"""
-        qrm.start_sequencer(port=1)
+        qrm.start_sequencer(port="feedline_input")
         qrm.device.arm_sequencer.assert_not_called()
         qrm.device.start_sequencer.assert_not_called()
 
@@ -419,7 +419,7 @@ class TestQbloxQRM:
 
     def test_upload_method(self, qrm, pulse_bus_schedule):
         """Test upload method"""
-        pulse_bus_schedule.port = 1
+        pulse_bus_schedule.port = "feedline_input"
         qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=100, num_bins=1)
         qrm.upload(port=pulse_bus_schedule.port)
         qrm.device.sequencers[0].sync_en.assert_called_once_with(True)
@@ -474,7 +474,9 @@ class TestQbloxQRM:
         new_qrm = QbloxQRM(settings=qrm_settings)
         # We create a pulse bus schedule
         pulse = Pulse(amplitude=1, phase=0, duration=50, frequency=1e9, pulse_shape=Gaussian(num_sigmas=4))
-        pulse_bus_schedule = PulseBusSchedule(timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port=1)
+        pulse_bus_schedule = PulseBusSchedule(
+            timeline=[PulseEvent(pulse=pulse, start_time=0, qubit=0)], port="feedline_input"
+        )
         sequences = new_qrm.compile(pulse_bus_schedule, nshots=1000, repetition_duration=2000, num_bins=1)
         # We assert that the waveform/weights of the first path is all zeros and the waveform of the second path is the gaussian
         waveforms = sequences[0]._waveforms._waveforms

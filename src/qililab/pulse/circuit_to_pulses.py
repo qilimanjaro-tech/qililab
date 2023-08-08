@@ -173,7 +173,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
     def _control_gate_to_pulse_event(
         self, time: dict[int, int], control_gate: Gate, chip: Chip
-    ) -> tuple[PulseEvent | None, int]:
+    ) -> tuple[PulseEvent | None, str]:
         """Translate a gate into a pulse event.
 
         Args:
@@ -312,7 +312,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
     def _readout_gate_to_pulse_event(
         self, time: dict[int, int], readout_gate: Gate, qubit_idx: int, chip: Chip
-    ) -> tuple[PulseEvent | None, int]:
+    ) -> tuple[PulseEvent | None, str]:
         """Translate a gate into a pulse.
 
         Args:
@@ -322,7 +322,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
             chip (Chip): chip representation as a graph.
 
         Returns:
-            tuple[PulseEvent | None, int]: (PulseEvent or None, port_id).
+            tuple[PulseEvent | None, str]: (PulseEvent or None, port_id).
         """
         gate_settings = self._get_gate_settings(gate=readout_gate)
         shape_settings = gate_settings.shape.copy()

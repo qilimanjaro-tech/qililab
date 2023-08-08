@@ -12,14 +12,14 @@ from qililab.instruments.instruments import Instruments
 from qililab.instruments.utils.instrument_reference import InstrumentReference
 from qililab.instruments.utils.loader import Loader
 from qililab.platform.components.bus_element import BusElement
-from qililab.settings import AliasElement
+from qililab.settings import Settings
 from qililab.typings.enums import InstrumentControllerName, Parameter
 from qililab.typings.instruments.device import Device
 from qililab.utils import Factory
 
 
 @dataclass(kw_only=True)
-class InstrumentControllerSettings(AliasElement):
+class InstrumentControllerSettings(Settings):
     """Contains the settings of a specific Instrument Controller.
     Args:
         connection (Connection): Connection class that represents the connection type of the Instrument Controller.
@@ -27,6 +27,7 @@ class InstrumentControllerSettings(AliasElement):
                                                 to be managed by the Instrument Controller.
     """
 
+    alias: str
     connection: Connection
     modules: list[InstrumentReference]
     reset: bool = True

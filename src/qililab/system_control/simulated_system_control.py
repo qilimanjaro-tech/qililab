@@ -70,12 +70,12 @@ class SimulatedSystemControl(ReadoutSystemControl):
         """String representation of a Simulated SystemControl class."""
         return "--"
 
-    def run(self, port: int) -> None:
+    def run(self, port: str) -> None:
         """Run the program"""
         self._evo.set_pulse_sequence(pulse_sequence=self.sequence, resolution=self.settings.resolution * 1e-9)
         self._evo.evolve()
 
-    def acquire_result(self, port: int) -> SimulatorResult:
+    def acquire_result(self, port: str) -> SimulatorResult:
         """Read the result from the AWG instrument
 
         Returns:
@@ -110,5 +110,5 @@ class SimulatedSystemControl(ReadoutSystemControl):
         self.sequence = [i_waveform]
         return []
 
-    def upload(self, port: int):
+    def upload(self, port: str):
         pass

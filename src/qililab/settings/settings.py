@@ -8,14 +8,8 @@ from qililab.utils.castings import cast_enum_fields
 
 
 @dataclass(kw_only=True)
-class AliasElement:
-    """Settings class.
-
-    Args:
-        alias (str): Unique name identifying the element.
-    """
-
-    alias: str
+class Settings:
+    """Settings class."""
 
     def __post_init__(self):
         """Cast all enum attributes to its corresponding Enum class."""
