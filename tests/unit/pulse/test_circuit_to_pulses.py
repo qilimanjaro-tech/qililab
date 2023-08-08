@@ -778,6 +778,11 @@ class TestTranslation:
         translator = CircuitToPulses(platform=platform)
         pulse_schedules = translator.translate(circuits=[c])
         assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, 0.1 * 0.8 / np.pi)
+        c = Circuit(1)
+        c.add(Drag(0, np.pi + 0.1, 0))
+        translator = CircuitToPulses(platform=platform)
+        pulse_schedules = translator.translate(circuits=[c])
+        assert np.allclose(pulse_schedules[0].elements[0].timeline[0].pulse.amplitude, -0.7745352091052967)
 
     def test_drag_schedule_error(self, platform: Platform):
         """Test error is raised if len(drag schedule) > 1"""
