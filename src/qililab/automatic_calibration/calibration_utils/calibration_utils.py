@@ -4,10 +4,10 @@ Useful functions for calibration experiments and data analysis.
 
 import random
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
 
 import numpy as np
 import yaml
-
 
 def get_timestamp():
     """Generate a UNIX timestamp.
@@ -63,7 +63,7 @@ def get_random_values(array: list(float), number_of_values: int):
     return random.sample(array, number_of_values)
 
 
-def get_raw_data(self, datapath):
+def get_raw_data(datapath):
     """
     Retrieves raw data from a YAML file.
 

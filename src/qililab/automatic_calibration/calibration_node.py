@@ -32,12 +32,13 @@ class CalibrationNode():
                                 *start
                                 *step 
                                 *stop
-                                The sweep values are all the numbers between 'start' and 'stop', separated fro each otehr 
+                                The sweep values are all the numbers between 'start' and 'stop', separated from each other 
                                 by the distance 'step'
         _is_refinement (bool): True if this experiment refines data obtained from a previous experiment. False otherwise.
                                 If True, the sweep values depend on the data obtained from the previous experiment. See run_experiment 
                                 for more details.
-        _fitting_model: The fitting model for the experimental data.
+        _analysis_function (function): analysis function for the experimental data. If set to None, we use a standard analysis function defined for all experiments.
+        _fitting_model: The fitting model for the experimental data. If None, it means we're using a custom fitting function that already has a built-in fitting model.
         _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis, 
                                     the values indicate the corresponding label.
         _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs. 
@@ -55,15 +56,24 @@ class CalibrationNode():
         self,
         node_id: str,
         qprogram: QProgram,
-        sweep_intervals: dict,
+        sweep_interval: dict,
         is_refinement: bool,
-        fitting_model,
+        analysis_function: function,
+        fitting_model: function,
         plotting_labels: dict,
         qubit: int,
         parameters: dict,
         data_validation_threshold: float,
         number_of_random_datapoints: int = 10,
     ):
+        self._node_id  = node_id
+        self._qprogram = qprogram
+        self._sweep_interval = sweep_interval
+        self._is_refinement = is_refinement
+        self._analysis_function = self.analyze if analysis_function is None else analysis_function
+        self._fitting_model = fitting_model
+        self._plotting_labels = plotting_labels
+        self._qubit = qubit
         self._parameters = parameters
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
@@ -129,8 +139,8 @@ class CalibrationNode():
         """
         
         if self._is_refinement:
-            # fetch data from previous experiment to determine sweep interval for current experiment
-            previous_experiment_data = np.arange(1, 2)
+            # TODO: fetch data from previous experiment to determine sweep interval for current experiment
+            previous_experiment_data = None
             self._sweep_interval = self._sweep_interval + previous_experiment_data
             '''
             Note: I'm not sure this can always be handled like this: I'm taking the example from 
@@ -161,3 +171,6 @@ class CalibrationNode():
                 user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
             else:
                 user_approves_plot = "y"
+                
+    def analyze():
+        pass
