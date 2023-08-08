@@ -67,7 +67,7 @@ class CircuitToPulses:  # pylint: disable=too-few-public-methods
 
                 # Measurement gates need to be handled on their own because qibo allows to define
                 # an M gate as eg. gates.M(*range(5))
-                elif isinstance(gate, M):
+                if isinstance(gate, M):
                     gate_schedule = []
                     gate_qubits = gate.qubits
                     for qubit in gate_qubits:
