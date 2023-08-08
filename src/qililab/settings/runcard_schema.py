@@ -147,8 +147,7 @@ class RuncardSchema:
                 return self.gates[gate_name.replace(" ", "")]
             if gate_name in self.gates.keys():
                 return self.gates[gate_name]
-            else:
-                raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
+            raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
         def gate_names(self) -> list[str]:
