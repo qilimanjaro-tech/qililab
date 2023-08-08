@@ -1,14 +1,14 @@
-import json
 import os
 
-import networkx as nx
-import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+from scipy.signal import find_peaks
 
 import qililab as ql
-from qililab import qprogram
 import qililab.automatic_calibration.calibration_utils.calibration_utils as calibration_utils
+from qililab import qprogram
 from qililab.automatic_calibration.calibration_node import CalibrationNode
 from qililab.automatic_calibration.controller import Controller
 from qililab.platform.platform import Platform
@@ -23,9 +23,7 @@ os.environ["RUNCARDS"] = "../runcards"
 os.environ["DATA"] = f"../data"
 platform_name = "soprano_master_galadriel"
 platform = ql.build_platform(name=platform_name)
-platform.filepath = os.path.join(
-    os.environ["RUNCARDS"], f"{platform_name}.yml"
-)
+platform.filepath = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 
 platform.connect()
 platform.turn_on_instruments()
@@ -41,21 +39,21 @@ fine_rabi_values = np.arange(-0.1, 0.1, 0.001)
 
 
 def rabi(drive_bus: str, readout_bus: str, sweep_values: list[int]):
-    """The rabi experiment written as a QProgram.
+    """The Rabi experiment written as a QProgram.
 
     Args:
         drive_bus (str): Name of the drive bus
         readout_bus (str): Name of the readout bus
 
     Returns:
-        QProgram: The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
     """
     qp = ql.QProgram()
     gain = qp.variable(float)
 
     # Adjust the arguments of DragPulse based on the runcard
     drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    
+
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
@@ -78,6 +76,15 @@ fine_if_values = np.arange(-2e6, 2e6, 0.2e6)
 
 
 def ramsey(drive_bus: str, readout_bus: str):
+    """The Ramsey experiment written as a QProgram.
+
+    Args:
+        drive_bus (str): Name of the drive bus
+        readout_bus (str): Name of the readout bus
+
+    Returns:
+        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+    """
     qp = ql.QProgram()
     wait_time = qp.variable(int)
 
@@ -102,6 +109,7 @@ def ramsey(drive_bus: str, readout_bus: str):
 # Drag coefficient calibration node
 drag_values = np.linspace(-3, 3, 41)
 
+
 def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: List[int]):
     """The drag coefficient calibration experiment written as a QProgram.
 
@@ -110,9 +118,9 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
         readout_bus (str): Name of the readout bus
 
     Returns:
-        QProgram: The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
     """
-    
+
     qp = ql.QProgram()
     drag_coefficient = qp.variable(float)
 
@@ -126,7 +134,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     # We use two different drag pulses with two different amplitudes.
     drag_pair_1 = DragPulse(amplitude=0.5, duration=20, num_sigmas=4, drag_coefficient=0.0)
     drag_pair_2 = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
-    
+
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
@@ -155,7 +163,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
 flip_values_array = np.arange(0, 20, 1)
 
 
-def flipping(drive_bus: str, readout_bus: str, , sweep_values: List[int]):
+def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     """The flipping experiment written as a QProgram.
 
     Args:
@@ -163,9 +171,9 @@ def flipping(drive_bus: str, readout_bus: str, , sweep_values: List[int]):
         readout_bus (str): Name of the readout bus
 
     Returns:
-        QProgram: The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
     """
-    
+
     qp = ql.QProgram()
     flip_values_array_element = qp.variable(int)
     counter = qp.variable(int)
@@ -214,6 +222,15 @@ def flipping(drive_bus: str, readout_bus: str, , sweep_values: List[int]):
 
 # AllXY experiment node (for initial status check and final validation)
 def all_xy(drive_bus: str, readout_bus: str):
+    """The allXY experiment written as a QProgram.
+
+    Args:
+        drive_bus (str): Name of the drive bus
+        readout_bus (str): Name of the readout bus
+
+    Returns:
+        qp (QProgram): The QProgram describing the experiment. It will need to be compiled to be run on the qblox cluster.
+    """
     qp = ql.QProgram()
 
     drag_pair = DragPulse(amplitude=1.0, duration=20, num_sigmas=4, drag_coefficient=0.0)
@@ -221,10 +238,30 @@ def all_xy(drive_bus: str, readout_bus: str):
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    # Load the file with the all_XY circuit settings
-    all_xy_circuit_settings_path = "./all_xy_circuits.json"
-    with open(all_xy_circuit_settings_path, encoding="utf8") as f:
-        circuits_settings = json.load(f)
+    # Definition of the all_xy sequence:
+    circuits_settings = [
+        {"name": "II", "gates": ["I", "I", "M"], "params": [-1, -1, -1]},
+        {"name": "XpXp", "gates": ["RX", "RX", "M"], "params": [1, 1, -1]},
+        {"name": "YpYp", "gates": ["RY", "RY", "M"], "params": [1, 1, -1]},
+        {"name": "XpYp", "gates": ["RX", "RY", "M"], "params": [1, 1, -1]},
+        {"name": "YpXp", "gates": ["RY", "RX", "M"], "params": [1, 1, -1]},
+        {"name": "X9I", "gates": ["RX", "I", "M"], "params": [0.5, -1, -1]},
+        {"name": "Y9I", "gates": ["RY", "I", "M"], "params": [0.5, -1, -1]},
+        {"name": "X9Y9", "gates": ["RX", "RY", "M"], "params": [0.5, 0.5, -1]},
+        {"name": "Y9X9", "gates": ["RY", "RX", "M"], "params": [0.5, 0.5, -1]},
+        {"name": "X9Yp", "gates": ["RX", "RY", "M"], "params": [0.5, 1, -1]},
+        {"name": "Y9Xp", "gates": ["RY", "RX", "M"], "params": [0.5, 1, -1]},
+        {"name": "XpY9", "gates": ["RX", "RY", "M"], "params": [1, 0.5, -1]},
+        {"name": "YpX9", "gates": ["RY", "RX", "M"], "params": [1, 0.5, -1]},
+        {"name": "X9Xp", "gates": ["RX", "RX", "M"], "params": [0.5, 1, -1]},
+        {"name": "XpX9", "gates": ["RX", "RX", "M"], "params": [1, 0.5, -1]},
+        {"name": "Y9Yp", "gates": ["RY", "RY", "M"], "params": [0.5, 1, -1]},
+        {"name": "YpY9", "gates": ["RY", "RY", "M"], "params": [1, 0.5, -1]},
+        {"name": "XpI", "gates": ["RX", "I", "M"], "params": [1, -1, -1]},
+        {"name": "YpI", "gates": ["RY", "I", "M"], "params": [1, -1, -1]},
+        {"name": "X9X9", "gates": ["RX", "RX", "M"], "params": [0.5, 0.5, -1]},
+        {"name": "Y9Y9", "gates": ["RY", "RY", "M"], "params": [0.5, 0.5, -1]},
+    ]
 
     # TODO: 21 acquire_loop calls are made. Is this an issue for how data is stored?
     for circuit_setting in circuits_settings:
@@ -264,19 +301,20 @@ Define the analysis functions and plotting functions.
         the labels of the plot depend on the fitting function.
 """
 
-def analyze_rabi(datapath : str = None, fit_quadrature = "i", label=""):
+
+def analyze_rabi(datapath: str = None, fit_quadrature="i", label=""):
     """
     Analyzes the Rabi experiment data.
 
     Args:
         datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
-    
-    Returns: 
+
+    Returns:
         fitted_pi_pulse_amplitude (int)
     """
-    
+
     # Get the path of the experimental data file
-    #TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to 
+    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
     # identify the right file.
     timestamp = get_last_timestamp()
     if datapath is None:
@@ -285,7 +323,7 @@ def analyze_rabi(datapath : str = None, fit_quadrature = "i", label=""):
     figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
     # get data
     data_raw = calibration_utils.get_raw_data(datapath)
-    
+
     amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
     swept_variable = data_raw["loops"][0]["parameter"]
     this_shape = len(amplitude_loop_values)
@@ -301,14 +339,14 @@ def analyze_rabi(datapath : str = None, fit_quadrature = "i", label=""):
     # Fit
     def sinus(x, a, b, c, d):
         return a * np.sin(2 * np.pi * b * np.array(x) - c) + d
-    
+
     # TODO: hint values are pretty random, they should be tuned better. Trial and error seems to be the best way.
     mod = lmfit.Model(sinus)
     mod.set_param_hint("a", value=1 / 2, vary=True, min=0)
     mod.set_param_hint("b", value=0, vary=True)
     mod.set_param_hint("c", value=0, vary=True)
     mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
-    
+
     params = mod.make_params()
     fit = mod.fit(data=fit_signal, params=params, x=amplitude_loop_values)
 
@@ -331,6 +369,122 @@ def analyze_rabi(datapath : str = None, fit_quadrature = "i", label=""):
     fig.savefig(figure_filepath, format="PNG")
     return fitted_pi_pulse_amplitude
 
+
+def analyze_ramsey(datapath=None, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
+    """
+    Analyzes the ramsey experiment data.
+
+    Args:
+        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+
+    Returns:
+        The optimal frequency found with the Ramsey experiment.
+    """
+    # Get the path of the experimental data file
+    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
+    # identify the right file.
+    timestamp = get_last_timestamp()
+    if datapath == None:
+        datapath = get_last_results()
+    parent_directory = os.path.dirname(datapath)
+    figure_filepath = os.path.join(parent_directory, f"RamseyFreq.PNG")
+    # get data
+    data_raw = get_raw_data(datapath)
+
+    # This is experiment specific and will go differently for every scheme of sweeps for tune-up
+    freq_loop_values = np.array(data_raw["loops"][0]["values"])
+    freq_label = data_raw["loops"][0]["parameter"]
+
+    wait_loop_values = np.array(data_raw["loops"][0]["loop"]["values"])
+    wait_label = data_raw["loops"][0]["loop"]["parameter"]
+    this_shape = (len(freq_loop_values), len(wait_loop_values))
+
+    # get flattened data and shape it
+    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i = i.reshape(this_shape)
+    q = q.reshape(this_shape)
+
+    # parse data and transform it
+    signal_vec = i if fit_quadrature == "i" else q
+    peaks_idx = []
+
+    fft_x = np.fft.fftfreq(
+        n=len(signal_vec[0, :]),
+        d=wait_loop_values[1] - wait_loop_values[0],
+    )
+    mask_fft = np.argsort(fft_x)
+    fft_x_sorted = fft_x[mask_fft]
+    x_axis = fft_x_sorted
+    y_axis = freq_loop_values
+    z_axis = []
+    if analyze:
+        for ii, freq in enumerate(freq_loop_values):
+            fft_y = np.fft.fft(signal_vec[ii, :] - np.mean(signal_vec[ii, :]))
+            # sort
+            fft_y_sorted = fft_y[mask_fft]
+            # normalize
+            this_norm = np.sqrt(np.sum(np.abs(fft_y_sorted) ** 2))
+            # fft_y_sorted = fft_y_sorted/this_norm
+
+            peak, _ = find_peaks(np.abs(fft_y_sorted), prominence=prominence_peaks)
+            if len(peak) == 2:
+                peaks_idx.append(peak)
+            else:
+                peaks_idx.append([np.nan, np.nan])
+            z_axis.append(fft_y_sorted)
+
+        peaks_idx = np.array(peaks_idx)
+        nan_indexes = np.argwhere(np.isnan(peaks_idx))
+        nan_indexes = nan_indexes[:, 0]
+        clean_array = np.delete(peaks_idx, nan_indexes, axis=0)
+        y_axis_fit = np.delete(y_axis, nan_indexes, axis=0)
+        clean_array = clean_array.astype(np.int64)
+
+        peaks_x = np.array([fft_x_sorted[p] for p in clean_array[:, 1]])
+
+        # Fit
+        def absline(x, a, xc):
+            return np.abs(a * (x - xc))
+
+        absmod = lmfit.Model(absline)
+        absmod.set_param_hint(
+            name="a",
+            value=(np.max(peaks_x) - np.min(peaks_x)) / (np.max(y_axis_fit) - np.min(y_axis_fit)),
+        )
+        absmod.set_param_hint(name="xc", value=np.mean(y_axis_fit))
+        params = absmod.make_params()
+        fit_res = absmod.fit(x=y_axis_fit, data=peaks_x, params=params)
+        fit_x = np.linspace(y_axis_fit[0], y_axis_fit[-1], num=101)
+        fit_y = absline(fit_x, **fit_res.best_values)
+    else:
+        for ii, freq in enumerate(freq_loop_values):
+            fft_y = np.fft.fft(signal_vec[ii, :] - np.mean(signal_vec[ii, :]))
+            # sort
+            fft_y_sorted = fft_y[mask_fft]
+            z_axis.append(fft_y_sorted)
+
+    # Plot
+    title_label = f"{timestamp} {label}"
+    fig, ax = plt.subplots()
+    plt.pcolormesh(x_axis, y_axis, np.abs(z_axis), label="FFT Data")
+    if analyze:
+        ax.plot(fit_y, fit_x, "r-")
+        ax.plot(peaks_x, y_axis_fit, "ro", label="Data")
+        ax.axhline(
+            fit_res.best_values["xc"],
+            linestyle="--",
+            color="r",
+            label=f"Fit={fit_res.best_values['xc']*1e-9:.5f} GHz",
+        )
+
+    ax.legend()
+    ax.set_xlabel("Frequency (GHz)")
+    ax.set_ylabel("Detuning")
+    ax.set_title(title_label)
+    fig.savefig(figure_filepath, format="PNG")
+    return fit_res.best_values["xc"] if analyze else None
+
+
 def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
     """
     Analyzes the drag coefficient calibration experiment data.
@@ -338,12 +492,12 @@ def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
     Args:
         datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
 
-    Returns: 
+    Returns:
         fitted_drag_coeff (int): The optimal drag coefficient.
     """
-    
+
     # Get path of the experimental data file
-    #TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to 
+    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
     # identify the right file.
     timestamp = get_last_timestamp()
     if datapath == None:
@@ -376,7 +530,7 @@ def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
         return a * np.sin(b * np.array(x) - c) + d
 
     a_guess = np.amax(difference) - np.amin(difference)
-    
+
     # Sinus fit
     mod = lmfit.Model(sinus)
     mod.set_param_hint("a", value=a_guess, vary=True, min=0)
@@ -393,8 +547,10 @@ def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
     d_value = fit.params["d"].value
 
     optimal_parameters = [a_value, b_value, c_value, d_value]
-    # NOTE: this could be wrong. Paul will let me know. Ramiro originally added this line.
-    fitted_drag_coeff = (np.arcsin(-optimal_parameters[3] / optimal_parameters[0]) + optimal_parameters[2]) / optimal_parameters[1]
+    # This experiment returns two sine waves. We want to find their intersection, which is the optimal drag coefficient. The following formula gives us that.
+    fitted_drag_coeff = (
+        np.arcsin(-optimal_parameters[3] / optimal_parameters[0]) + optimal_parameters[2]
+    ) / optimal_parameters[1]
 
     # Plot
     title_label = f"{timestamp} {label}"
@@ -416,53 +572,163 @@ def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
     fig.savefig(figure_filepath, format="PNG")
     return fitted_drag_coeff
 
+
+def analyze_flipping(flips_values, datapath=None, fit_quadrature="i", label=""):
+    """
+    Analyzes the flipping experiment data.
+
+    Args:
+        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+
+    """
+
+    # Get path of the experimental data file
+    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
+    # identify the right file.
+    timestamp = get_last_timestamp()
+    if datapath == None:
+        datapath = get_last_results()
+    parent_directory = os.path.dirname(datapath)
+    figure_filepath = os.path.join(parent_directory, f"Flipping.PNG")
+    # get data
+    data_raw = get_raw_data(datapath)
+
+    # Get flattened data and shape it
+    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i = np.array(i).flatten()
+    q = np.array(q).flatten()
+
+    # Process data
+    use_signal = i if fit_quadrature == "i" else q
+    calibration_points = use_signal[-2:]
+    voltage_data = use_signal[:-2]
+
+    data_range = calibration_points[1] - calibration_points[0]
+    scaled_data = [(x - calibration_points[0]) / data_range for x in voltage_data]
+
+    # Fit
+    def sinus(x, a, b, c, d):
+        return a * np.sin(b * np.array(x) - c) + d
+
+    a_guess = np.amax(scaled_data) - np.amin(scaled_data)
+
+    # Sinus fit
+    mod = lmfit.Model(sinus)
+    mod.set_param_hint("a", value=a_guess, vary=True, min=0)
+    mod.set_param_hint("b", value=0, vary=True)
+    mod.set_param_hint("c", value=0, vary=True)
+    mod.set_param_hint("d", value=1 / 2, vary=True, min=0)
+
+    params = mod.make_params()
+    fit = mod.fit(data=scaled_data, params=params, x=flips_values)
+
+    a_value = fit.params["a"].value
+    b_value = fit.params["b"].value
+    c_value = fit.params["c"].value
+    d_value = fit.params["d"].value
+
+    popt = [a_value, b_value, c_value, d_value]
+
+    epsilon_coef = popt[1] / 2
+    reduced_chi = fit.redchi
+
+    # Line fit
+    def line(x, a, b):
+        return a * x + b
+
+    mod2 = lmfit.Model(line)
+    mod2.set_param_hint("a", value=-1, vary=True)
+    mod2.set_param_hint("b", value=0.5, vary=True)
+
+    params2 = mod2.make_params()
+    fit2 = mod2.fit(data=scaled_data, params=params2, x=flips_values)
+
+    a_value2 = fit2.params["a"].value
+    b_value2 = fit2.params["b"].value
+
+    popt2 = [a_value2, b_value2]
+
+    epsilon_coef2 = popt2[0] / 2
+    reduced_chi2 = fit2.redchi
+
+    # Plot
+    title_label = f"{timestamp} {label}"
+    fig, axs = plt.subplots(1, 2)
+    ax = axs[0]
+    ax.plot(flips_values, scaled_data, "--o", label="data")
+    ax.plot(flips_values[-1] + 1, 1, "o", label="1")
+    ax.plot(flips_values[-1] + 1, 0, "o", label="0")
+    ax.set_xlabel("Number of Flips")
+    ax.legend()
+
+    ax = axs[1]
+    if reduced_chi < reduced_chi2:
+        func = sinus
+        label_fit = rf"$\epsilon$ = {epsilon_coef:.3f}"
+        ax.plot(flips_values, func(flips_values, *popt), "--", label=label_fit, color="red")
+    else:
+        func = line
+        label_fit = rf"$\epsilon$ = {epsilon_coef2:.3f}"
+        ax.plot(flips_values, func(flips_values, *popt2), "--", label=label_fit, color="red")
+
+    ax.plot(flips_values, scaled_data, "--o")
+    ax.plot(flips_values[-1] + 1, 1, "o", label="1")
+    ax.plot(flips_values[-1] + 1, 0, "o", label="0")
+    ax.set_xlabel("Number of Flips")
+    ax.legend()
+    fig.savefig(figure_filepath, format="PNG")
+
+    return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
+
+
 ######################################################################################################
 """
 Initialize all the nodes and add them to the calibration graph.
 """
-"""
 
- """
- # TODO: unfinished, analysis missing
-initial_all_xy_node = CalibrationNode(node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), model=None, qubit=0)
+# TODO: unfinished, analysis missing
+initial_all_xy_node = CalibrationNode(node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), qubit=0)
 rabi_1_node = CalibrationNode(
-    node_id="rabi_1", qprogram=rabi, sweep_interval=rabi_values, analysis_function=analyze_rabi, model=None, qubit=0
+    node_id="rabi_1", qprogram=rabi, sweep_interval=rabi_values, analysis_function=analyze_rabi, qubit=0
 )
- # TODO: unfinished, analysis missing
 ramsey_coarse_node = CalibrationNode(
-    node_id="ramsey_coarse", qprogram=ramsey("drive_bus", "readout_bus"), sweep_intervals=wait_values, model=None, qubit=0
+    node_id="ramsey_coarse",
+    qprogram=ramsey("drive_bus", "readout_bus"),
+    sweep_intervals=wait_values,
+    analysis_function=analyze_ramsey,
+    qubit=0,
 )
- # TODO: unfinished, analysis missing
 ramsey_fine_node = CalibrationNode(
     node_id="ramsey_fine",
     qprogram=ramsey("drive_bus", "readout_bus"),
     sweep_interval=fine_if_values,
     is_refinement=True,
-    model=None,
+    analysis_function=analyze_ramsey,
     qubit=0,
 )
-rabi_2_fine_node = CalibrationNode(node_id="rabi_2_coarse", qprogram=rabi, sweep_interval=rabi_values, analysis_function=analyze_rabi, model=None, qubit=0)
+rabi_2_fine_node = CalibrationNode(
+    node_id="rabi_2_coarse",
+    qprogram=rabi,
+    sweep_interval=rabi_values,
+    analysis_function=analyze_rabi,
+    qubit=0,
+)
 rabi_2_coarse_node = CalibrationNode(
     node_id="rabi_2_fine",
-    qprogram=rabi, 
+    qprogram=rabi,
     sweep_interval=rabi_values,
-    is_refinement=True, 
+    is_refinement=True,
     analysis_function=analyze_rabi,
-    model=None,
     qubit=0,
 )
 flipping_node = CalibrationNode(
     node_id="flipping",
     qprogram=flipping,
-     
-    analysis_function=analyze_rabi,
-    model=None,
+    analysis_function=analyze_flipping,
     qubit=0,
 )
 # TODO: unfinished: analysis missing
-verification_all_xy_node = CalibrationNode(
-    node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), model=None, qubit=0
-)
+verification_all_xy_node = CalibrationNode(node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), qubit=0)
 
 calibration_graph = nx.DiGraph()
 # Add nodes to the calibration graph, specifying connections

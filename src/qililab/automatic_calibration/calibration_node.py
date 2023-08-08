@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+
 import calibration_utils.calibration_utils as cal_utils
-from qililab.automatic_calibration.calibration_utils.experiment_factory import ExperimentFactory
-from qililab.qprogram.qprogram import QProgram
 import numpy as np
+
+from qililab.qprogram.qprogram import QProgram
 
 """
 TODO: decide how fitting and plotting functions for each calibration node are determined. There are 2 options:
@@ -13,12 +14,8 @@ TODO: decide how fitting and plotting functions for each calibration node are de
     fitting and plotting functions.
  """
 
-"""
-TODO: add docstrings for latest changes.
-"""
 
-
-class CalibrationNode():
+class CalibrationNode:
     """
     This class represents a node in the calibration graph.
     Each node represent a step of a lager calibration procedure. Each of these steps consists of:
@@ -30,18 +27,18 @@ class CalibrationNode():
         _qprogram (QProgram): The QProgram describing the experiment done in the node.
         _sweep_interval (dict): Dictionary with 3 keys describing the sweep values of the experiment. The keys are:
                                 *start
-                                *step 
+                                *step
                                 *stop
-                                The sweep values are all the numbers between 'start' and 'stop', separated from each other 
+                                The sweep values are all the numbers between 'start' and 'stop', separated from each other
                                 by the distance 'step'
         _is_refinement (bool): True if this experiment refines data obtained from a previous experiment. False otherwise.
-                                If True, the sweep values depend on the data obtained from the previous experiment. See run_experiment 
+                                If True, the sweep values depend on the data obtained from the previous experiment. See run_experiment
                                 for more details.
         _analysis_function (function): analysis function for the experimental data. If set to None, we use a standard analysis function defined for all experiments.
         _fitting_model: The fitting model for the experimental data. If None, it means we're using a custom fitting function that already has a built-in fitting model.
-        _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis, 
+        _plotting_labels (dict): Labels used in the plot of the fitted experimental data. The keys of the dictionary indicate the axis,
                                     the values indicate the corresponding label.
-        _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs. 
+        _qubit (int): The qubit that is being calibrated by the calibration graph to which the node belongs.
         _parameters (dict): A dictionary where keys are parameter names (str) and values are:
                                 - timeouts durations in seconds (float), representing an estimate of how long it takes for the parameters to drift.
                                 - default sweep interval for the experiment (list(float))
@@ -50,23 +47,25 @@ class CalibrationNode():
                            This operation can be either a function call of check_data() or of calibrate()
         _number_of_random_datapoints (int) : The number of points, chosen randomly within the sweep interval, where we check if the experiment
                                             gets the same outcome as during the last calibration that was run. Default value is 10.
+        _experiment_results: The results of the calibration experiment. TODO: Albert M. is implementing how a qprogram is run after being compiled. That will determine
+                                what these results look like (array, instance of Result class).
     """
 
     def __init__(
         self,
         node_id: str,
         qprogram: QProgram,
-        sweep_interval: dict,
-        is_refinement: bool,
-        analysis_function: function,
-        fitting_model: function,
-        plotting_labels: dict,
-        qubit: int,
-        parameters: dict,
-        data_validation_threshold: float,
+        sweep_interval: dict = None,
+        is_refinement: bool = False,
+        analysis_function: function = None,
+        fitting_model: function = None,
+        plotting_labels: dict = None,
+        qubit: int = None,
+        parameters: dict = None,
+        data_validation_threshold: float = 1,
         number_of_random_datapoints: int = 10,
     ):
-        self._node_id  = node_id
+        self._node_id = node_id
         self._qprogram = qprogram
         self._sweep_interval = sweep_interval
         self._is_refinement = is_refinement
@@ -137,18 +136,18 @@ class CalibrationNode():
             analyze (bool): If set to true the analysis function is run, otherwise it's not. Default value is True.
             manual_check (bool): If set to true, the user will be shown and asked to approve or reject the result of the fitting done by the analysis function. Default value is False.
         """
-        
+
         if self._is_refinement:
             # TODO: fetch data from previous experiment to determine sweep interval for current experiment
             previous_experiment_data = None
             self._sweep_interval = self._sweep_interval + previous_experiment_data
-            '''
-            Note: I'm not sure this can always be handled like this: I'm taking the example from 
-            LabScripts/QuantumPainHackathon/calibrations/single_qb_full_cal.py as universal which I 
+            """
+            Note: I'm not sure this can always be handled like this: I'm taking the example from
+            LabScripts/QuantumPainHackathon/calibrations/single_qb_full_cal.py as universal which I
             already know I'm gonna regret
-            '''
-        
-        '''
+            """
+
+        """
         Here this happens:
             1.Experiment is run
             2.Analysis function is called to fit data
@@ -156,7 +155,7 @@ class CalibrationNode():
             4.User is asked to approve plot
                 if user approves: return
                 else: go back to 1.
-        '''
+        """
         user_approves_plot = "n"
         while user_approves_plot == "n":
             # Compile and run the QProgram. TODO: add this once qprogram compiler is in main.
@@ -171,6 +170,6 @@ class CalibrationNode():
                 user_approves_plot = input("Do you want to repeat the experiment? (y/n): ").lower()
             else:
                 user_approves_plot = "y"
-                
+
     def analyze():
         pass

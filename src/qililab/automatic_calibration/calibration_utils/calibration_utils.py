@@ -4,10 +4,11 @@ Useful functions for calibration experiments and data analysis.
 
 import random
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+
 
 def get_timestamp():
     """Generate a UNIX timestamp.
