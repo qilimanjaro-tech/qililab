@@ -1,14 +1,12 @@
 """Class that translates a Qibo Circuit into a PulseSequence"""
-import ast
 import contextlib
-from copy import copy
 from dataclasses import asdict
 
 import numpy as np
 from qibo.gates import CZ, Gate, M
 from qibo.models.circuit import Circuit
 
-from qililab.chip.nodes import Coupler, Qubit, Resonator
+from qililab.chip.nodes import Coupler, Qubit
 from qililab.constants import RUNCARD
 from qililab.platform import Bus, Platform
 from qililab.pulse.pulse import Pulse

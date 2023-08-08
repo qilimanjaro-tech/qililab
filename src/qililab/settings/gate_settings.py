@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from typing import Collection
+from dataclasses import dataclass
 
 from qililab.typings.enums import Parameter
 
