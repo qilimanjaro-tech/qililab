@@ -285,9 +285,10 @@ class Experiment:
         elif isinstance(element, RuncardSchema.PlatformSettings):
             element.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             self.build_execution()
-        elif all(isinstance(element_event, GateEventSettings) for element_event in element):  # type: ignore
-            self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value)
-            self.build_execution()
+        elif isinstance(element, list):  # if element is a list of GateEventSettings
+            if all(isinstance(element_event, GateEventSettings) for element_event in element):  # type: ignore
+                self.platform.set_parameter(alias=alias, parameter=Parameter(parameter), value=value)
+                self.build_execution()
         else:
             element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)  # type: ignore
             if parameter == Parameter.DELAY:
