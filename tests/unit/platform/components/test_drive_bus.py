@@ -23,7 +23,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
 ALIAS = "drivebus_0"
 
 
@@ -126,7 +126,7 @@ def fixture_attenuator() -> QcmQrmRfAtt:
 @pytest.fixture(name="drive_bus")
 def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> DriveBus:
     """Return DriveBus instance"""
-    return DriveBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
+    return DriveBus(alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
 
 
 class TestDriveBus:
@@ -140,7 +140,7 @@ class TestDriveBus:
     def test_init(self, drive_bus: DriveBus):
         """Test init method"""
         assert drive_bus.alias == ALIAS
-        assert drive_bus.qubit == QUBIT
+        assert drive_bus.port == PORT
         assert isinstance(drive_bus.instruments["awg"], SequencerQCM)
         assert isinstance(drive_bus.instruments["local_oscillator"], QcmQrmRfLo)
         assert isinstance(drive_bus.instruments["attenuator"], QcmQrmRfAtt)
@@ -223,7 +223,10 @@ class TestDriveBus:
 
     def test_str(self, drive_bus: DriveBus):
         """Unittest for __str__ method."""
-        expected_str = f"DriveBus {ALIAS}: " + "".join(
-            f"--|{instrument}|----" for instrument in drive_bus.instruments.values()
+        expected_str = (
+            f"{ALIAS} ({drive_bus.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in drive_bus.instruments.values())
+            + f"--> port {drive_bus.port}"
         )
+
         assert str(drive_bus) == expected_str

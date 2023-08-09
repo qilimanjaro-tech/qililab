@@ -18,7 +18,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
 ALIAS = "bus_0"
 
 
@@ -53,7 +53,7 @@ def fixture_sequencer() -> SequencerQCM:
 @pytest.fixture(name="bus")
 def fixture_drive_bus(sequencer: SequencerQCM) -> BusDriver:
     """Return DriveBus instance"""
-    return BusDriver(alias=ALIAS, qubit=QUBIT, awg=sequencer)
+    return BusDriver(alias=ALIAS, port=PORT, awg=sequencer)
 
 
 class TestBusDriver:
@@ -67,7 +67,7 @@ class TestBusDriver:
     def test_init(self, bus: BusDriver):
         """Test init method"""
         assert bus.alias == ALIAS
-        assert bus.qubit == QUBIT
+        assert bus.port == PORT
         assert isinstance(bus.instruments["awg"], SequencerQCM)
 
     def test_set(self, bus: BusDriver):
@@ -106,9 +106,9 @@ class TestBusDriver:
 
     def test_set_get_distortions(self, bus: BusDriver):
         """Test set and get method for distortions parameter"""
-        with pytest.raises(NotImplementedError, match="This feature is not yet implemented."):
+        with pytest.raises(NotImplementedError, match="Setting distortion parameters of a bus is not yet implemented."):
             bus.set(param_name="distortions", value=[])
-        with pytest.raises(NotImplementedError, match="This feature is not yet implemented."):
+        with pytest.raises(NotImplementedError, match="Setting distortion parameters of a bus is not yet implemented."):
             bus.get(param_name="distortions")
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")

@@ -24,7 +24,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
 ALIAS = "readout_bus_0"
 
 
@@ -125,7 +125,7 @@ def fixture_readout_bus(digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, a
     """Return ReadoutBus instance"""
     return ReadoutBus(
         alias=ALIAS,
-        qubit=QUBIT,
+        port=PORT,
         awg=digitiser,
         digitiser=digitiser,
         local_oscillator=local_oscillator,
@@ -144,7 +144,7 @@ class TestReadoutBus:
     def test_init(self, readout_bus: ReadoutBus):
         """Test init method"""
         assert readout_bus.alias == ALIAS
-        assert readout_bus.qubit == QUBIT
+        assert readout_bus.port == PORT
         assert isinstance(readout_bus.instruments["awg"], SequencerQCM)
         assert isinstance(readout_bus.instruments["digitiser"], SequencerQRM)
         assert isinstance(readout_bus.instruments["local_oscillator"], QcmQrmRfLo)
@@ -241,7 +241,10 @@ class TestReadoutBus:
 
     def test_str(self, readout_bus: ReadoutBus):
         """Unittest for __str__ method."""
-        expected_str = f"ReadoutBus {ALIAS}: " + "".join(
-            f"--|{instrument}|----" for instrument in readout_bus.instruments.values()
+        expected_str = (
+            f"{ALIAS} ({readout_bus.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in readout_bus.instruments.values())
+            + f"--> port {readout_bus.port}"
         )
+
         assert str(readout_bus) == expected_str

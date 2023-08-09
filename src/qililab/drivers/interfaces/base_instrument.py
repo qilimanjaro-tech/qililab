@@ -6,6 +6,8 @@ from typing import Any
 class BaseInstrument(ABC):
     """Base Interface for all instruments."""
 
+    name: str
+
     @property
     @abstractmethod
     def params(self):

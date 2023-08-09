@@ -22,7 +22,7 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
 ALIAS = "flux_bus_0"
 
 
@@ -141,13 +141,13 @@ def fixture_current_source() -> S4gDacChannel:
 @pytest.fixture(name="flux_bus_current_source")
 def fixture_flux_bus_current_source(sequencer: SequencerQCM, current_source: S4gDacChannel) -> FluxBus:
     """Return FluxBus instance with current source."""
-    return FluxBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, source=current_source)
+    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=current_source)
 
 
 @pytest.fixture(name="flux_bus_voltage_source")
 def fixture_flux_bus_voltage_source(sequencer: SequencerQCM, voltage_source: D5aDacChannel) -> FluxBus:
     """Return FluxBus instance with voltage source."""
-    return FluxBus(alias=ALIAS, qubit=QUBIT, awg=sequencer, source=voltage_source)
+    return FluxBus(alias=ALIAS, port=PORT, awg=sequencer, source=voltage_source)
 
 
 class TestFluxBus:
@@ -310,7 +310,10 @@ class TestFluxBus:
 
     def test_str(self, flux_bus_current_source: FluxBus):
         """Unittest for __str__ method."""
-        expected_str = f"FluxBus {ALIAS}: " + "".join(
-            f"--|{instrument}|----" for instrument in flux_bus_current_source.instruments.values()
+        expected_str = (
+            f"{ALIAS} ({flux_bus_current_source.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in flux_bus_current_source.instruments.values())
+            + f"--> port {flux_bus_current_source.port}"
         )
+
         assert str(flux_bus_current_source) == expected_str

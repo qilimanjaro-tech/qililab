@@ -10,18 +10,18 @@ from qililab.pulse import PulseBusSchedule, PulseDistortion
 class BusDriver(ABC):
     """Bus Class."""
 
-    def __init__(self, alias: str, qubit: int, awg: AWG | None):
+    def __init__(self, alias: str, port: int, awg: AWG | None):
         """Initialise the bus.
 
         Args:
             alias (str): Bus alias
-            qubit (int): Qubit
+            port (int): Port to target
             awg (AWG): Sequencer
             local_oscillator (LocalOscillator | None): Local oscillator
             attenuator (Attenuator | None): Attenuator
         """
         self.alias = alias
-        self.qubit = qubit
+        self.port = port
         self._awg = awg
         self.instruments: dict[str, BaseInstrument | None] = {"awg": self._awg}
         self.delay = 0
@@ -64,7 +64,7 @@ class BusDriver(ABC):
         if param_name == "delay":
             self.delay = value
         elif param_name == "distortions":
-            raise NotImplementedError("This feature is not yet implemented.")
+            raise NotImplementedError("Setting distortion parameters of a bus is not yet implemented..")
         else:
             candidates: list[BaseInstrument | None] = [
                 instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
@@ -111,3 +111,11 @@ class BusDriver(ABC):
     def __eq__(self, other: object) -> bool:
         """compare two Bus objects"""
         return str(self) == str(other) if isinstance(other, BusDriver) else False
+
+    def __str__(self):
+        """String representation of a Bus."""
+        return (
+            f"{self.alias} ({self.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in self.instruments.values())
+            + f"--> port {self.port}"
+        )

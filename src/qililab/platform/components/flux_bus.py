@@ -8,17 +8,14 @@ from qililab.platform.components.bus_factory import BusFactory
 class FluxBus(BusDriver):
     """Qililab's driver for Flux Bus"""
 
-    def __init__(self, alias: str, qubit: int, awg: AWG | None, source: CurrentSource | VoltageSource | None):
+    def __init__(self, alias: str, port: int, awg: AWG | None, source: CurrentSource | VoltageSource | None):
         """Initialise the bus.
 
         Args:
             alias: Bus alias
+            port: Port to target
             awg (AWG): Bus awg instrument
             source (CurrentSource | VoltageSource): Bus source instrument
         """
-        super().__init__(alias=alias, qubit=qubit, awg=awg)
+        super().__init__(alias=alias, port=port, awg=awg)
         self.instruments["source"] = source
-
-    def __str__(self):
-        """String representation of a FluxBus. Prints a drawing of the bus elements."""
-        return f"FluxBus {self.alias}: " + "".join(f"--|{instrument}|----" for instrument in self.instruments.values())
