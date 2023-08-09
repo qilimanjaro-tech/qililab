@@ -10,7 +10,7 @@ import qililab as ql
 class TestExecute:
     """Test execute method in the `execute.py` script"""
 
-    @patch("qililab.experiment.circuit_experiment.Experiment.execute")
+    @patch("qililab.experiment.experiment.Experiment.execute")
     @patch("qililab.platform.PLATFORM_MANAGER_YAML.build")
     def test_execute(self, mock_build: MagicMock, mock_execute: MagicMock):
         n_qubits = 5
