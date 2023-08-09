@@ -170,12 +170,14 @@ def fixture_exp(request: pytest.FixtureRequest):
 @patch(
     "qililab.instrument_controllers.vector_network_analyzer.keysight_E5080B_vna_controller.VectorNetworkAnalyzerDriver",
     autospec=True,
-)  # pylint: disable=W0613
+)
 @patch(
     "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.VectorNetworkAnalyzerDriver",
     autospec=True,
-)  # pylint: disable=W0613
-def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform):
+)
+def fixture_vna_experiment(
+    mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform
+):  # pylint: disable=W0613
     """Return a connected experiment with the VNA instrument"""
     loop = Loop(
         alias=SauronVNA.buses[0][RUNCARD.ALIAS],
