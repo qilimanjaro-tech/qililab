@@ -4,6 +4,10 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Rename Experiment and CircuitExperiment classes and dependencies:
+  This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
+  [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
+
 - Add a new Factory for the Buses and registered the current ones
   [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
 
