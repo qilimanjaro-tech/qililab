@@ -11,7 +11,7 @@ from qililab.settings import Runcard
 
 @pytest.fixture(name="platform_settings")
 def fixture_platform_settings() -> Runcard.TranspilationSettings:
-    """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
+    """Fixture that returns an instance of a ``Runcard.TranspilationSettings`` class."""
     settings = {
         "id_": 0,
         "category": "platform",

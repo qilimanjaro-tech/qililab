@@ -49,10 +49,10 @@ class TestRuncard:
 
 
 class TestTranspilationSettings:
-    """Unit tests for the RuncardSchema.PlatformSettings class."""
+    """Unit tests for the Runcard.TranspilationSettings class."""
 
     def test_attributes(self, transpilation_settings):
-        """Test that the RuncardSchema.PlatformSettings dataclass contains the right attributes."""
+        """Test that the Runcard.TranspilationSettings dataclass contains the right attributes."""
         assert isinstance(transpilation_settings.name, str)
         assert isinstance(transpilation_settings.delay_between_pulses, int)
         assert isinstance(transpilation_settings.delay_before_readout, int)

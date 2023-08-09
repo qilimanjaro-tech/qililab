@@ -11,6 +11,7 @@ from qililab.platform import Bus, Buses, Platform
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
+from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel
 from tests.utils import platform_db, platform_yaml
 
@@ -123,19 +124,11 @@ class TestPlatform:
         if bus is not None:
             assert bus in platform.buses
 
-    # TODO: Modify this test of print statements and move them to where they correspond
     def test_print_platform(self, platform: Platform):
         """Test print platform."""
-        print(platform)
+        assert str(platform) == str(yaml.dump(platform.to_dict(), sort_keys=False))
 
-    def test_print_buses(self, platform: Platform):
-        """Test print buses."""
-        print(platform.buses)
-
+    # I'm leaving this test here, because there is no test_instruments.py, but should be moved there when created
     def test_print_instruments(self, platform: Platform):
         """Test print instruments."""
-        print(platform.instruments)
-
-    def test_print_chip(self, platform: Platform):
-        """Test print chip."""
-        print(platform.chip)
+        assert str(platform.instruments) == str(yaml.dump(platform.instruments._short_dict(), sort_keys=False))

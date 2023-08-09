@@ -398,7 +398,8 @@ class TestMethods:
     def test_loop_num_loops_property(self, experiment_all_platforms: Experiment):
         """Test loop's num_loops property."""
         if experiment_all_platforms.options.loops is not None:
-            print(experiment_all_platforms.options.loops[0].num_loops)
+            assert isinstance(experiment_all_platforms.options.loops[0].num_loops, int)
+            assert isinstance(str(experiment_all_platforms.options.loops[0].num_loops), str)
 
     def test_str_method(self, experiment_all_platforms: Experiment):
         """Test __str__ method."""

@@ -34,4 +34,4 @@ class TestBuses:
 
     def test_str_method(self, buses: Buses):
         """Test print buses."""
-        print(buses)
+        assert str(buses) == "\n".join(str(bus) for bus in buses.elements)

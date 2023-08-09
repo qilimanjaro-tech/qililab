@@ -25,7 +25,7 @@ from tests.utils import platform_db
 
 @pytest.fixture(name="platform")
 def fixture_platform(chip: Chip) -> Platform:
-    """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
+    """Fixture that returns an instance of a ``Runcard.TranspilationSettings`` class."""
     settings = {
         "id_": 0,
         "category": "platform",
