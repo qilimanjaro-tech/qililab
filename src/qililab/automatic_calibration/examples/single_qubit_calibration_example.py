@@ -32,7 +32,7 @@ platform.connect()
 platform.turn_on_instruments()
 platform.initial_setup()
 
-######################################################################################################
+##################################### EXPERIMENTS ##################################################
 """ Define the QPrograms, i.e. the experiments that will be the nodes of the calibration graph """
 
 
@@ -292,7 +292,7 @@ def all_xy(drive_bus: str, readout_bus: str):
     return qp
 
 
-######################################################################################################
+######################################### ANALYSIS ###################################################
 """
 Define the analysis functions and plotting functions.
     - Analysis functions analyze and fit the experimental data. One analysis function could be used by more
@@ -302,12 +302,12 @@ NOTE: For now, each experiment has it own custom function that handled both anal
         This will be made less hardcoded in the future by another intern.
 """
 
-def analyze_rabi(datapath: str = None, fit_quadrature="i", label=""):
+def analyze_rabi(datapath, fit_quadrature="i", label=""):
     """
     Analyzes the Rabi experiment data.
 
     Args:
-        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
 
     Returns:
         fitted_pi_pulse_amplitude (int)
@@ -370,12 +370,12 @@ def analyze_rabi(datapath: str = None, fit_quadrature="i", label=""):
     return fitted_pi_pulse_amplitude
 
 
-def analyze_ramsey(datapath=None, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
+def analyze_ramsey(datapath, fit_quadrature="i", label="", prominence_peaks=20, analyze=True):
     """
     Analyzes the ramsey experiment data.
 
     Args:
-        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
 
     Returns:
         The optimal frequency found with the Ramsey experiment.
@@ -485,12 +485,12 @@ def analyze_ramsey(datapath=None, fit_quadrature="i", label="", prominence_peaks
     return fit_res.best_values["xc"] if analyze else None
 
 
-def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
+def analyze_drag_coef(datapath, fit_quadrature="i", label=""):
     """
     Analyzes the drag coefficient calibration experiment data.
 
     Args:
-        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
 
     Returns:
         fitted_drag_coeff (int): The optimal drag coefficient.
@@ -573,12 +573,12 @@ def analyze_drag_coef(datapath=None, fit_quadrature="i", label=""):
     return fitted_drag_coeff
 
 
-def analyze_flipping(flips_values, datapath=None, fit_quadrature="i", label=""):
+def analyze_flipping(datapath, flips_values, fit_quadrature="i", label=""):
     """
     Analyzes the flipping experiment data.
 
     Args:
-        datapath (str, optional): Path to the calibration data YAML file. If not provided, the last results file is used.
+        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
 
     """
 
@@ -680,8 +680,45 @@ def analyze_flipping(flips_values, datapath=None, fit_quadrature="i", label=""):
 
     return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
 
-#TODO: all xy analysis
+def analyze_all_xy(datapath, label=""):
+    """
+    Analyzes the AllXY experiment data.
 
+    Args:
+        datapath: Where the data experimental is stored. If it's a string, it represents the path of a file. Otherwise it's something else, a python object (like a list).
+
+    Returns:
+        The plot of the AllXY experiment data
+    """
+
+    # Get the path of the experimental data file
+    # TODO: this will not work with my implementation, there always needs to be a datapath or a unique way to
+    # identify the right file.
+    timestamp = get_last_timestamp()
+    if datapath is None:
+        datapath = get_last_results()
+    parent_directory = os.path.dirname(datapath)
+    figure_filepath = os.path.join(parent_directory, "Rabi.PNG")
+    # get data
+    data_raw = calibration_utils.get_raw_data(datapath)
+
+    amplitude_loop_values = np.array(data_raw["loops"][0]["values"])
+    swept_variable = data_raw["loops"][0]["parameter"]
+    this_shape = len(amplitude_loop_values)
+
+    # Get flattened data and shape it
+    i, q = calibration_utils.get_iq_from_raw(data_raw)
+    i = i.reshape(this_shape)
+    q = q.reshape(this_shape)
+
+    plt.clf()
+    plt.figure()
+    plt.plot(i, "-o")
+    ax = plt.gca()
+    ax.set_title( "tbd" + ax.get_title()) #TODO: add timestamp in title?
+    #TODO: save figure with appropriate path
+    #TODO: print figure to show user
+    
 ######################################################################################################
 """
 Initialize all the nodes and add them to the calibration graph.
