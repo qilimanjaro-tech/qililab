@@ -52,4 +52,14 @@ Explore
          :caption: API
          :maxdepth: 1
 
-         code/modules
+         code/ql
+         code/execute
+         code/chip
+         code/drivers
+         code/experiment
+         code/platform
+         code/pulse
+         code/qprogram
+         code/result
+         code/transpiler
+         code/waveforms
