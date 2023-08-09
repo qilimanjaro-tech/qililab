@@ -29,9 +29,7 @@ class AWG(ABC):
         """
 
     @abstractmethod
-    def execute(
-        self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int
-    ) -> None:
+    def execute(self, sequence) -> None:
         """Compiles a pulse bus schedule, generates associated QASM program and runs it.
 
         Args:

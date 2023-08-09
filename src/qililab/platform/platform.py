@@ -9,6 +9,7 @@ from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
+from qililab.qprogram import QBloxCompiler, QProgram, Settings
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
@@ -19,7 +20,7 @@ class Platform:  # pylint: disable=too-many-public-methods
 
     Args:
         settings (PlatformSettings): Settings of the platform.
-        schema (Schema): Schema object.
+        schema (qililab.platform.components.schema.Schema): Schema object.
         buses (Buses): Container of Bus objects.
     """
 
@@ -48,6 +49,17 @@ class Platform:  # pylint: disable=too-many-public-methods
         self.instrument_controllers.connect()
         self._connected_to_instruments = True
         logger.info("Connected to the instruments")
+
+    def execute(self, qprogram: QProgram):
+        # Compile it into driver-specific programs
+        compiler = QBloxCompiler(settings=Settings())
+        compiled_results = compiler.compile(qprogram)
+        # Execute each compiled program on each bus
+        for bus in self.buses:
+            sequence = compiled_results[bus.alias]
+            bus.execute(sequence)
+
+        results = bus.get_results()
 
     def initial_setup(self):
         """Set the initial setup of the instruments"""
@@ -141,7 +153,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         return flux_bus, control_bus, readout_bus
 
     def get_bus_by_alias(self, alias: str | None = None):
-        """Get bus given an alias or id_ and category"""
+        """Get bus given an alias or id and category"""
         return next((bus for bus in self.buses if bus.alias == alias), None)
 
     def set_parameter(
@@ -155,7 +167,7 @@ class Platform:  # pylint: disable=too-many-public-methods
 
         Args:
             category (str): Category of the element.
-            id_ (int): ID of the element.
+            id (int): ID of the element.
             parameter (str): Name of the parameter to change.
             value (float): New value.
         """
@@ -168,10 +180,10 @@ class Platform:  # pylint: disable=too-many-public-methods
 
     @property
     def id_(self):
-        """Platform 'id_' property.
+        """ID of the Platform.
 
         Returns:
-            int: settings.id_.
+            int: ID of the Platform.
         """
         return self.settings.id_
 

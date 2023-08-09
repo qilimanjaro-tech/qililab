@@ -1,6 +1,8 @@
 """Driver for the Drive Bus class."""
 from typing import Any
 
+from qpysequence import Sequence
+
 from qililab.drivers.interfaces.attenuator import Attenuator
 from qililab.drivers.interfaces.awg import AWG
 from qililab.drivers.interfaces.local_oscillator import LocalOscillator
@@ -29,14 +31,7 @@ class DriveBus(BusInterface):
         if attenuator:
             self.attenuator = attenuator
 
-    def execute(
-        self,
-        instrument_name: str,
-        pulse_bus_schedule: PulseBusSchedule,
-        nshots: int,
-        repetition_duration: int,
-        num_bins: int,
-    ) -> None:
+    def execute(self, qpysequence: Sequence) -> None:
         """Execute a pulse bus schedule through an AWG or Digitiser Instrument belonging to the bus.
            Because Digitiser inherits from AWG, we only need to check for AWG instances, which is the interface
            defining the abstrac method for execution of Qprograms.
@@ -48,14 +43,7 @@ class DriveBus(BusInterface):
             repetition_duration (int): repetition duration.
             num_bins (int): number of bins
         """
-        instrument = getattr(self, instrument_name, None)
-        if isinstance(instrument, AWG):
-            instrument.execute(
-                pulse_bus_schedule=pulse_bus_schedule,
-                nshots=nshots,
-                repetition_duration=repetition_duration,
-                num_bins=num_bins,
-            )
+        self.awg.execute(qpysequence)
 
     def set(self, instrument_name: str, param_name: str, value: Any) -> None:
         """Set parameter on the bus' instruments.

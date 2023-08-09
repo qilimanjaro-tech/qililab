@@ -67,7 +67,7 @@ class SequencerQCM(Sequencer, AWG):
                 f"Impossible path configuration detected. {param_name} cannot be mapped to output {param_value}."
             )
 
-    def execute(self, pulse_bus_schedule: PulseBusSchedule, nshots: int, repetition_duration: int, num_bins: int):
+    def execute(self, sequence: QpySequence):
         """Execute a PulseBusSchedule on the instrument.
 
         Args:
@@ -76,7 +76,7 @@ class SequencerQCM(Sequencer, AWG):
             repetition_duration (int): repetition duration
             num_bins (int): number of bins
         """
-        sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
+        # sequence = self._translate_pulse_bus_schedule(pulse_bus_schedule, nshots, repetition_duration, num_bins)
         self.set("sequence", sequence.todict())
         self.parent.arm_sequencer(sequencer=self.seq_idx)
         self.parent.start_sequencer(sequencer=self.seq_idx)

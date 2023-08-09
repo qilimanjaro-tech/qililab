@@ -9,14 +9,7 @@ class BusInterface(ABC):
     """Interface of a Bus."""
 
     @abstractmethod
-    def execute(
-        self,
-        instrument_name: str,
-        pulse_bus_schedule: PulseBusSchedule,
-        nshots: int,
-        repetition_duration: int,
-        num_bins: int,
-    ) -> None:
+    def execute(self, qpysequence) -> None:
         """Execute a pulse bus schedule through an AWG Sequencer belonging to the bus.
 
         Args:
