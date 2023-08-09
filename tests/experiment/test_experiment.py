@@ -361,6 +361,7 @@ class TestReset:
         experiment_reset.platform.disconnect()
         assert mock_reset.call_count == 10
 
+
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
