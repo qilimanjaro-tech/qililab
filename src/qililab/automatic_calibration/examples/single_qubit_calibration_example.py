@@ -3,6 +3,7 @@ This file contains an example of use of the automatic calibration algorithm.
 
 TODO: elaborate 
 """
+
 import os
 
 import lmfit
@@ -31,17 +32,22 @@ platform.filepath = os.path.join(os.environ["RUNCARDS"], f"{platform_name}.yml")
 platform.connect()
 platform.turn_on_instruments()
 platform.initial_setup()
-
+  
 ##################################### EXPERIMENTS ##################################################
 """ Define the QPrograms, i.e. the experiments that will be the nodes of the calibration graph """
 
 
 # Rabi experiment 
-rabi_values = np.linspace(0, 0.25, 41)
-fine_rabi_values = np.arange(-0.1, 0.1, 0.001)
+rabi_values = {"start": 0,
+               "stop": 0.25,
+               "step": (0.25-0)/40 #It's written like this because it's derived from a np.linspace definition
+               }
+fine_rabi_values = {"start": -0.1,
+                    "stop": 0.1,
+                    "step": 0.001
+                    }
 
-
-def rabi(drive_bus: str, readout_bus: str, sweep_values: list[int]):
+def rabi(drive_bus: str, readout_bus: str, sweep_values: dict):
     """The Rabi experiment written as a QProgram.
 
     Args:
@@ -62,7 +68,7 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: list[int]):
 
     with qp.acquire_loop(iterations=1000):
         # We iterate over the gain instead of amplitude because it's equivalent and we can't iterate over amplitude.
-        with qp.loop(variable=gain, values=sweep_values):
+        with qp.for_loop(variable=gain, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
             qp.set_gain(bus=drive_bus, gain_path0=gain, gain_path1=gain)
             qp.play(bus=drive_bus, waveform=drag_pair)
             qp.sync()
@@ -96,7 +102,7 @@ def ramsey(drive_bus: str, readout_bus: str):
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
     with qp.acquire_loop(iterations=1000):
-        with qp.loop(variable=wait_time, values=wait_values):
+        with qp.for_loop(variable=wait_time, values=wait_values):
             qp.play(bus=drive_bus, waveform=drag_pair)
             qp.wait(bus=drive_bus, time=wait_time)
             qp.play(bus=drive_bus, waveform=drag_pair)
@@ -110,10 +116,13 @@ def ramsey(drive_bus: str, readout_bus: str):
 
 
 # Drag coefficient calibration experiment
-drag_values = np.linspace(-3, 3, 41)
+drag_values = {"start": -3,
+               "stop": 3,
+               "step": 0.15
+               }
 
 
-def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: list[int]):
+def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: dict):
     """The drag coefficient calibration experiment written as a QProgram.
 
     Args:
@@ -142,7 +151,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
     with qp.acquire_loop(iterations=1000):
-        with qp.loop(variable=drag_coefficient, values=drag_values):
+        with qp.for_loop(variable=drag_coefficient, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
             qp.set_phase(drive_bus, 0)
             qp.play(bus=drive_bus, waveform=drag_pair_1)
             qp.set_phase(drive_bus, np.pi / 2)
@@ -150,7 +159,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
             qp.sync()
             qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
             qp.acquire(bus=readout_bus)
-        with qp.loop(variable=drag_coefficient, values=drag_values):
+        with qp.for_loop(variable=drag_coefficient, start = drag_values["start"], stop = drag_values["stop"], step = drag_values["step"]):
             qp.set_phase(drive_bus, np.pi / 2)
             qp.play(bus=drive_bus, waveform=drag_pair_1)
             qp.set_phase(drive_bus, 0)
@@ -163,7 +172,10 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
 
 
 # Flipping experiment 
-flip_values_array = np.arange(0, 20, 1)
+flip_values_array = {"start": 0,
+                    "stop": 20,
+                    "step": 1
+                    }
 
 
 def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
@@ -199,8 +211,8 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
 
     with qp.acquire_loop(iterations=1000):
         qp.play(bus=drive_bus, waveform=drag_pair_1)
-        with qp.loop(variable=flip_values_array_element, values=flip_values_array):
-            with qp.loop(variable=counter, values=np.arange(0, flip_values_array_element, 1)):
+        with qp.for_loop(variable=flip_values_array_element, start = sweep_values["start"], stop = sweep_values["stop"], step = sweep_values["step"]):
+            with qp.for_loop(variable=counter, start = 0, stop = flip_values_array_element, step = 1):
                 # Play looped_drag_pair the number of times indicated by 'flip_values_array_element'
                 qp.play(bus=drive_bus, waveform=looped_drag_pair)
                 qp.play(bus=drive_bus, waveform=looped_drag_pair)
