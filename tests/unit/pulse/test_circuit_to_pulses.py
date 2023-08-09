@@ -8,7 +8,6 @@ from qibo import gates
 from qibo.models import Circuit
 
 from qililab.chip import Chip
-from qililab.config import logger
 from qililab.platform import Bus, Buses, Platform
 from qililab.pulse import PulseEvent, PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
@@ -330,7 +329,7 @@ def fixture_platform(chip: Chip) -> Platform:
 
 @pytest.fixture(name="chip")
 def fixture_chip():
-    """Fixture that returns an instance of a ``Chip`` class.
+    r"""Fixture that returns an instance of a ``Chip`` class.
 
 
     Chip schema (qubit_id, GHz, id)
@@ -474,7 +473,7 @@ class TestInitialization:
         gates."""
         _ = CircuitToPulses(platform=platform)
 
-        for gate in {I, M, ParkGate, DragGate, CZ}:
+        for gate in [I, M, ParkGate, DragGate, CZ]:
             if gate.name not in platform.transpilation_settings.gate_names:
                 # Some gates derive from others (such as RY from Y), thus they have no settings
                 assert not hasattr(gate, "settings")
@@ -550,7 +549,7 @@ class TestTranslation:
         circuit.add(Drag(0, 1, 0.5))  # 1 defines amplitude, 0.5 defines phase
         # test error raised when duration has decimal part
         platform.transpilation_settings.get_gate(name="Drag", qubits=0).duration = 2.3
-        error_string = "The settings of the gate drag have a non-integer duration \(2.3ns\). The gate duration must be an integer or a float with 0 decimal part"
+        error_string = r"The settings of the gate drag have a non-integer duration \(2.3ns\). The gate duration must be an integer or a float with 0 decimal part"
         translator = CircuitToPulses(platform=platform)
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit])
@@ -564,7 +563,7 @@ class TestTranslation:
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit])
 
-    def test_bus_error_is_raised(self, platform: Platform, chip: Chip):
+    def test_bus_error_is_raised(self, platform: Platform):
         circuit = Circuit(1)
         circuit.add(Drag(0, 1, 1))
         # create platform without buses for qubit 0
@@ -575,7 +574,7 @@ class TestTranslation:
         with pytest.raises(TypeError, match=error_string):
             translator.translate(circuits=[circuit])
 
-    def test_no_park_raises_warning(self, caplog, platform: Platform, chip: Chip):
+    def test_no_park_raises_warning(self, caplog, platform: Platform):
         cz = gates.CZ(1, 2)
         park_qubit = 3
         circuit = Circuit(3)
@@ -589,7 +588,9 @@ class TestTranslation:
         warning_string = f"Found parking candidate qubit {park_qubit} for {cz.name} at qubits {cz.qubits} but did not find settings for parking gate at qubit {park_qubit}"
         assert warning_string in caplog.text
 
-    def test_error_on_pad_time_negative(self, caplog, platform: Platform, chip: Chip):
+    def test_error_on_pad_time_negative(  # pylint: disable=unused-argument
+        self, caplog, platform: Platform, chip: Chip
+    ):
         cz = gates.CZ(1, 2)
         circuit = Circuit(3)
         circuit.add(cz)
@@ -605,6 +606,7 @@ class TestTranslation:
         with pytest.raises(ValueError, match=error_string):
             translator.translate(circuits=[circuit])
 
+    # pylint: disable=too-many-locals
     def test_translate_pulses_with_duration_not_multiple_of_minimum_clock_time(self, platform: Platform):
         """Test that when the duration of a pulse is not a multiple of the minimum clock time, the next pulse
         start time is delayed by ``pulse_time mod min_clock_time``."""

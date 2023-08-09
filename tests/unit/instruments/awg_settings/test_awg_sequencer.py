@@ -1,6 +1,4 @@
 """Unit tests for the AWGSequencer class."""
-import copy
-
 import pytest
 
 from qililab.instruments.awg_settings import AWGSequencer

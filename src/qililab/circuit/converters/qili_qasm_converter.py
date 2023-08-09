@@ -3,8 +3,8 @@
 This file provides the `QiliQasmConverter` class, which is responsible for converting Qililab quantum circuits
 to and from QILIQASM format. The QILIQASM format is a custom representation designed specifically for Qililab circuits.
 """
-from qililab.circuit import Circuit
-from qililab.circuit.operations import Operation
+from qililab.circuit import Circuit  # pylint: disable=cyclic-import
+from qililab.circuit.operations import Operation  # pylint: disable=cyclic-import
 from qililab.config.version import __version__
 
 

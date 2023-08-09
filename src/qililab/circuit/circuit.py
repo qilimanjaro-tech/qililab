@@ -141,24 +141,23 @@ class Circuit:
             layer.sort(key=lambda node: node.index)
         if method == OperationTimingsCalculationMethod.AS_SOON_AS_POSSIBLE:
             return layers
-        else:
-            for qubit in range(self.num_qubits):
-                for index, layer in enumerate(layers):
-                    current_single_operations_on_qubit = [
-                        op_i
-                        for op_i, operation in enumerate(layer)
-                        if qubit in operation.qubits and len(operation.qubits) == 1
-                    ]
-                    if len(current_single_operations_on_qubit) == 0:
-                        continue
-                    if index == len(layers) - 1:
-                        continue
-                    next_layer_operations_on_qubit = [
-                        operation for operation in layers[index + 1] if qubit in operation.qubits
-                    ]
-                    if len(next_layer_operations_on_qubit) == 0:
-                        layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
-            return layers
+        for qubit in range(self.num_qubits):
+            for index, layer in enumerate(layers):
+                current_single_operations_on_qubit = [
+                    op_i
+                    for op_i, operation in enumerate(layer)
+                    if qubit in operation.qubits and len(operation.qubits) == 1
+                ]
+                if len(current_single_operations_on_qubit) == 0:
+                    continue
+                if index == len(layers) - 1:
+                    continue
+                next_layer_operations_on_qubit = [
+                    operation for operation in layers[index + 1] if qubit in operation.qubits
+                ]
+                if len(next_layer_operations_on_qubit) == 0:
+                    layers[index + 1].append(layer.pop(current_single_operations_on_qubit[0]))
+        return layers
 
     def draw(self, filename: str | None = None):
         """Draws the circuit's graph.
@@ -170,12 +169,11 @@ class Circuit:
         def node_attr(node):
             if isinstance(node, EntryNode):
                 return {"color": "yellow", "fillcolor": "yellow", "style": "filled", "label": "start"}
-            else:
-                operation = str(node.operation)
-                qubits = ", ".join((str(qubit) for qubit in node.qubits))
-                timing = f"{node.timing.start}ns -> {node.timing.end}ns" if node.timing is not None else ""
-                label = f"{operation}: {qubits}\n{timing}"
-                return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
+            operation = str(node.operation)
+            qubits = ", ".join((str(qubit) for qubit in node.qubits))
+            timing = f"{node.timing.start}ns -> {node.timing.end}ns" if node.timing is not None else ""
+            label = f"{operation}: {qubits}\n{timing}"
+            return {"color": "red", "fillcolor": "red", "style": "filled", "label": label}
 
         image = graphviz_draw(self.graph, node_attr_fn=node_attr, filename=filename)
         if image is not None:

@@ -1,4 +1,3 @@
-import re
 from dataclasses import asdict
 
 import pytest

@@ -3,10 +3,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from qililab.constants import PULSEEVENT, RUNCARD
+from qililab.constants import PULSEEVENT
 from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_distortion import PulseDistortion
-from qililab.utils import Factory, Waveforms
+from qililab.utils import Waveforms
 from qililab.utils.signal_processing import modulate
 
 

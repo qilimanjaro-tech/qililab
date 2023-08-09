@@ -4,8 +4,21 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Add a new Factory for the Buses and registered the current ones
+  [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
+
+- Add a new Factory for the InstrumentDrivers and registered the current ones
+  [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
+
+- Add interfaces and drivers for Flux bus:
+  This PR brings the qililab implementation of the Flux bus driver and unittests.
+  [#469](https://github.com/qilimanjaro-tech/qililab/pull/469)
+
 - Add ReadoutBus class.
   [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
+
+- Fix: check whether cluster has submodules not present at init time.
+  [#477](https://github.com/qilimanjaro-tech/qililab/pull/477)
 
 - Add interfaces and drivers for Voltage and Current sources:
   This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
@@ -13,6 +26,9 @@ This document contains the changes of the current release.
 
 - Fix: add acquisitions and weights to Sequencer QRM
   [#461](https://github.com/qilimanjaro-tech/qililab/pull/461)
+
+- Add DriveBus and its interface for the new bus structure.
+  [457](https://github.com/qilimanjaro-tech/qililab/pull/457)
 
 - Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
   [452](https://github.com/qilimanjaro-tech/qililab/pull/452)

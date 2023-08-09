@@ -9,6 +9,8 @@ from qililab.settings.ddbb_element import DDBBElement
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
+# pylint: disable=too-few-public-methods
+
 
 @nested_dataclass
 class Runcard:

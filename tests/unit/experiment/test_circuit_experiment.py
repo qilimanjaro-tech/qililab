@@ -369,7 +369,7 @@ class TestReset:
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
-    def test_execute_without_saving_experiment(
+    def test_execute_without_saving_experiment(  # pylint: disable=unused-argument
         self,
         mock_open: MagicMock,
         mock_dump: MagicMock,

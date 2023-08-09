@@ -11,7 +11,7 @@ from qililab.typings.enums import (
 )
 
 
-class FactoryElement:
+class FactoryElement:  # pylint: disable=too-few-public-methods
     """Class FactoryElement"""
 
     name: (

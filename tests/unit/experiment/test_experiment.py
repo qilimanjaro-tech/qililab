@@ -175,7 +175,9 @@ def fixture_exp(request: pytest.FixtureRequest):
     "qililab.instrument_controllers.vector_network_analyzer.agilent_E5071B_vna_controller.VectorNetworkAnalyzerDriver",
     autospec=True,
 )
-def fixture_vna_experiment(mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform):
+def fixture_vna_experiment(  # pylint: disable=unused-argument
+    mock_agilent: MagicMock, mock_keysight: MagicMock, sauron_platform: Platform
+):
     """Return a connected experiment with the VNA instrument"""
     loop = Loop(
         alias=SauronVNA.buses[0][RUNCARD.ALIAS],
@@ -480,7 +482,7 @@ class TestSetParameter:
     def test_set_parameter_method_with_delay(self, exp: Experiment):
         """Test set_parameter method with delay parameter."""
         bus_delay = 0
-        exp.build_execution = MagicMock()
+        exp.build_execution = MagicMock()  # type: ignore
         alias = Galadriel.buses[0][RUNCARD.ALIAS]
         element = exp.platform.get_element(alias)
         exp.set_parameter(element=element, alias=alias, parameter=Parameter.DELAY, value=bus_delay)
