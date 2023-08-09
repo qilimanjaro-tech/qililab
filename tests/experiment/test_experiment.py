@@ -362,15 +362,18 @@ class TestReset:
         assert mock_reset.call_count == 10
 
 
+@patch("qililab.experiment.experiment.open")
+@patch("qililab.experiment.experiment.yaml.safe_dump")
+@patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
+@patch("qililab.experiment.experiment.os.makedirs")
 class TestSimulatedExecution:
     """Unit tests checking the execution of a simulated platform"""
 
-    @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
     def test_execute_without_saving_experiment(
         self,
         mock_ssc_run: MagicMock,
         simulated_experiment: Experiment,
-    ):
+    ):  # pylint: disable=W0613
         """Test execute method with simulated qubit"""
 
         # Method under test
@@ -385,10 +388,6 @@ class TestSimulatedExecution:
         with pytest.raises(ValueError):  # Result should be SimulatedResult
             results.acquisitions()
 
-    @patch("qililab.experiment.base_experiment.open")
-    @patch("qililab.experiment.base_experiment.yaml.safe_dump")
-    @patch("qililab.system_control.simulated_system_control.SimulatedSystemControl.run")
-    @patch("qililab.experiment.base_experiment.os.makedirs")
     def test_execute_with_saving_experiment(
         self,
         mock_open: MagicMock,
