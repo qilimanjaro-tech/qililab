@@ -1,3 +1,8 @@
+"""
+This file contains an example of use of the automatic calibration algorithm. 
+
+TODO: elaborate 
+"""
 import os
 
 import lmfit
@@ -14,10 +19,8 @@ from qililab.automatic_calibration.controller import Controller
 from qililab.platform.platform import Platform
 from qililab.waveforms import DragPulse, IQPair, Square
 
-# Create the nodes for a calibration graph
-
 #################################################################################################
-""" Define the platform and connect to the instruments"""
+""" Define the platform and connect to the instruments """
 
 os.environ["RUNCARDS"] = "../runcards"
 os.environ["DATA"] = f"../data"
@@ -33,7 +36,7 @@ platform.initial_setup()
 """ Define the QPrograms, i.e. the experiments that will be the nodes of the calibration graph """
 
 
-# Rabi experiment node
+# Rabi experiment 
 rabi_values = np.linspace(0, 0.25, 41)
 fine_rabi_values = np.arange(-0.1, 0.1, 0.001)
 
@@ -69,7 +72,7 @@ def rabi(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     return qp
 
 
-# Ramsey experiment node (it's run twice to refine values)
+# Ramsey experiment (it's run twice to refine values)
 # TODO: implement this once parallel loops are supported by qprogram
 wait_values = np.arange(8.0, 1000, 20)
 fine_if_values = np.arange(-2e6, 2e6, 0.2e6)
@@ -106,11 +109,11 @@ def ramsey(drive_bus: str, readout_bus: str):
     return qp
 
 
-# Drag coefficient calibration node
+# Drag coefficient calibration experiment
 drag_values = np.linspace(-3, 3, 41)
 
 
-def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: List[int]):
+def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     """The drag coefficient calibration experiment written as a QProgram.
 
     Args:
@@ -125,7 +128,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     drag_coefficient = qp.variable(float)
 
     """
-    Adjust the arguments of DragPulse based on the runcard.
+    NOTE: User should adjust the arguments of DragPulse based on the runcard.
     The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
     where theta is the argument of the Drag circuit constructor and pi_pulse_amplitude
     is the amplitude of the Drag circuit written in the runcard, where all the circuit
@@ -159,7 +162,7 @@ def drag_coefficient_calibration(drive_bus: str, readout_bus: str, sweep_values:
     return qp
 
 
-# Flipping experiment node
+# Flipping experiment 
 flip_values_array = np.arange(0, 20, 1)
 
 
@@ -179,7 +182,7 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     counter = qp.variable(int)
 
     """
-    Adjust the arguments of DragPulse based on the runcard.
+    NOTE: User should adjust the arguments of DragPulse based on the runcard.
     The 'amplitude' argument is computed as amplitude = theta*pi_pulse_amplitude/pi,
     where theta is the argument of the Drag circuit constructor and pi_pulse_amplitude
     is the amplitude of the Drag circuit written in the runcard, where all the circuit
@@ -194,24 +197,22 @@ def flipping(drive_bus: str, readout_bus: str, sweep_values: list[int]):
     ones_wf = Square(amplitude=1.0, duration=1000)
     zeros_wf = Square(amplitude=0.0, duration=1000)
 
-    # TODO: 3 acquire_loop calls are made. Is this an issue for how data is stored?
     with qp.acquire_loop(iterations=1000):
         qp.play(bus=drive_bus, waveform=drag_pair_1)
         with qp.loop(variable=flip_values_array_element, values=flip_values_array):
             with qp.loop(variable=counter, values=np.arange(0, flip_values_array_element, 1)):
                 # Play looped_drag_pair the number of times indicated by 'flip_values_array_element'
                 qp.play(bus=drive_bus, waveform=looped_drag_pair)
+                qp.play(bus=drive_bus, waveform=looped_drag_pair)
         qp.sync()
         qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
         qp.acquire(bus=readout_bus)
 
-    with qp.acquire_loop(iterations=1000):
         qp.play(bus=drive_bus, waveform=drag_pair_2)
         qp.sync()
         qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
         qp.acquire(bus=readout_bus)
-
-    with qp.acquire_loop(iterations=1000):
+    
         qp.play(bus=drive_bus, waveform=drag_pair_3)
         qp.sync()
         qp.play(bus=readout_bus, waveform=IQPair(I=ones_wf, Q=zeros_wf))
@@ -263,7 +264,6 @@ def all_xy(drive_bus: str, readout_bus: str):
         {"name": "Y9Y9", "gates": ["RY", "RY", "M"], "params": [0.5, 0.5, -1]},
     ]
 
-    # TODO: 21 acquire_loop calls are made. Is this an issue for how data is stored?
     for circuit_setting in circuits_settings:
         gates = circuit_setting["gates"]
         gate_parameters = circuit_setting["params"]
@@ -297,10 +297,10 @@ def all_xy(drive_bus: str, readout_bus: str):
 Define the analysis functions and plotting functions.
     - Analysis functions analyze and fit the experimental data. One analysis function could be used by more
         than one experiment.
-    - Plotting functions plot the fitted data. Each fitting function has an associated plot function, because
-        the labels of the plot depend on the fitting function.
+    - Plotting functions plot the fitted data.
+NOTE: For now, each experiment has it own custom function that handled both analysis (=processing and fitting the data) and plotting. 
+        This will be made less hardcoded in the future by another intern.
 """
-
 
 def analyze_rabi(datapath: str = None, fit_quadrature="i", label=""):
     """
@@ -680,6 +680,7 @@ def analyze_flipping(flips_values, datapath=None, fit_quadrature="i", label=""):
 
     return epsilon_coef if reduced_chi < reduced_chi2 else epsilon_coef2
 
+#TODO: all xy analysis
 
 ######################################################################################################
 """
