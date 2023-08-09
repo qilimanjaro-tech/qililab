@@ -18,7 +18,7 @@ from .circuit import (
 )
 from .config import __version__, logger
 from .execute import execute
-from .experiment import BaseExperiment
+from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .qprogram import QProgram
 from .result.results import Results
