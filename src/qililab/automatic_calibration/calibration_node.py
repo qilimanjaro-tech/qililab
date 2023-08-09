@@ -77,6 +77,16 @@ class CalibrationNode:
         self._data_validation_threshold = data_validation_threshold
         self._number_of_random_datapoints = number_of_random_datapoints
         self._timestamps = {}
+        
+    def _hash_(self) -> int:
+        """
+        Make the CalibrationNode object hashable by using its unique identifier _node_id.
+        This is necessary because to be a node in a NetworkX graph, an object must be hashable.
+
+        Returns:
+            int: The hash value of the object.
+        """        
+        return hash(self.node_id)
 
     def check_state(self):
         """
@@ -84,7 +94,7 @@ class CalibrationNode:
         These timeouts represent how long it usually takes for the parameters to drift.
 
         Args:
-            node (CalibrationNode): The node whose parameters need to be checked.
+            CalibrationNode: The node whose parameters need to be checked.
 
         Returns:
             bool: True if the parameters are in spec, False otherwise.

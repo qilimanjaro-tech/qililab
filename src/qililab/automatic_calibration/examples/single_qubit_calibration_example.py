@@ -485,7 +485,7 @@ def analyze_ramsey(datapath, fit_quadrature="i", label="", prominence_peaks=20, 
     return fit_res.best_values["xc"] if analyze else None
 
 
-def analyze_drag_coef(datapath, fit_quadrature="i", label=""):
+def analyze_drag_coefficient(datapath, fit_quadrature="i", label=""):
     """
     Analyzes the drag coefficient calibration experiment data.
 
@@ -721,11 +721,18 @@ def analyze_all_xy(datapath, label=""):
     
 ######################################################################################################
 """
-Initialize all the nodes and add them to the calibration graph.
+Initialize all the nodes and add them to the calibration graph. Add edges to calibration graph.
+
+Example of interpretation of an edge: 
+   node1 <---- node2    means "node2 depends on node1"
 """
 
-# TODO: unfinished, analysis missing
-initial_all_xy_node = CalibrationNode(node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), qubit=0)
+all_xy_node_1 = CalibrationNode(
+    node_id="all_xy_1", 
+    qprogram=all_xy, 
+    analysis_function=analyze_all_xy, 
+    qubit=0
+)
 rabi_1_node = CalibrationNode(
     node_id="rabi_1", qprogram=rabi, sweep_interval=rabi_values, analysis_function=analyze_rabi, qubit=0
 )
@@ -744,14 +751,21 @@ ramsey_fine_node = CalibrationNode(
     analysis_function=analyze_ramsey,
     qubit=0,
 )
-rabi_2_fine_node = CalibrationNode(
+drag_coefficient_node = CalibrationNode(
+    node_id="drag",
+    qprogram=drag_coefficient_calibration,
+    sweep_interval=drag_values,
+    analysis_function=analyze_drag_coefficient,
+    qubit=0,
+)
+rabi_2_coarse_node = CalibrationNode(
     node_id="rabi_2_coarse",
     qprogram=rabi,
     sweep_interval=rabi_values,
     analysis_function=analyze_rabi,
     qubit=0,
 )
-rabi_2_coarse_node = CalibrationNode(
+rabi_2_fine_node = CalibrationNode(
     node_id="rabi_2_fine",
     qprogram=rabi,
     sweep_interval=rabi_values,
@@ -765,12 +779,37 @@ flipping_node = CalibrationNode(
     analysis_function=analyze_flipping,
     qubit=0,
 )
-# TODO: unfinished: analysis missing
-verification_all_xy_node = CalibrationNode(node_id="all_xy", qprogram=all_xy("drive_bus", "readout_bus"), qubit=0)
+all_xy_node_2 = CalibrationNode(
+    node_id="all_xy_2", 
+    qprogram=all_xy, 
+    analysis_function=analyze_all_xy, 
+    qubit=0
+)
 
 calibration_graph = nx.DiGraph()
-# Add nodes to the calibration graph, specifying connections
 
+nodes = [
+    all_xy_node_1,
+    rabi_1_node,
+    ramsey_coarse_node,
+    ramsey_fine_node,
+    drag_coefficient_node,
+    rabi_2_coarse_node,
+    rabi_2_fine_node,
+    flipping_node,
+    all_xy_node_2
+]
+
+calibration_graph.add_nodes_from(nodes)
+    
+calibration_graph.add_edge(all_xy_node_2, flipping_node)
+calibration_graph.add_edge(flipping_node, rabi_2_fine_node)
+calibration_graph.add_edge(rabi_2_fine_node, rabi_2_coarse_node)
+calibration_graph.add_edge(rabi_2_coarse_node, drag_coefficient_node)
+calibration_graph.add_edge(drag_coefficient_node, ramsey_fine_node)
+calibration_graph.add_edge(ramsey_fine_node, ramsey_coarse_node)
+calibration_graph.add_edge(ramsey_coarse_node, rabi_1_node)
+calibration_graph.add_edge(rabi_1_node, all_xy_node_1)
 ######################################################################################################
 """
 Initialize the controller and start the calibration algorithm.
