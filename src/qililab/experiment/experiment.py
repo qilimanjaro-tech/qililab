@@ -120,7 +120,7 @@ class Experiment(BaseExperiment):
 
         self._process_loops(loops=loops, idx=idx, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):
+    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):  # pylint: disable=unused-argument
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:
@@ -241,7 +241,7 @@ class Experiment(BaseExperiment):
             options=experiment_options,
         )
 
-    def set_parameter(
+    def set_parameter(  # pylint: disable=too-many-arguments
         self,
         parameter: Parameter,
         value: float | str | bool,

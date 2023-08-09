@@ -1,4 +1,4 @@
-"""InstrumentFactory class."""
+"""InstrumentDriverFactory class module."""
 from typing import TypeVar
 
 from qcodes.instrument.instrument import Instrument

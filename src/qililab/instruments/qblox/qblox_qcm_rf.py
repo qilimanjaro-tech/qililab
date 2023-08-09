@@ -1,9 +1,9 @@
 """This file contains the QbloxQCMRF class."""
 from dataclasses import dataclass, field
 
-from qililab.instruments import Instrument
-from qililab.instruments.awg_settings import AWGQbloxSequencer
-from qililab.instruments.utils.instrument_factory import InstrumentFactory
+from qililab.instruments import Instrument  # pylint: disable=cyclic-import
+from qililab.instruments.awg_settings import AWGQbloxSequencer  # pylint: disable=cyclic-import
+from qililab.instruments.utils.instrument_factory import InstrumentFactory  # pylint: disable=cyclic-import
 from qililab.typings import InstrumentName, Parameter
 
 from .qblox_qcm import QbloxQCM
@@ -16,7 +16,7 @@ class QbloxQCMRF(QbloxQCM):
     name = InstrumentName.QCMRF
 
     @dataclass
-    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):
+    class QbloxQCMRFSettings(QbloxQCM.QbloxQCMSettings):  # pylint: disable=too-many-instance-attributes
         """Contains the settings of a specific Qblox QCM-RF module."""
 
         out0_lo_freq: float

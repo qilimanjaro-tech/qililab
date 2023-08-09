@@ -42,8 +42,7 @@ class SNZ(PulseShape):
                 raise ValueError(
                     f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
                 )
-            else:
-                self.t_phi = int(self.t_phi)
+            self.t_phi = int(self.t_phi)
         # full_snz_duration = 2 * duration + self.t_phi + 2
         halfpulse_t = (duration - 2 - self.t_phi) / 2
         halfpulse_t = int(halfpulse_t / resolution)
@@ -51,7 +50,7 @@ class SNZ(PulseShape):
         envelope = np.zeros(round(duration / resolution))
         # raise warning if we are rounding
         if (duration / resolution) % 1 != 0 or (halfpulse_t / resolution) % 1 != 0:
-            logger.warning(
+            logger.warning(  # pylint: disable=logging-fstring-interpolation
                 f"Envelope length rounded to nearest value {len(envelope)} from division full_snz_duration ({duration}) / resolution ({resolution}) = {duration/resolution}"
             )
         envelope[:halfpulse_t] = amplitude * np.ones(halfpulse_t)  # positive square halfpulse

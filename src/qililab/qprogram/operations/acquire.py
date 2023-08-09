@@ -5,6 +5,6 @@ from qililab.waveforms import IQPair
 
 
 @dataclass
-class Acquire(Operation):
+class Acquire(Operation):  # pylint: disable=missing-class-docstring
     bus: str
     weights: IQPair | None

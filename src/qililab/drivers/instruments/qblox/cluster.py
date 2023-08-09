@@ -13,7 +13,7 @@ from .sequencer_qrm import SequencerQRM
 
 
 @InstrumentDriverFactory.register
-class Cluster(QcodesCluster):
+class Cluster(QcodesCluster):  # pylint: disable=abstract-method
     """Qililab's driver for QBlox-instruments Cluster"""
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
@@ -25,19 +25,28 @@ class Cluster(QcodesCluster):
         """
         super().__init__(name, identifier=address, **kwargs)
 
-        # Add qcm-qrm's to the cluster
-        self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
-        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
-        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
         # registering only the slots specified in the dummy config if that is the case
         if "dummy_cfg" in kwargs:
             slot_ids = list(kwargs["dummy_cfg"].keys())
         else:
             slot_ids = list(range(1, self._num_slots + 1))
 
+        # Save information about modules actually being present in the cluster
+        old_submodules = self.submodules
+        submodules_present = [submodule.get("present") for submodule in old_submodules.values()]
+
+        # Add qcm-qrm's to the cluster
+        self.submodules: dict[str, InstrumentModule | ChannelTuple] = {}  # resetting superclass submodules
+        self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
+        self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass channel lists
+
         for slot_idx in slot_ids:
-            module = QcmQrm(self, f"module{slot_idx}", slot_idx)
-            self.add_submodule(f"module{slot_idx}", module)
+            if submodules_present[slot_idx - 1]:
+                module = QcmQrm(self, f"module{slot_idx}", slot_idx)
+                self.add_submodule(f"module{slot_idx}", module)
+            else:
+                old_module = old_submodules[f"module{slot_idx}"]
+                self.add_submodule(f"module{slot_idx}", old_module)
 
 
 class QcmQrm(QcodesQcmQrm):

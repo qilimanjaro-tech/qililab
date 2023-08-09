@@ -18,14 +18,6 @@ repos:
         name: isort (python)
         args: [-l=120]
 
-  - repo: https://github.com/econchick/interrogate
-    rev: 1.5.0
-    hooks:
-      - id: interrogate
-        args: [src, -vv, -i, --fail-under=80, --badge-format=png]
-        additional_dependencies:
-          [cairocffi==1.6.0, cairosvg==2.7.0, cssselect2==0.7.0]
-
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.4.1" # Use the sha / tag you want to point at
     hooks:
@@ -58,7 +50,7 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/pycqa/pylint
-    rev: v2.16.0
+    rev: v2.17.5
     hooks:
       - id: pylint
         name: pylint

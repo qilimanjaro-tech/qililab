@@ -10,7 +10,7 @@ from qililab.utils.factory import Factory
 
 @Factory.register
 @dataclass
-class SimulatorResult(Result):
+class SimulatorResult(Result):  # pylint: disable=abstract-method
     """SimulatorResult class.
 
     Stores results from the simulator.

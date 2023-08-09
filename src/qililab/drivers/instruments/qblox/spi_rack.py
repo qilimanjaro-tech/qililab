@@ -15,7 +15,7 @@ from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 # MAIN SpiRack CLASS
 @InstrumentDriverFactory.register
-class SpiRack(QcodesSpiRack):
+class SpiRack(QcodesSpiRack):  # pylint: disable=abstract-method
     """
     Qililab's driver for the Qblox SpiRack.
 

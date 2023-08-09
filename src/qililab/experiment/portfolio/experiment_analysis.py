@@ -36,7 +36,7 @@ class ExperimentAnalysis(Experiment, FittingModel):
     post_processed_results: np.ndarray
     popt: np.ndarray  # fitted parameters
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         platform: Platform,
         circuits: list[Circuit],

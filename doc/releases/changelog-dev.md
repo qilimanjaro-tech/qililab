@@ -7,7 +7,10 @@ This document contains the changes of the current release.
 - Rename Experiment and CircuitExperiment classes and dependencies:
   This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
   [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
-  
+
+- Add a new Factory for the Buses and registered the current ones
+  [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
+
 - Add a new Factory for the InstrumentDrivers and registered the current ones
   [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
 
@@ -17,6 +20,9 @@ This document contains the changes of the current release.
 
 - Add ReadoutBus class.
   [#465](https://github.com/qilimanjaro-tech/qililab/pull/465)
+
+- Fix: check whether cluster has submodules not present at init time.
+  [#477](https://github.com/qilimanjaro-tech/qililab/pull/477)
 
 - Add interfaces and drivers for Voltage and Current sources:
   This PR brings the qililab implementation of the Keithly2600 and Yokowaga QCodes drivers and unittests.
