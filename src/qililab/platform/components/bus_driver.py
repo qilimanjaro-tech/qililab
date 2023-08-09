@@ -96,7 +96,7 @@ class BusDriver(ABC):
         if param_name == "delay":
             return self.delay
         if param_name == "distortions":
-            raise NotImplementedError("This feature is not yet implemented.")
+            raise NotImplementedError("Setting distortion parameters of a bus is not yet implemented.")
         candidates: list[BaseInstrument | None] = [
             instrument for instrument in self.instruments.values() if instrument and param_name in instrument.params
         ]
