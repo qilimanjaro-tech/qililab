@@ -187,7 +187,7 @@ class BaseExperiment:
             favorite=False,
         )
 
-    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0, **kwargs):
+    def _execute_recursive_loops(self, loops: list[Loop] | None, queue: Queue, depth=0):
         """Loop over all the values defined in the Loop class and change the parameters of the chosen instruments.
 
         Args:
@@ -203,7 +203,7 @@ class BaseExperiment:
 
         self._process_loops(loops=loops, queue=queue, depth=depth)
 
-    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int, **kwargs):
+    def _process_loops(self, loops: list[Loop], queue: Queue, depth: int):
         """Loop over the loop values, change the element's parameter and call the recursive_loop function.
 
         Args:

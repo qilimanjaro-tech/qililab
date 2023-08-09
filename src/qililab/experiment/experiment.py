@@ -10,7 +10,7 @@ from qililab.chip import Node
 from qililab.config import __version__
 from qililab.constants import EXPERIMENT, RUNCARD
 from qililab.execution import EXECUTION_BUILDER
-from qililab.experiment import BaseExperiment
+from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
