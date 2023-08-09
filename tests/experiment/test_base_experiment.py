@@ -10,7 +10,7 @@ import pytest
 from qililab import build_platform
 from qililab.constants import DATA, RUNCARD, SCHEMA
 from qililab.execution.execution_manager import ExecutionManager
-from qililab.experiment import BaseExperiment
+from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform import Platform
 from qililab.result.results import Results
 from qililab.result.vna_result import VNAResult
