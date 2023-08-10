@@ -547,9 +547,9 @@ class Galadriel:
 
     runcard: dict[str, Any] = {
         RUNCARD.TRANSPILATION_SETTINGS: platform,
-        RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.CHIP: chip,
         RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
         RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 

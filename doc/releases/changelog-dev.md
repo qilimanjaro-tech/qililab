@@ -8,7 +8,7 @@ This document contains the changes of the current release.
 
   This PR brings importants simplifications to the full qililab structure, now the Runcards (`data.py`, `Galadriel.yml`...) will have the following structure:
 
-  ```python
+  ```lang-yaml
   - transpilation_settings:
 
   - chip
@@ -22,7 +22,7 @@ This document contains the changes of the current release.
 
   instead than the previous:
 
-  ```python
+  ```lang-yaml
   - settings:
 
   - schema:
@@ -42,8 +42,15 @@ This document contains the changes of the current release.
 
   [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
 
+- Rename Experiment and CircuitExperiment classes and dependencies:
+  This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
+  [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
+
 - Add a new Factory for the Buses and registered the current ones
   [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
+
+- Add the NEW_DRIVERS flag to choose between old and new instruments and bus drivers.
+  [#486](https://github.com/qilimanjaro-tech/qililab/pull/486)
 
 - Add a new Factory for the InstrumentDrivers and registered the current ones
   [#473](https://github.com/qilimanjaro-tech/qililab/pull/473)
