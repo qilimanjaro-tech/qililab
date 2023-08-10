@@ -2,7 +2,7 @@
 import pytest
 
 from qililab.platform.components import BusFactory, DriveBus, FluxBus, ReadoutBus
-from qililab.platform.components.interfaces.bus import BusInterface
+from qililab.platform.components.bus_driver import BusDriver
 
 
 @pytest.mark.parametrize("bus", [ReadoutBus, FluxBus, DriveBus])
@@ -10,12 +10,12 @@ class BusFactoryWithParametrize:
     """Unit test for the Factory of Buses passing parameters"""
 
     @staticmethod
-    def test_handlers(bus: BusInterface):
+    def test_handlers(bus: BusDriver):
         """Test that the registered handlers are correct"""
         assert BusFactory.handlers[bus.__name__] == bus
 
     @staticmethod
-    def test_get(bus: BusInterface):
+    def test_get(bus: BusDriver):
         """Test that the get method works properly"""
         assert BusFactory.get(name=bus.__name__) == bus
 
