@@ -189,12 +189,10 @@ class Runcard:
 
     # Runcard class actual initialization
     chip: ChipSettings
-    buses: list[BusSettings]
+    buses: list[BusSettings]  # This actually is a list[dict] until the post_init is called
     instruments: list[dict]
     instrument_controllers: list[dict]
     transpilation_settings: TranspilationSettings
 
     def __post_init__(self):
         self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None
-        if isinstance(self.chip, dict):
-            self.chip = self.ChipSettings(**self.chip)  # pylint: disable=not-a-mapping
