@@ -210,9 +210,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
     def _handle_parallel(self, element: Parallel):
         if not element.loops:
-            raise NotImplementedError("")
-        if any(isinstance(loop, Loop) for loop in element.loops):
-            raise NotImplementedError("Loops with arbitrary numpy arrays are not currently supported for QBlox.")
+            raise NotImplementedError("Parallel block should contain loops.")
         if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
             raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
         for bus in self._buses:
