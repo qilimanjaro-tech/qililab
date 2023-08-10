@@ -6,6 +6,8 @@ This document contains the changes of the current release.
 
 - Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
 
+  Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).
+
   This PR brings importants simplifications to the full qililab structure, now the Runcards (`data.py`, `Galadriel.yml`...) will have the following structure:
 
   ```lang-yaml
@@ -37,8 +39,6 @@ This document contains the changes of the current release.
   ```
 
   Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `tranpilation_settings` (and the class to `TranspilationSettings` having the runcard string and the class the same name now, before they didn't).
-
-  Also `RuncardSchema` is now calle simply `Runcard` (since its the class that maps our runcard files).
 
   [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
 
