@@ -65,6 +65,8 @@ class Settings:
 class QBloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
+    minimum_wait_duration: int = 4
+
     def __init__(self, settings: Settings):
         # External settings
         self._settings = settings
@@ -183,7 +185,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=4), bot_position=len(qpy_loop.components)
+                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration),
+                bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
@@ -198,7 +201,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=begin, end=end, step=step)
             qpy_loop.append_component(
-                component=QPyInstructions.WaitSync(wait_time=4), bot_position=len(qpy_loop.components)
+                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration),
+                bot_position=len(qpy_loop.components),
             )
             self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
             self._buses[bus].qpy_block_stack.append(qpy_loop)
@@ -277,7 +281,9 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         # QBlox does not currently support syncing on selective sequences. If it did we would do somethin like:
         # buses = element.buses if element.buses is not None else self._buses.keys()
         for bus in self._buses:
-            self._buses[bus].qpy_block_stack[-1].append_component(component=QPyInstructions.WaitSync(wait_time=4))
+            self._buses[bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.WaitSync(wait_time=QBloxCompiler.minimum_wait_duration)
+            )
 
     def _handle_acquire(self, element: Acquire):
         loops = [
@@ -363,7 +369,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             SetPhase: lambda x: int(x * 1e9 / 360),
             SetGain: lambda x: int(x * 32_767),
             SetOffset: lambda x: int(x * 32_767),
-            Wait: lambda x: max(int(x / 4) * 4, 4),
+            Wait: lambda x: max(x, QBloxCompiler.minimum_wait_duration),
         }
         return conversion_map.get(type(operation), lambda x: x)
 
