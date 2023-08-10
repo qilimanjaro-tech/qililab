@@ -69,13 +69,13 @@ class QProgram:
 
         Blocks need to open a scope.
 
+        Returns:
+            Block: The block.
+
         Examples:
 
             >>> with qp.block() as block:
             >>>    # operations that shall be executed in the block
-
-        Returns:
-            Block: The block.
         """
         return QProgram._BlockContext(qprogram=self)
 
@@ -104,16 +104,16 @@ class QProgram:
 
         Blocks need to open a scope.
 
-        Examples:
-
-            >>> with qp.acquire_loop(iterations=1000):
-            >>>    # operations that shall be executed in the acquire_loop block
-
         Args:
             iterations (int): The number of acquire iterations.
 
         Returns:
             AcquireLoop: The acquire_loop block.
+
+        Examples:
+
+            >>> with qp.acquire_loop(iterations=1000):
+            >>>    # operations that shall be executed in the acquire_loop block
         """
         return QProgram._AverageContext(qprogram=self, iterations=shots)
 
@@ -122,18 +122,18 @@ class QProgram:
 
         Blocks need to open a scope.
 
-        Examples:
-
-            >>> variable = qp.variable(int)
-            >>> with qp.loop(variable=variable, values=np.array(range(100))):
-            >>>    # operations that shall be executed in the loop block
-
         Args:
             variable (Variable): The variable to be affected from the loop.
             values (np.ndarray): The values to iterate over.
 
         Returns:
             Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.loop(variable=variable, values=np.array(range(100))):
+            >>>    # operations that shall be executed in the loop block
         """
 
         return QProgram._LoopContext(qprogram=self, variable=variable, values=values)
@@ -143,12 +143,6 @@ class QProgram:
 
         Blocks need to open a scope.
 
-        Examples:
-
-            >>> variable = qp.variable(int)
-            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
-            >>>    # operations that shall be executed in the for_loop block
-
         Args:
             variable (Variable): The variable to be affected from the loop.
             start (int | float): The start value.
@@ -157,6 +151,12 @@ class QProgram:
 
         Returns:
             Loop: The loop block.
+
+        Examples:
+
+            >>> variable = qp.variable(int)
+            >>> with qp.for_loop(variable=variable, start=0, stop=100, step=5)):
+            >>>    # operations that shall be executed in the for_loop block
         """
 
         return QProgram._ForLoopContext(qprogram=self, variable=variable, start=start, stop=stop, step=step)
