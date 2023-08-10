@@ -11,7 +11,7 @@ Waveforms
     ~Waveform
     ~Arbitrary
     ~Gaussian
-    ~DragWaveform
+    ~DragPair
     ~Square
     ~IQPair
 """
