@@ -18,7 +18,7 @@ class OperationNode(Node):
     """Node representing an operation acting on one or more qubits
 
     Args:
-        operation (qililab.circuit.operations.operation.Operation): The operation that is applied
+        operation (Operation): The operation that is applied
         Node (tuple[int]): The qubits the operation is applied on
         alias (str | None): An optional alias for easily retrieving the node (default = None)
     """

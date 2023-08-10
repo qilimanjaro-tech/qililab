@@ -38,7 +38,7 @@ def compute_shapes_from_loops(loops: list[Loop]):
     When running parallel loops, the shape of the results correspond to the minimum range of each nested loop.
 
     Args:
-        loops (list[.Loop]): list of parallel loops that might contain inner loops
+        loops (list[Loop]): list of parallel loops that might contain inner loops
 
     Returns:
         list[int]: shape of the results obtained from running the parallel loops

@@ -26,7 +26,7 @@ class QbloxModule(AWG):
     """Qblox Module class.
 
     Args:
-        device (qililab.typings.instruments.pulsar.Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
+        device (Pulsar): Instance of the Qblox Pulsar class used to connect to the instrument.
         settings (QbloxPulsarSettings): Settings of the instrument.
     """
 

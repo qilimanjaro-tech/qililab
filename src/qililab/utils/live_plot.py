@@ -23,7 +23,7 @@ class LivePlot:  # pylint: disable=too-many-instance-attributes
         connection (API): QiboConnection API object.
         num_schedules (int): Number of circuits/pulse schedules.
         title (str): Title of the plot.
-        loops (list[~utils.loop.Loop]): List of loops.
+        loops (list[Loop]): List of loops.
     """
 
     def __init__(self, connection: API, num_schedules: int, title: str = "", loops: list[Loop] | None = None):

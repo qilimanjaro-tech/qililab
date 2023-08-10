@@ -31,7 +31,7 @@ class Loader:
             with its category and alias to be retrieved from the Instrument Factory.
 
         Returns:
-            list[.Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
+            list[Instrument]: List of the Instruments that manages the Controller with its device driver assigned.
         """
         return [
             self._get_instrument_or_raise_error_when_not_found_or_not_supported_type(

@@ -19,7 +19,7 @@ class Platform:  # pylint: disable=too-many-public-methods
 
     Args:
         settings (PlatformSettings): Settings of the platform.
-        schema (qililab.platform.components.schema.Schema): Schema object.
+        schema (Schema): Schema object.
         buses (Buses): Container of Bus objects.
     """
 

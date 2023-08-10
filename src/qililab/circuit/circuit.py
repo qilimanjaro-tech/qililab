@@ -46,7 +46,7 @@ class Circuit:
 
         Args:
             qubits (int | tuple[int, ...]): The qubit(s) the operation acts on
-            operation (qililab.circuit.operations.operation.Operation): The operation to add
+            operation (Operation): The operation to add
             alias (str | None, optional): Optional alias for the operation. Defaults to None.
         """
         self._reset_transpilation_flags()
@@ -84,7 +84,7 @@ class Circuit:
 
         Args:
             qubits (tuple[int]): Tuple of qubits indices
-            operation (.Operation): The operation
+            operation (Operation): The operation
             alias (str | None): Optional alias
 
         Returns:
