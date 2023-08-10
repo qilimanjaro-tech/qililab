@@ -53,7 +53,6 @@ Explore
          :maxdepth: 1
 
          code/ql
-         code/execute
          code/chip
          code/drivers
          code/experiment
