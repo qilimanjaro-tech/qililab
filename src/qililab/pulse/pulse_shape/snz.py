@@ -43,7 +43,7 @@ class SNZ(PulseShape):
                     f"t_phi with value {self.t_phi}ns for pulse SNZ cannot have decimal part since min time resolution is 1ns"
                 )
             self.t_phi = int(self.t_phi)
-        # full_snz_duration = 2 * duration + self.t_phi + 2
+        # calculate the halfpulse duration
         halfpulse_t = (duration - 2 - self.t_phi) / 2
         halfpulse_t = int(halfpulse_t / resolution)
 
