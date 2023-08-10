@@ -24,16 +24,16 @@ class SNZ(PulseShape):
         """Constant amplitude envelope.
 
         Args:
-            duration (int): HALF-PULSE duration of the pulse (ns).
+            duration (int): total pulse duration (ns).
             amplitude (float): Maximum amplitude of the pulse
             resolution (float): Pulse resolution
 
         Returns:
             ndarray: Amplitude of the envelope for each time step.
 
-        The duration of the pulse is determined by duration, which is the duration of a halfpulse
-        thus the total duration will be 2*duration + t_phi + 2, where the 2 is due to each of the
-        1ns b pulses
+        The duration of the each half-pulse is determined by the total pulse duration. Thus
+        halfpulse_t = (duration - t_phi - 2) / 2. This implies that (duration - t_phi) should be even.
+        The -2 in the formula above is due to the 2 impulses b.
         """
 
         # ensure t_phi is an int or float with 0 decimal part
