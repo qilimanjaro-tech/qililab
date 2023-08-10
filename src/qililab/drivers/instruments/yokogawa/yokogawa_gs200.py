@@ -5,7 +5,6 @@ from qcodes.instrument_drivers.yokogawa.GS200 import GS200_Monitor as QCodesGS20
 from qcodes.instrument_drivers.yokogawa.GS200 import GS200Program as QCodesGS200Program
 
 from qililab.drivers.instruments.instrument_factory import InstrumentDriverFactory
-from qililab.drivers.interfaces import CurrentSource, VoltageSource
 
 
 @InstrumentDriverFactory.register
@@ -26,19 +25,11 @@ class GS200(QCodesGS200):
         self.instrument_modules: dict[str, InstrumentModule] = {}  # resetting superclass instrument modules
         self._channel_lists: dict[str, ChannelTuple] = {}  # resetting superclass instrument channel lists
         # Add the Monitor to the instrument
-        self.add_submodule("measure", GS200Monitor(self, name="measure", present=True))
+        self.add_submodule("measure", QCodesGS200Monitor(self, name="measure", present=True))
         # Add the Program to the instrument
         self.add_submodule("program", QCodesGS200Program(self, name="program"))
 
-
-class GS200Monitor(QCodesGS200Monitor, VoltageSource, CurrentSource):
-    """
-    Class for the Yokogawa GS200 Monitor.
-
-    It inherits from QCodes driver.
-
-    Args:
-        parent (QCodes.Instrument): The Instrument instance to which the channel is to be attached.
-        name (str): The 'colloquial' name of the channel
-        present (bool): Monitor is present
-    """
+    @property
+    def params(self):
+        """return the parameters of the instrument"""
+        return self.parameters
