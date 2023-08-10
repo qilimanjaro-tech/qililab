@@ -17,52 +17,36 @@ Get started
 
    This documentation is currently under construction.
 
+.. toctree::
+   :caption: Using qililab
+   :maxdepth: 1
+   :hidden:
 
-Explore
--------
+   introduction/what_is_qililab
+   introduction/platform
+   introduction/runcard
+   introduction/qprogram
+   introduction/transpilation
 
-.. tab-set::
+.. toctree::
+   :caption: Development
+   :maxdepth: 1
+   :hidden:
 
-   .. tab-item:: Using qililab
+   development/guide
 
-      This sections contains extended documentation on how to use `qililab`.
+.. toctree::
+   :caption: API
+   :maxdepth: 1
+   :hidden:
 
-      .. toctree::
-         :caption: Using qililab
-         :maxdepth: 1
-
-         introduction/what_is_qililab
-         introduction/platform
-         introduction/runcard
-         introduction/qprogram
-         introduction/transpilation
-
-   .. tab-item:: Development
-
-      The **Development** section contains information on how to contribute to `qililab`.
-
-      .. toctree::
-         :caption: Development
-         :maxdepth: 1
-
-
-         development/guide
-
-   .. tab-item:: API
-
-      The **API** section contains all the documentation about the `qililab` library.
-
-      .. toctree::
-         :caption: API
-         :maxdepth: 1
-
-         code/ql
-         code/chip
-         code/drivers
-         code/experiment
-         code/platform
-         code/pulse
-         code/qprogram
-         code/result
-         code/transpiler
-         code/waveforms
+   code/ql
+   code/chip
+   code/drivers
+   code/experiment
+   code/platform
+   code/pulse
+   code/qprogram
+   code/result
+   code/transpiler
+   code/waveforms
