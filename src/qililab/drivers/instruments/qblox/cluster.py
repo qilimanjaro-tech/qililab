@@ -14,15 +14,18 @@ from .sequencer_qrm import SequencerQRM
 
 @InstrumentDriverFactory.register
 class Cluster(QcodesCluster):  # pylint: disable=abstract-method
-    """Qililab's driver for QBlox-instruments Cluster"""
+    """Qililab's driver for QBlox-instruments Cluster.
+
+    Args:
+        name (str): The name/alias of the cluster.
+        address (str): The IP address of the cluster.
+
+    Keyword Args:
+        **kwargs: Any additional keyword arguments provided are passed to its `parent class
+            <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/cluster.html>`_.
+    """
 
     def __init__(self, name: str, address: str | None = None, **kwargs):
-        """Initialise the instrument.
-
-        Args:
-            name (str): Sequencer name
-            address (str): Instrument address
-        """
         super().__init__(name, identifier=address, **kwargs)
 
         # registering only the slots specified in the dummy config if that is the case

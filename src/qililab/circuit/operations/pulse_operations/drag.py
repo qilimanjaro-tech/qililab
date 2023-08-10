@@ -8,7 +8,7 @@ from qililab.utils import classproperty
 
 @OperationFactory.register
 @dataclass
-class DRAGPulse(PulseOperation):
+class DragPulse(PulseOperation):
     """Operation representing a DRAG pulse
 
     Args:

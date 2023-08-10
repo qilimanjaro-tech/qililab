@@ -1,4 +1,8 @@
 ql.result
 ===============
 
-.. automodule:: qililab.result
+.. currentmodule:: qililab.result
+
+.. automodapi:: qililab.result
+    :no-heading:
+    :no-inheritance-diagram:

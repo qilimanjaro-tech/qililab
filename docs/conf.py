@@ -24,8 +24,8 @@ release = qililab.__version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx_design",
+    "sphinx.ext.autodoc",
     "sphinx_mdinclude",  # allows the mdinclude directive to add Markdown files
     "sphinx.ext.napoleon",  # converts Google docstrings into rst
     "sphinx_automodapi.automodapi",
@@ -43,9 +43,9 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_preprocess_types = True
 
-autodoc_default_options = {"ignore-module-all": True}
-automodapi_toctreedirnm = "code/api"
+automodapi_toctreedirnm = "code/api"  # location where the automodapi rst files are built
 
+autoclass_content = "class"  # only show class docstrings (hide init docstrings)
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
