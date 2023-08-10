@@ -16,7 +16,6 @@ from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
 from qililab.settings import RuncardSchema
-from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
