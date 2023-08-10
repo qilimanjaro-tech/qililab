@@ -157,6 +157,8 @@ class TestPlatform:
         assert str(new_platform) == str(platform)
         assert str(new_platform.buses) == str(platform.buses)
         assert str(new_platform.chip) == str(platform.chip)
+        assert str(new_platform.instruments) == str(platform.instruments)
+        assert str(new_platform.instrument_controllers) == str(platform.instrument_controllers)
 
         new_runcard_dict = new_platform.to_dict()
         assert isinstance(new_runcard_dict, dict)
@@ -167,3 +169,5 @@ class TestPlatform:
         assert str(newest_platform) == str(new_platform)
         assert str(newest_platform.buses) == str(new_platform.buses)
         assert str(newest_platform.chip) == str(new_platform.chip)
+        assert str(newest_platform.instruments) == str(new_platform.instruments)
+        assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
