@@ -718,6 +718,15 @@ class TestTranslation:
                 "qubit": 0,
                 "pulse_shape": asdict(Rectangular()),
             },
+            {
+                "amplitude": 0.7,
+                "phase": 0,
+                "frequency": 3.0e6,
+                "duration": 100,
+                "start_time": 830,
+                "qubit": 0,
+                "pulse_shape": asdict(Rectangular()),
+            },
         ]
 
         flux_q2 = [
@@ -755,20 +764,25 @@ class TestTranslation:
 
         # port 8 (drive q0)
         port_8 = self.get_bus_schedule(pulse_bus_schedule, 8)
+        assert len(port_8) == len(drive_q0)
         assert all(i == k for i, k in zip(port_8, drive_q0))
         # port 13 (flux q0)
         port_13 = self.get_bus_schedule(pulse_bus_schedule, 13)
+        assert len(port_13) == len(flux_q0)
         assert all(i == k for i, k in zip(port_13, flux_q0))
         # port 12 (drive 14)
         port_12 = self.get_bus_schedule(pulse_bus_schedule, 12)
+        assert len(port_12) == len(drive_q4)
         assert all(i == k for i, k in zip(port_12, drive_q4))
 
         # port 15 (flux q2)
         port_15 = self.get_bus_schedule(pulse_bus_schedule, 15)
+        assert len(port_15) == len(flux_q2)
         assert all(i == k for i, k in zip(port_15, flux_q2))
 
         # port 43 (flux c2)
         port_43 = self.get_bus_schedule(pulse_bus_schedule, 43)
+        assert len(port_43) == len(flux_c2)
         assert all(i == k for i, k in zip(port_43, flux_c2))
 
     def test_normalize_angle(self, platform):
