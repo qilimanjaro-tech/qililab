@@ -17,7 +17,6 @@ class Runcard:
     """Runcard class. Casts the platform dictionary into a class.
 
     The input to the constructor should be a dictionary of the desired runcard with the following structure:
-
     - transpilation_settings:
     - chip:
     - buses:
@@ -31,18 +30,12 @@ class Runcard:
     corresponding Instrument classes with the settings attributes of this class.
 
     Args:
-        transpilation_settings (dict): TranspilationSettings dictionary -> TranspilationSettings
-        chip (dict): ChipSettings dictionary -> ChipSettings
-        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings]
-        instruments (list[dict]): List of dictionaries containing the "instruments" information
+        transpilation_settings (dict): TranspilationSettings dictionary -> TranspilationSettings inner dataclass
+        chip (dict): ChipSettings dictionary -> ChipSettings inner dataclass
+        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings] inner dataclass
+        instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
         instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
-
-    Attributes:
-        transpilation_settings (TranspilationSettings: Transformed transpilation settings dictionary
-        chip (ChipSettings): Transformed chip settings dictionary
-        buses (list[BusSettings]): Transformed buses settings list of dictionaries
-        instruments (list[dict]): Same instrument list of dictionaries (not transformed)
-        instruments_controllers (list[dict]): Same instrument_controllers list of dictionaries (not transformed)
+            (does not transform)
     """
 
     # Inner dataclasses definition

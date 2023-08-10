@@ -8,7 +8,7 @@ This document contains the changes of the current release.
 
   Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).
 
-  This PR brings importants simplifications to the full qililab structure, now the Runcards (`data.py`, `Galadriel.yml`...) will have the following structure:
+  This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
 
   ```yaml
   transpilation_settings:

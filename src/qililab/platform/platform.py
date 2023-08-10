@@ -32,38 +32,41 @@ class Platform:  # pylint: disable=too-many-public-methods
 
     This class also handles the corresponding dis/connections, set_ups, set_parameters and turning the instruments on/off.
 
-    Attributes:
-        transpilation_settings (TranspilationSettings): Exactly the transpilation_settings in the Runcard class
-        chip (Chip): Chip class instantiated given the ChipSettings class of the Runcard class
-        buses (Buses):  Buses class instantiated given the list[BusSettings] classes of the Runcard class
-        instruments (Instruments): Instruments corresponding classes instantiated given the list[dict] of instruments of the Runcard class
-        instrument_controllers (InstrumentControllers): InstrumentControllers corresponding classes instantiated given the list[dict] of
-            instrument_controllers of the Runcard class
+    Args:
+        runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
+        connection (API | None = None): Connection of the platform.
     """
 
     def __init__(self, runcard: Runcard, connection: API | None = None):
-        """instantiates the platform
+        """instantiates the platform"""
 
-        Args:
-            runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
-            connection (API | None = None): Connection of the platform.
-        """
         self.transpilation_settings = runcard.transpilation_settings
+        """Exactly the transpilation_settings in the Runcard class"""
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
+        """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+
         self.instrument_controllers = InstrumentControllers(
             elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
         )
+        """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+
         self.chip = Chip(**asdict(runcard.chip))
+        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+
         self.buses = Buses(
             elements=[
                 Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
                 for bus in runcard.buses
             ]
         )
+        """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
 
         self.connection = connection
+        """Connection of the platform. Same as the argument"""
+
         self._connected_to_instruments: bool = False
+        """Boolean describing the connection to instruments. Defaults to False (not connected)"""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
