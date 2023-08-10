@@ -1,5 +1,4 @@
 """Tests for the Platform class."""
-from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
 import pytest
