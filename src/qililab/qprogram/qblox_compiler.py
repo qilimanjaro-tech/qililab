@@ -31,22 +31,26 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
     """Class representing the information stored by QBloxCompiler for a bus."""
 
     def __init__(self):
+        # The generated Sequence
         self.qpy_sequence = QPy.Sequence(
             program=QPy.Program(), waveforms=QPy.Waveforms(), acquisitions=QPy.Acquisitions(), weights=QPy.Weights()
         )
 
+        # Dictionaries to hold mappings useful during compilation.
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
-        self.parameterized_waveform_to_index: dict[str, int] = {}
 
+        # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
         self.qpy_sequence._program.append_block(main_block)
+
+        # Stacks to manage block hierarchy during compilation
         self.qpy_block_stack: deque[QPyProgram.Block] = deque([main_block])
         self.qprogram_block_stack: deque[Block] = deque()
 
+        # Counters to help with naming and indexing
         self.next_bin_index = 0
         self.next_acquisition_index = 0
-
         self.loop_counter = 0
         self.average_counter = 0
 
@@ -62,7 +66,10 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
     """A class for compiling QProgram to QBlox hardware."""
 
     def __init__(self, settings: Settings):
+        # External settings
         self._settings = settings
+
+        # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
@@ -82,13 +89,13 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         self._buses: dict[str, BusInfo]
 
     def compile(self, qprogram: QProgram) -> dict[str, QPy.Sequence]:
-        """Compile QProgram to QPySequence
+        """Compile QProgram to qpysequence.Sequence
 
         Args:
             qprogram (QProgram): The QProgram to be compiled
 
         Returns:
-            dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding QPySequence as values.
+            dict[str, QPy.Sequence]: A dictionary with the buses participating in the QProgram as keys and the corresponding Sequence as values.
         """
 
         def traverse(block: Block):
@@ -110,14 +117,24 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         self._qprogram = qprogram
         self._buses = self._populate_buses()
 
+        # Recursive traversal to convert QProgram blocks to Sequence
         traverse(self._qprogram._program)
+
+        # Post-processing: Add stop instructions and compile
         for bus in self._buses:
             self._buses[bus].qpy_block_stack[0].append_component(component=QPyInstructions.Stop())
             self._buses[bus].qpy_sequence._program.compile()
 
+        # Return a dictionary with bus names as keys and the compiled Sequence as values.
         return {bus: bus_info.qpy_sequence for bus, bus_info in self._buses.items()}
 
     def _populate_buses(self):
+        """Map each bus in the QProgram to a BusInfo instance.
+
+        Returns:
+            A dictionary where the keys are bus names and the values are BusInfo objects.
+        """
+
         def collect_buses(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -131,6 +148,14 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         return {bus: BusInfo() for bus in buses}
 
     def _append_to_waveforms_of_bus(self, bus: str, waveform_I: Waveform, waveform_Q: Waveform | None):
+        """Append waveforms to Sequence's Waveforms of the given bus.
+
+        Args:
+            bus (str): Name of the bus.
+            waveform_I (Waveform): I waveform.
+            waveform_Q (Waveform | None): Q waveform.
+        """
+
         def handle_waveform(waveform: Waveform | None, default_length: int = 0):
             _hash = QBloxCompiler._hash(waveform) if waveform else f"zeros {default_length}"
 
