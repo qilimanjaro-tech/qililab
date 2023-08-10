@@ -24,7 +24,7 @@ from .execute import execute
 from .experiment import Experiment
 from .platform import build_platform, save_platform
 from .qprogram import QProgram
-from .result.results import Results
+from .result import Results
 from .transpiler import Drag, Park, translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings, Parameter
 from .utils import Loop
