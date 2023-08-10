@@ -10,32 +10,41 @@ This document contains the changes of the current release.
 
   This PR brings importants simplifications to the full qililab structure, now the Runcards (`data.py`, `Galadriel.yml`...) will have the following structure:
 
-  ```lang-yaml
-  - transpilation_settings:
+  ```yaml
+  transpilation_settings:
+    ...
 
-  - chip
+  chip:
+    ...
 
-  - buses
+  buses:
+    ...
 
-  - instruments
+  instruments:
+    ...
 
-  - instrument_controllers
+  instrument_controllers:
+    ...
   ```
 
   instead than the previous:
 
-  ```lang-yaml
-  - settings:
+  ```yaml
+  settings:
+    ...
 
-  - schema:
+  schema:
+    chip:
+      ...
 
-    - chip
+    buses:
+      ...
 
-    - buses
+    instruments:
+      ...
 
-    - instruments
-
-    - instrument_controllers
+    instrument_controllers:
+      ...
   ```
 
   Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `tranpilation_settings` (and the class to `TranspilationSettings` having the runcard string and the class the same name now, before they didn't).
