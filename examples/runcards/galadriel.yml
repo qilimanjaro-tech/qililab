@@ -255,6 +255,176 @@ chip:
       nodes: [10, 11, 12, 13, 14]
       line: feedline_output
 
+buses:
+  - id_: 0
+    category: bus
+    alias: feedline_bus
+    system_control:
+      id_: 0
+      name: readout_system_control
+      category: system_control
+      instruments: [QRM1, rs_1]
+    port: 100
+    distortions: []
+  - id_: 20
+    category: bus
+    alias: drive_line_q0_bus
+    system_control:
+      id_: 20
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF1]
+    port: 20
+    distortions: []
+  - id_: 30
+    category: bus
+    alias: flux_line_q0_bus
+    system_control:
+      id_: 30
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 30
+    distortions: []
+  - id_: 21
+    category: bus
+    alias: drive_line_q1_bus
+    system_control:
+      id_: 21
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF1]
+    port: 21
+    distortions: []
+  - id_: 31
+    category: bus
+    alias: flux_line_q1_bus
+    system_control:
+      id_: 31
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 31
+    distortions:
+      - name: bias_tee
+        tau_bias_tee: 11000
+      - name: lfilter
+        a:
+          [
+            4.46297950e-01,
+            -4.74695321e-02,
+            -6.35339660e-02,
+            6.90858657e-03,
+            7.21417336e-03,
+            1.34171108e-02,
+            1.54624140e-02,
+            4.44887896e-03,
+            1.76451157e-03,
+            -2.18655651e-04,
+            1.26421111e-03,
+            7.46639107e-03,
+            8.73383280e-04,
+            -1.02437299e-02,
+            -1.98913205e-02,
+            -2.94920516e-02,
+            -2.68926933e-03,
+            1.12518838e-02,
+            8.49538664e-04,
+            -5.64832645e-03,
+            -1.50532773e-02,
+            7.80205124e-04,
+            1.65796141e-02,
+            6.89980673e-04,
+            -7.25549782e-03,
+            3.32391693e-03,
+            9.97813872e-03,
+            -8.12679733e-03,
+            -1.00578281e-02,
+            6.97338810e-03,
+            2.05574979e-02,
+            -4.22533696e-04,
+            -5.30573522e-03,
+            -5.63574725e-03,
+            -7.72052668e-03,
+            1.53987162e-02,
+            7.62955256e-03,
+            -8.98278390e-03,
+            -7.90292832e-04,
+            -1.11828133e-03,
+            -6.62307356e-03,
+            8.23195094e-03,
+            1.10523437e-02,
+            -6.44999221e-03,
+            -7.18305957e-03,
+            1.52176963e-03,
+            -9.89509796e-03,
+            3.00056075e-03,
+            1.01091160e-02,
+            -3.77361876e-03,
+          ]
+        b: [1.]
+        norm_factor: 1.
+  - id_: 22
+    category: bus
+    alias: drive_line_q2_bus
+    system_control:
+      id_: 22
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF2]
+    port: 22
+    distortions: []
+  - id_: 32
+    category: bus
+    alias: flux_line_q2_bus
+    system_control:
+      id_: 32
+      name: system_control
+      category: system_control
+      instruments: [QCM2]
+    port: 32
+    distortions: []
+  - id_: 23
+    category: bus
+    alias: drive_line_q3_bus
+    system_control:
+      id_: 23
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF3]
+    port: 23
+    distortions: []
+  - id_: 33
+    category: bus
+    alias: flux_line_q3_bus
+    system_control:
+      id_: 33
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 33
+    distortions: []
+  - id_: 24
+    category: bus
+    alias: drive_line_q4_bus
+    system_control:
+      id_: 24
+      name: system_control
+      category: system_control
+      instruments: [QCM-RF3]
+    port: 24
+    distortions: []
+  - id_: 34
+    category: bus
+    alias: flux_line_q4_bus
+    system_control:
+      id_: 34
+      name: system_control
+      category: system_control
+      instruments: [QCM1]
+    port: 34
+    distortions: []
+
 instruments:
   - name: QRM
     alias: QRM1
@@ -616,176 +786,6 @@ instruments:
     category: attenuator
     firmware: None
     attenuation: 32
-
-buses:
-  - id_: 0
-    category: bus
-    alias: feedline_bus
-    system_control:
-      id_: 0
-      name: readout_system_control
-      category: system_control
-      instruments: [QRM1, rs_1]
-    port: 100
-    distortions: []
-  - id_: 20
-    category: bus
-    alias: drive_line_q0_bus
-    system_control:
-      id_: 20
-      name: system_control
-      category: system_control
-      instruments: [QCM-RF1]
-    port: 20
-    distortions: []
-  - id_: 30
-    category: bus
-    alias: flux_line_q0_bus
-    system_control:
-      id_: 30
-      name: system_control
-      category: system_control
-      instruments: [QCM1]
-    port: 30
-    distortions: []
-  - id_: 21
-    category: bus
-    alias: drive_line_q1_bus
-    system_control:
-      id_: 21
-      name: system_control
-      category: system_control
-      instruments: [QCM-RF1]
-    port: 21
-    distortions: []
-  - id_: 31
-    category: bus
-    alias: flux_line_q1_bus
-    system_control:
-      id_: 31
-      name: system_control
-      category: system_control
-      instruments: [QCM1]
-    port: 31
-    distortions:
-      - name: bias_tee
-        tau_bias_tee: 11000
-      - name: lfilter
-        a:
-          [
-            4.46297950e-01,
-            -4.74695321e-02,
-            -6.35339660e-02,
-            6.90858657e-03,
-            7.21417336e-03,
-            1.34171108e-02,
-            1.54624140e-02,
-            4.44887896e-03,
-            1.76451157e-03,
-            -2.18655651e-04,
-            1.26421111e-03,
-            7.46639107e-03,
-            8.73383280e-04,
-            -1.02437299e-02,
-            -1.98913205e-02,
-            -2.94920516e-02,
-            -2.68926933e-03,
-            1.12518838e-02,
-            8.49538664e-04,
-            -5.64832645e-03,
-            -1.50532773e-02,
-            7.80205124e-04,
-            1.65796141e-02,
-            6.89980673e-04,
-            -7.25549782e-03,
-            3.32391693e-03,
-            9.97813872e-03,
-            -8.12679733e-03,
-            -1.00578281e-02,
-            6.97338810e-03,
-            2.05574979e-02,
-            -4.22533696e-04,
-            -5.30573522e-03,
-            -5.63574725e-03,
-            -7.72052668e-03,
-            1.53987162e-02,
-            7.62955256e-03,
-            -8.98278390e-03,
-            -7.90292832e-04,
-            -1.11828133e-03,
-            -6.62307356e-03,
-            8.23195094e-03,
-            1.10523437e-02,
-            -6.44999221e-03,
-            -7.18305957e-03,
-            1.52176963e-03,
-            -9.89509796e-03,
-            3.00056075e-03,
-            1.01091160e-02,
-            -3.77361876e-03,
-          ]
-        b: [1.]
-        norm_factor: 1.
-  - id_: 22
-    category: bus
-    alias: drive_line_q2_bus
-    system_control:
-      id_: 22
-      name: system_control
-      category: system_control
-      instruments: [QCM-RF2]
-    port: 22
-    distortions: []
-  - id_: 32
-    category: bus
-    alias: flux_line_q2_bus
-    system_control:
-      id_: 32
-      name: system_control
-      category: system_control
-      instruments: [QCM2]
-    port: 32
-    distortions: []
-  - id_: 23
-    category: bus
-    alias: drive_line_q3_bus
-    system_control:
-      id_: 23
-      name: system_control
-      category: system_control
-      instruments: [QCM-RF3]
-    port: 23
-    distortions: []
-  - id_: 33
-    category: bus
-    alias: flux_line_q3_bus
-    system_control:
-      id_: 33
-      name: system_control
-      category: system_control
-      instruments: [QCM1]
-    port: 33
-    distortions: []
-  - id_: 24
-    category: bus
-    alias: drive_line_q4_bus
-    system_control:
-      id_: 24
-      name: system_control
-      category: system_control
-      instruments: [QCM-RF3]
-    port: 24
-    distortions: []
-  - id_: 34
-    category: bus
-    alias: flux_line_q4_bus
-    system_control:
-      id_: 34
-      name: system_control
-      category: system_control
-      instruments: [QCM1]
-    port: 34
-    distortions: []
 
 instrument_controllers:
   - name: qblox_cluster

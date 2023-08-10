@@ -4,6 +4,41 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Delete Schema class from `Platform` and `RuncardSchema` class (and from the rest of qililab)
+  This PR brings importants changes to the full qililab structure, for example the Runcards (`data.py` and `Galadriel.yml`) now will have the following structure:
+
+  ```python
+  - transpilation_settings:
+
+  - chip
+
+  - buses
+
+  - instruments
+
+  - instrument_controllers
+  ```
+
+  instead than the previous:
+
+  ```python
+  - settings:
+
+  - schema:
+
+    -chip
+
+    - buses
+
+    - instruments
+
+    - instrument_controllers
+  ```
+
+  Notice also how `settings` and `Settings` has changed to `tranpilation_settings` and `TranspilationSettings`, also `RuncardSchema` has changed to `Runcard` now.
+
+  [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
+
 - Add a new Factory for the Buses and registered the current ones
   [#487](https://github.com/qilimanjaro-tech/qililab/pull/487)
 

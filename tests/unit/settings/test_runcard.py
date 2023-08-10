@@ -33,19 +33,22 @@ class TestRuncard:
         assert asdict(runcard.transpilation_settings) == Galadriel.platform
 
         assert isinstance(runcard.chip, runcard.ChipSchema)
-        assert asdict(runcard.buses) == Galadriel.chip
+        assert asdict(runcard.chip) == Galadriel.chip
 
         assert isinstance(runcard.buses, list)
         assert isinstance(runcard.buses[0], runcard.BusSchema)
-        assert asdict(runcard.buses) == Galadriel.buses
+        for index, bus in enumerate(runcard.buses):
+            assert asdict(bus) == Galadriel.buses[index]
 
         assert isinstance(runcard.instruments, list)
         assert isinstance(runcard.instruments[0], dict)
-        assert asdict(runcard.instruments) == Galadriel.instruments
+        for index, instrument in enumerate(runcard.instruments):
+            assert instrument == Galadriel.instruments[index]
 
         assert isinstance(runcard.instrument_controllers, list)
         assert isinstance(runcard.instrument_controllers[0], dict)
-        assert asdict(runcard.instrument_controllers) == Galadriel.instrument_controllers
+        for index, instrument_controller in enumerate(runcard.instrument_controllers):
+            assert instrument_controller == Galadriel.instrument_controllers[index]
 
 
 class TestTranspilationSettings:

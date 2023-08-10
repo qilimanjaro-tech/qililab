@@ -128,7 +128,7 @@ def platform_db(runcard: dict) -> Platform:
     """Return PlatformBuilderDB instance with loaded platform."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name=DEFAULT_PLATFORM_NAME)
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     return platform
@@ -138,7 +138,7 @@ def platform_yaml(runcard: dict) -> Platform:
     """Return PlatformBuilderYAML instance with loaded platform."""
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            platform = build_platform(name="sauron")
+            platform = build_platform(name="_")
             mock_load.assert_called()
             mock_open.assert_called()
     return platform

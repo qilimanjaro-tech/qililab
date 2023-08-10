@@ -1,6 +1,7 @@
 """Platform class."""
 import ast
 import re
+from copy import deepcopy
 from dataclasses import asdict
 
 from qiboconnection.api import API
@@ -200,9 +201,11 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             list[Instrument]: List of instantiated instrument classes.
         """
-        return [
-            InstrumentFactory.get(instrument.pop(RUNCARD.NAME))(settings=instrument) for instrument in instruments_dict
-        ]
+        instruments = []
+        for instrument in instruments_dict:
+            local_dict = deepcopy(instrument)
+            instruments.append(InstrumentFactory.get(local_dict.pop(RUNCARD.NAME))(settings=local_dict))
+        return instruments
 
     def _load_instrument_controllers(self, instrument_controllers_dict: list[dict]) -> list[InstrumentController]:
         """Instantiate all instrument controller classes from their respective dictionaries.
@@ -214,12 +217,15 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             list[InstrumentController]: List of instantiated instrument controller classes.
         """
-        return [
-            InstrumentControllerFactory.get(instrument_controller.pop(RUNCARD.NAME))(
-                settings=instrument_controller, loaded_instruments=self.instruments
+        instrument_controllers = []
+        for instrument_controller in instrument_controllers_dict:
+            local_dict = deepcopy(instrument_controller)
+            instrument_controllers.append(
+                InstrumentControllerFactory.get(local_dict.pop(RUNCARD.NAME))(
+                    settings=local_dict, loaded_instruments=self.instruments
+                )
             )
-            for instrument_controller in instrument_controllers_dict
-        ]
+        return instrument_controllers
 
     @property
     def id_(self):
