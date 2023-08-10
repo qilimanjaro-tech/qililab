@@ -1,7 +1,7 @@
 """Execute function used to execute a qibo Circuit using the given runcard."""
 from qibo.models import Circuit
 
-from .experiment.circuit_experiment import CircuitExperiment
+from .experiment.experiment import Experiment
 from .platform import build_platform
 from .transpiler import translate_circuit
 from .typings import ExperimentOptions, ExperimentSettings
@@ -51,6 +51,6 @@ def execute(circuit: Circuit, runcard_name: str, nshots=1):
     options = ExperimentOptions(settings=settings)
 
     # create experiment with options
-    sample_experiment = CircuitExperiment(platform=platform, circuits=[circuit], options=options)
+    sample_experiment = Experiment(platform=platform, circuits=[circuit], options=options)
 
     return sample_experiment.execute(save_experiment=False, save_results=False)
