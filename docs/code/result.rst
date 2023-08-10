@@ -1,4 +1,4 @@
 ql.result
 ===============
 
-.. automodule:: qililab.qprogram
+.. automodule:: qililab.result

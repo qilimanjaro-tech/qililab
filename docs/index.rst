@@ -31,7 +31,11 @@ Explore
          :caption: Using qililab
          :maxdepth: 1
 
-         introduction/qililab
+         introduction/what_is_qililab
+         introduction/platform
+         introduction/runcard
+         introduction/qprogram
+         introduction/transpilation
 
    .. tab-item:: Development
 
