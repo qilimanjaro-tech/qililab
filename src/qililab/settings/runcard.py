@@ -15,25 +15,40 @@ from qililab.utils import nested_dataclass
 @nested_dataclass
 class Runcard:
     """Runcard class. Casts the platform dictionary into a class.
-    The input to the constructor should be a dictionary with the following structure:
 
-    - transpilation_settings: platform settings dictionary.
-    - instruments:
-    - instrument_controllers:
+    The input to the constructor should be a dictionary of the desired runcard with the following structure:
+
+    - transpilation_settings:
     - chip:
-    - buses: buses dictionary:
-        - elements: list of bus dictionaries with the following structure:
-            - name: "readout" or "control"
-            - awg: settings dictionary.
-            - signal_generator: settings dictionary.
-            - qubit / resonator: settings dictionary.
+    - buses:
+    - instruments: List of "instruments" dictionaries
+    - instrument_controllers: List of "instrument_controllers" dictionaries
+
+    The transpilation_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
+    ChipSettings or BusSettings here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+
+    Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
+    corresponding Instrument classes with the settings attributes of this class.
+
+    Args:
+        transpilation_settings (dict): TranspilationSettings dictionary -> TranspilationSettings
+        chip (dict): ChipSettings dictionary -> ChipSettings
+        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings]
+        instruments (list[dict]): List of dictionaries containing the "instruments" information
+        instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
+
+    Attributes:
+        transpilation_settings (TranspilationSettings: Transformed transpilation settings dictionary
+        chip (ChipSettings): Transformed chip settings dictionary
+        buses (list[BusSettings]): Transformed buses settings list of dictionaries
+        instruments (list[dict]): Same instrument list of dictionaries (not transformed)
+        instruments_controllers (list[dict]): Same instrument_controllers list of dictionaries (not transformed)
     """
 
-    # TODO: Check the structure this dictionary has to have, and check that the DATA files for tests, etc has them
-
+    # Inner dataclasses definition
     @dataclass
-    class BusSchema:
-        """Bus schema class."""
+    class BusSettings:
+        """Bus settings class."""
 
         id_: int
         category: str
@@ -44,23 +59,13 @@ class Runcard:
         delay: int = 0
 
     @dataclass
-    class ChipSchema:
-        """Chip schema class."""
+    class ChipSettings:
+        """Chip settings class."""
 
         id_: int
         category: str
         nodes: list[dict]
         alias: str | None = None
-
-    chip: ChipSchema
-    buses: list[BusSchema]
-    instruments: list[dict]
-    instrument_controllers: list[dict]
-
-    def __post_init__(self):
-        self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
-        if isinstance(self.chip, dict):
-            self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
 
     @nested_dataclass
     class TranspilationSettings(DDBBElement):
@@ -189,4 +194,14 @@ class Runcard:
             gate_settings = self.get_gate(name=name, qubits=qubits)
             gate_settings.set_parameter(parameter, value)
 
+    # Runcard class actual initialization
+    chip: ChipSettings
+    buses: list[BusSettings]
+    instruments: list[dict]
+    instrument_controllers: list[dict]
     transpilation_settings: TranspilationSettings
+
+    def __post_init__(self):
+        self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None
+        if isinstance(self.chip, dict):
+            self.chip = self.ChipSettings(**self.chip)  # pylint: disable=not-a-mapping

@@ -24,18 +24,30 @@ from qililab.typings.yaml_type import yaml
 class Platform:  # pylint: disable=too-many-public-methods
     """Platform object that describes setup used to control quantum devices.
 
-    Args:
-        transpilation_settings (TranspilationSettings): Settings of the platform.
-        instruments (Instruments):
-        instruments_controllers (InstrumentControllers):
-        chip (Chip):
-        buses (Buses): Container of Bus objects.
+    The class will receive the Runcard class, with all the TranspilationSettings, ChipSettings, BusSettings that the
+    Runcard class has created from the dictionaries, together with the instrument dictionaries that the Runcard class
+    has not transform into classes yet.
+
+    And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
+
+    This class also handles the corresponding dis/connections, set_ups, set_parameters and turning the instruments on/off.
+
+    Attributes:
+        transpilation_settings (TranspilationSettings): Exactly the transpilation_settings in the Runcard class
+        chip (Chip): Chip class instantiated given the ChipSettings class of the Runcard class
+        buses (Buses):  Buses class instantiated given the list[BusSettings] classes of the Runcard class
+        instruments (Instruments): Instruments corresponding classes instantiated given the list[dict] of instruments of the Runcard class
+        instrument_controllers (InstrumentControllers): InstrumentControllers corresponding classes instantiated given the list[dict] of
+            instrument_controllers of the Runcard class
     """
 
-    # TODO: fill the above docstring
-
     def __init__(self, runcard: Runcard, connection: API | None = None):
-        """instantiate the platform"""
+        """instantiates the platform
+
+        Args:
+            runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
+            connection (API | None = None): Connection of the platform.
+        """
         self.transpilation_settings = runcard.transpilation_settings
 
         self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))

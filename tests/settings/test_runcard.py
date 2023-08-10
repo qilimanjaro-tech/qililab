@@ -32,11 +32,11 @@ class TestRuncard:
         assert isinstance(runcard.transpilation_settings, runcard.TranspilationSettings)
         assert asdict(runcard.transpilation_settings) == Galadriel.platform
 
-        assert isinstance(runcard.chip, runcard.ChipSchema)
+        assert isinstance(runcard.chip, runcard.ChipSettings)
         assert asdict(runcard.chip) == Galadriel.chip
 
         assert isinstance(runcard.buses, list)
-        assert isinstance(runcard.buses[0], runcard.BusSchema)
+        assert isinstance(runcard.buses[0], runcard.BusSettings)
         for index, bus in enumerate(runcard.buses):
             assert asdict(bus) == Galadriel.buses[index]
 
