@@ -17,7 +17,7 @@ Waveforms
 """
 
 from .arbitrary import Arbitrary
-from .drag import Drag as DragWaveform
+from .drag import Drag as DragPair
 from .gaussian import Gaussian
 from .iq_pair import IQPair
 from .square import Square
