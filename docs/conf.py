@@ -36,7 +36,7 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*"]
 source_suffix = [".rst", ".md"]
-pygments_style = "emacs"
+pygments_style = "one-dark"
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -46,6 +46,7 @@ napoleon_preprocess_types = True
 automodapi_toctreedirnm = "code/api"  # location where the automodapi rst files are built
 
 autoclass_content = "class"  # only show class docstrings (hide init docstrings)
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -91,3 +92,4 @@ html_theme_options = {
     },
 }
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
