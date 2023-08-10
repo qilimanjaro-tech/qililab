@@ -108,7 +108,7 @@ class TestBusDriver:
         """Test set and get method for distortions parameter"""
         with pytest.raises(NotImplementedError, match="Setting distortion parameters of a bus is not yet implemented."):
             bus.set(param_name="distortions", value=[])
-        with pytest.raises(NotImplementedError, match="Setting distortion parameters of a bus is not yet implemented."):
+        with pytest.raises(NotImplementedError, match="Getting distortion parameters of a bus is not yet implemented."):
             bus.get(param_name="distortions")
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
