@@ -298,7 +298,9 @@ class Platform:  # pylint: disable=too-many-public-methods
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        settings_dict = {RUNCARD.TRANSPILATION_SETTINGS: asdict(self.transpilation_settings, dict_factory=dict_factory)}
+        transpilation_settings_dict = {
+            RUNCARD.TRANSPILATION_SETTINGS: asdict(self.transpilation_settings, dict_factory=dict_factory)
+        }
         chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
         buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
         instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
@@ -308,7 +310,7 @@ class Platform:  # pylint: disable=too-many-public-methods
             else None,
         }
 
-        return settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
+        return transpilation_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform

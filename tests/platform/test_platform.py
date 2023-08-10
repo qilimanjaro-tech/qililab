@@ -146,3 +146,24 @@ class TestPlatform:
     def test_print_instruments(self, platform: Platform):
         """Test print instruments."""
         assert str(platform.instruments) == str(yaml.dump(platform.instruments._short_dict(), sort_keys=False))
+
+    def test_serialization(self, platform: Platform):
+        """Test that a serialization of the Platform is possible"""
+        runcard_dict = platform.to_dict()
+        assert isinstance(runcard_dict, dict)
+
+        new_platform = Platform(runcard=Runcard(**Galadriel.runcard))
+        assert isinstance(new_platform, Platform)
+        assert str(new_platform) == str(platform)
+        assert str(new_platform.buses) == str(platform.buses)
+        assert str(new_platform.chip) == str(platform.chip)
+
+        new_runcard_dict = new_platform.to_dict()
+        assert isinstance(new_runcard_dict, dict)
+        assert new_runcard_dict == runcard_dict
+
+        newest_platform = Platform(runcard=Runcard(**Galadriel.runcard))
+        assert isinstance(newest_platform, Platform)
+        assert str(newest_platform) == str(new_platform)
+        assert str(newest_platform.buses) == str(new_platform.buses)
+        assert str(newest_platform.chip) == str(new_platform.chip)
