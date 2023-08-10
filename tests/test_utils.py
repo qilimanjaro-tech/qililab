@@ -6,7 +6,6 @@ import numpy as np
 from qcodes.instrument_drivers.tektronix.Keithley_2600_channels import KeithleyChannel
 
 from qililab import build_platform
-from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.platform import Platform
 
 
