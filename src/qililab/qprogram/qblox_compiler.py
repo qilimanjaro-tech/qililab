@@ -191,9 +191,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].weight_to_index[_hash]
                 length = next(
                     len(weight.data)
-                    for weight in self._buses[
-                        bus
-                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
+                    for weight in self._buses[bus].qpy_sequence._weights._weights  # pylint: disable=protected-access
                     if weight.index == index
                 )
                 return index, length
