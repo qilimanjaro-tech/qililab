@@ -11,24 +11,15 @@ from qililab.typings import Parameter
 from tests.data import Galadriel
 
 
-@pytest.fixture(name="runcard")
-def fixture_runcard() -> Runcard:
-    """Return DriveBus instance"""
-    return Runcard(**Galadriel.runcard)
-
-
-@pytest.fixture(name="transpilation_settings")
-def fixture_transpilation_settings() -> Runcard.TranspilationSettings:
-    """Return DriveBus instance"""
-    return Runcard(**Galadriel.runcard).transpilation_settings
-
-
+@pytest.mark.parametrize("runcard_dict", [Galadriel.runcard])
 class TestRuncard:
-    """Unit tests for the Runcard class."""
+    """Unit tests for the Runcard dataclass initialization."""
 
-    def test_attributes(self, runcard):
+    def test_attributes(self, runcard_dict):
         """Test that the attributes of the Runcard are casted into dataclasses, and that
         the values they contain are the same as the input dictionaries."""
+        runcard = Runcard(**runcard_dict)
+
         assert isinstance(runcard.transpilation_settings, runcard.TranspilationSettings)
         assert asdict(runcard.transpilation_settings) == Galadriel.platform
 
@@ -51,6 +42,7 @@ class TestRuncard:
             assert instrument_controller == Galadriel.instrument_controllers[index]
 
 
+@pytest.mark.parametrize("transpilation_settings", [Runcard(**Galadriel.runcard).transpilation_settings])
 class TestTranspilationSettings:
     """Unit tests for the Runcard.TranspilationSettings class."""
 

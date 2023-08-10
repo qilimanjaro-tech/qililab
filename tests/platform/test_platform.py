@@ -1,12 +1,15 @@
 """Tests for the Platform class."""
+from dataclasses import asdict
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from qililab import save_platform
-from qililab.chip import Qubit
+from qililab.chip import Chip, Qubit
 from qililab.constants import DEFAULT_PLATFORM_NAME
+from qililab.instrument_controllers import InstrumentControllers
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
+from qililab.instruments.instruments import Instruments
 from qililab.platform import Bus, Buses, Platform
 from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
@@ -16,9 +19,27 @@ from tests.data import Galadriel
 from tests.test_utils import platform_db, platform_yaml
 
 
+@pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
+class TestPlatformInitialization:
+    """Unit tests for the Platform class initialization"""
+
+    def test_init_method(self, runcard):
+        """Test initialization of the class"""
+        platform = Platform(runcard=runcard)
+
+        assert platform.transpilation_settings == runcard.transpilation_settings
+        assert isinstance(platform.transpilation_settings, Runcard.TranspilationSettings)
+        assert isinstance(platform.instruments, Instruments)
+        assert isinstance(platform.instrument_controllers, InstrumentControllers)
+        assert isinstance(platform.chip, Chip)
+        assert isinstance(platform.buses, Buses)
+        assert platform.connection is None
+        assert platform._connected_to_instruments is False
+
+
 @pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
 class TestPlatform:
-    """Unit tests checking the Platform attributes and methods."""
+    """Unit tests checking the Platform class."""
 
     def test_id_property(self, platform: Platform):
         """Test id property."""
