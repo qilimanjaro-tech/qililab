@@ -82,7 +82,11 @@ class BaseExperiment:
             save_experiment=save_experiment, save_results=save_results
         )
 
-        data_queue: Queue = Queue()  # queue used to store the experiment results
+        # The queue used to store the experiment results so that they can be permanently saved on the fly:
+        # saving the data is a slow process, so one thread executes the loops and puts the results in the queue
+        # with the '_execute_recursive_loops' method, while another thread asynchronously reads the results from
+        # the queue and saves them in a yaml file with the '_asynchronous_data_handling' method.
+        data_queue: Queue = Queue()
         self._asynchronous_data_handling(queue=data_queue)
         self._execute_recursive_loops(loops=self.options.loops, queue=data_queue)
 

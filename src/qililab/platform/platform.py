@@ -10,6 +10,7 @@ from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
 from qililab.qprogram import QBloxCompiler, QProgram, Settings
+from qililab.result.qblox_results.qblox_result import QbloxResult
 from qililab.settings import RuncardSchema
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
@@ -76,10 +77,10 @@ class Platform:  # pylint: disable=too-many-public-methods
         self._connected_to_instruments = False
         logger.info("Disconnected from instruments")
 
-    def execute_qprogram(self, qprogram: QProgram):
+    def execute_qprogram(self, qprogram: QProgram) -> list[QbloxResult]:
         """Compile and execute a qprogram on the buses of the platform.
 
-        NOTE: this method might give trouble when the platform is used with the old buses, because they don't
+        NOTE: this method might have issues when the platform is used with the old buses, because they don't
         have the 'execute_qpysequence' method (actually not even the 'execute' method). This should be handled
         somehow, to maintain backwards compatibility.
 
@@ -87,16 +88,20 @@ class Platform:  # pylint: disable=too-many-public-methods
             qprogram (QProgram): The qprogram to execute.
 
         Returns:
-            dict: A dictionary where the keys are the buses and the values are the corresponding results of the experiment.
+            A list where each element is the results of the acquisition performed by a readout bus.
+            These results are represented as instances of the QbloxResult class.
         """
         compiler = QBloxCompiler(settings=Settings())
         compiled_results = compiler.compile(qprogram)
 
-        results = {}
         for bus in self.buses:
             sequence = compiled_results[bus.alias]
             bus.execute_qpysequence(sequence)
-            results[bus] = bus.get_results()
+
+        results = []
+        for bus in self.buses.readout_buses():
+            result = bus.acquire_results()
+            results.append(result)
 
         return results
 

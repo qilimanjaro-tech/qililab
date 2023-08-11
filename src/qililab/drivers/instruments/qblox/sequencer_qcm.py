@@ -86,13 +86,13 @@ class SequencerQCM(Sequencer, AWG):
         self.parent.arm_sequencer(sequencer=self.seq_idx)
         self.parent.start_sequencer(sequencer=self.seq_idx)
 
-    def execute_qpysequence(self, sequence: QpySequence):
+    def execute_qpysequence(self, qpysequence: QpySequence):
         """Execute a qpysequence on the instrument.
 
         Args:
             sequence: The qpysequence to execute.
         """
-        self.set("sequence", sequence.todict())
+        self.set("sequence", qpysequence.todict())
         self.parent.arm_sequencer(sequencer=self.seq_idx)
         self.parent.start_sequencer(sequencer=self.seq_idx)
 
