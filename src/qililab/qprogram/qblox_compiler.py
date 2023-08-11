@@ -24,7 +24,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import Waveform
+from qililab.waveforms import IQPair, Waveform
 
 
 class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
@@ -39,6 +39,7 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         # Dictionaries to hold mappings useful during compilation.
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
+        self.weight_to_index: dict[str, int] = {}
 
         # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
@@ -181,6 +182,33 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             raise NotImplementedError("Waveforms should have equal lengths.")
         return index_I, index_Q, length_I
 
+    def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
+        def handle_waveform(waveform: Waveform):
+            _hash = QBloxCompiler._hash(waveform)
+
+            if _hash in self._buses[bus].weight_to_index:
+                index = self._buses[bus].weight_to_index[_hash]
+                length = next(
+                    len(weight.data)
+                    for weight in self._buses[
+                        bus
+                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
+                    if weight.index == index
+                )
+                return index, length
+
+            envelope = waveform.envelope()
+            length = len(envelope)
+            index = self._buses[bus].qpy_sequence._weights.add(envelope)  # pylint: disable=protected-access
+            self._buses[bus].weight_to_index[_hash] = index
+            return index, length
+
+        index_I, length_I = handle_waveform(weights.I)
+        index_Q, length_Q = handle_waveform(weights.Q)
+        if length_I != length_Q:
+            raise NotImplementedError("Weights should have equal lengths.")
+        return index_I, index_Q, length_I
+
     def _handle_average(self, element: Average):
         for bus in self._buses:
             qpy_loop = QPyProgram.Loop(name=f"avg_{self._buses[bus].average_counter}", begin=element.shots)
@@ -297,6 +325,10 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             num_bins=num_bins,
             index=self._buses[element.bus].next_acquisition_index,
         )
+
+        if element.weights:
+            index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+
         if num_bins > 1:
             bin_register = QPyProgram.Register()
             block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
@@ -305,15 +337,49 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=bin_register,
-                    wait_time=self._settings.integration_length,
+            if element.weights:
+                register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_I, register=register_I),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
                 )
-            )
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_Q, register=register_Q),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.AcquireWeighed(
+                        acq_index=self._buses[element.bus].next_acquisition_index,
+                        bin_index=bin_register,
+                        weight_index_0=register_I,
+                        weight_index_1=register_Q,
+                        wait_time=integration_length,
+                    )
+                )
+            else:
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Acquire(
+                        acq_index=self._buses[element.bus].next_acquisition_index,
+                        bin_index=bin_register,
+                        wait_time=self._settings.integration_length,
+                    )
+                )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
+            )
+        elif element.weights:
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.AcquireWeighed(
+                    acq_index=self._buses[element.bus].next_acquisition_index,
+                    bin_index=self._buses[element.bus].next_bin_index,
+                    weight_index_0=index_I,
+                    weight_index_1=index_Q,
+                    wait_time=integration_length,
+                )
             )
         else:
             self._buses[element.bus].qpy_block_stack[-1].append_component(

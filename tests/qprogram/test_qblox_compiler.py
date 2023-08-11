@@ -37,6 +37,42 @@ def fixture_average() -> QProgram:
     return qp
 
 
+@pytest.fixture(name="average_with_weights")
+def fixture_acquire_loop_with_weights() -> QProgram:
+    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights = IQPair(
+        I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+        Q=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+    )
+    qp = QProgram()
+    with qp.average(shots=1000):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.sync()
+        qp.wait(bus="readout", time=100)
+        qp.play(bus="readout", waveform=readout_pair)
+        qp.acquire(bus="readout", weights=weights)
+    return qp
+
+
+@pytest.fixture(name="average_with_weights_of_different_length")
+def fixture_average_with_weights_of_different_lengths() -> QProgram:
+    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights = IQPair(
+        I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+        Q=Gaussian(amplitude=1.0, duration=500, num_sigmas=2.5),
+    )
+    qp = QProgram()
+    with qp.average(shots=1000):
+        qp.play(bus="drive", waveform=drag_pair)
+        qp.sync()
+        qp.wait(bus="readout", time=100)
+        qp.play(bus="readout", waveform=readout_pair)
+        qp.acquire(bus="readout", weights=weights)
+    return qp
+
+
 @pytest.fixture(name="average_with_for_loop")
 def fixture_average_with_for_loop() -> QProgram:
     drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
@@ -50,6 +86,26 @@ def fixture_average_with_for_loop() -> QProgram:
             qp.wait(bus="readout", time=wait_time)
             qp.play(bus="readout", waveform=readout_pair)
             qp.acquire(bus="readout")
+    return qp
+
+
+@pytest.fixture(name="acquire_loop_with_for_loop_with_weights")
+def fixture_acquire_loop_with_for_loop_with_weights() -> QProgram:
+    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    weights = IQPair(
+        I=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+        Q=Gaussian(amplitude=1.0, duration=1000, num_sigmas=2.5),
+    )
+    qp = QProgram()
+    wait_time = qp.variable(int)
+    with qp.average(shots=1000):
+        with qp.for_loop(variable=wait_time, start=0, stop=100, step=4):
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.sync()
+            qp.wait(bus="readout", time=wait_time)
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.acquire(bus="readout", weights=weights)
     return qp
 
 
@@ -202,6 +258,43 @@ class TestQBloxCompiler:
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 1000\n        acquire          0, 0, 1000\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
+    def test_average_with_weights(self, average_with_weights: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=average_with_weights)
+
+        assert len(output) == 2
+        assert "drive" in output
+        assert "readout" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["drive"]._waveforms._waveforms) == 2
+        assert len(output["drive"]._acquisitions._acquisitions) == 0
+        assert len(output["drive"]._weights._weights) == 0
+        assert output["drive"]._program._compiled
+        assert (
+            repr(output["drive"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        play             0, 1, 40\n        wait_sync        4\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+        assert len(output["readout"]._waveforms._waveforms) == 2
+        assert len(output["readout"]._acquisitions._acquisitions) == 1
+        assert output["readout"]._acquisitions._acquisitions[0].num_bins == 1
+        assert len(output["readout"]._weights._weights) == 1
+        assert output["readout"]._program._compiled
+        assert (
+            repr(output["readout"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        wait_sync        4\n        wait             100\n        play             0, 1, 1000\n        acquire_weighed  0, 0, 0, 0, 1000\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+    def test_average_with_weights_of_different_length_throws_exception(
+        self, average_with_weights_of_different_length: QProgram
+    ):
+        with pytest.raises(NotImplementedError, match="Weights should have equal lengths."):
+            compiler = QBloxCompiler(settings=Settings())
+            _ = compiler.compile(qprogram=average_with_weights_of_different_length)
+
     def test_average_with_for_loop(self, average_with_for_loop: QProgram):
         compiler = QBloxCompiler(settings=Settings())
         output = compiler.compile(qprogram=average_with_for_loop)
@@ -230,6 +323,36 @@ class TestQBloxCompiler:
         assert (
             repr(output["readout"]._program)
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             4, R2\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R2\n            play             0, 1, 1000\n            acquire          0, R1, 1000\n            add              R1, 1, R1\n            add              R2, 4, R2\n            nop\n            jlt              R2, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+    def test_acquire_loop_with_for_loop_with_weights(self, acquire_loop_with_for_loop_with_weights: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=acquire_loop_with_for_loop_with_weights)
+
+        assert len(output) == 2
+        assert "drive" in output
+        assert "readout" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["drive"]._waveforms._waveforms) == 2
+        assert len(output["drive"]._acquisitions._acquisitions) == 0
+        assert len(output["drive"]._weights._weights) == 0
+        assert output["drive"]._program._compiled
+        assert (
+            repr(output["drive"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             4, R1\n        loop_0:\n            wait_sync        4\n            play             0, 1, 40\n            wait_sync        4\n            add              R1, 4, R1\n            nop\n            jlt              R1, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+        assert len(output["readout"]._waveforms._waveforms) == 2
+        assert len(output["readout"]._acquisitions._acquisitions) == 1
+        assert output["readout"]._acquisitions._acquisitions[0].num_bins == 24
+        assert len(output["readout"]._weights._weights) == 1
+        assert output["readout"]._program._compiled
+        assert (
+            repr(output["readout"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        move             0, R2\n        move             0, R3\n        wait_sync        4\n        move             4, R4\n        loop_0:\n            wait_sync        4\n            wait_sync        4\n            wait             R4\n            play             0, 1, 1000\n            acquire_weighed  0, R3, R2, R1, 1000\n            add              R3, 1, R3\n            add              R4, 4, R4\n            nop\n            jlt              R4, 100, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_average_with_multiple_for_loops_and_acquires(self, average_with_multiple_for_loops_and_acquires: QProgram):
