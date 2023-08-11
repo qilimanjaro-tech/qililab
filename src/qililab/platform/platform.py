@@ -126,12 +126,12 @@ class Platform:  # pylint: disable=too-many-public-methods
         if alias is not None:
             if alias == Category.PLATFORM.value:
                 return self.transpilation_settings
-            regex_match = re.search(GATE_ALIAS_REGEX, alias)
+            regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
-                if name in self.gate_names:
+                if f"{name}({qubits_str})" in self.gate_names:
                     return self.transpilation_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)

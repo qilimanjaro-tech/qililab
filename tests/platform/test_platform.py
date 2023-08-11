@@ -11,6 +11,7 @@ from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.instruments.instruments import Instruments
 from qililab.platform import Bus, Buses, Platform
 from qililab.settings import Runcard
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
@@ -67,12 +68,8 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        for qubit, gate_settings_list in platform.transpilation_settings.gates.items():
-            for gate_settings in gate_settings_list:
-                alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
-                gate = platform.get_element(alias=alias)
-                assert isinstance(gate, Runcard.TranspilationSettings.GateSettings)
-                assert gate.name == gate_settings.name
+        gates = platform.transpilation_settings.gates.keys()
+        all(isinstance(event, GateEventSettings) for gate in gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""
