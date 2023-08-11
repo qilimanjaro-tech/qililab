@@ -179,6 +179,9 @@ This document contains the changes of the current release.
 - Add `ForLoop` iteration method to QProgram.
   [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
 
+- Add `Parallel` block to QProgram to allow parallel loops, and compilation support to QBloxCompiler.
+  [496](https://github.com/qilimanjaro-tech/qililab/pull/496)
+
 - Allow CZ gates to use different pulse shapes
   [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)
 

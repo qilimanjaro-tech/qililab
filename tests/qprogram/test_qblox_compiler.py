@@ -2,6 +2,7 @@ import pytest
 import qpysequence as QPy
 
 from qililab.qprogram import QBloxCompiler, QProgram, Settings
+from qililab.qprogram.blocks import ForLoop
 from qililab.waveforms import DragPulse, Gaussian, IQPair, Square
 
 
@@ -144,6 +145,29 @@ def fixture_average_with_nested_for_loops() -> QProgram:
                 qp.wait(bus="readout", time=wait_time)
                 qp.play(bus="readout", waveform=readout_pair)
                 qp.acquire(bus="readout")
+    return qp
+
+
+@pytest.fixture(name="average_with_parallel_for_loops")
+def fixture_average_with_parallel_for_loops() -> QProgram:
+    drag_pair = DragPulse(amplitude=1.0, duration=40, num_sigmas=4, drag_coefficient=1.2)
+    readout_pair = IQPair(I=Square(amplitude=1.0, duration=1000), Q=Square(amplitude=0.0, duration=1000))
+    qp = QProgram()
+    frequency = qp.variable(float)
+    gain = qp.variable(float)
+    with qp.average(shots=1000):
+        with qp.parallel(
+            loops=[
+                ForLoop(variable=frequency, start=100, stop=200, step=10),
+                ForLoop(variable=gain, start=0, stop=1, step=0.1),
+            ]
+        ):
+            qp.set_gain(bus="drive", gain_path0=gain, gain_path1=gain)
+            qp.set_frequency(bus="readout", frequency=frequency)
+            qp.play(bus="drive", waveform=drag_pair)
+            qp.sync()
+            qp.play(bus="readout", waveform=readout_pair)
+            qp.acquire(bus="readout")
     return qp
 
 
@@ -405,6 +429,36 @@ class TestQBloxCompiler:
         assert (
             repr(output["readout"]._program)
             == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             0, R2\n        loop_0:\n            wait_sync        4\n            move             4, R3\n            loop_1:\n                wait_sync        4\n                wait_sync        4\n                wait             R3\n                play             0, 1, 1000\n                acquire          0, R1, 1000\n                add              R1, 1, R1\n                add              R3, 4, R3\n                nop\n                jlt              R3, 100, @loop_1\n            add              R2, 3276, R2\n            nop\n            jlt              R2, 32767, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+    def test_average_with_parallel_for_loops(self, average_with_parallel_for_loops: QProgram):
+        compiler = QBloxCompiler(settings=Settings())
+        output = compiler.compile(qprogram=average_with_parallel_for_loops)
+
+        assert len(output) == 2
+        assert "drive" in output
+        assert "readout" in output
+
+        for bus in output:
+            assert isinstance(output[bus], QPy.Sequence)
+
+        assert len(output["drive"]._waveforms._waveforms) == 2
+        assert len(output["drive"]._acquisitions._acquisitions) == 0
+        assert len(output["drive"]._weights._weights) == 0
+        assert output["drive"]._program._compiled
+        assert (
+            repr(output["drive"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        wait_sync        4\n        move             400, R1\n        move             0, R2\n        move             10, R3\n        loop_0:\n            wait_sync        4\n            set_awg_gain     R2, R2\n            play             0, 1, 40\n            wait_sync        4\n            add              R2, 3276, R2\n            add              R1, 40, R1\n            loop             R3, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
+        )
+
+        assert len(output["readout"]._waveforms._waveforms) == 2
+        assert len(output["readout"]._acquisitions._acquisitions) == 1
+        assert output["readout"]._acquisitions._acquisitions[0].num_bins == 10
+        assert len(output["readout"]._weights._weights) == 0
+        assert output["readout"]._program._compiled
+        assert (
+            repr(output["readout"]._program)
+            == "setup:\n    wait_sync        4\n    \nmain:\n    move             1000, R0\n    avg_0:\n        move             0, R1\n        wait_sync        4\n        move             400, R2\n        move             0, R3\n        move             10, R4\n        loop_0:\n            wait_sync        4\n            set_freq         R2\n            wait_sync        4\n            play             0, 1, 1000\n            acquire          0, R1, 1000\n            add              R1, 1, R1\n            add              R3, 3276, R3\n            add              R2, 40, R2\n            loop             R4, @loop_0\n        loop             R0, @avg_0\n    stop\n    \n"
         )
 
     def test_for_loop_variable_with_no_targets_throws_exception(self, for_loop_variable_with_no_target: QProgram):

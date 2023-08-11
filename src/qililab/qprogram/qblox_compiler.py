@@ -9,7 +9,7 @@ import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -74,6 +74,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
@@ -190,9 +191,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 index = self._buses[bus].weight_to_index[_hash]
                 length = next(
                     len(weight.data)
-                    for weight in self._buses[
-                        bus
-                    ].qpy_sequence._waveforms._waveforms  # pylint: disable=protected-access
+                    for weight in self._buses[bus].qpy_sequence._weights._weights  # pylint: disable=protected-access
                     if weight.index == index
                 )
                 return index, length
@@ -208,6 +207,36 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         if length_I != length_Q:
             raise NotImplementedError("Weights should have equal lengths.")
         return index_I, index_Q, length_I
+
+    def _handle_parallel(self, element: Parallel):
+        if not element.loops:
+            raise NotImplementedError("Parallel block should contain loops.")
+        if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
+            raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
+        for bus in self._buses:
+            iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
+            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
+            for loop in element.loops:
+                operation = QBloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+                if not operation:
+                    raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
+                begin, _, step = QBloxCompiler._convert_for_loop_values(loop, operation)
+                loop_register = QPyProgram.Register()
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Move(var=begin, register=loop_register)
+                )
+                qpy_loop.builtin_components.insert(
+                    0,
+                    QPyInstructions.Add(loop_register, step, loop_register)
+                    if step > 0
+                    else QPyInstructions.Sub(loop_register, step, loop_register),
+                )
+                self._buses[bus].variable_to_register[loop.variable] = loop_register
+            qpy_loop.append_component(QPyInstructions.WaitSync(4))
+            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
+            self._buses[bus].qpy_block_stack.append(qpy_loop)
+            self._buses[bus].loop_counter += 1
+        return True
 
     def _handle_average(self, element: Average):
         for bus in self._buses:
@@ -404,7 +433,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             )
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: ForLoop):
+    def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -413,7 +442,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                     if any(variable is loop.variable for variable in element.get_variables()):
                         yield element
 
-        operations = list(collect_operations(loop))
+        starting_block = starting_block or loop
+        operations = list(collect_operations(starting_block))
 
         if not operations:
             return None
