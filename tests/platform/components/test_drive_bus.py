@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import qcodes.validators as vals
 from qcodes import Instrument
+from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers import parameters
@@ -22,7 +23,8 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
+ALIAS = "drivebus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -80,6 +82,9 @@ class MockQcmQrmRF(DummyInstrument):  # pylint: disable=abstract-method
                 vals=vals.Numbers(0, 20e9),
             )
 
+    def __str__(self):
+        return "MockQcmQrmRF"
+
 
 @pytest.fixture(name="pulse_bus_schedule")
 def fixture_pulse_bus_schedule() -> PulseBusSchedule:
@@ -107,14 +112,21 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
     att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-
-    return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    # duplicated parameter for testing purposes
+    attenuator.add_parameter(
+        "status",
+        label="Delegated parameter device status",
+        source=att_parent.parameters[f"{channel}_lo_en"],
+        parameter_class=DelegateParameter,
+    )
+    return attenuator
 
 
 @pytest.fixture(name="drive_bus")
 def fixture_drive_bus(sequencer: SequencerQCM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> DriveBus:
     """Return DriveBus instance"""
-    return DriveBus(qubit=QUBIT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
+    return DriveBus(alias=ALIAS, port=PORT, awg=sequencer, local_oscillator=local_oscillator, attenuator=attenuator)
 
 
 class TestDriveBus:
@@ -127,36 +139,67 @@ class TestDriveBus:
 
     def test_init(self, drive_bus: DriveBus):
         """Test init method"""
-        assert drive_bus.qubit == QUBIT
-        assert isinstance(drive_bus.awg, SequencerQCM)
-        assert isinstance(drive_bus.local_oscillator, QcmQrmRfLo)
-        assert isinstance(drive_bus.attenuator, QcmQrmRfAtt)
+        assert drive_bus.alias == ALIAS
+        assert drive_bus.port == PORT
+        assert isinstance(drive_bus.instruments["awg"], SequencerQCM)
+        assert isinstance(drive_bus.instruments["local_oscillator"], QcmQrmRfLo)
+        assert isinstance(drive_bus.instruments["attenuator"], QcmQrmRfAtt)
 
     def test_set(self, drive_bus: DriveBus):
         """Test set method"""
+        # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        drive_bus.set(param_name=sequencer_param, value=True)
+        drive_bus.set(param_name=lo_frequency_param, value=2)
+        drive_bus.set(param_name=attenuation_param, value=2)
 
-        assert drive_bus.awg.get(sequencer_param) is True
-        assert drive_bus.local_oscillator.get(lo_frequency_param) == 2
-        assert drive_bus.attenuator.get(attenuation_param) == 2
+        assert drive_bus.instruments["awg"].get(sequencer_param) is True
+        assert drive_bus.instruments["local_oscillator"].get(lo_frequency_param) == 2
+        assert drive_bus.instruments["attenuator"].get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            drive_bus.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            drive_bus.set(param_name=duplicated_param, value=True)
 
     def test_get(self, drive_bus: DriveBus):
         """Test get method"""
+        # Testing with parameters that exists
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        drive_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        drive_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        drive_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        drive_bus.set(param_name=sequencer_param, value=True)
+        drive_bus.set(param_name=lo_frequency_param, value=2)
+        drive_bus.set(param_name=attenuation_param, value=2)
 
-        assert drive_bus.get("awg", sequencer_param) is True
-        assert drive_bus.get("local_oscillator", lo_frequency_param) == 2
-        assert drive_bus.get("attenuator", attenuation_param) == 2
+        assert drive_bus.get(sequencer_param) is True
+        assert drive_bus.get(lo_frequency_param) == 2
+        assert drive_bus.get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            drive_bus.get(param_name=random_param)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            drive_bus.get(param_name=duplicated_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute(self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, drive_bus: DriveBus):
@@ -165,7 +208,6 @@ class TestDriveBus:
         repetition_duration = 1000
         num_bins = 1
         drive_bus.execute(
-            instrument_name="awg",
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
@@ -178,3 +220,13 @@ class TestDriveBus:
             repetition_duration=repetition_duration,
             num_bins=num_bins,
         )
+
+    def test_str(self, drive_bus: DriveBus):
+        """Unittest for __str__ method."""
+        expected_str = (
+            f"{ALIAS} ({drive_bus.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in drive_bus.instruments.values())
+            + f"--> port {drive_bus.port}"
+        )
+
+        assert str(drive_bus) == expected_str

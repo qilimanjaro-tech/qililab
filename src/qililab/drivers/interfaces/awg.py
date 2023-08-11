@@ -1,32 +1,14 @@
-from abc import ABC, abstractmethod
-from typing import Any
+from abc import abstractmethod
 
 from qililab.pulse import PulseBusSchedule
 
+from .base_instrument import BaseInstrument
 
-class AWG(ABC):
+
+class AWG(BaseInstrument):
     """
     Interface for AWG sequencer instrument types.
     """
-
-    @abstractmethod
-    def set(self, param_name: str, value: Any) -> None:
-        """Set parameter on the instrument.
-
-        Args:
-            param (str): Parameter's name.
-            value (float): Parameter's value
-        """
-
-    @abstractmethod
-    def get(self, param_name: str) -> Any:
-        """Return value associated to a parameter on the instrument.
-
-        Args:
-            param (str): Parameter's name.
-        Returns:
-            value (float): Parameter's value
-        """
 
     @abstractmethod
     def execute(

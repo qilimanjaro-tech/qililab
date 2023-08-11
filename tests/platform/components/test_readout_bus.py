@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import qcodes.validators as vals
 from qcodes import Instrument
+from qcodes.instrument import DelegateParameter
 from qcodes.tests.instrument_mocks import DummyInstrument
 
 from qililab.drivers import parameters
@@ -23,7 +24,8 @@ PULSE_NAME = Gaussian.name
 NUM_SLOTS = 20
 START_TIME_DEFAULT = 0
 START_TIME_NON_ZERO = 4
-QUBIT = 0
+PORT = 0
+ALIAS = "readout_bus_0"
 
 
 def get_pulse_bus_schedule(start_time: int, negative_amplitude: bool = False, number_pulses: int = 1):
@@ -88,12 +90,6 @@ def fixture_pulse_bus_schedule() -> PulseBusSchedule:
     return get_pulse_bus_schedule(start_time=0)
 
 
-@pytest.fixture(name="sequencer")
-def fixture_sequencer() -> SequencerQCM:
-    """Return SequencerQCM instance."""
-    return SequencerQCM(parent=MagicMock(), name="test_sequencer", seq_idx=0)
-
-
 @pytest.fixture(name="digitiser")
 def fixture_digitiser() -> SequencerQRM:
     """Return SequencerQRM instance."""
@@ -114,17 +110,26 @@ def fixture_attenuator() -> QcmQrmRfAtt:
     """Return QcmQrmRfAtt instance"""
     channel = "out1"
     att_parent = MockQcmQrmRF(f"test_qcmqrflo_{channel}", qcm_qrm="qcm")
-
-    return QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator = QcmQrmRfAtt(name=f"test_att_{channel}", parent=att_parent, channel=channel)
+    attenuator.add_parameter(
+        "status",
+        label="Delegated parameter device status",
+        source=att_parent.parameters[f"{channel}_lo_en"],
+        parameter_class=DelegateParameter,
+    )
+    return attenuator
 
 
 @pytest.fixture(name="readout_bus")
-def fixture_readout_bus(
-    sequencer: SequencerQCM, digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt
-) -> ReadoutBus:
+def fixture_readout_bus(digitiser: SequencerQRM, local_oscillator: QcmQrmRfLo, attenuator: QcmQrmRfAtt) -> ReadoutBus:
     """Return ReadoutBus instance"""
     return ReadoutBus(
-        qubit=QUBIT, awg=sequencer, digitiser=digitiser, local_oscillator=local_oscillator, attenuator=attenuator
+        alias=ALIAS,
+        port=PORT,
+        awg=digitiser,
+        digitiser=digitiser,
+        local_oscillator=local_oscillator,
+        attenuator=attenuator,
     )
 
 
@@ -138,43 +143,72 @@ class TestReadoutBus:
 
     def test_init(self, readout_bus: ReadoutBus):
         """Test init method"""
-
-        assert readout_bus.qubit == QUBIT
-        assert isinstance(readout_bus.awg, SequencerQCM)
-        assert isinstance(readout_bus.digitiser, SequencerQRM)
-        assert isinstance(readout_bus.local_oscillator, QcmQrmRfLo)
-        assert isinstance(readout_bus.attenuator, QcmQrmRfAtt)
+        assert readout_bus.alias == ALIAS
+        assert readout_bus.port == PORT
+        assert isinstance(readout_bus.instruments["awg"], SequencerQCM)
+        assert isinstance(readout_bus.instruments["digitiser"], SequencerQRM)
+        assert isinstance(readout_bus.instruments["local_oscillator"], QcmQrmRfLo)
+        assert isinstance(readout_bus.instruments["attenuator"], QcmQrmRfAtt)
 
     def test_set(self, readout_bus: ReadoutBus):
         """Test set method"""
+        # Testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
 
-        readout_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        readout_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
-        readout_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        readout_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        readout_bus.set(param_name=sequencer_param, value=True)
+        readout_bus.set(param_name=lo_frequency_param, value=2)
+        readout_bus.set(param_name=attenuation_param, value=2)
 
-        assert readout_bus.awg.get(sequencer_param) is True
-        assert readout_bus.digitiser.get(sequencer_param) is True
-        assert readout_bus.local_oscillator.get(lo_frequency_param) == 2
-        assert readout_bus.attenuator.get(attenuation_param) == 2
+        assert readout_bus.instruments["awg"].get(sequencer_param) is True
+        assert readout_bus.instruments["digitiser"].get(sequencer_param) is True
+        assert readout_bus.instruments["local_oscillator"].get(lo_frequency_param) == 2
+        assert readout_bus.instruments["attenuator"].get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            readout_bus.set(param_name=random_param, value=True)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            readout_bus.set(param_name=duplicated_param, value=True)
 
     def test_get(self, readout_bus: ReadoutBus):
         """Test get method"""
+        # Testing with parameters that exist
         sequencer_param = "channel_map_path0_out0_en"
         lo_frequency_param = parameters.lo.frequency
         attenuation_param = parameters.attenuator.attenuation
-        readout_bus.set(instrument_name="awg", param_name=sequencer_param, value=True)
-        readout_bus.set(instrument_name="digitiser", param_name=sequencer_param, value=True)
-        readout_bus.set(instrument_name="local_oscillator", param_name=lo_frequency_param, value=2)
-        readout_bus.set(instrument_name="attenuator", param_name=attenuation_param, value=2)
+        readout_bus.set(param_name=sequencer_param, value=True)
+        readout_bus.set(param_name=sequencer_param, value=True)
+        readout_bus.set(param_name=lo_frequency_param, value=2)
+        readout_bus.set(param_name=attenuation_param, value=2)
 
-        assert readout_bus.get("awg", sequencer_param) is True
-        assert readout_bus.get("digitiser", sequencer_param) is True
-        assert readout_bus.get("local_oscillator", lo_frequency_param) == 2
-        assert readout_bus.get("attenuator", attenuation_param) == 2
+        assert readout_bus.get(sequencer_param) is True
+        assert readout_bus.get(sequencer_param) is True
+        assert readout_bus.get(lo_frequency_param) == 2
+        assert readout_bus.get(attenuation_param) == 2
+
+        # Testing with parameter that does not exist
+        random_param = "some_random_param"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} doesn't contain any instrument with the parameter {random_param}."
+        ):
+            readout_bus.get(param_name=random_param)
+
+        # Testing with parameter that exists in more than one instrument
+        duplicated_param = "status"
+        with pytest.raises(
+            AttributeError, match=f"Bus {ALIAS} contains multiple instruments with the parameter {duplicated_param}."
+        ):
+            readout_bus.get(param_name=duplicated_param)
 
     @patch("qililab.drivers.instruments.qblox.sequencer_qcm.SequencerQCM.execute")
     def test_execute_sequencer(
@@ -185,30 +219,6 @@ class TestReadoutBus:
         repetition_duration = 1000
         num_bins = 1
         readout_bus.execute(
-            instrument_name="awg",
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
-
-        mock_execute.assert_called_once_with(
-            pulse_bus_schedule=pulse_bus_schedule,
-            nshots=nshots,
-            repetition_duration=repetition_duration,
-            num_bins=num_bins,
-        )
-
-    @patch("qililab.drivers.instruments.qblox.sequencer_qrm.SequencerQRM.execute")
-    def test_execute_digitiser(
-        self, mock_execute: MagicMock, pulse_bus_schedule: PulseBusSchedule, readout_bus: ReadoutBus
-    ):
-        """Test execute method"""
-        nshots = 1
-        repetition_duration = 1000
-        num_bins = 1
-        readout_bus.execute(
-            instrument_name="digitiser",
             pulse_bus_schedule=pulse_bus_schedule,
             nshots=nshots,
             repetition_duration=repetition_duration,
@@ -228,3 +238,13 @@ class TestReadoutBus:
         readout_bus.acquire_results()
 
         mock_acquire.assert_called_once()
+
+    def test_str(self, readout_bus: ReadoutBus):
+        """Unittest for __str__ method."""
+        expected_str = (
+            f"{ALIAS} ({readout_bus.__class__.__name__}): "
+            + "".join(f"--|{instrument.name}|" for instrument in readout_bus.instruments.values())
+            + f"--> port {readout_bus.port}"
+        )
+
+        assert str(readout_bus) == expected_str

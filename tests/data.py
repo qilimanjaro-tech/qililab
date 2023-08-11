@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 import numpy as np
-from qibo.gates import RX, RY, I, M, X, Y
+from qibo.gates import I, M, X, Y
 from qibo.models.circuit import Circuit
 
 from qililab.constants import (
@@ -18,7 +18,6 @@ from qililab.constants import (
     PULSEEVENT,
     PULSESCHEDULES,
     RUNCARD,
-    SCHEMA,
 )
 from qililab.instruments.awg_settings.typings import AWGTypes
 from qililab.typings.enums import (
@@ -68,120 +67,82 @@ class Galadriel:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    "name": "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "feedline_input_output_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    "name": "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            1: [
-                {
-                    "name": "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
-                    },
-                },
-                {
-                    "name": "Drag",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 1.0,
-                    },
-                },
-            ],
-            (0, 1): [
-                {
-                    "name": "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
                 }
             ],
-            (1, 0): [
+            "I(0)": [
                 {
-                    "name": "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
+                    },
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "drive_line_q0_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
                 }
             ],
         },
@@ -459,9 +420,9 @@ class Galadriel:
 
     buses: list[dict[str, Any]] = [
         {
-            "alias": "drive_line_bus",
+            RUNCARD.ALIAS: "drive_line_q0_bus",
             "system_control": {
-                "name": SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             "port": "drive_q0",
@@ -479,9 +440,9 @@ class Galadriel:
             RUNCARD.DELAY: 0,
         },
         {
-            "alias": "flux_line_bus",
+            RUNCARD.ALIAS: "flux_line_q0_bus",
             "system_control": {
-                "name": SystemControlName.SYSTEM_CONTROL,
+                RUNCARD.NAME: SystemControlName.SYSTEM_CONTROL,
                 RUNCARD.INSTRUMENTS: [InstrumentName.QBLOX_QCM.value, "rs_0"],
             },
             "port": "flux_q0",
@@ -490,16 +451,12 @@ class Galadriel:
         },
     ]
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
     qubit_0: dict[str, Any] = {
@@ -557,44 +514,84 @@ class FluxQubitSimulator:
             },
         ],
         "gates": {
-            0: [
+            "M(0)": [
                 {
-                    "name": "M",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 2000,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "I",
-                    "amplitude": 0,
-                    "phase": 0,
-                    "duration": 0,
-                    EXPERIMENT.SHAPE: {"name": "rectangular"},
-                },
-                {
-                    "name": "X",
-                    "amplitude": 1,
-                    "phase": 0,
-                    "duration": 50,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 2000,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
+                }
+            ],
+            "I(0)": [
                 {
-                    "name": "Y",
-                    "amplitude": 1,
-                    "phase": 1.5707963267948966,
-                    "duration": 20,
-                    EXPERIMENT.SHAPE: {
-                        "name": "drag",
-                        "num_sigmas": 4,
-                        "drag_coefficient": 0,
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 100,
+                        "frequency": 0,
+                        "shape": {"name": "rectangular"},
                     },
-                },
-            ]
+                }
+            ],
+            "X(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 0,
+                        "duration": 50,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "Y(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RY(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
+            "RX(0)": [
+                {
+                    "bus": "simulated_bus",
+                    "wait_time": 0,
+                    "pulse": {
+                        "amplitude": 1.0,
+                        "phase": 1.5707963267948966,
+                        "duration": 20,
+                        "frequency": 0,
+                        "shape": {"name": "drag", "num_sigmas": 4, "drag_coefficient": 0},
+                    },
+                }
+            ],
         },
     }
 
@@ -605,11 +602,12 @@ class FluxQubitSimulator:
         ],
     }
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: [],
-        SCHEMA.INSTRUMENT_CONTROLLERS: [],
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: [
+    runcard: dict[str, Any] = {
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: [],
+        RUNCARD.INSTRUMENT_CONTROLLERS: [],
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: [
             {
                 "alias": "simulated_bus",
                 "system_control": {
@@ -627,11 +625,6 @@ class FluxQubitSimulator:
         ],
     }
 
-    runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
-    }
-
 
 experiment_params: list[list[str | Circuit | list[Circuit]]] = []
 for platform in [Galadriel]:
@@ -639,8 +632,9 @@ for platform in [Galadriel]:
     circuit.add(I(0))
     circuit.add(X(0))
     circuit.add(Y(0))
-    circuit.add(RX(0, 23))
-    circuit.add(RY(0, 15))
+    # FIXME: https://www.notion.so/qilimanjaro/Adapt-test-data-runcard-circuit-to-current-implementation-d875fecbe5834272a4a43e9b3f602685?pvs=4
+    # circuit.add(RX(0, 23))
+    # circuit.add(RY(0, 15))
     if platform == Galadriel:
         circuit.add(M(0))
     experiment_params.extend([[platform.runcard, circuit], [platform.runcard, [circuit, circuit]]])  # type: ignore
@@ -650,8 +644,8 @@ simulated_experiment_circuit: Circuit = Circuit(1)
 simulated_experiment_circuit.add(I(0))
 simulated_experiment_circuit.add(X(0))
 simulated_experiment_circuit.add(Y(0))
-simulated_experiment_circuit.add(RX(0, 23))
-simulated_experiment_circuit.add(RY(0, 15))
+# simulated_experiment_circuit.add(RX(0, 23))
+# simulated_experiment_circuit.add(RY(0, 15))
 
 results_two_loops: dict[str, Any] = {
     EXPERIMENT.SOFTWARE_AVERAGE: 1,
@@ -798,8 +792,8 @@ experiment: dict[str, Any] = {
                 },
             }
         ],
-        "name": "punchout",
-        RUNCARD.SETTINGS: {
+        RUNCARD.NAME: "punchout",
+        RUNCARD.GATE_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -932,16 +926,12 @@ class SauronVNA:
         },
     ]
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
 

@@ -1,7 +1,7 @@
 """__init__.py"""
 from qiboconnection.api import API
 
-from .components import Bus, BusElement, Buses, Schema
+from .components import Bus, BusElement, Buses
 from .platform import Platform
 from .platform_manager_db import PlatformManagerDB
 from .platform_manager_yaml import PlatformManagerYAML
@@ -10,7 +10,9 @@ PLATFORM_MANAGER_DB = PlatformManagerDB()
 PLATFORM_MANAGER_YAML = PlatformManagerYAML()
 
 
-def build_platform(name: str, connection: API | None = None, database: bool = False) -> Platform:
+def build_platform(
+    name: str, connection: API | None = None, database: bool = False, new_drivers: bool = False
+) -> Platform:
     """Build platform.
 
     Args:
@@ -22,7 +24,7 @@ def build_platform(name: str, connection: API | None = None, database: bool = Fa
     """
     if database:
         raise NotImplementedError
-    return PLATFORM_MANAGER_YAML.build(platform_name=name, connection=connection)
+    return PLATFORM_MANAGER_YAML.build(platform_name=name, connection=connection, new_drivers=new_drivers)
 
 
 def save_platform(platform: Platform, database: bool = False):

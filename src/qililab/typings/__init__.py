@@ -16,7 +16,6 @@ from .enums import (
     PulseShapeSettingsName,
     ReferenceClock,
     ResultName,
-    SchemaDrawOptions,
 )
 from .experiment import ExperimentOptions, ExperimentSettings
 from .factory_element import FactoryElement

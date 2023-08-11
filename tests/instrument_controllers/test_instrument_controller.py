@@ -1,5 +1,6 @@
 """This file tests the the ``InstrumentController`` class"""
 import pytest
+import yaml
 
 from qililab.constants import CONNECTION, INSTRUMENTCONTROLLER, RUNCARD
 from qililab.instrument_controllers.rohde_schwarz import SGS100AController
@@ -72,3 +73,8 @@ class TestConnection:
             match=f"The {name.value} Instrument Controller only supports 1 module/s.You have loaded 2 modules.",
         ):
             SGS100AController(settings=rs_settings, loaded_instruments=platform.instruments)
+
+    def test_print_instrument_controllers(self, platform: Platform):
+        """Test print instruments."""
+        instr_cont = platform.instrument_controllers
+        assert str(instr_cont) == str(yaml.dump(instr_cont.to_dict(), sort_keys=False))

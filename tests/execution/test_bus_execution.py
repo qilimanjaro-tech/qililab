@@ -7,7 +7,7 @@ from qpysequence import Sequence
 
 from qililab import build_platform
 from qililab.execution import BusExecution, ExecutionManager
-from qililab.experiment.circuit_experiment import CircuitExperiment
+from qililab.experiment.experiment import Experiment
 from qililab.instruments import AWG
 from qililab.pulse import Gaussian, Pulse, PulseBusSchedule, PulseEvent
 from qililab.typings import Parameter
@@ -29,7 +29,7 @@ def fixture_pulse_event() -> PulseEvent:
 
 
 @pytest.fixture(name="execution_manager")
-def fixture_execution_manager(experiment: CircuitExperiment) -> ExecutionManager:
+def fixture_execution_manager(experiment: Experiment) -> ExecutionManager:
     """Load ExecutionManager.
 
     Returns:
@@ -54,7 +54,7 @@ def fixture_experiment(request: pytest.FixtureRequest):
         values=np.arange(start=4, stop=1000, step=40),
     )
     options = ExperimentOptions(loops=[loop])
-    return CircuitExperiment(
+    return Experiment(
         platform=platform, circuits=circuits if isinstance(circuits, list) else [circuits], options=options
     )
 
@@ -117,7 +117,7 @@ class TestBusExecution:
     def test_acquire_results_raises_error(self, bus_execution: BusExecution):
         """Test that the ``acquire_results`` raises an error when no readout system control is present."""
         with pytest.raises(
-            ValueError, match="The bus drive_line_bus needs a readout system control to acquire the results"
+            ValueError, match="The bus drive_line_q0_bus needs a readout system control to acquire the results"
         ):
             bus_execution.acquire_result()
 

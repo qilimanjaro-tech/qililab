@@ -27,7 +27,9 @@ class TestBus:
 
     def test_print_bus(self, bus: Bus):
         """Test print bus."""
-        print(bus)
+        assert str(bus) == f"Bus {bus.id_}:  ----{bus.system_control}---" + "".join(
+            f"--|{target}|----" for target in bus.targets
+        )
 
     def test_set_parameter(self, bus: Bus):
         """Test set_parameter method."""

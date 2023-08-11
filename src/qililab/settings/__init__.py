@@ -1,3 +1,3 @@
 """__init__.py"""
-from .runcard_schema import RuncardSchema
+from .runcard import Runcard
 from .settings import Settings
