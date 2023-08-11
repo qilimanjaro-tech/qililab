@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -16,7 +17,7 @@ from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from qililab.typings.yaml_type import yaml
 from tests.data import Galadriel
-from tests.test_utils import platform_db, platform_yaml
+from tests.test_utils import platform_db
 
 
 @pytest.mark.parametrize("runcard", [Runcard(**Galadriel.runcard)])
@@ -37,7 +38,11 @@ class TestPlatformInitialization:
         assert platform._connected_to_instruments is False
 
 
-@pytest.mark.parametrize("platform", [platform_db(runcard=Galadriel.runcard), platform_yaml(runcard=Galadriel.runcard)])
+@pytest.fixture(name="platform")
+def fixture_platform():
+    return copy.deepcopy(platform_db(Galadriel.runcard))
+
+
 class TestPlatform:
     """Unit tests checking the Platform class."""
 

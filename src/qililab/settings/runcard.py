@@ -5,10 +5,11 @@ from dataclasses import dataclass
 from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
-from qililab.settings import Settings
 from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
+
+from .settings import Settings
 
 # pylint: disable=too-few-public-methods
 
@@ -44,8 +45,6 @@ class Runcard:
     class BusSettings:
         """Bus settings class."""
 
-        id_: int
-        category: str
         system_control: dict
         port: int
         distortions: list[dict]
@@ -56,10 +55,7 @@ class Runcard:
     class ChipSettings:
         """Chip settings class."""
 
-        id_: int
-        category: str
         nodes: list[dict]
-        alias: str | None = None
 
     @nested_dataclass
     class GateSettings(Settings):
