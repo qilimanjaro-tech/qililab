@@ -5,8 +5,9 @@ import numpy as np
 import pytest
 
 from qililab.qprogram import QProgram
-from qililab.qprogram.blocks.acquire_loop import AcquireLoop
+from qililab.qprogram.blocks.average import Average
 from qililab.qprogram.blocks.block import Block
+from qililab.qprogram.blocks.for_loop import ForLoop
 from qililab.qprogram.blocks.loop import Loop
 from qililab.qprogram.operations.acquire import Acquire
 from qililab.qprogram.operations.operation import Operation
@@ -52,6 +53,24 @@ class TestQProgram:
         assert len(qp._program.elements) == 1
         assert qp._program.elements[0] is block
 
+    def test_for_loop_method(self):
+        """Test loop method"""
+        qp = QProgram()
+        variable = qp.variable(int)
+        start, stop, step = 0, 100, 5
+        with qp.for_loop(variable=variable, start=start, stop=stop, step=step) as loop:
+            # __enter__
+            assert isinstance(loop, ForLoop)
+            assert loop.variable == variable
+            assert loop.start == start
+            assert loop.stop == stop
+            assert loop.step == step
+            assert qp._active_block is loop
+        # __exit__
+        assert len(qp._program.elements) == 1
+        assert qp._program.elements[0] is loop
+        assert qp._active_block is qp._program
+
     def test_loop_method(self):
         """Test loop method"""
         qp = QProgram()
@@ -71,11 +90,10 @@ class TestQProgram:
     def test_acquire_loop_method(self):
         """Test acquire_loop method"""
         qp = QProgram()
-        with qp.acquire_loop(iterations=1000, bins=10) as loop:
+        with qp.average(shots=1000) as loop:
             # __enter__
-            assert isinstance(loop, AcquireLoop)
-            assert loop.iterations == 1000
-            assert loop.bins == 10
+            assert isinstance(loop, Average)
+            assert loop.shots == 1000
             assert qp._active_block is loop
         # __exit__
         assert len(qp._program.elements) == 1
