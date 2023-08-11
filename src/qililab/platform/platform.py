@@ -89,11 +89,13 @@ class Platform:  # pylint: disable=too-many-public-methods
         compiler = QBloxCompiler(settings=Settings())
         compiled_results = compiler.compile(qprogram)
 
+        results = {}
         for bus in self.buses:
             sequence = compiled_results[bus.alias]
             bus.execute_qpysequence(sequence)
+            results[bus] = bus.get_results()
 
-        return bus.get_results()
+        return results
 
     def get_element(self, alias: str):
         """Get platform element.
