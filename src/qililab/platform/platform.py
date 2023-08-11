@@ -85,6 +85,9 @@ class Platform:  # pylint: disable=too-many-public-methods
 
         Args:
             qprogram (QProgram): The qprogram to execute.
+
+        Returns:
+            dict: A dictionary where the keys are the buses and the values are the corresponding results of the experiment.
         """
         compiler = QBloxCompiler(settings=Settings())
         compiled_results = compiler.compile(qprogram)
