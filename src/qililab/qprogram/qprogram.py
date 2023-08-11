@@ -2,7 +2,7 @@ from collections import deque
 
 import numpy as np
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Play,
@@ -78,6 +78,26 @@ class QProgram:
             >>>    # operations that shall be executed in the block
         """
         return QProgram._BlockContext(qprogram=self)
+
+    def parallel(self, loops: list[ForLoop]):
+        """Define a block for running multiple loops in parallel.
+
+        Blocks need to open a scope.
+
+        Examples:
+            >>> gain = qp.variable(float)
+            >>> frequency = qp.variable(float)
+            >>> with qp.parallel(loops=[ForLoop(variable=frequency, start=0, stop=100, step=10),
+                                        ForLoop(variable=gain, start=0.0, stop=1.0, step=0.1)]):
+            >>>    # operations that shall be executed in the block
+
+        Args:
+            loops (list[Loop  |  ForLoop]): The loops to run in parallel
+
+        Returns:
+            Parallel: The parallel block.
+        """
+        return QProgram._ParallelContext(qprogram=self, loops=loops)
 
     def average(self, shots: int):
         """Define an acquire loop block with averaging in real time.
@@ -272,6 +292,15 @@ class QProgram:
         def __exit__(self, exc_type, exc_value, exc_tb):
             block = self.qprogram._pop_from_block_stack()
             self.qprogram._active_block.append(block)
+
+    class _ParallelContext(_BlockContext):  # pylint: disable=too-few-public-methods
+        def __init__(self, qprogram: "QProgram", loops: list[ForLoop]):  # pylint: disable=super-init-not-called
+            self.qprogram = qprogram
+            self.block: Parallel = Parallel(loops=loops)
+
+        def __enter__(self) -> Parallel:
+            self.qprogram._append_to_block_stack(block=self.block)
+            return self.block
 
     class _LoopContext(_BlockContext):  # pylint: disable=too-few-public-methods
         def __init__(  # pylint: disable=super-init-not-called

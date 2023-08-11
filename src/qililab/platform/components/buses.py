@@ -52,6 +52,14 @@ class Buses:
         """Return a dict representation of the Buses class."""
         return [bus.to_dict() for bus in self.elements]
 
+    def __str__(self) -> str:
+        """String representation of the buses
+
+        Returns:
+            str: Buses structure representation
+        """
+        return "\n".join(str(bus) for bus in self.elements)
+
     @property
     def readout_buses(self) -> list[Bus]:
         """Returns a list of buses containing system controls used for readout."""

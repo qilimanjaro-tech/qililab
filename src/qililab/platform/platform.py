@@ -1,39 +1,78 @@
 """Platform class."""
 import ast
 import re
+from copy import deepcopy
 from dataclasses import asdict
 from queue import Queue
 
 from qibo.models import Circuit
 from qiboconnection.api import API
 
+from qililab.chip import Chip
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
+from qililab.instrument_controllers import InstrumentController, InstrumentControllers
+from qililab.instrument_controllers.utils import InstrumentControllerFactory
+from qililab.instruments.instrument import Instrument
+from qililab.instruments.instruments import Instruments
+from qililab.instruments.utils import InstrumentFactory
 from qililab.pulse import PulseSchedule
 from qililab.result import Result
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
-from .components import Bus, Schema
+from .components import Bus, Buses
 from .components.bus_element import dict_factory
 
 
 class Platform:  # pylint: disable=too-many-public-methods
     """Platform object that describes setup used to control quantum devices.
 
+    The class will receive the Runcard class, with all the GateSettings, ChipSettings, BusSettings that the
+    Runcard class has created from the dictionaries, together with the instrument dictionaries that the Runcard class
+    has not transform into classes yet.
+
+    And with all that information instantiates the actual qililab Chip, Buses/Bus and corresponding Instrument classes.
+
+    This class also handles the corresponding dis/connections, set_ups, set_parameters and turning the instruments on/off.
+
     Args:
-        settings (PlatformSettings): Settings of the platform.
-        schema (Schema): Schema object.
-        buses (Buses): Container of Bus objects.
+        runcard (Runcard): Runcard class containing all the chip, buses & instruments information of the platform.
+        connection (API | None = None): Connection of the platform.
     """
 
-    def __init__(self, runcard_schema: RuncardSchema, connection: API | None = None):
-        self.settings = runcard_schema.settings
-        self.schema = Schema(**asdict(runcard_schema.schema))  # type: ignore
+    def __init__(self, runcard: Runcard, connection: API | None = None):
+        """instantiates the platform"""
+
+        self.gate_settings = runcard.gate_settings
+        """Exactly the gate_settings in the Runcard class"""
+
+        self.instruments = Instruments(elements=self._load_instruments(instruments_dict=runcard.instruments))
+        """Instruments corresponding classes, instantiated given the instruments list[dict] of the Runcard class"""
+
+        self.instrument_controllers = InstrumentControllers(
+            elements=self._load_instrument_controllers(instrument_controllers_dict=runcard.instrument_controllers)
+        )
+        """InstrumentControllers corresponding classes, instantiated given the instrument_controllers list[dict] of the Runcard class"""
+
+        self.chip = Chip(**asdict(runcard.chip))
+        """Chip class, instantiated given the ChipSettings class of the Runcard class"""
+
+        self.buses = Buses(
+            elements=[
+                Bus(settings=asdict(bus), platform_instruments=self.instruments, chip=self.chip)
+                for bus in runcard.buses
+            ]
+        )
+        """Buses class, instantiated given the list[BusSettings] classes of the Runcard class"""
+
         self.connection = connection
+        """Connection of the platform. Same as the argument"""
+
         self._connected_to_instruments: bool = False
+        """Boolean describing the connection to instruments. Defaults to False (not connected)"""
 
     def connect(self, manual_override=False):
         """Blocks the given device and connects to the instruments.
@@ -92,14 +131,14 @@ class Platform:  # pylint: disable=too-many-public-methods
         """
         if alias is not None:
             if alias == Category.PLATFORM.value:
-                return self.settings
+                return self.gate_settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias.split("_")[0])
             if regex_match is not None:
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if f"{name}({qubits_str})" in self.gate_names:
-                    return self.settings.get_gate(name=name, qubits=qubits)
+                    return self.gate_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
         if element is None:
@@ -153,10 +192,45 @@ class Platform:  # pylint: disable=too-many-public-methods
         """
         regex_match = re.search(GATE_ALIAS_REGEX, alias)
         if alias == Category.PLATFORM.value or regex_match is not None:
-            self.settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
+            self.gate_settings.set_parameter(alias=alias, parameter=parameter, value=value, channel_id=channel_id)
             return
         element = self.get_element(alias=alias)
         element.set_parameter(parameter=parameter, value=value, channel_id=channel_id)
+
+    def _load_instruments(self, instruments_dict: list[dict]) -> list[Instrument]:
+        """Instantiate all instrument classes from their respective dictionaries.
+
+        Args:
+            instruments_dict (list[dict]): List of dictionaries containing the settings of each instrument.
+
+        Returns:
+            list[Instrument]: List of instantiated instrument classes.
+        """
+        instruments = []
+        for instrument in instruments_dict:
+            local_dict = deepcopy(instrument)
+            instruments.append(InstrumentFactory.get(local_dict.pop(RUNCARD.NAME))(settings=local_dict))
+        return instruments
+
+    def _load_instrument_controllers(self, instrument_controllers_dict: list[dict]) -> list[InstrumentController]:
+        """Instantiate all instrument controller classes from their respective dictionaries.
+
+        Args:
+            instrument_controllers_dict (list[dict]): List of dictionaries containing
+            the settings of each instrument controller.
+
+        Returns:
+            list[InstrumentController]: List of instantiated instrument controller classes.
+        """
+        instrument_controllers = []
+        for instrument_controller in instrument_controllers_dict:
+            local_dict = deepcopy(instrument_controller)
+            instrument_controllers.append(
+                InstrumentControllerFactory.get(local_dict.pop(RUNCARD.NAME))(
+                    settings=local_dict, loaded_instruments=self.instruments
+                )
+            )
+        return instrument_controllers
 
     @property
     def id_(self):
@@ -165,7 +239,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             int: settings.id_.
         """
-        return self.settings.id_
+        return self.gate_settings.id_
 
     @property
     def name(self):
@@ -174,7 +248,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             str: settings.name.
         """
-        return self.settings.name
+        return self.gate_settings.name
 
     @property
     def category(self):
@@ -183,16 +257,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             str: settings.category.
         """
-        return self.settings.category
-
-    @property
-    def buses(self):
-        """Platform 'buses' property.
-
-        Returns:
-            Buses: schema.buses.
-        """
-        return self.schema.buses
+        return self.gate_settings.category
 
     @property
     def num_qubits(self):
@@ -210,34 +275,7 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             list[str]: List of the names of all the defined gates.
         """
-        return self.settings.gate_names
-
-    @property
-    def instruments(self):
-        """Platform 'instruments' property.
-
-        Returns:
-            Instruments: List of all instruments.
-        """
-        return self.schema.instruments
-
-    @property
-    def chip(self):
-        """Platform 'chip' property.
-
-        Returns:
-            Chip: Class descibing the chip properties.
-        """
-        return self.schema.chip
-
-    @property
-    def instrument_controllers(self):
-        """Platform 'instrument_controllers' property.
-
-        Returns:
-            InstrumentControllers: List of all instrument controllers.
-        """
-        return self.schema.instrument_controllers
+        return self.gate_settings.gate_names
 
     @property
     def device_id(self):
@@ -246,13 +284,21 @@ class Platform:  # pylint: disable=too-many-public-methods
         Returns:
             int: id of the platform device
         """
-        return self.settings.device_id
+        return self.gate_settings.device_id
 
     def to_dict(self):
         """Return all platform information as a dictionary."""
-        platform_dict = {RUNCARD.SETTINGS: asdict(self.settings, dict_factory=dict_factory)}
-        schema_dict = {RUNCARD.SCHEMA: self.schema.to_dict()}
-        return platform_dict | schema_dict
+        gate_settings_dict = {RUNCARD.GATE_SETTINGS: asdict(self.gate_settings, dict_factory=dict_factory)}
+        chip_dict = {RUNCARD.CHIP: self.chip.to_dict() if self.chip is not None else None}
+        buses_dict = {RUNCARD.BUSES: self.buses.to_dict() if self.buses is not None else None}
+        instrument_dict = {RUNCARD.INSTRUMENTS: self.instruments.to_dict() if self.instruments is not None else None}
+        instrument_controllers_dict = {
+            RUNCARD.INSTRUMENT_CONTROLLERS: self.instrument_controllers.to_dict()
+            if self.instrument_controllers is not None
+            else None,
+        }
+
+        return gate_settings_dict | chip_dict | buses_dict | instrument_dict | instrument_controllers_dict
 
     def __str__(self) -> str:
         """String representation of the platform

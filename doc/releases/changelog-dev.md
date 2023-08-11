@@ -4,6 +4,53 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Delete `Schema` class from `Platform` and `RuncardSchema` classes (and from the rest of qililab).
+
+  Also `RuncardSchema` is now called simply `Runcard` (since its the class that maps our runcard files).
+
+  This PR brings importants simplifications to the full qililab structure, now the runcard will have the following structure:
+
+  ```yaml
+  gate_settings:
+    ...
+
+  chip:
+    ...
+
+  buses:
+    ...
+
+  instruments:
+    ...
+
+  instrument_controllers:
+    ...
+  ```
+
+  instead than the previous:
+
+  ```yaml
+  settings:
+    ...
+
+  schema:
+    chip:
+      ...
+
+    buses:
+      ...
+
+    instruments:
+      ...
+
+    instrument_controllers:
+      ...
+  ```
+
+  Notice also how `settings` (and his respective class `PlatformSettings`) has changed to `gate_settings` (and the class to `GateSettings` having the runcard string and the class the same name now, before they didn't).
+
+  [#475](https://github.com/qilimanjaro-tech/qililab/pull/475)
+
 - Simplify circuit gate to pulse transpilation.
   Previous hardware gates are removed. Now gates can be defined in the runcard as a list of
   `GateEvent` items with bus, wait time (optional) and pulse information. This allows more
@@ -178,6 +225,9 @@ This document contains the changes of the current release.
 
 - Add `ForLoop` iteration method to QProgram.
   [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
+
+- Add `Parallel` block to QProgram to allow parallel loops, and compilation support to QBloxCompiler.
+  [496](https://github.com/qilimanjaro-tech/qililab/pull/496)
 
 - Allow CZ gates to use different pulse shapes
   [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)

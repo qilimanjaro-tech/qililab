@@ -9,7 +9,7 @@ import qpysequence as QPy
 import qpysequence.program as QPyProgram
 import qpysequence.program.instructions as QPyInstructions
 
-from qililab.qprogram.blocks import Average, Block, ForLoop, Loop
+from qililab.qprogram.blocks import Average, Block, ForLoop, Loop, Parallel
 from qililab.qprogram.operations import (
     Acquire,
     Operation,
@@ -24,7 +24,7 @@ from qililab.qprogram.operations import (
 )
 from qililab.qprogram.qprogram import QProgram
 from qililab.qprogram.variable import Variable
-from qililab.waveforms import Waveform
+from qililab.waveforms import IQPair, Waveform
 
 
 class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
@@ -39,6 +39,7 @@ class BusInfo:  # pylint: disable=too-many-instance-attributes, too-few-public-m
         # Dictionaries to hold mappings useful during compilation.
         self.variable_to_register: dict[Variable, QPyProgram.Register] = {}
         self.waveform_to_index: dict[str, int] = {}
+        self.weight_to_index: dict[str, int] = {}
 
         # Create and append the main block to the Sequence's program
         main_block = QPyProgram.Block(name="main")
@@ -73,6 +74,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
 
         # Handlers to map each operation to a corresponding handler function
         self._handlers: dict[type, Callable] = {
+            Parallel: self._handle_parallel,
             Average: self._handle_average,
             ForLoop: self._handle_for_loop,
             Loop: self._handle_loop,
@@ -180,6 +182,61 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
         if length_I != length_Q:
             raise NotImplementedError("Waveforms should have equal lengths.")
         return index_I, index_Q, length_I
+
+    def _append_to_weights_of_bus(self, bus: str, weights: IQPair):
+        def handle_waveform(waveform: Waveform):
+            _hash = QBloxCompiler._hash(waveform)
+
+            if _hash in self._buses[bus].weight_to_index:
+                index = self._buses[bus].weight_to_index[_hash]
+                length = next(
+                    len(weight.data)
+                    for weight in self._buses[bus].qpy_sequence._weights._weights  # pylint: disable=protected-access
+                    if weight.index == index
+                )
+                return index, length
+
+            envelope = waveform.envelope()
+            length = len(envelope)
+            index = self._buses[bus].qpy_sequence._weights.add(envelope)  # pylint: disable=protected-access
+            self._buses[bus].weight_to_index[_hash] = index
+            return index, length
+
+        index_I, length_I = handle_waveform(weights.I)
+        index_Q, length_Q = handle_waveform(weights.Q)
+        if length_I != length_Q:
+            raise NotImplementedError("Weights should have equal lengths.")
+        return index_I, index_Q, length_I
+
+    def _handle_parallel(self, element: Parallel):
+        if not element.loops:
+            raise NotImplementedError("Parallel block should contain loops.")
+        if len({int((loop.stop - loop.start) / loop.step) for loop in element.loops}) != 1:
+            raise NotImplementedError("Loops run in parallel should have the same number of iterations.")
+        for bus in self._buses:
+            iterations = int((element.loops[0].stop - element.loops[0].start) / element.loops[0].step)
+            qpy_loop = QPyProgram.Loop(name=f"loop_{self._buses[bus].loop_counter}", begin=iterations)
+            for loop in element.loops:
+                operation = QBloxCompiler._get_reference_operation_of_loop(loop=loop, starting_block=element)
+                if not operation:
+                    raise NotImplementedError("Variables referenced in loops should be used in at least one operation.")
+                begin, _, step = QBloxCompiler._convert_for_loop_values(loop, operation)
+                loop_register = QPyProgram.Register()
+                self._buses[bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Move(var=begin, register=loop_register)
+                )
+                qpy_loop.builtin_components.insert(
+                    0,
+                    QPyInstructions.Add(loop_register, step, loop_register)
+                    if step > 0
+                    else QPyInstructions.Sub(loop_register, step, loop_register),
+                )
+                self._buses[bus].variable_to_register[loop.variable] = loop_register
+            qpy_loop.append_component(QPyInstructions.WaitSync(4))
+            self._buses[bus].qpy_block_stack[-1].append_component(qpy_loop)
+            self._buses[bus].qpy_block_stack.append(qpy_loop)
+            self._buses[bus].loop_counter += 1
+        return True
 
     def _handle_average(self, element: Average):
         for bus in self._buses:
@@ -297,6 +354,10 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             num_bins=num_bins,
             index=self._buses[element.bus].next_acquisition_index,
         )
+
+        if element.weights:
+            index_I, index_Q, integration_length = self._append_to_weights_of_bus(element.bus, weights=element.weights)
+
         if num_bins > 1:
             bin_register = QPyProgram.Register()
             block_index_for_move_instruction = loops[0][0] - 1 if loops else -2
@@ -305,15 +366,49 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                 component=QPyInstructions.Move(var=self._buses[element.bus].next_bin_index, register=bin_register),
                 bot_position=len(self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components),
             )
-            self._buses[element.bus].qpy_block_stack[-1].append_component(
-                component=QPyInstructions.Acquire(
-                    acq_index=self._buses[element.bus].next_acquisition_index,
-                    bin_index=bin_register,
-                    wait_time=self._settings.integration_length,
+            if element.weights:
+                register_I, register_Q = QPyProgram.Register(), QPyProgram.Register()
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_I, register=register_I),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
                 )
-            )
+                self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].append_component(
+                    component=QPyInstructions.Move(var=index_Q, register=register_Q),
+                    bot_position=len(
+                        self._buses[element.bus].qpy_block_stack[block_index_for_move_instruction].components
+                    ),
+                )
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.AcquireWeighed(
+                        acq_index=self._buses[element.bus].next_acquisition_index,
+                        bin_index=bin_register,
+                        weight_index_0=register_I,
+                        weight_index_1=register_Q,
+                        wait_time=integration_length,
+                    )
+                )
+            else:
+                self._buses[element.bus].qpy_block_stack[-1].append_component(
+                    component=QPyInstructions.Acquire(
+                        acq_index=self._buses[element.bus].next_acquisition_index,
+                        bin_index=bin_register,
+                        wait_time=self._settings.integration_length,
+                    )
+                )
             self._buses[element.bus].qpy_block_stack[block_index_for_add_instruction].append_component(
                 component=QPyInstructions.Add(origin=bin_register, var=1, destination=bin_register)
+            )
+        elif element.weights:
+            self._buses[element.bus].qpy_block_stack[-1].append_component(
+                component=QPyInstructions.AcquireWeighed(
+                    acq_index=self._buses[element.bus].next_acquisition_index,
+                    bin_index=self._buses[element.bus].next_bin_index,
+                    weight_index_0=index_I,
+                    weight_index_1=index_Q,
+                    wait_time=integration_length,
+                )
             )
         else:
             self._buses[element.bus].qpy_block_stack[-1].append_component(
@@ -338,7 +433,7 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
             )
 
     @staticmethod
-    def _get_reference_operation_of_loop(loop: ForLoop):
+    def _get_reference_operation_of_loop(loop: ForLoop, starting_block: Block | None = None):
         def collect_operations(block: Block):
             for element in block.elements:
                 if isinstance(element, Block):
@@ -347,7 +442,8 @@ class QBloxCompiler:  # pylint: disable=too-few-public-methods
                     if any(variable is loop.variable for variable in element.get_variables()):
                         yield element
 
-        operations = list(collect_operations(loop))
+        starting_block = starting_block or loop
+        operations = list(collect_operations(starting_block))
 
         if not operations:
             return None

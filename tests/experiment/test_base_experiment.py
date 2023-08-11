@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from qililab import build_platform
-from qililab.constants import DATA, RUNCARD, SCHEMA
+from qililab.constants import DATA, RUNCARD
 from qililab.execution.execution_manager import ExecutionManager
 from qililab.experiment.base_experiment import BaseExperiment
 from qililab.platform import Platform
@@ -142,7 +142,7 @@ def fixture_experiment_reset(request: pytest.FixtureRequest):
     runcard = copy.deepcopy(runcard)
     with patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=runcard) as mock_load:
         with patch("qililab.platform.platform_manager_yaml.open") as mock_open:
-            mock_load.return_value[RUNCARD.SCHEMA][SCHEMA.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
+            mock_load.return_value[RUNCARD.INSTRUMENT_CONTROLLERS][0] |= {"reset": False}
             platform = build_platform(name="sauron")
             mock_load.assert_called()
             mock_open.assert_called()
@@ -248,7 +248,8 @@ class TestMethods:
     def test_loop_num_loops_property(self, experiment_all_platforms: BaseExperiment):
         """Test loop's num_loops property."""
         if experiment_all_platforms.options.loops is not None:
-            print(experiment_all_platforms.options.loops[0].num_loops)
+            assert isinstance(experiment_all_platforms.options.loops[0].num_loops, int)
+            assert isinstance(str(experiment_all_platforms.options.loops[0].num_loops), str)
 
     def test_str_method(self, experiment_all_platforms: BaseExperiment):
         """Test __str__ method."""
@@ -314,10 +315,10 @@ class TestSetParameter:
         mock_urllib.request.urlopen.assert_called()
         exp.set_parameter(alias=InstrumentName.QBLOX_QCM.value, parameter=Parameter.IF, value=1e9, channel_id=0)
 
-    def test_set_parameter_method_with_platform_settings(self, exp: BaseExperiment):
-        """Test set_parameter method with platform settings."""
+    def test_set_parameter_method_with_platform_gate_settings(self, exp: BaseExperiment):
+        """Test set_parameter method with platform gate settings."""
         exp.set_parameter(alias="M(0)_0", parameter=Parameter.AMPLITUDE, value=0.3)
-        assert exp.platform.settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
+        assert exp.platform.gate_settings.get_gate(name="M", qubits=0)[0].pulse.amplitude == 0.3
 
     def test_set_parameter_method_with_instrument_controller_reset(self, exp: BaseExperiment):
         """Test set_parameter method with instrument controller reset."""

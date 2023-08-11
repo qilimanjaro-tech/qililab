@@ -1,3 +1,4 @@
+"""This file contains unit tests for the ``CircuitToPulses`` class."""
 import re
 from dataclasses import asdict
 
@@ -14,8 +15,8 @@ from qililab.pulse.pulse import Pulse
 from qililab.pulse.pulse_shape import SNZ
 from qililab.pulse.pulse_shape import Drag as Drag_pulse
 from qililab.pulse.pulse_shape import Gaussian, Rectangular
-from qililab.settings import RuncardSchema
-from qililab.settings.gate_settings import GateEventSettings
+from qililab.settings import Runcard
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.transpiler import Drag
 from qililab.utils import Wait
 from tests.data import Galadriel
@@ -337,7 +338,7 @@ def fixture_chip():
 
 @pytest.fixture(name="platform")
 def fixture_platform(chip: Chip) -> Platform:
-    """Fixture that returns an instance of a ``RuncardSchema.PlatformSettings`` class."""
+    """Fixture that returns an instance of a ``Runcard.GateSettings`` class."""
     settings = {
         "id_": 0,
         "category": "platform",
@@ -523,18 +524,15 @@ def fixture_platform(chip: Chip) -> Platform:
         },
     ]
 
-    settings = RuncardSchema.PlatformSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
+    gate_settings = Runcard.GateSettings(**settings)  # type: ignore  # pylint: disable=unexpected-keyword-arg
     platform = platform_db(runcard=Galadriel.runcard)
-    platform.settings = settings  # type: ignore
-    platform.schema.chip = chip
+    platform.gate_settings = gate_settings  # type: ignore
+    platform.chip = chip
     buses = Buses(
-        elements=[
-            Bus(settings=bus, platform_instruments=platform.schema.instruments, chip=chip) for bus in bus_settings
-        ]
+        elements=[Bus(settings=bus, platform_instruments=platform.instruments, chip=chip) for bus in bus_settings]
     )
-    platform.schema.buses = buses
-
-    platform.settings.gates = {  # type: ignore
+    platform.buses = buses
+    platform.gate_settings.gates = {  # type: ignore
         gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in platform_gates.items()  # type: ignore
     }
     return platform
@@ -546,7 +544,7 @@ class TestCircuitToPulses:  # pylint: disable=R0903 # disable too few public met
     def test_init(self, platform):
         """Test init method."""
         circuit_to_pulses = CircuitToPulses(platform)
-        assert list(platform_gates.keys()) == circuit_to_pulses.platform.settings.gate_names
+        assert list(platform_gates.keys()) == circuit_to_pulses.platform.gate_settings.gate_names
 
 
 class TestTranslation:
@@ -801,8 +799,8 @@ class TestTranslation:
     def test_drag_schedule_error(self, platform: Platform):
         """Test error is raised if len(drag schedule) > 1"""
         # append schedule of M(0) to Drag(0) so that Drag(0)'s gate schedule has 2 elements
-        platform.settings.gates["Drag(0)"].append(platform.settings.gates["M(0)"][0])
-        gate_schedule = platform.settings.gates["Drag(0)"]
+        platform.gate_settings.gates["Drag(0)"].append(platform.gate_settings.gates["M(0)"][0])
+        gate_schedule = platform.gate_settings.gates["Drag(0)"]
         error_string = re.escape(
             f"Schedule for the drag gate is expected to have only 1 pulse but instead found {len(gate_schedule)} pulses"
         )

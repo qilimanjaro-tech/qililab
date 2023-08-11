@@ -1,4 +1,4 @@
-"""PlatformSchema class."""
+"""Runcard class."""
 import ast
 import re
 from dataclasses import dataclass
@@ -6,7 +6,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
-from qililab.settings.gate_settings import GateEventSettings
+from qililab.settings.gate_event_settings import GateEventSettings
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -14,66 +14,64 @@ from qililab.utils import nested_dataclass
 
 
 @nested_dataclass
-class RuncardSchema:
-    """PlatformSchema class. Casts the platform dictionary into a class.
-    The input to the constructor should be a dictionary with the following structure:
+class Runcard:
+    """Runcard class. Casts the platform dictionary into a class.
 
-    - platform: settings dictionary.
-    - schema: schema dictionary:
-        - buses: buses dictionary:
-            - elements: list of bus dictionaries with the following structure:
-                - name: "readout" or "control"
-                - awg: settings dictionary.
-                - signal_generator: settings dictionary.
-                - qubit / resonator: settings dictionary.
+    The input to the constructor should be a dictionary of the desired runcard with the following structure:
+    - gate_settings:
+    - chip:
+    - buses:
+    - instruments: List of "instruments" dictionaries
+    - instrument_controllers: List of "instrument_controllers" dictionaries
+
+    The gate_settings, chip and bus dictionaries will be passed to their corresponding TranpilationSettings,
+    ChipSettings or BusSettings here, meanwhile the instruments and instrument_controllers will remain dictionaries.
+
+    Then this full class gets passed to the Platform who will instantiate the actual qililab Chip, Buses/Bus and the
+    corresponding Instrument classes with the settings attributes of this class.
+
+    Args:
+        gate_settings (dict): GateSettings dictionary -> GateSettings inner dataclass
+        chip (dict): ChipSettings dictionary -> ChipSettings inner dataclass
+        buses (list[dict]): List of BusSettings dictionaries -> list[BusSettings] inner dataclass
+        instruments (list[dict]): List of dictionaries containing the "instruments" information (does not transform)
+        instruments_controllers (list[dict]): List of dictionaries containing the "instrument_controllers" information
+            (does not transform)
     """
 
-    @nested_dataclass
-    class Schema:
-        """SchemaDict class."""
+    # Inner dataclasses definition
+    @dataclass
+    class BusSettings:
+        """Bus settings class."""
 
-        @dataclass
-        class BusSchema:
-            """Bus schema class."""
+        id_: int
+        category: str
+        system_control: dict
+        port: int
+        distortions: list[dict]
+        alias: str | None = None
+        delay: int = 0
 
-            id_: int
-            category: str
-            system_control: dict
-            port: int
-            distortions: list[dict]
-            alias: str | None = None
-            delay: int = 0
+    @dataclass
+    class ChipSettings:
+        """Chip settings class."""
 
-        @dataclass
-        class ChipSchema:
-            """Chip schema class."""
-
-            id_: int
-            category: str
-            nodes: list[dict]
-            alias: str | None = None
-
-        chip: ChipSchema | None
-        buses: list[BusSchema]
-        instruments: list[dict]
-        instrument_controllers: list[dict]
-
-        def __post_init__(self):
-            self.buses = [self.BusSchema(**bus) for bus in self.buses] if self.buses is not None else None
-            if isinstance(self.chip, dict):
-                self.chip = self.ChipSchema(**self.chip)  # pylint: disable=not-a-mapping
+        id_: int
+        category: str
+        nodes: list[dict]
+        alias: str | None = None
 
     @nested_dataclass
-    class PlatformSettings(DDBBElement):
-        """SettingsSchema class."""
+    class GateSettings(DDBBElement):
+        """GateSettings class."""
 
         @nested_dataclass
         class OperationSettings:
-            """OperationSchema class"""
+            """OperationSettings class"""
 
             @dataclass
             class PulseSettings:
-                """PulseSchema class"""
+                """PulseSettings class"""
 
                 name: str
                 amplitude: float
@@ -98,7 +96,6 @@ class RuncardSchema:
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-
             self.gates = {
                 gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
             }
@@ -118,10 +115,10 @@ class RuncardSchema:
             for operation in self.operations:
                 # TODO: Fix bug that parses settings as dict instead of defined classes
                 if isinstance(operation, dict):
-                    operation = RuncardSchema.PlatformSettings.OperationSettings(**operation)
+                    operation = Runcard.GateSettings.OperationSettings(**operation)
                 if operation.name == name:
                     return operation
-            raise ValueError(f"Operation {name} not found in platform settings.")
+            raise ValueError(f"Operation {name} not found in gate settings.")
 
         def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
             """Get gate settings from runcard for a given gate name and qubits.
@@ -151,7 +148,7 @@ class RuncardSchema:
 
         @property
         def gate_names(self) -> list[str]:
-            """PlatformSettings 'gate_names' property.
+            """GateSettings 'gate_names' property.
 
             Returns:
                 list[str]: List of the names of all the defined gates.
@@ -179,5 +176,12 @@ class RuncardSchema:
             schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
             gate_settings[schedule_element].set_parameter(parameter, value)
 
-    settings: PlatformSettings
-    schema: Schema
+    # Runcard class actual initialization
+    chip: ChipSettings
+    buses: list[BusSettings]  # This actually is a list[dict] until the post_init is called
+    instruments: list[dict]
+    instrument_controllers: list[dict]
+    gate_settings: GateSettings
+
+    def __post_init__(self):
+        self.buses = [self.BusSettings(**bus) for bus in self.buses] if self.buses is not None else None

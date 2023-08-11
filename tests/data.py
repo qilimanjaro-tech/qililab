@@ -20,7 +20,6 @@ from qililab.constants import (
     PULSEEVENT,
     PULSESCHEDULES,
     RUNCARD,
-    SCHEMA,
 )
 from qililab.instruments.awg_settings.typings import AWGSequencerTypes, AWGTypes
 from qililab.typings.enums import (
@@ -508,16 +507,12 @@ class Galadriel:
         },
     ]
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
     qubit_0: dict[str, Any] = {
@@ -679,11 +674,12 @@ class FluxQubitSimulator:
         ],
     }
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: [],
-        SCHEMA.INSTRUMENT_CONTROLLERS: [],
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: [
+    runcard: dict[str, Any] = {
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: [],
+        RUNCARD.INSTRUMENT_CONTROLLERS: [],
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: [
             {
                 RUNCARD.ID: 0,
                 RUNCARD.CATEGORY: Category.BUS.value,
@@ -704,11 +700,6 @@ class FluxQubitSimulator:
                 NodeName.PORT.value: 0,
             }
         ],
-    }
-
-    runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
     }
 
 
@@ -879,7 +870,7 @@ experiment: dict[str, Any] = {
             }
         ],
         RUNCARD.NAME: "punchout",
-        RUNCARD.SETTINGS: {
+        RUNCARD.GATE_SETTINGS: {
             EXPERIMENT.HARDWARE_AVERAGE: 1024,
             EXPERIMENT.SOFTWARE_AVERAGE: 1,
             EXPERIMENT.REPETITION_DURATION: 200000,
@@ -1043,16 +1034,12 @@ class SauronVNA:
         },
     ]
 
-    schema: dict[str, Any] = {
-        SCHEMA.INSTRUMENTS: instruments,
-        SCHEMA.CHIP: chip,
-        SCHEMA.BUSES: buses,
-        SCHEMA.INSTRUMENT_CONTROLLERS: instrument_controllers,
-    }
-
     runcard: dict[str, Any] = {
-        RUNCARD.SETTINGS: platform,
-        RUNCARD.SCHEMA: schema,
+        RUNCARD.GATE_SETTINGS: platform,
+        RUNCARD.INSTRUMENTS: instruments,
+        RUNCARD.CHIP: chip,
+        RUNCARD.BUSES: buses,
+        RUNCARD.INSTRUMENT_CONTROLLERS: instrument_controllers,
     }
 
 
