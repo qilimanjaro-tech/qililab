@@ -129,7 +129,7 @@ def fixture_connected_experiment(
     """Fixture that mocks all the instruments, connects to the mocked instruments and returns the `Experiment`
     instance."""
     mock_instruments(mock_rs=mock_rs, mock_pulsar=mock_pulsar, mock_keithley=mock_keithley)
-    experiment_all_platforms.connect()
+    experiment_all_platforms.platform.connect()
     mock_mini_circuits.assert_called()
     mock_keithley.assert_called()
     mock_rs.assert_called()

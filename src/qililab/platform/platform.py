@@ -137,7 +137,7 @@ class Platform:  # pylint: disable=too-many-public-methods
                 name = regex_match["gate"]
                 qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
-                if f"{name}({qubits_str})" in self.gate_names:
+                if f"{name}({qubits_str})" in self.gate_settings.gate_names:
                     return self.gate_settings.get_gate(name=name, qubits=qubits)
 
         element = self.instruments.get_instrument(alias=alias)
@@ -233,15 +233,6 @@ class Platform:  # pylint: disable=too-many-public-methods
         return instrument_controllers
 
     @property
-    def id_(self):
-        """Platform 'id_' property.
-
-        Returns:
-            int: settings.id_.
-        """
-        return self.gate_settings.id_
-
-    @property
     def name(self):
         """Platform 'name' property.
 
@@ -249,33 +240,6 @@ class Platform:  # pylint: disable=too-many-public-methods
             str: settings.name.
         """
         return self.gate_settings.name
-
-    @property
-    def category(self):
-        """Platform 'category' property.
-
-        Returns:
-            str: settings.category.
-        """
-        return self.gate_settings.category
-
-    @property
-    def num_qubits(self):
-        """Platform 'num_qubits' property.
-
-        Returns:
-            int: Number of different qubits that the platform contains.
-        """
-        return self.chip.num_qubits
-
-    @property
-    def gate_names(self):
-        """Platform 'gate_names' property.
-
-        Returns:
-            list[str]: List of the names of all the defined gates.
-        """
-        return self.gate_settings.gate_names
 
     @property
     def device_id(self):

@@ -1,4 +1,5 @@
 """Tests for the Platform class."""
+import copy
 from queue import Queue
 from unittest.mock import MagicMock, patch
 
@@ -46,21 +47,9 @@ class TestPlatformInitialization:
 class TestPlatform:
     """Unit tests checking the Platform class."""
 
-    def test_id_property(self, platform: Platform):
-        """Test id property."""
-        assert platform.id_ == platform.gate_settings.id_
-
     def test_name_property(self, platform: Platform):
         """Test name property."""
         assert platform.name == platform.gate_settings.name
-
-    def test_category_property(self, platform: Platform):
-        """Test category property."""
-        assert platform.category == platform.gate_settings.category
-
-    def test_num_qubits_property(self, platform: Platform):
-        """Test num_qubits property."""
-        assert platform.num_qubits == platform.chip.num_qubits
 
     def test_platform_name(self, platform: Platform):
         """Test platform name."""
@@ -178,19 +167,24 @@ class TestPlatform:
         assert str(newest_platform.instrument_controllers) == str(new_platform.instrument_controllers)
 
 
+@pytest.fixture(name="galadriel")
+def fixture_platform():
+    return copy.deepcopy(platform_yaml(runcard=Galadriel.runcard))
+
+
 class TestMethods:
     """Unit tests for the methods of the Platform class."""
 
-    def test_compile_circuit(self, platform: Platform):
+    def test_compile_circuit(self, galadriel: Platform):
         """Test the compilation of a qibo Circuit."""
         circuit = Circuit(1)
         circuit.add(gates.X(0))
         circuit.add(gates.Y(0))
         circuit.add(gates.M(0))
 
-        self._compile_and_assert(platform, circuit, 3)
+        self._compile_and_assert(galadriel, circuit, 3)
 
-    def test_compile_pulse_schedule(self, platform: Platform):
+    def test_compile_pulse_schedule(self, galadriel: Platform):
         """Test the compilation of a qibo Circuit."""
         pulse_schedule = PulseSchedule()
         drag_pulse = Pulse(
@@ -200,64 +194,64 @@ class TestMethods:
         pulse_schedule.add_event(PulseEvent(pulse=drag_pulse, start_time=0), port=0, port_delay=0)
         pulse_schedule.add_event(PulseEvent(pulse=readout_pulse, start_time=200, qubit=0), port=1, port_delay=0)
 
-        self._compile_and_assert(platform, pulse_schedule, 2)
+        self._compile_and_assert(galadriel, pulse_schedule, 2)
 
-    def _compile_and_assert(self, platform: Platform, program: Circuit | PulseSchedule, len_sequences: int):
-        sequences = platform.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
+    def _compile_and_assert(self, galadriel: Platform, program: Circuit | PulseSchedule, len_sequences: int):
+        sequences = galadriel.compile(program=program, num_avg=1000, repetition_duration=2000, num_bins=1)
         assert isinstance(sequences, dict)
         assert len(sequences) == len_sequences
         for alias, sequences in sequences.items():
-            assert alias in {bus.alias for bus in platform.buses}
+            assert alias in {bus.alias for bus in galadriel.buses}
             assert isinstance(sequences, list)
             assert len(sequences) == 1
             assert isinstance(sequences[0], Sequence)
             assert sequences[0]._program.duration == 2000 * 1000 + 4
 
-    def test_execute(self, platform: Platform):
+    def test_execute(self, galadriel: Platform):
         """Test that the execute method calls the buses to run and return the results."""
         with patch.object(Bus, "upload") as upload:
             with patch.object(Bus, "run") as run:
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     acquire_result.return_value = 123
-                    result = platform.execute(
+                    result = galadriel.execute(
                         program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
                     )
 
-        assert upload.call_count == len(platform.buses)
-        assert run.call_count == len(platform.buses)
+        assert upload.call_count == len(galadriel.buses)
+        assert run.call_count == len(galadriel.buses)
         acquire_result.assert_called_once_with()
         assert result == 123
 
-    def test_execute_with_queue(self, platform: Platform):
+    def test_execute_with_queue(self, galadriel: Platform):
         """Test that the execute method adds the obtained results to the given queue."""
         queue: Queue = Queue()
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result") as acquire_result:
                     acquire_result.return_value = 123
-                    _ = platform.execute(
+                    _ = galadriel.execute(
                         program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1, queue=queue
                     )
 
         assert len(queue.queue) == 1
         assert queue.get() == 123
 
-    def test_execute_raises_error_if_no_readout_buses_present(self, platform: Platform):
+    def test_execute_raises_error_if_no_readout_buses_present(self, galadriel: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.elements = []
+        galadriel.buses.elements = []
         with pytest.raises(ValueError, match="There are no readout buses in the platform."):
-            platform.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
+            galadriel.execute(program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1)
 
-    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, platform: Platform):
+    def test_execute_raises_error_if_more_than_one_readout_bus_present(self, galadriel: Platform):
         """Test that `Platform.execute` raises an error when the platform contains more than one readout bus."""
-        platform.buses.add(
-            Bus(settings=Galadriel.buses[1], platform_instruments=platform.instruments, chip=platform.chip)
+        galadriel.buses.add(
+            Bus(settings=Galadriel.buses[1], platform_instruments=galadriel.instruments, chip=galadriel.chip)
         )
         with patch.object(Bus, "upload"):
             with patch.object(Bus, "run"):
                 with patch.object(Bus, "acquire_result"):
                     with patch("qililab.platform.platform.logger") as mock_logger:
-                        _ = platform.execute(
+                        _ = galadriel.execute(
                             program=PulseSchedule(), num_avg=1000, repetition_duration=2000, num_bins=1
                         )
 

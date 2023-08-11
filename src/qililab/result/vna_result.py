@@ -29,3 +29,7 @@ class VNAResult(Result):
             tuple[float, float]: Probabilities of being in the ground and excited state.
         """
         raise NotImplementedError
+
+    @property
+    def array(self) -> np.ndarray:
+        return np.array([])

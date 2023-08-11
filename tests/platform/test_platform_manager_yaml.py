@@ -1,4 +1,5 @@
 """Tests for PlatformManagerYAML class."""
+import copy
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,7 +12,7 @@ from tests.data import Galadriel
 class TestPlatformManagerYAML:
     """Unit tests checking the Platform attributes and methods."""
 
-    @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard)
+    @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
     @patch("qililab.platform.platform_manager_yaml.open")
     def test_build_method(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
@@ -22,7 +23,7 @@ class TestPlatformManagerYAML:
         with pytest.raises(NotImplementedError):
             build_platform(name="_", database=True)
 
-    @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=Galadriel.runcard)
+    @patch("qililab.platform.platform_manager_yaml.yaml.safe_load", return_value=copy.deepcopy(Galadriel.runcard))
     @patch("qililab.platform.platform_manager_yaml.open")
     def test_build_method_with_new_drivers(self, mock_open: MagicMock, mock_load: MagicMock):
         """Test build method."""
