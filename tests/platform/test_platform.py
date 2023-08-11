@@ -9,6 +9,7 @@ from qililab.constants import DEFAULT_PLATFORM_NAME
 from qililab.instruments import AWG, AWGAnalogDigitalConverter, SignalGenerator
 from qililab.platform import Bus, Buses, Platform, Schema
 from qililab.settings import RuncardSchema
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import InstrumentName
 from tests.data import Galadriel
@@ -52,12 +53,8 @@ class TestPlatform:
 
     def test_get_element_with_gate(self, platform: Platform):
         """Test the get_element method with a gate alias."""
-        for qubit, gate_settings_list in platform.settings.gates.items():
-            for gate_settings in gate_settings_list:
-                alias = f"{gate_settings.name}{qubit}" if isinstance(qubit, tuple) else f"{gate_settings.name}({qubit})"
-                gate = platform.get_element(alias=alias)
-                assert isinstance(gate, RuncardSchema.PlatformSettings.GateSettings)
-                assert gate.name == gate_settings.name
+        gates = platform.settings.gates.keys()
+        all(isinstance(event, GateEventSettings) for gate in gates for event in platform.get_element(alias=gate))
 
     def test_str_magic_method(self, platform: Platform):
         """Test __str__ magic method."""

@@ -4,6 +4,65 @@ This document contains the changes of the current release.
 
 ### New features since last release
 
+- Simplify circuit gate to pulse transpilation.
+  Previous hardware gates are removed. Now gates can be defined in the runcard as a list of
+  `GateEvent` items with bus, wait time (optional) and pulse information. This allows more
+  customization and freedom of what a certain gate does. The gate will be transpiled as long
+  as the circuit gate's name and qubits match those of the gate in the runcard.
+  An example of a custom gate for the circuit X gate at qubit 0 and a CZ gate at (0,1)
+
+  ```yml
+  X(0):
+  - bus: drive_line_q0_bus  # alias of the bus
+    wait_time: 200
+    pulse:
+      amplitude: 0.5
+      phase: 0
+      duration: 200
+      frequency: 0
+      shape:
+        name: drag
+        drag_coefficient: 1
+        num_sigmas: 2
+  - bus: flux_line_q0_bus  # alias of the bus
+    pulse:
+      amplitude: 1.0
+      phase: 0
+      duration: 200
+      frequency: 0
+      shape:
+        name: rectangular
+
+  CZ(0,1):
+  - bus: flux_line_q0_bus  # park pulse
+    pulse:
+      amplitude: 0.5
+      phase: 0
+      duration: 241
+      frequency: 0
+      shape:
+        name: rectangular
+  - bus: flux_line_q1_bus  # snz
+    wait_time: 40 # wait 40ns after start of the park pulse
+    pulse:
+      amplitude: 1
+      phase: 0
+      duration: 201
+      frequency: 0
+      shape:
+        name: snz
+        b: 0.5
+        t_phi: 1
+  ```
+
+  Experiments can access `GateEvent` items by using the gate and qubit `alias` like previously
+  and adding `_item` to access a `GateEvent` that is not the first event of the gate.
+  For example, `set_parameter(parameter='amplitude', value=0.8, alias='X(0)')` will set the amplitude
+  in the gate setting above from 0.5 to 0.8. This is equivalent to `alias='X(0)_0'`. However
+  `alias='X(0)_1'` sets instead the amplitude of the second event (`bus=flux_line_q0_bus`) from
+  1.0 to 0.8
+  [#472](https://github.com/qilimanjaro-tech/qililab/pull/472)
+
 - Rename Experiment and CircuitExperiment classes and dependencies:
   This branch renames the Experiment class to BaseExperiment and CircuitExperiment to Experiment.
   [#482](https://github.com/qilimanjaro-tech/qililab/pull/482)
