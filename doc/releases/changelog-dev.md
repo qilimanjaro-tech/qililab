@@ -99,6 +99,9 @@ This document contains the changes of the current release.
 - Add QProgram for developing quantum programs in the bus level, the operations `Play`, `Sync`, `Wait`, `Acquire`, `SetGain`, `SetOffset`, `SetFrequency`, `SetPhase`, `ResetPhase`, and the iteration blocks `AcquireLoop` and `Loop`.
   [452](https://github.com/qilimanjaro-tech/qililab/pull/452)
 
+- Add QBloxCompiler for compiling QProgram into QPySequence.
+  [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
+
 - Add waveforms for the new QProgram
   [456](https://github.com/qilimanjaro-tech/qililab/pull/456)
 
@@ -172,6 +175,9 @@ This document contains the changes of the current release.
   [#417](https://github.com/qilimanjaro-tech/qililab/pull/417)
 
 ### Improvements
+
+- Add `ForLoop` iteration method to QProgram.
+  [481](https://github.com/qilimanjaro-tech/qililab/pull/481)
 
 - Allow CZ gates to use different pulse shapes
   [#406](https://github.com/qilimanjaro-tech/qililab/pull/406)
