@@ -106,14 +106,13 @@ class Experiment(BaseExperiment):
         idx = copy.deepcopy(kwargs["idx"])
 
         if loops is None or len(loops) == 0:
-            self.execution_manager.compile(
-                idx=idx,
-                nshots=self.hardware_average,
+            result = self.platform.execute(
+                program=self.pulse_schedules[idx],
+                num_avg=self.hardware_average,
                 repetition_duration=self.repetition_duration,
                 num_bins=self.num_bins,
+                queue=queue,
             )
-            self.execution_manager.upload()
-            result = self.execution_manager.run(queue)
             if result is not None:
                 self.results.add(result)
             return
@@ -161,7 +160,7 @@ class Experiment(BaseExperiment):
         if not hasattr(self, "execution_manager"):
             raise ValueError("Please build the execution_manager before compilation.")
         return [
-            self.execution_manager.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
+            self.platform.compile(schedule_idx, self.hardware_average, self.repetition_duration, self.num_bins)
             for schedule_idx in range(len(self.pulse_schedules))
         ]
 

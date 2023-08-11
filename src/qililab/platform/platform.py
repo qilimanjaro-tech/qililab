@@ -2,14 +2,19 @@
 import ast
 import re
 from dataclasses import asdict
+from queue import Queue
 
+from qibo.models import Circuit
 from qiboconnection.api import API
 
 from qililab.config import logger
 from qililab.constants import GATE_ALIAS_REGEX, RUNCARD
 from qililab.platform.components import Bus, Schema
 from qililab.platform.components.bus_element import dict_factory
+from qililab.pulse import CircuitToPulses, PulseSchedule
+from qililab.result import Result
 from qililab.settings import RuncardSchema
+from qililab.system_control import ReadoutSystemControl
 from qililab.typings.enums import Category, Line, Parameter
 from qililab.typings.yaml_type import yaml
 
@@ -89,8 +94,8 @@ class Platform:  # pylint: disable=too-many-public-methods
                 return self.settings
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is not None:
-                name = regex_match.group("gate")
-                qubits_str = regex_match.group("qubits")
+                name = regex_match["gate"]
+                qubits_str = regex_match["qubits"]
                 qubits = ast.literal_eval(qubits_str)
                 if name in self.gate_names:
                     return self.settings.get_gate(name=name, qubits=qubits)
@@ -104,20 +109,6 @@ class Platform:  # pylint: disable=too-many-public-methods
             element = self.chip.get_node_from_alias(alias=alias)
         return element
 
-    def get_bus(self, port: int) -> tuple[int, Bus] | tuple[list, None]:
-        """Find bus associated with the specified port.
-
-        Args:
-            port (int): port index of the chip
-
-        Returns:
-            Bus | None: Returns a Bus object or None if none is found.
-        """
-        return next(
-            ((bus_idx, bus) for bus_idx, bus in enumerate(self.buses) if bus.port == port),
-            ([], None),
-        )
-
     def get_bus_by_qubit_index(self, qubit_index: int) -> tuple[Bus, Bus, Bus]:
         """Find bus associated with the given qubit index.
 
@@ -130,9 +121,9 @@ class Platform:  # pylint: disable=too-many-public-methods
         flux_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FLUX)
         control_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.DRIVE)
         readout_port = self.chip.get_port_from_qubit_idx(idx=qubit_index, line=Line.FEEDLINE_INPUT)
-        flux_bus = self.get_bus(port=flux_port)[1]
-        control_bus = self.get_bus(port=control_port)[1]
-        readout_bus = self.get_bus(port=readout_port)[1]
+        flux_bus = self.buses.get(port=flux_port)
+        control_bus = self.buses.get(port=control_port)
+        readout_bus = self.buses.get(port=readout_port)
         if flux_bus is None or control_bus is None or readout_bus is None:
             raise ValueError(
                 f"Could not find buses for qubit {qubit_index} connected to the ports "
@@ -269,3 +260,86 @@ class Platform:  # pylint: disable=too-many-public-methods
             str: Name of the platform
         """
         return str(yaml.dump(self.to_dict(), sort_keys=False))
+
+    def execute(
+        self,
+        program: PulseSchedule | Circuit,
+        num_avg: int,
+        repetition_duration: int,
+        num_bins: int,
+        queue: Queue | None = None,
+    ) -> Result:
+        """Execute a circuit or a pulse schedule using the platform instruments.
+
+        If a Circuit is given, then it will be translated into a pulse schedule by using the transpilation
+        settings of the platform.
+
+        Args:
+            program (PulseSchedule | Circuit): Circuit or pulse schedule to execute.
+            num_avg (int): Number of hardware averages used.
+            repetition_duration (int): Minimum duration of a single execution.
+            num_bins (int): Number of bins used.
+            queue (Queue, optional): External queue used for asynchronous data handling. Defaults to None.
+
+        Returns:
+            Result: Result obtained from the execution. This corresponds to a numpy array that depending on the
+                platform configuration may contain the following:
+
+                - Scope acquisition is enabled: An array with dimension `(N, 2)` which contain the scope data for
+                    path0 (I) and path1 (Q). N corresponds to the length of the scope measured.
+
+                - Scope acquisition disabled: An array with dimension `(#sequencers, #bins, 2)
+        """
+        # Compile pulse schedule
+        self.compile(program, num_avg, repetition_duration, num_bins)
+
+        # Upload pulse schedule
+        for bus in self.buses:
+            bus.upload()
+
+        # Execute pulse schedule
+        for bus in self.buses:
+            bus.run()
+
+        # Acquire results
+        readout_buses = [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
+        results: list[Result] = []
+        for bus in readout_buses:
+            result = bus.acquire_result()
+            if queue is not None:
+                queue.put_nowait(item=result)
+            results.append(result)
+
+        # FIXME: set multiple readout buses
+        if len(results) > 1:
+            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
+        if not results:
+            raise ValueError("No Results acquired")
+
+        return results[0]
+
+    def compile(self, program: PulseSchedule | Circuit, num_avg: int, repetition_duration: int, num_bins: int) -> dict:
+        """Compiles the circuit / pulse schedule into a set of assembly programs.
+
+        Args:
+            program (PulseSchedule | Circuit): Circuit to compile.
+            num_avg (int): Number of hardware averages used.
+            repetition_duration (int): Minimum duration of a single execution.
+            num_bins (int): Number of bins used.
+
+        Returns:
+            dict: Dictionary of compiled assembly programs.
+        """
+        if isinstance(program, Circuit):
+            translator = CircuitToPulses(platform=self)
+            pulse_schedule = translator.translate(circuits=[program])[0]
+        else:
+            pulse_schedule = program
+
+        programs = {}
+        for pulse_bus_schedule in pulse_schedule:
+            bus = self.buses.get(port=pulse_bus_schedule.port)
+            bus_programs = bus.compile(pulse_bus_schedule, num_avg, repetition_duration, num_bins)
+            programs[bus.alias] = bus_programs
+
+        return programs

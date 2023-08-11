@@ -1,22 +1,21 @@
 """Result class."""
-from dataclasses import asdict, dataclass, field
+from abc import ABC
 
+import numpy as np
 import pandas as pd
 
-from qililab.constants import RUNCARD
 from qililab.result.counts import Counts
 from qililab.typings.enums import ResultName
 from qililab.typings.factory_element import FactoryElement
 from qililab.utils import nested_dict_to_pandas_dataframe
 
 
-# FIXME: Cannot use dataclass and ABC at the same time
-@dataclass
-class Result(FactoryElement):
+class Result(FactoryElement, ABC):
     """Result class."""
 
-    name: ResultName = field(init=False)
-    data_dataframe_indices: set[str] = field(init=False, default_factory=set)
+    name: ResultName
+    data_dataframe_indices: set[str]
+    array: np.ndarray
 
     def probabilities(self) -> dict[str, float]:
         """Return probabilities of being in the ground and excited state.
@@ -42,7 +41,7 @@ class Result(FactoryElement):
         Returns:
             dict: Dictionary containing all the class information.
         """
-        return asdict(self) | {RUNCARD.NAME: self.name.value}
+        return {"name": self.name.value, "data_dataframe_indices": self.data_dataframe_indices}
 
     def to_dataframe(self) -> pd.DataFrame:
         """

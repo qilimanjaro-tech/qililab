@@ -19,16 +19,7 @@ class ExecutionManager:
     """ExecutionManager class."""
 
     num_schedules: int
-    platform: Platform
     buses: list[BusExecution] = field(default_factory=list)
-
-    def turn_on_instruments(self):
-        """Start/Turn on the instruments."""
-        self.platform.turn_on_instruments()
-
-    def turn_off_instruments(self):
-        """Start/Turn on the instruments."""
-        self.platform.turn_off_instruments()
 
     def __post_init__(self):
         """check that the number of schedules matches all the schedules for each bus"""
@@ -42,50 +33,6 @@ class ExecutionManager:
                 f"Error: number of schedules: {self.num_schedules} does not match "
                 + f"the length of the schedules in a bus: {bus_num_schedules}"
             )
-
-    def compile(self, idx: int, nshots: int, repetition_duration: int, num_bins: int) -> dict:
-        """Compiles the pulse schedule at index ``idx`` of each bus into a set of assembly programs.
-
-        Args:
-            idx (int): index of the circuit to compile and upload
-            nshots (int): number of shots / hardware average
-            repetition_duration (int): maximum window for the duration of one hardware repetition
-            num_bins (int): number of bins
-
-        Returns:
-            list: list of compiled assembly programs
-        """
-        programs = {}
-        for bus in self.buses:
-            bus_programs = bus.compile(
-                idx=idx, nshots=nshots, repetition_duration=repetition_duration, num_bins=num_bins
-            )
-            programs[bus.alias] = bus_programs
-        return programs
-
-    def upload(self):
-        """Uploads all previously compiled programs into its corresponding instruments."""
-        for bus in self.buses:
-            bus.upload()
-
-    def run(self, queue: Queue) -> Result | None:
-        """Execute the program for each Bus (with an uploaded pulse schedule)."""
-
-        for bus in self.buses:
-            bus.run()
-
-        results = []
-        for bus in self.readout_buses:
-            result = bus.acquire_result()
-            queue.put_nowait(item=result)
-            results.append(result)
-
-        # FIXME: set multiple readout buses
-        if len(results) > 1:
-            logger.error("Only One Readout Bus allowed. Reading only from the first one.")
-        if not results:
-            raise ValueError("No Results acquired")
-        return results[0]
 
     def waveforms_dict(self, modulation: bool = True, resolution: float = 1.0, idx: int = 0) -> dict[int, Waveforms]:
         """Get pulses of each bus.
@@ -177,12 +124,3 @@ class ExecutionManager:
     def __getitem__(self, key):
         """Redirect __get_item__ magic method."""
         return self.buses.__getitem__(key)
-
-    @property
-    def readout_buses(self) -> list[BusExecution]:
-        """Returns a list of all the readout buses.
-
-        Returns:
-            list[BusExecution]: list of readout buses
-        """
-        return [bus for bus in self.buses if isinstance(bus.system_control, ReadoutSystemControl)]
