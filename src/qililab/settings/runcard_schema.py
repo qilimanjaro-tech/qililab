@@ -6,6 +6,7 @@ from typing import Literal
 
 from qililab.constants import GATE_ALIAS_REGEX
 from qililab.settings.ddbb_element import DDBBElement
+from qililab.settings.gate_settings import GateEventSettings
 from qililab.typings.enums import Category, OperationTimingsCalculationMethod, Parameter, ResetMethod
 from qililab.utils import nested_dataclass
 
@@ -82,24 +83,6 @@ class RuncardSchema:
             name: str
             pulse: PulseSettings
 
-        @dataclass
-        class GateSettings:
-            """GatesSchema class."""
-
-            name: str
-            amplitude: float
-            phase: float
-            duration: int
-            shape: dict
-
-            def set_parameter(self, parameter: Parameter, value: float | str | bool):
-                """Change a gate parameter with the given value."""
-                param = parameter.value
-                if not hasattr(self, param):
-                    self.shape[param] = value
-                else:
-                    setattr(self, param, value)
-
         name: str
         device_id: int
         minimum_clock_time: int
@@ -111,15 +94,14 @@ class RuncardSchema:
         reset_method: Literal[ResetMethod.ACTIVE, ResetMethod.PASSIVE]
         passive_reset_duration: int
         operations: list[OperationSettings]
-        gates: dict[int | tuple[int, int], list[GateSettings]]
+        gates: dict[str, list[GateEventSettings]]
 
         def __post_init__(self):
             """build the Gate Settings based on the master settings"""
-            self.gates = (
-                {qubit: [self.GateSettings(**gate) for gate in gate_list] for qubit, gate_list in self.gates.items()}
-                if self.gates is not None
-                else None
-            )
+
+            self.gates = {
+                gate: [GateEventSettings(**event) for event in schedule] for gate, schedule in self.gates.items()
+            }
 
         def get_operation_settings(self, name: str) -> OperationSettings:
             """Get OperationSettings by operation's name
@@ -141,24 +123,31 @@ class RuncardSchema:
                     return operation
             raise ValueError(f"Operation {name} not found in platform settings.")
 
-        def get_gate(self, name: str, qubits: int | tuple[int, int]):
-            """Get gate with the given name for the given qubit(s).
+        def get_gate(self, name: str, qubits: int | tuple[int, int] | tuple[int]):
+            """Get gate settings from runcard for a given gate name and qubits.
 
             Args:
                 name (str): Name of the gate.
-                qubits (int |  tuple[int, int]): The qubits the gate is acting on.
+                qubits (int |  tuple[int, int] | tuple[int]): The qubits the gate is acting on.
 
             Raises:
                 ValueError: If no gate is found.
 
             Returns:
-                GateSettings: GateSettings class.
+                GateSettings: gate settings.
             """
-            if qubits in self.gates:
-                for gate in self.gates[qubits]:
-                    if gate.name == name:
-                        return gate
-            raise ValueError(f"Gate {name} for qubits {qubits} not found in settings.")
+
+            gate_qubits = (
+                (qubits,) if isinstance(qubits, int) else qubits
+            )  # tuplify so that the join method below is general
+            gate_name = f"{name}({', '.join(map(str, gate_qubits))})"
+
+            # parse spaces in tuple if needed, check first case with spaces since it is more common
+            if gate_name.replace(" ", "") in self.gates.keys():
+                return self.gates[gate_name.replace(" ", "")]
+            if gate_name in self.gates.keys():
+                return self.gates[gate_name]
+            raise KeyError(f"Gate {name} for qubits {qubits} not found in settings.")
 
         @property
         def gate_names(self) -> list[str]:
@@ -167,7 +156,7 @@ class RuncardSchema:
             Returns:
                 list[str]: List of the names of all the defined gates.
             """
-            return list({gate.name for gates in self.gates.values() for gate in gates})
+            return list(self.gates.keys())
 
         def set_parameter(
             self,
@@ -183,11 +172,12 @@ class RuncardSchema:
             regex_match = re.search(GATE_ALIAS_REGEX, alias)
             if regex_match is None:
                 raise ValueError(f"Alias {alias} has incorrect format")
-            name = regex_match.group("gate")
-            qubits_str = regex_match.group("qubits")
+            name = regex_match["gate"]
+            qubits_str = regex_match["qubits"]
             qubits = ast.literal_eval(qubits_str)
             gate_settings = self.get_gate(name=name, qubits=qubits)
-            gate_settings.set_parameter(parameter, value)
+            schedule_element = 0 if len(alias.split("_")) == 1 else int(alias.split("_")[1])
+            gate_settings[schedule_element].set_parameter(parameter, value)
 
     settings: PlatformSettings
     schema: Schema
