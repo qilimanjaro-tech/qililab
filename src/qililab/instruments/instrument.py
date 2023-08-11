@@ -5,7 +5,6 @@ from functools import partial
 from typing import Callable, get_type_hints
 
 from qililab.config import logger
-from qililab.constants import RUNCARD
 from qililab.platform.components.bus_element import BusElement
 from qililab.result import Result
 from qililab.settings import DDBBElement
@@ -139,7 +138,7 @@ class Instrument(BusElement, ABC):
 
     def __init__(self, settings: dict):
         """Cast the settings to its corresponding class."""
-        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get(RUNCARD.SETTINGS)  # type: ignore
+        settings_class: type[self.InstrumentSettings] = get_type_hints(self).get("settings")  # type: ignore
         self.settings = settings_class(**settings)
 
     @CheckDeviceInitialized

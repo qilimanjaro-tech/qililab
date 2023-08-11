@@ -147,7 +147,7 @@ class Bus:
         return iter(self.system_control)
 
     def to_dict(self):
-        """Return a dict representation of the SchemaSettings class."""
+        """Return a dict representation of the Bus class."""
         return {
             RUNCARD.ID: self.id_,
             RUNCARD.CATEGORY: self.category.value,

@@ -31,3 +31,7 @@ class TestBuses:
         readout_buses = buses.readout_buses
         assert isinstance(readout_buses, list)
         assert isinstance(readout_buses[0].system_control, ReadoutSystemControl)
+
+    def test_str_method(self, buses: Buses):
+        """Test print buses."""
+        assert str(buses) == "\n".join(str(bus) for bus in buses.elements)

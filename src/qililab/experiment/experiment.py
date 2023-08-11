@@ -15,7 +15,7 @@ from qililab.platform.platform import Platform
 from qililab.pulse import PulseSchedule
 from qililab.pulse.circuit_to_pulses import CircuitToPulses
 from qililab.result.results import Results
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings.enums import Instrument, Parameter
 from qililab.typings.experiment import ExperimentOptions
 from qililab.utils.live_plot import LivePlot
@@ -222,7 +222,7 @@ class Experiment(BaseExperiment):
             dictionary (dict): Dictionary description of a Experiment.
         """
 
-        platform = Platform(runcard_schema=RuncardSchema(**dictionary[RUNCARD.PLATFORM]))
+        platform = Platform(runcard=Runcard(**dictionary[RUNCARD.PLATFORM]))
         circuits = (
             [Circuit.from_qasm(settings) for settings in dictionary[EXPERIMENT.CIRCUITS]]
             if EXPERIMENT.CIRCUITS in dictionary
@@ -246,7 +246,7 @@ class Experiment(BaseExperiment):
         parameter: Parameter,
         value: float | str | bool,
         alias: str,
-        element: RuncardSchema.PlatformSettings | Node | Instrument | None = None,
+        element: Runcard.GateSettings | Node | Instrument | None = None,
         channel_id: int | None = None,
     ):
         """Set parameter of a platform element.

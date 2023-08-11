@@ -13,7 +13,6 @@ class Category(str, Enum):
         * signal_generator
         * buses
         * bus
-        * schema
         * resonator
         * node
         * instrument_controller
@@ -26,7 +25,6 @@ class Category(str, Enum):
     QUBIT = "qubit"
     AWG = "awg"
     SIGNAL_GENERATOR = "signal_generator"
-    SCHEMA = "schema"
     RESONATOR = "resonator"
     BUSES = "buses"
     BUS = "bus"
@@ -153,19 +151,6 @@ class AcquisitionName(str, Enum):
 
     SINGLE = "single"
     LARGE = "large"
-
-
-class SchemaDrawOptions(str, Enum):
-    """Schema draw options.
-
-    Args:
-        enum (str): Available types of schema draw options:
-        * print
-        * file
-    """
-
-    PRINT = "print"
-    FILE = "file"
 
 
 class PulseDistortionName(str, Enum):

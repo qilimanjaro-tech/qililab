@@ -2,7 +2,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 
-from qililab.settings import RuncardSchema
+from qililab.settings import Runcard
 from qililab.typings.enums import ResetMethod
 
 from .circuit import Circuit
@@ -15,7 +15,7 @@ from .operations import Barrier, Measure, PulseOperation, Reset, SpecialOperatio
 class CircuitTranspiler:
     """CircuitTranspiler class."""
 
-    settings: RuncardSchema.PlatformSettings
+    settings: Runcard.GateSettings
 
     def calculate_timings(self, circuit: Circuit) -> Circuit:
         """Calculates the timings of all operations in a given quantum circuit and annotates the operation nodes with timing information.
